@@ -1407,6 +1407,7 @@ function updatePledgeSection(items) {
     elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
     elements.pledgeLeaderName.textContent = leaderName;
 
+    console.log('Calling fetchMemberPhotoFromClerkData with:', leaderName);
     // Try to fetch member photo using House Clerk data
     fetchMemberPhotoFromClerkData(leaderName);
 }
@@ -1428,17 +1429,51 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
 
         console.log(`Searching for member: ${lastName} from ${state}`);
 
-        // Fetch House Clerk MemberData.xml using CORS proxy
-        const clerkUrl = 'https://clerk.house.gov/xml/lists/MemberData.xml';
-        const proxyUrl = API_CONFIG.corsProxy + encodeURIComponent(clerkUrl);
+        // Try to fetch member data from the worker first
+        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data?state=${state}&lastName=${lastName}`;
         
-        const clerkResponse = await fetch(proxyUrl);
+        let clerkResponse;
+        try {
+            clerkResponse = await fetch(workerUrl);
+            if (clerkResponse.ok) {
+                const workerData = await clerkResponse.json();
+                console.log('Worker response:', workerData);
+                
+                if (workerData && workerData.member) {
+                    const member = workerData.member;
+                    // Update display with worker data
+                    const partyLetter = member.party === 'Republican' ? 'R' : (member.party === 'Democrat' ? 'D' : 'I');
+                    elements.pledgeLeaderName.textContent = member.fullName || `${member.firstName} ${member.lastName}`;
+                    elements.pledgeLeaderDetails.textContent = `${member.state}-${member.district} · ${partyLetter}`;
+                    
+                    // Try to get photo
+                    if (member.bioguideId) {
+                        const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${member.bioguideId}.jpg`;
+                        const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+                        if (photoResponse.ok) {
+                            elements.pledgeImagePlaceholder.style.display = 'none';
+                            elements.pledgeImage.src = photoUrl;
+                            elements.pledgeImage.style.display = 'block';
+                            console.log('Photo found and displayed');
+                            return;
+                        }
+                    }
+                }
+            }
+        } catch (workerError) {
+            console.log('Worker endpoint failed, falling back to direct parsing:', workerError);
+        }
+
+        // Fallback: Fetch House Clerk MemberData.xml directly and parse
+        const clerkUrl = 'https://clerk.house.gov/xml/lists/MemberData.xml';
+        clerkResponse = await fetch(clerkUrl);
         if (!clerkResponse.ok) {
             throw new Error(`HTTP ${clerkResponse.status}: ${clerkResponse.statusText}`);
         }
 
         const clerkDataText = await clerkResponse.text();
         console.log('Fetched MemberData.xml, length:', clerkDataText.length);
+        console.log('First 500 chars:', clerkDataText.substring(0, 500));
 
         // Search for matching member in the data
         // The format is more complex, let's try a better pattern
@@ -1450,13 +1485,16 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         // Find all entries for the state
         const stateEntries = clerkDataText.split(statePattern).slice(1);
         
-        console.log(`Found ${stateEntries.length} entries for ${state}`);
+        console.log(`Found ${stateEntries.length} entries for ${state} with pattern ${statePattern}`);
 
         for (const entry of stateEntries) {
             // Extract the member information
             // Format: Lastname, Firstname BioguideID ...
             const nameMatch = entry.match(/^([A-Za-z\-\']+),\s+([A-Za-z\-\']+)/);
-            if (!nameMatch) continue;
+            if (!nameMatch) {
+                console.log('No name match in entry:', entry.substring(0, 100));
+                continue;
+            }
 
             const memberLastName = nameMatch[1].trim();
             const memberFirstName = nameMatch[2].trim();
@@ -1465,6 +1503,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const score = calculateNameSimilarity(lastName, memberLastName);
             
             console.log(`Comparing "${lastName}" with "${memberLastName}": score ${score}`);
+            console.log('Entry sample:', entry.substring(0, 200));
             
             if (score > bestScore && score > 0.3) {
                 bestScore = score;
@@ -1491,10 +1530,13 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         console.log('Best match:', bestMatch, 'Score:', bestScore);
 
         if (bestMatch && bestMatch.bioguideId) {
+            console.log('Updating display with member info');
             // Update the display with member information
             const partyLetter = bestMatch.party === 'RR' ? 'R' : (bestMatch.party === 'DD' ? 'D' : 'I');
             elements.pledgeLeaderName.textContent = bestMatch.fullName;
             elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district} · ${partyLetter}`;
+            console.log('Updated name:', elements.pledgeLeaderName.textContent);
+            console.log('Updated details:', elements.pledgeLeaderDetails.textContent);
             
             // Use bioguide ID to fetch photo from voteview
             const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${bestMatch.bioguideId}.jpg`;
@@ -1503,6 +1545,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             // Check if photo exists
             const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+            console.log('Photo response status:', photoResponse.status);
             if (photoResponse.ok) {
                 elements.pledgeImagePlaceholder.style.display = 'none';
                 elements.pledgeImage.src = photoUrl;
@@ -1512,7 +1555,10 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             } else {
                 console.log('Photo not found, using placeholder');
                 // Still show the member info even if photo isn't available
+                return;
             }
+        } else {
+            console.log('No best match found or no bioguide ID');
         }
 
         // Fallback to placeholder if no match found or photo doesn't exist
