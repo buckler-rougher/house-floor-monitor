@@ -1430,99 +1430,82 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         console.log(`Searching for member: ${lastName} from ${state}`);
 
         // Try to fetch member data from the worker first
-        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data?state=${state}&lastName=${lastName}`;
+        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
         
-        let clerkResponse;
+        let clerkDataText;
         try {
-            clerkResponse = await fetch(workerUrl);
-            if (clerkResponse.ok) {
-                const workerData = await clerkResponse.json();
-                console.log('Worker response:', workerData);
+            const workerResponse = await fetch(workerUrl);
+            if (workerResponse.ok) {
+                const workerData = await workerResponse.json();
+                console.log('Worker response type:', typeof workerData);
                 
-                if (workerData && workerData.member) {
-                    const member = workerData.member;
-                    // Update display with worker data
-                    const partyLetter = member.party === 'Republican' ? 'R' : (member.party === 'Democrat' ? 'D' : 'I');
-                    elements.pledgeLeaderName.textContent = member.fullName || `${member.firstName} ${member.lastName}`;
-                    elements.pledgeLeaderDetails.textContent = `${member.state}-${member.district} · ${partyLetter}`;
-                    
-                    // Try to get photo
-                    if (member.bioguideId) {
-                        const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${member.bioguideId}.jpg`;
-                        const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
-                        if (photoResponse.ok) {
-                            elements.pledgeImagePlaceholder.style.display = 'none';
-                            elements.pledgeImage.src = photoUrl;
-                            elements.pledgeImage.style.display = 'block';
-                            console.log('Photo found and displayed');
-                            return;
-                        }
-                    }
+                if (workerData && workerData.xmlData) {
+                    console.log('Worker returned XML data, length:', workerData.xmlData.length);
+                    clerkDataText = workerData.xmlData;
+                } else {
+                    console.log('Worker returned unexpected format:', workerData);
+                    throw new Error('Unexpected worker response format');
                 }
+            } else {
+                throw new Error(`Worker returned HTTP ${workerResponse.status}`);
             }
         } catch (workerError) {
-            console.log('Worker endpoint failed, falling back to direct parsing:', workerError);
+            console.log('Worker endpoint failed, cannot fetch data:', workerError);
+            showPledgePlaceholder();
+            return;
         }
 
-        // Fallback: Fetch House Clerk MemberData.xml directly and parse
-        const clerkUrl = 'https://clerk.house.gov/xml/lists/MemberData.xml';
-        clerkResponse = await fetch(clerkUrl);
-        if (!clerkResponse.ok) {
-            throw new Error(`HTTP ${clerkResponse.status}: ${clerkResponse.statusText}`);
-        }
-
-        const clerkDataText = await clerkResponse.text();
-        console.log('Fetched MemberData.xml, length:', clerkDataText.length);
-        console.log('First 500 chars:', clerkDataText.substring(0, 500));
-
-        // Search for matching member in the data
-        // The format is more complex, let's try a better pattern
-        const statePattern = state.toUpperCase() + '\\d{2}';
+        console.log('Parsing XML data from worker');
+        
+        // Parse the XML data
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(clerkDataText, 'text/xml');
+        
+        // Get all member elements
+        const members = xmlDoc.querySelectorAll('member');
+        console.log(`Found ${members.length} total members in XML`);
         
         let bestMatch = null;
         let bestScore = 0;
 
-        // Find all entries for the state
-        const stateEntries = clerkDataText.split(statePattern).slice(1);
-        
-        console.log(`Found ${stateEntries.length} entries for ${state} with pattern ${statePattern}`);
-
-        for (const entry of stateEntries) {
-            // Extract the member information
-            // Format: Lastname, Firstname BioguideID ...
-            const nameMatch = entry.match(/^([A-Za-z\-\']+),\s+([A-Za-z\-\']+)/);
-            if (!nameMatch) {
-                console.log('No name match in entry:', entry.substring(0, 100));
+        // Find matching members for the state
+        for (const member of members) {
+            const stateElement = member.querySelector('state');
+            const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
+            
+            if (memberState.toUpperCase() !== state.toUpperCase()) {
                 continue;
             }
-
-            const memberLastName = nameMatch[1].trim();
-            const memberFirstName = nameMatch[2].trim();
+            
+            const lastNameElement = member.querySelector('lastname');
+            const firstNameElement = member.querySelector('firstname');
+            const bioguideElement = member.querySelector('bioguideID');
+            const partyElement = member.querySelector('party');
+            const districtElement = member.querySelector('district');
+            
+            if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
+            
+            const memberLastName = lastNameElement.textContent.trim();
+            const memberFirstName = firstNameElement.textContent.trim();
+            const bioguideId = bioguideElement.textContent.trim();
+            const party = partyElement ? partyElement.textContent.trim() : '';
+            const district = districtElement ? districtElement.textContent.trim() : '';
             
             // Score based on last name similarity
             const score = calculateNameSimilarity(lastName, memberLastName);
             
-            console.log(`Comparing "${lastName}" with "${memberLastName}": score ${score}`);
-            console.log('Entry sample:', entry.substring(0, 200));
+            console.log(`Comparing "${lastName}" with "${memberLastName}": score ${score}, bioguide: ${bioguideId}`);
             
             if (score > bestScore && score > 0.3) {
                 bestScore = score;
-                
-                // Extract bioguide ID (usually 7 chars: letter + 6 digits)
-                const bioguideMatch = entry.match(/[A-Z]\d{6}/);
-                // Extract party (RR or DD usually)
-                const partyMatch = entry.match(/(RR|DD)/);
-                // Extract district (appears after state code)
-                const districtMatch = entry.match(/\d+/);
-                
                 bestMatch = {
                     lastName: memberLastName,
                     firstName: memberFirstName,
                     fullName: `${memberFirstName} ${memberLastName}`,
-                    bioguideId: bioguideMatch ? bioguideMatch[0] : null,
-                    party: partyMatch ? partyMatch[0] : null,
-                    district: districtMatch ? districtMatch[0] : null,
-                    state: state
+                    bioguideId: bioguideId,
+                    party: party,
+                    district: district,
+                    state: memberState
                 };
             }
         }
@@ -1532,7 +1515,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         if (bestMatch && bestMatch.bioguideId) {
             console.log('Updating display with member info');
             // Update the display with member information
-            const partyLetter = bestMatch.party === 'RR' ? 'R' : (bestMatch.party === 'DD' ? 'D' : 'I');
+            const partyLetter = bestMatch.party || 'I';
             elements.pledgeLeaderName.textContent = bestMatch.fullName;
             elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district} · ${partyLetter}`;
             console.log('Updated name:', elements.pledgeLeaderName.textContent);
@@ -1567,6 +1550,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
 
     } catch (error) {
         console.error('Error fetching member photo from clerk data:', error);
+        elements.pledgeLeaderDetails.textContent = '';
         showPledgePlaceholder();
     }
 }
