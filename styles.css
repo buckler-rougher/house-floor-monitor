@@ -2813,6 +2813,16 @@ body.prayer-mode .prayer-section {
     flex-shrink: 0;
     width: 150px;
     height: 150px;
+    position: relative;
+}
+
+.prayer-image,
+.prayer-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .prayer-image {
@@ -2881,6 +2891,34 @@ body.prayer-mode .prayer-section {
     margin: 0;
 }
 
+.prayer-header-right {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.prayer-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-right: 12px;
+}
+
+.prayer-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.prayer-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.prayer-source a:hover {
+    text-decoration: underline;
+}
+
 /* Pledge Section */
 .pledge-section {
     display: none;
@@ -2920,6 +2958,16 @@ body.pledge-mode .pledge-section {
     flex-shrink: 0;
     width: 150px;
     height: 150px;
+    position: relative;
+}
+
+.pledge-image,
+.pledge-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .pledge-image {
@@ -3015,6 +3063,34 @@ body.pledge-mode .pledge-section {
     color: var(--text-muted);
     margin: 0;
     font-style: italic;
+}
+
+.pledge-header-right {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.pledge-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-right: 12px;
+}
+
+.pledge-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.pledge-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.pledge-source a:hover {
+    text-decoration: underline;
 }
 
 .pledge-text-container {
