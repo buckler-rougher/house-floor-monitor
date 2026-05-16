@@ -710,6 +710,7 @@ const elements = {
     prayerLeaderDescription: document.getElementById('prayer-leader-description'),
     pledgeSection: document.getElementById('pledge-section'),
     pledgeImage: document.getElementById('pledge-image'),
+    pledgeImagePlaceholder: document.getElementById('pledge-image-placeholder'),
     pledgeLeaderTitle: document.getElementById('pledge-leader-title'),
     pledgeLeaderName: document.getElementById('pledge-leader-name'),
     congressInfo: document.getElementById('congress-info'),
@@ -1348,9 +1349,9 @@ function updatePrayerSection(items) {
         elements.prayerImage.removeAttribute('src');
         elements.prayerImagePlaceholder.style.display = 'flex';
     } else {
-        // For House Chaplain, try to use a standard image
+        // For House Chaplain, use the specific Margaret Kibben photo
         elements.prayerImagePlaceholder.style.display = 'none';
-        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Chaplain_of_the_US_House_of_Representatives_seal.png/240px-Chaplain_of_the_US_House_of_Representatives_seal.png';
+        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original';
         elements.prayerImage.style.display = 'block';
     }
 }
@@ -1390,8 +1391,68 @@ function updatePledgeSection(items) {
     elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
     elements.pledgeLeaderName.textContent = leaderName;
 
-    // For now, hide the image since we don't have a reliable source for pledge leader photos
+    // Try to fetch member photo from voteview/member_photos
+    fetchMemberPhoto(leaderName);
+}
+
+// Fetch member photo from voteview/member_photos GitHub repository
+async function fetchMemberPhoto(memberName) {
+    try {
+        // Parse member name to extract state and name
+        // Format: "Mr. Thompson of PA" or "Ms. Smith of CA"
+        const nameMatch = memberName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+(\w+)\s+of\s+(\w+)/i);
+        
+        if (!nameMatch) {
+            showPledgePlaceholder();
+            return;
+        }
+
+        const lastName = nameMatch[1];
+        const state = nameMatch[2];
+
+        // Try to construct GitHub URL based on voteview naming convention
+        // The repository uses ICPSR IDs, but we can try common patterns
+        const githubBaseUrl = 'https://raw.githubusercontent.com/voteview/member_photos/master/';
+        
+        // Try different possible filename patterns
+        const possibleFilenames = [
+            `${lastName}_${state}.jpg`,
+            `${lastName}.jpg`,
+            `${lastName.toLowerCase()}_${state.toLowerCase()}.jpg`,
+            `${lastName.toLowerCase()}.jpg`
+        ];
+
+        let photoFound = false;
+        for (const filename of possibleFilenames) {
+            const photoUrl = githubBaseUrl + filename;
+            
+            try {
+                const response = await fetch(photoUrl, { method: 'HEAD' });
+                if (response.ok) {
+                    elements.pledgeImagePlaceholder.style.display = 'none';
+                    elements.pledgeImage.src = photoUrl;
+                    elements.pledgeImage.style.display = 'block';
+                    photoFound = true;
+                    break;
+                }
+            } catch (e) {
+                // Continue to next filename
+            }
+        }
+
+        if (!photoFound) {
+            showPledgePlaceholder();
+        }
+    } catch (error) {
+        console.error('Error fetching member photo:', error);
+        showPledgePlaceholder();
+    }
+}
+
+function showPledgePlaceholder() {
     elements.pledgeImage.style.display = 'none';
+    elements.pledgeImage.removeAttribute('src');
+    elements.pledgeImagePlaceholder.style.display = 'flex';
 }
 
 // Utility function to calculate time ago
