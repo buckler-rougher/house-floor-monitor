@@ -115,8 +115,14 @@
 
             <!-- Prayer Section -->
             <div class="prayer-section" id="prayer-section">
-                <div class="prayer-tag">
-                    <span class="prayer-tag-text">MORNING PRAYER</span>
+                <div class="prayer-section-header">
+                    <div class="prayer-tag">
+                        <span class="prayer-tag-text">MORNING PRAYER</span>
+                        <span class="prayer-tag-time" id="prayer-time"></span>
+                    </div>
+                    <div class="prayer-header-right">
+                        <span class="prayer-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
                 </div>
                 <div class="prayer-content">
                     <div class="prayer-image-container">
@@ -132,21 +138,21 @@
                     <div class="prayer-info">
                         <h2 class="prayer-leader-title" id="prayer-leader-title">Loading...</h2>
                         <p class="prayer-leader-name" id="prayer-leader-name">--</p>
-                        <div class="prayer-leader-meta">
-                            <span class="prayer-time" id="prayer-time"></span>
-                            <span class="prayer-leader-description" id="prayer-leader-description">Loading prayer information...</span>
-                        </div>
+                        <p class="prayer-leader-description" id="prayer-leader-description">Loading prayer information...</p>
                     </div>
-                </div>
-                <div class="prayer-header-right">
-                    <span class="prayer-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
                 </div>
             </div>
 
             <!-- Pledge Section -->
             <div class="pledge-section" id="pledge-section">
-                <div class="pledge-tag">
-                    <span class="pledge-tag-text">PLEDGE OF ALLEGIANCE</span>
+                <div class="pledge-section-header">
+                    <div class="pledge-tag">
+                        <span class="pledge-tag-text">PLEDGE OF ALLEGIANCE</span>
+                        <span class="pledge-tag-time" id="pledge-time"></span>
+                    </div>
+                    <div class="pledge-header-right">
+                        <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">House Clerk</a></span>
+                    </div>
                 </div>
                 <div class="pledge-content">
                     <div class="pledge-image-container">
@@ -162,15 +168,11 @@
                         <h2 class="pledge-leader-title" id="pledge-leader-title">Loading...</h2>
                         <p class="pledge-leader-name" id="pledge-leader-name">--</p>
                         <div class="pledge-leader-meta">
-                            <span class="pledge-time" id="pledge-time"></span>
                             <span class="pledge-party-tag" id="pledge-party-tag"></span>
                             <span class="pledge-leader-details" id="pledge-leader-details"></span>
                         </div>
                         <p class="pledge-leader-additional" id="pledge-leader-additional"></p>
                     </div>
-                </div>
-                <div class="pledge-header-right">
-                    <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">House Clerk</a></span>
                 </div>
                 <div class="pledge-text-container">
                     <div class="pledge-text-inner">
@@ -354,7 +356,7 @@
             <div class="absentee-panel">
                 <div class="panel-header">
                     <span class="panel-label">MISSING MEMBERS</span>
-                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">House Clerk</a></span>
+                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
                 </div>
                 <div class="absentee-info">
                     <span class="absentee-explainer">Potential absences based on Members who missed the latest roll call</span>
