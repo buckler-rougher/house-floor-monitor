@@ -225,6 +225,11 @@ body {
     color: white;
 }
 
+.mode-toggle-btn[data-mode="debate"] .debate-mode {
+    background: var(--accent-blue);
+    color: white;
+}
+
 .today-date {
     font-size: 14px;
     font-weight: 600;
@@ -2679,3 +2684,12 @@ body.recess-mode #capcam-video {
     display: none !important;
 }
 
+/* Debate Mode */
+body.debate-mode .vote-display,
+body.debate-mode .progress-section,
+body.debate-mode .vote-header,
+body.debate-mode .threshold-panel,
+body.debate-mode .quorum-panel,
+body.debate-mode .floor-grid-panel {
+    display: none !important;
+}
