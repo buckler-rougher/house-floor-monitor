@@ -1320,9 +1320,18 @@ function updatePrayerSection(items) {
     const isGuestChaplain = description.toLowerCase().includes('guest') ||
                            description.toLowerCase().includes('invited');
 
-    // Extract chaplain name
-    const nameMatch = description.match(/(?:by|led\s*by|offered\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
-    const chaplainName = nameMatch ? nameMatch[1].trim() : 'Unknown Chaplain';
+    // Extract chaplain name - handle "Chaplain Margaret Grun Kibben" format
+    let chaplainName = 'Unknown Chaplain';
+    const nameMatch = description.match(/chaplain\s+([^.]+\.?)/i);
+    if (nameMatch) {
+        chaplainName = nameMatch[1].trim();
+    } else {
+        // Fallback to other patterns
+        const fallbackMatch = description.match(/(?:by|led\s*by|offered\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
+        if (fallbackMatch) {
+            chaplainName = fallbackMatch[1].trim();
+        }
+    }
 
     // Extract additional information
     const infoMatch = description.match(/(.+?)(?:prayer|offered)/i);
@@ -1364,9 +1373,18 @@ function updatePledgeSection(items) {
 
     const description = pledgeItem.description;
 
-    // Extract who is leading the pledge
-    const nameMatch = description.match(/(?:by|led\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
-    const leaderName = nameMatch ? nameMatch[1].trim() : 'Unknown Leader';
+    // Extract who is leading the pledge - handle "designated Mr. Thompson of PA" format
+    let leaderName = 'Unknown Leader';
+    const designatedMatch = description.match(/designated\s+(.+?)\s+to\s+lead/i);
+    if (designatedMatch) {
+        leaderName = designatedMatch[1].trim();
+    } else {
+        // Fallback to other patterns
+        const fallbackMatch = description.match(/(?:by|led\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
+        if (fallbackMatch) {
+            leaderName = fallbackMatch[1].trim();
+        }
+    }
 
     // Update pledge section elements
     elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
