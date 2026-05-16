@@ -1623,6 +1623,33 @@ function initWeatherPanel() {
     });
 }
 
+// Initialize mode toggle
+function initModeToggle() {
+    const modeToggleBtn = document.getElementById('mode-toggle-btn');
+    if (!modeToggleBtn) return;
+    
+    // Set initial mode to vote
+    let currentMode = localStorage.getItem('displayMode') || 'vote';
+    modeToggleBtn.setAttribute('data-mode', currentMode);
+    
+    if (currentMode === 'recess') {
+        document.body.classList.add('recess-mode');
+    }
+    
+    // Handle toggle click
+    modeToggleBtn.addEventListener('click', () => {
+        currentMode = currentMode === 'vote' ? 'recess' : 'vote';
+        modeToggleBtn.setAttribute('data-mode', currentMode);
+        localStorage.setItem('displayMode', currentMode);
+        
+        if (currentMode === 'recess') {
+            document.body.classList.add('recess-mode');
+        } else {
+            document.body.classList.remove('recess-mode');
+        }
+    });
+}
+
 // Initialize
 function init() {
     updateTimestamp();
@@ -1663,6 +1690,9 @@ function init() {
     
     // Initialize floor grid
     initFloorGrid();
+    
+    // Initialize mode toggle
+    initModeToggle();
     
     // Fetch initial data
     updateProceedingsFeed();
