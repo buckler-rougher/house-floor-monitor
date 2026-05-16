@@ -2842,8 +2842,9 @@ body.prayer-mode .prayer-section {
     color: var(--text-muted);
 }
 
-.placeholder-icon {
-    font-size: 48px;
+.placeholder-svg {
+    width: 64px;
+    height: 64px;
     opacity: 0.5;
 }
 
@@ -2944,8 +2945,13 @@ body.pledge-mode .pledge-section {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     color: var(--text-muted);
+}
+
+.placeholder-svg {
+    width: 64px;
+    height: 64px;
+    opacity: 0.5;
 }
 
 .pledge-info {
@@ -2968,11 +2974,33 @@ body.pledge-mode .pledge-section {
 
 .pledge-text-container {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    flex-direction: column;
+    gap: 12px;
     padding: 16px;
     background: var(--bg-elevated);
     border-radius: 8px;
+    margin-top: 16px;
+}
+
+.pledge-text-inner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.pledge-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.pledge-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.pledge-source a:hover {
+    text-decoration: underline;
 }
 
 .pledge-flag {

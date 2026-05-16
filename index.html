@@ -122,7 +122,10 @@
                     <div class="prayer-image-container">
                         <img class="prayer-image" id="prayer-image" src="" alt="Chaplain" />
                         <div class="prayer-image-placeholder" id="prayer-image-placeholder">
-                            <span class="placeholder-icon">✝️</span>
+                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
                             <span class="placeholder-text">Guest Chaplain</span>
                         </div>
                     </div>
@@ -143,18 +146,26 @@
                     <div class="pledge-image-container">
                         <img class="pledge-image" id="pledge-image" src="" alt="Pledge Leader" />
                         <div class="pledge-image-placeholder" id="pledge-image-placeholder">
-                            <span class="placeholder-icon">👤</span>
+                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
                         </div>
                     </div>
                     <div class="pledge-info">
                         <h2 class="pledge-leader-title" id="pledge-leader-title">Loading...</h2>
                         <p class="pledge-leader-name" id="pledge-leader-name">--</p>
                     </div>
-                    <div class="pledge-text-container">
+                </div>
+                <div class="pledge-text-container">
+                    <div class="pledge-text-inner">
                         <div class="pledge-flag">🇺🇸</div>
                         <div class="pledge-text">
                             "I pledge allegiance to the Flag of the United States of America, and to the Republic for which it stands, one Nation under God, indivisible, with liberty and justice for all."
                         </div>
+                    </div>
+                    <div class="pledge-source">
+                        Source: <a href="https://uscode.house.gov/view.xhtml?path=/prelim@title4/chapter1&edition=prelim" target="_blank" rel="noopener">U.S. Code (Title 4, Chapter 1)</a>
                     </div>
                 </div>
             </div>
