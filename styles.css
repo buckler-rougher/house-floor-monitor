@@ -2972,11 +2972,49 @@ body.pledge-mode .pledge-section {
     margin: 0 0 8px 0;
 }
 
+.pledge-leader-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pledge-party-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+}
+
+.pledge-party-tag.republican {
+    background: rgba(249, 25, 28, 0.1);
+    color: #f9251c;
+}
+
+.pledge-party-tag.democrat {
+    background: rgba(63, 185, 80, 0.1);
+    color: #3fb950;
+}
+
+.pledge-party-tag.independent {
+    background: rgba(163, 113, 247, 0.1);
+    color: #a371f7;
+}
+
 .pledge-leader-details {
     font-size: 13px;
     color: var(--text-secondary);
     margin: 0;
     font-family: var(--font-mono);
+}
+
+.pledge-leader-additional {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+    font-style: italic;
 }
 
 .pledge-text-container {
