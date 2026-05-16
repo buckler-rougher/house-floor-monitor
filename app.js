@@ -713,7 +713,9 @@ const elements = {
     pledgeImagePlaceholder: document.getElementById('pledge-image-placeholder'),
     pledgeLeaderTitle: document.getElementById('pledge-leader-title'),
     pledgeLeaderName: document.getElementById('pledge-leader-name'),
+    pledgePartyTag: document.getElementById('pledge-party-tag'),
     pledgeLeaderDetails: document.getElementById('pledge-leader-details'),
+    pledgeLeaderAdditional: document.getElementById('pledge-leader-additional'),
     congressInfo: document.getElementById('congress-info'),
     airportDelaysList: document.getElementById('airport-delays-list'),
     absenteeRollInfo: document.getElementById('absentee-roll-info'),
@@ -1384,7 +1386,9 @@ function updatePledgeSection(items) {
     if (!pledgeItem) {
         elements.pledgeLeaderTitle.textContent = 'No Pledge Information';
         elements.pledgeLeaderName.textContent = '--';
+        elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
+        elements.pledgeLeaderAdditional.textContent = '';
         return;
     }
 
@@ -1482,6 +1486,8 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const bioguideElement = member.querySelector('bioguideID');
             const partyElement = member.querySelector('party');
             const districtElement = member.querySelector('district');
+            const termsElement = member.querySelector('prior-congress');
+            const townElement = member.querySelector('townname');
             
             if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
             
@@ -1490,6 +1496,8 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const bioguideId = bioguideElement.textContent.trim();
             const party = partyElement ? partyElement.textContent.trim() : '';
             const district = districtElement ? districtElement.textContent.trim() : '';
+            const terms = termsElement ? termsElement.textContent.trim() : '';
+            const town = townElement ? townElement.textContent.trim() : '';
             
             // Score based on last name similarity
             const score = calculateNameSimilarity(lastName, memberLastName);
@@ -1505,7 +1513,9 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
                     bioguideId: bioguideId,
                     party: party,
                     district: district,
-                    state: memberState
+                    state: memberState,
+                    terms: terms,
+                    town: town
                 };
             }
         }
@@ -1515,11 +1525,34 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         if (bestMatch && bestMatch.bioguideId) {
             console.log('Updating display with member info');
             // Update the display with member information
-            const partyLetter = bestMatch.party || 'I';
             elements.pledgeLeaderName.textContent = bestMatch.fullName;
-            elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district} · ${partyLetter}`;
+            elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district}`;
+            
+            // Set party tag
+            elements.pledgePartyTag.textContent = bestMatch.party;
+            elements.pledgePartyTag.className = 'pledge-party-tag';
+            if (bestMatch.party === 'R') {
+                elements.pledgePartyTag.classList.add('republican');
+            } else if (bestMatch.party === 'D') {
+                elements.pledgePartyTag.classList.add('democrat');
+            } else {
+                elements.pledgePartyTag.classList.add('independent');
+            }
+            
+            // Show additional interesting info
+            let additionalInfo = [];
+            if (bestMatch.terms && bestMatch.terms !== '0') {
+                additionalInfo.push(`${bestMatch.terms} term${bestMatch.terms === '1' ? '' : 's'} in Congress`);
+            }
+            if (bestMatch.town) {
+                additionalInfo.push(`from ${bestMatch.town}`);
+            }
+            elements.pledgeLeaderAdditional.textContent = additionalInfo.length > 0 ? additionalInfo.join(' • ') : '';
+            
             console.log('Updated name:', elements.pledgeLeaderName.textContent);
             console.log('Updated details:', elements.pledgeLeaderDetails.textContent);
+            console.log('Party tag:', elements.pledgePartyTag.textContent);
+            console.log('Additional info:', elements.pledgeLeaderAdditional.textContent);
             
             // Use bioguide ID to fetch photo from voteview
             const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${bestMatch.bioguideId}.jpg`;
@@ -1545,12 +1578,16 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         }
 
         // Fallback to placeholder if no match found or photo doesn't exist
+        elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
+        elements.pledgeLeaderAdditional.textContent = '';
         showPledgePlaceholder();
 
     } catch (error) {
         console.error('Error fetching member photo from clerk data:', error);
+        elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
+        elements.pledgeLeaderAdditional.textContent = '';
         showPledgePlaceholder();
     }
 }
@@ -1585,7 +1622,9 @@ function showPledgePlaceholder() {
     elements.pledgeImage.style.display = 'none';
     elements.pledgeImage.removeAttribute('src');
     elements.pledgeImagePlaceholder.style.display = 'flex';
+    elements.pledgePartyTag.textContent = '';
     elements.pledgeLeaderDetails.textContent = '';
+    elements.pledgeLeaderAdditional.textContent = '';
 }
 
 // Utility function to calculate time ago
