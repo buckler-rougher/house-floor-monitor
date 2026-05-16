@@ -1632,22 +1632,33 @@ function initModeToggle() {
     let currentMode = localStorage.getItem('displayMode') || 'vote';
     modeToggleBtn.setAttribute('data-mode', currentMode);
     
-    if (currentMode === 'recess') {
-        document.body.classList.add('recess-mode');
-    }
+    // Apply initial mode classes
+    updateModeClasses(currentMode);
     
     // Handle toggle click
     modeToggleBtn.addEventListener('click', () => {
-        currentMode = currentMode === 'vote' ? 'recess' : 'vote';
+        // Cycle through modes: vote -> recess -> debate -> vote
+        const modes = ['vote', 'recess', 'debate'];
+        const currentIndex = modes.indexOf(currentMode);
+        currentMode = modes[(currentIndex + 1) % modes.length];
+        
         modeToggleBtn.setAttribute('data-mode', currentMode);
         localStorage.setItem('displayMode', currentMode);
         
-        if (currentMode === 'recess') {
-            document.body.classList.add('recess-mode');
-        } else {
-            document.body.classList.remove('recess-mode');
-        }
+        updateModeClasses(currentMode);
     });
+}
+
+function updateModeClasses(mode) {
+    // Remove all mode classes
+    document.body.classList.remove('recess-mode', 'debate-mode');
+    
+    // Add appropriate class based on mode
+    if (mode === 'recess') {
+        document.body.classList.add('recess-mode');
+    } else if (mode === 'debate') {
+        document.body.classList.add('debate-mode');
+    }
 }
 
 // Initialize
