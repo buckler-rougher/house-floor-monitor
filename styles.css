@@ -186,6 +186,45 @@ body {
     gap: 4px;
 }
 
+.mode-toggle {
+    display: flex;
+    align-items: center;
+}
+
+.mode-toggle-btn {
+    display: flex;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-toggle-btn:hover {
+    border-color: var(--accent-blue);
+}
+
+.mode-icon {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-family: var(--font-mono);
+}
+
+.mode-toggle-btn[data-mode="vote"] .vote-mode {
+    background: var(--accent-green);
+    color: white;
+}
+
+.mode-toggle-btn[data-mode="recess"] .recess-mode {
+    background: var(--accent-amber);
+    color: white;
+}
+
 .today-date {
     font-size: 14px;
     font-weight: 600;
@@ -2627,3 +2666,16 @@ font-family: var(--font-mono);
         align-items: flex-start;
     }
 }
+
+/* Recess Mode */
+body.recess-mode .youtube-panel,
+body.recess-mode .vote-display,
+body.recess-mode .progress-section,
+body.recess-mode .vote-header,
+body.recess-mode .threshold-panel,
+body.recess-mode .quorum-panel,
+body.recess-mode .floor-grid-panel,
+body.recess-mode #capcam-video {
+    display: none !important;
+}
+
