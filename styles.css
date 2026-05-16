@@ -2907,12 +2907,14 @@ body.pledge-mode .pledge-section {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 24px;
+    display: flex;
+    gap: 24px;
 }
 
 .pledge-image-container {
+    flex-shrink: 0;
     width: 150px;
     height: 150px;
-    margin: 0 auto 16px;
 }
 
 .pledge-image {
@@ -2928,8 +2930,7 @@ body.pledge-mode .pledge-section {
 }
 
 .pledge-info {
-    text-align: center;
-    margin-bottom: 24px;
+    flex: 1;
 }
 
 .pledge-leader-title {
@@ -2943,7 +2944,7 @@ body.pledge-mode .pledge-section {
     font-size: 16px;
     font-weight: 600;
     color: var(--accent-blue);
-    margin: 0;
+    margin: 0 0 16px 0;
 }
 
 .pledge-text-container {
@@ -2968,25 +2969,21 @@ body.pledge-mode .pledge-section {
 }
 
 /* Prayer Mode */
-body.prayer-mode .youtube-panel,
 body.prayer-mode .vote-display,
 body.prayer-mode .progress-section,
 body.prayer-mode .vote-header,
 body.prayer-mode .threshold-panel,
 body.prayer-mode .quorum-panel,
-body.prayer-mode .floor-grid-panel,
-body.prayer-mode #capcam-video {
+body.prayer-mode .floor-grid-panel {
     display: none !important;
 }
 
 /* Pledge Mode */
-body.pledge-mode .youtube-panel,
 body.pledge-mode .vote-display,
 body.pledge-mode .progress-section,
 body.pledge-mode .vote-header,
 body.pledge-mode .threshold-panel,
 body.pledge-mode .quorum-panel,
-body.pledge-mode .floor-grid-panel,
-body.pledge-mode #capcam-video {
+body.pledge-mode .floor-grid-panel {
     display: none !important;
 }
