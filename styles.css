@@ -2819,8 +2819,9 @@ body.prayer-mode .prayer-section {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 12px;
     display: none;
+    border: 2px solid var(--border-color);
 }
 
 .prayer-image[src] {
@@ -2830,8 +2831,9 @@ body.prayer-mode .prayer-section {
 .prayer-image-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--bg-elevated);
-    border-radius: 8px;
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2842,6 +2844,7 @@ body.prayer-mode .prayer-section {
 
 .placeholder-icon {
     font-size: 48px;
+    opacity: 0.5;
 }
 
 .placeholder-text {
@@ -2849,6 +2852,7 @@ body.prayer-mode .prayer-section {
     font-weight: 600;
     text-transform: uppercase;
     font-family: var(--font-mono);
+    opacity: 0.7;
 }
 
 .prayer-info {
@@ -2921,12 +2925,27 @@ body.pledge-mode .pledge-section {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 12px;
     display: none;
+    border: 2px solid var(--border-color);
 }
 
 .pledge-image[src] {
     display: block;
+}
+
+.pledge-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
 }
 
 .pledge-info {
