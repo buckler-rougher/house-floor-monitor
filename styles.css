@@ -230,6 +230,16 @@ body {
     color: white;
 }
 
+.mode-toggle-btn[data-mode="prayer"] .prayer-mode {
+    background: var(--accent-purple);
+    color: white;
+}
+
+.mode-toggle-btn[data-mode="pledge"] .pledge-mode {
+    background: var(--accent-red);
+    color: white;
+}
+
 .today-date {
     font-size: 14px;
     font-weight: 600;
@@ -2762,4 +2772,221 @@ body.debate-mode .debate-section {
     line-height: 1.6;
     color: var(--text-secondary);
     margin: 0;
+}
+
+/* Prayer Section */
+.prayer-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.prayer-mode .prayer-section {
+    display: block;
+}
+
+.prayer-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-purple);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    font-family: var(--font-mono);
+}
+
+.prayer-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+}
+
+.prayer-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+}
+
+.prayer-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    display: none;
+}
+
+.prayer-image[src] {
+    display: block;
+}
+
+.prayer-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+}
+
+.placeholder-icon {
+    font-size: 48px;
+}
+
+.placeholder-text {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+}
+
+.prayer-info {
+    flex: 1;
+}
+
+.prayer-leader-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.prayer-leader-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0 0 12px 0;
+}
+
+.prayer-leader-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Pledge Section */
+.pledge-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.pledge-mode .pledge-section {
+    display: block;
+}
+
+.pledge-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-red);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    font-family: var(--font-mono);
+}
+
+.pledge-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.pledge-image-container {
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 16px;
+}
+
+.pledge-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    display: none;
+}
+
+.pledge-image[src] {
+    display: block;
+}
+
+.pledge-info {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.pledge-leader-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.pledge-leader-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0;
+}
+
+.pledge-text-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.pledge-flag {
+    font-size: 64px;
+    flex-shrink: 0;
+}
+
+.pledge-text {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Prayer Mode */
+body.prayer-mode .youtube-panel,
+body.prayer-mode .vote-display,
+body.prayer-mode .progress-section,
+body.prayer-mode .vote-header,
+body.prayer-mode .threshold-panel,
+body.prayer-mode .quorum-panel,
+body.prayer-mode .floor-grid-panel,
+body.prayer-mode #capcam-video {
+    display: none !important;
+}
+
+/* Pledge Mode */
+body.pledge-mode .youtube-panel,
+body.pledge-mode .vote-display,
+body.pledge-mode .progress-section,
+body.pledge-mode .vote-header,
+body.pledge-mode .threshold-panel,
+body.pledge-mode .quorum-panel,
+body.pledge-mode .floor-grid-panel,
+body.pledge-mode #capcam-video {
+    display: none !important;
 }
