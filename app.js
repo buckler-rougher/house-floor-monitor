@@ -1323,7 +1323,7 @@ function updatePrayerSection(items) {
 
     // Extract chaplain name - handle "Chaplain Margaret Grun Kibben" format
     let chaplainName = 'Unknown Chaplain';
-    const nameMatch = description.match(/chaplain\s+([^.]+\.?)/i);
+    const nameMatch = description.match(/chaplain\s+([^.]+)\./i);
     if (nameMatch) {
         chaplainName = nameMatch[1].trim();
     } else {
@@ -1334,14 +1334,28 @@ function updatePrayerSection(items) {
         }
     }
 
-    // Extract additional information
-    const infoMatch = description.match(/(.+?)(?:prayer|offered)/i);
-    const additionalInfo = infoMatch ? infoMatch[1].trim() : '';
+    // Remove trailing period if present
+    chaplainName = chaplainName.replace(/\.$/, '').trim();
+
+    // Extract additional information - try to get meaningful description
+    let additionalInfo = '';
+    
+    // Try to extract text between the name and the end, skipping common patterns
+    const afterNameMatch = description.match(new RegExp(chaplainName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.\\s*(.+)', 'i'));
+    if (afterNameMatch && afterNameMatch[1]) {
+        additionalInfo = afterNameMatch[1].trim();
+        // Remove common prefixes like "Today's", "The", etc.
+        additionalInfo = additionalInfo.replace(/^(Today's|The|A)\s+/i, '');
+        // Limit length
+        if (additionalInfo.length > 150) {
+            additionalInfo = additionalInfo.substring(0, 150) + '...';
+        }
+    }
 
     // Update prayer section elements
     elements.prayerLeaderTitle.textContent = isGuestChaplain ? 'Guest Chaplain' : 'House Chaplain';
     elements.prayerLeaderName.textContent = chaplainName;
-    elements.prayerLeaderDescription.textContent = additionalInfo || description.substring(0, 200) + (description.length > 200 ? '...' : '');
+    elements.prayerLeaderDescription.textContent = additionalInfo || 'Leading the House in prayer.';
 
     // Handle image display
     if (isGuestChaplain) {
