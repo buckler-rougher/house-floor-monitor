@@ -1405,17 +1405,17 @@ function updatePledgeSection(items) {
     elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
     elements.pledgeLeaderName.textContent = leaderName;
 
-    // Try to fetch member photo from voteview/member_photos
-    fetchMemberPhoto(leaderName);
+    // Try to fetch member photo using House Clerk data
+    fetchMemberPhotoFromClerkData(leaderName);
 }
 
-// Fetch member photo from voteview/member_photos GitHub repository
-async function fetchMemberPhoto(memberName) {
+// Fetch member data from House Clerk and get photo
+async function fetchMemberPhotoFromClerkData(leaderName) {
     try {
-        // Parse member name to extract state and name
+        // Parse member name to extract last name and state
         // Format: "Mr. Thompson of PA" or "Ms. Smith of CA"
-        const nameMatch = memberName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+(\w+)\s+of\s+(\w+)/i);
-        
+        const nameMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+(\w+)\s+of\s+(\w+)/i);
+
         if (!nameMatch) {
             showPledgePlaceholder();
             return;
@@ -1424,43 +1424,97 @@ async function fetchMemberPhoto(memberName) {
         const lastName = nameMatch[1];
         const state = nameMatch[2];
 
-        // Try to construct GitHub URL based on voteview naming convention
-        // The repository uses ICPSR IDs, but we can try common patterns
-        const githubBaseUrl = 'https://raw.githubusercontent.com/voteview/member_photos/master/';
-        
-        // Try different possible filename patterns
-        const possibleFilenames = [
-            `${lastName}_${state}.jpg`,
-            `${lastName}.jpg`,
-            `${lastName.toLowerCase()}_${state.toLowerCase()}.jpg`,
-            `${lastName.toLowerCase()}.jpg`
-        ];
+        // Fetch House Clerk MemberData.xml
+        const clerkResponse = await fetch('https://clerk.house.gov/xml/lists/MemberData.xml');
+        if (!clerkResponse.ok) {
+            throw new Error(`HTTP ${clerkResponse.status}: ${clerkResponse.statusText}`);
+        }
 
-        let photoFound = false;
-        for (const filename of possibleFilenames) {
-            const photoUrl = githubBaseUrl + filename;
-            
-            try {
-                const response = await fetch(photoUrl, { method: 'HEAD' });
-                if (response.ok) {
-                    elements.pledgeImagePlaceholder.style.display = 'none';
-                    elements.pledgeImage.src = photoUrl;
-                    elements.pledgeImage.style.display = 'block';
-                    photoFound = true;
-                    break;
+        const clerkDataText = await clerkResponse.text();
+
+        // Search for matching member in the data
+        // The format appears to be: STATE+DISTRICT Lastname, Firstname BIOGUIDE_ID
+        const statePattern = state.toUpperCase() + '\\d{2}';
+        const memberPattern = new RegExp(statePattern + '([^,]+),\\s+([^A-Z]+)([A-Z]\\d{6})', 'i');
+
+        let bestMatch = null;
+        let bestScore = 0;
+
+        // Find all potential matches for the state
+        const stateMatches = clerkDataText.match(new RegExp(state + '\\d{2}[^,]+,\\s+[^A-Z]+[A-Z]\\d{6}', 'gi'));
+
+        if (stateMatches) {
+            for (const match of stateMatches) {
+                // Extract last name from the match
+                const lastNameMatch = match.match(/([^,]+),/);
+                if (lastNameMatch) {
+                    const memberLastName = lastNameMatch[1].trim();
+                    
+                    // Score based on how well the last names match
+                    const score = calculateNameSimilarity(lastName, memberLastName);
+                    
+                    if (score > bestScore && score > 0.5) {
+                        bestScore = score;
+                        // Extract bioguide ID
+                        const bioguideMatch = match.match(/[A-Z]\d{6}/);
+                        if (bioguideMatch) {
+                            bestMatch = {
+                                bioguideId: bioguideMatch[0],
+                                lastName: memberLastName
+                            };
+                        }
+                    }
                 }
-            } catch (e) {
-                // Continue to next filename
             }
         }
 
-        if (!photoFound) {
-            showPledgePlaceholder();
+        if (bestMatch) {
+            // Use bioguide ID to fetch photo from voteview
+            const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${bestMatch.bioguideId}.jpg`;
+            
+            // Check if photo exists
+            const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+            if (photoResponse.ok) {
+                elements.pledgeImagePlaceholder.style.display = 'none';
+                elements.pledgeImage.src = photoUrl;
+                elements.pledgeImage.style.display = 'block';
+                return;
+            }
         }
+
+        // Fallback to placeholder if no match found or photo doesn't exist
+        showPledgePlaceholder();
+
     } catch (error) {
-        console.error('Error fetching member photo:', error);
+        console.error('Error fetching member photo from clerk data:', error);
         showPledgePlaceholder();
     }
+}
+
+// Calculate similarity between two names
+function calculateNameSimilarity(name1, name2) {
+    const n1 = name1.toLowerCase();
+    const n2 = name2.toLowerCase();
+    
+    if (n1 === n2) return 1.0;
+    
+    // Check if one contains the other
+    if (n1.includes(n2) || n2.includes(n1)) return 0.8;
+    
+    // Simple Levenshtein-like distance for partial matches
+    const longer = n1.length > n2.length ? n1 : n2;
+    const shorter = n1.length > n2.length ? n2 : n1;
+    
+    if (longer.length === 0) return 0;
+    
+    let matches = 0;
+    for (let i = 0; i < shorter.length; i++) {
+        if (longer.includes(shorter[i])) {
+            matches++;
+        }
+    }
+    
+    return matches / longer.length;
 }
 
 function showPledgePlaceholder() {
