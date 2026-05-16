@@ -1,0 +1,13 @@
+{
+  "name": "dome-watch-monitor",
+  "version": "1.0.0",
+  "description": "Congressional dome monitoring dashboard",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve . -p 8080",
+    "deploy-worker": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
