@@ -2693,3 +2693,73 @@ body.debate-mode .quorum-panel,
 body.debate-mode .floor-grid-panel {
     display: none !important;
 }
+
+/* Debate Section */
+.debate-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.debate-mode .debate-section {
+    display: block;
+}
+
+.debate-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-blue);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    font-family: var(--font-mono);
+}
+
+.debate-tag-text {
+    white-space: nowrap;
+}
+
+.debate-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.debate-bill-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+    line-height: 1.3;
+}
+
+.debate-bill-info {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.debate-bill-id {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.debate-bill-sponsor {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.debate-bill-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0;
+}

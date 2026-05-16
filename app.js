@@ -697,6 +697,11 @@ const elements = {
     majorityControlBadge: document.getElementById('majority-control-badge'),
     vacanciesCount: document.getElementById('vacancies-count'),
     vacanciesList: document.getElementById('vacancies-list'),
+    debateSection: document.getElementById('debate-section'),
+    debateBillTitle: document.getElementById('debate-bill-title'),
+    debateBillId: document.getElementById('debate-bill-id'),
+    debateBillSponsor: document.getElementById('debate-bill-sponsor'),
+    debateBillDescription: document.getElementById('debate-bill-description'),
     congressInfo: document.getElementById('congress-info'),
     airportDelaysList: document.getElementById('airport-delays-list'),
     absenteeRollInfo: document.getElementById('absentee-roll-info'),
@@ -1239,11 +1244,43 @@ async function updateProceedingsFeed() {
         }
         
         elements.proceedingsFeed.innerHTML = html;
+        
+        // Update debate section with latest bill information
+        updateDebateSection(data.items);
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
         elements.proceedingsFeed.innerHTML = '<div class="proceedings-error">UNABLE TO FETCH PROCEEDINGS</div>';
     }
+}
+
+// Update debate section with bill information
+function updateDebateSection(items) {
+    if (!elements.debateBillTitle || !items || items.length === 0) return;
+    
+    // Get the latest item
+    const latestItem = items[0];
+    
+    // Try to extract bill information from the description
+    const description = latestItem.description || '';
+    
+    // Try to find bill number (e.g., H.R. 1234, S. 567)
+    const billMatch = description.match(/[HS]\.?\s*R\.?\s*\d+/i);
+    const billId = billMatch ? billMatch[0].toUpperCase().replace(/\s/g, '') : 'Unknown Bill';
+    
+    // Try to find bill title (first sentence or line)
+    const titleMatch = description.match(/^(.+?)(?:\n|$)/);
+    const billTitle = titleMatch ? titleMatch[1].trim() : description.substring(0, 100);
+    
+    // Try to find sponsor (looking for patterns like "Sponsor: Rep. Name")
+    const sponsorMatch = description.match(/(?:sponsor|by|introduced\s*by):\s*(.+?)(?:\n|,|$)/i);
+    const sponsor = sponsorMatch ? sponsorMatch[1].trim() : 'Unknown Sponsor';
+    
+    // Update debate section elements
+    elements.debateBillTitle.textContent = billTitle;
+    elements.debateBillId.textContent = billId;
+    elements.debateBillSponsor.textContent = `Sponsor: ${sponsor}`;
+    elements.debateBillDescription.textContent = description.substring(0, 300) + (description.length > 300 ? '...' : '');
 }
 
 // Utility function to calculate time ago
