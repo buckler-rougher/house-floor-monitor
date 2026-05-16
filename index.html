@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONITORING THE HOUSE FLOOR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- True Header -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="brand">
+                <div class="live-indicator"></div>
+                <span class="brand-text">MONITORING THE HOUSE FLOOR</span>
+            </div>
+            <div class="date-info">
+                <span class="today-date" id="today-date">--</span>
+                <div class="session-status" id="session-status">
+                    <span class="session-text" id="session-text">Checking session...</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="weather-panel" id="weather-panel">
+                <div class="weather-info" id="weather-info">
+                    <div class="weather-temp" id="weather-temp">--°</div>
+                    <div class="weather-condition" id="weather-condition">Loading...</div>
+                </div>
+                <video id="capcam-video" muted playsinline preload="auto" crossorigin="anonymous"></video>
+            </div>
+            <div class="clock-group" aria-label="Current times">
+                <div class="clock">
+                    <span class="clock-label">LOCAL</span>
+                    <span class="analog-clock" id="local-analog" aria-hidden="true">
+                        <span class="clock-hand hour-hand"></span>
+                        <span class="clock-hand minute-hand"></span>
+                        <span class="clock-hand second-hand"></span>
+                        <span class="clock-center"></span>
+                    </span>
+                    <span class="clock-time" id="local-time">--:--:--</span>
+                </div>
+                <div class="clock">
+                    <span class="clock-label">DC</span>
+                    <span class="analog-clock" id="dc-analog" aria-hidden="true">
+                        <span class="clock-hand hour-hand"></span>
+                        <span class="clock-hand minute-hand"></span>
+                        <span class="clock-hand second-hand"></span>
+                        <span class="clock-center"></span>
+                    </span>
+                    <span class="clock-time" id="dc-time">--:--:--</span>
+                </div>
+                <div class="clock">
+                    <span class="clock-label">UTC</span>
+                    <span class="analog-clock" id="utc-analog" aria-hidden="true">
+                        <span class="clock-hand hour-hand"></span>
+                        <span class="clock-hand minute-hand"></span>
+                        <span class="clock-hand second-hand"></span>
+                        <span class="clock-center"></span>
+                    </span>
+                    <span class="clock-time" id="utc-time">--:--:--</span>
+                </div>
+            </div>
+                    </div>
+    </header>
+    
+    <div class="container">
+                    <!-- Congress Info Display -->
+            <div class="congress-info" id="congress-info">
+                <span class="congress-text">--</span>
+                <br>
+                <span class="floor-status" id="floor-status">Loading...</span>
+            </div>
+
+        <!-- Main Display -->
+        <div class="main-display">
+            <!-- Vote Title -->
+            <div class="vote-header">
+                <h1 class="vote-title" id="vote-title">Loading...</h1>
+                <div class="vote-meta">
+                    <span class="vote-id" id="vote-id">--</span>
+                    <button class="refresh-btn" id="refresh-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vote Count Display -->
+            <div class="vote-display">
+                <div class="vote-counts-row">
+                    <div class="vote-count-section yeas">
+                        <div class="count-label">YEA</div>
+                        <div class="count-number" id="yeas-count">--</div>
+                        <div class="count-percentage" id="yeas-percent">--%</div>
+                    </div>
+
+                    <div class="vote-count-section present">
+                        <div class="count-label">PRESENT</div>
+                        <div class="count-number" id="present-count">--</div>
+                        <div class="count-percentage" id="present-percent">--%</div>
+                    </div>
+
+                    <div class="vote-count-section nays">
+                        <div class="count-label">NAY</div>
+                        <div class="count-number" id="nays-count">--</div>
+                        <div class="count-percentage" id="nays-percent">--%</div>
+                    </div>
+                </div>
+
+                <!-- Integrated Timer Display -->
+                <div class="vote-timer" id="vote-timer">
+                    <span class="vote-timer-label">TIMER</span>
+                    <span class="vote-timer-value" id="last-update">--:--</span>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill yeas" id="yeas-bar"></div>
+                    <div class="progress-fill present" id="present-bar"></div>
+                    <div class="progress-fill nays" id="nays-bar"></div>
+                </div>
+                <div class="progress-labels">
+                    <span>YEAS</span>
+                    <span id="total-votes">Total: --</span>
+                    <span>NAYS</span>
+                </div>
+            </div>
+
+            <!-- Threshold Status -->
+            <div class="threshold-panel">
+                <div class="panel-header">
+                    <span class="panel-label">THRESHOLD ANALYSIS</span>
+                    <span class="threshold-state" id="threshold-state">CALCULATING</span>
+                </div>
+                <div class="threshold-grid">
+                    <div class="threshold-item">
+                        <span class="threshold-metric-label">Votes Remaining</span>
+                        <span class="threshold-metric-value" id="votes-remaining">--</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-metric-label">Yeas Needed</span>
+                        <span class="threshold-metric-value" id="yeas-needed">--</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-metric-label">Nays to Block</span>
+                        <span class="threshold-metric-value" id="nays-to-block">--</span>
+                    </div>
+                    <div class="threshold-item">
+                        <span class="threshold-metric-label">Max Possible Yeas</span>
+                        <span class="threshold-metric-value" id="max-possible-yeas">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quorum Status -->
+            <div class="quorum-panel">
+                <div class="panel-header">
+                    <span class="panel-label">QUORUM CALL</span>
+                    <span class="quorum-indicator" id="quorum-indicator">
+                        <span class="indicator-dot"></span>
+                        <span class="indicator-text">CALCULATING</span>
+                    </span>
+                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">House Clerk</a></span>
+                </div>
+                <div class="quorum-content">
+                    <div class="quorum-metrics">
+                        <div class="metric-item">
+                            <span class="metric-label">Members Present</span>
+                            <span class="metric-value" id="members-present">--</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Required for Quorum</span>
+                            <span class="metric-value">218</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Whole Number</span>
+                            <span class="metric-value" id="quorum-session-status">--</span>
+                        </div>
+                    </div>
+                    <div class="quorum-visual">
+                        <div class="quorum-bar">
+                            <div class="quorum-fill" id="quorum-fill"></div>
+                        </div>
+                        <div class="quorum-labels">
+                            <span>0</span>
+                            <span>218</span>
+                            <span>435</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chamber Vote Map -->
+            <div class="floor-grid-panel">
+                <div class="panel-header">
+                    <span class="panel-label">CHAMBER VOTE MAP</span>
+                    <div class="grid-legend">
+                        <span class="legend-item"><span class="dot yea"></span> YEA</span>
+                        <span class="legend-item"><span class="dot nay"></span> NAY</span>
+                        <span class="legend-item"><span class="dot present"></span> PRESENT</span>
+                        <span class="legend-item"><span class="dot not-voting"></span> NOT VOTING</span>
+                    </div>
+                </div>
+                <div class="grid-note">
+                    Live vote tallies do not identify individual members, and members do not have assigned seats. This map is for visualization purposes only.
+                </div>
+                <div class="grid-container">
+                    <div class="floor-arch" id="floor-arch">
+                        <div class="chamber-rings" aria-hidden="true"></div>
+                        <div class="center-aisle" aria-hidden="true"></div>
+                        <div class="arch-label rep-label">REPUBLICANS</div>
+                        <div class="arch-label dem-label">DEMOCRATS</div>
+                        <div class="dais-label">ROSTRUM</div>
+                        <!-- Seats will be generated by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="youtube-panel">
+                <div class="panel-header">
+                    <span class="panel-label">LIVE STREAM</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://youtube.com/@USHouseClerk/live" target="_blank" rel="noopener">US House Clerk (YouTube)</a></span>
+                    </div>
+                </div>
+                <div class="youtube-container">
+                    <iframe
+                        src="https://www.youtube.com/embed/live_stream?channel=UCqU8qiVHYmLsF0JIMByCTvw&autoplay=1&mute=1&controls=0&cc_load_policy=1&cc_lang_pref=en&rel=0&modestbranding=1"
+                        class="youtube-iframe"
+                        title="US House Clerk — Live"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; autoplay"
+                        allowfullscreen>
+                    </iframe>
+                    <div class="youtube-overlay"></div>
+                </div>
+            </div>
+
+            <!-- Floor Proceedings -->
+            <div class="proceedings-panel">
+                <div class="panel-header">
+                    <span class="panel-label">FLOOR PROCEEDINGS</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                        <span class="proceedings-time" id="proceedings-last-update">--:--</span>
+                    </div>
+                </div>
+                <div class="proceedings-feed" id="proceedings-feed">
+                    <!-- Items will be generated by JS -->
+                </div>
+            </div>
+
+            <!-- Absentee Tracking -->
+            <div class="absentee-panel">
+                <div class="panel-header">
+                    <span class="panel-label">MISSING MEMBERS</span>
+                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">House Clerk</a></span>
+                </div>
+                <div class="absentee-info">
+                    <span class="absentee-explainer">Potential absences based on Members who missed the latest roll call</span>
+                    <span class="absentee-roll-info" id="absentee-roll-info">--</span>
+                </div>
+                <div class="absentee-content">
+                    <div class="absentee-metrics">
+                        <div class="absentee-metric">
+                            <span class="metric-label">REPUBLICANS</span>
+                            <span class="metric-value" id="absentee-rep">--</span>
+                        </div>
+                        <div class="absentee-metric">
+                            <span class="metric-label">DEMOCRATS</span>
+                            <span class="metric-value" id="absentee-dem">--</span>
+                        </div>
+                        <div class="absentee-metric">
+                            <span class="metric-label">TOTAL</span>
+                            <span class="metric-value" id="absentee-total">--</span>
+                        </div>
+                    </div>
+                    <div class="absentee-list" id="absentee-list">
+                        <!-- Missing members will be listed here -->
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Airport Delays Display -->
+            <div class="airport-delays-panel">
+                <div class="panel-header">
+                    <span class="panel-label">AIRPORT DELAYS</span>
+                    <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
+                </div>
+                <div class="airport-delays-content">
+                    <div class="airport-delays-list" id="airport-delays-list">
+                        <!-- Airport delay information will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Party Breakdown Panel -->
+            <div class="party-breakdown-panel">
+                <div class="panel-header">
+                    <span class="panel-label">BALANCE OF POWER</span>
+                    <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">House Clerk</a></span>
+                        <span class="party-breakdown-time" id="party-breakdown-last-update">--:--</span>
+                    </div>
+                </div>
+                <div class="party-breakdown-content">
+                    <div class="party-breakdown-metrics">
+                        <div class="party-metric rep-metric">
+                            <span class="party-label">REPUBLICANS</span>
+                            <span class="party-value" id="party-rep">--</span>
+                        </div>
+                        <div class="party-metric dem-metric">
+                            <span class="party-label">DEMOCRATS</span>
+                            <span class="party-value" id="party-dem">--</span>
+                        </div>
+                        <div class="party-metric ind-metric">
+                            <span class="party-label">INDEPENDENT</span>
+                            <span class="party-value" id="party-ind">--</span>
+                        </div>
+                        <div class="party-metric total-metric">
+                            <span class="party-label">WHOLE NUMBER</span>
+                            <span class="party-value" id="party-total">--</span>
+                        </div>
+                    </div>
+                    <div class="party-breakdown-visual">
+                        <div class="party-bar">
+                            <div class="rep-fill" id="rep-fill" title="Republicans"></div>
+                            <div class="dem-fill" id="dem-fill" title="Democrats"></div>
+                            <div class="ind-fill" id="ind-fill" title="Independents"></div>
+                            <div class="vac-fill" id="vac-fill" title="Vacancies"></div>
+                        </div>
+                    </div>
+                    <div class="vacancies-section" id="vacancies-section">
+                        <div class="vacancies-header">
+                            <span class="vacancies-label">VACANCIES</span>
+                            <span class="vacancies-count" id="vacancies-count">--</span>
+                        </div>
+                        <div class="vacancies-list" id="vacancies-list">
+                            <!-- Vacancies will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bills This Week Section -->
+            <div class="bills-section">
+                <div class="panel-header">
+                    <span class="panel-label">BILLS THIS WEEK</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://docs.house.gov/BillsThisWeek-RSS.xml" target="_blank" rel="noopener">House Docs (House Clerk/Majority Leader)</a></span>
+                        <span class="bills-last-update" id="bills-last-update">--:--</span>
+                    </div>
+                </div>
+                <div class="bills-columns">
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <span class="bills-column-title">UNDER RULE</span>
+                        </div>
+                        <div class="bills-list" id="rule-bills-list">
+                            <!-- Rule bills will be listed here -->
+                        </div>
+                    </div>
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <span class="bills-column-title">UNDER SUSPENSION</span>
+                        </div>
+                        <div class="bills-list" id="suspension-bills-list">
+                            <!-- Suspension bills will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="video-section">
+    <div class="panel-header">
+        <span class="panel-label">LIVE FLOOR FEED</span>
+        <div class="panel-header-right">
+            <span class="panel-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
+        </div>
+    </div>
+    <div class="video-container" aria-live="polite">
+    <!-- video element; hidden visually when fallback shown but keeps its layout box -->
+    <video id="player" controls playsinline muted></video>
+
+    <!-- fallback occupies the exact same area and shows centered text -->
+    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
+      <div>
+        <strong>Stream unavailable</strong>
+        <div class="subtitle">The live feed is currently offline or unavailable.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+        <!-- Bottom Ticker -->
+        <div class="bottom-ticker" id="bottom-ticker">
+            <div class="ticker-content" id="ticker-content">
+                <!-- Bluesky content will scroll here -->
+            </div>
+        </div>
+
+<!-- place scripts at end of body -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+  (function(){
+    const url = 'https://houseliveprod-f9h4cpb9dyb8gegg.a01.azurefd.net/east/2026-05-07T08-51-17/manifest.m3u8';
+    const video = document.getElementById('player');
+    const fallback = document.getElementById('video-fallback');
+
+    function showFallback(){
+      video.style.visibility = 'hidden';   // keep layout but hide playback UI
+      fallback.style.display = 'flex';
+      fallback.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideFallback(){
+      fallback.style.display = 'none';
+      fallback.setAttribute('aria-hidden', 'true');
+      video.style.visibility = 'visible';
+    }
+
+    if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls({maxBufferLength:30});
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        hideFallback();
+        video.play().catch(()=>{});
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) showFallback();
+      });
+    } else if (video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.addEventListener('loadedmetadata', () => {
+        hideFallback();
+        video.play().catch(()=>{});
+      });
+      video.addEventListener('error', showFallback);
+    } else {
+      showFallback();
+    }
+
+    // basic retry logic to refresh expiring manifests (keeps layout consistent)
+    let retries = 0;
+    function retryLoad(){
+      if (retries++ >= 5) return showFallback();
+      const newUrl = url.split('?')[0] + '?_=' + Date.now();
+      if (window.Hls && Hls.isSupported()) {
+        try { hls.loadSource(newUrl); } catch(e){ /* ignore */ }
+      } else {
+        video.src = newUrl;
+      }
+      setTimeout(()=>{ if (video.readyState === 0) retryLoad(); }, 4000);
+    }
+
+    // watch for ended/emptied states to try reload once
+    video.addEventListener('emptied', retryLoad);
+    video.addEventListener('error', () => { setTimeout(retryLoad, 2000); });
+  })();
+</script>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-section">
+                <span class="footer-title">DATA SOURCES</span>
+                <div class="footer-updated" id="footer-updated">Last updated: --</div>
+                <div class="footer-sources">
+                    <div class="source-group">
+                        <span class="source-category">House Proceedings:</span>
+                        <a href="https://clerk.house.gov/evs" target="_blank" rel="noopener">Roll Call Votes (House Clerk)</a>
+                        <a href="https://domewatch.us" target="_blank" rel="noopener">Live Vote Tallies (Dome Watch)</a>
+                        <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">Member Data (House Clerk)</a>
+                        <a href="https://docs.house.gov/BillsThisWeek-RSS.xml" target="_blank" rel="noopener">House Docs (House Clerk/Majority Leader)</a>
+                        <a href="https://www.house.gov/voting-days" target="_blank" rel="noopener">Voting Days Calendar (house.gov)</a>
+                        <a href="https://live.house.gov" target="_blank" rel="noopener">House Live Floor Feed (House Clerk)</a>
+                        <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a>
+                        <a href="https://api.congress.gov" target="_blank" rel="noopener">Legislative Actions (Congress.gov)</a>
+                    </div>
+                    <div class="source-group">
+                        <span class="source-category">Weather:</span>
+                        <a href="https://weather.gov" target="_blank" rel="noopener">National Weather Service</a>
+                        <a href="https://www.senate.gov/general/capcam.htm" target="_blank" rel="noopener">Capitol Camera (Secretary of the Senate)</a>
+                        <a href="https://https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a>
+                    </div>
+                    <div class="source-group">
+                        <span class="source-category">News:</span>
+                        <a href="https://rollcall.com/section/congress/rss" target="_blank" rel="noopener">Roll Call</a>
+                        <a href="https://www.politico.com/rss/congress.xml" target="_blank" rel="noopener">Politico Congress</a>
+                        <a href="https://x.com/jakesherman" target="_blank" rel="noopener">@JakeSherman via Nitter</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
