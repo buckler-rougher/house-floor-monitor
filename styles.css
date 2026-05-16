@@ -2785,6 +2785,13 @@ body.prayer-mode .prayer-section {
     display: block;
 }
 
+.prayer-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
 .prayer-tag {
     display: inline-flex;
     align-items: center;
@@ -2796,8 +2803,34 @@ body.prayer-mode .prayer-section {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 16px;
     font-family: var(--font-mono);
+}
+
+.prayer-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.prayer-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.prayer-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.prayer-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.prayer-source a:hover {
+    text-decoration: underline;
 }
 
 .prayer-content {
@@ -2891,19 +2924,6 @@ body.prayer-mode .prayer-section {
     margin: 0;
 }
 
-.prayer-header-right {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
-}
-
-.prayer-time {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    margin-right: 12px;
-}
-
 .prayer-source {
     font-size: 10px;
     color: var(--text-muted);
@@ -2943,6 +2963,25 @@ body.pledge-mode .pledge-section {
     letter-spacing: 0.5px;
     margin-bottom: 16px;
     font-family: var(--font-mono);
+}
+
+.pledge-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.pledge-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.pledge-header-right {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .pledge-content {
