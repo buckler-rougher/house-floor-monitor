@@ -702,6 +702,16 @@ const elements = {
     debateBillId: document.getElementById('debate-bill-id'),
     debateBillSponsor: document.getElementById('debate-bill-sponsor'),
     debateBillDescription: document.getElementById('debate-bill-description'),
+    prayerSection: document.getElementById('prayer-section'),
+    prayerImage: document.getElementById('prayer-image'),
+    prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
+    prayerLeaderTitle: document.getElementById('prayer-leader-title'),
+    prayerLeaderName: document.getElementById('prayer-leader-name'),
+    prayerLeaderDescription: document.getElementById('prayer-leader-description'),
+    pledgeSection: document.getElementById('pledge-section'),
+    pledgeImage: document.getElementById('pledge-image'),
+    pledgeLeaderTitle: document.getElementById('pledge-leader-title'),
+    pledgeLeaderName: document.getElementById('pledge-leader-name'),
     congressInfo: document.getElementById('congress-info'),
     airportDelaysList: document.getElementById('airport-delays-list'),
     absenteeRollInfo: document.getElementById('absentee-roll-info'),
@@ -1244,9 +1254,13 @@ async function updateProceedingsFeed() {
         }
         
         elements.proceedingsFeed.innerHTML = html;
-        
+
         // Update debate section with latest bill information
         updateDebateSection(data.items);
+
+        // Update prayer and pledge sections
+        updatePrayerSection(data.items);
+        updatePledgeSection(data.items);
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
@@ -1281,6 +1295,85 @@ function updateDebateSection(items) {
     elements.debateBillId.textContent = billId;
     elements.debateBillSponsor.textContent = `Sponsor: ${sponsor}`;
     elements.debateBillDescription.textContent = description.substring(0, 300) + (description.length > 300 ? '...' : '');
+}
+
+// Update prayer section with chaplain information
+function updatePrayerSection(items) {
+    if (!elements.prayerLeaderTitle || !items || items.length === 0) return;
+
+    // Search for prayer-related proceedings
+    const prayerItem = items.find(item => {
+        const desc = item.description.toLowerCase();
+        return desc.includes('prayer') || desc.includes('chaplain');
+    });
+
+    if (!prayerItem) {
+        elements.prayerLeaderTitle.textContent = 'No Prayer Information';
+        elements.prayerLeaderName.textContent = '--';
+        elements.prayerLeaderDescription.textContent = 'No prayer information available in current proceedings.';
+        return;
+    }
+
+    const description = prayerItem.description;
+
+    // Determine if it's the House Chaplain or a guest chaplain
+    const isGuestChaplain = description.toLowerCase().includes('guest') ||
+                           description.toLowerCase().includes('invited');
+
+    // Extract chaplain name
+    const nameMatch = description.match(/(?:by|led\s*by|offered\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
+    const chaplainName = nameMatch ? nameMatch[1].trim() : 'Unknown Chaplain';
+
+    // Extract additional information
+    const infoMatch = description.match(/(.+?)(?:prayer|offered)/i);
+    const additionalInfo = infoMatch ? infoMatch[1].trim() : '';
+
+    // Update prayer section elements
+    elements.prayerLeaderTitle.textContent = isGuestChaplain ? 'Guest Chaplain' : 'House Chaplain';
+    elements.prayerLeaderName.textContent = chaplainName;
+    elements.prayerLeaderDescription.textContent = additionalInfo || description.substring(0, 200) + (description.length > 200 ? '...' : '');
+
+    // Handle image display
+    if (isGuestChaplain) {
+        elements.prayerImage.style.display = 'none';
+        elements.prayerImage.removeAttribute('src');
+        elements.prayerImagePlaceholder.style.display = 'flex';
+    } else {
+        // For House Chaplain, try to use a standard image
+        elements.prayerImagePlaceholder.style.display = 'none';
+        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Chaplain_of_the_US_House_of_Representatives_seal.png/240px-Chaplain_of_the_US_House_of_Representatives_seal.png';
+        elements.prayerImage.style.display = 'block';
+    }
+}
+
+// Update pledge section with pledge leader information
+function updatePledgeSection(items) {
+    if (!elements.pledgeLeaderTitle || !items || items.length === 0) return;
+
+    // Search for pledge-related proceedings
+    const pledgeItem = items.find(item => {
+        const desc = item.description.toLowerCase();
+        return desc.includes('pledge') || desc.includes('allegiance');
+    });
+
+    if (!pledgeItem) {
+        elements.pledgeLeaderTitle.textContent = 'No Pledge Information';
+        elements.pledgeLeaderName.textContent = '--';
+        return;
+    }
+
+    const description = pledgeItem.description;
+
+    // Extract who is leading the pledge
+    const nameMatch = description.match(/(?:by|led\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
+    const leaderName = nameMatch ? nameMatch[1].trim() : 'Unknown Leader';
+
+    // Update pledge section elements
+    elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+    elements.pledgeLeaderName.textContent = leaderName;
+
+    // For now, hide the image since we don't have a reliable source for pledge leader photos
+    elements.pledgeImage.style.display = 'none';
 }
 
 // Utility function to calculate time ago
@@ -1664,37 +1757,41 @@ function initWeatherPanel() {
 function initModeToggle() {
     const modeToggleBtn = document.getElementById('mode-toggle-btn');
     if (!modeToggleBtn) return;
-    
+
     // Set initial mode to vote
     let currentMode = localStorage.getItem('displayMode') || 'vote';
     modeToggleBtn.setAttribute('data-mode', currentMode);
-    
+
     // Apply initial mode classes
     updateModeClasses(currentMode);
-    
+
     // Handle toggle click
     modeToggleBtn.addEventListener('click', () => {
-        // Cycle through modes: vote -> recess -> debate -> vote
-        const modes = ['vote', 'recess', 'debate'];
+        // Cycle through modes: vote -> recess -> debate -> prayer -> pledge -> vote
+        const modes = ['vote', 'recess', 'debate', 'prayer', 'pledge'];
         const currentIndex = modes.indexOf(currentMode);
         currentMode = modes[(currentIndex + 1) % modes.length];
-        
+
         modeToggleBtn.setAttribute('data-mode', currentMode);
         localStorage.setItem('displayMode', currentMode);
-        
+
         updateModeClasses(currentMode);
     });
 }
 
 function updateModeClasses(mode) {
     // Remove all mode classes
-    document.body.classList.remove('recess-mode', 'debate-mode');
-    
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'pledge-mode');
+
     // Add appropriate class based on mode
     if (mode === 'recess') {
         document.body.classList.add('recess-mode');
     } else if (mode === 'debate') {
         document.body.classList.add('debate-mode');
+    } else if (mode === 'prayer') {
+        document.body.classList.add('prayer-mode');
+    } else if (mode === 'pledge') {
+        document.body.classList.add('pledge-mode');
     }
 }
 
