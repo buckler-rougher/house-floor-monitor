@@ -708,12 +708,14 @@ const elements = {
     prayerLeaderTitle: document.getElementById('prayer-leader-title'),
     prayerLeaderName: document.getElementById('prayer-leader-name'),
     prayerLeaderDescription: document.getElementById('prayer-leader-description'),
+    prayerTime: document.getElementById('prayer-time'),
     pledgeSection: document.getElementById('pledge-section'),
     pledgeImage: document.getElementById('pledge-image'),
     pledgeImagePlaceholder: document.getElementById('pledge-image-placeholder'),
     pledgeLeaderTitle: document.getElementById('pledge-leader-title'),
     pledgeLeaderName: document.getElementById('pledge-leader-name'),
     pledgePartyTag: document.getElementById('pledge-party-tag'),
+    pledgeTime: document.getElementById('pledge-time'),
     pledgeLeaderDetails: document.getElementById('pledge-leader-details'),
     pledgeLeaderAdditional: document.getElementById('pledge-leader-additional'),
     congressInfo: document.getElementById('congress-info'),
@@ -1315,10 +1317,24 @@ function updatePrayerSection(items) {
         elements.prayerLeaderTitle.textContent = 'No Prayer Information';
         elements.prayerLeaderName.textContent = '--';
         elements.prayerLeaderDescription.textContent = 'No prayer information available in current proceedings.';
+        elements.prayerTime.textContent = '';
         return;
     }
 
     const description = prayerItem.description;
+    const pubDate = prayerItem.pubDate;
+
+    // Extract time from pubDate
+    if (pubDate) {
+        const date = new Date(pubDate);
+        const timeStr = date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZoneName: 'short'
+        });
+        elements.prayerTime.textContent = timeStr;
+    }
 
     // Determine if it's the House Chaplain or a guest chaplain
     const isGuestChaplain = description.toLowerCase().includes('guest') ||
@@ -1389,10 +1405,24 @@ function updatePledgeSection(items) {
         elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
+        elements.pledgeTime.textContent = '';
         return;
     }
 
     const description = pledgeItem.description;
+    const pubDate = pledgeItem.pubDate;
+
+    // Extract time from pubDate
+    if (pubDate) {
+        const date = new Date(pubDate);
+        const timeStr = date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZoneName: 'short'
+        });
+        elements.pledgeTime.textContent = timeStr;
+    }
 
     // Extract who is leading the pledge - handle "designated Mr. Thompson of PA" format
     let leaderName = 'Unknown Leader';
@@ -1486,7 +1516,6 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const bioguideElement = member.querySelector('bioguideID');
             const partyElement = member.querySelector('party');
             const districtElement = member.querySelector('district');
-            const termsElement = member.querySelector('prior-congress');
             const townElement = member.querySelector('townname');
             
             if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
@@ -1496,7 +1525,6 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const bioguideId = bioguideElement.textContent.trim();
             const party = partyElement ? partyElement.textContent.trim() : '';
             const district = districtElement ? districtElement.textContent.trim() : '';
-            const terms = termsElement ? termsElement.textContent.trim() : '';
             const town = townElement ? townElement.textContent.trim() : '';
             
             // Score based on last name similarity
@@ -1514,13 +1542,13 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
                     party: party,
                     district: district,
                     state: memberState,
-                    terms: terms,
                     town: town
                 };
             }
         }
 
         console.log('Best match:', bestMatch, 'Score:', bestScore);
+        console.log('Has bioguide ID:', bestMatch && bestMatch.bioguideId);
 
         if (bestMatch && bestMatch.bioguideId) {
             console.log('Updating display with member info');
@@ -1541,11 +1569,8 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             // Show additional interesting info
             let additionalInfo = [];
-            if (bestMatch.terms && bestMatch.terms !== '0') {
-                additionalInfo.push(`${bestMatch.terms} term${bestMatch.terms === '1' ? '' : 's'} in Congress`);
-            }
             if (bestMatch.town) {
-                additionalInfo.push(`from ${bestMatch.town}`);
+                additionalInfo.push(`from ${bestMatch.town}, ${bestMatch.state}`);
             }
             elements.pledgeLeaderAdditional.textContent = additionalInfo.length > 0 ? additionalInfo.join(' • ') : '';
             
@@ -1558,18 +1583,27 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${bestMatch.bioguideId}.jpg`;
             
             console.log('Trying photo URL:', photoUrl);
+            console.log('Bioguide ID:', bestMatch.bioguideId);
             
             // Check if photo exists
-            const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
-            console.log('Photo response status:', photoResponse.status);
-            if (photoResponse.ok) {
-                elements.pledgeImagePlaceholder.style.display = 'none';
-                elements.pledgeImage.src = photoUrl;
-                elements.pledgeImage.style.display = 'block';
-                console.log('Photo found and displayed');
-                return;
-            } else {
-                console.log('Photo not found, using placeholder');
+            try {
+                const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+                console.log('Photo response status:', photoResponse.status);
+                console.log('Photo response ok:', photoResponse.ok);
+                
+                if (photoResponse.ok) {
+                    elements.pledgeImagePlaceholder.style.display = 'none';
+                    elements.pledgeImage.src = photoUrl;
+                    elements.pledgeImage.style.display = 'block';
+                    console.log('Photo found and displayed');
+                    return;
+                } else {
+                    console.log('Photo not found, status:', photoResponse.status);
+                    // Still show the member info even if photo isn't available
+                    return;
+                }
+            } catch (photoError) {
+                console.error('Error fetching photo:', photoError);
                 // Still show the member info even if photo isn't available
                 return;
             }
@@ -1579,6 +1613,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
 
         // Fallback to placeholder if no match found or photo doesn't exist
         elements.pledgePartyTag.textContent = '';
+        elements.pledgeTime.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
         showPledgePlaceholder();
@@ -1586,6 +1621,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
     } catch (error) {
         console.error('Error fetching member photo from clerk data:', error);
         elements.pledgePartyTag.textContent = '';
+        elements.pledgeTime.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
         showPledgePlaceholder();
@@ -1623,6 +1659,7 @@ function showPledgePlaceholder() {
     elements.pledgeImage.removeAttribute('src');
     elements.pledgeImagePlaceholder.style.display = 'flex';
     elements.pledgePartyTag.textContent = '';
+    elements.pledgeTime.textContent = '';
     elements.pledgeLeaderDetails.textContent = '';
     elements.pledgeLeaderAdditional.textContent = '';
 }
