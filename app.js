@@ -1428,8 +1428,11 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
 
         console.log(`Searching for member: ${lastName} from ${state}`);
 
-        // Fetch House Clerk MemberData.xml
-        const clerkResponse = await fetch('https://clerk.house.gov/xml/lists/MemberData.xml');
+        // Fetch House Clerk MemberData.xml using CORS proxy
+        const clerkUrl = 'https://clerk.house.gov/xml/lists/MemberData.xml';
+        const proxyUrl = API_CONFIG.corsProxy + encodeURIComponent(clerkUrl);
+        
+        const clerkResponse = await fetch(proxyUrl);
         if (!clerkResponse.ok) {
             throw new Error(`HTTP ${clerkResponse.status}: ${clerkResponse.statusText}`);
         }
