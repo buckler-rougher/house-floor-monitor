@@ -713,6 +713,7 @@ const elements = {
     pledgeImagePlaceholder: document.getElementById('pledge-image-placeholder'),
     pledgeLeaderTitle: document.getElementById('pledge-leader-title'),
     pledgeLeaderName: document.getElementById('pledge-leader-name'),
+    pledgeLeaderDetails: document.getElementById('pledge-leader-details'),
     congressInfo: document.getElementById('congress-info'),
     airportDelaysList: document.getElementById('airport-delays-list'),
     absenteeRollInfo: document.getElementById('absentee-roll-info'),
@@ -1383,6 +1384,7 @@ function updatePledgeSection(items) {
     if (!pledgeItem) {
         elements.pledgeLeaderTitle.textContent = 'No Pledge Information';
         elements.pledgeLeaderName.textContent = '--';
+        elements.pledgeLeaderDetails.textContent = '';
         return;
     }
 
@@ -1424,6 +1426,8 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         const lastName = nameMatch[1];
         const state = nameMatch[2];
 
+        console.log(`Searching for member: ${lastName} from ${state}`);
+
         // Fetch House Clerk MemberData.xml
         const clerkResponse = await fetch('https://clerk.house.gov/xml/lists/MemberData.xml');
         if (!clerkResponse.ok) {
@@ -1431,46 +1435,68 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         }
 
         const clerkDataText = await clerkResponse.text();
+        console.log('Fetched MemberData.xml, length:', clerkDataText.length);
 
         // Search for matching member in the data
-        // The format appears to be: STATE+DISTRICT Lastname, Firstname BIOGUIDE_ID
+        // The format is more complex, let's try a better pattern
         const statePattern = state.toUpperCase() + '\\d{2}';
-        const memberPattern = new RegExp(statePattern + '([^,]+),\\s+([^A-Z]+)([A-Z]\\d{6})', 'i');
-
+        
         let bestMatch = null;
         let bestScore = 0;
 
-        // Find all potential matches for the state
-        const stateMatches = clerkDataText.match(new RegExp(state + '\\d{2}[^,]+,\\s+[^A-Z]+[A-Z]\\d{6}', 'gi'));
+        // Find all entries for the state
+        const stateEntries = clerkDataText.split(statePattern).slice(1);
+        
+        console.log(`Found ${stateEntries.length} entries for ${state}`);
 
-        if (stateMatches) {
-            for (const match of stateMatches) {
-                // Extract last name from the match
-                const lastNameMatch = match.match(/([^,]+),/);
-                if (lastNameMatch) {
-                    const memberLastName = lastNameMatch[1].trim();
-                    
-                    // Score based on how well the last names match
-                    const score = calculateNameSimilarity(lastName, memberLastName);
-                    
-                    if (score > bestScore && score > 0.5) {
-                        bestScore = score;
-                        // Extract bioguide ID
-                        const bioguideMatch = match.match(/[A-Z]\d{6}/);
-                        if (bioguideMatch) {
-                            bestMatch = {
-                                bioguideId: bioguideMatch[0],
-                                lastName: memberLastName
-                            };
-                        }
-                    }
-                }
+        for (const entry of stateEntries) {
+            // Extract the member information
+            // Format: Lastname, Firstname BioguideID ...
+            const nameMatch = entry.match(/^([A-Za-z\-\']+),\s+([A-Za-z\-\']+)/);
+            if (!nameMatch) continue;
+
+            const memberLastName = nameMatch[1].trim();
+            const memberFirstName = nameMatch[2].trim();
+            
+            // Score based on last name similarity
+            const score = calculateNameSimilarity(lastName, memberLastName);
+            
+            console.log(`Comparing "${lastName}" with "${memberLastName}": score ${score}`);
+            
+            if (score > bestScore && score > 0.3) {
+                bestScore = score;
+                
+                // Extract bioguide ID (usually 7 chars: letter + 6 digits)
+                const bioguideMatch = entry.match(/[A-Z]\d{6}/);
+                // Extract party (RR or DD usually)
+                const partyMatch = entry.match(/(RR|DD)/);
+                // Extract district (appears after state code)
+                const districtMatch = entry.match(/\d+/);
+                
+                bestMatch = {
+                    lastName: memberLastName,
+                    firstName: memberFirstName,
+                    fullName: `${memberFirstName} ${memberLastName}`,
+                    bioguideId: bioguideMatch ? bioguideMatch[0] : null,
+                    party: partyMatch ? partyMatch[0] : null,
+                    district: districtMatch ? districtMatch[0] : null,
+                    state: state
+                };
             }
         }
 
-        if (bestMatch) {
+        console.log('Best match:', bestMatch, 'Score:', bestScore);
+
+        if (bestMatch && bestMatch.bioguideId) {
+            // Update the display with member information
+            const partyLetter = bestMatch.party === 'RR' ? 'R' : (bestMatch.party === 'DD' ? 'D' : 'I');
+            elements.pledgeLeaderName.textContent = bestMatch.fullName;
+            elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district} · ${partyLetter}`;
+            
             // Use bioguide ID to fetch photo from voteview
             const photoUrl = `https://raw.githubusercontent.com/voteview/member_photos/master/${bestMatch.bioguideId}.jpg`;
+            
+            console.log('Trying photo URL:', photoUrl);
             
             // Check if photo exists
             const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
@@ -1478,11 +1504,16 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
                 elements.pledgeImagePlaceholder.style.display = 'none';
                 elements.pledgeImage.src = photoUrl;
                 elements.pledgeImage.style.display = 'block';
+                console.log('Photo found and displayed');
                 return;
+            } else {
+                console.log('Photo not found, using placeholder');
+                // Still show the member info even if photo isn't available
             }
         }
 
         // Fallback to placeholder if no match found or photo doesn't exist
+        elements.pledgeLeaderDetails.textContent = '';
         showPledgePlaceholder();
 
     } catch (error) {
@@ -1521,6 +1552,7 @@ function showPledgePlaceholder() {
     elements.pledgeImage.style.display = 'none';
     elements.pledgeImage.removeAttribute('src');
     elements.pledgeImagePlaceholder.style.display = 'flex';
+    elements.pledgeLeaderDetails.textContent = '';
 }
 
 // Utility function to calculate time ago
