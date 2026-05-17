@@ -31,6 +31,27 @@ const DOMEWATCH_CONFIG = {
   baseUrl: 'https://data.domewatch.us/v1'
 };
 
+const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator';
+const STREAM_FALLBACK_KEY = '__domewatch_stream_fallback__';
+
+function sseResponseInit() {
+  return {
+    headers: {
+      ...CORS_HEADERS,
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+      'X-Source-Of-Truth': 'durable-object'
+    }
+  };
+}
+
+async function getStreamCoordinator(env) {
+  const id = env.DOMEWATCH_STREAM_COORDINATOR.idFromName(STREAM_COORDINATOR_OBJECT);
+  return env.DOMEWATCH_STREAM_COORDINATOR.get(id);
+}
+
 async function fetchRSSFeed(url) {
   try {
     const response = await fetch(url, {
@@ -314,6 +335,23 @@ function getWeekRange(date) {
     return `${startStr} - ${endStr}, ${startOfWeek.getFullYear()}`;
 }
 
+function getWeekRangeForDate(date) {
+    const current = new Date(date);
+    const day = current.getDay();
+    const start = new Date(current);
+
+    if (day === 0) {
+        start.setDate(current.getDate() - 6);
+    } else {
+        start.setDate(current.getDate() - (day - 1));
+    }
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 4);
+
+    return { start, end };
+}
+
 async function handleBills() {
   try {
     // Fetch both House.gov bills and Bluesky updates
@@ -338,49 +376,49 @@ async function handleBills() {
       });
     }
     
-    // Find the most recent entry with actual floor content for current week
-    let bestEntry = null;
-    let mostRecentDate = null;
-    
+    const now = new Date();
+    const { start: currentWeekStart, end: currentWeekEnd } = getWeekRangeForDate(now);
+
+    const currentWeekEntries = [];
+    const futureWeekEntries = [];
+
     for (const entryXml of entryMatches) {
       const titleMatch = entryXml.match(/<title[^>]*>([^<]*)<\/title>/);
       const updatedMatch = entryXml.match(/<updated[^>]*>([^<]*)<\/updated>/);
       const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-      
-      if (titleMatch && updatedMatch && contentMatch) {
-        const title = titleMatch[1];
-        const updated = updatedMatch[1];
-        const content = contentMatch[1];
-        
-        // Look for entries with current year (2026) AND actual floor content
-        if (title.includes('2026') && content.includes('floorItems')) {
-          const entryDate = new Date(updated);
-          
-          // Initialize status variables
-          let status = 'pending';
-          let statusText = 'Pending consideration';
-          
-          if (!mostRecentDate || entryDate > mostRecentDate) {
-            mostRecentDate = entryDate;
-            bestEntry = {
-              title: title,
-              content: content,
-              updated: updated,
-              status: status,
-              statusText: statusText
-            };
-          }
+
+      if (!titleMatch || !updatedMatch || !contentMatch) continue;
+
+      const title = titleMatch[1];
+      const updated = updatedMatch[1];
+      const content = contentMatch[1];
+      if (!content.includes('floorItems')) continue;
+
+      const entryDate = new Date(updated);
+      if (Number.isNaN(entryDate.getTime())) continue;
+
+      const entryWeekRange = getWeekRangeForDate(entryDate);
+      const entry = { title, content, updated, entryDate };
+
+      if (entryWeekRange.start.getTime() === currentWeekStart.getTime()) {
+        if (entryDate <= now) {
+          currentWeekEntries.push(entry);
+        } else {
+          futureWeekEntries.push(entry);
         }
       }
     }
-    
-    const mostRecentEntry = bestEntry;
-    
-    if (!mostRecentEntry) {
+
+    const selectedEntry = currentWeekEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
+      || futureWeekEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
+      || null;
+
+    if (!selectedEntry) {
       return new Response(JSON.stringify({ 
         ruleBills: [],
         suspensionBills: [],
-        weekDate: 'No current week data available'
+        weekDate: getWeekRange(now),
+        consideredBills: []
       }), {
         headers: {
           ...CORS_HEADERS,
@@ -429,145 +467,116 @@ async function handleBills() {
     const ruleBills = [];
     const suspensionBills = [];
     
-    // Use current week date instead of parsing from RSS
-    const now = new Date();
-    const currentWeek = getWeekRange(now);
-    const weekDate = currentWeek;
-    
-    // Find the best entry for current week (not just most recent)
-    let currentWeekEntry = null;
-    let currentWeekDate = null;
-    
-    for (const entryXml of entryMatches) {
-      const titleMatch = entryXml.match(/<title[^>]*>([^<]*)<\/title>/);
-      const updatedMatch = entryXml.match(/<updated[^>]*>([^<]*)<\/updated>/);
-      const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-      
-      if (titleMatch && updatedMatch && contentMatch) {
-        const title = titleMatch[1];
-        const updated = updatedMatch[1];
-        const content = contentMatch[1];
-        
-        // Look for entries with current year (2026) AND actual floor content
-        if (title.includes('2026') && content.includes('floorItems')) {
-          const entryDate = new Date(updated);
-          
-          // Check if this entry is within current week range
-          const entryWeekStart = new Date(entryDate);
-          const currentWeekStart = new Date(now);
-          const day = currentWeekStart.getDay();
-          if (day === 0) { // Sunday
-            currentWeekStart.setDate(currentWeekStart.getDate() - 6); // Go back to Monday
-          } else {
-            currentWeekStart.setDate(currentWeekStart.getDate() - (day - 1)); // Go back to Monday
-          }
-          
-          const entryWeekEnd = new Date(currentWeekStart);
-          entryWeekEnd.setDate(currentWeekStart.getDate() + 4); // Add 4 days to get to Friday
-          
-          // Initialize status variables
-          let status = 'pending';
-          let statusText = 'Pending consideration';
-          
-          if (entryDate >= currentWeekStart && entryDate <= entryWeekEnd) {
-            if (!currentWeekDate || entryDate > currentWeekDate) {
-              currentWeekDate = entryDate;
-              currentWeekEntry = {
-                title: title,
-                content: content,
-                updated: updated,
-                status: status,
-                statusText: statusText
-              };
-            }
-          }
-        }
-      }
-    }
-    
+    const weekDate = getWeekRange(now);
+    const contentUpdatedAt = selectedEntry.updated;
+
     // Parse HTML content using regex
-    let content = currentWeekEntry.content;
+    let content = selectedEntry.content;
     
     // Decode HTML entities
     content = content.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
     
-    // Extract all floorItem rows from the content
-    const allFloorRows = content.match(/<tr[^>]*class="floorItem"[^>]*>[\s\S]*?<\/tr>/g) || [];
-    console.log(`Found ${allFloorRows.length} total floorItem rows`);
-    
-    // Find the rule section to determine context
-    const ruleSectionStart = content.indexOf('Items that may be considered pursuant to a rule');
-    const suspensionSectionStart = content.indexOf('Items that may be considered under suspension of rules');
-    
-    for (const row of allFloorRows) {
-      const legisNumMatch = row.match(/<td[^>]*class="legisNum"[^>]*>([^<]*)<\/td>/);
-      const floorTextMatch = row.match(/<td[^>]*class="floorText"[^>]*>([^<]*)<\/td>/);
-      
-      if (legisNumMatch && floorTextMatch) {
-        const legisNum = legisNumMatch[1].trim();
-        const floorText = floorTextMatch[1].trim();
-        
-        if (legisNum && floorText && !legisNum.includes('::')) {
-          // Extract bill status from floor text
-          let billStatus = 'pending';
-          let latestAction = 'Pending consideration';
-          
-          if (floorText.includes('Passed') || floorText.includes('Agreed to')) {
-            billStatus = 'passed';
-            latestAction = 'Passed';
-          } else if (floorText.includes('Failed') || floorText.includes('Not Agreed to')) {
-            billStatus = 'failed';
-            latestAction = 'Failed';
-          } else if (floorText.includes('Postponed')) {
-            billStatus = 'postponed';
-            latestAction = 'Postponed';
-          } else if (floorText.includes('Amended')) {
-            billStatus = 'amended';
-            latestAction = 'Amended';
-          }
+    const extractSection = (source, startPattern, endPattern) => {
+      const start = source.search(startPattern);
+      if (start === -1) return '';
+      const end = endPattern ? source.slice(start + 1).search(endPattern) : -1;
+      return end === -1 ? source.slice(start) : source.slice(start, start + 1 + end);
+    };
 
-          // Use Bluesky status update if available
-          const blueskyUpdate = blueskyUpdates[legisNum];
-          const finalStatus = blueskyUpdate ? blueskyUpdate.status : billStatus;
-          const finalStatusText = blueskyUpdate ? blueskyUpdate.statusText : latestAction;
-          const finalActionDate = blueskyUpdate ? new Date(mostRecentEntry.updated) : new Date(mostRecentEntry.updated);
+    const ruleHeaderMatch = content.match(/Items that may be considered pursuant to a rule/i);
+    const suspensionHeaderMatch = content.match(/Items that may be considered under suspension of rules/i);
 
-          const bill = {
-            id: legisNum,
-            title: floorText,
-            considerationType: '',
-            isRule: false,
-            description: '',
-            pubDate: new Date(mostRecentEntry.updated),
-            status: finalStatus,
-            latestAction: finalStatusText,
-            latestActionDate: finalActionDate
-          };
-          
-          // Determine if this is a rule or suspension bill based on position
-          const rowPosition = content.indexOf(row);
-          if (rowPosition > ruleSectionStart && ruleSectionStart !== -1) {
-            bill.considerationType = 'Under Rule';
-            bill.isRule = true;
-          } else if (rowPosition > suspensionSectionStart && suspensionSectionStart !== -1) {
-            bill.considerationType = 'Under Suspension';
-            bill.isRule = false;
-          }
-          
-          if (bill.isRule) {
-            ruleBills.push(bill);
-          } else {
-            suspensionBills.push(bill);
-          }
+    const ruleSection = extractSection(
+      content,
+      /Items that may be considered pursuant to a rule/i,
+      /Items that may be considered under suspension of rules/i
+    );
+    const suspensionSection = extractSection(
+      content,
+      /Items that may be considered under suspension of rules/i,
+      /<h[1-6][^>]*>.*?<\/h[1-6]>/i
+    );
+
+    const parseBillsFromSection = (sectionHtml, isRule) => {
+      const rows = sectionHtml.match(/<tr[^>]*class="floorItem"[^>]*>[\s\S]*?<\/tr>/g) || [];
+      console.log(`Found ${rows.length} floorItem rows in ${isRule ? 'rule' : 'suspension'} section`);
+
+      for (const row of rows) {
+        const legisNumMatch = row.match(/<td[^>]*class="legisNum"[^>]*>([\s\S]*?)<\/td>/);
+        const floorTextMatch = row.match(/<td[^>]*class="floorText"[^>]*>([\s\S]*?)<\/td>/);
+
+        if (!legisNumMatch || !floorTextMatch) continue;
+
+        const legisNum = legisNumMatch[1].replace(/<[^>]*>/g, '').trim();
+        const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
+        if (!legisNum || !floorText || legisNum.includes('::')) continue;
+
+        let billStatus = 'pending';
+        let latestAction = 'Pending consideration';
+        let considered = false;
+
+        if (/(Passed|Agreed to)/i.test(floorText)) {
+          billStatus = 'passed';
+          latestAction = 'Passed';
+          considered = true;
+        } else if (/(Failed|Not Agreed to)/i.test(floorText)) {
+          billStatus = 'failed';
+          latestAction = 'Failed';
+          considered = true;
+        } else if (/Postponed/i.test(floorText)) {
+          billStatus = 'postponed';
+          latestAction = 'Postponed';
+          considered = true;
+        } else if (/Amended/i.test(floorText)) {
+          billStatus = 'amended';
+          latestAction = 'Amended';
+          considered = true;
+        } else if (/considered|consideration|reported|laid over|debated/i.test(floorText)) {
+          billStatus = 'considered';
+          latestAction = 'Considered';
+          considered = true;
+        }
+
+        const blueskyUpdate = blueskyUpdates[legisNum];
+        const finalStatus = blueskyUpdate ? blueskyUpdate.status : billStatus;
+        const finalStatusText = blueskyUpdate ? blueskyUpdate.statusText : latestAction;
+
+        const bill = {
+          id: legisNum,
+          title: floorText,
+          considerationType: isRule ? 'Under Rule' : 'Under Suspension',
+          isRule,
+          description: '',
+          pubDate: new Date(contentUpdatedAt),
+          status: finalStatus,
+          latestAction: finalStatusText,
+          latestActionDate: new Date(contentUpdatedAt),
+          considered: considered || !!blueskyUpdate
+        };
+
+        if (isRule) {
+          ruleBills.push(bill);
+        } else {
+          suspensionBills.push(bill);
         }
       }
-    }
+    };
+
+    if (ruleSection) parseBillsFromSection(ruleSection, true);
+    if (suspensionSection) parseBillsFromSection(suspensionSection, false);
     
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
       suspensionBills: suspensionBills,
       lastUpdated: new Date(),
-      weekDate: weekDate
+      weekDate: weekDate,
+      rawHeaders: {
+        weekTitle: selectedEntry.title,
+        updated: contentUpdatedAt,
+        ruleHeader: ruleHeaderMatch ? ruleHeaderMatch[0] : '',
+        suspensionHeader: suspensionHeaderMatch ? suspensionHeaderMatch[0] : ''
+      },
+      consideredBills: [...ruleBills, ...suspensionBills].filter(b => b.considered).map(b => b.id)
     }), {
       headers: {
         ...CORS_HEADERS,
@@ -902,43 +911,127 @@ async function handleDomeWatchFloor() {
   }
 }
 
-async function handleDomeWatchStream() {
+async function handleDomeWatchStream(request, env) {
   try {
-    const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/stream/votes/current`, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': DOMEWATCH_CONFIG.apiKey,
-        'Content-Type': 'text/event-stream',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (env && env.DOMEWATCH_STREAM_COORDINATOR) {
+      const coordinator = await getStreamCoordinator(env);
+      return await coordinator.fetch(request);
     }
-
-    // Return the SSE stream directly
-    return new Response(response.body, {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Cache-Control'
-      }
-    });
+    return await handleDomeWatchStreamFallback(request);
   } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: `Failed to fetch DomeWatch stream: ${error.message}` 
-    }), {
-      status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      }
-    });
+    return await handleDomeWatchStreamFallback(request, error);
   }
+}
+
+async function handleDomeWatchStreamFallback(request, priorError = null) {
+  if (!globalThis[STREAM_FALLBACK_KEY]) {
+    globalThis[STREAM_FALLBACK_KEY] = {
+      clients: new Set(),
+      upstreamReader: null,
+      upstreamConnected: false,
+      upstreamReconnects: 0,
+      lastEventAt: null,
+      lastError: priorError ? priorError.message : null,
+      encoder: new TextEncoder()
+    };
+  }
+
+  const relay = globalThis[STREAM_FALLBACK_KEY];
+
+  const syncRelay = () => {
+    relay.clientCount = relay.clients.size;
+  };
+
+  const broadcast = (chunk) => {
+    const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
+    const encoded = relay.encoder.encode(text);
+    for (const controller of [...relay.clients]) {
+      try {
+        controller.enqueue(encoded);
+      } catch {
+        relay.clients.delete(controller);
+      }
+    }
+    syncRelay();
+  };
+
+  const ensureUpstream = async () => {
+    if (relay.upstreamReader) return;
+    relay.upstreamConnected = true;
+    syncRelay();
+
+    try {
+      const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/stream/votes/current`, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': DOMEWATCH_CONFIG.apiKey,
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body.getReader();
+      relay.upstreamReader = reader;
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        relay.lastEventAt = new Date().toISOString();
+        broadcast(decoder.decode(value, { stream: true }));
+      }
+    } catch (error) {
+      relay.lastError = error.message;
+      relay.upstreamReconnects += 1;
+      relay.upstreamReader = null;
+      relay.upstreamConnected = false;
+      syncRelay();
+      broadcast(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      setTimeout(() => {
+        relay.upstreamReader = null;
+        ensureUpstream();
+      }, 3000);
+    }
+  };
+
+  let controllerRef = null;
+  const readable = new ReadableStream({
+    start: (controller) => {
+      controllerRef = controller;
+      relay.clients.add(controller);
+      syncRelay();
+      controller.enqueue(relay.encoder.encode(`event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: 'worker-singleton-fallback', priorError: priorError?.message || null })}\n\n`));
+      ensureUpstream();
+    },
+    cancel: () => {
+      if (controllerRef) {
+        relay.clients.delete(controllerRef);
+        controllerRef = null;
+        syncRelay();
+      }
+    }
+  });
+
+  request.signal?.addEventListener('abort', () => {
+    if (controllerRef) {
+      relay.clients.delete(controllerRef);
+      controllerRef = null;
+      syncRelay();
+    }
+  }, { once: true });
+
+  return new Response(readable, {
+    headers: {
+      ...sseResponseInit().headers,
+      'X-Source-Of-Truth': 'worker-singleton-fallback',
+      'X-Connected-Clients': String(relay.clients.size),
+      'X-Relay-Mode': 'fallback'
+    }
+  });
 }
 
 function handleOptions() {
@@ -948,7 +1041,7 @@ function handleOptions() {
   });
 }
 
-async function handleRequest(request) {
+async function handleRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
 
@@ -977,23 +1070,28 @@ async function handleRequest(request) {
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
     return await handleDomeWatchFloor();
   } else if (path === '/api/stream/votes/current' && request.method === 'GET') {
-    return await handleDomeWatchStream();
+    return await handleDomeWatchStream(request, env);
+  } else if (path === '/api/stream/votes/current/status' && request.method === 'GET') {
+    const coordinator = await getStreamCoordinator(env);
+    return await coordinator.fetch(new Request(request.url, { method: 'POST' }));
   } else if (path.startsWith('/api/congress-index/roll/') && request.method === 'GET') {
     // Handle individual roll call requests
     const rollNumber = path.split('/').pop();
     return await handleRollCall(rollNumber);
   } else if (path === '/api/health' && request.method === 'GET') {
-    return new Response(JSON.stringify({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString() 
+    const coordinator = await getStreamCoordinator(env);
+    const streamStatus = await coordinator.fetch(new Request(`${url.origin}/api/stream/votes/current/status?status=1`, { method: 'POST' })).then(r => r.json()).catch(() => null);
+    return new Response(JSON.stringify({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      sourceOfTruth: 'durable-object',
+      stream: streamStatus
     }), {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'application/json'
       }
     });
-  } else if (path === '/api/stream/votes/current' && request.method === 'GET') {
-    return await handleDomeWatchStream();
   } else if (path.startsWith('/api/congress-index/roll/') && request.method === 'GET') {
     return new Response(JSON.stringify({ 
       error: 'Not found' 
@@ -1007,7 +1105,167 @@ async function handleRequest(request) {
   }
 }
 
-// Event listener for fetch events
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
-});
+export default {
+  async fetch(request, env) {
+    return handleRequest(request, env);
+  }
+};
+
+export class DomeWatchStreamCoordinator {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.clients = new Set();
+    this.upstreamReader = null;
+    this.upstreamConnected = false;
+    this.upstreamReconnects = 0;
+    this.lastEventAt = null;
+    this.currentEventId = 0;
+    this.encoder = new TextEncoder();
+    this.health = {
+      sourceOfTruth: true,
+      upstreamConnected: false,
+      connectedClients: 0,
+      upstreamReconnects: 0,
+      lastEventAt: null,
+      lastError: null
+    };
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method === 'POST' && url.searchParams.has('status')) {
+      return new Response(JSON.stringify(this.getStatus()), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
+    if (request.method !== 'GET') {
+      return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+    }
+
+    let controllerRef = null;
+    const readable = new ReadableStream({
+      start: (controller) => {
+        controllerRef = controller;
+        this.clients.add(controller);
+        this.syncHealth();
+        controller.enqueue(this.encoder.encode(`event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true })}\n\n`));
+        this.ensureUpstream();
+      },
+      cancel: () => {
+        if (controllerRef) {
+          this.clients.delete(controllerRef);
+          controllerRef = null;
+          this.syncHealth();
+        }
+      }
+    });
+
+    request.signal?.addEventListener('abort', () => {
+      if (controllerRef) {
+        this.clients.delete(controllerRef);
+        controllerRef = null;
+        this.syncHealth();
+      }
+    }, { once: true });
+
+    return new Response(readable, {
+      headers: {
+        ...sseResponseInit().headers,
+        'X-Connected-Clients': String(this.clients.size)
+      }
+    });
+  }
+
+  getStatus() {
+    return {
+      ...this.health,
+      connectedClients: this.clients.size,
+      upstreamConnected: this.upstreamConnected,
+      upstreamReconnects: this.upstreamReconnects,
+      lastEventAt: this.lastEventAt
+    };
+  }
+
+  syncHealth(extra = {}) {
+    this.health = {
+      ...this.health,
+      ...extra,
+      connectedClients: this.clients.size,
+      upstreamConnected: this.upstreamConnected,
+      upstreamReconnects: this.upstreamReconnects,
+      lastEventAt: this.lastEventAt
+    };
+  }
+
+  async ensureUpstream() {
+    if (this.upstreamReader) return;
+    this.upstreamConnected = true;
+    this.syncHealth();
+
+    try {
+      const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/stream/votes/current`, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': DOMEWATCH_CONFIG.apiKey,
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body.getReader();
+      this.upstreamReader = reader;
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        this.lastEventAt = new Date().toISOString();
+        this.syncHealth();
+        await this.broadcast(value);
+      }
+    } catch (error) {
+      this.health.lastError = error.message;
+      this.upstreamReconnects += 1;
+      this.upstreamConnected = false;
+      this.upstreamReader = null;
+      this.syncHealth();
+      await this.broadcast(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      await this.scheduleReconnect();
+    }
+  }
+
+  async scheduleReconnect() {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    this.upstreamReader = null;
+    this.ensureUpstream();
+  }
+
+  async broadcast(chunk) {
+    const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
+    const encoded = this.encoder.encode(text);
+    const dead = [];
+    for (const client of this.clients) {
+      try {
+        client.enqueue(encoded);
+      } catch {
+        dead.push(client);
+      }
+    }
+    for (const client of dead) {
+      this.clients.delete(client);
+    }
+    this.syncHealth();
+  }
+}
