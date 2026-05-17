@@ -1,3 +1,11 @@
 name = "dome-watch-worker"
 main = "worker.js"
 compatibility_date = "2023-12-01"
+
+[[durable_objects.bindings]]
+name = "DOMEWATCH_STREAM_COORDINATOR"
+class_name = "DomeWatchStreamCoordinator"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["DomeWatchStreamCoordinator"]
