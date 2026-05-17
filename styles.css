@@ -309,6 +309,15 @@ body {
     letter-spacing: 0.5px;
 }
 
+.next-votes {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+
 /* Top Bar */
 .top-bar {
     display: flex;
