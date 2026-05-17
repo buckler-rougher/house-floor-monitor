@@ -796,10 +796,10 @@ function updateFloorDisplay(status = null) {
     }
 
     // Update timeline info if available
-    if (floorData.timeline && elements.proceedingsLastUpdate) {
+    if (floorData.timeline && elements.nextVotes) {
         const timelineText = floorData.timeline.first_votes?.text || '';
         if (timelineText) {
-            elements.proceedingsLastUpdate.textContent = timelineText;
+            elements.nextVotes.textContent = timelineText;
         }
     }
 }
@@ -943,6 +943,7 @@ const elements = {
     sessionStatus: document.getElementById('session-status'),
     sessionIndicator: document.getElementById('session-status')?.querySelector('.session-indicator'),
     sessionText: document.getElementById('session-status')?.querySelector('.session-text'),
+    nextVotes: document.getElementById('next-votes'),
     floorStatus: document.getElementById('floor-status'),
     // Footer elements
     footerUpdated: document.getElementById('footer-updated')
