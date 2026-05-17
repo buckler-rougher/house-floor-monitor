@@ -27,6 +27,9 @@
                     <span class="mode-icon debate-mode">DEBATE</span>
                     <span class="mode-icon prayer-mode">PRAYER</span>
                     <span class="mode-icon pledge-mode">PLEDGE</span>
+                    <span class="mode-icon silence-mode">SILENCE</span>
+                    <span class="mode-icon oath-mode">OATH</span>
+                    <span class="mode-icon speaker-mode">SPEAKER PRO TEMPORE</span>
                 </button>
             </div>
         </div>
@@ -139,6 +142,99 @@
                         <h2 class="prayer-leader-title" id="prayer-leader-title">Loading...</h2>
                         <p class="prayer-leader-name" id="prayer-leader-name">--</p>
                         <p class="prayer-leader-description" id="prayer-leader-description">Loading prayer information...</p>
+                        <a class="prayer-leader-website" id="prayer-leader-website" href="https://chaplain.house.gov/chaplaincy/index.html" target="_blank" rel="noopener">https://chaplain.house.gov</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moment of Silence Section -->
+            <div class="silence-section" id="silence-section">
+                <div class="silence-section-header">
+                    <div class="silence-tag">
+                        <span class="silence-tag-text">MOMENT OF SILENCE</span>
+                        <span class="silence-tag-time" id="silence-time"></span>
+                    </div>
+                    <div class="silence-header-right">
+                        <span class="silence-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
+                </div>
+                <div class="silence-content">
+                    <div class="silence-info">
+                        <h2 class="silence-title" id="silence-title">Loading...</h2>
+                        <p class="silence-description" id="silence-description">Loading moment of silence information...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oath of Office Section -->
+            <div class="oath-section" id="oath-section">
+                <div class="oath-section-header">
+                    <div class="oath-tag">
+                        <span class="oath-tag-text">OATH OF OFFICE</span>
+                        <span class="oath-tag-time" id="oath-time"></span>
+                    </div>
+                    <div class="oath-header-right">
+                        <span class="oath-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
+                </div>
+                <div class="oath-content">
+                    <div class="oath-image-container">
+                        <div class="oath-image-placeholder" id="oath-image-placeholder">
+                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span class="placeholder-text">Member</span>
+                        </div>
+                    </div>
+                    <div class="oath-info">
+                        <h2 class="oath-member-title" id="oath-member-title">Loading...</h2>
+                        <p class="oath-member-name" id="oath-member-name">--</p>
+                        <p class="oath-member-description" id="oath-member-description">Loading oath information...</p>
+                    </div>
+                </div>
+                    <div class="oath-text-container">
+                        <div class="oath-text-inner">
+                            <div class="oath-text">
+                                “I, AB, do solemnly swear (or affirm) that I will support and defend the Constitution of the United States against all enemies, foreign and domestic; that I will bear true faith and allegiance to the same; that I take this obligation freely, without any mental reservation or purpose of evasion; and that I will well and faithfully discharge the duties of the office on which I am about to enter. So help me God.”
+                            </div>
+                        </div>
+                        <div class="oath-source-inline">Source: <a href="https://uscode.house.gov/view.xhtml?req=%28title:5%20section:3331%20edition:prelim%29%20OR%20%28granuleid:USC-prelim-title5-section3331%29&f=treesort&edition=prelim&num=0&jumpTo=true" target="_blank" rel="noopener">5 U.S. Code § 3331</a></div>
+                    </div>
+                </div>
+
+            <!-- Speaker Pro Tempore Section -->
+            <div class="speaker-section" id="speaker-section">
+                <div class="speaker-section-header">
+                    <div class="speaker-tag">
+                        <span class="speaker-tag-text">SPEAKER PRO TEMPORE</span>
+                        <span class="speaker-tag-time" id="speaker-time"></span>
+                    </div>
+                    <div class="speaker-header-right">
+                        <span class="speaker-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
+                </div>
+                <div class="speaker-content">
+                    <div class="speaker-image-container">
+                        <img class="speaker-image" id="speaker-image" src="" alt="Speaker pro tempore" />
+                        <div class="speaker-image-placeholder" id="speaker-image-placeholder">
+                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span class="placeholder-text">Member</span>
+                        </div>
+                    </div>
+                    <div class="speaker-info">
+                        <h2 class="speaker-member-title" id="speaker-member-title">Loading...</h2>
+                        <p class="speaker-member-name" id="speaker-member-name">--</p>
+                        <div class="speaker-member-meta">
+                            <span class="speaker-party-tag" id="speaker-party-tag"></span>
+                            <span class="speaker-member-details" id="speaker-member-details"></span>
+                        </div>
+                        <p class="speaker-member-additional" id="speaker-member-additional"></p>
+                        <a class="speaker-member-website" id="speaker-member-website" href="#" target="_blank" rel="noopener">--</a>
+                        <p class="speaker-member-description" id="speaker-member-description">Loading speaker pro tempore information...</p>
                     </div>
                 </div>
             </div>
@@ -151,7 +247,7 @@
                         <span class="pledge-tag-time" id="pledge-time"></span>
                     </div>
                     <div class="pledge-header-right">
-                        <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">House Clerk</a></span>
+                        <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
                     </div>
                 </div>
                 <div class="pledge-content">
@@ -172,6 +268,7 @@
                             <span class="pledge-leader-details" id="pledge-leader-details"></span>
                         </div>
                         <p class="pledge-leader-additional" id="pledge-leader-additional"></p>
+                        <a class="pledge-leader-website" id="pledge-leader-website" href="#" target="_blank" rel="noopener">--</a>
                     </div>
                 </div>
                 <div class="pledge-text-container">
@@ -212,7 +309,10 @@
                 <!-- Integrated Timer Display -->
                 <div class="vote-timer" id="vote-timer">
                     <span class="vote-timer-label">TIMER</span>
-                    <span class="vote-timer-value" id="last-update">--:--</span>
+                    <span class="vote-timer-body">
+                        <span class="vote-timer-value" id="last-update">--:--</span>
+                        <span class="vote-timer-start" id="vote-timer-start"></span>
+                    </span>
                 </div>
             </div>
 
@@ -503,8 +603,25 @@
             </div>
         </div>
 
+        <!-- Voting Days Calendar -->
+        <div class="voting-calendar-panel">
+            <div class="panel-header">
+                <span class="panel-label">HOUSE CALENDAR</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a href="https://votingdays.house.gov/voting-days.ics" target="_blank" rel="noopener">House Voting Days Calendar</a></span>
+                    <span class="voting-calendar-time" id="voting-calendar-time">--:--</span>
+                </div>
+            </div>
+            <div class="voting-calendar-wrap" id="voting-calendar-wrap">
+                <div class="voting-calendar-month" id="voting-calendar-prev"></div>
+                <div class="voting-calendar-month voting-calendar-month-center" id="voting-calendar-current"></div>
+                <div class="voting-calendar-month" id="voting-calendar-next"></div>
+            </div>
+        </div>
+
 <!-- place scripts at end of body -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
 <script>
   (function(){
     const url = 'https://houseliveprod-f9h4cpb9dyb8gegg.a01.azurefd.net/east/2026-05-07T08-51-17/manifest.m3u8';
@@ -568,7 +685,6 @@
         <div class="footer">
             <div class="footer-section">
                 <span class="footer-title">DATA SOURCES</span>
-                <div class="footer-updated" id="footer-updated">Last updated: --</div>
                 <div class="footer-sources">
                     <div class="source-group">
                         <span class="source-category">House Proceedings:</span>
