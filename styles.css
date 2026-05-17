@@ -235,9 +235,33 @@ body {
     color: white;
 }
 
+.mode-toggle-btn[data-mode="silence"] .silence-mode {
+    background: #8b949e;
+    color: white;
+}
+
+.mode-toggle-btn[data-mode="oath"] .oath-mode {
+    background: #d29922;
+    color: white;
+}
+
 .mode-toggle-btn[data-mode="pledge"] .pledge-mode {
     background: var(--accent-red);
     color: white;
+}
+
+.mode-toggle-btn[data-mode="speaker"] .speaker-mode {
+    background: #d29922;
+    color: white;
+}
+
+/* Hide auto-switch modes from UI toggle button */
+.mode-toggle-btn .prayer-mode,
+.mode-toggle-btn .pledge-mode,
+.mode-toggle-btn .silence-mode,
+.mode-toggle-btn .oath-mode,
+.mode-toggle-btn .speaker-mode {
+    display: none;
 }
 
 .today-date {
@@ -357,22 +381,23 @@ body {
 .clock-group {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
 .clock {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    min-width: 58px;
+    gap: 3px;
+    min-width: 56px;
 }
 
 .clock-label {
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.8px;
+    letter-spacing: 1px;
     color: var(--text-muted);
+    text-transform: uppercase;
 }
 
 .analog-clock {
@@ -381,61 +406,109 @@ body {
     --second-angle: 0deg;
     position: relative;
     display: block;
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent calc(50% - 1px), rgba(139, 148, 158, 0.16) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), 
-        linear-gradient(0deg, transparent calc(50% - 0.5px), rgba(139, 148, 158, 0.16) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)), 
-        var(--bg-elevated);
-    box-shadow: inset 0 0 0 1px rgba(13, 17, 23, 0.8);
-    border: 1px solid var(--border-color);
+    background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0 40%, transparent 41%),
+        conic-gradient(from -90deg,
+            rgba(139, 148, 158, 0.75) 0deg 1deg,
+            transparent 1deg 29deg,
+            rgba(139, 148, 158, 0.45) 29deg 30deg,
+            transparent 30deg 59deg,
+            rgba(139, 148, 158, 0.75) 59deg 60deg,
+            transparent 60deg 89deg,
+            rgba(139, 148, 158, 0.45) 89deg 90deg,
+            transparent 90deg 119deg,
+            rgba(139, 148, 158, 0.75) 119deg 120deg,
+            transparent 120deg 149deg,
+            rgba(139, 148, 158, 0.45) 149deg 150deg,
+            transparent 150deg 179deg,
+            rgba(139, 148, 158, 0.75) 179deg 180deg,
+            transparent 180deg 209deg,
+            rgba(139, 148, 158, 0.45) 209deg 210deg,
+            transparent 210deg 239deg,
+            rgba(139, 148, 158, 0.75) 239deg 240deg,
+            transparent 240deg 269deg,
+            rgba(139, 148, 158, 0.45) 269deg 270deg,
+            transparent 270deg 299deg,
+            rgba(139, 148, 158, 0.75) 299deg 300deg,
+            transparent 300deg 329deg,
+            rgba(139, 148, 158, 0.45) 329deg 330deg,
+            transparent 330deg 359deg,
+            rgba(139, 148, 158, 0.75) 359deg 360deg),
+        linear-gradient(145deg, #1a2029 0%, #10151c 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(88, 166, 255, 0.10);
+}
+
+.analog-clock::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(139, 148, 158, 0.10);
+    background: radial-gradient(circle at center, transparent 58%, rgba(88, 166, 255, 0.03) 100%);
+}
+
+.analog-clock::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, transparent 0 60%, rgba(255, 255, 255, 0.015) 61% 100%);
+    pointer-events: none;
 }
 
 .clock-hand {
     position: absolute;
     left: 50%;
     bottom: 50%;
-    width: 3px;
+    width: 2px;
     transform-origin: 50% 100%;
-    border-radius: 2px;
+    border-radius: 999px;
 }
 
 .hour-hand {
-    height: 16px;
-    background: var(--text-primary);
+    height: 15px;
+    background: linear-gradient(180deg, #f8fbff 0%, #b8c6d4 100%);
     transform: translateX(-50%) rotate(var(--hour-angle));
-    border-radius: 2px;
 }
 
 .minute-hand {
-    height: 20px;
-    background: var(--text-primary);
+    height: 19px;
+    width: 2px;
+    background: linear-gradient(180deg, #f8fbff 0%, #d0d8e0 100%);
     transform: translateX(-50%) rotate(var(--minute-angle));
-    border-radius: 2px;
 }
 
 .second-hand {
-    height: 22px;
-    background: var(--accent-red);
+    height: 21px;
+    width: 1px;
+    background: linear-gradient(180deg, #ff8578 0%, var(--accent-red) 100%);
     transform: translateX(-50%) rotate(var(--second-angle));
-    border-radius: 2px;
 }
 
 .clock-center {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 4px;
-    height: 4px;
-    background: var(--accent-blue);
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0 18%, var(--accent-blue) 19% 100%);
     transform: translate(-50%, -50%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(13, 17, 23, 0.95);
 }
 
 .clock-time {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 9px;
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
 }
 
 .connection-status {
@@ -1743,6 +1816,9 @@ body {
 }
 
 .absentee-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -1770,6 +1846,82 @@ body {
 .absentee-party.dem {
   background: var(--accent-blue);
   color: white;
+}
+
+.absentee-photo-wrap {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: rgba(136, 153, 170, 0.12);
+}
+
+.absentee-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.absentee-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.absentee-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.absentee-party-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.absentee-party-tag.republican {
+  background: rgba(249, 25, 28, 0.1);
+  color: #f9251c;
+}
+
+.absentee-party-tag.democrat {
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+}
+
+.absentee-party-tag.independent {
+  background: rgba(163, 113, 247, 0.1);
+  color: #a371f7;
+}
+
+.absentee-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.absentee-state,
+.absentee-vote {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 
 /* Footer */
@@ -1981,7 +2133,7 @@ body {
     padding: 16px 32px;
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-color);
-    margin: 0 -16px 12px -16px;
+    margin: 0;
     border-radius: 8px 8px 0 0;
     height: 52px;
     box-sizing: border-box;
@@ -2189,6 +2341,255 @@ body {
     margin-bottom: 16px;
 }
 
+.bills-raw-headers {
+    padding: 8px 24px 0 24px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    opacity: 0.9;
+}
+
+.voting-calendar-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    padding-bottom: 0;
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.05) inset;
+}
+
+.voting-calendar-panel .panel-header {
+    margin: 0;
+    border-radius: 14px 14px 0 0;
+    background: #0b1322;
+    border-bottom: 1px solid rgba(52, 72, 100, 0.8);
+    padding: 16px 24px;
+}
+
+.voting-calendar-panel .panel-header-right {
+    gap: 16px;
+}
+
+.voting-calendar-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.voting-calendar-wrap {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px 14px 14px;
+    width: 100%;
+    margin: 0;
+    align-items: stretch;
+    overflow: visible;
+}
+
+.voting-calendar-month {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 4px;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.voting-calendar-month-center {
+    background: rgba(88, 166, 255, 0.04);
+    border-color: rgba(88, 166, 255, 0.25);
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.08) inset;
+}
+
+.voting-calendar-month .fc {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    --fc-page-bg-color: transparent;
+    --fc-border-color: var(--border-color);
+    --fc-neutral-bg-color: transparent;
+    --fc-today-bg-color: rgba(88, 166, 255, 0.08);
+    --fc-event-bg-color: transparent;
+    --fc-event-border-color: transparent;
+    --fc-event-text-color: var(--text-primary);
+    --fc-button-bg-color: var(--bg-elevated);
+    --fc-button-border-color: var(--border-color);
+    --fc-button-hover-bg-color: var(--bg-card);
+    --fc-button-hover-border-color: var(--accent-blue);
+    --fc-button-active-bg-color: var(--accent-blue);
+    --fc-button-active-border-color: var(--accent-blue);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+
+.voting-calendar-month .fc .fc-toolbar {
+    margin: 0 0 -34px 0 !important;
+    padding: 0 2px !important;
+    min-height: 0;
+}
+
+.voting-calendar-month .fc .fc-toolbar-title {
+    font-size: 7px !important;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.15;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.voting-calendar-month .fc .fc-col-header-cell-cushion,
+.voting-calendar-month .fc .fc-col-header-cell-cushion {
+    color: #ffffff !important;
+    text-decoration: none;
+    font-size: 7px !important;
+    font-weight: 700;
+    opacity: 1 !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-number {
+    color: #d7dde5 !important;
+    text-decoration: none;
+    font-size: 7px !important;
+    font-weight: 700;
+    z-index: 2;
+    position: relative;
+    opacity: 1 !important;
+    text-shadow: none !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-number a,
+.voting-calendar-month .fc .fc-daygrid-day-top a {
+    color: #d7dde5 !important;
+    opacity: 1 !important;
+    text-decoration: none !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-number,
+.voting-calendar-month .fc .fc-daygrid-day-number a {
+    display: inline-block;
+    min-width: 12px;
+    min-height: 12px;
+}
+
+.voting-calendar-month .fc .fc-col-header-cell {
+    background: #1f2937 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.voting-calendar-month .fc .fc-scrollgrid,
+.voting-calendar-month .fc .fc-scrollgrid-section,
+.voting-calendar-month .fc table,
+.voting-calendar-month .fc .fc-scrollgrid-sync-table {
+    background: rgba(255, 255, 255, 0.98) !important;
+    overflow: visible;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-top {
+    justify-content: flex-end;
+    padding-top: 0 !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-body,
+.voting-calendar-month .fc .fc-scrollgrid {
+    min-height: 0;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day {
+    min-height: 0;
+    background: rgba(255, 255, 255, 0.98) !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-frame {
+    padding: 0 1px 1px 1px;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    position: relative;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-top,
+.voting-calendar-month .fc .fc-daygrid-day-number {
+    color: #d7dde5 !important;
+}
+
+.voting-calendar-month .fc .fc-theme-standard td,
+.voting-calendar-month .fc .fc-theme-standard th {
+    border-color: rgba(15, 23, 32, 0.10) !important;
+}
+
+.calendar-event-label {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    font-size: 5px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: rgba(230, 237, 243, 0.95);
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+    pointer-events: none;
+}
+
+.voting-calendar-month .fc .fc-daygrid-event {
+    width: 100% !important;
+    position: static !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-event-dot {
+    display: none !important;
+}
+
+.voting-calendar-month .fc .fc-event-main {
+    padding: 0 !important;
+}
+
+.voting-calendar-month .fc .fc-event-title,
+.voting-calendar-month .fc .fc-event-time {
+    display: none !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-event-harness {
+    position: static !important;
+    margin-top: 0 !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-events {
+    position: static !important;
+    min-height: 0;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-bottom {
+    display: none !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-body table {
+    table-layout: fixed !important;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day-frame,
+.voting-calendar-month .fc .fc-scrollgrid-sync-table td {
+    aspect-ratio: 1 / 1;
+}
+
+.voting-calendar-month .fc .fc-daygrid-day {
+    aspect-ratio: 1 / 1;
+}
+
 
 .bills-label {
     font-size: 12px;
@@ -2344,6 +2745,18 @@ font-family: var(--font-mono);
 }
 
 .bill-date {
+    font-family: var(--font-mono);
+}
+
+.considered-indicator {
+    color: var(--accent-amber);
+    border: 1px solid rgba(210, 153, 34, 0.3);
+    background: rgba(210, 153, 34, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
     font-family: var(--font-mono);
 }
 
@@ -2603,6 +3016,14 @@ font-family: var(--font-mono);
     margin-right: auto;
 }
 
+.vote-timer-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+    margin-left: 10px;
+}
+
 .vote-timer-label {
     font-size: 10px;
     font-weight: 600;
@@ -2617,6 +3038,17 @@ font-family: var(--font-mono);
     font-weight: 600;
     color: var(--text-primary);
     font-family: var(--font-mono);
+}
+
+.vote-timer-start {
+    margin-top: 2px;
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    opacity: 0.8;
 }
 
 .vote-timer-value.active {
@@ -2785,6 +3217,36 @@ body.prayer-mode .prayer-section {
     display: block;
 }
 
+.silence-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.silence-mode .silence-section {
+    display: block;
+}
+
+.oath-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.oath-mode .oath-section {
+    display: block;
+}
+
+.speaker-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.speaker-mode .speaker-section {
+    display: block;
+}
+
 .prayer-section-header {
     display: flex;
     justify-content: space-between;
@@ -2831,6 +3293,75 @@ body.prayer-mode .prayer-section {
 
 .prayer-source a:hover {
     text-decoration: underline;
+}
+
+.silence-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.silence-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #8b949e;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.silence-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.silence-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.silence-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.silence-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.silence-source a:hover {
+    text-decoration: underline;
+}
+
+.silence-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.silence-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.silence-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0;
 }
 
 .prayer-content {
@@ -2924,6 +3455,20 @@ body.prayer-mode .prayer-section {
     margin: 0;
 }
 
+.prayer-leader-website {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    text-decoration: none;
+    margin-top: 4px;
+    word-break: break-all;
+}
+
+.prayer-leader-website:hover {
+    text-decoration: underline;
+}
+
 .prayer-source {
     font-size: 10px;
     color: var(--text-muted);
@@ -2961,7 +3506,6 @@ body.pledge-mode .pledge-section {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 16px;
     font-family: var(--font-mono);
 }
 
@@ -3104,6 +3648,20 @@ body.pledge-mode .pledge-section {
     font-style: italic;
 }
 
+.pledge-leader-website {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    text-decoration: none;
+    margin-top: 4px;
+    word-break: break-all;
+}
+
+.pledge-leader-website:hover {
+    text-decoration: underline;
+}
+
 .pledge-header-right {
     display: flex;
     justify-content: flex-end;
@@ -3132,6 +3690,142 @@ body.pledge-mode .pledge-section {
     text-decoration: underline;
 }
 
+.oath-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.oath-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #d29922;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.oath-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.oath-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.oath-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.oath-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.oath-source a:hover {
+    text-decoration: underline;
+}
+
+.oath-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+}
+
+.oath-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    position: relative;
+}
+
+.oath-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+}
+
+.oath-info {
+    flex: 1;
+}
+
+.oath-member-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.oath-member-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0 0 12px 0;
+}
+
+.oath-member-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.oath-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.oath-text {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.oath-source-inline {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 8px;
+}
+
+.oath-source-inline a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.oath-source-inline a:hover {
+    text-decoration: underline;
+}
+
 .pledge-text-container {
     display: flex;
     flex-direction: column;
@@ -3148,27 +3842,198 @@ body.pledge-mode .pledge-section {
     gap: 16px;
 }
 
-.pledge-source {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
-.pledge-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
-.pledge-source a:hover {
-    text-decoration: underline;
-}
-
 .pledge-flag {
     font-size: 64px;
     flex-shrink: 0;
 }
 
 .pledge-text {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.speaker-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.speaker-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #d29922;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.speaker-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.speaker-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.speaker-source {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.speaker-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.speaker-source a:hover {
+    text-decoration: underline;
+}
+
+.speaker-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+}
+
+.speaker-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    position: relative;
+}
+
+.speaker-image,
+.speaker-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.speaker-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    display: none;
+    border: 2px solid var(--border-color);
+}
+
+.speaker-image[src] {
+    display: block;
+}
+
+.speaker-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+}
+
+.speaker-info {
+    flex: 1;
+}
+
+.speaker-member-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.speaker-member-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0 0 8px 0;
+}
+
+.speaker-member-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.speaker-party-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+}
+
+.speaker-member-details {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    font-family: var(--font-mono);
+}
+
+.speaker-member-additional {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+    font-style: italic;
+}
+
+.speaker-member-website {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    text-decoration: none;
+    margin-top: 4px;
+    word-break: break-all;
+}
+
+.speaker-member-website:hover {
+    text-decoration: underline;
+}
+
+.speaker-member-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 12px 0 0 0;
+}
+
+.speaker-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.speaker-text {
     font-size: 16px;
     font-style: italic;
     color: var(--text-primary);
@@ -3192,5 +4057,32 @@ body.pledge-mode .vote-header,
 body.pledge-mode .threshold-panel,
 body.pledge-mode .quorum-panel,
 body.pledge-mode .floor-grid-panel {
+    display: none !important;
+}
+
+body.silence-mode .vote-display,
+body.silence-mode .progress-section,
+body.silence-mode .vote-header,
+body.silence-mode .threshold-panel,
+body.silence-mode .quorum-panel,
+body.silence-mode .floor-grid-panel {
+    display: none !important;
+}
+
+body.oath-mode .vote-display,
+body.oath-mode .progress-section,
+body.oath-mode .vote-header,
+body.oath-mode .threshold-panel,
+body.oath-mode .quorum-panel,
+body.oath-mode .floor-grid-panel {
+    display: none !important;
+}
+
+body.speaker-mode .vote-display,
+body.speaker-mode .progress-section,
+body.speaker-mode .vote-header,
+body.speaker-mode .threshold-panel,
+body.speaker-mode .quorum-panel,
+body.speaker-mode .floor-grid-panel {
     display: none !important;
 }
