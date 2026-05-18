@@ -1098,7 +1098,30 @@ async function handleRollCall(rollNumber) {
   }
 }
 
-async function handleHlsUrl() {
+async function checkManifestLiveness(streamUrl) {
+  try {
+    const mResp = await fetch(streamUrl);
+    if (!mResp.ok) return null; // URL is dead
+    const manifest = await mResp.text();
+    if (manifest.includes('#EXT-X-STREAM-INF')) {
+      const variantLine = manifest.split('\n').find(l => l.trim() && !l.startsWith('#'));
+      if (variantLine) {
+        const variantUrl = variantLine.trim().startsWith('http')
+          ? variantLine.trim()
+          : new URL(variantLine.trim(), streamUrl).href;
+        const vResp = await fetch(variantUrl);
+        if (!vResp.ok) return null;
+        const variantManifest = await vResp.text();
+        return !variantManifest.includes('#EXT-X-ENDLIST');
+      }
+    }
+    return !manifest.includes('#EXT-X-ENDLIST');
+  } catch {
+    return null; // treat as dead
+  }
+}
+
+async function handleHlsUrl(env) {
   try {
     // Ask the live.house.gov proxy for the current stream URL.
     // Returns 404 when House is not in session.
@@ -1107,71 +1130,56 @@ async function handleHlsUrl() {
       { headers: { 'Accept': 'application/json' } }
     );
 
-    if (!proxyResp.ok) {
-      // Not in session — no stream available
-      return new Response(JSON.stringify({ url: null, isLive: false, inSession: false }), {
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-      });
-    }
-
-    // Parse stream URL — response may be a plain string, a JSON object, or JSON array
-    const raw = await proxyResp.text();
     let streamUrl = null;
-    try {
-      const parsed = JSON.parse(raw);
-      // Handle { url: "..." }, { streamingUrl: "..." }, or ["url"] shapes
-      streamUrl = parsed?.url || parsed?.streamingUrl || parsed?.hlsUrl
-                || (Array.isArray(parsed) ? parsed[0] : null)
-                || null;
-      // Also try extracting any m3u8 URL if present in a string value
-      if (!streamUrl) {
-        const m = raw.match(/https?:\/\/[^"'\s]+\.m3u8/i);
+
+    if (proxyResp.ok) {
+      const raw = await proxyResp.text();
+      try {
+        const parsed = JSON.parse(raw);
+        streamUrl = parsed?.url || parsed?.streamingUrl || parsed?.hlsUrl
+                  || (Array.isArray(parsed) ? parsed[0] : null) || null;
+        if (!streamUrl) {
+          const m = raw.match(/https?:\/\/[^"'\s]+\.m3u8/i);
+          if (m) streamUrl = m[0];
+        }
+      } catch {
+        const m = raw.trim().match(/^https?:\/\/\S+/);
         if (m) streamUrl = m[0];
       }
-    } catch {
-      // Plain-string response
-      const m = raw.trim().match(/^https?:\/\/\S+/);
-      if (m) streamUrl = m[0];
     }
 
-    if (!streamUrl) {
-      return new Response(JSON.stringify({ url: null, isLive: false, inSession: false }), {
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-      });
+    if (streamUrl) {
+      // Check if actually live
+      const isLive = await checkManifestLiveness(streamUrl);
+      if (isLive !== null) {
+        // Save to KV so we can show the last frame later
+        if (env?.HLS_CACHE) {
+          await env.HLS_CACHE.put('last_url', streamUrl, { expirationTtl: 7 * 24 * 3600 });
+        }
+        return new Response(JSON.stringify({ url: streamUrl, isLive }), {
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' }
+        });
+      }
     }
 
-    // Check liveness by inspecting the HLS manifest for #EXT-X-ENDLIST
-    let isLive = false;
-    try {
-      const mResp = await fetch(streamUrl);
-      if (mResp.ok) {
-        const manifest = await mResp.text();
-        if (manifest.includes('#EXT-X-STREAM-INF')) {
-          // Multi-bitrate master — check first variant playlist
-          const variantLine = manifest.split('\n').find(l => l.trim() && !l.startsWith('#'));
-          if (variantLine) {
-            const variantUrl = variantLine.trim().startsWith('http')
-              ? variantLine.trim()
-              : new URL(variantLine.trim(), streamUrl).href;
-            const vResp = await fetch(variantUrl);
-            if (vResp.ok) {
-              const variantManifest = await vResp.text();
-              isLive = !variantManifest.includes('#EXT-X-ENDLIST');
-            }
-          }
-        } else {
-          isLive = !manifest.includes('#EXT-X-ENDLIST');
+    // Liveproxy returned nothing or URL is dead — try last cached URL for last-frame display
+    if (env?.HLS_CACHE) {
+      const cachedUrl = await env.HLS_CACHE.get('last_url');
+      if (cachedUrl) {
+        const isLive = await checkManifestLiveness(cachedUrl);
+        if (isLive !== null) {
+          return new Response(JSON.stringify({ url: cachedUrl, isLive: false }), {
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
+          });
         }
       }
-    } catch { /* treat as not live */ }
+    }
 
-    return new Response(JSON.stringify({ url: streamUrl, isLive, inSession: true }), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300'
-      }
+    // Nothing available
+    return new Response(JSON.stringify({ url: null, isLive: false }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
     });
+
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
@@ -1443,7 +1451,7 @@ async function handleRequest(request, env) {
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
   } else if (path === '/api/hls-url' && request.method === 'GET') {
-    return await handleHlsUrl();
+    return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
     return await handleDomeWatchFloor();
   } else if (path === '/api/stream/votes/current' && request.method === 'GET') {

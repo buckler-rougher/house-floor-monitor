@@ -2,10 +2,14 @@ name = "dome-watch-worker"
 main = "worker.js"
 compatibility_date = "2023-12-01"
 
+[[kv_namespaces]]
+binding = "HLS_CACHE"
+id = "5ad549966c6248f09d101224fc46b629"
+
 [[durable_objects.bindings]]
 name = "DOMEWATCH_STREAM_COORDINATOR"
 class_name = "DomeWatchStreamCoordinator"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["DomeWatchStreamCoordinator"]
+new_sqlite_classes = ["DomeWatchStreamCoordinator"]
