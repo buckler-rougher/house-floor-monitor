@@ -1,5 +1,22 @@
 // Dome Watch - Single Vote Tracker
 
+// Guard against unnecessary DOM thrashing — skip innerHTML update if content unchanged
+const _htmlCache = new WeakMap();
+function setIfChanged(el, html) {
+    if (!el) return;
+    if (_htmlCache.get(el) === html) return;
+    _htmlCache.set(el, html);
+    el.innerHTML = html;
+}
+
+// Set a member profile link, showing friendly text instead of raw URL
+function setMemberProfileLink(el, url) {
+    if (!el) return;
+    if (!url || url === '#') { el.href = '#'; el.textContent = '--'; return; }
+    el.href = url;
+    el.textContent = url.includes('congress.gov') ? 'View on Congress.gov →' : 'View profile →';
+}
+
 const DEBUG_LOG_ALLOW = [
     'SSE connection opened',
     'SSE data received:',
@@ -1112,13 +1129,15 @@ async function fetchAirportDelays() {
     try {
         if (!elements.airportDelaysList) return;
 
-        // Show loading state
-        elements.airportDelaysList.innerHTML = FAA_CONFIG.wasAirports.map(code => `
-            <div class="airport-delay-item">
-                <span class="airport-code">${code}</span>
-                <span class="airport-status loading">LOADING</span>
-            </div>
-        `).join('');
+        // Show loading state (only if empty to avoid flash on refresh)
+        if (!elements.airportDelaysList.hasChildNodes()) {
+            elements.airportDelaysList.innerHTML = FAA_CONFIG.wasAirports.map(code => `
+                <div class="airport-delay-item">
+                    <span class="airport-code">${code}</span>
+                    <span class="airport-status loading">LOADING</span>
+                </div>
+            `).join('');
+        }
 
         const delays = {};
 
@@ -1214,7 +1233,7 @@ async function fetchAirportDelays() {
     } catch (error) {
         console.error('Airport delays fetch error:', error);
         if (elements.airportDelaysList) {
-            elements.airportDelaysList.innerHTML = '<div class="airport-delay-item"><span class="airport-status delay">CONNECTION ERROR</span></div>';
+            setIfChanged(elements.airportDelaysList, '<div class="airport-delay-item"><span class="airport-status delay">CONNECTION ERROR</span></div>');
         }
     }
 }
@@ -1225,12 +1244,12 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
 
     // If disconnected, show connection error for all airports
     if (connectionStatus === 'disconnected') {
-        elements.airportDelaysList.innerHTML = FAA_CONFIG.wasAirports.map(code => `
+        setIfChanged(elements.airportDelaysList, FAA_CONFIG.wasAirports.map(code => `
             <div class="airport-delay-item">
                 <span class="airport-info">${code}</span>
                 <span class="airport-status disconnected">NO DATA</span>
             </div>
-        `).join('');
+        `).join(''));
         return;
     }
 
@@ -1256,7 +1275,7 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
         `;
     }).join('');
 
-    elements.airportDelaysList.innerHTML = delaysHtml;
+    setIfChanged(elements.airportDelaysList, delaysHtml);
 }
 
 // Utility function to format dates
@@ -1362,10 +1381,10 @@ async function fetchBillsThisWeek() {
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
-            elements.ruleBillsList.innerHTML = '<div class="no-bills">Unable to load bills</div>';
+            setIfChanged(elements.ruleBillsList, '<div class="no-bills">Unable to load bills</div>');
         }
         if (elements.suspensionBillsList) {
-            elements.suspensionBillsList.innerHTML = '<div class="no-bills">Unable to load bills</div>';
+            setIfChanged(elements.suspensionBillsList, '<div class="no-bills">Unable to load bills</div>');
         }
     }
 }
@@ -1445,17 +1464,17 @@ function updateBillsDisplay() {
     // Update rule bills
     if (billsData.ruleBills.length > 0) {
         const ruleHtml = billsData.ruleBills.map(bill => createBillCard(bill, 'rule')).join('');
-        elements.ruleBillsList.innerHTML = ruleHtml;
+        setIfChanged(elements.ruleBillsList, ruleHtml);
     } else {
-        elements.ruleBillsList.innerHTML = '<div class="no-bills">No bills under rule</div>';
+        setIfChanged(elements.ruleBillsList, '<div class="no-bills">No bills under rule</div>');
     }
 
     // Update suspension bills
     if (billsData.suspensionBills.length > 0) {
         const suspensionHtml = billsData.suspensionBills.map(bill => createBillCard(bill, 'suspension')).join('');
-        elements.suspensionBillsList.innerHTML = suspensionHtml;
+        setIfChanged(elements.suspensionBillsList, suspensionHtml);
     } else {
-        elements.suspensionBillsList.innerHTML = '<div class="no-bills">No bills under suspension</div>';
+        setIfChanged(elements.suspensionBillsList, '<div class="no-bills">No bills under suspension</div>');
     }
     
     // Update week date display
@@ -1821,7 +1840,7 @@ function autoSwitchModeFromProceedings(items) {
 async function updateProceedingsFeed() {
     if (!elements.proceedingsFeed) return;
 
-    elements.proceedingsFeed.innerHTML = '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>';
+    setIfChanged(elements.proceedingsFeed, '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>');
 
     try {
         const proceedingsUrl = proceedingsDateOverride
@@ -1839,7 +1858,7 @@ async function updateProceedingsFeed() {
         }
 
         if (!data.items || data.items.length === 0) {
-            elements.proceedingsFeed.innerHTML = '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>';
+            setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
             return;
         }
 
@@ -1885,7 +1904,7 @@ async function updateProceedingsFeed() {
         `;
         }).join('');
 
-        elements.proceedingsFeed.innerHTML = timelineHtml + html;
+        setIfChanged(elements.proceedingsFeed, timelineHtml + html);
 
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
@@ -1911,7 +1930,7 @@ async function updateProceedingsFeed() {
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
-        elements.proceedingsFeed.innerHTML = '<div class="proceedings-error">UNABLE TO FETCH PROCEEDINGS</div>';
+        setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">UNABLE TO FETCH PROCEEDINGS</div>');
     }
 }
 
@@ -2274,10 +2293,7 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
             elements.journalImage.style.display = 'block';
             if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'none';
         }
-        if (elements.journalChairWebsite) {
-            elements.journalChairWebsite.href = profileUrl;
-            elements.journalChairWebsite.textContent = profileUrl;
-        }
+        setMemberProfileLink(elements.journalChairWebsite, profileUrl);
     }
 }
 
@@ -2332,10 +2348,7 @@ async function fetchSpeakerAsChair() {
             if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'none';
         }
         const profileUrl = buildCongressProfileUrl(bioguideId);
-        if (elements.pledgeLeaderWebsite) {
-            elements.pledgeLeaderWebsite.href = profileUrl;
-            elements.pledgeLeaderWebsite.textContent = profileUrl;
-        }
+        setMemberProfileLink(elements.pledgeLeaderWebsite, profileUrl);
     } catch (error) {
         console.error('fetchSpeakerAsChair failed:', error);
         if (elements.pledgeLeaderName) elements.pledgeLeaderName.textContent = 'Speaker of the House';
@@ -2417,8 +2430,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
         else elements.speakerPartyTag.classList.add('independent');
         elements.speakerMemberAdditional.textContent = match.town ? `from ${match.town}, ${match.state}` : '';
         const websiteUrl = buildCongressProfileUrl(match.bioguideId);
-        elements.speakerMemberWebsite.href = websiteUrl;
-        elements.speakerMemberWebsite.textContent = websiteUrl;
+        setMemberProfileLink(elements.speakerMemberWebsite, websiteUrl);
 const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
         if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'none';
         if (elements.speakerImage) {
@@ -2831,8 +2843,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             elements.pledgeLeaderAdditional.textContent = additionalInfo.length > 0 ? additionalInfo.join(' • ') : '';
             if (elements.pledgeLeaderWebsite) {
                 const websiteUrl = bestMatch.website || buildCongressProfileUrl(bestMatch.bioguideId);
-                elements.pledgeLeaderWebsite.href = websiteUrl;
-                elements.pledgeLeaderWebsite.textContent = websiteUrl;
+                setMemberProfileLink(elements.pledgeLeaderWebsite, websiteUrl);
             }
             
             console.log('Updated name:', elements.pledgeLeaderName.textContent);
@@ -2865,10 +2876,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         elements.pledgeTime.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
-        if (elements.pledgeLeaderWebsite) {
-            elements.pledgeLeaderWebsite.href = '#';
-            elements.pledgeLeaderWebsite.textContent = '--';
-        }
+        setMemberProfileLink(elements.pledgeLeaderWebsite, null);
         showPledgePlaceholder();
 
     } catch (error) {
@@ -2877,10 +2885,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         elements.pledgeTime.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
-        if (elements.pledgeLeaderWebsite) {
-            elements.pledgeLeaderWebsite.href = '#';
-            elements.pledgeLeaderWebsite.textContent = '--';
-        }
+        setMemberProfileLink(elements.pledgeLeaderWebsite, null);
         showPledgePlaceholder();
     }
 }
@@ -3301,9 +3306,9 @@ function updatePartyBreakdownDisplay() {
                     </div>
                 `;
             }).join('');
-            elements.vacanciesList.innerHTML = vacanciesHtml;
+            setIfChanged(elements.vacanciesList, vacanciesHtml);
         } else {
-            elements.vacanciesList.innerHTML = '<div class="no-vacancies">No current vacancies</div>';
+            setIfChanged(elements.vacanciesList, '<div class="no-vacancies">No current vacancies</div>');
         }
     }
 
@@ -3354,7 +3359,7 @@ function updateTicker() {
         `<span class="ticker-item">[${escapeHtml(item.author)}] ${escapeHtml(item.text)}</span>`
     ).join('');
     
-    elements.tickerContent.innerHTML = html;
+    setIfChanged(elements.tickerContent, html);
 }
 
 // Weather Data
@@ -3685,7 +3690,7 @@ async function fetchNewsTicker() {
         }
         
         if (!data.items || data.items.length === 0) {
-            elements.tickerContent.innerHTML = '<div class="ticker-item">No news available</div>';
+            setIfChanged(elements.tickerContent, '<div class="ticker-item">No news available</div>');
             return;
         }
         
@@ -3704,14 +3709,14 @@ async function fetchNewsTicker() {
         `).join('');
         
         // Update ticker display
-        elements.tickerContent.innerHTML = continuousContent;
+        setIfChanged(elements.tickerContent, continuousContent);
         elements.tickerContent.style.paddingLeft = '0'; 
         // Let CSS handle the animation so hover pause works reliably
         elements.tickerContent.style.animation = ''; 
         
     } catch (error) {
         console.error('News ticker fetch error:', error);
-        elements.tickerContent.innerHTML = '<div class="ticker-item">Unable to fetch news</div>';
+        setIfChanged(elements.tickerContent, '<div class="ticker-item">Unable to fetch news</div>');
     }
 }
 
@@ -4018,7 +4023,7 @@ async function updateAbsenteeTracking() {
         
     } catch (error) {
         console.error('Absentee tracking error:', error);
-        elements.absenteeList.innerHTML = '<div class="absentee-member">ERROR</div>';
+        setIfChanged(elements.absenteeList, '<div class="absentee-member">ERROR</div>');
     }
 }
 
@@ -4091,9 +4096,9 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
                 </div>
             </div>
         `;}).join('');
-        elements.absenteeList.innerHTML = absenteeHtml;
+        setIfChanged(elements.absenteeList, absenteeHtml);
     } else {
-        elements.absenteeList.innerHTML = '<div class="absentee-member">ALL MEMBERS VOTED</div>';
+        setIfChanged(elements.absenteeList, '<div class="absentee-member">ALL MEMBERS VOTED</div>');
     }
     
     console.log(`Roll ${rollNumber} (${rollDate}): ${totalAbsentees} absentees`);
