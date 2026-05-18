@@ -607,7 +607,7 @@ async function fetchFloorData() {
                     title: floorData.rollCall?.question || 'Loading...',
                     id: floorData.rollCall?.number || '--',
                     date: floorData.rollCall?.bill?.considered_on || null,
-                    votesNeeded: Math.ceil(((iv(t.yeas)) + (iv(t.nays)) + (iv(t.present))) / 2) + 1
+                    votesNeeded: Math.floor((iv(t.yeas) + iv(t.nays) + iv(t.present) + iv(t.not_voting)) / 2) + 1
                 }
             };
             console.log('Vote map state updated:', state.data);
@@ -4145,7 +4145,8 @@ function updateThresholdAnalysis() {
 
     const vote = state.data.vote;
     const totalCast = vote.yeas + vote.nays + vote.present;
-    const votesRemaining = Math.max(HOUSE_TOTAL_MEMBERS - totalCast, 0);
+    const wholeNumber = totalCast + (vote.not_voting || 0);
+    const votesRemaining = Math.max(wholeNumber - totalCast, 0);
     const yeasNeeded = Math.max(vote.votesNeeded - vote.yeas, 0);
     const maxPossibleYeas = vote.yeas + votesRemaining;
     const naysToBlock = vote.yeas >= vote.votesNeeded
