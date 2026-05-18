@@ -1428,6 +1428,139 @@ async function handleLastSessionDate(request) {
   }
 }
 
+// ── Committee Live Feeds ─────────────────────────────────────────────────────
+
+const COMMITTEE_YOUTUBE = {
+  HSAG: { channelId: 'UCOWh2WJxPywHIaccDWb8Mvg', name: 'Agriculture' },
+  HSAP: { channelId: 'UCMaSlF09S0fpoRshS2t_7XA', name: 'Appropriations' },
+  HSAS: { channelId: 'UCD506yORW2voSanqEgLOUIQ', name: 'Armed Services' },
+  HSBA: { channelId: 'UCiGw0gRK-daU7Xv4oDMr9Hg', name: 'Financial Services' },
+  HSBU: { channelId: 'UCwzia2rpHJkowAXK-IF9E0w', name: 'Budget' },
+  HSED: { channelId: 'UCqAHNOSUqn0OByR-4vF81FQ', name: 'Education & Workforce' },
+  HSFA: { channelId: 'UCXCjgHrMgPEqDvCmPc9BbJA', name: 'Foreign Affairs' },
+  HSGO: { channelId: 'UCXSlyao4qkUFiPqghptHtZA', name: 'Oversight' },
+  HSHA: { channelId: 'UCTO94zQwJNB_gmud-4IyZXA', name: 'House Administration' },
+  HSHM: { channelId: 'UC6Vg3_8RRaIVLJFyo7WZfzA', name: 'Homeland Security' },
+  HSIF: { channelId: 'UCCbD3bkHRcwiBsaL1lWE_QQ', name: 'Energy & Commerce' },
+  HSII: { channelId: 'UCB6LGE5-_i-xxtZxk1_SeTg', name: 'Natural Resources' },
+  HLIG: { channelId: 'UCMF5z6BIrwwQTtcj2cacBPw', name: 'Intelligence' },
+  HSJU: { channelId: 'UCVvv3JRCVQAl6ovogDum4hA', name: 'Judiciary' },
+  HSPW: { channelId: 'UChc8bTPtZgTZDDLJ6UWJgxA', name: 'Transportation' },
+  HSRU: { channelId: 'UC3LTS2HRaURCmt_kkWorvFw', name: 'Rules' },
+  HSSM: { channelId: 'UCnYcuO2JQhVbnCR8ltmSacQ', name: 'Small Business' },
+  HSSO: { channelId: 'UCxZOzbhWkBPEimMti0NBvQQ', name: 'Ethics' },
+  HSSY: { channelId: 'UCtoUE3dJ-mLUo5dwGs7hXOw', name: 'Science & Tech' },
+  HSVR: { channelId: 'UCvI8xjyh45-XAJbfPcjUdbQ', name: "Veterans' Affairs" },
+  HSWM: { channelId: 'UCrz_XV52yquSiXvyjdh03Fw', name: 'Ways & Means' },
+};
+
+// Convert ISO string to Eastern date string (YYYY-MM-DD), approximate DST
+function toEasternDateStr(isoString) {
+  const d = new Date(isoString);
+  const month = d.getUTCMonth() + 1;
+  const offset = (month >= 3 && month <= 11) ? -4 : -5;
+  return new Date(d.getTime() + offset * 3600000).toISOString().slice(0, 10);
+}
+
+async function checkYouTubeRSS(channelId) {
+  try {
+    const resp = await fetch(
+      `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+      { cf: { cacheTtl: 60 } }
+    );
+    if (!resp.ok) return null;
+    const xml = await resp.text();
+
+    const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
+    if (!entryMatch) return null;
+    const entry = entryMatch[1];
+
+    const published  = entry.match(/<published>(.*?)<\/published>/)?.[1];
+    const updated    = entry.match(/<updated>(.*?)<\/updated>/)?.[1];
+    const title      = entry.match(/<title>(.*?)<\/title>/)?.[1] || '';
+    const videoId    = entry.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1] || '';
+    const thumbnail  = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : '';
+
+    if (!published || !updated) return null;
+
+    const nowMs           = Date.now();
+    const publishedAgeHrs = (nowMs - new Date(published).getTime()) / 3600000;
+    const updatedAgeMins  = (nowMs - new Date(updated).getTime()) / 60000;
+
+    // Heuristic: published within 8 h AND (updated <20 min ago OR title sounds like a hearing)
+    const titleLive = /live|hearing|markup|meeting|session/i.test(title);
+    if (publishedAgeHrs > 8) return null;
+    if (updatedAgeMins > 20 && !titleLive) return null;
+
+    return { videoId, thumbnail, streamTitle: title, publishedAt: published };
+  } catch { return null; }
+}
+
+async function handleCommitteeLive() {
+  try {
+    const nowStr       = new Date().toISOString();
+    const todayEastern = toEasternDateStr(nowStr);
+
+    // Fetch meetings updated within the last 3 days (catches today's schedule)
+    const from = new Date(Date.now() - 3 * 86400000).toISOString();
+    const to   = new Date(Date.now() + 86400000).toISOString();
+    const listUrl = `https://api.congress.gov/v3/committee-meeting/119/house?format=json&limit=50&fromDateTime=${from}&toDateTime=${to}&api_key=${CONGRESS_API_KEY}`;
+
+    const listResp = await fetch(listUrl, { headers: { Accept: 'application/json' } });
+    if (!listResp.ok) throw new Error('Congress list failed');
+    const { committeeMeetings = [] } = await listResp.json();
+
+    // Fetch full details in parallel to get actual meeting dates
+    const details = await Promise.all(
+      committeeMeetings.slice(0, 50).map(m =>
+        fetch(`${m.url}&api_key=${CONGRESS_API_KEY}`, { headers: { Accept: 'application/json' } })
+          .then(r => r.ok ? r.json() : null).catch(() => null)
+      )
+    );
+
+    // Filter to today's non-cancelled full-committee meetings with known YouTube channels
+    const seenCommittees = new Set();
+    const todayMeetings = [];
+
+    for (const detail of details) {
+      const mtg = detail?.committeeMeeting;
+      if (!mtg?.date) continue;
+      if (['Cancelled', 'Postponed'].includes(mtg.meetingStatus)) continue;
+      if (toEasternDateStr(mtg.date) !== todayEastern) continue;
+
+      for (const committee of (mtg.committees || [])) {
+        const code = committee.systemCode || '';
+        if (!code.endsWith('00')) continue; // skip subcommittees
+        const thomasId = code.slice(0, -2).toUpperCase();
+        const info = COMMITTEE_YOUTUBE[thomasId];
+        if (!info || seenCommittees.has(thomasId)) continue;
+        seenCommittees.add(thomasId);
+        todayMeetings.push({
+          thomasId, channelId: info.channelId, name: info.name,
+          type: mtg.type || 'Meeting', status: mtg.meetingStatus,
+          date: mtg.date, location: mtg.location,
+        });
+      }
+    }
+
+    // Check YouTube RSS for live activity on each committee's channel
+    const liveResults = (await Promise.all(
+      todayMeetings.map(async mtg => {
+        const stream = await checkYouTubeRSS(mtg.channelId);
+        return stream ? { ...mtg, ...stream } : null;
+      })
+    )).filter(Boolean);
+
+    return new Response(JSON.stringify({ committees: liveResults, updatedAt: nowStr }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ committees: [], error: err.message }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 async function handleLeadership() {
   try {
     const response = await fetch('https://clerk.house.gov/Members/ViewLeadership', {
@@ -1492,6 +1625,8 @@ async function handleRequest(request, env) {
     return await handleCongressIndex();
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed();
+  } else if (path === '/api/committee-live' && request.method === 'GET') {
+    return await handleCommitteeLive();
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership();
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
