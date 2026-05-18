@@ -3872,11 +3872,7 @@ function renderArchSeats() {
     const cx = w / 2;
     const floorY = h * 0.96;
     const innerR = w * 0.16, outerR = w * 0.47;
-    const innerXR = innerR, outerXR = outerR;
-    const innerYR = innerR, outerYR = outerR;
-    const arcStart = Math.PI * 0.02;
-    const arcEnd   = Math.PI * 0.98;
-    const steps = 80;
+    const aisleHalfW = 21; // half of 42px center-aisle
 
     // Draw SVG arc guides using the same math as the dots
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -3887,24 +3883,28 @@ function renderArchSeats() {
 
     for (let rowIdx = 0; rowIdx < nRows; rowIdx++) {
         const rp = rowIdx / (nRows - 1);
-        const xR = innerXR + (outerXR - innerXR) * rp;
-        const yR = innerYR + (outerYR - innerYR) * rp;
+        const R = innerR + (outerR - innerR) * rp;
         const opacity = 0.18 - rowIdx * 0.008;
+        // Per-row gap angle so center gap is exactly aisleHalfW pixels at every row radius
+        const gapAngle = R > aisleHalfW ? Math.acos(aisleHalfW / R) : Math.PI / 2;
 
-        // Build arc path by stepping through angles (avoids SVG large-arc-flag ambiguity)
-        let d = '';
-        for (let s = 0; s <= steps; s++) {
-            const angle = arcStart + (arcEnd - arcStart) * (s / steps);
-            const px = cx + xR * Math.cos(angle);
-            const py = floorY - yR * Math.sin(angle);
-            d += (s === 0 ? 'M' : 'L') + `${px.toFixed(1)} ${py.toFixed(1)} `;
+        // Two arc segments per row — one per side of center aisle
+        for (const [aStart, aEnd] of [[0, gapAngle], [Math.PI - gapAngle, Math.PI]]) {
+            const segSteps = Math.max(3, Math.round(40 * (aEnd - aStart) / (Math.PI / 2)));
+            let d = '';
+            for (let s = 0; s <= segSteps; s++) {
+                const angle = aStart + (aEnd - aStart) * (s / segSteps);
+                const px = cx + R * Math.cos(angle);
+                const py = floorY - R * Math.sin(angle);
+                d += (s === 0 ? 'M' : 'L') + `${px.toFixed(1)} ${py.toFixed(1)} `;
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', `rgba(139,148,158,${opacity.toFixed(3)})`);
+            path.setAttribute('stroke-width', '1');
+            svg.appendChild(path);
         }
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', d);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', `rgba(139,148,158,${opacity.toFixed(3)})`);
-        path.setAttribute('stroke-width', '1');
-        svg.appendChild(path);
     }
 
     // Insert SVG before labels
@@ -3930,29 +3930,27 @@ function createUsChamberLayout(container, config) {
     const centerX = width / 2;
     const floorY = height * 0.96;
     const innerR = width * 0.16, outerR = width * 0.47;
-    const innerXRadius = innerR, outerXRadius = outerR;
-    const innerYRadius = innerR, outerYRadius = outerR;
-    const leftStart  = Math.PI * 0.02;
-    const leftEnd    = Math.PI * 0.48;
-    const rightStart = Math.PI * 0.52;
-    const rightEnd   = Math.PI * 0.98;
+    const aisleHalfW = 21;
     const seats = [];
 
     config.rows.forEach((count, rowIdx) => {
         const rowProgress = rowIdx / (config.rows.length - 1);
-        const xRadius = innerXRadius + (outerXRadius - innerXRadius) * rowProgress;
-        const yRadius = innerYRadius + (outerYRadius - innerYRadius) * rowProgress;
-        
+        const R = innerR + (outerR - innerR) * rowProgress;
+        // gapAngle ensures center gap = exactly aisleHalfW*2 pixels at this row's radius
+        const gapAngle = R > aisleHalfW ? Math.acos(aisleHalfW / R) : Math.PI / 2;
+
         for (let i = 0; i < count; i++) {
             const side = i < count / 2 ? -1 : 1;
             const sideIndex = side === -1 ? i : i - Math.ceil(count / 2);
             const sideCount = side === -1 ? Math.ceil(count / 2) : Math.floor(count / 2);
             const sideProgress = sideCount > 1 ? sideIndex / (sideCount - 1) : 0;
+            // side===-1: Democrat, screen RIGHT, angle 0 (right edge, floor) → gapAngle (right of aisle)
+            // side=== 1: Republican, screen LEFT, angle PI-gapAngle (left of aisle) → PI (left edge, floor)
             const angle = side === -1
-                ? leftStart + (leftEnd - leftStart) * sideProgress
-                : rightStart + (rightEnd - rightStart) * sideProgress;
-            const x = centerX + xRadius * Math.cos(angle);
-            const y = floorY - yRadius * Math.sin(angle);
+                ? gapAngle * sideProgress
+                : (Math.PI - gapAngle) + gapAngle * sideProgress;
+            const x = centerX + R * Math.cos(angle);
+            const y = floorY - R * Math.sin(angle);
             
             seats.push({
                 party: side === 1 ? config.rightParty : config.leftParty,
