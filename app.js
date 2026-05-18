@@ -3692,12 +3692,14 @@ function renderCommitteeTiles(committees) {
     const count = document.getElementById('committee-feeds-live-count');
     if (!panel || !grid) return;
 
+    panel.hidden = false;
+
     if (!committees.length) {
-        panel.hidden = true;
+        count.textContent = '';
+        setIfChanged(grid, '<div class="committee-feeds-empty">No active committee hearings detected</div>');
         return;
     }
 
-    panel.hidden = false;
     count.textContent = `${committees.length} LIVE`;
 
     const newHtml = committees.map(c => {

@@ -2019,6 +2019,12 @@ body {
 }
 .committee-feeds-grid::-webkit-scrollbar { display: none; }
 
+.committee-feeds-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 4px 0;
+}
+
 .committee-tile {
     position: relative;
     flex-shrink: 0;
