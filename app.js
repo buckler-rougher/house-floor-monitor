@@ -1502,12 +1502,79 @@ function openBillModal(billId) {
     const bill = billDataMap.get(billId);
     if (!bill) return;
 
+    const procedureClass = bill.procedure === 'suspension' ? 'suspension' : 'rule';
+    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : 'UNDER RULE';
     const statusClass = bill.status || 'scheduled';
     const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE IN PROGRESS' }[bill.status] || 'SCHEDULED';
-    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : 'UNDER RULE';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
     const congressUrl = billIdToCongressUrl(bill.id);
+
+    // Sponsor HTML (reuse absentee-member classes)
+    let sponsorHtml = '';
+    if (bill.sponsor) {
+        const s = bill.sponsor;
+        const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
+        const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
+        const name = `${s.firstName} ${s.lastName}`;
+        const loc = s.state + (s.district != null ? `-${s.district}` : '');
+        const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
+        sponsorHtml = `
+            <div class="bill-modal-section">
+                <div class="bill-modal-section-label">SPONSOR</div>
+                <div class="absentee-member" style="padding:0;border:none;">
+                    <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
+                        <img class="absentee-photo" src="${photo}" style="display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" alt="${name}" />
+                        <div class="absentee-photo-placeholder" style="display:none;">${pLetter}</div>
+                    </div>
+                    <div class="absentee-meta">
+                        <span class="absentee-party-tag ${pClass}">${pLetter}</span>
+                        <span class="absentee-name">${name}</span>
+                        <span class="absentee-state">${loc}</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // Cosponsors bar (includes sponsor in count)
+    let cosponsorsHtml = '';
+    const allSupporters = [
+        ...(bill.sponsor ? [bill.sponsor] : []),
+        ...(bill.cosponsors || []),
+    ];
+    if (allSupporters.length > 0) {
+        const rCount = allSupporters.filter(m => m.party === 'R').length;
+        const dCount = allSupporters.filter(m => m.party === 'D').length;
+        const iCount = allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length;
+        const total = allSupporters.length;
+        const rPct = (rCount / total * 100).toFixed(1);
+        const dPct = (dCount / total * 100).toFixed(1);
+        const iPct = (iCount / total * 100).toFixed(1);
+        const coLabel = bill.cosponsors?.length ? `${bill.cosponsors.length} COSPONSOR${bill.cosponsors.length !== 1 ? 'S' : ''}` : 'NO COSPONSORS';
+        cosponsorsHtml = `
+            <div class="bill-modal-section">
+                <div class="bill-modal-section-label">SUPPORT — ${coLabel}</div>
+                <div class="bill-modal-support-bar">
+                    ${rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : ''}
+                    ${dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : ''}
+                    ${iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : ''}
+                </div>
+                <div class="bill-modal-support-labels">
+                    ${rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : ''}
+                    ${dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : ''}
+                    ${iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : ''}
+                </div>
+            </div>`;
+    }
+
+    // Committees
+    const committeeHtml = bill.committees?.length ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">REFERRED TO</div>
+            <div class="bill-modal-committees">
+                ${bill.committees.map(c => `<span class="bill-modal-committee">${c}</span>`).join('')}
+            </div>
+        </div>` : '';
 
     let overlay = document.getElementById('bill-modal-overlay');
     if (!overlay) {
@@ -1524,9 +1591,12 @@ function openBillModal(billId) {
             <div class="bill-modal-header">
                 <span class="bill-modal-id">${bill.id}</span>
                 <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
-                <span class="bill-modal-badge procedure">${procedureLabel}</span>
+                <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
             </div>
             <h2 class="bill-modal-title">${bill.title}</h2>
+            ${sponsorHtml}
+            ${cosponsorsHtml}
+            ${committeeHtml}
             ${bill.summary ? `
                 <div class="bill-modal-section">
                     <div class="bill-modal-section-label">SUMMARY</div>
@@ -1537,7 +1607,7 @@ function openBillModal(billId) {
                     <div class="bill-modal-section-label">LATEST ACTION</div>
                     <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}</span>` : ''}</div>
                 </div>` : ''}
-            ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+            ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
         </div>
     `;
     overlay.hidden = false;
