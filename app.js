@@ -578,16 +578,19 @@ async function fetchFloorData() {
 
         // Update state with floor data for vote map
         if (floorData.voteCounts) {
+            const t = floorData.voteCounts.totals || {};
+            const d = floorData.voteCounts.blue  || {};
+            const r = floorData.voteCounts.red   || {};
+            const iv = v => Math.max(parseInt(v) || 0, 0);
             state.data = {
                 vote: {
-                    yeas: floorData.voteCounts.totals?.yeas || 0,
-                    nays: floorData.voteCounts.totals?.nays || 0,
-                    present: floorData.voteCounts.totals?.present || 0,
-                    not_voting: floorData.voteCounts.totals?.not_voting || 0,
+                    yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), not_voting: iv(t.not_voting),
+                    dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
+                    rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
                     title: floorData.rollCall?.question || 'Loading...',
                     id: floorData.rollCall?.number || '--',
                     date: floorData.rollCall?.bill?.considered_on || null,
-                    votesNeeded: Math.ceil(((floorData.voteCounts.totals?.yeas || 0) + (floorData.voteCounts.totals?.nays || 0) + (floorData.voteCounts.totals?.present || 0)) / 2) + 1
+                    votesNeeded: Math.ceil(((iv(t.yeas)) + (iv(t.nays)) + (iv(t.present))) / 2) + 1
                 }
             };
             console.log('Vote map state updated:', state.data);
@@ -3838,8 +3841,10 @@ const HOUSE_SEATS = {
 const HOUSE_TOTAL_MEMBERS = 435;
 const US_CHAMBER_LAYOUT = {
     rows: [25, 31, 37, 43, 49, 55, 61, 67, 67],
-    leftParty: 'republican',
-    rightParty: 'democrat'
+    // side===-1 uses angles 30-85° (cos>0, screen RIGHT) → democrats
+    // side=== 1 uses angles 95-149° (cos<0, screen LEFT)  → republicans
+    leftParty: 'democrat',
+    rightParty: 'republican'
 };
 
 function initFloorGrid() {
@@ -3857,14 +3862,56 @@ function initFloorGrid() {
 
 function renderArchSeats() {
     if (!elements.floorArch) return;
-    
+
     const container = elements.floorArch;
-    // Remove only existing seats, keep labels
-    const existingSeats = container.querySelectorAll('.seat');
-    existingSeats.forEach(s => s.remove());
+    container.querySelectorAll('.seat, .chamber-rings-svg').forEach(el => el.remove());
+
+    const w = container.offsetWidth || 720;
+    const h = container.offsetHeight || 280;
+    const nRows = US_CHAMBER_LAYOUT.rows.length;
+    const cx = w / 2;
+    const floorY = h - 26;
+    const innerXR = w * 0.16, outerXR = w * 0.43;
+    const innerYR = h * 0.22, outerYR = h * 0.72;
+    const arcStart = Math.PI * 0.17;  // leftStart
+    const arcEnd   = Math.PI * 0.83;  // rightEnd
+    const steps = 80;
+
+    // Draw SVG arc guides using the same math as the dots
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;';
+    svg.classList.add('chamber-rings-svg');
+
+    for (let rowIdx = 0; rowIdx < nRows; rowIdx++) {
+        const rp = rowIdx / (nRows - 1);
+        const xR = innerXR + (outerXR - innerXR) * rp;
+        const yR = innerYR + (outerYR - innerYR) * rp;
+        const opacity = 0.18 - rowIdx * 0.008;
+
+        // Build arc path by stepping through angles (avoids SVG large-arc-flag ambiguity)
+        let d = '';
+        for (let s = 0; s <= steps; s++) {
+            const angle = arcStart + (arcEnd - arcStart) * (s / steps);
+            const px = cx + xR * Math.cos(angle);
+            const py = floorY - yR * Math.sin(angle);
+            d += (s === 0 ? 'M' : 'L') + `${px.toFixed(1)} ${py.toFixed(1)} `;
+        }
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', `rgba(139,148,158,${opacity.toFixed(3)})`);
+        path.setAttribute('stroke-width', '1');
+        svg.appendChild(path);
+    }
+
+    // Insert SVG before labels
+    const firstLabel = container.querySelector('.arch-label, .dais-label');
+    container.insertBefore(svg, firstLabel || container.firstChild);
 
     const seats = createUsChamberLayout(container, US_CHAMBER_LAYOUT);
-    seats.forEach((seatData) => {
+    seats.forEach(seatData => {
         const seat = document.createElement('div');
         seat.className = 'seat';
         seat.dataset.party = seatData.party;
@@ -4123,50 +4170,53 @@ function updateThresholdAnalysis() {
 }
 
 function updateFloorGrid() {
-    console.log('=== FLOOR GRID UPDATE START ===');
-    console.log('State data:', state.data);
-    console.log('State vote:', state.data?.vote);
-    
-    if (!state.data || !state.data.vote) {
-        console.log('No vote data available for floor grid');
-        return;
-    }
-    
+    if (!state.data?.vote) return;
+
     const vote = state.data.vote;
-    console.log('Vote data:', vote);
-    console.log('Vote counts - yeas:', vote.yeas, 'nays:', vote.nays, 'present:', vote.present);
-    
-    const seats = elements.floorArch.querySelectorAll('.seat');
-    console.log('Found seats:', seats.length);
-    
-    applyChamberStatuses(Array.from(seats), [
-        { status: 'yea', count: vote.yeas },
-        { status: 'nay', count: vote.nays },
-        { status: 'present', count: vote.present }
-    ]);
-    
-    console.log('=== FLOOR GRID UPDATE COMPLETE ===');
+    const seats = Array.from(elements.floorArch.querySelectorAll('.seat'));
+
+    // Sort each party's seats by row then position (inner → outer, aisle → edge)
+    const sortSeats = arr => arr.sort((a, b) => {
+        const dr = Number(a.dataset.row) - Number(b.dataset.row);
+        return dr !== 0 ? dr : Number(a.dataset.seatOrder) - Number(b.dataset.seatOrder);
+    });
+
+    const repSeats = sortSeats(seats.filter(s => s.dataset.party === 'republican'));
+    const demSeats = sortSeats(seats.filter(s => s.dataset.party === 'democrat'));
+
+    seats.forEach(s => s.classList.remove('yea', 'nay', 'present', 'not-voting'));
+
+    // Use per-party breakdown when available, fall back to proportional distribution
+    if (vote.rep && vote.dem && (vote.rep.yeas + vote.rep.nays + vote.rep.present + vote.dem.yeas + vote.dem.nays + vote.dem.present) > 0) {
+        fillPartySeats(repSeats, [
+            { status: 'yea',     count: vote.rep.yeas },
+            { status: 'nay',     count: vote.rep.nays },
+            { status: 'present', count: vote.rep.present },
+        ]);
+        fillPartySeats(demSeats, [
+            { status: 'yea',     count: vote.dem.yeas },
+            { status: 'nay',     count: vote.dem.nays },
+            { status: 'present', count: vote.dem.present },
+        ]);
+    } else {
+        // No party breakdown — distribute totals proportionally across both sides
+        const total = vote.yeas + vote.nays + vote.present;
+        if (total === 0) return;
+        const allSeats = [...repSeats, ...demSeats];
+        fillPartySeats(allSeats, [
+            { status: 'yea',     count: vote.yeas },
+            { status: 'nay',     count: vote.nays },
+            { status: 'present', count: vote.present },
+        ]);
+    }
 }
 
-function applyChamberStatuses(seats, statuses) {
-    const orderedSeats = seats
-        .slice()
-        .sort((a, b) => {
-            const rowDelta = Number(a.dataset.row) - Number(b.dataset.row);
-            if (rowDelta !== 0) return rowDelta;
-            return Number(a.dataset.seatOrder) - Number(b.dataset.seatOrder);
-        });
-
+function fillPartySeats(seats, statuses) {
     let cursor = 0;
-    orderedSeats.forEach((seat) => seat.classList.remove('yea', 'nay', 'present'));
-
     statuses.forEach(({ status, count }) => {
-        const safeCount = Math.max(Number(count) || 0, 0);
-        const end = Math.min(cursor + safeCount, orderedSeats.length);
-
-        for (let i = cursor; i < end; i++) {
-            orderedSeats[i].classList.add(status);
-        }
+        const n = Math.max(parseInt(count) || 0, 0);
+        const end = Math.min(cursor + n, seats.length);
+        for (let i = cursor; i < end; i++) seats[i].classList.add(status);
         cursor = end;
     });
 }
