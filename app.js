@@ -8,7 +8,16 @@ const DEBUG_LOG_ALLOW = [
     'DomeWatch payload:',
     'SSE error:',
     'Failed to start SSE streaming:',
-    'Fetch floor data failed:'
+    'Fetch floor data failed:',
+    // Voting days
+    'Today:', 'Today event found:', 'All events:', 'Is fly-in day:', 'Event summary:',
+    'Final todayStatus:', 'Updating session status to:', 'Session text element:', 'Session status updated to:',
+    // Timer
+    '=== TIMER UPDATE', 'Timer data:', 'Timer element:', 'Timer value:',
+    'Timestamp:', 'Seconds remaining:', 'Timer data available:', 'Timer element available:',
+    // Bills
+    '=== BILLS FETCH START ===', 'Rule bills list element:', 'Suspension bills list element:',
+    'Bills API response:', 'Found ', 'Vote map state updated:',
 ];
 
 const __originalConsoleLog = console.log.bind(console);
@@ -100,8 +109,8 @@ async function fetchVotingDays() {
         // Find today's events (there may be multiple)
         const todayEvents = [];
         for (const event of events) {
-            const eventDate = new Date(event.date);
-            eventDate.setHours(0, 0, 0, 0);
+            const [ey, em, ed] = event.date.split('-').map(Number);
+            const eventDate = new Date(ey, em - 1, ed);
             
             if (eventDate.getTime() === today.getTime()) {
                 todayEvents.push(event);
@@ -189,13 +198,7 @@ function renderVotingDaysCalendar() {
 
     if (!prevEl || !currentEl || !nextEl || !window.FullCalendar || !window.FullCalendar.Calendar) return;
 
-    if (timeEl) {
-        timeEl.textContent = new Date().toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
-    }
+
 
     const now = new Date();
     const baseMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -584,7 +587,7 @@ async function fetchFloorData() {
                     title: floorData.rollCall?.question || 'Loading...',
                     id: floorData.rollCall?.number || '--',
                     date: floorData.rollCall?.bill?.considered_on || null,
-                    votesNeeded: Math.ceil((floorData.voteCounts.totals?.yeas || 0 + floorData.voteCounts.totals?.nays || 0 + floorData.voteCounts.totals?.present || 0) / 2) + 1
+                    votesNeeded: Math.ceil(((floorData.voteCounts.totals?.yeas || 0) + (floorData.voteCounts.totals?.nays || 0) + (floorData.voteCounts.totals?.present || 0)) / 2) + 1
                 }
             };
             console.log('Vote map state updated:', state.data);
@@ -626,6 +629,16 @@ function updateFloorDisplay(status = null) {
     const statusText = floorData.currentStatus.text || 'Unknown';
     const statusValue = floorData.currentStatus.value || 'unknown';
     
+    // Auto-switch mode based on DomeWatch status
+    const statusLower = (statusText + ' ' + statusValue).toLowerCase();
+    if (statusLower.includes('vote')) {
+        window.setMode('vote');
+    } else if (statusLower.includes('debate')) {
+        window.setMode('debate');
+    } else if (statusLower.includes('adjourn') || statusLower.includes('recess')) {
+        window.setMode('recess');
+    }
+
     // Update floor status with house adjournment information
     if (elements.floorStatus) {
         elements.floorStatus.textContent = statusText;
@@ -874,6 +887,8 @@ const elements = {
     proceedingsLastUpdate: document.getElementById('proceedings-last-update'),
         absenteeRep: document.getElementById('absentee-rep'),
     absenteeDem: document.getElementById('absentee-dem'),
+    absenteeInd: document.getElementById('absentee-ind'),
+    absenteeIndMetric: document.getElementById('absentee-ind-metric'),
     absenteeTotal: document.getElementById('absentee-total'),
     absenteeList: document.getElementById('absentee-list'),
     tickerContent: document.getElementById('ticker-content'),
@@ -911,6 +926,40 @@ const elements = {
     pledgeLeaderDetails: document.getElementById('pledge-leader-details'),
     pledgeLeaderAdditional: document.getElementById('pledge-leader-additional'),
     pledgeLeaderWebsite: document.getElementById('pledge-leader-website'),
+    journalImage: document.getElementById('journal-image'),
+    journalImagePlaceholder: document.getElementById('journal-image-placeholder'),
+    journalChairTitle: document.getElementById('journal-chair-title'),
+    journalChairName: document.getElementById('journal-chair-name'),
+    journalPartyTag: document.getElementById('journal-party-tag'),
+    journalTime: document.getElementById('journal-time'),
+    journalChairDetails: document.getElementById('journal-chair-details'),
+    journalChairAdditional: document.getElementById('journal-chair-additional'),
+    journalChairWebsite: document.getElementById('journal-chair-website'),
+    journalLastSessionDate: document.getElementById('journal-last-session-date'),
+    oneMinuteTime: document.getElementById('one-minute-time'),
+    oneMinuteDescriptionLine: document.getElementById('one-minute-description-line'),
+    specialOrderTime: document.getElementById('special-order-time'),
+    specialOrderDescriptionLine: document.getElementById('special-order-description-line'),
+    jointMeetingTime: document.getElementById('joint-meeting-time'),
+    jointMeetingDescriptionLine: document.getElementById('joint-meeting-description-line'),
+    messageTime: document.getElementById('message-time'),
+    messageFromLine: document.getElementById('message-from-line'),
+    messageBody: document.getElementById('message-body'),
+    morningHourTime: document.getElementById('morning-hour-time'),
+    certElectionTime: document.getElementById('cert-election-time'),
+    certElectionText: document.getElementById('cert-election-text'),
+    certElectoralTime: document.getElementById('cert-electoral-time'),
+    certElectoralText: document.getElementById('cert-electoral-text'),
+    sineDieTime: document.getElementById('sine-die-time'),
+    sineDieDescriptionLine: document.getElementById('sine-die-description-line'),
+    newSessionTime: document.getElementById('new-session-time'),
+    newSessionDescriptionLine: document.getElementById('new-session-description-line'),
+    adminOathTime: document.getElementById('admin-oath-time'),
+    adminOathAdministeredBy: document.getElementById('admin-oath-administered-by'),
+    adminOathRecipients: document.getElementById('admin-oath-recipients'),
+    jointSessionTime: document.getElementById('joint-session-time'),
+    jointSessionDescriptionLine: document.getElementById('joint-session-description-line'),
+    jointSessionPresidingLine: document.getElementById('joint-session-presiding-line'),
     silenceSection: document.getElementById('silence-section'),
     silenceTitle: document.getElementById('silence-title'),
     silenceDescription: document.getElementById('silence-description'),
@@ -954,6 +1003,9 @@ const RSS_CONFIG = {
     workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/proceedings',
     refreshInterval: 120000 // 2 minutes
 };
+
+// Date override for testing proceedings from a specific date (set via console)
+let proceedingsDateOverride = null;
 
 // News Ticker Configuration
 const NEWS_CONFIG = {
@@ -1275,7 +1327,10 @@ async function fetchBillsThisWeek() {
         console.log('Rule bills list element:', elements.ruleBillsList);
         console.log('Suspension bills list element:', elements.suspensionBillsList);
         
-        const response = await fetch(BILLS_CONFIG.workerUrl);
+        const billsUrl = proceedingsDateOverride
+            ? `${BILLS_CONFIG.workerUrl}?date=${encodeURIComponent(proceedingsDateOverride)}`
+            : BILLS_CONFIG.workerUrl;
+        const response = await fetch(billsUrl);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -1376,27 +1431,8 @@ function updateBillsDisplay() {
 
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
-        let debug = billsSection.querySelector('.bills-raw-headers');
-        if (!debug) {
-            debug = document.createElement('div');
-            debug.className = 'bills-raw-headers';
-            const header = billsSection.querySelector('.panel-header');
-            if (header && header.nextSibling) {
-                header.parentNode.insertBefore(debug, header.nextSibling);
-            } else if (header) {
-                header.parentNode.appendChild(debug);
-            }
-        }
-        if (billsData.rawHeaders) {
-            const weekTitle = billsData.rawHeaders.weekTitle || '';
-            const updated = billsData.rawHeaders.updated ? formatDate(billsData.rawHeaders.updated) : '';
-            const ruleHeader = billsData.rawHeaders.ruleHeader || 'Rule header not found';
-            const suspensionHeader = billsData.rawHeaders.suspensionHeader || 'Suspension header not found';
-            debug.textContent = `${weekTitle} • Updated ${updated} • ${ruleHeader} • ${suspensionHeader}`.trim();
-            debug.style.display = 'block';
-        } else {
-            debug.style.display = 'none';
-        }
+        const debug = billsSection.querySelector('.bills-raw-headers');
+        if (debug) debug.remove();
     }
     
     // Update rule bills
@@ -1422,27 +1458,24 @@ function updateBillsDisplay() {
 }
 
 function createBillCard(bill) {
-    const statusClass = bill.status || 'pending';
-    const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✗' : bill.status === 'considered' ? '•' : '?';
+    const statusClass = bill.status || 'scheduled';
+    const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✕' : '';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
-    const consideredTag = bill.considered || bill.status === 'considered'
-        ? '<div class="voice-vote-indicator considered-indicator">CONSIDERED</div>'
+    const summaryHtml = bill.summary
+        ? `<div class="bill-summary">${bill.summary.length > 300 ? bill.summary.slice(0, 300) + '…' : bill.summary}</div>`
         : '';
-    const voiceVoteIndicator = bill.status === 'passed' || bill.status === 'requested' ? 
-        '<div class="voice-vote-indicator">📢 Voice Vote</div>' : '';
-    
+
     return `
         <div class="bill-card">
             <div class="bill-status ${statusClass}">${statusSymbol}</div>
             <div class="bill-info">
                 <div class="bill-id">${bill.id}</div>
                 <div class="bill-title">${bill.title}</div>
+                ${summaryHtml}
                 <div class="bill-meta">
                     <div class="bill-action">${actionText}</div>
                     <div class="bill-date">${actionDate}</div>
-                    ${consideredTag}
-                    ${voiceVoteIndicator}
                 </div>
             </div>
         </div>
@@ -1453,21 +1486,185 @@ function createBillCard(bill) {
 function autoSwitchModeFromProceedings(items) {
     if (!items || items.length === 0) return;
 
-    const latestItem = items[0];
-    const description = latestItem.description.toLowerCase();
+    const latest = items[0].description.toLowerCase();
 
-    // Check if latest proceeding matches any auto-switch mode
-    if (description.includes('prayer') || description.includes('chaplain')) {
-        window.setMode('prayer');
-    } else if (description.includes('pledge') || description.includes('allegiance')) {
-        window.setMode('pledge');
-    } else if (description.includes('moment of silence') || description.includes('silence')) {
-        window.setMode('silence');
-    } else if (description.includes('oath of office') || description.includes('oath')) {
-        window.setMode('oath');
-    } else if (description.includes('speaker pro tempore') || description.includes('pro tempore')) {
-        window.setMode('speaker');
+    // If the most recent proceeding is an adjournment, that's the final word — stay in recess.
+    if (latest.includes('adjourn') || latest.includes('the house stands adjourned')) {
+        window.setMode('recess');
+        return;
     }
+
+    // Joint Session (highest priority — rare, significant)
+    const jsItem = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()));
+    if (jsItem) {
+        window.setMode('joint-session');
+        updateJointSessionSection(items);
+        if (jsItem.pubDate && elements.jointSessionTime) {
+            elements.jointSessionTime.textContent = new Date(jsItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    // Certification of Electoral Votes
+    const certElectoralItem = items.find(i => /^CERTIFICATION OF ELECTORAL VOTES\b/i.test(i.description.trim()));
+    if (certElectoralItem) {
+        window.setMode('cert-electoral');
+        updateCertElectoralSection(items);
+        if (certElectoralItem.pubDate && elements.certElectoralTime) {
+            elements.certElectoralTime.textContent = new Date(certElectoralItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    // Certification of Election
+    const certElectionItem = items.find(i => /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()));
+    if (certElectionItem) {
+        window.setMode('cert-election');
+        updateCertElectionSection(items);
+        if (certElectionItem.pubDate && elements.certElectionTime) {
+            elements.certElectionTime.textContent = new Date(certElectionItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    // New Session (20th Amendment)
+    const newSessionItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('20th amendment') && (d.includes('convened') || d.includes('new legislative day'));
+    });
+    if (newSessionItem) {
+        window.setMode('new-session');
+        updateNewSessionSection(items);
+        if (newSessionItem.pubDate && elements.newSessionTime) {
+            elements.newSessionTime.textContent = new Date(newSessionItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    // Administration of the Oath of Office (bulk/ceremonial — distinct from individual oath)
+    const adminOathItem = items.find(i => /^ADMINISTRATION OF THE OATH OF OFFICE\b/i.test(i.description.trim()));
+    if (adminOathItem) {
+        window.setMode('admin-oath');
+        updateAdminOathSection(items);
+        if (adminOathItem.pubDate && elements.adminOathTime) {
+            elements.adminOathTime.textContent = new Date(adminOathItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    // Sine Die
+    if (latest.includes('sine die')) {
+        window.setMode('sine-die');
+        updateSineDieSection(items);
+        return;
+    }
+
+    const jmItem = items.findLast(i => /^JOINT MEETING\b/i.test(i.description.trim()));
+    if (jmItem) {
+        window.setMode('joint-meeting');
+        if (jmItem.pubDate && elements.jointMeetingTime) {
+            elements.jointMeetingTime.textContent = new Date(jmItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        if (elements.jointMeetingDescriptionLine) {
+            elements.jointMeetingDescriptionLine.textContent = decodeHtml(jmItem.description.replace(/^JOINT MEETING\s*[-–]\s*/i, '').trim());
+        }
+        return;
+    }
+
+    const soItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('special order speech') || d.includes('special orders');
+    });
+    if (soItem) {
+        window.setMode('special-order');
+        if (soItem.pubDate && elements.specialOrderTime) {
+            elements.specialOrderTime.textContent = new Date(soItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        if (elements.specialOrderDescriptionLine) {
+            elements.specialOrderDescriptionLine.textContent = decodeHtml(soItem.description);
+        }
+        return;
+    }
+
+    const omItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('one minute speech') || d.includes('one-minute speech');
+    });
+    if (omItem) {
+        window.setMode('one-minute');
+        if (omItem.pubDate && elements.oneMinuteTime) {
+            elements.oneMinuteTime.textContent = new Date(omItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        if (elements.oneMinuteDescriptionLine) {
+            elements.oneMinuteDescriptionLine.textContent = decodeHtml(omItem.description);
+        }
+        return;
+    }
+
+    const mhItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('morning-hour debate') || d.includes('morning hour debate');
+    });
+    if (mhItem) {
+        window.setMode('morning-hour');
+        if (mhItem.pubDate && elements.morningHourTime) {
+            elements.morningHourTime.textContent = new Date(mhItem.pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
+    if (latest.startsWith('the house received a message from')) {
+        window.setMode('message');
+        return;
+    }
+
+    if (latest.includes('prayer') || latest.includes('chaplain')) {
+        window.setMode('prayer');
+        return;
+    }
+    if (latest.includes('pledge') || latest.includes('allegiance')) {
+        window.setMode('pledge');
+        return;
+    }
+    if (latest.includes('moment of silence') || latest.includes('silence')) {
+        window.setMode('silence');
+        return;
+    }
+    if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
+        window.setMode('speaker');
+        return;
+    }
+
+    // Oath and journal can appear anywhere in the day — search all items
+    const oathItem = items.find(i => /^OATH OF OFFICE\b/i.test(i.description.trim()));
+    if (oathItem) {
+        window.setMode('oath');
+        return;
+    }
+
+    const hasJournal = items.some(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('approval of the journal') || d.includes('approved the journal') || d.includes('announced approval of the journal');
+    });
+    if (hasJournal) window.setMode('journal');
 }
 
 // Update proceedings feed (autoscroll removed)
@@ -1477,7 +1674,10 @@ async function updateProceedingsFeed() {
     elements.proceedingsFeed.innerHTML = '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>';
 
     try {
-        const response = await fetch(RSS_CONFIG.workerUrl);
+        const proceedingsUrl = proceedingsDateOverride
+            ? `${RSS_CONFIG.workerUrl}?date=${encodeURIComponent(proceedingsDateOverride)}`
+            : RSS_CONFIG.workerUrl;
+        const response = await fetch(proceedingsUrl);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -1493,23 +1693,38 @@ async function updateProceedingsFeed() {
             return;
         }
 
-        // Get the latest date for the source line
-        const latestDate = new Date(data.items[0]?.pubDate || new Date());
-        const dateStr = latestDate.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric' 
+        // Show the proceedings date in the header span
+        const proceedingsDate = proceedingsDateOverride
+            ? new Date(proceedingsDateOverride)
+            : new Date(data.items[0]?.pubDate || new Date());
+        const dateStr = proceedingsDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
+        if (elements.proceedingsLastUpdate) {
+            elements.proceedingsLastUpdate.textContent = dateStr;
+        }
+
+        // Pinned timeline item from DomeWatch (e.g. "First votes: Wednesday at 12:30 PM")
+        const timelineText = floorData.timeline?.first_votes?.text || '';
+        const timelineHtml = timelineText ? `
+            <div class="proceedings-item proceedings-timeline-pin">
+                <div class="proceedings-text">
+                    <span class="proceedings-time">NEXT</span>
+                    ${escapeHtml(timelineText)}
+                </div>
+            </div>` : '';
 
         const html = data.items.map(item => {
             const pubDate = new Date(item.pubDate);
-            const timeStr = pubDate.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
+            const timeStr = pubDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
                 timeZoneName: 'short'
             });
-            
+
             return `
             <div class="proceedings-item">
                 <div class="proceedings-text">
@@ -1520,12 +1735,7 @@ async function updateProceedingsFeed() {
         `;
         }).join('');
 
-        // Update header with date
-        if (elements.proceedingsLastUpdate) {
-            elements.proceedingsLastUpdate.textContent = dateStr;
-        }
-        
-        elements.proceedingsFeed.innerHTML = html;
+        elements.proceedingsFeed.innerHTML = timelineHtml + html;
 
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
@@ -1537,6 +1747,17 @@ async function updateProceedingsFeed() {
         updatePrayerSection(data.items);
         updatePledgeSection(data.items);
         updateSpeakerSection(data.items);
+        updateJournalSection(data.items);
+        updateOathSection(data.items);
+        updateMessageSection(data.items);
+
+        // Update new mode sections
+        updateCertElectionSection(data.items);
+        updateCertElectoralSection(data.items);
+        updateSineDieSection(data.items);
+        updateNewSessionSection(data.items);
+        updateAdminOathSection(data.items);
+        updateJointSessionSection(data.items);
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
@@ -1640,6 +1861,11 @@ function updatePrayerSection(items) {
     // Remove trailing period if present
     chaplainName = chaplainName.replace(/\.$/, '').trim();
 
+    // Restore full title for known chaplains
+    if (/margaret grun kibben/i.test(chaplainName)) {
+        chaplainName = 'The Reverend Doctor Margaret Grun Kibben';
+    }
+
     // Extract additional information - try to get meaningful description
     let additionalInfo = '';
     
@@ -1658,7 +1884,7 @@ function updatePrayerSection(items) {
     // Update prayer section elements
     elements.prayerLeaderTitle.textContent = isGuestChaplain ? 'Guest Chaplain' : 'House Chaplain';
     elements.prayerLeaderName.textContent = chaplainName;
-    elements.prayerLeaderDescription.textContent = additionalInfo || (isGuestChaplain ? 'Leading the House in prayer.' : 'Leading the House in prayer.');
+    elements.prayerLeaderDescription.textContent = additionalInfo || (isGuestChaplain ? 'Leading the House in prayer.' : 'The Chaplain intercedes for Members and asks for blessings on them as they labor to make decisions for the good of the nation.');
     if (elements.prayerLeaderWebsite) {
         elements.prayerLeaderWebsite.href = chaplainWebsite;
         elements.prayerLeaderWebsite.textContent = 'https://chaplain.house.gov';
@@ -1712,26 +1938,258 @@ function updatePledgeSection(items) {
         elements.pledgeTime.textContent = timeStr;
     }
 
-    // Extract who is leading the pledge - handle "designated Mr. Thompson of PA" format
-    let leaderName = 'Unknown Leader';
+    // Extract who is leading the pledge
     const designatedMatch = description.match(/designated\s+(.+?)\s+to\s+lead/i);
+    const chairLedMatch = /the\s+chair\s+led/i.test(description);
+
     if (designatedMatch) {
-        leaderName = designatedMatch[1].trim();
+        let leaderName = designatedMatch[1].trim();
+        leaderName = leaderName.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '').trim();
+        elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+        elements.pledgeLeaderName.textContent = leaderName;
+        fetchMemberPhotoFromClerkData(leaderName);
+    } else if (chairLedMatch) {
+        // "The Chair led" — resolve who the Chair is
+        const proTemporeItem = items.find(item => {
+            const d = item.description.toLowerCase();
+            return d.includes('speaker pro tempore') || d.includes('designated the honorable');
+        });
+
+        if (proTemporeItem) {
+            // Use the designated Speaker Pro Tempore
+            const proMatch = proTemporeItem.description.match(
+                /designated\s+the\s+Honorable\s+(.+?)\s+to\s+act/i
+            ) || proTemporeItem.description.match(/designated\s+(.+?)\s+to\s+act/i);
+            const proName = proMatch ? proMatch[1].trim() : null;
+            if (proName) {
+                elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+                elements.pledgeLeaderName.textContent = proName;
+                fetchMemberPhotoFromClerkData(proName);
+                return;
+            }
+        }
+
+        // No pro tempore — fall back to the elected Speaker
+        elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+        elements.pledgeLeaderName.textContent = 'Resolving Speaker...';
+        fetchSpeakerAsChair();
     } else {
-        // Fallback to other patterns
         const fallbackMatch = description.match(/(?:by|led\s*by):\s*(.+?)(?:\n|,|\.|$)/i);
         if (fallbackMatch) {
-            leaderName = fallbackMatch[1].trim();
+            let leaderName = fallbackMatch[1].trim().replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '');
+            elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+            elements.pledgeLeaderName.textContent = leaderName;
+            fetchMemberPhotoFromClerkData(leaderName);
+        }
+    }
+}
+
+async function updateJournalSection(items) {
+    if (!elements.journalChairTitle) return;
+
+    const journalItem = items.find(item =>
+        item.description.toLowerCase().includes('approval of the journal') ||
+        item.description.toLowerCase().includes('approved the journal')
+    );
+
+    if (journalItem?.pubDate) {
+        const d = new Date(journalItem.pubDate);
+        elements.journalTime.textContent = d.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+
+    // Find last session date and display it
+    fetchLastSessionDate();
+
+    // Determine the Chair: pro tempore if present, else Speaker
+    const proTemporeItem = items.find(item => {
+        const d = item.description.toLowerCase();
+        return d.includes('speaker pro tempore') || d.includes('designated the honorable');
+    });
+
+    if (proTemporeItem) {
+        const proMatch = proTemporeItem.description.match(
+            /designated\s+the\s+Honorable\s+(.+?)\s+to\s+act/i
+        ) || proTemporeItem.description.match(/designated\s+(.+?)\s+to\s+act/i);
+        const proName = proMatch ? proMatch[1].trim() : null;
+        if (proName) {
+            elements.journalChairTitle.textContent = 'Speaker Pro Tempore';
+            elements.journalChairName.textContent = proName;
+            fetchJournalChairInfo(proName);
+            return;
         }
     }
 
-    // Update pledge section elements
-    elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
-    elements.pledgeLeaderName.textContent = leaderName;
+    // No pro tempore — use the Speaker
+    elements.journalChairTitle.textContent = 'Speaker of the House';
+    elements.journalChairName.textContent = 'Resolving...';
+    fetchJournalSpeakerInfo();
+}
 
-    console.log('Calling fetchMemberPhotoFromClerkData with:', leaderName);
-    // Try to fetch member photo using House Clerk data
-    fetchMemberPhotoFromClerkData(leaderName);
+async function fetchLastSessionDate() {
+    if (!elements.journalLastSessionDate) return;
+    try {
+        const before = proceedingsDateOverride || (() => {
+            const t = new Date();
+            return `${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}/${t.getFullYear()}`;
+        })();
+        const res = await fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/last-session-date?before=${encodeURIComponent(before)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { date } = await res.json();
+        if (date) {
+            const d = new Date(date + 'T12:00:00');
+            elements.journalLastSessionDate.textContent = d.toLocaleDateString('en-US', {
+                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+            });
+        }
+    } catch (e) {
+        console.error('fetchLastSessionDate failed:', e);
+    }
+}
+
+async function fetchJournalChairInfo(name) {
+    try {
+        const clean = name.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.|the\s+Honorable)\s+/i, '').trim();
+        const lastName = clean.split(/\s+/).pop();
+        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        const memberData = await memberRes.json();
+        const xml = memberData.xmlData || '';
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xml, 'text/xml');
+        const members = xmlDoc.querySelectorAll('member');
+        let best = null, bestScore = 0;
+        for (const m of members) {
+            const ln = m.querySelector('lastname')?.textContent.trim() || '';
+            const score = calculateNameSimilarity(lastName, ln);
+            if (score > bestScore && score > 0.5) { bestScore = score; best = m; }
+        }
+        if (best) populateJournalChair(best);
+    } catch (e) {
+        console.error('fetchJournalChairInfo failed:', e);
+    }
+}
+
+async function fetchJournalSpeakerInfo() {
+    try {
+        const res = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        if (elements.journalChairName) elements.journalChairName.textContent = data.name;
+        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        const memberData = await memberRes.json();
+        const xml = memberData.xmlData || '';
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xml, 'text/xml');
+        const members = xmlDoc.querySelectorAll('member');
+        for (const m of members) {
+            if (m.querySelector('bioguideID')?.textContent.trim() === data.bioguideId) {
+                populateJournalChair(m, data.bioguideId);
+                break;
+            }
+        }
+    } catch (e) {
+        console.error('fetchJournalSpeakerInfo failed:', e);
+        if (elements.journalChairName) elements.journalChairName.textContent = 'Speaker of the House';
+    }
+}
+
+function populateJournalChair(memberEl, bioguideIdOverride) {
+    const bioguideId = bioguideIdOverride || memberEl.querySelector('bioguideID')?.textContent.trim() || '';
+    const firstName = memberEl.querySelector('firstname')?.textContent.trim() || '';
+    const lastName = memberEl.querySelector('lastname')?.textContent.trim() || '';
+    const party = memberEl.querySelector('party')?.textContent.trim() || '';
+    const state = memberEl.querySelector('state')?.getAttribute('postal-code') || '';
+    const district = memberEl.querySelector('district')?.textContent.trim() || '';
+    const town = memberEl.querySelector('townname')?.textContent.trim() || '';
+
+    if (elements.journalChairName) elements.journalChairName.textContent = `${firstName} ${lastName}`;
+    if (elements.journalPartyTag) {
+        elements.journalPartyTag.textContent = party;
+        elements.journalPartyTag.className = 'journal-party-tag ' +
+            (party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent');
+    }
+    if (elements.journalChairDetails) elements.journalChairDetails.textContent = `${state}-${normalizeDistrict(district)}`;
+    if (elements.journalChairAdditional) elements.journalChairAdditional.textContent = town ? `from ${town}, ${state}` : '';
+
+    if (bioguideId) {
+        const photoUrl = buildBioguidePhotoUrl(bioguideId);
+        const profileUrl = buildCongressProfileUrl(bioguideId);
+        if (elements.journalImage) {
+            elements.journalImage.onerror = () => {
+                if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'flex';
+                elements.journalImage.style.display = 'none';
+            };
+            elements.journalImage.src = photoUrl;
+            elements.journalImage.style.display = 'block';
+            if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'none';
+        }
+        if (elements.journalChairWebsite) {
+            elements.journalChairWebsite.href = profileUrl;
+            elements.journalChairWebsite.textContent = profileUrl;
+        }
+    }
+}
+
+async function fetchSpeakerAsChair() {
+    try {
+        const response = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        const { bioguideId, name } = data;
+        if (elements.pledgeLeaderName) elements.pledgeLeaderName.textContent = name;
+
+        // Fetch member details from member-data XML for party/district/etc
+        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        if (!memberRes.ok) throw new Error('member-data failed');
+        const memberData = await memberRes.json();
+        const xml = memberData.xmlData || '';
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xml, 'text/xml');
+        const members = xmlDoc.querySelectorAll('member');
+        let match = null;
+        for (const m of members) {
+            if (m.querySelector('bioguideID')?.textContent.trim() === bioguideId) {
+                match = m; break;
+            }
+        }
+
+        if (match) {
+            const party = match.querySelector('party')?.textContent.trim() || '';
+            const state = match.querySelector('state')?.getAttribute('postal-code') || '';
+            const district = match.querySelector('district')?.textContent.trim() || '';
+            const town = match.querySelector('townname')?.textContent.trim() || '';
+            if (elements.pledgePartyTag) {
+                elements.pledgePartyTag.textContent = party;
+                elements.pledgePartyTag.className = 'pledge-party-tag ' +
+                    (party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent');
+            }
+            if (elements.pledgeLeaderDetails) elements.pledgeLeaderDetails.textContent = `${state}-${normalizeDistrict(district)}`;
+            if (elements.pledgeLeaderAdditional) elements.pledgeLeaderAdditional.textContent = town ? `from ${town}, ${state}` : '';
+        }
+
+        // Photo from BioGuide
+        const photoUrl = buildBioguidePhotoUrl(bioguideId);
+        if (elements.pledgeImage) {
+            elements.pledgeImage.onerror = () => {
+                if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'flex';
+                elements.pledgeImage.style.display = 'none';
+            };
+            elements.pledgeImage.src = photoUrl;
+            elements.pledgeImage.style.display = 'block';
+            if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'none';
+        }
+        const profileUrl = buildCongressProfileUrl(bioguideId);
+        if (elements.pledgeLeaderWebsite) {
+            elements.pledgeLeaderWebsite.href = profileUrl;
+            elements.pledgeLeaderWebsite.textContent = profileUrl;
+        }
+    } catch (error) {
+        console.error('fetchSpeakerAsChair failed:', error);
+        if (elements.pledgeLeaderName) elements.pledgeLeaderName.textContent = 'Speaker of the House';
+    }
 }
 
 async function fetchSpeakerMemberInfo(leaderName) {
@@ -1801,7 +2259,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
         if (!match || !match.bioguideId) return;
 
         elements.speakerMemberName.textContent = match.fullName;
-        elements.speakerMemberDetails.textContent = `${match.state}-${match.district}`;
+        elements.speakerMemberDetails.textContent = `${match.state}-${normalizeDistrict(match.district)}`;
         elements.speakerPartyTag.textContent = match.party || '';
         elements.speakerPartyTag.className = 'pledge-party-tag';
         if (match.party === 'R') elements.speakerPartyTag.classList.add('republican');
@@ -1811,9 +2269,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
         const websiteUrl = buildCongressProfileUrl(match.bioguideId);
         elements.speakerMemberWebsite.href = websiteUrl;
         elements.speakerMemberWebsite.textContent = websiteUrl;
-        elements.speakerMemberDescription.textContent = `Speaker pro tempore designation resolved from Clerk member data.`;
-
-        const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
+const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
         if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'none';
         if (elements.speakerImage) {
             elements.speakerImage.onerror = () => {
@@ -1873,27 +2329,242 @@ function updateSpeakerSection(items) {
 
     elements.speakerMemberTitle.textContent = 'Speaker Pro Tempore';
     elements.speakerMemberName.textContent = leaderName;
-    elements.speakerMemberDescription.textContent = description;
 
     fetchSpeakerMemberInfo(leaderName);
+}
+
+const ORDINAL_TO_NUM = {
+    first:1,second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10,
+    eleventh:11,twelfth:12,thirteenth:13,fourteenth:14,fifteenth:15,sixteenth:16,
+    seventeenth:17,eighteenth:18,nineteenth:19,twentieth:20,
+    'twenty-first':21,'twenty-second':22,'twenty-third':23,'twenty-fourth':24,'twenty-fifth':25,
+    'twenty-sixth':26,'twenty-seventh':27,'twenty-eighth':28,'twenty-ninth':29,'thirtieth':30,
+    'thirty-first':31,'thirty-second':32,'thirty-third':33,'thirty-fourth':34,'thirty-fifth':35,
+    'thirty-sixth':36,'thirty-seventh':37,'thirty-eighth':38,'thirty-ninth':39,'fortieth':40,
+    'forty-first':41,'forty-second':42,'forty-third':43,'forty-fourth':44,'forty-fifth':45,
+    'forty-sixth':46,'forty-seventh':47,'forty-eighth':48,'forty-ninth':49,'fiftieth':50,
+    'fifty-first':51,'fifty-second':52,'fifty-third':53,
+};
+
+const STATE_NAME_TO_ABBR = {
+    'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+    'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+    'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS',
+    'Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA',
+    'Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT',
+    'Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM',
+    'New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK',
+    'Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC',
+    'South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT',
+    'Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY',
+    'District of Columbia':'DC','Puerto Rico':'PR','Guam':'GU','Virgin Islands':'VI',
+    'American Samoa':'AS','Northern Mariana Islands':'MP',
+};
+
+function normalizeDistrict(district) {
+    if (!district) return '';
+    if (/^at\s+large$/i.test(district.trim())) return 'AL';
+    return district.trim().replace(/^(\d+)(?:st|nd|rd|th)$/i, '$1');
+}
+
+function formatOathDistrict(districtText) {
+    // "Eleventh District, State of New Jersey" → "NJ-11"
+    // "At Large District, State of Wyoming" → "WY-AL"
+    const stateMatch = districtText.match(/State\s+of\s+(.+)$/i);
+    const stateAbbr = stateMatch ? (STATE_NAME_TO_ABBR[stateMatch[1].trim()] || stateMatch[1].trim()) : '';
+
+    const ordinalMatch = districtText.match(/^([\w-]+)\s+District/i);
+    let districtNum = '';
+    if (ordinalMatch) {
+        const word = ordinalMatch[1].toLowerCase();
+        if (word === 'at' || word === 'at large') {
+            districtNum = 'AL';
+        } else {
+            districtNum = ORDINAL_TO_NUM[word] ? String(ORDINAL_TO_NUM[word]) : ordinalMatch[1];
+        }
+    }
+
+    return stateAbbr && districtNum ? `${stateAbbr}-${districtNum}` : districtText;
+}
+
+// Update oath section with member information
+function updateOathSection(items) {
+    if (!elements.oathMemberTitle || !items || items.length === 0) return;
+
+    const oathItem = items.find(i => /^OATH OF OFFICE\b/i.test(i.description.trim()));
+    if (!oathItem) return;
+
+    const description = oathItem.description;
+
+    if (oathItem.pubDate && elements.oathTime) {
+        elements.oathTime.textContent = new Date(oathItem.pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+
+    // "OATH OF OFFICE - Representative-elect Jane Smith, Eleventh District, State of New Jersey, presented herself..."
+    const afterDash = description.replace(/^OATH\s+OF\s+OFFICE\s*[-–]\s*/i, '').trim();
+
+    const singleMatch = afterDash.match(/^(?:Representative|Delegate|Resident\s+Commissioner)-elect\s+([^,]+),/i);
+    let memberName = '';
+    let districtFormatted = '';
+
+    if (singleMatch) {
+        memberName = singleMatch[1].trim();
+        const afterName = afterDash.slice(singleMatch[0].length);
+        const districtMatch = afterName.match(/^([^,]+(?:,\s*State\s+of\s+[^,]+)?)(?:,\s*presented|,\s*[a-z]|$)/i);
+        if (districtMatch) {
+            districtFormatted = formatOathDistrict(districtMatch[1].trim());
+        }
+    }
+
+    elements.oathMemberTitle.textContent = 'Representative-elect';
+    elements.oathMemberName.textContent = memberName || '--';
+    elements.oathMemberDescription.textContent = districtFormatted || '';
+
+    if (elements.oathImagePlaceholder) {
+        elements.oathImagePlaceholder.style.display = 'flex';
+    }
+    const oathImg = document.getElementById('oath-image');
+    if (oathImg) {
+        oathImg.style.display = 'none';
+        oathImg.removeAttribute('src');
+    }
+}
+
+// Update message section
+function updateMessageSection(items) {
+    if (!elements.messageFromLine || !items || items.length === 0) return;
+
+    const msgItem = items.find(i =>
+        i.description.toLowerCase().startsWith('the house received a message from')
+    );
+    if (!msgItem) return;
+
+    const raw = msgItem.description;
+    const firstPeriod = raw.indexOf('.');
+    const fromLine = firstPeriod > -1 ? raw.slice(0, firstPeriod + 1) : raw;
+    const body = firstPeriod > -1 ? raw.slice(firstPeriod + 1).trim() : '';
+
+    elements.messageFromLine.textContent = decodeHtml(fromLine);
+    elements.messageBody.textContent = decodeHtml(body);
+
+    if (msgItem.pubDate && elements.messageTime) {
+        elements.messageTime.textContent = new Date(msgItem.pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+}
+
+// Update cert-election section
+function updateCertElectionSection(items) {
+    const item = items.find(i => /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()));
+    if (!item) return;
+    if (elements.certElectionText) {
+        elements.certElectionText.textContent = decodeHtml(item.description);
+    }
+}
+
+// Update cert-electoral section
+function updateCertElectoralSection(items) {
+    const item = items.find(i => /^CERTIFICATION OF ELECTORAL VOTES\b/i.test(i.description.trim()));
+    if (!item) return;
+    if (elements.certElectoralText) {
+        elements.certElectoralText.textContent = decodeHtml(item.description);
+    }
+}
+
+// Update sine die section
+function updateSineDieSection(items) {
+    if (!items || items.length === 0) return;
+    const latest = items[0].description;
+    if (elements.sineDieDescriptionLine) {
+        elements.sineDieDescriptionLine.textContent = decodeHtml(latest) || 'The House stands adjourned sine die.';
+    }
+    if (items[0].pubDate && elements.sineDieTime) {
+        elements.sineDieTime.textContent = new Date(items[0].pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+}
+
+// Update new session section
+function updateNewSessionSection(items) {
+    const item = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('20th amendment') && (d.includes('convened') || d.includes('new legislative day'));
+    });
+    if (!item) return;
+    if (elements.newSessionDescriptionLine) {
+        elements.newSessionDescriptionLine.textContent = decodeHtml(item.description);
+    }
+}
+
+// Update admin oath section
+function updateAdminOathSection(items) {
+    const item = items.find(i => /^ADMINISTRATION OF THE OATH OF OFFICE\b/i.test(i.description.trim()));
+    if (!item) return;
+
+    const afterDash = item.description.replace(/^ADMINISTRATION OF THE OATH OF OFFICE\s*[-–]\s*/i, '').trim();
+    const lower = afterDash.toLowerCase();
+
+    let administeredBy = 'The Speaker';
+    let recipients = afterDash.replace(/\.$/, '').trim();
+
+    if (lower.includes('dean of the house')) {
+        administeredBy = 'Dean of the House';
+        recipients = 'Speaker-elect';
+    } else if (lower.includes('members-elect')) {
+        administeredBy = 'The Speaker';
+        // Try to extract congress number e.g. "119th Congress"
+        const congressMatch = afterDash.match(/(\d+(?:st|nd|rd|th)\s+Congress)/i);
+        recipients = congressMatch ? `Members-elect of the ${congressMatch[1]}` : 'Members-elect';
+    } else if (lower.includes('officers')) {
+        administeredBy = 'The Speaker';
+        recipients = 'Officers of the House';
+    } else {
+        administeredBy = 'The Speaker';
+        const periodIdx = afterDash.indexOf('.');
+        recipients = (periodIdx > -1 ? afterDash.slice(0, periodIdx) : afterDash).trim();
+    }
+
+    if (elements.adminOathAdministeredBy) elements.adminOathAdministeredBy.textContent = administeredBy;
+    if (elements.adminOathRecipients) elements.adminOathRecipients.textContent = recipients;
+}
+
+// Update joint session section
+function updateJointSessionSection(items) {
+    const item = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()));
+    if (!item) return;
+
+    // Strip label prefix: "JOINT SESSION CALLED TO ORDER - " or "JOINT SESSION - "
+    const stripped = decodeHtml(item.description.replace(/^JOINT SESSION\s*(?:CALLED TO ORDER\s*)?[-–]\s*/i, '').trim());
+
+    if (elements.jointSessionDescriptionLine) {
+        elements.jointSessionDescriptionLine.textContent = stripped || 'The House and Senate have convened in Joint Session.';
+    }
+
+    if (elements.jointSessionPresidingLine) {
+        if (stripped.toLowerCase().includes('vice president')) {
+            elements.jointSessionPresidingLine.textContent = 'Presided over by the Vice President';
+        } else {
+            elements.jointSessionPresidingLine.textContent = '';
+        }
+    }
 }
 
 // Fetch member data from House Clerk and get photo
 async function fetchMemberPhotoFromClerkData(leaderName) {
     try {
-        // Parse member name to extract last name and state
-        // Format: "Mr. Thompson of PA" or "Ms. Smith of CA"
-        const nameMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+(\w+)\s+of\s+(\w+)/i);
+        // Parse member name - handle "Mr. Thompson of PA", "Mr. McGarvey", or "Morgan McGarvey"
+        const withStateMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)?\s*(\w+)\s+of\s+(\w+)/i);
+        const prefixMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+([\w]+(?:\s+[\w]+)*)/i);
+        const lastName = withStateMatch ? withStateMatch[1]
+            : prefixMatch ? prefixMatch[1].split(/\s+/).pop()
+            : leaderName.split(/\s+/).pop();
+        const state = withStateMatch ? withStateMatch[2] : null;
 
-        if (!nameMatch) {
-            showPledgePlaceholder();
-            return;
-        }
-
-        const lastName = nameMatch[1];
-        const state = nameMatch[2];
-
-        console.log(`Searching for member: ${lastName} from ${state}`);
+        console.log(`Searching for member: ${lastName}${state ? ' from ' + state : ''}`);
 
         // Try to fetch member data from the worker first
         const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
@@ -1934,12 +2605,12 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         let bestMatch = null;
         let bestScore = 0;
 
-        // Find matching members for the state
+        // Find matching members — filter by state only when we have one
         for (const member of members) {
             const stateElement = member.querySelector('state');
             const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
-            
-            if (memberState.toUpperCase() !== state.toUpperCase()) {
+
+            if (state && memberState.toUpperCase() !== state.toUpperCase()) {
                 continue;
             }
             
@@ -1989,7 +2660,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             console.log('Updating display with member info');
             // Update the display with member information
             elements.pledgeLeaderName.textContent = bestMatch.fullName;
-            elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${bestMatch.district}`;
+            elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${normalizeDistrict(bestMatch.district)}`;
             
             // Set party tag
             elements.pledgePartyTag.textContent = bestMatch.party;
@@ -2146,7 +2817,7 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
 
 function buildBioguidePhotoUrl(bioguideId) {
     if (!bioguideId) return '';
-    return `https://unitedstates.github.io/images/congress/225x275/${bioguideId}.jpg`;
+    return `https://bioguide.congress.gov/bioguide/photo/${bioguideId.charAt(0)}/${bioguideId}.jpg`;
 }
 
 function buildCongressProfileUrl(bioguideId) {
@@ -2271,6 +2942,19 @@ async function getTimeAgo(date) {
     if (diff < 3600) return `${Math.floor(diff / 60)} MIN AGO`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} HOURS AGO`;
     return `${Math.floor(diff / 86400)} DAYS AGO`;
+}
+
+function decodeHtml(text) {
+    return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#x27;/g, "'")
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+        .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
 }
 
 function escapeHtml(text) {
@@ -2640,52 +3324,43 @@ function initWeatherPanel() {
     });
 }
 
+// Console API: setDate('mm/dd/yyyy') / clearDate()
+window.setDate = function(dateStr) {
+    const normalized = dateStr.replace(/-/g, '/');
+    if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(normalized)) {
+        return 'Invalid date format. Use mm/dd/yyyy, e.g. setDate("05/17/2026")';
+    }
+    proceedingsDateOverride = normalized;
+    updateProceedingsFeed();
+    fetchBillsThisWeek();
+    return `Proceedings date set to ${normalized} — refreshing...`;
+};
+window.clearDate = function() {
+    proceedingsDateOverride = null;
+    updateProceedingsFeed();
+    fetchBillsThisWeek();
+    return 'Date override cleared — back to live feed';
+};
+
 // Global mode switch function for console access
 window.setMode = function(mode) {
-    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge'];
+    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session'];
     if (!validModes.includes(mode)) {
         console.error(`Invalid mode: ${mode}. Valid modes are: ${validModes.join(', ')}`);
         return;
     }
 
-    const modeToggleBtn = document.getElementById('mode-toggle-btn');
-    if (modeToggleBtn) {
-        modeToggleBtn.setAttribute('data-mode', mode);
-        localStorage.setItem('displayMode', mode);
-        updateModeClasses(mode);
-        console.log(`Mode switched to: ${mode}`);
-    }
+    updateModeClasses(mode);
 };
 
-// Initialize mode toggle
+// Initialize mode (no toggle — mode is driven by DomeWatch)
 function initModeToggle() {
-    const modeToggleBtn = document.getElementById('mode-toggle-btn');
-    if (!modeToggleBtn) return;
-
-    // Set initial mode to vote
-    let currentMode = localStorage.getItem('displayMode') || 'vote';
-    modeToggleBtn.setAttribute('data-mode', currentMode);
-
-    // Apply initial mode classes
-    updateModeClasses(currentMode);
-
-    // Handle toggle click
-    modeToggleBtn.addEventListener('click', () => {
-        // Cycle through visible modes only: vote -> recess -> debate -> vote
-        const visibleModes = ['vote', 'recess', 'debate'];
-        const currentIndex = visibleModes.indexOf(currentMode);
-        currentMode = visibleModes[(currentIndex + 1) % visibleModes.length];
-
-        modeToggleBtn.setAttribute('data-mode', currentMode);
-        localStorage.setItem('displayMode', currentMode);
-
-        updateModeClasses(currentMode);
-    });
+    updateModeClasses('vote');
 }
 
 function updateModeClasses(mode) {
     // Remove all mode classes
-    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode');
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode');
 
     // Add appropriate class based on mode
     if (mode === 'recess') {
@@ -2702,6 +3377,30 @@ function updateModeClasses(mode) {
         document.body.classList.add('speaker-mode');
     } else if (mode === 'pledge') {
         document.body.classList.add('pledge-mode');
+    } else if (mode === 'journal') {
+        document.body.classList.add('journal-mode');
+    } else if (mode === 'morning-hour') {
+        document.body.classList.add('morning-hour-mode');
+    } else if (mode === 'one-minute') {
+        document.body.classList.add('one-minute-mode');
+    } else if (mode === 'special-order') {
+        document.body.classList.add('special-order-mode');
+    } else if (mode === 'joint-meeting') {
+        document.body.classList.add('joint-meeting-mode');
+    } else if (mode === 'message') {
+        document.body.classList.add('message-mode');
+    } else if (mode === 'cert-election') {
+        document.body.classList.add('cert-election-mode');
+    } else if (mode === 'cert-electoral') {
+        document.body.classList.add('cert-electoral-mode');
+    } else if (mode === 'sine-die') {
+        document.body.classList.add('sine-die-mode');
+    } else if (mode === 'new-session') {
+        document.body.classList.add('new-session-mode');
+    } else if (mode === 'admin-oath') {
+        document.body.classList.add('admin-oath-mode');
+    } else if (mode === 'joint-session') {
+        document.body.classList.add('joint-session-mode');
     }
 }
 
@@ -3019,16 +3718,6 @@ async function updateAbsenteeTracking() {
             return;
         }
 
-        // Simple test data first
-        const testAbsentees = [
-            { name: 'Test Member 1', party: 'rep', state: 'CA', voteType: 'Not Voting' },
-            { name: 'Test Member 2', party: 'dem', state: 'NY', voteType: 'Not Voting' }
-        ];
-        
-        await updateAbsenteeUI(testAbsentees, '155', 2026);
-        console.log('Test data displayed');
-        
-        // Now try real data
         try {
             const indexResponse = await fetch(CONGRESS_INDEX_CONFIG.workerUrl);
             if (!indexResponse.ok) throw new Error(`HTTP ${indexResponse.status}`);
@@ -3056,14 +3745,16 @@ async function updateAbsenteeTracking() {
                     
                     absentees.push({
                         name: name.trim(),
-                        party: party.toLowerCase().includes('r') ? 'rep' : 'dem',
+                        party: party === 'R' ? 'rep' : party === 'D' ? 'dem' : 'ind',
                         state: state.trim(),
                         voteType: vote
                     });
                 }
             });
-            
-            await updateAbsenteeUI(absentees, rollNumber, 2026);
+
+            const rollDate = xmlDoc.querySelector('action-date')?.textContent?.trim() || '';
+            const rollTime = xmlDoc.querySelector('action-time')?.textContent?.trim() || '';
+            await updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime);
             console.log('Real data displayed:', absentees.length, 'absentees');
             
         } catch (error) {
@@ -3077,31 +3768,39 @@ async function updateAbsenteeTracking() {
 }
 
 // Update absentee UI with data from roll call
-async function updateAbsenteeUI(absentees, rollNumber, year) {
+async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
     if (!elements.absenteeList) return;
-    
+
     // Update counts
     const totalAbsentees = absentees.length;
     const repAbsentees = absentees.filter(a => a.party === 'rep').length;
     const demAbsentees = absentees.filter(a => a.party === 'dem').length;
-    
-        if (elements.absenteeRep) elements.absenteeRep.textContent = repAbsentees;
+    const indAbsentees = absentees.filter(a => a.party === 'ind').length;
+
+    if (elements.absenteeRep) elements.absenteeRep.textContent = repAbsentees;
     if (elements.absenteeDem) elements.absenteeDem.textContent = demAbsentees;
     if (elements.absenteeTotal) elements.absenteeTotal.textContent = totalAbsentees;
-    
-    // Update roll call info with date/time
+    if (elements.absenteeInd) elements.absenteeInd.textContent = indAbsentees;
+    if (elements.absenteeIndMetric) {
+        elements.absenteeIndMetric.style.display = indAbsentees > 0 ? '' : 'none';
+    }
+
+    // Update roll call info with date/time from XML
     if (elements.absenteeRollInfo) {
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-        });
-        const timeStr = now.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false 
-        });
-        elements.absenteeRollInfo.textContent = `Roll ${rollNumber} • ${dateStr} ${timeStr}`;
+        let dateTimeStr = '';
+        if (rollDate) {
+            // rollDate format: "15-May-2026"
+            const parts = rollDate.split('-');
+            if (parts.length === 3) {
+                const months = {jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec'};
+                const mon = months[parts[1].toLowerCase().slice(0,3)] || parts[1];
+                dateTimeStr = `${mon} ${parseInt(parts[0])}`;
+            } else {
+                dateTimeStr = rollDate;
+            }
+        }
+        if (rollTime) dateTimeStr += ` ${rollTime}`;
+        elements.absenteeRollInfo.textContent = `Roll ${rollNumber}${dateTimeStr ? ' • ' + dateTimeStr : ''}`;
     }
     
     // Update absentee list
@@ -3118,7 +3817,8 @@ async function updateAbsenteeUI(absentees, rollNumber, year) {
             const parsedName = parseAbsenteeRollName(absentee.name);
             const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
             const displayName = match ? match.fullName : parsedName.rawName;
-            const displayState = match ? match.state : absentee.state;
+            const nd = match ? normalizeDistrict(match.district) : '';
+            const displayState = match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state;
             const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
             const photoStyle = photoUrl ? 'display:block;' : '';
             const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
@@ -3141,7 +3841,7 @@ async function updateAbsenteeUI(absentees, rollNumber, year) {
         elements.absenteeList.innerHTML = '<div class="absentee-member">ALL MEMBERS VOTED</div>';
     }
     
-    console.log(`Roll ${rollNumber} (${year}): ${totalAbsentees} absentees`);
+    console.log(`Roll ${rollNumber} (${rollDate}): ${totalAbsentees} absentees`);
 }
 
 // Update API Status Indicator
