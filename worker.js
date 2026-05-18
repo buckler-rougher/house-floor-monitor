@@ -484,8 +484,10 @@ async function fetchCongressBillSummary(billId) {
     const summaries = data.summaries || [];
     if (!summaries.length) return null;
     const raw = summaries[0].text || '';
-    // Strip HTML tags from summary text
-    return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() || null;
+    // Strip HTML tags, then strip leading bill citation ("H.R. 1234—" or "H.R. 1234 (119th Congress)—")
+    let text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    text = text.replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+(?:\s*\([^)]*\))?\s*[—–\-:]\s*/i, '');
+    return text || null;
   } catch {
     return null;
   }
