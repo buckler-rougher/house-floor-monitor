@@ -3453,6 +3453,89 @@ function init() {
     fetchHouseMakeup();
     fetchBlueskyFeed();
     fetchNewsTicker();
+
+    initHlsPlayer();
+}
+
+async function initHlsPlayer() {
+    const video = document.getElementById('player');
+    const fallback = document.getElementById('video-fallback');
+    const endedLabel = document.getElementById('video-ended-label');
+    if (!video) return;
+
+    function showFallback() {
+        video.style.visibility = 'hidden';
+        fallback.style.display = 'flex';
+        fallback.setAttribute('aria-hidden', 'false');
+        if (endedLabel) endedLabel.hidden = true;
+    }
+
+    function hideFallback() {
+        fallback.style.display = 'none';
+        fallback.setAttribute('aria-hidden', 'true');
+        video.style.visibility = 'visible';
+    }
+
+    let streamUrl, isLive;
+    try {
+        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/hls-url');
+        const data = await resp.json();
+        if (!data.url) {
+            // House not in session — hide the HLS panel entirely; YouTube embed is sufficient
+            const videoSection = video.closest('.video-section');
+            if (videoSection) videoSection.style.display = 'none';
+            return;
+        }
+        streamUrl = data.url;
+        isLive = data.isLive;
+    } catch {
+        showFallback();
+        return;
+    }
+
+    function onReady() {
+        hideFallback();
+        if (isLive) {
+            if (endedLabel) endedLabel.hidden = true;
+            video.play().catch(() => {});
+        } else {
+            if (endedLabel) endedLabel.hidden = false;
+            // Seek to last frame once duration is known
+            function seekToEnd() {
+                if (isFinite(video.duration) && video.duration > 1) {
+                    video.currentTime = video.duration - 0.5;
+                }
+            }
+            if (isFinite(video.duration) && video.duration > 1) {
+                seekToEnd();
+            } else {
+                video.addEventListener('loadedmetadata', seekToEnd, { once: true });
+                video.addEventListener('durationchange', seekToEnd, { once: true });
+            }
+        }
+    }
+
+    if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls({ maxBufferLength: 30 });
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+        hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) showFallback();
+        });
+        video.addEventListener('ended', () => {
+            if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+        video.addEventListener('loadedmetadata', onReady, { once: true });
+        video.addEventListener('error', showFallback);
+        video.addEventListener('ended', () => {
+            if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
+        });
+    } else {
+        showFallback();
+    }
 }
 
 // Fetch news ticker from RSS feeds
