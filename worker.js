@@ -488,9 +488,39 @@ async function fetchCongressBillSummary(billId) {
     let text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     text = text.replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+(?:\s*\([^)]*\))?\s*[—–\-:]\s*/i, '');
     return text || null;
+    // Note: bill-title prefix stripping happens in the enrichment pass where bill.title is available
   } catch {
     return null;
   }
+}
+
+async function fetchBillMeta(billId) {
+  const parsed = billIdToCongressType(billId);
+  if (!parsed) return null;
+  try {
+    const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
+    const key = `?api_key=${CONGRESS_API_KEY}`;
+    const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
+      fetch(`${base}${key}`, { headers: { 'Accept': 'application/json' } }),
+      fetch(`${base}/cosponsors${key}&limit=100`, { headers: { 'Accept': 'application/json' } }),
+      fetch(`${base}/committees${key}&limit=5`, { headers: { 'Accept': 'application/json' } }),
+    ]);
+    const result = {};
+    if (billResp.ok) {
+      const data = await billResp.json();
+      const s = (data.bill?.sponsors || [])[0];
+      if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
+    }
+    if (cosponsorsResp.ok) {
+      const data = await cosponsorsResp.json();
+      result.cosponsors = (data.cosponsors || []).map(c => ({ bioguideId: c.bioguideId, firstName: c.firstName, lastName: c.lastName, party: c.party, state: c.state, district: c.district ?? null }));
+    }
+    if (committeesResp.ok) {
+      const data = await committeesResp.json();
+      result.committees = (data.committees || []).map(c => c.name).filter(Boolean).slice(0, 3);
+    }
+    return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
+  } catch { return null; }
 }
 
 async function fetchCongressBillStatus(billId) {
@@ -772,12 +802,13 @@ async function handleBills(request) {
     if (ruleSection) parseBillsFromSection(ruleSection, true);
     if (suspensionSection) parseBillsFromSection(suspensionSection, false);
 
-    // Second pass: enrich with Congress.gov floor actions + summaries
+    // Second pass: enrich with Congress.gov floor actions + summaries + sponsor/cosponsors/committees
     const allBills = [...ruleBills, ...suspensionBills];
     await Promise.all(allBills.map(async (bill) => {
-      const [congressStatus, summary] = await Promise.all([
+      const [congressStatus, summary, meta] = await Promise.all([
         fetchCongressBillStatus(bill.id),
         fetchCongressBillSummary(bill.id),
+        fetchBillMeta(bill.id),
       ]);
       if (congressStatus) {
         bill.status = congressStatus.status;
@@ -787,7 +818,20 @@ async function handleBills(request) {
           bill.latestActionDate = new Date(congressStatus.actionDate + 'T00:00:00Z');
         }
       }
-      if (summary) bill.summary = summary;
+      if (summary) {
+        // Strip bill title if Congress.gov repeats it verbatim at the start of the summary
+        let text = summary;
+        const titleTrimmed = (bill.title || '').trim();
+        if (titleTrimmed && text.startsWith(titleTrimmed)) {
+          text = text.slice(titleTrimmed.length).replace(/^[\s.,:;—–\-]+/, '').trim();
+        }
+        bill.summary = text || summary;
+      }
+      if (meta) {
+        if (meta.sponsor) bill.sponsor = meta.sponsor;
+        if (meta.cosponsors) bill.cosponsors = meta.cosponsors;
+        if (meta.committees) bill.committees = meta.committees;
+      }
     }));
     
     return new Response(JSON.stringify({
