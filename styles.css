@@ -3157,7 +3157,7 @@ font-family: var(--font-mono);
     }
 }
 
-/* Recess Mode */
+/* Recess Mode — hide YouTube (HLS panel takes its place) */
 body.recess-mode .youtube-panel,
 body.recess-mode .vote-display,
 body.recess-mode .progress-section,
