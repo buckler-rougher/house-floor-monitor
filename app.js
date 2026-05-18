@@ -1308,6 +1308,8 @@ const BILLS_CONFIG = {
 };
 
 // State for bills data
+const billDataMap = new Map();
+
 let billsData = {
     ruleBills: [],
     suspensionBills: [],
@@ -1435,17 +1437,19 @@ function updateBillsDisplay() {
         if (debug) debug.remove();
     }
     
+    billDataMap.clear();
+
     // Update rule bills
     if (billsData.ruleBills.length > 0) {
-        const ruleHtml = billsData.ruleBills.map(bill => createBillCard(bill)).join('');
+        const ruleHtml = billsData.ruleBills.map(bill => createBillCard(bill, 'rule')).join('');
         elements.ruleBillsList.innerHTML = ruleHtml;
     } else {
         elements.ruleBillsList.innerHTML = '<div class="no-bills">No bills under rule</div>';
     }
-    
+
     // Update suspension bills
     if (billsData.suspensionBills.length > 0) {
-        const suspensionHtml = billsData.suspensionBills.map(bill => createBillCard(bill)).join('');
+        const suspensionHtml = billsData.suspensionBills.map(bill => createBillCard(bill, 'suspension')).join('');
         elements.suspensionBillsList.innerHTML = suspensionHtml;
     } else {
         elements.suspensionBillsList.innerHTML = '<div class="no-bills">No bills under suspension</div>';
@@ -1457,29 +1461,98 @@ function updateBillsDisplay() {
     }
 }
 
-function createBillCard(bill) {
+function createBillCard(bill, procedure) {
+    billDataMap.set(bill.id, { ...bill, procedure });
     const statusClass = bill.status || 'scheduled';
     const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✕' : '';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
-    const summaryHtml = bill.summary
-        ? `<div class="bill-summary">${bill.summary.length > 300 ? bill.summary.slice(0, 300) + '…' : bill.summary}</div>`
-        : '';
 
     return `
-        <div class="bill-card">
+        <div class="bill-card" data-bill-id="${bill.id}" role="button" tabindex="0">
             <div class="bill-status ${statusClass}">${statusSymbol}</div>
             <div class="bill-info">
                 <div class="bill-id">${bill.id}</div>
                 <div class="bill-title">${bill.title}</div>
-                ${summaryHtml}
                 <div class="bill-meta">
                     <div class="bill-action">${actionText}</div>
                     <div class="bill-date">${actionDate}</div>
                 </div>
             </div>
+            <div class="bill-chevron">›</div>
         </div>
     `;
+}
+
+function billIdToCongressUrl(billId) {
+    const norm = billId.trim().replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
+    const m = norm.match(/^(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.Con\.Res\.|S\.J\.Res\.|S\.Res\.|S\.)\s*(\d+)$/i);
+    if (!m) return null;
+    const typeMap = {
+        'h.r.': 'house-bill', 'h.con.res.': 'house-concurrent-resolution',
+        'h.j.res.': 'house-joint-resolution', 'h.res.': 'house-resolution',
+        's.': 'senate-bill', 's.con.res.': 'senate-concurrent-resolution',
+        's.j.res.': 'senate-joint-resolution', 's.res.': 'senate-resolution',
+    };
+    const slug = typeMap[m[1].toLowerCase()];
+    return slug ? `https://www.congress.gov/bill/119th-congress/${slug}/${m[2]}` : null;
+}
+
+function openBillModal(billId) {
+    const bill = billDataMap.get(billId);
+    if (!bill) return;
+
+    const statusClass = bill.status || 'scheduled';
+    const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE IN PROGRESS' }[bill.status] || 'SCHEDULED';
+    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : 'UNDER RULE';
+    const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
+    const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
+    const congressUrl = billIdToCongressUrl(bill.id);
+
+    let overlay = document.getElementById('bill-modal-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'bill-modal-overlay';
+        overlay.className = 'bill-modal-overlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
+    }
+
+    overlay.innerHTML = `
+        <div class="bill-modal" role="dialog" aria-modal="true">
+            <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
+            <div class="bill-modal-header">
+                <span class="bill-modal-id">${bill.id}</span>
+                <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
+                <span class="bill-modal-badge procedure">${procedureLabel}</span>
+            </div>
+            <h2 class="bill-modal-title">${bill.title}</h2>
+            ${bill.summary ? `
+                <div class="bill-modal-section">
+                    <div class="bill-modal-section-label">SUMMARY</div>
+                    <p class="bill-modal-summary">${bill.summary}</p>
+                </div>` : ''}
+            ${actionText ? `
+                <div class="bill-modal-section">
+                    <div class="bill-modal-section-label">LATEST ACTION</div>
+                    <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}</span>` : ''}</div>
+                </div>` : ''}
+            ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+        </div>
+    `;
+    overlay.hidden = false;
+    document.getElementById('bill-modal-close').addEventListener('click', closeBillModal);
+    document.addEventListener('keydown', onBillModalKey);
+}
+
+function closeBillModal() {
+    const overlay = document.getElementById('bill-modal-overlay');
+    if (overlay) overlay.hidden = true;
+    document.removeEventListener('keydown', onBillModalKey);
+}
+
+function onBillModalKey(e) {
+    if (e.key === 'Escape') closeBillModal();
 }
 
 // Auto-switch mode based on latest proceeding
@@ -3422,6 +3495,21 @@ function init() {
     fetchNewsTicker();
 
     initHlsPlayer();
+
+    // Bill card click → modal
+    const billsSection = document.querySelector('.bills-section');
+    if (billsSection) {
+        billsSection.addEventListener('click', e => {
+            const card = e.target.closest('[data-bill-id]');
+            if (card) openBillModal(card.dataset.billId);
+        });
+        billsSection.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const card = e.target.closest('[data-bill-id]');
+                if (card) { e.preventDefault(); openBillModal(card.dataset.billId); }
+            }
+        });
+    }
 }
 
 async function initHlsPlayer() {
