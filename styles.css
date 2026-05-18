@@ -1432,21 +1432,6 @@ body {
   isolation: isolate;
 }
 
-.chamber-rings {
-  position: absolute;
-  inset: 8px 6% 22px;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  background:
-    radial-gradient(ellipse at 50% 100%, transparent 0 20%, rgba(139, 148, 158, 0.13) 20.3% 20.8%, transparent 21.1% 28%,
-      rgba(139, 148, 158, 0.12) 28.3% 28.8%, transparent 29.1% 36%,
-      rgba(139, 148, 158, 0.11) 36.3% 36.8%, transparent 37.1% 44%,
-      rgba(139, 148, 158, 0.1) 44.3% 44.8%, transparent 45.1% 52%,
-      rgba(139, 148, 158, 0.09) 52.3% 52.8%, transparent 53.1% 60%,
-      rgba(139, 148, 158, 0.08) 60.3% 60.8%, transparent 61.1%);
-  opacity: 0.9;
-  pointer-events: none;
-  z-index: 0;
-}
 
 .center-aisle {
   content: '';
