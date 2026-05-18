@@ -56,15 +56,14 @@ body {
 
 /* Footer */
 .footer {
-    padding: 24px 200px;
-    margin-top: auto;
-    background: var(--bg-elevated);
-    border-top: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .footer-section {
-    margin-bottom: 16px;
+    width: 100%;
 }
 
 .footer-title {
@@ -73,14 +72,19 @@ body {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 12px;
     display: block;
+    padding: 12px 24px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .footer-sources {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
+    width: 100%;
+    padding: 16px 24px;
+    box-sizing: border-box;
 }
 
 .source-group {
@@ -120,13 +124,19 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 12px;
+    padding: 10px 24px;
     border-top: 1px solid var(--border-color);
+    background: var(--bg-elevated);
 }
 
 .footer-text {
     font-size: 11px;
     color: var(--text-secondary);
+}
+
+.footer-disclaimer {
+    font-size: 10px;
+    color: var(--text-muted);
 }
 
 .footer-updated {
@@ -1817,8 +1827,9 @@ body {
 }
 
 .absentee-list {
-  max-height: 120px;
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
   font-size: 10px;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -1931,18 +1942,6 @@ body {
   font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono);
-}
-
-/* Footer */
-.footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-top: auto;
 }
 
 .weather-attribution {
@@ -2698,10 +2697,11 @@ font-family: var(--font-mono);
     margin-top: 1px;
 }
 
-.bill-status.pending {
-    background: rgba(255, 193, 7, 0.1);
-    color: var(--accent-amber);
-    border: 1px solid rgba(255, 193, 7, 0.3);
+.bill-status.pending,
+.bill-status.scheduled {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid rgba(100, 116, 139, 0.3);
 }
 
 .bill-status.passed {
@@ -2714,6 +2714,12 @@ font-family: var(--font-mono);
     background: rgba(248, 81, 73, 0.1);
     color: var(--accent-red);
     border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.bill-status.roll-call {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--accent-amber);
+    border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .bill-info {
@@ -2739,6 +2745,14 @@ font-family: var(--font-mono);
     line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.bill-summary {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-bottom: 4px;
+    opacity: 0.8;
 }
 
 .bill-meta {
@@ -3116,9 +3130,13 @@ font-family: var(--font-mono);
         grid-template-columns: 1fr 1fr;
     }
 
-    .footer {
+    .footer-sources {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-bottom {
         flex-direction: column;
-        gap: 8px;
+        gap: 4px;
         align-items: flex-start;
     }
 }
@@ -3216,6 +3234,346 @@ body.debate-mode .debate-section {
 }
 
 /* Prayer Section */
+/* One Minute Speeches */
+.one-minute-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.one-minute-mode .one-minute-section {
+    display: block;
+}
+
+body.one-minute-mode .vote-display,
+body.one-minute-mode .progress-section,
+body.one-minute-mode .vote-header,
+body.one-minute-mode .threshold-panel,
+body.one-minute-mode .quorum-panel,
+body.one-minute-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.one-minute-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.one-minute-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #92400e;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.one-minute-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.one-minute-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.one-minute-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.one-minute-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.one-minute-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.one-minute-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.one-minute-explainer {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.one-minute-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.one-minute-pill {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(180, 83, 9, 0.12);
+    border: 1px solid rgba(180, 83, 9, 0.35);
+    color: #d97706;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Special Order Speeches */
+.special-order-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.special-order-mode .special-order-section {
+    display: block;
+}
+
+body.special-order-mode .vote-display,
+body.special-order-mode .progress-section,
+body.special-order-mode .vote-header,
+body.special-order-mode .threshold-panel,
+body.special-order-mode .quorum-panel,
+body.special-order-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.special-order-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.special-order-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #1e3a5f;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.special-order-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.special-order-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.special-order-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.special-order-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.special-order-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.special-order-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.special-order-explainer {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.special-order-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.special-order-pill {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(30, 58, 95, 0.15);
+    border: 1px solid rgba(56, 108, 176, 0.35);
+    color: #58a6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Morning-Hour Debate */
+.morning-hour-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.morning-hour-mode .morning-hour-section {
+    display: block;
+}
+
+body.morning-hour-mode .vote-display,
+body.morning-hour-mode .progress-section,
+body.morning-hour-mode .vote-header,
+body.morning-hour-mode .threshold-panel,
+body.morning-hour-mode .quorum-panel,
+body.morning-hour-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.morning-hour-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.morning-hour-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #1b6b3a;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.morning-hour-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.morning-hour-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.morning-hour-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.morning-hour-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.morning-hour-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.morning-hour-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.morning-hour-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.morning-hour-pill {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(46, 160, 67, 0.12);
+    border: 1px solid rgba(46, 160, 67, 0.35);
+    color: #3fb950;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.morning-hour-explainer {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.speech-mode-ai-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.speech-mode-ai-note a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+}
+
+.speech-mode-ai-note a:hover {
+    text-decoration-color: currentColor;
+}
+
 .prayer-section {
     display: none;
     padding: 24px 0;
@@ -3634,8 +3992,8 @@ body.pledge-mode .pledge-section {
 }
 
 .pledge-party-tag.democrat {
-    background: rgba(63, 185, 80, 0.1);
-    color: #3fb950;
+    background: rgba(88, 166, 255, 0.1);
+    color: #58a6ff;
 }
 
 .pledge-party-tag.independent {
@@ -4069,6 +4427,435 @@ body.pledge-mode .floor-grid-panel {
     display: none !important;
 }
 
+/* Message Mode */
+.message-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.message-mode .message-section {
+    display: block;
+}
+
+body.message-mode .vote-display,
+body.message-mode .progress-section,
+body.message-mode .vote-header,
+body.message-mode .threshold-panel,
+body.message-mode .quorum-panel,
+body.message-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.message-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.message-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #1a3a4a;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.message-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.message-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.message-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.message-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.message-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.message-from-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.message-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+/* Joint Meeting Mode */
+.joint-meeting-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.joint-meeting-mode .joint-meeting-section {
+    display: block;
+}
+
+body.joint-meeting-mode .vote-display,
+body.joint-meeting-mode .progress-section,
+body.joint-meeting-mode .vote-header,
+body.joint-meeting-mode .threshold-panel,
+body.joint-meeting-mode .quorum-panel,
+body.joint-meeting-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.joint-meeting-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.joint-meeting-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #4a1942;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.joint-meeting-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.joint-meeting-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.joint-meeting-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.joint-meeting-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.joint-meeting-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.joint-meeting-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* ── Journal Mode ────────────────────────────── */
+.journal-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.journal-mode .journal-section {
+    display: block;
+}
+
+body.journal-mode .vote-display,
+body.journal-mode .progress-section,
+body.journal-mode .vote-header,
+body.journal-mode .threshold-panel,
+body.journal-mode .quorum-panel,
+body.journal-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.journal-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.journal-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #5a3e9b;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.journal-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.journal-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.journal-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.journal-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.journal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.journal-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    position: relative;
+}
+
+.journal-image,
+.journal-image-placeholder {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+}
+
+.journal-image {
+    object-fit: cover;
+    border-radius: 12px;
+    display: none;
+    border: 2px solid var(--border-color);
+}
+
+.journal-image[src]:not([src=""]) {
+    display: block;
+}
+
+.journal-image-placeholder {
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.journal-info {
+    flex: 1;
+}
+
+.journal-chair-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.journal-chair-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0 0 8px 0;
+}
+
+.journal-chair-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.journal-party-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    border: 1px solid currentColor;
+}
+
+.journal-party-tag.republican {
+    background: rgba(248, 81, 73, 0.1);
+    color: #f85149;
+}
+
+.journal-party-tag.democrat {
+    background: rgba(88, 166, 255, 0.1);
+    color: #58a6ff;
+}
+
+.journal-party-tag.independent {
+    background: rgba(163, 113, 247, 0.1);
+    color: #a371f7;
+}
+
+.journal-chair-details {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.journal-chair-additional {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 4px 0 8px 0;
+}
+
+.journal-chair-website {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    word-break: break-all;
+}
+
+.journal-chair-website:hover {
+    color: var(--accent-blue);
+}
+
+/* Approval badge + text block */
+.journal-approval-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.journal-approval-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(63, 185, 80, 0.12);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: #3fb950;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+
+.journal-check-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #3fb950;
+    flex-shrink: 0;
+}
+
+.journal-approval-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+#journal-last-session-date {
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+/* Constitution quote block */
+.journal-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.journal-text-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.journal-scroll-icon {
+    font-size: 48px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.journal-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.journal-constitution-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.journal-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
 body.silence-mode .vote-display,
 body.silence-mode .progress-section,
 body.silence-mode .vote-header,
@@ -4094,4 +4881,721 @@ body.speaker-mode .threshold-panel,
 body.speaker-mode .quorum-panel,
 body.speaker-mode .floor-grid-panel {
     display: none !important;
+}
+
+/* ── Joint Session Mode ────────────────────────────── */
+.joint-session-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.joint-session-mode .joint-session-section {
+    display: block;
+}
+
+body.joint-session-mode .vote-display,
+body.joint-session-mode .progress-section,
+body.joint-session-mode .vote-header,
+body.joint-session-mode .threshold-panel,
+body.joint-session-mode .quorum-panel,
+body.joint-session-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.joint-session-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.joint-session-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #4a2800;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.joint-session-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.joint-session-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.joint-session-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.joint-session-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.joint-session-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.joint-session-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.joint-session-presiding-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+/* ── Certification of Election Mode ────────────────────────────── */
+.cert-election-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.cert-election-mode .cert-election-section {
+    display: block;
+}
+
+body.cert-election-mode .vote-display,
+body.cert-election-mode .progress-section,
+body.cert-election-mode .vote-header,
+body.cert-election-mode .threshold-panel,
+body.cert-election-mode .quorum-panel,
+body.cert-election-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.cert-election-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.cert-election-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #1a3a58;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.cert-election-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.cert-election-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cert-election-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.cert-election-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.cert-election-approval-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.cert-election-approval-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(63, 185, 80, 0.12);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: #3fb950;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+
+.cert-election-check-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #3fb950;
+    flex-shrink: 0;
+}
+
+.cert-election-approval-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.cert-election-quote-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.cert-election-quote-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.cert-election-quote-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.cert-election-constitution-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.cert-election-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+/* ── Certification of Electoral Votes Mode ────────────────────────────── */
+.cert-electoral-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.cert-electoral-mode .cert-electoral-section {
+    display: block;
+}
+
+body.cert-electoral-mode .vote-display,
+body.cert-electoral-mode .progress-section,
+body.cert-electoral-mode .vote-header,
+body.cert-electoral-mode .threshold-panel,
+body.cert-electoral-mode .quorum-panel,
+body.cert-electoral-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.cert-electoral-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.cert-electoral-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #7c1d1d;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.cert-electoral-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.cert-electoral-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cert-electoral-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.cert-electoral-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.cert-electoral-approval-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.cert-electoral-approval-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(63, 185, 80, 0.12);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: #3fb950;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+
+.cert-electoral-check-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #3fb950;
+    flex-shrink: 0;
+}
+
+.cert-electoral-approval-text {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.cert-electoral-quote-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.cert-electoral-quote-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.cert-electoral-quote-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.cert-electoral-constitution-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.cert-electoral-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+/* ── Sine Die Mode ────────────────────────────── */
+.sine-die-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.sine-die-mode .sine-die-section {
+    display: block;
+}
+
+body.sine-die-mode .vote-display,
+body.sine-die-mode .progress-section,
+body.sine-die-mode .vote-header,
+body.sine-die-mode .threshold-panel,
+body.sine-die-mode .quorum-panel,
+body.sine-die-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.sine-die-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.sine-die-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #374151;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.sine-die-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.sine-die-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sine-die-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.sine-die-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.sine-die-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.sine-die-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.sine-die-quote-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.sine-die-quote-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.sine-die-quote-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.sine-die-constitution-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.sine-die-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+/* ── New Session Mode ────────────────────────────── */
+.new-session-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.new-session-mode .new-session-section {
+    display: block;
+}
+
+body.new-session-mode .vote-display,
+body.new-session-mode .progress-section,
+body.new-session-mode .vote-header,
+body.new-session-mode .threshold-panel,
+body.new-session-mode .quorum-panel,
+body.new-session-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.new-session-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.new-session-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #0d3321;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.new-session-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.new-session-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.new-session-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.new-session-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.new-session-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.new-session-description-line {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.new-session-quote-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.new-session-quote-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.new-session-quote-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.new-session-constitution-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.new-session-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+/* ── Admin Oath Mode ────────────────────────────── */
+.admin-oath-section {
+    display: none;
+    padding: 24px 0;
+    margin-bottom: 24px;
+}
+
+body.admin-oath-mode .admin-oath-section {
+    display: block;
+}
+
+body.admin-oath-mode .vote-display,
+body.admin-oath-mode .progress-section,
+body.admin-oath-mode .vote-header,
+body.admin-oath-mode .threshold-panel,
+body.admin-oath-mode .quorum-panel,
+body.admin-oath-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.admin-oath-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.admin-oath-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #2c1a4a;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.admin-oath-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.admin-oath-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.admin-oath-source {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.admin-oath-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.admin-oath-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.admin-oath-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    position: relative;
+}
+
+.admin-oath-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: rgba(136, 153, 170, 0.1);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+}
+
+.admin-oath-info {
+    flex: 1;
+}
+
+.admin-oath-administered-by {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.admin-oath-recipients {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0 0 12px 0;
+}
+
+.admin-oath-text-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: 8px;
+}
+
+.admin-oath-text-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.admin-oath-text {
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.7;
+}
+
+.admin-oath-source-inline {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.admin-oath-source-inline a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.admin-oath-source-inline a:hover {
+    text-decoration: underline;
 }
