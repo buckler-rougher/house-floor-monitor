@@ -3560,7 +3560,9 @@ function init() {
     setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
     setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 1 minute
     setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
-    
+    fetchCommitteeFeeds();
+    setInterval(fetchCommitteeFeeds, 5 * 60 * 1000); // Refresh committee feeds every 5 minutes
+
     // Initialize
     initWeatherPanel();
     
@@ -3671,6 +3673,75 @@ async function initHlsPlayer() {
     } else {
         showFallback();
     }
+}
+
+// ── Committee Live Feeds ─────────────────────────────────────────────────────
+
+async function fetchCommitteeFeeds() {
+    try {
+        const res = await fetch(`${API_CONFIG.baseUrl}/committee-live`);
+        if (!res.ok) return;
+        const { committees = [] } = await res.json();
+        renderCommitteeTiles(committees);
+    } catch { /* silent — committee feeds are supplemental */ }
+}
+
+function renderCommitteeTiles(committees) {
+    const panel = document.getElementById('committee-feeds-panel');
+    const grid  = document.getElementById('committee-feeds-grid');
+    const count = document.getElementById('committee-feeds-live-count');
+    if (!panel || !grid) return;
+
+    if (!committees.length) {
+        panel.hidden = true;
+        return;
+    }
+
+    panel.hidden = false;
+    count.textContent = `${committees.length} LIVE`;
+
+    const newHtml = committees.map(c => {
+        const time = c.date
+            ? new Date(c.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
+            : '';
+        const meta = [c.type, time].filter(Boolean).join(' · ');
+        return `
+        <div class="committee-tile"
+             data-channel-id="${c.channelId}"
+             data-video-id="${c.videoId || ''}">
+            <div class="committee-tile-live-dot"></div>
+            ${c.thumbnail ? `<img class="committee-tile-thumb" src="${c.thumbnail}" alt="" loading="lazy">` : ''}
+            <div class="committee-tile-overlay">
+                <span class="committee-tile-name">${c.name}</span>
+                <span class="committee-tile-meta">${meta}</span>
+            </div>
+        </div>`;
+    }).join('');
+
+    setIfChanged(grid, newHtml);
+
+    // Attach hover handlers to any tile that doesn't already have one
+    grid.querySelectorAll('.committee-tile').forEach(tile => {
+        if (tile.dataset.hoverBound) return;
+        tile.dataset.hoverBound = '1';
+
+        tile.addEventListener('mouseenter', () => {
+            if (tile.querySelector('iframe')) return;
+            const iframe = document.createElement('iframe');
+            iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+            iframe.allowFullscreen = true;
+            const vid = tile.dataset.videoId;
+            iframe.src = vid
+                ? `https://www.youtube.com/embed/${vid}?autoplay=1&mute=1`
+                : `https://www.youtube.com/embed/live_stream?channel=${tile.dataset.channelId}&autoplay=1&mute=1`;
+            tile.appendChild(iframe);
+        });
+
+        tile.addEventListener('mouseleave', () => {
+            const iframe = tile.querySelector('iframe');
+            if (iframe) { iframe.src = ''; iframe.remove(); }
+        });
+    });
 }
 
 // Fetch news ticker from RSS feeds
