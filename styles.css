@@ -1436,7 +1436,7 @@ body {
 .center-aisle {
   content: '';
   position: absolute;
-  bottom: 21px;
+  bottom: 20px;
   left: 50%;
   width: 42px;
   height: 218px;
