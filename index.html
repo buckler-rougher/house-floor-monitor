@@ -761,6 +761,25 @@
                 </div>
             </div>
 
+            <div class="video-section">
+                <div class="panel-header">
+                    <span class="panel-label">LIVE FLOOR FEED</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
+                    </div>
+                </div>
+                <div class="video-container" aria-live="polite">
+                    <video id="player" controls playsinline muted></video>
+                    <div id="video-ended-label" class="video-ended-label" hidden>SESSION ENDED</div>
+                    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
+                        <div>
+                            <strong>Stream unavailable</strong>
+                            <div class="subtitle">The live feed is currently offline or unavailable.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Floor Proceedings -->
             <div class="proceedings-panel">
                 <div class="panel-header">
@@ -902,25 +921,6 @@
                 </div>
             </div>
 
-            <div class="video-section">
-    <div class="panel-header">
-        <span class="panel-label">LIVE FLOOR FEED</span>
-        <div class="panel-header-right">
-            <span class="panel-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
-        </div>
-    </div>
-    <div class="video-container" aria-live="polite">
-    <video id="player" controls playsinline muted></video>
-    <div id="video-ended-label" class="video-ended-label" hidden>SESSION ENDED</div>
-    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
-      <div>
-        <strong>Stream unavailable</strong>
-        <div class="subtitle">The live feed is currently offline or unavailable.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
         <!-- Bottom Ticker -->
         <div class="bottom-ticker" id="bottom-ticker">
             <div class="ticker-content" id="ticker-content">
@@ -989,6 +989,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260518e"></script>
+    <script src="app.js?v=20260518f"></script>
 </body>
 </html>

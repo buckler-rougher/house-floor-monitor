@@ -3251,76 +3251,43 @@ let videoLoaded = false;
 function initWeatherPanel() {
     const panel = elements.weatherPanel;
     const video = elements.capcamVideo;
-    
-    console.log('Weather panel init, HLS.js available:', !!window.Hls);
-    
+
+    // Load capcam immediately so it's buffered and ready on first hover
+    video.muted = true;
+    const isLocalFile = window.location.protocol === 'file:';
+
+    if (window.Hls && Hls.isSupported()) {
+        capcamHls = new Hls({ maxBufferLength: 30, enableWorker: !isLocalFile, autoStartLoad: true });
+        capcamHls.loadSource(CAPCAM_URL);
+        capcamHls.attachMedia(video);
+        capcamHls.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoLoaded = true;
+            // Don't play yet — wait for first hover
+        });
+        capcamHls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) { capcamHls.destroy(); capcamHls = null; videoLoaded = false; }
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = CAPCAM_URL;
+        const onReady = () => { videoLoaded = true; };
+        video.addEventListener('loadedmetadata', onReady, { once: true });
+        video.addEventListener('canplay', onReady, { once: true });
+        video.addEventListener('error', () => { videoLoaded = false; });
+        video.load();
+    }
+
+    // Hover shows/plays, leave pauses
     panel.addEventListener('mouseenter', () => {
-        console.log('Weather panel hover');
-        
-        if (!videoLoaded) {
-            video.muted = true; // Keep muted for autoplay
-            
-            if (window.Hls && Hls.isSupported()) {
-                console.log('Using HLS.js');
-                // Disable worker on local files (Safari blocks blob URLs from file:// protocol)
-                const isLocalFile = window.location.protocol === 'file:';
-                capcamHls = new Hls({ 
-                    maxBufferLength: 30,
-                    enableWorker: !isLocalFile
-                });
-                capcamHls.loadSource(CAPCAM_URL);
-                capcamHls.attachMedia(video);
-                
-                capcamHls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    console.log('HLS manifest parsed');
-                    videoLoaded = true;
-                    video.play().catch(err => console.log('Play error:', err));
-                });
-                
-                capcamHls.on(Hls.Events.ERROR, (event, data) => {
-                    console.error('HLS Error:', data);
-                    if (data.fatal) {
-                        capcamHls.destroy();
-                        videoLoaded = false;
-                    }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                console.log('Using native HLS (Safari)');
-                video.src = CAPCAM_URL;
-                
-                // Safari sometimes fires canplay instead of loadedmetadata
-                const onReady = () => {
-                    console.log('Video ready (Safari)');
-                    videoLoaded = true;
-                    video.play().catch(err => console.log('Play error:', err));
-                };
-                
-                video.addEventListener('loadedmetadata', onReady, { once: true });
-                video.addEventListener('canplay', onReady, { once: true });
-                
-                video.addEventListener('error', (err) => {
-                    console.error('Video error:', err);
-                    console.error('Video error code:', video.error?.code);
-                    console.error('Video error message:', video.error?.message);
-                    videoLoaded = false;
-                });
-                
-                // Force load for Safari
-                video.load();
-            } else {
-                console.error('HLS not supported');
-            }
-        } else {
-            console.log('Video already loaded, resuming');
+        if (videoLoaded) {
             video.play().catch(() => {});
+        } else if (capcamHls) {
+            // Still loading — play as soon as manifest is ready
+            capcamHls.once(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
         }
     });
-    
+
     panel.addEventListener('mouseleave', () => {
-        console.log('Weather panel leave');
-        if (videoLoaded) {
-            video.pause();
-        }
+        video.pause();
     });
 }
 
