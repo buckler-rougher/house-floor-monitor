@@ -114,6 +114,21 @@ body {
     text-decoration: underline;
 }
 
+/* Shared style for all member profile links (pledge, speaker, journal chair) */
+.pledge-leader-website,
+.speaker-member-website,
+.journal-chair-website {
+    font-size: 12px;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+    text-decoration: none;
+}
+.pledge-leader-website:hover,
+.speaker-member-website:hover,
+.journal-chair-website:hover {
+    text-decoration: underline;
+}
+
 .static-source {
     font-size: 10px;
     color: var(--text-muted);
@@ -1140,6 +1155,20 @@ body {
 @media (max-width: 640px) {
   .video-header { padding: 12px 16px; }
   .video-label, .video-source { font-size: 11px; }
+
+  .footer-sources {
+    grid-template-columns: 1fr;
+  }
+
+  .bill-modal-overlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .bill-modal {
+    max-height: 96vh;
+    border-radius: 12px 12px 0 0;
+  }
 }
 
 /* Weather Panel */
@@ -1518,7 +1547,17 @@ body {
 .seat.nay { background: var(--accent-red); border-color: rgba(248, 81, 73, 0.9); box-shadow: 0 0 8px rgba(248, 81, 73, 0.55); }
 .seat.present { background: var(--accent-amber); border-color: rgba(210, 153, 34, 0.9); box-shadow: 0 0 8px rgba(210, 153, 34, 0.55); }
 
+@media (max-width: 1200px) {
+  .main-display {
+    padding: 0 80px;
+  }
+}
+
 @media (max-width: 900px) {
+  .main-display {
+    padding: 0 24px;
+  }
+
   .grid-header {
     align-items: flex-start;
     flex-direction: column;
@@ -3393,6 +3432,10 @@ font-family: var(--font-mono);
         grid-template-columns: 1fr 1fr;
     }
 
+    .main-display {
+        padding: 0;
+    }
+
     .footer-sources {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -3401,6 +3444,16 @@ font-family: var(--font-mono);
         flex-direction: column;
         gap: 4px;
         align-items: flex-start;
+    }
+
+    .bill-modal {
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: 8px;
+    }
+
+    .bill-modal-overlay {
+        padding: 16px;
     }
 }
 
@@ -4279,16 +4332,7 @@ body.pledge-mode .pledge-section {
 
 .pledge-leader-website {
     display: inline-block;
-    font-size: 12px;
-    color: var(--accent-blue);
-    font-family: var(--font-mono);
-    text-decoration: none;
     margin-top: 4px;
-    word-break: break-all;
-}
-
-.pledge-leader-website:hover {
-    text-decoration: underline;
 }
 
 .pledge-header-right {
@@ -4633,16 +4677,7 @@ body.pledge-mode .pledge-section {
 
 .speaker-member-website {
     display: inline-block;
-    font-size: 12px;
-    color: var(--accent-blue);
-    font-family: var(--font-mono);
-    text-decoration: none;
     margin-top: 4px;
-    word-break: break-all;
-}
-
-.speaker-member-website:hover {
-    text-decoration: underline;
 }
 
 .speaker-member-description {
@@ -5024,15 +5059,8 @@ body.journal-mode .floor-grid-panel {
 }
 
 .journal-chair-website {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-family: var(--font-mono);
-    word-break: break-all;
-}
-
-.journal-chair-website:hover {
-    color: var(--accent-blue);
+    display: inline-block;
+    margin-top: 4px;
 }
 
 /* Approval badge + text block */
