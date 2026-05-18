@@ -3870,11 +3870,11 @@ function renderArchSeats() {
     const h = container.offsetHeight || 280;
     const nRows = US_CHAMBER_LAYOUT.rows.length;
     const cx = w / 2;
-    const floorY = h - 26;
-    const innerXR = w * 0.16, outerXR = w * 0.43;
-    const innerYR = h * 0.22, outerYR = h * 0.72;
-    const arcStart = Math.PI * 0.17;  // leftStart
-    const arcEnd   = Math.PI * 0.83;  // rightEnd
+    const floorY = h * 0.93;
+    const innerXR = w * 0.06, outerXR = w * 0.47;
+    const innerYR = h * 0.10, outerYR = h * 0.78;
+    const arcStart = Math.PI * 0.05;
+    const arcEnd   = Math.PI * 0.95;
     const steps = 80;
 
     // Draw SVG arc guides using the same math as the dots
@@ -3927,15 +3927,15 @@ function createUsChamberLayout(container, config) {
     const width = container.offsetWidth || 720;
     const height = container.offsetHeight || 280;
     const centerX = width / 2;
-    const floorY = height - 26;
-    const innerXRadius = width * 0.16;
-    const outerXRadius = width * 0.43;
-    const innerYRadius = height * 0.22;
-    const outerYRadius = height * 0.72;
-    const leftStart = Math.PI * 0.17;
-    const leftEnd = Math.PI * 0.47;
-    const rightStart = Math.PI * 0.53;
-    const rightEnd = Math.PI * 0.83;
+    const floorY = height * 0.93;
+    const innerXRadius = width * 0.06;
+    const outerXRadius = width * 0.47;
+    const innerYRadius = height * 0.10;
+    const outerYRadius = height * 0.78;
+    const leftStart = Math.PI * 0.05;
+    const leftEnd   = Math.PI * 0.46;
+    const rightStart = Math.PI * 0.54;
+    const rightEnd   = Math.PI * 0.95;
     const seats = [];
 
     config.rows.forEach((count, rowIdx) => {
