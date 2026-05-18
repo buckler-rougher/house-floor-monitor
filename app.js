@@ -3481,9 +3481,7 @@ async function initHlsPlayer() {
         const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/hls-url');
         const data = await resp.json();
         if (!data.url) {
-            // House not in session — hide the HLS panel entirely; YouTube embed is sufficient
-            const videoSection = video.closest('.video-section');
-            if (videoSection) videoSection.style.display = 'none';
+            showFallback();
             return;
         }
         streamUrl = data.url;
