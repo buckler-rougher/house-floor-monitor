@@ -3157,15 +3157,14 @@ font-family: var(--font-mono);
     }
 }
 
-/* Recess Mode — hide YouTube (HLS panel takes its place) */
+/* Recess Mode — hide vote/YouTube panels (HLS panel takes YouTube's place) */
 body.recess-mode .youtube-panel,
 body.recess-mode .vote-display,
 body.recess-mode .progress-section,
 body.recess-mode .vote-header,
 body.recess-mode .threshold-panel,
 body.recess-mode .quorum-panel,
-body.recess-mode .floor-grid-panel,
-body.recess-mode #capcam-video {
+body.recess-mode .floor-grid-panel {
     display: none !important;
 }
 
