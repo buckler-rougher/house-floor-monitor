@@ -7,14 +7,31 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// Maximum age (in hours) for items shown in the news scroll — easy to tune
+const NEWS_MAX_AGE_HOURS = 48;
+
+// Nitter instances to try for each Twitter account (first success wins)
+const NITTER_INSTANCES = [
+  'https://nitter.privacydev.net',
+  'https://nitter.poast.org',
+  'https://nitter.1d4.us',
+  'https://nitter.cz',
+];
+
+// Twitter accounts to include in the news scroll
+const TWITTER_FEEDS = [
+  { handle: 'JakeSherman', label: 'SHERMAN' },
+  { handle: 'mkraju',      label: 'RAJU' },
+  { handle: 'jamiedupree', label: 'DUPREE' },
+];
+
 const RSS_FEEDS = {
   proceedings: 'https://clerk.house.gov/Home/Feed',
   news: [
     'https://www.politico.com/rss/playbook.xml',
     'https://thehill.com/homenews/feed/',
     'https://www.rollcall.com/feed/',
-    'https://nitter.privacydev.net/JakeSherman/rss',
-    'https://nitter.poast.org/JakeSherman/rss'
+    // Twitter feeds are fetched dynamically in handleNews via TWITTER_FEEDS + NITTER_INSTANCES
   ],
   uscp: 'https://www.uscp.gov/daily-arrests',
   bills: 'https://docs.house.gov/BillsThisWeek-RSS.xml',
@@ -22,7 +39,7 @@ const RSS_FEEDS = {
   airportDelays: 'https://nasstatus.faa.gov/api/airport-status-information',
   memberData: 'https://clerk.house.gov/xml/lists/MemberData.xml',
   congressIndex: 'https://clerk.house.gov/evs/2026/index.asp',
-  bluesky: 'https://bskyrss.com/did:plc:cr26c7oguulx6ipxdy6bf2it.xml'
+  bluesky: 'https://bskyrss.com/did:plc:sqqvdfeilp5ozvkq3ullwtqo.xml'
 };
 
 // DomeWatch API configuration
@@ -30,6 +47,9 @@ const DOMEWATCH_CONFIG = {
   apiKey: 'dw_WukWf8avaMpRU7uk7UyHi94ny1pHFsE8',
   baseUrl: 'https://data.domewatch.us/v1'
 };
+
+const CONGRESS_API_KEY = '5o7xqvVsCGdjdAIAdDLbdgpayABFrAtPuSfJo3EL';
+const CURRENT_CONGRESS = 119;
 
 const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator';
 const STREAM_FALLBACK_KEY = '__domewatch_stream_fallback__';
@@ -127,7 +147,10 @@ function parseRSSFeed(xmlText, feedType = 'proceedings') {
         if (url.includes('politico')) return 'POLITICO';
         if (url.includes('thehill')) return 'THE HILL';
         if (url.includes('rollcall')) return 'ROLL CALL';
-        if (url.includes('jakesherman') || url.includes('nitter') || url.includes('sherman')) return 'SHERMAN';
+        // Match Twitter handles by checking for the handle in the nitter URL path
+        for (const tf of TWITTER_FEEDS) {
+          if (url.includes(`/${tf.handle.toLowerCase()}/`)) return tf.label;
+        }
         return 'NEWS';
       };
       
@@ -191,22 +214,88 @@ function getTimeAgo(date) {
   }
 }
 
-async function handleProceedings() {
+function parseViewFloorActionsHtml(html) {
   try {
+    const items = [];
+    // Each row has a hidden span with "MM/DD/YYYY HH:MM:SS" and an Activity td
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch;
+    while ((rowMatch = rowRegex.exec(html)) !== null) {
+      const row = rowMatch[1];
+      // Extract hidden datetime span: <span style="display:none;">05/15/2026 11:41:57</span>
+      const dtMatch = row.match(/<span[^>]*style="display:none;"[^>]*>([\d\/]+ [\d:]+)<\/span>/);
+      if (!dtMatch) continue;
+      const datetimeStr = dtMatch[1]; // "05/15/2026 11:41:57"
+      // Extract Activity td (last td with actual text)
+      const tds = [...row.matchAll(/<td[^>]*data-label="Activity"[^>]*>([\s\S]*?)<\/td>/gi)];
+      if (!tds.length) continue;
+      const tdContent = tds[0][1];
+      // Prefer the hidden span which always has the full untruncated text
+      const hiddenSpanMatch = tdContent.match(/<span[^>]*style="display:none;"[^>]*>([\s\S]*?)<\/span>/i);
+      const description = hiddenSpanMatch
+        ? hiddenSpanMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        : tdContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!description) continue;
+      // Parse datetime: "05/15/2026 11:41:57" -> ISO
+      const [datePart, timePart] = datetimeStr.split(' ');
+      const [month, day, year] = datePart.split('/');
+      const pubDate = new Date(`${year}-${month}-${day}T${timePart}-04:00`).toISOString();
+      // Extract time display from the nowrap span
+      const timeMatch = row.match(/<span class="nowrap">([\d:]+ [AP]M)<\/span>/);
+      const timeDisplay = timeMatch ? timeMatch[1] : timePart;
+      items.push({
+        title: description.substring(0, 100),
+        link: '',
+        description: description,
+        pubDate,
+        timestamp: new Date(pubDate).getTime(),
+        relativeTime: timeDisplay,
+        source: 'PROCEEDINGS'
+      });
+    }
+    return { items, error: items.length === 0 ? 'No proceedings items found' : null };
+  } catch (error) {
+    return { items: [], error: `Failed to parse floor actions: ${error.message}` };
+  }
+}
+
+async function handleProceedings(request) {
+  try {
+    const url = new URL(request.url);
+    const date = url.searchParams.get('date'); // expected: mm/dd/yyyy
+
+    if (date) {
+      const encodedDate = encodeURIComponent(date);
+      const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
+      const response = await fetch(actionsUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status} from ViewFloorActions`);
+      const html = await response.text();
+      const result = parseViewFloorActionsHtml(html);
+      return new Response(JSON.stringify(result), {
+        headers: {
+          ...CORS_HEADERS,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60'
+        }
+      });
+    }
+
     const xmlText = await fetchRSSFeed(RSS_FEEDS.proceedings);
     const result = parseRSSFeed(xmlText, 'proceedings');
-    
+
     return new Response(JSON.stringify(result), {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=120' // 2 minutes
+        'Cache-Control': 'public, max-age=120'
       }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ 
-      items: [], 
-      error: `Failed to fetch proceedings: ${error.message}` 
+    return new Response(JSON.stringify({
+      items: [],
+      error: `Failed to fetch proceedings: ${error.message}`
     }), {
       status: 500,
       headers: {
@@ -227,13 +316,30 @@ async function handleNews() {
       const xmlText = await fetchRSSFeed(feedUrl);
       const result = parseRSSFeed(xmlText, feedUrl);
       allItems.push(...result.items);
-      
-      if (result.error) {
-        errors.push(`${feedUrl}: ${result.error}`);
-      }
+      if (result.error) errors.push(`${feedUrl}: ${result.error}`);
     } catch (error) {
       errors.push(`${feedUrl}: ${error.message}`);
     }
+  }
+
+  // Fetch Twitter accounts via nitter, trying each instance until one succeeds
+  for (const account of TWITTER_FEEDS) {
+    let fetched = false;
+    for (const instance of NITTER_INSTANCES) {
+      const feedUrl = `${instance}/${account.handle}/rss`;
+      try {
+        const xmlText = await fetchRSSFeed(feedUrl);
+        const result = parseRSSFeed(xmlText, feedUrl);
+        if (!result.error && result.items.length > 0) {
+          allItems.push(...result.items);
+          fetched = true;
+          break;
+        }
+      } catch (_) {
+        // try next instance
+      }
+    }
+    if (!fetched) errors.push(`Twitter @${account.handle}: all nitter instances failed`);
   }
 
   // Fetch and parse USCP Daily Arrests
@@ -248,8 +354,8 @@ async function handleNews() {
   // Sort all items by timestamp
   allItems.sort((a, b) => b.timestamp - a.timestamp);
 
-  // Filter to only include articles from the last 72 hours (3 days)
-  const cutoffTime = Date.now() - (72 * 60 * 60 * 1000);
+  // Filter to items newer than NEWS_MAX_AGE_HOURS
+  const cutoffTime = Date.now() - (NEWS_MAX_AGE_HOURS * 60 * 60 * 1000);
   const filteredItems = allItems.filter(item => item.timestamp > cutoffTime);
 
   return new Response(JSON.stringify({ 
@@ -337,33 +443,108 @@ function getWeekRange(date) {
 
 function getWeekRangeForDate(date) {
     const current = new Date(date);
-    const day = current.getDay();
-    const start = new Date(current);
-
+    const day = current.getUTCDay();
+    // Normalize to UTC midnight so getTime() comparisons work across entries
+    const start = new Date(Date.UTC(
+        current.getUTCFullYear(), current.getUTCMonth(), current.getUTCDate()
+    ));
     if (day === 0) {
-        start.setDate(current.getDate() - 6);
+        start.setUTCDate(start.getUTCDate() - 6);
     } else {
-        start.setDate(current.getDate() - (day - 1));
+        start.setUTCDate(start.getUTCDate() - (day - 1));
     }
-
     const end = new Date(start);
-    end.setDate(start.getDate() + 4);
-
+    end.setUTCDate(start.getUTCDate() + 4);
     return { start, end };
 }
 
-async function handleBills() {
+// Map bill ID string to Congress.gov type slug
+function billIdToCongressType(billId) {
+  // Normalize spaces within type abbreviation: "H. Res." → "H.Res.", "H. Con. Res." → "H.Con.Res."
+  const norm = billId.trim().replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
+  const m = norm.match(/^(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.Con\.Res\.|S\.J\.Res\.|S\.Res\.|S\.)\s*(\d+)$/i);
+  if (!m) return null;
+  const typeMap = {
+    'h.r.': 'hr', 'h.con.res.': 'hconres', 'h.j.res.': 'hjres',
+    'h.res.': 'hres', 's.': 's', 's.con.res.': 'sconres',
+    's.j.res.': 'sjres', 's.res.': 'sres',
+  };
+  const slug = typeMap[m[1].toLowerCase()];
+  return slug ? { type: slug, number: m[2] } : null;
+}
+
+async function fetchCongressBillSummary(billId) {
+  const parsed = billIdToCongressType(billId);
+  if (!parsed) return null;
   try {
+    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/summaries?api_key=${CONGRESS_API_KEY}&limit=1&sort=updateDate+desc`;
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const summaries = data.summaries || [];
+    if (!summaries.length) return null;
+    const raw = summaries[0].text || '';
+    // Strip HTML tags from summary text
+    return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCongressBillStatus(billId) {
+  const parsed = billIdToCongressType(billId);
+  if (!parsed) return null;
+  try {
+    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${CONGRESS_API_KEY}&limit=20&sort=updateDate+desc`;
+    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const actions = (data.actions || []).filter(a => a.type === 'Floor');
+    for (const action of actions) {
+      const t = (action.text || '').toLowerCase();
+      const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
+                        t.includes('on passage passed') || t.includes('considered and passed') ||
+                        t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree');
+      const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
+      if (!isPassage && !isFailed) continue;
+      let statusText;
+      if (isFailed) {
+        statusText = 'Failed';
+      } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
+        statusText = 'Passed (voice vote)';
+      } else if (t.includes('yeas and nays') || t.includes('roll no') || t.includes('record vote no')) {
+        statusText = 'Passed (roll call)';
+      } else {
+        statusText = 'Passed';
+      }
+      return {
+        status: isFailed ? 'failed' : 'passed',
+        statusText,
+        actionDate: action.actionDate,
+        actionText: action.text
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function handleBills(request) {
+  try {
+    const url = new URL(request.url);
+    const dateParam = url.searchParams.get('date'); // e.g. "05/12/2026"
+
     // Fetch both House.gov bills and Bluesky updates
     const [billsXmlText, blueskyXmlText] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
       fetchRSSFeed(RSS_FEEDS.bluesky)
     ]);
-    
+
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
     if (!entryMatches) {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         ruleBills: [],
         suspensionBills: [],
         error: 'No entries found in bills feed'
@@ -375,12 +556,35 @@ async function handleBills() {
         }
       });
     }
-    
-    const now = new Date();
-    const { start: currentWeekStart, end: currentWeekEnd } = getWeekRangeForDate(now);
 
-    const currentWeekEntries = [];
-    const futureWeekEntries = [];
+    // Use provided date or now; for date override find the week containing that date
+    let referenceDate;
+    if (dateParam) {
+      const parts = dateParam.match(/(\d+)\/(\d+)\/(\d+)/);
+      referenceDate = parts
+        ? new Date(Date.UTC(Number(parts[3]), Number(parts[1]) - 1, Number(parts[2])))
+        : new Date();
+    } else {
+      referenceDate = new Date();
+    }
+    const { start: currentWeekStart } = getWeekRangeForDate(referenceDate);
+
+    // Parse "Week of Month Day, Year" from entry title to match by scheduled week,
+    // not by publication date (House posts next week's schedule mid-current-week).
+    const MONTHS = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+    function parseTitleWeekStart(title) {
+      const m = title.match(/week of\s+([A-Za-z]+)\s+(\d+),?\s*(\d{4})/i);
+      if (!m) return null;
+      const mon = MONTHS[m[1].toLowerCase().slice(0, 3)];
+      if (mon === undefined) return null;
+      const d = new Date(Date.UTC(Number(m[3]), mon, Number(m[2])));
+      return getWeekRangeForDate(d).start;
+    }
+
+    const matchingEntries = [];
+    const priorWeekStart = new Date(currentWeekStart);
+    priorWeekStart.setUTCDate(priorWeekStart.getUTCDate() - 7);
+    const priorEntries = [];
 
     for (const entryXml of entryMatches) {
       const titleMatch = entryXml.match(/<title[^>]*>([^<]*)<\/title>/);
@@ -397,27 +601,29 @@ async function handleBills() {
       const entryDate = new Date(updated);
       if (Number.isNaN(entryDate.getTime())) continue;
 
-      const entryWeekRange = getWeekRangeForDate(entryDate);
+      // Match by title-derived week start (most reliable)
+      const titleWeekStart = parseTitleWeekStart(title);
+      const weekStart = titleWeekStart || getWeekRangeForDate(entryDate).start;
+
       const entry = { title, content, updated, entryDate };
 
-      if (entryWeekRange.start.getTime() === currentWeekStart.getTime()) {
-        if (entryDate <= now) {
-          currentWeekEntries.push(entry);
-        } else {
-          futureWeekEntries.push(entry);
-        }
+      if (weekStart.getTime() === currentWeekStart.getTime()) {
+        matchingEntries.push(entry);
+      } else if (weekStart.getTime() === priorWeekStart.getTime()) {
+        priorEntries.push(entry);
       }
     }
 
-    const selectedEntry = currentWeekEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
-      || futureWeekEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
+    // Use most-recently-updated entry for the target week; fall back to prior week
+    const selectedEntry = matchingEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
+      || priorEntries.sort((a, b) => b.entryDate - a.entryDate)[0]
       || null;
 
     if (!selectedEntry) {
       return new Response(JSON.stringify({ 
         ruleBills: [],
         suspensionBills: [],
-        weekDate: getWeekRange(now),
+        weekDate: '',
         consideredBills: []
       }), {
         headers: {
@@ -434,30 +640,51 @@ async function handleBills() {
     
     if (blueskyEntryMatches) {
       for (const entryMatch of blueskyEntryMatches) {
-        const entryXml = entryMatch[0];
+        const entryXml = entryMatch;
         const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-        
+
         if (contentMatch) {
-          const cleanContent = contentMatch[1].replace(/<[^>]*>/g, '').trim();
-          const billIdMatch = cleanContent.match(/H\.?[Rr]\.? (\d+)/i);
-          
-          if (billIdMatch) {
-            const billId = `H.R. ${billIdMatch[1]}`;
-            let status = 'pending';
-            let statusText = 'Scheduled for consideration';
-            
-            if (cleanContent.includes('passed') || cleanContent.includes('agreed to')) {
+          // Decode HTML-encoded tags and entities
+          const raw = contentMatch[1]
+            .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+          const cleanContent = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+          // Match bill IDs: H.R. 1234, H.Con.Res. 75, H.Res. 12, S. 123, H.J.Res. 9
+          const billIdMatches = cleanContent.matchAll(/\b(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.)\s*(\d+)/gi);
+          for (const m of billIdMatches) {
+            const billId = `${m[1].replace(/\.$/, '').replace(/\bS$/, 'S.')} ${m[2]}`.trim();
+            // Normalize: "H.R. 1234", "H.Con.Res. 75", etc.
+            const normalized = `${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim();
+            const lc = cleanContent.toLowerCase();
+
+            let status = 'roll-call';
+            let statusText = 'Roll call vote';
+
+            if (/passed by voice vote/i.test(cleanContent)) {
+              status = 'passed';
+              statusText = 'Passed by voice vote';
+            } else if (/\b(passed|agreed to)\b/i.test(cleanContent)) {
               status = 'passed';
               statusText = 'Passed';
-            } else if (cleanContent.includes('failed') || cleanContent.includes('rejected')) {
+            } else if (/\b(failed|not agreed to|rejected)\b/i.test(cleanContent)) {
               status = 'failed';
               statusText = 'Failed';
-            } else if (cleanContent.includes('postponed')) {
+            } else if (/postponed/i.test(cleanContent)) {
               status = 'postponed';
               statusText = 'Postponed';
+            } else if (/vote.*began|began.*vote|passage|final passage/i.test(cleanContent)) {
+              status = 'roll-call';
+              statusText = 'Roll call vote';
+            } else {
+              continue; // Don't update status just from a mention without context
             }
-            
-            blueskyUpdates[billId] = { status, statusText };
+
+            // Only update if this is a stronger status than what we already have
+            const existing = blueskyUpdates[normalized];
+            const priority = { 'passed': 4, 'failed': 4, 'postponed': 3, 'roll-call': 2 };
+            if (!existing || (priority[status] || 0) >= (priority[existing.status] || 0)) {
+              blueskyUpdates[normalized] = { status, statusText };
+            }
           }
         }
       }
@@ -467,7 +694,9 @@ async function handleBills() {
     const ruleBills = [];
     const suspensionBills = [];
     
-    const weekDate = getWeekRange(now);
+    // Prefer the week stated in the entry title (e.g. "...the Week of May 18, 2026...")
+    const titleWeekMatch = selectedEntry.title.match(/week of (.+?)(?:\s*[-–]|$)/i);
+    const weekDate = titleWeekMatch ? `Week of ${titleWeekMatch[1].trim()}` : getWeekRange(referenceDate);
     const contentUpdatedAt = selectedEntry.updated;
 
     // Parse HTML content using regex
@@ -484,22 +713,15 @@ async function handleBills() {
     };
 
     const ruleHeaderMatch = content.match(/Items that may be considered pursuant to a rule/i);
-    const suspensionHeaderMatch = content.match(/Items that may be considered under suspension of rules/i);
+    const suspensionHeaderMatch = content.match(/Items that may be considered under suspension of the rules/i);
 
-    const ruleSection = extractSection(
-      content,
-      /Items that may be considered pursuant to a rule/i,
-      /Items that may be considered under suspension of rules/i
-    );
-    const suspensionSection = extractSection(
-      content,
-      /Items that may be considered under suspension of rules/i,
-      /<h[1-6][^>]*>.*?<\/h[1-6]>/i
-    );
+    // Both sections stop at the next h-tag so ordering doesn't matter
+    const nextHeader = /<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/i;
+    const ruleSection = extractSection(content, /Items that may be considered pursuant to a rule/i, nextHeader);
+    const suspensionSection = extractSection(content, /Items that may be considered under suspension of the rules/i, nextHeader);
 
     const parseBillsFromSection = (sectionHtml, isRule) => {
       const rows = sectionHtml.match(/<tr[^>]*class="floorItem"[^>]*>[\s\S]*?<\/tr>/g) || [];
-      console.log(`Found ${rows.length} floorItem rows in ${isRule ? 'rule' : 'suspension'} section`);
 
       for (const row of rows) {
         const legisNumMatch = row.match(/<td[^>]*class="legisNum"[^>]*>([\s\S]*?)<\/td>/);
@@ -511,35 +733,18 @@ async function handleBills() {
         const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
         if (!legisNum || !floorText || legisNum.includes('::')) continue;
 
-        let billStatus = 'pending';
-        let latestAction = 'Pending consideration';
+        // Default: bill is scheduled but not yet acted upon
+        let billStatus = 'scheduled';
+        let latestAction = 'Scheduled for consideration';
         let considered = false;
 
-        if (/(Passed|Agreed to)/i.test(floorText)) {
-          billStatus = 'passed';
-          latestAction = 'Passed';
-          considered = true;
-        } else if (/(Failed|Not Agreed to)/i.test(floorText)) {
-          billStatus = 'failed';
-          latestAction = 'Failed';
-          considered = true;
-        } else if (/Postponed/i.test(floorText)) {
-          billStatus = 'postponed';
-          latestAction = 'Postponed';
-          considered = true;
-        } else if (/Amended/i.test(floorText)) {
-          billStatus = 'amended';
-          latestAction = 'Amended';
-          considered = true;
-        } else if (/considered|consideration|reported|laid over|debated/i.test(floorText)) {
-          billStatus = 'considered';
-          latestAction = 'Considered';
+        // Check Bluesky updates for this bill (roll call vote announcements, outcomes)
+        const blueskyUpdate = blueskyUpdates[legisNum];
+        if (blueskyUpdate) {
+          billStatus = blueskyUpdate.status;
+          latestAction = blueskyUpdate.statusText;
           considered = true;
         }
-
-        const blueskyUpdate = blueskyUpdates[legisNum];
-        const finalStatus = blueskyUpdate ? blueskyUpdate.status : billStatus;
-        const finalStatusText = blueskyUpdate ? blueskyUpdate.statusText : latestAction;
 
         const bill = {
           id: legisNum,
@@ -548,10 +753,10 @@ async function handleBills() {
           isRule,
           description: '',
           pubDate: new Date(contentUpdatedAt),
-          status: finalStatus,
-          latestAction: finalStatusText,
+          status: billStatus,
+          latestAction: latestAction,
           latestActionDate: new Date(contentUpdatedAt),
-          considered: considered || !!blueskyUpdate
+          considered
         };
 
         if (isRule) {
@@ -564,6 +769,24 @@ async function handleBills() {
 
     if (ruleSection) parseBillsFromSection(ruleSection, true);
     if (suspensionSection) parseBillsFromSection(suspensionSection, false);
+
+    // Second pass: enrich with Congress.gov floor actions + summaries
+    const allBills = [...ruleBills, ...suspensionBills];
+    await Promise.all(allBills.map(async (bill) => {
+      const [congressStatus, summary] = await Promise.all([
+        fetchCongressBillStatus(bill.id),
+        fetchCongressBillSummary(bill.id),
+      ]);
+      if (congressStatus) {
+        bill.status = congressStatus.status;
+        bill.latestAction = congressStatus.statusText;
+        bill.considered = true;
+        if (congressStatus.actionDate) {
+          bill.latestActionDate = new Date(congressStatus.actionDate + 'T00:00:00Z');
+        }
+      }
+      if (summary) bill.summary = summary;
+    }));
     
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
@@ -766,8 +989,8 @@ async function handleBlueskyFeed() {
     
     if (entryMatches) {
       for (const entryMatch of entryMatches) {
-        const entryXml = entryMatch[0];
-        
+        const entryXml = entryMatch;
+
         const titleMatch = entryXml.match(/<title[^>]*>([^<]*)<\/title>/);
         const updatedMatch = entryXml.match(/<updated[^>]*>([^<]*)<\/updated>/);
         const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
@@ -1034,6 +1257,72 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
   });
 }
 
+async function handleLastSessionDate(request) {
+  try {
+    const url = new URL(request.url);
+    const fromDate = url.searchParams.get('before'); // mm/dd/yyyy of the current proceedings
+    // Walk backwards from the day before the proceedings date
+    const anchor = fromDate ? new Date(fromDate.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2')) : new Date();
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(anchor);
+      d.setDate(anchor.getDate() - i);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      const dateStr = `${mm}/${dd}/${yyyy}`;
+      const encoded = encodeURIComponent(dateStr);
+      const res = await fetch(`https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encoded}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      // Check for actual <tr> rows with datetime data
+      if (/<span[^>]*style="display:none;"[^>]*>[\d\/]+ [\d:]+<\/span>/.test(html)) {
+        return new Response(JSON.stringify({ date: `${yyyy}-${mm}-${dd}`, formatted: dateStr }), {
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+        });
+      }
+    }
+    throw new Error('No session found in past 30 days');
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleLeadership() {
+  try {
+    const response = await fetch('https://clerk.house.gov/Members/ViewLeadership', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+
+    // Speaker is the first leadership-box_hero section
+    // BioGuide ID comes from the image path: /images/members/J000299.jpg
+    const bioguideMatch = html.match(/\/images\/members\/([A-Z]\d+)\.jpg/);
+    const nameMatch = html.match(/<h1[^>]*>\s*Rep\.\s+([^<]+)<\/h1>/);
+    const titleMatch = html.match(/<p class="title"[^>]*>([^<]+)<\/p>/);
+
+    if (!bioguideMatch || !nameMatch) throw new Error('Could not parse Speaker from leadership page');
+
+    const bioguideId = bioguideMatch[1];
+    const name = nameMatch[1].trim();
+    const title = titleMatch ? titleMatch[1].trim() : 'Speaker of the House';
+
+    return new Response(JSON.stringify({ bioguideId, name, title }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 function handleOptions() {
   return new Response(null, {
     status: 200,
@@ -1052,11 +1341,11 @@ async function handleRequest(request, env) {
 
   // Route handling
   if (path === '/api/proceedings' && request.method === 'GET') {
-    return await handleProceedings();
+    return await handleProceedings(request);
   } else if (path === '/api/news' && request.method === 'GET') {
     return await handleNews();
   } else if (path === '/api/bills' && request.method === 'GET') {
-    return await handleBills();
+    return await handleBills(request);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
     return await handleVotingDays();
   } else if (path === '/api/airport-delays' && request.method === 'GET') {
@@ -1067,6 +1356,10 @@ async function handleRequest(request, env) {
     return await handleCongressIndex();
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed();
+  } else if (path === '/api/leadership' && request.method === 'GET') {
+    return await handleLeadership();
+  } else if (path === '/api/last-session-date' && request.method === 'GET') {
+    return await handleLastSessionDate(request);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
     return await handleDomeWatchFloor();
   } else if (path === '/api/stream/votes/current' && request.method === 'GET') {
