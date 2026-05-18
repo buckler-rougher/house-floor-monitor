@@ -1588,26 +1588,30 @@ function openBillModal(billId) {
     overlay.innerHTML = `
         <div class="bill-modal" role="dialog" aria-modal="true">
             <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
-            <div class="bill-modal-header">
-                <span class="bill-modal-id">${bill.id}</span>
-                <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
-                <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
+            <div class="bill-modal-top">
+                <div class="bill-modal-header">
+                    <span class="bill-modal-id">${bill.id}</span>
+                    <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
+                    <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
+                </div>
+                <h2 class="bill-modal-title">${bill.title}</h2>
+                ${sponsorHtml}
+                ${cosponsorsHtml}
+                ${committeeHtml}
             </div>
-            <h2 class="bill-modal-title">${bill.title}</h2>
-            ${sponsorHtml}
-            ${cosponsorsHtml}
-            ${committeeHtml}
             ${bill.summary ? `
-                <div class="bill-modal-section">
-                    <div class="bill-modal-section-label">SUMMARY</div>
-                    <p class="bill-modal-summary">${bill.summary}</p>
-                </div>` : ''}
-            ${actionText ? `
-                <div class="bill-modal-section">
+            <div class="bill-modal-body">
+                <div class="bill-modal-section-label">SUMMARY</div>
+                <p class="bill-modal-summary">${bill.summary}</p>
+            </div>` : ''}
+            <div class="bill-modal-foot">
+                ${actionText ? `
+                <div class="bill-modal-section" style="margin-bottom:12px;">
                     <div class="bill-modal-section-label">LATEST ACTION</div>
                     <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}</span>` : ''}</div>
                 </div>` : ''}
-            ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+                ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+            </div>
         </div>
     `;
     overlay.hidden = false;
