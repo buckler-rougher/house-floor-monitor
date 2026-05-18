@@ -910,10 +910,8 @@
         </div>
     </div>
     <div class="video-container" aria-live="polite">
-    <!-- video element; hidden visually when fallback shown but keeps its layout box -->
     <video id="player" controls playsinline muted></video>
-
-    <!-- fallback occupies the exact same area and shows centered text -->
+    <div id="video-ended-label" class="video-ended-label" hidden>SESSION ENDED</div>
     <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
       <div>
         <strong>Stream unavailable</strong>
@@ -948,64 +946,6 @@
 <!-- place scripts at end of body -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
-<script>
-  (function(){
-    const url = 'https://houseliveprod-f9h4cpb9dyb8gegg.a01.azurefd.net/east/2026-05-07T08-51-17/manifest.m3u8';
-    const video = document.getElementById('player');
-    const fallback = document.getElementById('video-fallback');
-
-    function showFallback(){
-      video.style.visibility = 'hidden';   // keep layout but hide playback UI
-      fallback.style.display = 'flex';
-      fallback.setAttribute('aria-hidden', 'false');
-    }
-
-    function hideFallback(){
-      fallback.style.display = 'none';
-      fallback.setAttribute('aria-hidden', 'true');
-      video.style.visibility = 'visible';
-    }
-
-    if (window.Hls && Hls.isSupported()) {
-      const hls = new Hls({maxBufferLength:30});
-      hls.loadSource(url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        hideFallback();
-        video.play().catch(()=>{});
-      });
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) showFallback();
-      });
-    } else if (video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-      video.addEventListener('loadedmetadata', () => {
-        hideFallback();
-        video.play().catch(()=>{});
-      });
-      video.addEventListener('error', showFallback);
-    } else {
-      showFallback();
-    }
-
-    // basic retry logic to refresh expiring manifests (keeps layout consistent)
-    let retries = 0;
-    function retryLoad(){
-      if (retries++ >= 5) return showFallback();
-      const newUrl = url.split('?')[0] + '?_=' + Date.now();
-      if (window.Hls && Hls.isSupported()) {
-        try { hls.loadSource(newUrl); } catch(e){ /* ignore */ }
-      } else {
-        video.src = newUrl;
-      }
-      setTimeout(()=>{ if (video.readyState === 0) retryLoad(); }, 4000);
-    }
-
-    // watch for ended/emptied states to try reload once
-    video.addEventListener('emptied', retryLoad);
-    video.addEventListener('error', () => { setTimeout(retryLoad, 2000); });
-  })();
-</script>
 
         <!-- Footer -->
         <div class="footer">
@@ -1049,6 +989,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260518"></script>
+    <script src="app.js?v=20260518c"></script>
 </body>
 </html>
