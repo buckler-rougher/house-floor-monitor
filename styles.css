@@ -1427,7 +1427,7 @@ body {
   position: relative;
   width: 100%;
   max-width: 760px;
-  height: 280px;
+  height: 380px;
   border-bottom: 1px solid rgba(139, 148, 158, 0.18);
   isolation: isolate;
 }
@@ -1436,10 +1436,10 @@ body {
 .center-aisle {
   content: '';
   position: absolute;
-  bottom: 20px;
+  bottom: 15px;
   left: 50%;
   width: 42px;
-  height: 218px;
+  height: 310px;
   background: linear-gradient(to top, rgba(13, 17, 23, 0.85), rgba(13, 17, 23, 0));
   transform: translateX(-50%);
   pointer-events: none;
@@ -1539,7 +1539,7 @@ body {
   }
 
   .floor-arch {
-    height: 200px;
+    height: 260px;
   }
 
   .arch-label {
@@ -1548,7 +1548,7 @@ body {
   }
 
   .center-aisle {
-    height: 158px;
+    height: 210px;
     width: 32px;
   }
 
