@@ -989,6 +989,16 @@ const elements = {
     oathMemberName: document.getElementById('oath-member-name'),
     oathMemberDescription: document.getElementById('oath-member-description'),
     oathTime: document.getElementById('oath-time'),
+    committeeChairSection: document.getElementById('committee-chair-section'),
+    committeeChairImage: document.getElementById('committee-chair-image'),
+    committeeChairImagePlaceholder: document.getElementById('committee-chair-image-placeholder'),
+    committeeChairMemberTitle: document.getElementById('committee-chair-member-title'),
+    committeeChairMemberName: document.getElementById('committee-chair-member-name'),
+    committeeChairPartyTag: document.getElementById('committee-chair-party-tag'),
+    committeeChairTime: document.getElementById('committee-chair-time'),
+    committeeChairMemberDetails: document.getElementById('committee-chair-member-details'),
+    committeeChairMemberAdditional: document.getElementById('committee-chair-member-additional'),
+    committeeChairMemberWebsite: document.getElementById('committee-chair-member-website'),
     speakerSection: document.getElementById('speaker-section'),
     speakerImage: document.getElementById('speaker-image'),
     speakerImagePlaceholder: document.getElementById('speaker-image-placeholder'),
@@ -1332,6 +1342,54 @@ const BILLS_CONFIG = {
 // State for bills data
 const billDataMap = new Map();
 
+// Map from normalized bill ID -> rule info {hres, hresNum, pdfUrl, ruleStatus}
+const specialRulesMap = new Map();
+
+// Normalize a bill ID to match the rules.house.gov slug format, e.g. "H.R. 1041" -> "HR1041"
+function normalizeBillIdForRules(billId) {
+    return billId.toUpperCase().replace(/[.\s]/g, '');
+}
+
+async function fetchSpecialRules() {
+    try {
+        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/rules');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        specialRulesMap.clear();
+        for (const rule of (data.rules || [])) {
+            for (const billKey of rule.bills) {
+                // billKey is already normalized (e.g. "HR1041")
+                specialRulesMap.set(billKey, {
+                    hres: rule.hres,
+                    hresNum: rule.hresNum,
+                    pdfUrl: rule.pdfUrl,
+                    ruleStatus: rule.ruleStatus
+                });
+            }
+        }
+    } catch (e) {
+        console.error('fetchSpecialRules error:', e);
+    }
+}
+
+// Sort mode: 'status' (default) | 'listed'
+let billsSortMode = 'status';
+
+const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, postponed: 2 };
+
+function sortBillsForDisplay(bills) {
+    const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
+    if (billsSortMode === 'status') {
+        return indexed.sort((a, b) => {
+            const pa = BILL_STATUS_SORT_ORDER[a.status] ?? 0;
+            const pb = BILL_STATUS_SORT_ORDER[b.status] ?? 0;
+            if (pa !== pb) return pa - pb;
+            return a._origIdx - b._origIdx;
+        });
+    }
+    return indexed.sort((a, b) => a._origIdx - b._origIdx);
+}
+
 let billsData = {
     ruleBills: [],
     suspensionBills: [],
@@ -1366,10 +1424,11 @@ async function fetchBillsThisWeek() {
         
         console.log('Bills API response:', data);
         
-        // Process bills data from worker
+        // Process bills data from worker; stamp original index for stable fallback sort
+        const stampIdx = (arr) => (arr || []).map((b, i) => ({ ...b, _origIdx: i }));
         billsData = {
-            ruleBills: data.ruleBills || [],
-            suspensionBills: data.suspensionBills || [],
+            ruleBills: stampIdx(data.ruleBills),
+            suspensionBills: stampIdx(data.suspensionBills),
             rawHeaders: data.rawHeaders || null,
             lastUpdated: data.lastUpdated || new Date(),
             weekDate: data.weekDate || 'No current week bills available'
@@ -1377,7 +1436,10 @@ async function fetchBillsThisWeek() {
         console.log(`Found ${billsData.ruleBills.length} rule bills, ${billsData.suspensionBills.length} suspension bills`);
         
         updateBillsDisplay();
-        
+
+        // Fetch special rules in parallel, then re-render cards with rule tags
+        fetchSpecialRules().then(() => updateBillsDisplay());
+
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
@@ -1458,28 +1520,49 @@ function updateBillsDisplay() {
         const debug = billsSection.querySelector('.bills-raw-headers');
         if (debug) debug.remove();
     }
-    
+
     billDataMap.clear();
 
-    // Update rule bills
-    if (billsData.ruleBills.length > 0) {
-        const ruleHtml = billsData.ruleBills.map(bill => createBillCard(bill, 'rule')).join('');
-        setIfChanged(elements.ruleBillsList, ruleHtml);
+    const sortedRule = sortBillsForDisplay(billsData.ruleBills);
+    const sortedSuspension = sortBillsForDisplay(billsData.suspensionBills);
+
+    if (sortedRule.length > 0) {
+        setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
         setIfChanged(elements.ruleBillsList, '<div class="no-bills">No bills under rule</div>');
     }
 
-    // Update suspension bills
-    if (billsData.suspensionBills.length > 0) {
-        const suspensionHtml = billsData.suspensionBills.map(bill => createBillCard(bill, 'suspension')).join('');
-        setIfChanged(elements.suspensionBillsList, suspensionHtml);
+    if (sortedSuspension.length > 0) {
+        setIfChanged(elements.suspensionBillsList, sortedSuspension.map(bill => createBillCard(bill, 'suspension')).join(''));
     } else {
         setIfChanged(elements.suspensionBillsList, '<div class="no-bills">No bills under suspension</div>');
     }
-    
-    // Update week date display
+
     if (elements.billsLastUpdate) {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
+    }
+
+    document.querySelectorAll('.bills-sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
+    });
+
+    // Populate rule tags in the UNDER RULE header
+    const ruleTagsContainer = document.getElementById('rule-tags-container');
+    if (ruleTagsContainer && specialRulesMap.size > 0) {
+        const seen = new Set();
+        const tags = [];
+        for (const bill of billsData.ruleBills) {
+            const rule = specialRulesMap.get(normalizeBillIdForRules(bill.id));
+            if (rule && !seen.has(rule.hresNum)) {
+                seen.add(rule.hresNum);
+                const sc = rule.ruleStatus === 'passed' ? 'rule-tag-passed'
+                    : rule.ruleStatus === 'reported' ? 'rule-tag-reported'
+                    : 'rule-tag-unknown';
+                const href = rule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${rule.hresNum}`;
+                tags.push(`<a class="bill-rule-tag ${sc}" href="${href}" target="_blank" rel="noopener" title="Special rule for floor consideration" onclick="event.stopPropagation()">${rule.hres}${rule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`);
+            }
+        }
+        ruleTagsContainer.innerHTML = tags.join('');
     }
 }
 
@@ -1520,6 +1603,13 @@ function billIdToCongressUrl(billId) {
     return slug ? `https://www.congress.gov/bill/119th-congress/${slug}/${m[2]}` : null;
 }
 
+function billIdToRulesSlug(billId) {
+    const m = billId.trim().match(/^(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.)\s*(\d+)$/i);
+    if (!m) return null;
+    const typeSlug = m[1].toLowerCase().replace(/\./g, '').replace(/\s/g, '');
+    return `${typeSlug}-${m[2]}`;
+}
+
 function openBillModal(billId) {
     const bill = billDataMap.get(billId);
     if (!bill) return;
@@ -1527,10 +1617,24 @@ function openBillModal(billId) {
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : 'rule';
     const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : 'UNDER RULE';
     const statusClass = bill.status || 'scheduled';
-    const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE IN PROGRESS' }[bill.status] || 'SCHEDULED';
+    const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
+    let actionTimeStr = '';
+    if (bill.actionTime) {
+        try {
+            actionTimeStr = new Date(bill.actionTime).toLocaleTimeString('en-US', {
+                hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+            });
+        } catch (_) {}
+    }
     const congressUrl = billIdToCongressUrl(bill.id);
+    let actionSourceHtml = '';
+    if (bill.actionSource === 'bluesky' && bill.actionSourceUrl) {
+        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">source</a>`;
+    } else if (bill.actionSource === 'congress' && congressUrl) {
+        actionSourceHtml = ` <a href="${congressUrl}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">source</a>`;
+    }
 
     // Sponsor HTML (reuse absentee-member classes)
     let sponsorHtml = '';
@@ -1607,6 +1711,18 @@ function openBillModal(billId) {
         overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
     }
 
+    const modalRule = bill.procedure === 'rule' ? specialRulesMap.get(normalizeBillIdForRules(bill.id)) : null;
+    const modalRuleTagHtml = modalRule ? (() => {
+        const sc = modalRule.ruleStatus === 'passed' ? 'rule-tag-passed'
+            : modalRule.ruleStatus === 'reported' ? 'rule-tag-reported'
+            : 'rule-tag-unknown';
+        const href = modalRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${modalRule.hresNum}`;
+        return `<a class="bill-rule-tag ${sc} bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`;
+    })() : '';
+
+    const rulesSlug = bill.procedure === 'rule' ? billIdToRulesSlug(bill.id) : null;
+    const hasAmendments = !!rulesSlug;
+
     overlay.innerHTML = `
         <div class="bill-modal" role="dialog" aria-modal="true">
             <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
@@ -1615,30 +1731,107 @@ function openBillModal(billId) {
                     <span class="bill-modal-id">${bill.id}</span>
                     <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
                     <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
+                    ${modalRuleTagHtml}
                 </div>
                 <h2 class="bill-modal-title">${bill.title}</h2>
+                ${hasAmendments ? `
+                <div class="bill-modal-tabs">
+                    <button class="bill-modal-tab active" data-tab="details">Details</button>
+                    <button class="bill-modal-tab" data-tab="amendments">Amendments</button>
+                </div>` : ''}
+            </div>
+            <div class="bill-modal-tab-panel" data-panel="details">
+                <div class="bill-modal-sections">
                 ${sponsorHtml}
                 ${cosponsorsHtml}
                 ${committeeHtml}
-            </div>
-            ${bill.summary ? `
-            <div class="bill-modal-body">
-                <div class="bill-modal-section-label">SUMMARY</div>
-                <p class="bill-modal-summary">${bill.summary}</p>
-            </div>` : ''}
-            <div class="bill-modal-foot">
-                ${actionText ? `
-                <div class="bill-modal-section" style="margin-bottom:12px;">
-                    <div class="bill-modal-section-label">LATEST ACTION</div>
-                    <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}</span>` : ''}</div>
+                </div>
+                ${bill.summary ? `
+                <div class="bill-modal-body">
+                    <div class="bill-modal-section-label">SUMMARY</div>
+                    <p class="bill-modal-summary">${bill.summary}</p>
                 </div>` : ''}
-                ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+                <div class="bill-modal-foot">
+                    ${actionText ? `
+                    <div class="bill-modal-section" style="margin-bottom:12px;">
+                        <div class="bill-modal-section-label">LATEST ACTION</div>
+                        <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}</div>
+                    </div>` : ''}
+                    ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+                </div>
             </div>
+            ${hasAmendments ? `
+            <div class="bill-modal-tab-panel" data-panel="amendments" hidden>
+                <div class="bill-amendments-wrap">
+                    <div class="bill-amendments-loading">Loading amendments…</div>
+                </div>
+            </div>` : ''}
         </div>
     `;
     overlay.hidden = false;
     document.getElementById('bill-modal-close').addEventListener('click', closeBillModal);
     document.addEventListener('keydown', onBillModalKey);
+
+    if (hasAmendments) {
+        overlay.querySelectorAll('.bill-modal-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                overlay.querySelectorAll('.bill-modal-tab').forEach(t => t.classList.remove('active'));
+                overlay.querySelectorAll('.bill-modal-tab-panel').forEach(p => p.hidden = true);
+                tab.classList.add('active');
+                const panel = overlay.querySelector(`[data-panel="${tab.dataset.tab}"]`);
+                if (panel) panel.hidden = false;
+                if (tab.dataset.tab === 'amendments' && !tab.dataset.loaded) {
+                    tab.dataset.loaded = '1';
+                    loadAmendments(rulesSlug, panel.querySelector('.bill-amendments-wrap'));
+                }
+            });
+        });
+    }
+}
+
+async function loadAmendments(slug, container) {
+    try {
+        const resp = await fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}`);
+        const data = await resp.json();
+        if (!data.amendments?.length) {
+            container.innerHTML = '<div class="bill-amendments-empty">No amendments submitted.</div>';
+            return;
+        }
+        const partyClass = p => p === 'Republican' ? 'rep' : p === 'Democrat' ? 'dem' : 'ind';
+        const statusClass = s => {
+            const sl = s.toLowerCase();
+            if (sl.includes('made in order') || sl.includes('adopted')) return 'adopted';
+            if (sl.includes('not') || sl.includes('failed') || sl.includes('withdrawn')) return 'failed';
+            return 'submitted';
+        };
+        container.innerHTML = `
+            <table class="amendments-table">
+                <thead><tr>
+                    <th>#</th>
+                    <th>Sponsor(s)</th>
+                    <th>Summary</th>
+                    <th>Status</th>
+                </tr></thead>
+                <tbody>
+                ${data.amendments.map(a => `
+                    <tr>
+                        <td class="amdt-num">${a.num}</td>
+                        <td class="amdt-sponsors">
+                            <span class="amdt-party ${partyClass(a.party)}"></span>
+                            ${a.pdfUrl
+                                ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${a.sponsors}</a>`
+                                : a.sponsors}
+                        </td>
+                        <td class="amdt-summary">${a.summary}</td>
+                        <td class="amdt-status"><span class="amdt-status-badge ${statusClass(a.status)}">${a.status}</span></td>
+                    </tr>
+                `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (e) {
+        container.innerHTML = `<div class="bill-amendments-empty">Failed to load amendments.</div>`;
+    }
 }
 
 function closeBillModal() {
@@ -1649,6 +1842,96 @@ function closeBillModal() {
 
 function onBillModalKey(e) {
     if (e.key === 'Escape') closeBillModal();
+}
+
+// Info popup
+const INFO_CONTENT = {
+    'prayer': {
+        title: 'Opening Prayer',
+        tags: ['SINCE 1789', 'ELECTED OFFICER', 'GUEST CHAPLAINS WELCOME'],
+        body: `The House has opened each day of session with a prayer since April 1, 1789 — one of its oldest unbroken traditions. The House Chaplain is an elected officer of the House who typically delivers the prayer, though Members frequently invite guest chaplains from many faith traditions in their place.
+
+Beyond the daily prayer, the Chaplain provides confidential pastoral counseling to Members, families, and Capitol staff. The current Chaplain is Rev. Margaret Kibben, elected in 2021 as the first woman to hold the role.`,
+        source: 'Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/R/PDF/R41807/R41807.5.pdf" target="_blank" rel="noopener">CRS Report R41807</a>'
+    },
+    'moment-of-silence': {
+        title: 'Moment of Silence',
+        tags: [],
+        body: `"The House has observed moments of silence as a way to honor notable individuals, fallen heroes and soldiers of wars, and victims of national tragedies. In one instance, the House stood in silent prayer in observance of the Nazi invasion of France."`,
+        source: '<a href="https://www.govinfo.gov/content/pkg/GPO-HPREC-DESCHLERS-V17/pdf/GPO-HPREC-DESCHLERS-V17-4-14.pdf" target="_blank" rel="noopener">Deschler-Brown-Johnson Precedents, Ch. 36 § 13</a>'
+    },
+    'speaker-pro-tempore': {
+        title: 'Speaker Pro Tempore',
+        tags: ['MAX 3 LEGISLATIVE DAYS'],
+        body: `Simple designation — without formal House approval — is permitted for up to three legislative days. The Speaker may designate a Member orally (in open House or off the record) or in writing when absent at the start of a session. The designation may also be withdrawn.
+
+The designated Speaker pro tempore must ordinarily seek House consent before carrying out sensitive functions a Speaker would handle as a matter of course — such as administering the oath of office, appointing conferees, or referring Presidential messages to committees.`,
+        source: '<a href="https://www.govinfo.gov/content/pkg/GPO-HPREC-DESCHLERS-V1/pdf/GPO-HPREC-DESCHLERS-V1-6-3-4.pdf" target="_blank" rel="noopener">Deschler\'s Precedents, Ch. 6 § 12</a>'
+    },
+    'journal': {
+        title: "Approval of the Journal",
+        tags: [],
+        body: `The Constitution requires each chamber to keep a Journal. The House Journal is the official record of chamber <em>actions</em> — votes, motions, quorum calls, amendments — not the text of debate (that's the Congressional Record).
+
+Each legislative day, the Speaker announces approval of the previous day's Journal. Any Member may demand a recorded vote on approval, which has historically been used to force Members to the floor and establish a quorum before important business.`,
+        source: 'Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/R/PDF/R45209/R45209.4.pdf" target="_blank" rel="noopener">CRS Report R45209</a>'
+    },
+    'under-rule': {
+        title: 'Consideration Under a Rule',
+        tags: ['RULES COMMITTEE', 'MAJORITY VOTE'],
+        body: `The Rules Committee reports a "special rule" — a simple House resolution (H.Res.) — that sets the exact terms for floor debate on a specific bill. The House must first pass the rule by simple majority before the bill itself can be considered.
+
+The rule specifies debate time (typically 1–2 hours, split equally), and which amendments may be offered. An <strong>open rule</strong> allows any germane amendment; a <strong>closed rule</strong> permits none; a <strong>structured rule</strong> lists only specified amendments. This gives the majority party significant control over what happens on the floor.`,
+        source: 'Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/R/PDF/R48308/R48308.1.pdf" target="_blank" rel="noopener">CRS Report R48308</a>'
+    },
+    'under-suspension': {
+        title: 'Suspension of the Rules',
+        tags: ['2/3 MAJORITY REQUIRED', '40 MIN DEBATE', 'NO AMENDMENTS', 'MON & TUE'],
+        body: `An expedited procedure under House Rule XV for non-controversial bills. "Suspension" means temporarily setting aside normal House rules for a streamlined process.
+
+Passage requires a two-thirds supermajority. Debate is capped at 40 minutes (20 per side). No floor amendments may be offered. Bills are scheduled by the Speaker, typically on Mondays and Tuesdays. A bill that fails under suspension can still return under regular order requiring only a simple majority.`,
+        source: 'Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/RS/PDF/98-314/98-314.16.pdf" target="_blank" rel="noopener">CRS Report 98-314</a>'
+    }
+};
+
+function openInfoPopup(key) {
+    const content = INFO_CONTENT[key];
+    if (!content) return;
+
+    let overlay = document.getElementById('info-popup-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'info-popup-overlay';
+        overlay.className = 'info-popup-overlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeInfoPopup(); });
+    }
+
+    const tagsHtml = content.tags?.length
+        ? `<div class="info-popup-tags">${content.tags.map(t => `<span class="info-popup-tag">${t}</span>`).join('')}</div>`
+        : '';
+    overlay.innerHTML = `
+        <div class="info-popup" role="dialog" aria-modal="true">
+            <button class="info-popup-close" id="info-popup-close" aria-label="Close">&#x2715;</button>
+            <div class="info-popup-title">${content.title}</div>
+            ${tagsHtml}
+            <div class="info-popup-body">${content.body.split('\n\n').map(p => `<p>${p}</p>`).join('')}</div>
+            ${content.source ? `<div class="info-popup-source">${content.source}</div>` : ''}
+        </div>
+    `;
+    overlay.hidden = false;
+    document.getElementById('info-popup-close').addEventListener('click', closeInfoPopup);
+    document.addEventListener('keydown', onInfoPopupKey);
+}
+
+function closeInfoPopup() {
+    const overlay = document.getElementById('info-popup-overlay');
+    if (overlay) overlay.hidden = true;
+    document.removeEventListener('keydown', onInfoPopupKey);
+}
+
+function onInfoPopupKey(e) {
+    if (e.key === 'Escape') closeInfoPopup();
 }
 
 // Auto-switch mode based on latest proceeding
@@ -1800,6 +2083,19 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // Committee of the Whole — designated chairman signals House has resolved into COWH
+    const cotwItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('act as chairman of the committee') ||
+               d.includes('committee of the whole') ||
+               d.includes('resolved itself into the committee');
+    });
+    if (cotwItem) {
+        window.setMode('debate');
+        updateDebateSection(items);
+        return;
+    }
+
     if (latest.startsWith('the house received a message from')) {
         window.setMode('message');
         return;
@@ -1817,6 +2113,12 @@ function autoSwitchModeFromProceedings(items) {
         window.setMode('silence');
         return;
     }
+    if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
+        window.setMode('committee-chair');
+        updateCommitteeChairSection(items);
+        return;
+    }
+
     if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
         window.setMode('speaker');
         return;
@@ -1898,7 +2200,7 @@ async function updateProceedingsFeed() {
             <div class="proceedings-item">
                 <div class="proceedings-text">
                     <span class="proceedings-time">${timeStr}</span>
-                    ${escapeHtml(item.description)}
+                    ${decodeHtml(item.description)}
                 </div>
             </div>
         `;
@@ -1916,6 +2218,7 @@ async function updateProceedingsFeed() {
         updatePrayerSection(data.items);
         updatePledgeSection(data.items);
         updateSpeakerSection(data.items);
+        updateCommitteeChairSection(data.items);
         updateJournalSection(data.items);
         updateOathSection(data.items);
         updateMessageSection(data.items);
@@ -2493,6 +2796,104 @@ function updateSpeakerSection(items) {
     elements.speakerMemberName.textContent = leaderName;
 
     fetchSpeakerMemberInfo(leaderName);
+}
+
+function updateCommitteeChairSection(items) {
+    if (!elements.committeeChairMemberTitle || !items || items.length === 0) return;
+
+    const chairItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('act as chairman of the committee') || d.includes('act as chair of the committee');
+    });
+
+    if (!chairItem) return;
+
+    if (chairItem.pubDate && elements.committeeChairTime) {
+        elements.committeeChairTime.textContent = new Date(chairItem.pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+
+    const nameMatch = chairItem.description.match(/designated\s+the\s+Honorable\s+(.+?)\s+to\s+act\s+as\s+Chair(?:man)?\s+of\s+the\s+Committee/i)
+        || chairItem.description.match(/Honorable\s+(.+?)\s+to\s+act\s+as\s+Chair(?:man)?\s+of\s+the\s+Committee/i);
+    const memberName = nameMatch ? nameMatch[1].trim() : null;
+
+    if (memberName) {
+        elements.committeeChairMemberName.textContent = memberName;
+        fetchCommitteeChairMemberInfo(memberName);
+    }
+}
+
+async function fetchCommitteeChairMemberInfo(leaderName) {
+    try {
+        const normalizedName = leaderName.replace(/\s+/g, ' ').trim();
+        const stateMatch = normalizedName.match(/(?:of|from)\s+([A-Z]{2})\b/i);
+        const state = stateMatch ? stateMatch[1].toUpperCase() : '';
+        const nameOnly = normalizedName
+            .replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '')
+            .replace(/\s+(?:of|from)\s+[A-Z]{2}\b/i, '')
+            .trim();
+
+        if (!nameOnly) return;
+
+        const rawLastName = nameOnly.split(/\s+/).slice(-1)[0];
+        const xmlText = await getMemberDataXml();
+        const xmlDoc = parseMemberDataXml(xmlText);
+        const members = xmlDoc.querySelectorAll('member');
+        let bestMatch = null, bestScore = 0;
+
+        for (const member of members) {
+            const stateElement = member.querySelector('state');
+            const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
+            if (state && memberState.toUpperCase() !== state.toUpperCase()) continue;
+
+            const lastNameEl = member.querySelector('lastname');
+            const firstNameEl = member.querySelector('firstname');
+            const bioguideEl = member.querySelector('bioguideID');
+            const partyEl = member.querySelector('party');
+            const districtEl = member.querySelector('district');
+            const townEl = member.querySelector('townname');
+            if (!lastNameEl || !firstNameEl || !bioguideEl) continue;
+
+            const score = calculateNameSimilarity(rawLastName, lastNameEl.textContent.trim());
+            if (score > bestScore && score > 0.3) {
+                bestScore = score;
+                bestMatch = {
+                    fullName: `${firstNameEl.textContent.trim()} ${lastNameEl.textContent.trim()}`,
+                    bioguideId: bioguideEl.textContent.trim(),
+                    party: partyEl ? partyEl.textContent.trim() : '',
+                    district: districtEl ? districtEl.textContent.trim() : '',
+                    state: memberState,
+                    town: townEl ? townEl.textContent.trim() : ''
+                };
+            }
+        }
+
+        if (!bestMatch) return;
+
+        elements.committeeChairMemberName.textContent = bestMatch.fullName;
+        elements.committeeChairMemberDetails.textContent = `${bestMatch.state}-${normalizeDistrict(bestMatch.district)}`;
+        if (elements.committeeChairPartyTag) {
+            elements.committeeChairPartyTag.textContent = bestMatch.party || '';
+            elements.committeeChairPartyTag.className = 'committee-chair-party-tag';
+            if (bestMatch.party === 'R') elements.committeeChairPartyTag.classList.add('republican');
+            else if (bestMatch.party === 'D') elements.committeeChairPartyTag.classList.add('democrat');
+            else elements.committeeChairPartyTag.classList.add('independent');
+        }
+        elements.committeeChairMemberAdditional.textContent = bestMatch.town ? `from ${bestMatch.town}, ${bestMatch.state}` : '';
+        setMemberProfileLink(elements.committeeChairMemberWebsite, buildCongressProfileUrl(bestMatch.bioguideId));
+        const photoUrl = buildBioguidePhotoUrl(bestMatch.bioguideId);
+        if (elements.committeeChairImagePlaceholder) elements.committeeChairImagePlaceholder.style.display = 'none';
+        if (elements.committeeChairImage) {
+            elements.committeeChairImage.onerror = () => {
+                elements.committeeChairImage.style.display = 'none';
+                if (elements.committeeChairImagePlaceholder) elements.committeeChairImagePlaceholder.style.display = 'flex';
+            };
+            elements.committeeChairImage.src = photoUrl;
+        }
+    } catch (e) {
+        console.error('fetchCommitteeChairMemberInfo error:', e);
+    }
 }
 
 const ORDINAL_TO_NUM = {
@@ -3466,7 +3867,7 @@ window.clearDate = function() {
 
 // Global mode switch function for console access
 window.setMode = function(mode) {
-    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session'];
+    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair'];
     if (!validModes.includes(mode)) {
         console.error(`Invalid mode: ${mode}. Valid modes are: ${validModes.join(', ')}`);
         return;
@@ -3482,7 +3883,7 @@ function initModeToggle() {
 
 function updateModeClasses(mode) {
     // Remove all mode classes
-    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode');
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
 
     // Add appropriate class based on mode
     if (mode === 'recess') {
@@ -3523,6 +3924,8 @@ function updateModeClasses(mode) {
         document.body.classList.add('admin-oath-mode');
     } else if (mode === 'joint-session') {
         document.body.classList.add('joint-session-mode');
+    } else if (mode === 'committee-chair') {
+        document.body.classList.add('committee-chair-mode');
     }
 }
 
@@ -3580,10 +3983,18 @@ function init() {
 
     initHlsPlayer();
 
-    // Bill card click → modal
+    // Info popup click delegation
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.info-btn');
+        if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
+    });
+
+    // Bill card click → modal; sort button click → re-sort
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
         billsSection.addEventListener('click', e => {
+            const sortBtn = e.target.closest('.bills-sort-btn');
+            if (sortBtn) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
             const card = e.target.closest('[data-bill-id]');
             if (card) openBillModal(card.dataset.billId);
         });

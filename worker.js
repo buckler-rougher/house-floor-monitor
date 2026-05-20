@@ -1454,6 +1454,61 @@ const COMMITTEE_YOUTUBE = {
   HSWM: { channelId: 'UCrz_XV52yquSiXvyjdh03Fw', name: 'Ways & Means' },
 };
 
+async function handleAmendments(request, env) {
+  const url = new URL(request.url);
+  const slug = url.searchParams.get('bill'); // e.g. "hr-1041"
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+    return new Response(JSON.stringify({ amendments: [], error: 'Missing or invalid bill slug' }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const cacheKey = `amendments_${slug}`;
+  if (env?.HLS_CACHE) {
+    const cached = await env.HLS_CACHE.get(cacheKey);
+    if (cached) return new Response(cached, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+  }
+
+  try {
+    const resp = await fetch(`https://rules.house.gov/bill/119/${slug}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+    });
+    if (!resp.ok) throw new Error(`rules.house.gov returned ${resp.status}`);
+    const html = await resp.text();
+
+    const amendments = [];
+    const tableMatch = html.match(/<table[^>]*class="sortable"[^>]*>([\s\S]*?)<\/table>/);
+    if (tableMatch) {
+      const rows = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
+      for (const row of rows.slice(1)) { // skip header row
+        const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1]);
+        if (cells.length < 6) continue;
+        const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const linkMatch = cells[2].match(/href="([^"]+)"/);
+        amendments.push({
+          num: clean(cells[0]),
+          version: clean(cells[1]),
+          sponsors: clean(cells[2]),
+          pdfUrl: linkMatch ? linkMatch[1] : null,
+          party: clean(cells[3]),
+          summary: clean(cells[4]),
+          status: clean(cells[5]),
+        });
+      }
+    }
+
+    const result = JSON.stringify({ amendments });
+    if (env?.HLS_CACHE) {
+      try { await env.HLS_CACHE.put(cacheKey, result, { expirationTtl: 10 * 60 }); } catch (_) {}
+    }
+    return new Response(result, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+  } catch (err) {
+    return new Response(JSON.stringify({ amendments: [], error: err.message }), {
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+    });
+  }
+}
+
 // Convert ISO string to Eastern date string (YYYY-MM-DD), approximate DST
 function toEasternDateStr(isoString) {
   const d = new Date(isoString);
@@ -1462,97 +1517,68 @@ function toEasternDateStr(isoString) {
   return new Date(d.getTime() + offset * 3600000).toISOString().slice(0, 10);
 }
 
-async function checkYouTubeRSS(channelId) {
+async function checkYouTubeLive(channelId) {
   try {
+    // When a channel is live, YouTube injects a <link rel="canonical" href="...watch?v=...">
+    // into the <head> of the /live page (within the first ~30KB). When not live, this tag
+    // only appears deep in the JS (~600KB in). We stream until we find it or hit 40KB.
     const resp = await fetch(
-      `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
-      { cf: { cacheTtl: 60 } }
+      `https://www.youtube.com/channel/${channelId}/live`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      }
     );
-    if (!resp.ok) return null;
-    const xml = await resp.text();
+    if (!resp.ok || !resp.body) return null;
 
-    const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
-    if (!entryMatch) return null;
-    const entry = entryMatch[1];
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    const MAX_BYTES = 750000;
+    let bytesRead = 0;
+    let result = null;
 
-    const published  = entry.match(/<published>(.*?)<\/published>/)?.[1];
-    const updated    = entry.match(/<updated>(.*?)<\/updated>/)?.[1];
-    const title      = entry.match(/<title>(.*?)<\/title>/)?.[1] || '';
-    const videoId    = entry.match(/<yt:videoId>(.*?)<\/yt:videoId>/)?.[1] || '';
-    const thumbnail  = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : '';
-
-    if (!published || !updated) return null;
-
-    const nowMs           = Date.now();
-    const publishedAgeHrs = (nowMs - new Date(published).getTime()) / 3600000;
-    const updatedAgeMins  = (nowMs - new Date(updated).getTime()) / 60000;
-
-    // Heuristic: published within 8 h AND (updated <20 min ago OR title sounds like a hearing)
-    const titleLive = /live|hearing|markup|meeting|session/i.test(title);
-    if (publishedAgeHrs > 8) return null;
-    if (updatedAgeMins > 20 && !titleLive) return null;
-
-    return { videoId, thumbnail, streamTitle: title, publishedAt: published };
+    while (bytesRead < MAX_BYTES) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytesRead += value.length;
+      buf += decoder.decode(value, { stream: true });
+      const m = buf.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/);
+      if (m) {
+        const videoId = m[1];
+        result = {
+          videoId,
+          thumbnail: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+          streamTitle: 'Live',
+          publishedAt: new Date().toISOString(),
+        };
+        break;
+      }
+    }
+    reader.cancel();
+    return result;
   } catch { return null; }
 }
 
 async function handleCommitteeLive() {
   try {
-    const nowStr       = new Date().toISOString();
-    const todayEastern = toEasternDateStr(nowStr);
+    const nowStr = new Date().toISOString();
 
-    // Fetch meetings updated within the last 3 days (catches today's schedule)
-    const from = new Date(Date.now() - 3 * 86400000).toISOString();
-    const to   = new Date(Date.now() + 86400000).toISOString();
-    const listUrl = `https://api.congress.gov/v3/committee-meeting/119/house?format=json&limit=50&fromDateTime=${from}&toDateTime=${to}&api_key=${CONGRESS_API_KEY}`;
-
-    const listResp = await fetch(listUrl, { headers: { Accept: 'application/json' } });
-    if (!listResp.ok) throw new Error('Congress list failed');
-    const { committeeMeetings = [] } = await listResp.json();
-
-    // Fetch full details in parallel to get actual meeting dates
-    const details = await Promise.all(
-      committeeMeetings.slice(0, 50).map(m =>
-        fetch(`${m.url}&api_key=${CONGRESS_API_KEY}`, { headers: { Accept: 'application/json' } })
-          .then(r => r.ok ? r.json() : null).catch(() => null)
-      )
+    // Check all known committee YouTube channels in parallel.
+    // YouTube redirects /channel/{id}/live → /watch?v=... when live — no heuristics needed.
+    const results = await Promise.all(
+      Object.entries(COMMITTEE_YOUTUBE).map(async ([thomasId, info]) => {
+        const stream = await checkYouTubeLive(info.channelId);
+        return stream ? { thomasId, channelId: info.channelId, name: info.name, ...stream } : null;
+      })
     );
 
-    // Filter to today's non-cancelled full-committee meetings with known YouTube channels
-    const seenCommittees = new Set();
-    const todayMeetings = [];
-
-    for (const detail of details) {
-      const mtg = detail?.committeeMeeting;
-      if (!mtg?.date) continue;
-      if (['Cancelled', 'Postponed'].includes(mtg.meetingStatus)) continue;
-      if (toEasternDateStr(mtg.date) !== todayEastern) continue;
-
-      for (const committee of (mtg.committees || [])) {
-        const code = committee.systemCode || '';
-        if (!code.endsWith('00')) continue; // skip subcommittees
-        const thomasId = code.slice(0, -2).toUpperCase();
-        const info = COMMITTEE_YOUTUBE[thomasId];
-        if (!info || seenCommittees.has(thomasId)) continue;
-        seenCommittees.add(thomasId);
-        todayMeetings.push({
-          thomasId, channelId: info.channelId, name: info.name,
-          type: mtg.type || 'Meeting', status: mtg.meetingStatus,
-          date: mtg.date, location: mtg.location,
-        });
-      }
-    }
-
-    // Check YouTube RSS for live activity on each committee's channel
-    const liveResults = (await Promise.all(
-      todayMeetings.map(async mtg => {
-        const stream = await checkYouTubeRSS(mtg.channelId);
-        return stream ? { ...mtg, ...stream } : null;
-      })
-    )).filter(Boolean);
+    const liveResults = results.filter(Boolean);
 
     return new Response(JSON.stringify({ committees: liveResults, updatedAt: nowStr }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
     });
   } catch (err) {
     return new Response(JSON.stringify({ committees: [], error: err.message }), {
@@ -1625,6 +1651,8 @@ async function handleRequest(request, env) {
     return await handleCongressIndex();
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed();
+  } else if (path === '/api/amendments' && request.method === 'GET') {
+    return await handleAmendments(request, env);
   } else if (path === '/api/committee-live' && request.method === 'GET') {
     return await handleCommitteeLive();
   } else if (path === '/api/leadership' && request.method === 'GET') {
