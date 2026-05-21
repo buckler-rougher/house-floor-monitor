@@ -64,14 +64,7 @@ function updateFooterTimestamp() {
 // Update Today's Date
 function updateTodayDate() {
     if (elements.todayDate) {
-        const now = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        elements.todayDate.textContent = now.toLocaleDateString('en-US', options);
+        elements.todayDate.textContent = fmtDateLong(new Date());
     }
     
     // Update source links with dynamic year
@@ -481,6 +474,135 @@ let floorData = {
 // SSE streaming state
 let sseConnection = null;
 let isStreaming = false;
+let lastSseTallyAt = 0; // ms timestamp of last vote.tally received (for stale detection)
+
+// ── Vote countdown timer ──────────────────────────────────────────────────────
+// The DomeWatch SSE sends timer.value ("MM:SS") every ~1s.
+// We record that value + the moment we received it, then interpolate locally
+// at 500ms so the display is smooth between server ticks and self-corrects on
+// the next tick.
+const voteTimer = {
+    interval: null,      // setInterval handle
+    seconds: 0,          // parsed seconds from last server sync
+    syncedAt: 0,         // Date.now() at last server sync
+    openedAt: null,      // timer.timestamp (when the vote clock was opened)
+};
+
+const VOTE_OVERTIME_KEY = 'voteOvertimeStartedAt'; // sessionStorage key
+
+function syncVoteTimer(timerData) {
+    if (!timerData?.value) return;
+    const parts = timerData.value.split(':').map(Number);
+    if (parts.length !== 2 || parts.some(isNaN)) return;
+    const newSeconds = parts[0] * 60 + parts[1];
+
+    if (newSeconds === 0) {
+        // During overtime DomeWatch sets timestamp = the exact moment the clock hit 0.
+        // Use it directly so late joiners and refreshes both get the correct duration.
+        const serverExpiry = timerData.timestamp ? new Date(timerData.timestamp).getTime() : 0;
+        const stored       = sessionStorage.getItem(VOTE_OVERTIME_KEY);
+        const anchor       = serverExpiry || (stored ? parseInt(stored, 10) : 0) || Date.now();
+        voteTimer.syncedAt = anchor;
+        voteTimer.seconds  = 0;
+        // Keep sessionStorage in sync as a fallback for when timestamp isn't available
+        if (!stored || parseInt(stored, 10) !== anchor) {
+            sessionStorage.setItem(VOTE_OVERTIME_KEY, String(anchor));
+        }
+    } else {
+        // Normal countdown — clear any stale overtime anchor
+        sessionStorage.removeItem(VOTE_OVERTIME_KEY);
+        voteTimer.seconds  = newSeconds;
+        voteTimer.syncedAt = Date.now();
+    }
+
+    voteTimer.openedAt = timerData.timestamp || null;
+    if (!voteTimer.interval) {
+        voteTimer.interval = setInterval(tickVoteTimer, 50);
+    }
+}
+
+function tickVoteTimer() {
+    const elapsedMs = Date.now() - voteTimer.syncedAt;
+    const totalMs   = voteTimer.seconds * 1000 - elapsedMs; // negative = overtime
+    const overtime  = totalMs < 0;
+    const absMs     = Math.abs(totalMs);
+    const mm        = Math.floor(absMs / 60000);
+    const ss        = Math.floor((absMs % 60000) / 1000);
+    const cs        = Math.floor((absMs % 1000) / 10); // centiseconds (2 digits)
+    const display   = (overtime ? '+' : '')
+                    + `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
+
+    const el = document.getElementById('last-update');
+    if (el) {
+        el.className = 'vote-timer-value';
+        if (overtime)              el.classList.add('overtime');
+        else if (totalMs < 60000)  el.classList.add('warning');
+        else                       el.classList.add('active');
+        el.textContent = display;
+    }
+    // Don't clear — keep running in overtime until the 30s REST poll confirms vote ended
+}
+
+function clearVoteTimer() {
+    if (voteTimer.interval) {
+        clearInterval(voteTimer.interval);
+        voteTimer.interval = null;
+    }
+    voteTimer.seconds  = 0;
+    voteTimer.syncedAt = 0;
+    sessionStorage.removeItem(VOTE_OVERTIME_KEY);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Fast-path vote count update — called on every SSE tick, touches only the count
+// DOM elements. Keeps the numbers in sync without triggering the full render.
+function updateVoteCountsDisplay(counts) {
+    if (!counts) return;
+    const totals = counts.totals || {};
+    const iv = v => Math.max(parseInt(v) || 0, 0);
+    const yeas    = iv(totals.yeas);
+    const nays    = iv(totals.nays);
+    const present = iv(totals.present);
+    const notVoting = iv(totals.not_voting);
+    const totalVotes = yeas + nays + present;
+
+    if (elements.yeasCount)    elements.yeasCount.textContent    = yeas.toLocaleString();
+    if (elements.naysCount)    elements.naysCount.textContent    = nays.toLocaleString();
+    if (elements.presentCount) elements.presentCount.textContent = present.toLocaleString();
+    if (elements.totalVotes)   elements.totalVotes.textContent   = `Total Votes: ${(yeas + nays + present + notVoting).toLocaleString()}`;
+
+    if (totalVotes > 0) {
+        const yPct = Math.round(yeas    / totalVotes * 100);
+        const nPct = Math.round(nays    / totalVotes * 100);
+        const pPct = Math.round(present / totalVotes * 100);
+        if (elements.yeasPercent)    elements.yeasPercent.textContent    = `${yPct}%`;
+        if (elements.naysPercent)    elements.naysPercent.textContent    = `${nPct}%`;
+        if (elements.presentPercent) elements.presentPercent.textContent = `${pPct}%`;
+        if (elements.yeasBar)    elements.yeasBar.style.width    = `${yPct}%`;
+        if (elements.naysBar)    elements.naysBar.style.width    = `${nPct}%`;
+        if (elements.presentBar) elements.presentBar.style.width = `${pPct}%`;
+    }
+
+    // Bold whichever side is leading
+    if (elements.yeasCount && elements.naysCount) {
+        elements.yeasCount.style.fontWeight = yeas > nays ? 'bold' : 'normal';
+        elements.naysCount.style.fontWeight = nays > yeas ? 'bold' : 'normal';
+    }
+
+    // Update floor grid with party breakdown (fast DOM, no network)
+    const blue = counts.blue || {};
+    const red  = counts.red  || {};
+    const ivf  = v => Math.max(parseInt(v) || 0, 0);
+    state.data = {
+        vote: {
+            yeas, nays, present, not_voting: notVoting, total: totalVotes,
+            votesNeeded: getVotesNeeded(/suspend/i.test(floorData.rollCall?.question || '')),
+            dem: { yeas: ivf(blue.yeas), nays: ivf(blue.nays), present: ivf(blue.present) },
+            rep: { yeas: ivf(red.yeas),  nays: ivf(red.nays),  present: ivf(red.present)  },
+        }
+    };
+    updateFloorGrid();
+}
 
 // SSE Streaming for real-time updates
 function startSSEStreaming() {
@@ -501,21 +623,62 @@ function startSSEStreaming() {
         
         eventSource.onopen = () => {
             console.log('SSE connection opened');
-            // Show subtle live indicator
             const liveIndicator = document.querySelector('.live-indicator');
             if (liveIndicator) {
                 liveIndicator.classList.add('live');
                 liveIndicator.classList.remove('connecting');
             }
         };
-        
+
+        // DomeWatch sends named events — onmessage only fires for unnamed events,
+        // so we must use addEventListener for each event type.
+
+        // vote.tally: real-time tally during an active roll call vote
+        // Data shape: { tickAt, vote: { counts, roll_call, timer } }
+        // Throttled full render — at most once per 2 seconds from SSE ticks
+        let sseRenderPending = false;
+        const scheduleFullRender = () => {
+            if (sseRenderPending) return;
+            sseRenderPending = true;
+            setTimeout(() => { sseRenderPending = false; updateFloorDisplay(); }, 2000);
+        };
+
+        eventSource.addEventListener('vote.tally', (event) => {
+            try {
+                lastSseTallyAt = Date.now(); // track liveness for stale watchdog
+                const data = JSON.parse(event.data);
+                const v = data.vote || {};
+                floorData = {
+                    ...floorData,
+                    lastUpdated: new Date(),
+                    currentStatus: { value: 'vote' },
+                    rollCall: v.roll_call || floorData.rollCall,
+                    voteCounts: v.counts || floorData.voteCounts,
+                    timer: v.timer || floorData.timer,
+                };
+                syncVoteTimer(v.timer);
+                // Hot path: update count numbers immediately every tick
+                updateVoteCountsDisplay(v.counts);
+                // Slow path: full re-render throttled to 2s (floor grid etc.)
+                scheduleFullRender();
+            } catch (error) {
+                console.error('Error parsing SSE vote.tally:', error);
+            }
+        });
+
+        // connected: initial handshake — no data to process, just confirms stream is live
+        eventSource.addEventListener('connected', (event) => {
+            console.log('SSE connected event:', event.data);
+        });
+
+        // Fallback for any unnamed default messages
         eventSource.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log('SSE data received:', data);
-                
-                // Update floor data state with streaming data
+                console.log('SSE message (unnamed):', data);
+                // Map REST-style shape if present
                 floorData = {
+                    ...floorData,
                     lastUpdated: new Date(),
                     currentStatus: data.now || floorData.currentStatus,
                     rollCall: data.roll_call || floorData.rollCall,
@@ -523,23 +686,29 @@ function startSSEStreaming() {
                     timer: data.timer || floorData.timer,
                     timeline: data.timeline || floorData.timeline
                 };
-                
-                // Update UI with new streaming data
                 updateFloorDisplay();
-                
             } catch (error) {
                 console.error('Error parsing SSE data:', error);
             }
         };
-        
+
         eventSource.onerror = (error) => {
             console.error('SSE error:', error);
+            // Close the broken connection so the browser stops auto-reconnecting it;
+            // we manage reconnects ourselves to avoid duplicate connections.
+            eventSource.close();
+            if (sseConnection === eventSource) sseConnection = null;
             isStreaming = false;
-            // Fall back to polling if SSE fails
+            const liveIndicator = document.querySelector('.live-indicator');
+            if (liveIndicator) {
+                liveIndicator.classList.remove('live');
+                liveIndicator.classList.add('connecting');
+            }
+            // Retry SSE after 5s rather than permanently falling back to polling
             setTimeout(() => {
                 if (!isStreaming) {
-                    console.log('SSE disconnected, falling back to polling');
-                    fetchFloorData();
+                    console.log('SSE disconnected, retrying...');
+                    startSSEStreaming();
                 }
             }, 5000);
         };
@@ -555,10 +724,10 @@ function startSSEStreaming() {
 }
 
 // Fetch DomeWatch Floor Data (fallback)
-async function fetchFloorData() {
+async function fetchFloorData(silent = false) {
     try {
-        // Show loading state
-        if (elements.voteTitle) {
+        // Show loading state only on explicit (non-background) fetches
+        if (!silent && elements.voteTitle) {
             elements.voteTitle.textContent = 'FETCHING...';
         }
         
@@ -593,6 +762,11 @@ async function fetchFloorData() {
             timeline: data.timeline
         };
 
+        // Clear the local vote countdown if we're no longer in a vote
+        if (data.now?.value !== 'vote' && data.now?.value !== 'voting') {
+            clearVoteTimer();
+        }
+
         // Update state with floor data for vote map
         if (floorData.voteCounts) {
             const t = floorData.voteCounts.totals || {};
@@ -607,7 +781,7 @@ async function fetchFloorData() {
                     title: floorData.rollCall?.question || 'Loading...',
                     id: floorData.rollCall?.number || '--',
                     date: floorData.rollCall?.bill?.considered_on || null,
-                    votesNeeded: Math.floor((iv(t.yeas) + iv(t.nays) + iv(t.present) + iv(t.not_voting)) / 2) + 1
+                    votesNeeded: getVotesNeeded(/suspend/i.test(floorData.rollCall?.question || ''))
                 }
             };
             console.log('Vote map state updated:', state.data);
@@ -615,13 +789,16 @@ async function fetchFloorData() {
         
         // Update missing members
         updateAbsenteeTracking();
-        
+
+        // Quorum check — runs here (30s REST poll) not on every SSE tick
+        updateQuorumStatus();
+
         // Update bills
         fetchBillsThisWeek();
-        
+
         // Update vote map
         updateFloorGrid();
-        
+
         // Update UI with new data
         updateFloorDisplay();
         
@@ -650,8 +827,9 @@ function updateFloorDisplay(status = null) {
     const statusValue = floorData.currentStatus.value || 'unknown';
     
     // Auto-switch mode based on DomeWatch status
+    // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
-    if (statusLower.includes('vote')) {
+    if (statusLower.includes('vote') || statusLower.includes('voting')) {
         window.setMode('vote');
     } else if (statusLower.includes('debate')) {
         window.setMode('debate');
@@ -749,83 +927,45 @@ function updateFloorDisplay(status = null) {
             }
         }
 
-        // Update threshold analysis by updating global state first
+        // Update state for floor grid — include per-party breakdown if available
+        const iv = v => Math.max(parseInt(v) || 0, 0);
+        const blue = floorData.voteCounts.blue || {};
+        const red  = floorData.voteCounts.red  || {};
         state.data = {
             vote: {
-                yeas: yeas,
-                nays: nays,
-                present: present,
+                yeas, nays, present,
+                not_voting: notVoting,
                 total: totalVotes,
-                votesNeeded: 218 // Simple majority threshold
+                votesNeeded: getVotesNeeded(/suspend/i.test(floorData.rollCall?.question || '')),
+                dem: { yeas: iv(blue.yeas), nays: iv(blue.nays), present: iv(blue.present) },
+                rep: { yeas: iv(red.yeas),  nays: iv(red.nays),  present: iv(red.present)  },
             }
         };
         updateThresholdAnalysis();
+        // updateFloorGrid() is called from updateVoteCountsDisplay() on every SSE tick
+        // and from fetchFloorData() on the 30s poll — not needed here.
 
-        // Update quorum status
-        updateQuorumStatus();
+        // updateQuorumStatus() makes a network request — run it only from the 30s REST
+        // poll (fetchFloorData), not on every SSE tick.
     }
 
-    // Update timer if available
-    if (floorData.timer && elements.lastUpdate) {
-        console.log('=== TIMER UPDATE START ===');
-        console.log('Timer data:', floorData.timer);
-        console.log('Timer element:', elements.lastUpdate);
-        
-        const timerValue = floorData.timer.value || '';
-        const timestamp = floorData.timer.timestamp ? new Date(floorData.timer.timestamp).toLocaleTimeString() : '';
-        const startTimestamp = floorData.timer.timestamp ? new Date(floorData.timer.timestamp).toLocaleTimeString([], {
-            hour: 'numeric',
-            minute: '2-digit'
-        }) : '';
-        const secondsRemaining = floorData.timer.seconds_remaining || 0;
-        
-        console.log('Timer value:', timerValue);
-        console.log('Timestamp:', timestamp);
-        console.log('Seconds remaining:', secondsRemaining);
-        
-        // Format timer display - clean and minimal
-        let timerText = '';
-        let valueClass = '';
-        
-        if (timerValue && secondsRemaining > 0) {
-            timerText = `${timerValue} (${secondsRemaining}s)`;
-            valueClass = 'active';
-            
-            // Add warning status if less than 30 seconds
-            if (secondsRemaining < 30) {
-                valueClass = 'warning';
-            }
-        } else if (timerValue) {
-            timerText = `${timerValue} (Expired)`;
-            valueClass = 'expired';
+    // Countdown display is handled by tickVoteTimer() / syncVoteTimer().
+    // Here we only update the "STARTED HH:MM" label from the timer's open timestamp.
+    const timerStartElement = document.getElementById('vote-timer-start');
+    if (timerStartElement) {
+        const openedAt = floorData.timer?.timestamp || voteTimer.openedAt;
+        if (openedAt) {
+            const startStr = new Date(openedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            timerStartElement.textContent = `OPENED ${startStr}`;
+            timerStartElement.hidden = false;
         } else {
-            timerText = timestamp;
-            valueClass = '';
+            timerStartElement.hidden = true;
         }
-        
-        const timerElement = document.getElementById('last-update');
-        const timerStartElement = document.getElementById('vote-timer-start');
-        if (timerElement) {
-            // Clear existing classes
-            timerElement.className = 'vote-timer-value';
-            
-            // Apply new classes
-            if (valueClass) {
-                timerElement.classList.add(valueClass);
-            }
-            
-            // Update text content
-            timerElement.textContent = timerText;
-        }
-        if (timerStartElement) {
-            timerStartElement.textContent = startTimestamp ? `STARTED ${startTimestamp}` : '';
-            timerStartElement.hidden = !startTimestamp;
-        }
-        console.log('=== TIMER UPDATE SUCCESS ===');
-    } else {
-        console.log('=== TIMER UPDATE SKIPPED ===');
-        console.log('Timer data available:', !!floorData.timer);
-        console.log('Timer element available:', !!elements.lastUpdate);
+    }
+    // If we have timer data from a REST poll (not SSE), sync it once so the
+    // local countdown starts even if SSE hasn't delivered a tick yet.
+    if (floorData.timer?.value && !voteTimer.interval) {
+        syncVoteTimer(floorData.timer);
     }
 
     // Update timeline info if available
@@ -835,6 +975,66 @@ function updateFloorDisplay(status = null) {
             elements.nextVotes.textContent = timelineText;
         }
     }
+
+    // Sync completed roll call results back to bill cards
+    reconcileVoteWithBills();
+}
+
+// After a vote finishes, look up the bill in billsData by roll call question and update its status.
+function reconcileVoteWithBills() {
+    if (!floorData.rollCall || !floorData.voteCounts) return;
+    // Don't update while a vote is actively in progress
+    if (floorData.currentStatus?.value === 'vote') return;
+
+    const totals = floorData.voteCounts.totals || {};
+    const yeas = parseInt(totals.yeas) || 0;
+    const nays = parseInt(totals.nays) || 0;
+    if (yeas + nays === 0) return;
+
+    // Parse bill ID from question, e.g. "S 1003 - On Motion to Suspend..." or "H R 1041 - ..."
+    const question = floorData.rollCall.question || '';
+    // Normalize abbreviation with optional spaces/dots to our canonical form
+    const normalizeBillType = raw => {
+        const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
+        const map = {
+            'HR': 'H.R.', 'H.R.': 'H.R.', 'HRES': 'H.Res.', 'H.RES.': 'H.Res.',
+            'HJRES': 'H.J.Res.', 'H.J.RES.': 'H.J.Res.',
+            'HCONRES': 'H.Con.Res.', 'H.CON.RES.': 'H.Con.Res.',
+            'S': 'S.', 'S.': 'S.', 'SRES': 'S.Res.', 'S.RES.': 'S.Res.',
+            'SJRES': 'S.J.Res.', 'SCONRES': 'S.Con.Res.'
+        };
+        return map[t] || null;
+    };
+    // Match "S 1003", "H R 1041", "H Res 100", etc. at the start or after a dash
+    const qm = question.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+    if (!qm) return;
+
+    const type = normalizeBillType(qm[1]);
+    if (!type) return;
+    const billId = `${type} ${qm[2]}`;
+
+    // Look for the bill across all three billsData arrays
+    const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
+    let found = false;
+    for (const key of allArrays) {
+        const arr = billsData[key] || [];
+        const bill = arr.find(b => b.id === billId);
+        if (bill) {
+            // Determine pass/fail: suspension requires 2/3 of votes cast; regular = simple majority
+            const isSuspension = /suspend/i.test(question);
+            const required = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
+            const passed = yeas >= required;
+            const rollNum = floorData.rollCall.number ? ` (Roll Call ${floorData.rollCall.number})` : '';
+            bill.status = passed ? 'passed' : 'failed';
+            bill.latestAction = passed
+                ? `Passed${rollNum}: ${yeas}-${nays}`
+                : `Failed${rollNum}: ${yeas}-${nays}`;
+            bill.considered = true;
+            found = true;
+            break;
+        }
+    }
+    if (found) updateBillsDisplay();
 }
 
 // Mock Data (single vote)
@@ -925,10 +1125,20 @@ const elements = {
     vacanciesCount: document.getElementById('vacancies-count'),
     vacanciesList: document.getElementById('vacancies-list'),
     debateSection: document.getElementById('debate-section'),
+    debateLengthTag: document.getElementById('debate-length-tag'),
+    debateLengthText: document.getElementById('debate-length-text'),
     debateBillTitle: document.getElementById('debate-bill-title'),
     debateBillId: document.getElementById('debate-bill-id'),
-    debateBillSponsor: document.getElementById('debate-bill-sponsor'),
     debateBillDescription: document.getElementById('debate-bill-description'),
+    debateSponsorSection: document.getElementById('debate-sponsor-section'),
+    debateSponsorInner: document.getElementById('debate-sponsor-inner'),
+    debateSupportSection: document.getElementById('debate-support-section'),
+    debateSupportLabel: document.getElementById('debate-support-label'),
+    debateSupportBar: document.getElementById('debate-support-bar'),
+    debateSupportLabels: document.getElementById('debate-support-labels'),
+    debateCommitteesSection: document.getElementById('debate-committees-section'),
+    debateCommitteesList: document.getElementById('debate-committees-list'),
+    debateSummarySection: document.getElementById('debate-summary-section'),
     prayerSection: document.getElementById('prayer-section'),
     prayerImage: document.getElementById('prayer-image'),
     prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
@@ -1031,7 +1241,7 @@ const elements = {
 // RSS Feed Configuration
 const RSS_CONFIG = {
     workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/proceedings',
-    refreshInterval: 120000 // 2 minutes
+    refreshInterval: 15000 // 15 seconds — proceedings drives mode switching
 };
 
 // Date override for testing proceedings from a specific date (set via console)
@@ -1288,34 +1498,74 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
     setIfChanged(elements.airportDelaysList, delaysHtml);
 }
 
+// Convert a string to Title Case, respecting common minor words
+function toTitleCase(str) {
+    const minors = new Set(['a','an','the','and','but','or','for','nor','on','at','to','by','of','in','up']);
+    return str.toLowerCase().replace(/\b\w+/g, (word, offset) =>
+        (offset === 0 || !minors.has(word)) ? word.charAt(0).toUpperCase() + word.slice(1) : word
+    );
+}
+
+// Parse a debate length phrase like "forty minutes" or "one hour" into "40 MIN" / "1 HR"
+function parseDebateLength(text) {
+    const lower = text.trim().toLowerCase();
+    const wordMap = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+        'fifteen': 15, 'twenty': 20, 'thirty': 30, 'forty': 40,
+        'forty-five': 45, 'forty five': 45,
+        'sixty': 60, 'ninety': 90,
+        'one and a half': 90, 'one and one-half': 90,
+    };
+    const m = lower.match(/^(.+?)\s+(hours?|minutes?)$/);
+    if (!m) return null;
+    const numPart = m[1].trim();
+    const unit = m[2];
+    const n = wordMap[numPart] ?? parseInt(numPart, 10);
+    if (!n || isNaN(n)) return null;
+    return unit.startsWith('hour') ? (n === 1 ? '1 HR' : `${n} HRS`) : `${n} MIN`;
+}
+
 // Utility function to format dates
+const MONTH_NAMES = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+];
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// "20 May 2026"
+function fmtDate(d) {
+    return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "Tuesday, 20 May 2026"
+function fmtDateLong(d) {
+    return `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
+}
+
+// Accepts date strings in various formats (ISO, M/D/YY, M/D/YYYY) → "20 May 2026"
 function formatDate(dateStr) {
-    // Handle undefined or null dateStr
-    if (!dateStr) {
-        return 'No date';
+    if (!dateStr) return 'No date';
+
+    // Parse "4/22/26" or "1/6/2026"
+    const slash = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (slash) {
+        const fullYear = slash[3].length === 2 ? 2000 + parseInt(slash[3]) : parseInt(slash[3]);
+        const d = new Date(fullYear, parseInt(slash[1]) - 1, parseInt(slash[2]));
+        return fmtDate(d);
     }
-    
-    // Handle various date formats from gallery
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    // Parse formats like "4/22/26" or "1/6/26"
-    const match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})/);
-    if (match) {
-        const [, month, day, year] = match;
-        const fullYear = 2000 + parseInt(year);
-        return `${day.padStart(2, '0')} ${monthNames[parseInt(month) - 1]} ${fullYear}`;
+
+    // ISO or any other parseable string — parse as local date to avoid UTC offset shifting the day
+    const isoLocal = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoLocal) {
+        const d = new Date(parseInt(isoLocal[1]), parseInt(isoLocal[2]) - 1, parseInt(isoLocal[3]));
+        return fmtDate(d);
     }
-    
-    // Try parsing ISO date format
-    const isoDate = new Date(dateStr);
-    if (!isNaN(isoDate.getTime())) {
-        const day = isoDate.getDate().toString().padStart(2, '0');
-        const month = monthNames[isoDate.getMonth()];
-        const year = isoDate.getFullYear();
-        return `${day} ${month} ${year}`;
-    }
-    
-    return dateStr; // Return original if can't parse
+
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return fmtDate(d);
+
+    return dateStr;
 }
 
 // House Voting Days Configuration
@@ -1336,7 +1586,7 @@ let votingCalendarData = [];
 // Bills This Week Configuration
 const BILLS_CONFIG = {
     workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/bills',
-    refreshInterval: 300000 // 5 minutes
+    refreshInterval: 60000 // 1 minute — status changes during active sessions
 };
 
 // State for bills data
@@ -1393,6 +1643,7 @@ function sortBillsForDisplay(bills) {
 let billsData = {
     ruleBills: [],
     suspensionBills: [],
+    mayBeConsideredBills: [],
     rawHeaders: null,
     lastUpdated: null
 };
@@ -1403,38 +1654,82 @@ const BLUESKY_CONFIG = {
 
 
 // Bills This Week Functions
+// True after the first successful full fetch (with Congress.gov enrichment).
+// Subsequent calls use ?quick=1 and preserve enrichment fields from the initial load.
+let billsFullyEnriched = false;
+
 async function fetchBillsThisWeek() {
     console.log('=== BILLS FETCH START ===');
     try {
         console.log('Rule bills list element:', elements.ruleBillsList);
         console.log('Suspension bills list element:', elements.suspensionBillsList);
-        
-        const billsUrl = proceedingsDateOverride
+
+        // Quick mode: skip Congress.gov enrichment (summaries, sponsors, committees).
+        // We already have that from the initial full fetch; only Bluesky + House XML
+        // status updates matter on recurring polls.
+        const isQuick = billsFullyEnriched;
+        let billsUrl = proceedingsDateOverride
             ? `${BILLS_CONFIG.workerUrl}?date=${encodeURIComponent(proceedingsDateOverride)}`
             : BILLS_CONFIG.workerUrl;
+        if (isQuick) billsUrl += (billsUrl.includes('?') ? '&' : '?') + 'quick=1';
+
         const response = await fetch(billsUrl);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         if (data.error) {
             throw new Error(data.error);
         }
-        
+
         console.log('Bills API response:', data);
-        
-        // Process bills data from worker; stamp original index for stable fallback sort
-        const stampIdx = (arr) => (arr || []).map((b, i) => ({ ...b, _origIdx: i }));
-        billsData = {
-            ruleBills: stampIdx(data.ruleBills),
-            suspensionBills: stampIdx(data.suspensionBills),
-            rawHeaders: data.rawHeaders || null,
-            lastUpdated: data.lastUpdated || new Date(),
-            weekDate: data.weekDate || 'No current week bills available'
+
+        // Merge incoming bill data with what we already have locally.
+        // Rules:
+        //  1. Never downgrade a higher-priority status (e.g. passed → scheduled).
+        //  2. On quick refreshes, carry over Congress.gov enrichment fields
+        //     (summary, sponsor, cosponsors, committees) since the server skipped them.
+        const STATUS_PRIORITY = { passed: 4, failed: 4, 'roll-call': 3, postponed: 2, scheduled: 1 };
+        const mergeBills = (newArr, existingArr) => {
+            const byId = Object.fromEntries((existingArr || []).map(b => [b.id, b]));
+            return (newArr || []).map((bill, i) => {
+                const prev = byId[bill.id];
+                if (!prev) return { ...bill, _origIdx: i };
+
+                // Keep higher-priority status from previous state
+                const keepOldStatus = (STATUS_PRIORITY[prev.status] || 0) > (STATUS_PRIORITY[bill.status] || 0);
+                const statusFields = keepOldStatus
+                    ? { status: prev.status, latestAction: prev.latestAction, considered: prev.considered,
+                        actionSource: prev.actionSource, actionSourceUrl: prev.actionSourceUrl,
+                        latestActionDate: prev.latestActionDate }
+                    : {};
+
+                // On quick refresh carry over enrichment the server didn't re-fetch
+                const enrichment = isQuick ? {
+                    summary:     bill.summary     ?? prev.summary,
+                    sponsor:     bill.sponsor     ?? prev.sponsor,
+                    cosponsors:  bill.cosponsors  ?? prev.cosponsors,
+                    committees:  bill.committees  ?? prev.committees,
+                } : {};
+
+                return { ...bill, ...enrichment, ...statusFields, _origIdx: i };
+            });
         };
-        console.log(`Found ${billsData.ruleBills.length} rule bills, ${billsData.suspensionBills.length} suspension bills`);
-        
+
+        billsData = {
+            ruleBills:           mergeBills(data.ruleBills,           billsData.ruleBills),
+            suspensionBills:     mergeBills(data.suspensionBills,     billsData.suspensionBills),
+            mayBeConsideredBills:mergeBills(data.mayBeConsideredBills,billsData.mayBeConsideredBills),
+            rawHeaders:   data.rawHeaders  || billsData.rawHeaders  || null,
+            lastUpdated:  data.lastUpdated || new Date(),
+            weekDate:     data.weekDate    || billsData.weekDate    || 'No current week bills available'
+        };
+
+        if (!isQuick) billsFullyEnriched = true; // mark enrichment complete after first full fetch
+
+        console.log(`Found ${billsData.ruleBills.length} rule bills, ${billsData.suspensionBills.length} suspension bills, ${billsData.mayBeConsideredBills.length} may-be-considered bills`);
+
         updateBillsDisplay();
 
         // Fetch special rules in parallel, then re-render cards with rule tags
@@ -1546,23 +1841,60 @@ function updateBillsDisplay() {
         btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
     });
 
-    // Populate rule tags in the UNDER RULE header
+    // Populate SPECIAL RULE(S) section
     const ruleTagsContainer = document.getElementById('rule-tags-container');
+    const ruleGoverningSection = document.getElementById('rule-governing-section');
     if (ruleTagsContainer && specialRulesMap.size > 0) {
         const seen = new Set();
-        const tags = [];
+        const cards = [];
         for (const bill of billsData.ruleBills) {
             const rule = specialRulesMap.get(normalizeBillIdForRules(bill.id));
             if (rule && !seen.has(rule.hresNum)) {
                 seen.add(rule.hresNum);
-                const sc = rule.ruleStatus === 'passed' ? 'rule-tag-passed'
-                    : rule.ruleStatus === 'reported' ? 'rule-tag-reported'
-                    : 'rule-tag-unknown';
+                const statusClass = rule.ruleStatus === 'passed' ? 'passed'
+                    : rule.ruleStatus === 'reported' ? 'scheduled'
+                    : 'scheduled';
+                const statusSymbol = rule.ruleStatus === 'passed' ? '✓' : '';
                 const href = rule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${rule.hresNum}`;
-                tags.push(`<a class="bill-rule-tag ${sc}" href="${href}" target="_blank" rel="noopener" title="Special rule for floor consideration" onclick="event.stopPropagation()">${rule.hres}${rule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`);
+                const actionText = rule.ruleStatus === 'passed' ? 'Agreed to by the House'
+                    : rule.ruleStatus === 'reported' ? 'Reported by Rules Committee'
+                    : 'Pending';
+                cards.push(`
+                    <a class="bill-card bill-card-rule-link" href="${href}" target="_blank" rel="noopener">
+                        <div class="bill-status ${statusClass}">${statusSymbol}</div>
+                        <div class="bill-info">
+                            <div class="bill-id">${rule.hres}</div>
+                            <div class="bill-title">Special rule governing floor consideration</div>
+                            <div class="bill-meta">
+                                <div class="bill-action">${actionText}</div>
+                            </div>
+                        </div>
+                        <div class="bill-chevron">›</div>
+                    </a>
+                `);
             }
         }
-        ruleTagsContainer.innerHTML = tags.join('');
+        ruleTagsContainer.innerHTML = cards.join('');
+        const show = cards.length > 0;
+        if (ruleGoverningSection) ruleGoverningSection.style.display = show ? '' : 'none';
+        ruleTagsContainer.style.display = show ? '' : 'none';
+    } else {
+        if (ruleGoverningSection) ruleGoverningSection.style.display = 'none';
+        if (ruleTagsContainer) ruleTagsContainer.style.display = 'none';
+    }
+
+    // Populate MAY BE CONSIDERED section
+    const mayBeConsideredList = document.getElementById('may-be-considered-list');
+    const mayBeConsideredSection = document.getElementById('may-be-considered-section');
+    const sortedMaybe = sortBillsForDisplay(billsData.mayBeConsideredBills || []);
+    if (mayBeConsideredList) {
+        if (sortedMaybe.length > 0) {
+            setIfChanged(mayBeConsideredList, sortedMaybe.map(bill => createBillCard(bill, 'maybe')).join(''));
+            if (mayBeConsideredSection) mayBeConsideredSection.style.display = '';
+        } else {
+            setIfChanged(mayBeConsideredList, '');
+            if (mayBeConsideredSection) mayBeConsideredSection.style.display = 'none';
+        }
     }
 }
 
@@ -1621,9 +1953,11 @@ function openBillModal(billId) {
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
     let actionTimeStr = '';
-    if (bill.actionTime) {
+    // Congress.gov only has date precision (actionDate = "YYYY-MM-DD", stored as midnight UTC).
+    // Bluesky and proceedings timestamps have real time precision — show the time for those.
+    if ((bill.actionSource === 'bluesky' || bill.actionSource === 'proceedings') && bill.latestActionDate) {
         try {
-            actionTimeStr = new Date(bill.actionTime).toLocaleTimeString('en-US', {
+            actionTimeStr = new Date(bill.latestActionDate).toLocaleTimeString('en-US', {
                 hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
             });
         } catch (_) {}
@@ -1631,9 +1965,11 @@ function openBillModal(billId) {
     const congressUrl = billIdToCongressUrl(bill.id);
     let actionSourceHtml = '';
     if (bill.actionSource === 'bluesky' && bill.actionSourceUrl) {
-        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">source</a>`;
+        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">Bluesky</a>`;
+    } else if (bill.actionSource === 'proceedings' && bill.actionSourceUrl) {
+        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">House Clerk</a>`;
     } else if (bill.actionSource === 'congress' && congressUrl) {
-        actionSourceHtml = ` <a href="${congressUrl}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">source</a>`;
+        actionSourceHtml = ` <a href="${congressUrl}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">Congress.gov</a>`;
     }
 
     // Sponsor HTML (reuse absentee-member classes)
@@ -1721,10 +2057,17 @@ function openBillModal(billId) {
     })() : '';
 
     const rulesSlug = bill.procedure === 'rule' ? billIdToRulesSlug(bill.id) : null;
-    const hasAmendments = !!rulesSlug;
+
+    if (rulesSlug) overlay.classList.add('has-amendments');
+    else overlay.classList.remove('has-amendments');
 
     overlay.innerHTML = `
-        <div class="bill-modal" role="dialog" aria-modal="true">
+        ${rulesSlug ? `
+        <div class="bill-panel-nav" id="bill-panel-nav">
+            <button class="bill-panel-nav-btn is-active" data-panel="main">Bill Details</button>
+            <button class="bill-panel-nav-btn" data-panel="amendments">Amendments</button>
+        </div>` : ''}
+        <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true">
             <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
             <div class="bill-modal-top">
                 <div class="bill-modal-header">
@@ -1734,103 +2077,154 @@ function openBillModal(billId) {
                     ${modalRuleTagHtml}
                 </div>
                 <h2 class="bill-modal-title">${bill.title}</h2>
-                ${hasAmendments ? `
-                <div class="bill-modal-tabs">
-                    <button class="bill-modal-tab active" data-tab="details">Details</button>
-                    <button class="bill-modal-tab" data-tab="amendments">Amendments</button>
-                </div>` : ''}
             </div>
-            <div class="bill-modal-tab-panel" data-panel="details">
-                <div class="bill-modal-sections">
+            <div class="bill-modal-sections">
                 ${sponsorHtml}
                 ${cosponsorsHtml}
                 ${committeeHtml}
-                </div>
-                ${bill.summary ? `
-                <div class="bill-modal-body">
-                    <div class="bill-modal-section-label">SUMMARY</div>
-                    <p class="bill-modal-summary">${bill.summary}</p>
-                </div>` : ''}
-                <div class="bill-modal-foot">
-                    ${actionText ? `
-                    <div class="bill-modal-section" style="margin-bottom:12px;">
-                        <div class="bill-modal-section-label">LATEST ACTION</div>
-                        <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}</div>
-                    </div>` : ''}
-                    ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
-                </div>
             </div>
-            ${hasAmendments ? `
-            <div class="bill-modal-tab-panel" data-panel="amendments" hidden>
-                <div class="bill-amendments-wrap">
-                    <div class="bill-amendments-loading">Loading amendments…</div>
-                </div>
+            ${bill.summary ? `
+            <div class="bill-modal-body">
+                <div class="bill-modal-section-label">SUMMARY</div>
+                <p class="bill-modal-summary">${bill.summary}</p>
             </div>` : ''}
+            <div class="bill-modal-foot">
+                ${actionText ? `
+                <div class="bill-modal-section" style="margin-bottom:12px;">
+                    <div class="bill-modal-section-label">LATEST ACTION</div>
+                    <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}</div>
+                </div>` : ''}
+                ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+            </div>
         </div>
+        ${rulesSlug ? `
+        <div class="bill-amendments-panel" id="bill-amendments-panel-el">
+            <div class="bill-amendments-panel-header">
+                <span class="bill-amendments-panel-title">Amendments</span>
+                <span class="bill-amendments-count" id="amendments-count"></span>
+            </div>
+            <div class="bill-amendments-panel-body" id="amendments-body">
+                <div class="bill-amendments-empty">Loading…</div>
+            </div>
+            <div class="bill-modal-foot">
+                <a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-modal-link rule" target="_blank" rel="noopener">View on rules.house.gov →</a>
+            </div>
+        </div>` : ''}
     `;
     overlay.hidden = false;
     document.getElementById('bill-modal-close').addEventListener('click', closeBillModal);
     document.addEventListener('keydown', onBillModalKey);
 
-    if (hasAmendments) {
-        overlay.querySelectorAll('.bill-modal-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                overlay.querySelectorAll('.bill-modal-tab').forEach(t => t.classList.remove('active'));
-                overlay.querySelectorAll('.bill-modal-tab-panel').forEach(p => p.hidden = true);
-                tab.classList.add('active');
-                const panel = overlay.querySelector(`[data-panel="${tab.dataset.tab}"]`);
-                if (panel) panel.hidden = false;
-                if (tab.dataset.tab === 'amendments' && !tab.dataset.loaded) {
-                    tab.dataset.loaded = '1';
-                    loadAmendments(rulesSlug, panel.querySelector('.bill-amendments-wrap'));
-                }
+    if (rulesSlug) {
+        const mainPanel = document.getElementById('bill-main-panel');
+        const amendmentsPanel = document.getElementById('bill-amendments-panel-el');
+        const nav = document.getElementById('bill-panel-nav');
+        if (nav && mainPanel && amendmentsPanel) {
+            mainPanel.classList.add('panel-visible');
+            nav.querySelectorAll('.bill-panel-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    nav.querySelectorAll('.bill-panel-nav-btn').forEach(b => b.classList.remove('is-active'));
+                    btn.classList.add('is-active');
+                    if (btn.dataset.panel === 'main') {
+                        mainPanel.classList.add('panel-visible');
+                        amendmentsPanel.classList.remove('panel-visible');
+                    } else {
+                        mainPanel.classList.remove('panel-visible');
+                        amendmentsPanel.classList.add('panel-visible');
+                    }
+                });
             });
-        });
+        }
+        loadAmendments(rulesSlug);
     }
 }
 
-async function loadAmendments(slug, container) {
+async function loadAmendments(slug) {
+    const body = document.getElementById('amendments-body');
+    const countEl = document.getElementById('amendments-count');
+    if (!body) return;
     try {
-        const resp = await fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}`);
+        const congress = currentCongress || 119;
+        const [resp, xmlText] = await Promise.all([
+            fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
+            getMemberDataXml().catch(() => null)
+        ]);
         const data = await resp.json();
         if (!data.amendments?.length) {
-            container.innerHTML = '<div class="bill-amendments-empty">No amendments submitted.</div>';
+            body.innerHTML = '<div class="bill-amendments-empty">No amendments submitted.</div>';
             return;
         }
-        const partyClass = p => p === 'Republican' ? 'rep' : p === 'Democrat' ? 'dem' : 'ind';
-        const statusClass = s => {
-            const sl = s.toLowerCase();
-            if (sl.includes('made in order') || sl.includes('adopted')) return 'adopted';
-            if (sl.includes('not') || sl.includes('failed') || sl.includes('withdrawn')) return 'failed';
+        if (countEl) countEl.textContent = `${data.amendments.length} submitted`;
+
+        const xmlDoc = xmlText ? parseMemberDataXml(xmlText) : null;
+
+        const sc = s => {
+            const l = s.toLowerCase();
+            if (l.includes('made in order') || l.includes('adopted')) return 'adopted';
+            if (l.includes('not') || l.includes('failed') || l.includes('withdrawn')) return 'failed';
             return 'submitted';
         };
-        container.innerHTML = `
+
+        const partyClass = p => {
+            const l = (p || '').toLowerCase();
+            if (l === 'r' || l.startsWith('rep')) return 'rep';
+            if (l === 'd' || l.startsWith('dem')) return 'dem';
+            return 'ind';
+        };
+
+        const parseSponsorTokens = str =>
+            str.split(/,\s*(?=[A-Z])/).map(t => {
+                const m = t.trim().match(/^(.+?)\s*\(([A-Z]{2})\)$/);
+                return m ? { raw: t.trim(), lastName: m[1].trim(), state: m[2] } : { raw: t.trim(), lastName: null, state: null };
+            }).filter(t => t.raw);
+
+        const partyLetter = p => partyClass(p) === 'rep' ? 'R' : partyClass(p) === 'dem' ? 'D' : 'I';
+        const cleanDistrict = d => d ? d.replace(/\b(\d+)(?:st|nd|rd|th)\b/gi, '$1') : d;
+
+        const renderSponsors = (a) => {
+            const tokens = parseSponsorTokens(a.sponsors);
+            const amendmentDot = partyClass(a.party); // one dot per amendment
+            const chips = tokens.map(t => {
+                const match = (xmlDoc && t.lastName && t.state)
+                    ? findBestMemberMatchByName(xmlDoc, t.lastName, t.state)
+                    : null;
+                const pc = match ? partyClass(match.party) : partyClass(a.party);
+                const pl = match ? partyLetter(match.party) : partyLetter(a.party);
+                const name = match ? match.fullName : t.raw;
+                const photoUrl = match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null;
+                const profileUrl = match ? buildCongressProfileUrl(match.bioguideId) : null;
+                const dist = match && match.district && match.district !== '0' ? cleanDistrict(match.district) : '';
+                const distLabel = match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || '');
+                const nameHtml = a.pdfUrl
+                    ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${name}</a>`
+                    : name;
+                const imgHtml = `<img class="amdt-sponsor-photo" src="${photoUrl || ''}" alt="">`;
+                const wrapHtml = `<div class="amdt-sponsor-photo-wrap">${imgHtml}</div>`;
+                const photoHtml = photoUrl
+                    ? (profileUrl ? `<a href="${profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
+                    : wrapHtml;
+                return `<div class="amdt-sponsor-chip">
+                    ${photoHtml}
+                    <span class="amdt-sponsor-name"><span class="amdt-sponsor-party-tag ${pc}">${pl}</span>${nameHtml}${distLabel ? `<span class="amdt-sponsor-dist"> ${distLabel}</span>` : ''}</span>
+                </div>`;
+            });
+            return `<span class="amdt-party ${amendmentDot}"></span><div class="amdt-sponsor-list">${chips.join('')}</div>`;
+        };
+
+        body.innerHTML = `
             <table class="amendments-table">
-                <thead><tr>
-                    <th>#</th>
-                    <th>Sponsor(s)</th>
-                    <th>Summary</th>
-                    <th>Status</th>
-                </tr></thead>
-                <tbody>
-                ${data.amendments.map(a => `
+                <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th></tr></thead>
+                <tbody>${data.amendments.map(a => `
                     <tr>
                         <td class="amdt-num">${a.num}</td>
-                        <td class="amdt-sponsors">
-                            <span class="amdt-party ${partyClass(a.party)}"></span>
-                            ${a.pdfUrl
-                                ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${a.sponsors}</a>`
-                                : a.sponsors}
-                        </td>
+                        <td class="amdt-sponsors">${renderSponsors(a)}</td>
                         <td class="amdt-summary">${a.summary}</td>
-                        <td class="amdt-status"><span class="amdt-status-badge ${statusClass(a.status)}">${a.status}</span></td>
-                    </tr>
-                `).join('')}
+                        <td><span class="amdt-status-badge ${sc(a.status)}">${a.status}</span></td>
+                    </tr>`).join('')}
                 </tbody>
-            </table>
-        `;
+            </table>`;
     } catch (e) {
-        container.innerHTML = `<div class="bill-amendments-empty">Failed to load amendments.</div>`;
+        body.innerHTML = '<div class="bill-amendments-empty">Failed to load amendments.</div>';
     }
 }
 
@@ -1938,10 +2332,21 @@ function onInfoPopupKey(e) {
 function autoSwitchModeFromProceedings(items) {
     if (!items || items.length === 0) return;
 
+    // Never override an active vote with proceedings-derived mode.
+    // DomeWatch SSE is authoritative for vote state; the RSS feed lags.
+    const liveStatus = floorData.currentStatus?.value;
+    if (liveStatus === 'vote' || liveStatus === 'voting') {
+        window.setMode('vote');
+        return;
+    }
+
     const latest = items[0].description.toLowerCase();
 
-    // If the most recent proceeding is an adjournment, that's the final word — stay in recess.
-    if (latest.includes('adjourn') || latest.includes('the house stands adjourned')) {
+    // If the most recent proceeding is a recess or adjournment, stay in recess.
+    if (latest.includes('adjourn') ||
+        latest.includes('do now recess') ||
+        latest.includes('stands in recess') ||
+        latest.includes('house do now recess')) {
         window.setMode('recess');
         return;
     }
@@ -2035,64 +2440,77 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // For episodic modes (one-minute, special-order, morning-hour) vs persistent debate (COWH),
+    // pick whichever has the most recent matching item — avoids stale morning speeches
+    // overriding afternoon floor debate.
+    const itemTime = i => i?.pubDate ? new Date(i.pubDate).getTime() : 0;
+
+    const cotwItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        if (d.includes('morning-hour debate') || d.includes('morning hour debate')) return false;
+        return d.includes('act as chairman of the committee') ||
+               d.includes('committee of the whole') ||
+               d.includes('resolved itself into the committee') ||
+               d.startsWith('debate -') ||   // "DEBATE - The House proceeded with..."
+               (d.includes('proceeded with') && d.includes('debate'));
+    });
+
     const soItem = items.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('special order speech') || d.includes('special orders');
     });
-    if (soItem) {
-        window.setMode('special-order');
-        if (soItem.pubDate && elements.specialOrderTime) {
-            elements.specialOrderTime.textContent = new Date(soItem.pubDate).toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-            });
-        }
-        if (elements.specialOrderDescriptionLine) {
-            elements.specialOrderDescriptionLine.textContent = decodeHtml(soItem.description);
-        }
-        return;
-    }
 
     const omItem = items.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('one minute speech') || d.includes('one-minute speech');
     });
-    if (omItem) {
-        window.setMode('one-minute');
-        if (omItem.pubDate && elements.oneMinuteTime) {
-            elements.oneMinuteTime.textContent = new Date(omItem.pubDate).toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-            });
-        }
-        if (elements.oneMinuteDescriptionLine) {
-            elements.oneMinuteDescriptionLine.textContent = decodeHtml(omItem.description);
-        }
-        return;
-    }
 
     const mhItem = items.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('morning-hour debate') || d.includes('morning hour debate');
     });
-    if (mhItem) {
-        window.setMode('morning-hour');
-        if (mhItem.pubDate && elements.morningHourTime) {
-            elements.morningHourTime.textContent = new Date(mhItem.pubDate).toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-            });
-        }
-        return;
-    }
 
-    // Committee of the Whole — designated chairman signals House has resolved into COWH
-    const cotwItem = items.find(i => {
-        const d = i.description.toLowerCase();
-        return d.includes('act as chairman of the committee') ||
-               d.includes('committee of the whole') ||
-               d.includes('resolved itself into the committee');
-    });
-    if (cotwItem) {
-        window.setMode('debate');
-        updateDebateSection(items);
+    // Build candidate list sorted by most-recent timestamp; COWH wins ties
+    const candidates = [];
+    if (cotwItem) candidates.push({ mode: 'debate',        item: cotwItem, tiebreak: 1 });
+    if (soItem)   candidates.push({ mode: 'special-order', item: soItem,   tiebreak: 0 });
+    if (omItem)   candidates.push({ mode: 'one-minute',    item: omItem,   tiebreak: 0 });
+    if (mhItem)   candidates.push({ mode: 'morning-hour',  item: mhItem,   tiebreak: 0 });
+
+    if (candidates.length > 0) {
+        candidates.sort((a, b) => (itemTime(b.item) - itemTime(a.item)) || (b.tiebreak - a.tiebreak));
+        const winner = candidates[0];
+        if (winner.mode === 'debate') {
+            window.setMode('debate');
+            updateDebateSection(items);
+        } else if (winner.mode === 'special-order') {
+            window.setMode('special-order');
+            if (soItem.pubDate && elements.specialOrderTime) {
+                elements.specialOrderTime.textContent = new Date(soItem.pubDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+                });
+            }
+            if (elements.specialOrderDescriptionLine) {
+                elements.specialOrderDescriptionLine.textContent = decodeHtml(soItem.description);
+            }
+        } else if (winner.mode === 'one-minute') {
+            window.setMode('one-minute');
+            if (omItem.pubDate && elements.oneMinuteTime) {
+                elements.oneMinuteTime.textContent = new Date(omItem.pubDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+                });
+            }
+            if (elements.oneMinuteDescriptionLine) {
+                elements.oneMinuteDescriptionLine.textContent = decodeHtml(omItem.description);
+            }
+        } else if (winner.mode === 'morning-hour') {
+            window.setMode('morning-hour');
+            if (mhItem.pubDate && elements.morningHourTime) {
+                elements.morningHourTime.textContent = new Date(mhItem.pubDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+                });
+            }
+        }
         return;
     }
 
@@ -2111,6 +2529,7 @@ function autoSwitchModeFromProceedings(items) {
     }
     if (latest.includes('moment of silence') || latest.includes('silence')) {
         window.setMode('silence');
+        updateSilenceSection(items);
         return;
     }
     if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
@@ -2168,11 +2587,7 @@ async function updateProceedingsFeed() {
         const proceedingsDate = proceedingsDateOverride
             ? new Date(proceedingsDateOverride)
             : new Date(data.items[0]?.pubDate || new Date());
-        const dateStr = proceedingsDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
+        const dateStr = fmtDate(proceedingsDate);
         if (elements.proceedingsLastUpdate) {
             elements.proceedingsLastUpdate.textContent = dateStr;
         }
@@ -2214,8 +2629,9 @@ async function updateProceedingsFeed() {
         // Update debate section with latest bill information
         updateDebateSection(data.items);
 
-        // Update prayer and pledge sections
+        // Update prayer, silence, and pledge sections
         updatePrayerSection(data.items);
+        updateSilenceSection(data.items);
         updatePledgeSection(data.items);
         updateSpeakerSection(data.items);
         updateCommitteeChairSection(data.items);
@@ -2240,33 +2656,221 @@ async function updateProceedingsFeed() {
 // Update debate section with bill information
 function updateDebateSection(items) {
     if (!elements.debateBillTitle || !items || items.length === 0) return;
-    
-    // Get the latest item
-    const latestItem = items[0];
-    
-    // Try to extract bill information from the description
-    const description = latestItem.description || '';
-    
-    // Try to find bill number (e.g., H.R. 1234, S. 567)
-    const billMatch = description.match(/[HS]\.?\s*R\.?\s*\d+/i);
-    const billId = billMatch ? billMatch[0].toUpperCase().replace(/\s/g, '') : 'Unknown Bill';
-    
-    // Try to find bill title (first sentence or line)
-    const titleMatch = description.match(/^(.+?)(?:\n|$)/);
-    const billTitle = titleMatch ? titleMatch[1].trim() : description.substring(0, 100);
-    
-    // Try to find sponsor (looking for patterns like "Sponsor: Rep. Name")
-    const sponsorMatch = description.match(/(?:sponsor|by|introduced\s*by):\s*(.+?)(?:\n|,|$)/i);
-    const sponsor = sponsorMatch ? sponsorMatch[1].trim() : 'Unknown Sponsor';
-    
-    // Update debate section elements
-    elements.debateBillTitle.textContent = billTitle;
-    elements.debateBillId.textContent = billId;
-    elements.debateBillSponsor.textContent = `Sponsor: ${sponsor}`;
-    elements.debateBillDescription.textContent = description.substring(0, 300) + (description.length > 300 ? '...' : '');
+
+    // ── 1. Find the best proceedings item ───────────────────────────────
+    // Prefer items that start with "DEBATE" (e.g. "DEBATE - The House proceeded with…")
+    const debateItem = items.find(i => /^DEBATE\b/i.test(i.description));
+    const fallbackItem = items.find(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('committee of the whole') || d.includes('consideration of') || d.includes('proceeded to');
+    });
+    const activeItem = debateItem || fallbackItem;
+
+    // ── 2. Parse debate length and bill ID from "proceeded with X of debate on BILL" ─
+    let debateLengthLabel = null;
+    let foundBillId = null;
+
+    if (activeItem) {
+        const desc = activeItem.description;
+
+        // Debate length: "proceeded with forty minutes of debate" / "one hour of debate"
+        const timeMatch = desc.match(/proceeded with (.+?) of debate/i);
+        if (timeMatch) {
+            debateLengthLabel = parseDebateLength(timeMatch[1]);
+        }
+
+        // Bill ID at end of phrase: "on S. 1003" / "on H.R. 1234" / "on H. Res. 456"
+        const onBillMatch = desc.match(/\bon\s+(H\.\s*(?:R\.|Res\.|J\.\s*Res\.|Con\.\s*Res\.)|S\.\s*(?:Res\.\s*|Con\.\s*Res\.\s*|J\.\s*Res\.\s*)?)\s*(\d+)/i);
+        if (onBillMatch) {
+            // Normalize: collapse internal spaces between letters and re-attach number
+            const prefix = onBillMatch[1].replace(/\s+/g, '').replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.') + ' ';
+            foundBillId = prefix + onBillMatch[2];
+        } else {
+            // Fallback: first bill pattern in description
+            const billPattern = /\b(H\.R\.|H\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Con\.\s*Res\.|S\.(?:\s*Res\.|\s*Con\.\s*Res\.|\s*J\.\s*Res\.)?)\s*(\d+)/gi;
+            const m = billPattern.exec(desc);
+            if (m) {
+                foundBillId = m[1].replace(/\s+/g, '').replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.') + ' ' + m[2];
+            }
+        }
+    }
+
+    // ── 3. Look up bill in billDataMap (try normalized variations) ────────
+    let foundBill = null;
+    if (foundBillId) {
+        foundBill = billDataMap.get(foundBillId);
+        if (!foundBill) {
+            // Try normalizing both key and needle for comparison
+            const normNeedle = foundBillId.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim();
+            for (const [key, val] of billDataMap) {
+                const normKey = key.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim();
+                if (normKey === normNeedle) { foundBill = val; break; }
+            }
+        }
+    }
+
+    // Wider fallback: scan all debate-related items for any bill in the map
+    if (!foundBill) {
+        const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.)\s*(\d+)/gi;
+        for (const item of items) {
+            const desc = item.description || '';
+            const descLower = desc.toLowerCase();
+            if (!descLower.includes('committee of the whole') && !descLower.includes('consideration of') &&
+                !descLower.includes('proceeded to') && !descLower.includes('debate')) continue;
+            for (const m of desc.matchAll(billPattern)) {
+                const raw = m[0].replace(/\s+/g, ' ').trim();
+                if (billDataMap.has(raw)) { foundBill = billDataMap.get(raw); break; }
+            }
+            if (foundBill) break;
+        }
+    }
+
+    // ── 4. Update debate length tag ───────────────────────────────────────
+    if (elements.debateLengthTag && elements.debateLengthText) {
+        if (debateLengthLabel) {
+            elements.debateLengthText.textContent = debateLengthLabel;
+            elements.debateLengthTag.style.display = '';
+        } else {
+            elements.debateLengthTag.style.display = 'none';
+        }
+    }
+
+    // ── 5. Render bill details ────────────────────────────────────────────
+    if (foundBill) {
+        elements.debateBillTitle.textContent = foundBill.title || '—';
+        elements.debateBillId.textContent = foundBill.id || '';
+
+        // Sponsor block
+        if (elements.debateSponsorSection && elements.debateSponsorInner) {
+            if (foundBill.sponsor) {
+                const s = foundBill.sponsor;
+                const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
+                const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
+                const name = `${s.firstName} ${s.lastName}`;
+                const loc = s.state + (s.district != null ? `-${s.district}` : '');
+                const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
+                elements.debateSponsorInner.innerHTML = `
+                    <div class="absentee-member" style="padding:0;border:none;">
+                        <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
+                            <img class="absentee-photo" src="${photo}" style="display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" alt="${name}" />
+                            <div class="absentee-photo-placeholder" style="display:none;">${pLetter}</div>
+                        </div>
+                        <div class="absentee-meta">
+                            <span class="absentee-party-tag ${pClass}">${pLetter}</span>
+                            <span class="absentee-name">${name}</span>
+                            <span class="absentee-state">${loc}</span>
+                        </div>
+                    </div>`;
+                elements.debateSponsorSection.style.display = '';
+            } else {
+                elements.debateSponsorSection.style.display = 'none';
+            }
+        }
+
+        // Cosponsor support bar
+        if (elements.debateSupportSection && elements.debateSupportBar && elements.debateSupportLabels) {
+            const allSupporters = [
+                ...(foundBill.sponsor ? [foundBill.sponsor] : []),
+                ...(foundBill.cosponsors || []),
+            ];
+            if (allSupporters.length > 0) {
+                const rCount = allSupporters.filter(m => m.party === 'R').length;
+                const dCount = allSupporters.filter(m => m.party === 'D').length;
+                const iCount = allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length;
+                const total = allSupporters.length;
+                const rPct = (rCount / total * 100).toFixed(1);
+                const dPct = (dCount / total * 100).toFixed(1);
+                const iPct = (iCount / total * 100).toFixed(1);
+                const coLabel = foundBill.cosponsors?.length
+                    ? `${foundBill.cosponsors.length} COSPONSOR${foundBill.cosponsors.length !== 1 ? 'S' : ''}`
+                    : 'NO COSPONSORS';
+                if (elements.debateSupportLabel) elements.debateSupportLabel.textContent = `SUPPORT — ${coLabel}`;
+                elements.debateSupportBar.innerHTML = [
+                    rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : '',
+                    dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : '',
+                    iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : '',
+                ].join('');
+                elements.debateSupportLabels.innerHTML = [
+                    rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : '',
+                    dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : '',
+                    iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : '',
+                ].join('');
+                elements.debateSupportSection.style.display = '';
+            } else {
+                elements.debateSupportSection.style.display = 'none';
+            }
+        }
+
+        // Committees
+        if (elements.debateCommitteesSection && elements.debateCommitteesList) {
+            if (foundBill.committees?.length) {
+                elements.debateCommitteesList.innerHTML = foundBill.committees
+                    .map(c => `<span class="bill-modal-committee">${c}</span>`).join('');
+                elements.debateCommitteesSection.style.display = '';
+            } else {
+                elements.debateCommitteesSection.style.display = 'none';
+            }
+        }
+
+        // Summary
+        if (elements.debateSummarySection && elements.debateBillDescription) {
+            if (foundBill.summary) {
+                elements.debateBillDescription.textContent = foundBill.summary;
+                elements.debateSummarySection.style.display = '';
+            } else {
+                elements.debateSummarySection.style.display = 'none';
+            }
+        }
+    } else {
+        // Fallback: show raw description title and bill ID
+        const desc = (activeItem || items[0])?.description || '';
+        elements.debateBillTitle.textContent = desc.split(/[.\n]/)[0].trim().substring(0, 120) || '—';
+        elements.debateBillId.textContent = foundBillId || '—';
+        if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
+        if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
+        if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
+        if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
+    }
 }
 
-// Update prayer section with chaplain information
+// Update silence section with honoree information
+function updateSilenceSection(items) {
+    if (!elements.silenceTitle || !items || items.length === 0) return;
+
+    const silenceItem = items.find(item =>
+        /moment of silence/i.test(item.description) || /\bsilence\b/i.test(item.description)
+    );
+
+    if (!silenceItem) {
+        elements.silenceTitle.textContent = 'Moment of Silence';
+        if (elements.silenceDescription) elements.silenceDescription.textContent = '';
+        if (elements.silenceTime) elements.silenceTime.textContent = '';
+        return;
+    }
+
+    // Full proceedings text e.g.
+    // "MOMENT OF SILENCE - The House observed a moment of silence in honor of the victims of..."
+    const fullText = silenceItem.description.replace(/\s+/g, ' ').trim();
+
+    // Strip the "MOMENT OF SILENCE - " prefix to get the body sentence
+    const body = fullText.replace(/^MOMENT OF SILENCE\s*[-–]\s*/i, '').trim();
+
+    // Extract a short title from the body ("in honor of X" / "for X" / "in memory of X")
+    const honorMatch = body.match(/in (?:honor|memory|memoriam) of (.+?)(?:\.|,|$)/i)
+                    || body.match(/for (?:the )?(.+?)(?:\.|,|$)/i);
+    const shortTitle = honorMatch ? honorMatch[1].trim() : 'Moment of Silence';
+
+    if (elements.silenceTitle) elements.silenceTitle.textContent = toTitleCase(shortTitle);
+    if (elements.silenceDescription) elements.silenceDescription.textContent = body;
+
+    if (elements.silenceTime && silenceItem.pubDate) {
+        const date = new Date(silenceItem.pubDate);
+        elements.silenceTime.textContent = date.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+        });
+    }
+}
+
 function updatePrayerSection(items) {
     if (!elements.prayerLeaderTitle || !items || items.length === 0) return;
 
@@ -2511,9 +3115,7 @@ async function fetchLastSessionDate() {
         const { date } = await res.json();
         if (date) {
             const d = new Date(date + 'T12:00:00');
-            elements.journalLastSessionDate.textContent = d.toLocaleDateString('en-US', {
-                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-            });
+            elements.journalLastSessionDate.textContent = fmtDateLong(d);
         }
     } catch (e) {
         console.error('fetchLastSessionDate failed:', e);
@@ -3777,13 +4379,13 @@ async function fetchWeather() {
         if (!pointsResponse.ok) throw new Error('Points API failed');
         const pointsData = await pointsResponse.json();
         
-        // Step 2: Get current forecast
-        const forecastUrl = pointsData.properties.forecast;
+        // Step 2: Get hourly forecast (more accurate for current conditions)
+        const forecastUrl = pointsData.properties.forecastHourly;
         const forecastResponse = await fetch(forecastUrl);
         if (!forecastResponse.ok) throw new Error('Forecast API failed');
         const forecastData = await forecastResponse.json();
-        
-        // Get current period (first period is usually current)
+
+        // First hourly period is the current hour
         const current = forecastData.properties.periods[0];
         
         // Update DOM
@@ -3854,12 +4456,14 @@ window.setDate = function(dateStr) {
         return 'Invalid date format. Use mm/dd/yyyy, e.g. setDate("05/17/2026")';
     }
     proceedingsDateOverride = normalized;
+    billsFullyEnriched = false; // force full re-enrichment for the new date
     updateProceedingsFeed();
     fetchBillsThisWeek();
     return `Proceedings date set to ${normalized} — refreshing...`;
 };
 window.clearDate = function() {
     proceedingsDateOverride = null;
+    billsFullyEnriched = false; // force full re-enrichment on return to live
     updateProceedingsFeed();
     fetchBillsThisWeek();
     return 'Date override cleared — back to live feed';
@@ -3931,6 +4535,9 @@ function updateModeClasses(mode) {
 
 // Initialize
 function init() {
+    const footerYear = document.getElementById('footer-year');
+    if (footerYear) footerYear.textContent = new Date().getFullYear();
+
     updateTimestamp();
     setInterval(updateTimestamp, 1000);
     updateTodayDate();
@@ -3951,15 +4558,34 @@ function init() {
     
     // Start SSE streaming for real-time updates (with polling fallback)
     startSSEStreaming();
-    
-    // Note: SSE streaming is working, no need for polling fallback
-    // setInterval(() => {
-    //     if (!isStreaming) {
-    //         fetchFloorData();
-    //     }
-    // }, DOMEWATCH_CONFIG.refreshInterval); // Refresh DomeWatch floor data every 10 seconds if not streaming
+
+    // Client-side SSE staleness watchdog.
+    // During an active roll call vote DomeWatch sends vote.tally every ~1s.
+    // If we're in vote mode but haven't received a tally tick for 45s, the
+    // SSE connection has gone zombie (open but silent). Force a reconnect.
+    setInterval(() => {
+        const inVote = floorData?.currentStatus?.value === 'vote' ||
+                       floorData?.currentStatus?.value === 'voting';
+        if (inVote && lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) > 45000) {
+            console.log('SSE vote.tally stale >45s during active vote — forcing reconnect');
+            if (sseConnection) { sseConnection.close(); sseConnection = null; }
+            isStreaming = false;
+            lastSseTallyAt = Date.now(); // reset to avoid a tight reconnect loop
+            startSSEStreaming();
+        }
+    }, 15000);
+
+    // Poll the REST floor endpoint every 30s alongside SSE.
+    // SSE gives us real-time vote tallies, but it only sends vote.tally events —
+    // it does NOT send an event when a vote ends. Without this poll, currentStatus
+    // stays stuck at 'vote' forever and reconcileVoteWithBills never fires.
+    // Poll REST floor endpoint every 10s as a reliable fallback.
+    // SSE is the fast path, but if the upstream goes silent (between votes, stale
+    // connection) the REST poll ensures counts stay current.
+    setInterval(() => fetchFloorData(true), 10000);
     setInterval(fetchWeather, 300000); // Refresh weather every 5 minutes
-    setInterval(updateProceedingsFeed, RSS_CONFIG.refreshInterval); // Refresh RSS every 2 minutes
+    setInterval(updateProceedingsFeed, RSS_CONFIG.refreshInterval); // Refresh proceedings every 15s
+    setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
     setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
     setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 1 minute
     setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
@@ -3974,6 +4600,9 @@ function init() {
     
     // Initialize mode toggle
     initModeToggle();
+
+    // Initialize SVG analog clocks (tick marks)
+    initAnalogClocks();
     
     // Fetch initial data
     updateProceedingsFeed();
@@ -4275,16 +4904,40 @@ function getTimeParts(date, timeZone) {
     };
 }
 
+function initAnalogClocks() {
+    ['local', 'dc', 'utc'].forEach(id => {
+        const svg = document.getElementById(`${id}-analog`);
+        if (!svg) return;
+        const ticks = svg.querySelector('.clock-ticks');
+        if (!ticks) return;
+        for (let i = 0; i < 60; i++) {
+            const isHour = i % 5 === 0;
+            const rad = (i * 6 - 90) * Math.PI / 180;
+            const outer = 44;
+            const inner = isHour ? 36 : 40;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', (50 + outer * Math.cos(rad)).toFixed(2));
+            line.setAttribute('y1', (50 + outer * Math.sin(rad)).toFixed(2));
+            line.setAttribute('x2', (50 + inner * Math.cos(rad)).toFixed(2));
+            line.setAttribute('y2', (50 + inner * Math.sin(rad)).toFixed(2));
+            line.setAttribute('stroke-linecap', 'round');
+            line.setAttribute('stroke', isHour ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.2)');
+            line.setAttribute('stroke-width', isHour ? '2' : '0.8');
+            ticks.appendChild(line);
+        }
+    });
+}
+
 function updateAnalogClock(clockElement, time) {
     if (!clockElement) return;
 
-    const hourDegrees = ((time.hours % 12) * 30) + (time.minutes * 0.5);
-    const minuteDegrees = (time.minutes * 6) + (time.seconds * 0.1);
-    const secondDegrees = time.seconds * 6;
+    const hourDeg = ((time.hours % 12) * 30) + (time.minutes * 0.5);
+    const minuteDeg = (time.minutes * 6) + (time.seconds * 0.1);
+    const secondDeg = time.seconds * 6;
 
-    clockElement.style.setProperty('--hour-angle', `${hourDegrees}deg`);
-    clockElement.style.setProperty('--minute-angle', `${minuteDegrees}deg`);
-    clockElement.style.setProperty('--second-angle', `${secondDegrees}deg`);
+    clockElement.querySelector('.hour-hand')?.setAttribute('transform', `rotate(${hourDeg.toFixed(2)},50,50)`);
+    clockElement.querySelector('.minute-hand')?.setAttribute('transform', `rotate(${minuteDeg.toFixed(2)},50,50)`);
+    clockElement.querySelector('.second-hand')?.setAttribute('transform', `rotate(${secondDeg.toFixed(2)},50,50)`);
 }
 
 // Fetch Data from API
@@ -4321,13 +4974,21 @@ function processApiData(apiData) {
 }
 
 // Floor Grid Configuration
-const HOUSE_SEATS = {
-    total: 435,
-    dem: 213,
-    rep: 222
-};
-
 const HOUSE_TOTAL_MEMBERS = 435;
+
+// Returns the current "Whole Number" of the House — members sworn in, excluding vacancies.
+// houseMakeup.total is populated by fetchHouseMakeup(); falls back to HOUSE_TOTAL_MEMBERS minus
+// any vacancies we've already parsed.
+function getWholeNumber() {
+    return houseMakeup?.total || (HOUSE_TOTAL_MEMBERS - vacancies.length);
+}
+
+// Votes needed to pass, based on the current Whole Number.
+// Simple majority: floor(n/2)+1. Suspension of rules: ceil(n*2/3).
+function getVotesNeeded(isSuspension = false) {
+    const n = getWholeNumber();
+    return isSuspension ? Math.ceil(n * 2 / 3) : Math.floor(n / 2) + 1;
+}
 const US_CHAMBER_LAYOUT = {
     rows: [25, 31, 37, 43, 49, 55, 61, 67, 67],
     // side===-1 uses angles 30-85° (cos>0, screen RIGHT) → democrats
@@ -4533,14 +5194,15 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
     if (elements.absenteeRollInfo) {
         let dateTimeStr = '';
         if (rollDate) {
-            // rollDate format: "15-May-2026"
+            // rollDate format from Clerk XML: "15-May-2026"
             const parts = rollDate.split('-');
             if (parts.length === 3) {
-                const months = {jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun',jul:'Jul',aug:'Aug',sep:'Sep',oct:'Oct',nov:'Nov',dec:'Dec'};
-                const mon = months[parts[1].toLowerCase().slice(0,3)] || parts[1];
-                dateTimeStr = `${mon} ${parseInt(parts[0])}`;
+                // parts[0]=day, parts[1]=month name, parts[2]=year
+                const monthIdx = MONTH_NAMES.findIndex(m => m.toLowerCase().startsWith(parts[1].toLowerCase().slice(0, 3)));
+                const mon = monthIdx >= 0 ? MONTH_NAMES[monthIdx] : parts[1];
+                dateTimeStr = `${parseInt(parts[0])} ${mon} ${parts[2]}`;
             } else {
-                dateTimeStr = rollDate;
+                dateTimeStr = formatDate(rollDate);
             }
         }
         if (rollTime) dateTimeStr += ` ${rollTime}`;
@@ -4672,7 +5334,17 @@ function updateFloorGrid() {
     const repSeats = sortSeats(seats.filter(s => s.dataset.party === 'republican'));
     const demSeats = sortSeats(seats.filter(s => s.dataset.party === 'democrat'));
 
-    seats.forEach(s => s.classList.remove('yea', 'nay', 'present', 'not-voting'));
+    seats.forEach(s => s.classList.remove('yea', 'nay', 'present', 'not-voting', 'vacant'));
+
+    // Mark vacant seats: last N seats on each side, proportional to layout size
+    const vacCount = vacancies.length;
+    if (vacCount > 0) {
+        const totalGridSeats = repSeats.length + demSeats.length;
+        const vacRep = Math.round(vacCount * repSeats.length / totalGridSeats);
+        const vacDem = vacCount - vacRep;
+        if (vacRep > 0) repSeats.slice(-vacRep).forEach(s => s.classList.add('vacant'));
+        if (vacDem > 0) demSeats.slice(-vacDem).forEach(s => s.classList.add('vacant'));
+    }
 
     // Use per-party breakdown when available, fall back to proportional distribution
     if (vote.rep && vote.dem && (vote.rep.yeas + vote.rep.nays + vote.rep.present + vote.dem.yeas + vote.dem.nays + vote.dem.present) > 0) {
@@ -4788,7 +5460,7 @@ async function updateQuorumStatus() {
         
         const vote = state.data.vote;
         const totalVoted = vote.yeas + vote.nays + vote.present;
-        const quorumRequired = 218; // Fallback hardcoded value
+        const quorumRequired = getVotesNeeded(false);
         const quorumMet = totalVoted >= quorumRequired;
         
         elements.membersPresent.textContent = totalVoted;
@@ -4860,6 +5532,119 @@ function updateLastUpdate() {
         elements.lastUpdate.textContent = `Last updated: ${state.lastUpdate.toLocaleTimeString()}`;
     }
 }
+
+// ── YouTube PIP & scroll-shrink ──────────────────────────────────────────────
+(function initYouTubePip() {
+    const SITE_HEADER_H = 100; // matches .main-header height in CSS
+    const YT_SRC = 'https://www.youtube.com/embed/live_stream?channel=UCqU8qiVHYmLsF0JIMByCTvw&autoplay=1&mute=1&controls=1&rel=0&modestbranding=1';
+
+    const panel      = document.getElementById('youtube-panel');
+    const panelHdr   = document.getElementById('youtube-panel-header');
+    const container  = document.getElementById('youtube-container');
+    const pip        = document.getElementById('youtube-pip');
+    const pipIframe  = document.getElementById('youtube-pip-iframe');
+    const pipClose   = document.getElementById('youtube-pip-close');
+    if (!panel || !container || !pip) return;
+
+    let pipDismissed = false;
+    let pipActive    = false;
+    let rafPending   = false;
+
+    // Load PIP iframe src lazily (only when first activated)
+    function ensurePipSrc() {
+        if (!pipIframe.src || pipIframe.src === window.location.href) {
+            pipIframe.src = YT_SRC;
+        }
+    }
+
+    function showPip() {
+        if (pipDismissed || pipActive) return;
+        ensurePipSrc();
+        pip.classList.add('pip-active');
+        pipActive = true;
+    }
+
+    function hidePip() {
+        if (!pipActive) return;
+        pip.classList.remove('pip-active');
+        pipActive = false;
+    }
+
+    pipClose.addEventListener('click', () => {
+        pipDismissed = true;
+        hidePip();
+    });
+
+    // Size PIP to fill the right margin beside the panel content
+    function updatePipWidth() {
+        const panelRect = panel.getBoundingClientRect();
+        // Space from panel's right edge to viewport right, minus 32px (16px each side)
+        const rightSpace = window.innerWidth - panelRect.right;
+        pip.style.width = Math.max(220, rightSpace - 32) + 'px';
+    }
+
+    function setNaturalHeight() {
+        container.classList.remove('scroll-sized');
+        container.style.height = '';
+        container.style.paddingBottom = '';
+    }
+
+    function setScrollHeight(h) {
+        container.classList.add('scroll-sized');
+        container.style.height = h + 'px';
+        container.style.paddingBottom = '0';
+    }
+
+    function tick() {
+        rafPending = false;
+        if (!panel) return;
+
+        const rect      = panel.getBoundingClientRect();
+        const panelHdrH = panelHdr ? panelHdr.offsetHeight : 48;
+        const winH      = window.innerHeight;
+        const tickerH   = 40;
+
+        // Fully above viewport → PIP
+        if (rect.bottom <= SITE_HEADER_H) {
+            showPip();
+            setNaturalHeight();
+            return;
+        }
+
+        hidePip();
+        pipDismissed = false;
+
+        const naturalH = panel.offsetWidth * 9 / 16;
+
+        // Visible slice: from below site header (or panel header, whichever is lower)
+        // down to above the bottom ticker.
+        const videoTopViewport    = Math.max(SITE_HEADER_H, rect.top + panelHdrH);
+        const videoBottomViewport = Math.min(winH - tickerH, rect.bottom - 1);
+        const available = Math.max(0, videoBottomViewport - videoTopViewport);
+
+        const h = Math.min(naturalH, available);
+
+        if (h >= naturalH - 1) {
+            setNaturalHeight();
+        } else {
+            setScrollHeight(h);
+        }
+    }
+
+    function onScroll() {
+        if (!rafPending) {
+            rafPending = true;
+            requestAnimationFrame(tick);
+        }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', () => { updatePipWidth(); onScroll(); }, { passive: true });
+    // Run once on load to set correct initial state
+    document.addEventListener('DOMContentLoaded', () => { updatePipWidth(); tick(); });
+    // Also run after a brief delay in case layout hasn't settled
+    setTimeout(() => { updatePipWidth(); tick(); }, 300);
+})();
 
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
