@@ -31,8 +31,9 @@
     <!-- True Header -->
     <header class="main-header">
         <div class="header-logo-clip">
-            <img src="logo.svg" alt="" class="header-logo">
+            <img src="logo.svg" alt="" class="header-logo" id="header-logo-img">
         </div>
+        <script>document.getElementById('header-logo-img').src='logo.svg?'+Date.now();</script>
         <div class="header-left">
             <div class="brand-tooltip-anchor">
                 <div class="brand" id="brand-trigger">
