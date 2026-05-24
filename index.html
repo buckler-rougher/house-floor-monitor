@@ -32,14 +32,14 @@
     <header class="main-header">
         <div class="header-logo-clip">
             <img alt="" class="header-logo" id="header-logo-img"
-                 style="pointer-events:auto;cursor:pointer"
+                 style="pointer-events:auto;cursor:pointer;visibility:hidden"
                  onclick="scrollTo({top:0,behavior:'smooth'})">
         </div>
         <script>
-            // Wait for two rendered frames so the browser finishes initial layout/JS parse
-            // before the SVG loads and its SMIL animation begins — prevents jitter on load.
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                document.getElementById('header-logo-img').src = 'logo.svg?' + Date.now();
+                const logo = document.getElementById('header-logo-img');
+                logo.src = 'logo.svg?' + Date.now();
+                logo.style.visibility = '';
             }));
         </script>
         <div class="header-left">
