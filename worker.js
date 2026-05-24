@@ -1021,7 +1021,20 @@ async function handleCasualtyList(env) {
   }
 }
 
+// Cache the full (non-quick, no date) weekly bills response for 60s so that
+// parallel Congress.gov enrichment only runs once per minute instead of on every
+// client request — prevents Worker CPU-time-limit 503s under concurrent load.
 async function handleBills(request, env) {
+  const url = new URL(request.url);
+  const quick = url.searchParams.has('quick');
+  const dateParam = url.searchParams.get('date');
+  if (!quick && !dateParam) {
+    return kvCache(env, 'bills-weekly', 60, () => _fetchBills(request, env));
+  }
+  return _fetchBills(request, env);
+}
+
+async function _fetchBills(request, env) {
   try {
     const url = new URL(request.url);
     const dateParam = url.searchParams.get('date'); // e.g. "05/12/2026"
