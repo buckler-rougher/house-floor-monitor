@@ -3635,6 +3635,14 @@ a.bill-card-rule-link {
     border-bottom: 1px solid var(--border-color);
 }
 
+.bill-modal-body .bill-modal-section-label {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    padding-bottom: 6px;
+    z-index: 1;
+}
+
 .bill-modal-foot {
     padding: 14px 24px 20px;
 }
