@@ -419,7 +419,7 @@ body {
     position: absolute;
     left: 50%;
     top: 0;
-    transform: translateX(calc(-50% - 15px));
+    transform: translateX(calc(-50% + 14px));
     height: 100px;
     overflow: hidden;
     display: flex;
