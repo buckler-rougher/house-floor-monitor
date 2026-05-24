@@ -424,7 +424,8 @@ body {
     overflow: hidden;
     display: flex;
     align-items: center;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .header-logo {
