@@ -35,6 +35,8 @@ const DEBUG_LOG_ALLOW = [
     // Bills
     '=== BILLS FETCH START ===', 'Rule bills list element:', 'Suspension bills list element:',
     'Bills API response:', 'Found ', 'Vote map state updated:',
+    // Debate section debug
+    '[debate]', '[debate-nav]', '[bills→debate]',
 ];
 
 const __originalConsoleLog = console.log.bind(console);
@@ -179,9 +181,13 @@ async function fetchVotingDays() {
                 let type = null;
                 if (/^(voting day|vote day)$/.test(summary)) {
                     type = 'vote-day';
+                } else if (/fly.?in/.test(summary)) {
+                    type = 'fly-in';
+                } else if (/fly.?out/.test(summary)) {
+                    type = 'fly-out';
                 } else if (/^(votes? added|added votes?|added votes? day|added-votes|additional votes?)$/.test(summary)) {
                     type = 'added';
-                } else if (/^(votes? cancelled|cancelled votes?|canceled votes?)$/.test(summary)) {
+                } else if (/^(votes? cancelled|cancelled votes?|canceled votes?|canceled vote day|cancelled vote day)$/.test(summary)) {
                     type = 'cancelled';
                 }
                 return {
@@ -220,7 +226,7 @@ function renderVotingDaysCalendar() {
 
     const events = votingCalendarData.map((item, index) => {
         const type = item.type || 'vote-day';
-        const indicatorRank = type === 'vote-day' ? 0 : type === 'added' ? 1 : 2;
+        const indicatorRank = { 'fly-in': 0, 'fly-out': 1, 'added': 2, 'vote-day': 3, 'cancelled': 4 }[type] ?? 5;
         return {
             start: item.date,
             title: '',
@@ -238,7 +244,17 @@ function renderVotingDaysCalendar() {
         list.push(event.extendedProps);
         eventMap.set(event.start, list);
     });
-    const indicatorTypes = new Set(['vote-day', 'added', 'cancelled']);
+    const indicatorTypes = new Set(['vote-day', 'fly-in', 'fly-out', 'added', 'cancelled']);
+
+    const applyHarnessCorners = () => {
+        [prevEl, currentEl, nextEl].forEach(calEl => {
+            if (!calEl) return;
+            calEl.querySelectorAll('.fc-view-harness').forEach(h => {
+                h.style.setProperty('border', '1px solid #30363d', 'important');
+                h.style.setProperty('border-radius', '8px', 'important');
+            });
+        });
+    };
 
     const syncCalendarSizes = () => {
         const monthEls = [prevEl, currentEl, nextEl];
@@ -249,6 +265,8 @@ function renderVotingDaysCalendar() {
                 monthEl._calendar.setOption('height', 'auto');
             }
         });
+        // setOption triggers an internal re-render; apply corner fix after it settles
+        setTimeout(applyHarnessCorners, 50);
     };
 
     const renderCalendar = (el, monthDate) => {
@@ -266,6 +284,7 @@ function renderVotingDaysCalendar() {
             selectable: false,
             editable: false,
             navLinks: false,
+            datesSet: applyHarnessCorners,
             dayMaxEvents: false,
             dayMaxEventRows: false,
             moreLinkClick: false,
@@ -285,6 +304,10 @@ function renderVotingDaysCalendar() {
                 const frame = arg.el.querySelector('.fc-daygrid-day-frame');
                 const header = arg.el.querySelector('.fc-daygrid-day-top');
                 const number = arg.el.querySelector('.fc-daygrid-day-number');
+
+                // Override FullCalendar's white cell background
+                arg.el.style.setProperty('background', 'transparent', 'important');
+
                 if (frame) {
                     frame.style.aspectRatio = '1 / 1';
                     frame.style.position = 'relative';
@@ -293,31 +316,117 @@ function renderVotingDaysCalendar() {
                     header.style.position = 'relative';
                     header.style.zIndex = '1';
                 }
+                const isToday = arg.el.classList.contains('fc-day-today');
                 if (number) {
-                    number.style.color = '#e6edf3';
-                    number.style.setProperty('color', '#e6edf3', 'important');
+                    number.style.setProperty('color', '#8b949e', 'important');
                     number.style.fontSize = '7px';
-                    number.style.fontWeight = '700';
+                    number.style.fontWeight = '600';
                     number.style.opacity = '1';
                     number.style.position = 'absolute';
                     number.style.top = '1px';
                     number.style.right = '2px';
                     number.style.zIndex = '2';
-                    number.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.7)';
-                }
-                if (arg.isOther) return;
-                const matches = eventMap.get(dateStr) || [];
-                const filtered = matches.filter(match => indicatorTypes.has(match.type));
-                if (frame && filtered.length) {
-                    let labelEl = frame.querySelector('.calendar-event-label');
-                    if (!labelEl) {
-                        labelEl = document.createElement('span');
-                        labelEl.className = 'calendar-event-label';
-                        frame.appendChild(labelEl);
+                    number.style.textShadow = 'none';
+                    number.style.lineHeight = '1';
+                    // padding so text never touches the circle edge
+                    number.style.padding = '2px 2px';
+
+                    // Today: circle grows around the padded number, not the other way around
+                    if (isToday) {
+                        number.style.setProperty('color', '#ffffff', 'important');
+                        number.style.fontWeight = '800';
+                        number.style.display = 'inline-flex';
+                        number.style.alignItems = 'center';
+                        number.style.justifyContent = 'center';
+                        number.style.borderRadius = '50%';
+                        number.style.background = 'rgba(255,255,255,0.15)';
+                        number.style.border = '1px solid rgba(255,255,255,0.35)';
+                        number.style.boxSizing = 'border-box';
+                        number.style.minWidth = '14px';
+                        number.style.minHeight = '14px';
                     }
-                    labelEl.dataset.type = filtered[0]?.type || 'vote-day';
-                    labelEl.textContent = 'VOTES';
-                    labelEl.title = filtered.map(match => match.label).join(' | ') || 'Voting Day';
+                }
+
+                if (arg.isOther) return;
+
+                const matches = eventMap.get(dateStr) || [];
+                const filtered = matches
+                    .filter(m => indicatorTypes.has(m.type))
+                    .sort((a, b) => (a.indicatorRank ?? 9) - (b.indicatorRank ?? 9));
+
+                if (!filtered.length) {
+                    arg.el.addEventListener('mouseenter', () =>
+                        arg.el.style.setProperty('background', 'rgba(255,255,255,0.05)', 'important'));
+                    arg.el.addEventListener('mouseleave', () =>
+                        arg.el.style.setProperty('background', 'transparent', 'important'));
+                    return;
+                }
+
+                const VOTE_COLORS = {
+                    'fly-in':    { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
+                    'fly-out':   { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
+                    'vote-day':  { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
+                    'added':     { base: 'rgba(210,153,34,0.16)',  hover: 'rgba(210,153,34,0.28)',  label: '#fcd34d', num: '#fbbf24' },
+                    'cancelled': { base: 'rgba(139,148,158,0.10)', hover: 'rgba(139,148,158,0.20)', label: '#6e7681', num: '#6e7681' },
+                };
+
+                const typesPresent = new Set(filtered.map(m => m.type));
+                const tipText  = filtered.map(m => m.label).join(' · ') || 'Voting Day';
+                // Color priority: added (amber) > fly-in/fly-out/vote-day (green) > cancelled (grey)
+                const colorType = typesPresent.has('added') ? 'added'
+                                : typesPresent.has('cancelled') && typesPresent.size === 1 ? 'cancelled'
+                                : filtered[0]?.type || 'vote-day';
+                const voteType = filtered[0]?.type || 'vote-day';
+                const c = VOTE_COLORS[colorType] || VOTE_COLORS['vote-day'];
+
+                arg.el.dataset.voteType = voteType;
+                arg.el.style.setProperty('background', c.base, 'important');
+                if (number) number.style.setProperty('color', c.num, 'important');
+
+                arg.el.addEventListener('mouseenter', () =>
+                    arg.el.style.setProperty('background', c.hover, 'important'));
+                arg.el.addEventListener('mouseleave', () =>
+                    arg.el.style.setProperty('background', c.base, 'important'));
+
+                // Build stacked label lines
+                const AMBER = '#fcd34d';
+                const GREEN = '#86efac';
+                const GREY  = '#6e7681';
+                const labelLines = [];
+                if (typesPresent.has('fly-in'))  labelLines.push({ text: 'FLY IN',  color: c.label, strike: false });
+                if (typesPresent.has('fly-out')) labelLines.push({ text: 'FLY OUT', color: c.label, strike: false });
+                const hasVote       = typesPresent.has('vote-day') || typesPresent.has('added');
+                const onlyCancelled = typesPresent.has('cancelled') && !hasVote && !typesPresent.has('fly-in') && !typesPresent.has('fly-out');
+                if (hasVote)        labelLines.push({ text: typesPresent.has('added') ? 'VOTES+' : 'VOTES', color: c.label, strike: false });
+                if (onlyCancelled)  labelLines.push({ text: 'VOTES', color: GREY, strike: true });
+
+                if (!frame || !labelLines.length) return;
+
+                let container = frame.querySelector('.calendar-event-label');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'calendar-event-label';
+                    frame.appendChild(container);
+                }
+                container.innerHTML = '';
+                container.title = tipText;
+                container.dataset.type = voteType;
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.alignItems = 'center';
+                container.style.gap = '1px';
+
+                for (const line of labelLines) {
+                    const span = document.createElement('span');
+                    span.textContent = line.text;
+                    span.style.color = line.color;
+                    span.style.fontSize = '5.5px';
+                    span.style.fontWeight = '800';
+                    span.style.lineHeight = '1';
+                    span.style.letterSpacing = '0.5px';
+                    span.style.fontFamily = 'var(--font-mono)';
+                    if (line.strike) span.style.textDecoration = 'line-through';
+                    container.appendChild(span);
                 }
             },
             dayHeaderDidMount: (arg) => {
@@ -471,10 +580,269 @@ let floorData = {
     timeline: null
 };
 
+// ── Roll call log ─────────────────────────────────────────────────────────────
+// Tracks DomeWatch vote counts per roll call. Overwrites current roll's entry
+// as tallies stream in; finalises and starts a new entry when roll number changes.
+let rollLog = [];           // in-memory mirror of what's been POSTed to worker
+let rollLogCurrentRoll = null; // roll number we're currently tracking
+
+function rollLogEntry(rollCall, voteCounts) {
+    const iv = v => Math.max(parseInt(v) || 0, 0);
+    const t = (voteCounts?.totals) || {};
+    const d = (voteCounts?.blue)   || {};
+    const r = (voteCounts?.red)    || {};
+    return {
+        roll:      rollCall?.number ?? null,
+        bill:      rollCall?.bill?.legisNum || rollCall?.bill?.title || null,
+        question:  rollCall?.question || null,
+        totals: {
+            yeas:       iv(t.yeas),
+            nays:       iv(t.nays),
+            present:    iv(t.present),
+            notVoting:  iv(t.not_voting),
+        },
+        dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
+        rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+// KV write debounce: at most one write per 60s per roll, plus one final write on roll change
+let _rollLogDebounceTimer = null;
+let _rollLogPendingEntry  = null;
+const ROLL_LOG_DEBOUNCE_MS = 60_000;
+
+function postRollLogEntry(entry, immediate = false) {
+    if (!entry?.roll) return;
+    // Always update in-memory log instantly
+    const idx = rollLog.findIndex(e => e.roll === entry.roll);
+    if (idx >= 0) rollLog[idx] = entry; else rollLog.push(entry);
+
+    if (immediate) {
+        // Flush any pending debounce and write now
+        clearTimeout(_rollLogDebounceTimer);
+        _rollLogDebounceTimer = null;
+        _rollLogPendingEntry  = null;
+        fetch('https://api.evanhollander.org/house-floor/api/roll-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        }).catch(() => {});
+        return;
+    }
+
+    // Debounced path — coalesce rapid SSE ticks into one write per minute
+    _rollLogPendingEntry = entry;
+    if (_rollLogDebounceTimer) return; // already scheduled
+    _rollLogDebounceTimer = setTimeout(() => {
+        _rollLogDebounceTimer = null;
+        const e = _rollLogPendingEntry;
+        _rollLogPendingEntry = null;
+        if (!e) return;
+        fetch('https://api.evanhollander.org/house-floor/api/roll-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(e),
+        }).catch(() => {});
+    }, ROLL_LOG_DEBOUNCE_MS);
+}
+
+async function loadRollLog() {
+    try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
+        const data = await resp.json();
+        if (Array.isArray(data.entries)) rollLog = data.entries;
+    } catch {}
+}
+
+// Call whenever floorData.rollCall / floorData.voteCounts changes during a vote
+function trackRollLog() {
+    // Only log during an active vote — DomeWatch returns stale roll call data
+    // even when the chamber is in recess, which would burn KV writes all day.
+    const status = floorData.currentStatus?.value;
+    if (status !== 'vote' && status !== 'voting') return;
+
+    const roll = floorData.rollCall?.number;
+    const counts = floorData.voteCounts;
+    if (!roll || !counts) return;
+
+    const rollChanged = rollLogCurrentRoll !== null && rollLogCurrentRoll !== roll;
+    if (rollChanged) {
+        // Previous roll is final — flush immediately so we don't lose last known counts
+        const prev = rollLog.find(e => e.roll === rollLogCurrentRoll);
+        if (prev) postRollLogEntry(prev, /* immediate */ true);
+    }
+    rollLogCurrentRoll = roll;
+    postRollLogEntry(rollLogEntry(floorData.rollCall, counts)); // debounced
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // SSE streaming state
 let sseConnection = null;
 let isStreaming = false;
-let lastSseTallyAt = 0; // ms timestamp of last vote.tally received (for stale detection)
+let lastSseTallyAt = 0;    // ms timestamp of last vote.tally received (for stale detection)
+let sseReconnectCount = 0; // how many times we've reconnected to the SSE endpoint
+let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdown display)
+
+// ── Connection dashboard tooltip ──────────────────────────────────────────────
+(function initConnectionDashboard() {
+    const trigger   = document.getElementById('brand-trigger');
+    const dashboard = document.getElementById('connection-dashboard');
+    if (!trigger || !dashboard) return;
+
+    const $ = (id) => document.getElementById(id);
+    let tickInterval  = null;
+    let hideTimer     = null;
+    let workerStatus  = null; // cached from last /status fetch
+    const POLL_MS     = 10_000; // matches the floor REST poll interval
+
+    function badge(cls, text) {
+        return `<span class="conn-dash-badge ${cls}">${text}</span>`;
+    }
+
+    function ago(ms) {
+        if (!ms) return '—';
+        const s = Math.round((Date.now() - ms) / 1000);
+        if (s < 5)  return 'just now';
+        if (s < 60) return `${s}s ago`;
+        const m = Math.floor(s / 60);
+        return `${m}m ${s % 60}s ago`;
+    }
+
+    function isoAgo(iso) {
+        if (!iso) return '—';
+        return ago(new Date(iso).getTime());
+    }
+
+    function render() {
+        // ── Your browser ──────────────────────────────────────────────────────
+        const rs     = sseConnection ? sseConnection.readyState : -1;
+        const isLive = rs === EventSource.OPEN;
+        const isConn = rs === EventSource.CONNECTING;
+
+        const dot = $('cd-dot');
+        if (dot) {
+            dot.className = 'conn-dash-dot ' +
+                (isLive ? 'state-live' : isConn ? 'state-connecting' : 'state-error');
+        }
+        const statusEl = $('cd-status');
+        if (statusEl) {
+            statusEl.textContent = isLive ? 'Live stream active' : isConn ? 'Connecting…' : 'Disconnected';
+        }
+
+        const streamEl = $('cd-stream');
+        if (streamEl) {
+            streamEl.innerHTML = isLive ? badge('green', 'SSE connected') :
+                                 isConn ? badge('amber', 'connecting') :
+                                          badge('red', 'disconnected');
+        }
+
+        const lastDataEl = $('cd-last-data');
+        if (lastDataEl) {
+            const dataTs = floorData?.lastUpdated ? floorData.lastUpdated.getTime() : 0;
+            lastDataEl.textContent = dataTs ? ago(dataTs) : '—';
+        }
+
+        const reconnEl = $('cd-reconnects');
+        if (reconnEl) reconnEl.textContent = sseReconnectCount === 0 ? 'none' : String(sseReconnectCount);
+
+        // ── Worker (server) ───────────────────────────────────────────────────
+        const ws = workerStatus;
+        const upstreamEl = $('cd-upstream');
+        if (upstreamEl) {
+            upstreamEl.innerHTML = ws == null ? '—' :
+                ws.upstreamConnected ? badge('green', 'connected') : badge('red', 'disconnected');
+        }
+
+        const clientsEl = $('cd-clients');
+        if (clientsEl) {
+            if (ws == null) { clientsEl.textContent = '—'; }
+            else {
+                const n = ws.connectedClients ?? '?';
+                clientsEl.textContent = `${n} browser${n !== 1 ? 's' : ''}`;
+            }
+        }
+
+        const srvReconnEl = $('cd-srv-reconnects');
+        if (srvReconnEl) {
+            if (ws == null) { srvReconnEl.textContent = '—'; }
+            else {
+                const n = ws.upstreamReconnects ?? 0;
+                srvReconnEl.textContent = n === 0 ? 'none' : String(n);
+            }
+        }
+
+        const lastEventEl = $('cd-last-event');
+        if (lastEventEl) lastEventEl.textContent = ws?.lastEventAt ? isoAgo(ws.lastEventAt) : '—';
+
+        // ── Floor ─────────────────────────────────────────────────────────────
+        const floorStatusEl = $('cd-floor-status');
+        if (floorStatusEl) {
+            const val  = floorData?.currentStatus?.value || '';
+            const text = floorData?.currentStatus?.text  || val || '—';
+            if (val === 'vote' || val === 'voting') {
+                floorStatusEl.innerHTML = badge('amber', 'VOTE IN PROGRESS');
+            } else if (val === 'recess') {
+                floorStatusEl.innerHTML = badge('red', 'recess');
+            } else if (val) {
+                floorStatusEl.innerHTML = badge('green', text);
+            } else {
+                floorStatusEl.textContent = '—';
+            }
+        }
+
+        // Countdown to next REST poll
+        const countdownEl = $('cd-next-poll');
+        if (countdownEl) {
+            if (!lastFloorPollAt) {
+                countdownEl.textContent = '—';
+            } else {
+                const elapsed = Date.now() - lastFloorPollAt;
+                const remaining = Math.max(0, Math.ceil((POLL_MS - elapsed) / 1000));
+                countdownEl.textContent = remaining === 0 ? 'now…' : `${remaining}s`;
+            }
+        }
+    }
+
+    function fetchWorkerStatus() {
+        fetch('https://api.evanhollander.org/house-floor/api/stream/votes/current/status')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { workerStatus = data; render(); })
+            .catch(() => {});
+    }
+
+    function cancelHide() {
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+    }
+
+    function scheduleHide() {
+        cancelHide();
+        // Small delay so cursor can cross the gap between trigger and panel
+        hideTimer = setTimeout(() => {
+            dashboard.classList.remove('visible');
+            dashboard.setAttribute('aria-hidden', 'true');
+            clearInterval(tickInterval);
+            tickInterval = null;
+            workerStatus = null;
+        }, 120);
+    }
+
+    function show() {
+        cancelHide();
+        if (dashboard.classList.contains('visible')) return; // already open
+        dashboard.classList.add('visible');
+        dashboard.setAttribute('aria-hidden', 'false');
+        fetchWorkerStatus();
+        render();
+        tickInterval = setInterval(render, 1000);
+    }
+
+    trigger.addEventListener('mouseenter', show);
+    trigger.addEventListener('mouseleave', scheduleHide);
+    dashboard.addEventListener('mouseenter', cancelHide);
+    dashboard.addEventListener('mouseleave', scheduleHide);
+})();
+// ── End connection dashboard ──────────────────────────────────────────────────
 
 // ── Vote countdown timer ──────────────────────────────────────────────────────
 // The DomeWatch SSE sends timer.value ("MM:SS") every ~1s.
@@ -572,12 +940,12 @@ function updateVoteCountsDisplay(counts) {
     if (elements.totalVotes)   elements.totalVotes.textContent   = `Total Votes: ${(yeas + nays + present + notVoting).toLocaleString()}`;
 
     if (totalVotes > 0) {
-        const yPct = Math.round(yeas    / totalVotes * 100);
-        const nPct = Math.round(nays    / totalVotes * 100);
-        const pPct = Math.round(present / totalVotes * 100);
-        if (elements.yeasPercent)    elements.yeasPercent.textContent    = `${yPct}%`;
-        if (elements.naysPercent)    elements.naysPercent.textContent    = `${nPct}%`;
-        if (elements.presentPercent) elements.presentPercent.textContent = `${pPct}%`;
+        const yPct = yeas    / totalVotes * 100;
+        const nPct = nays    / totalVotes * 100;
+        const pPct = present / totalVotes * 100;
+        if (elements.yeasPercent)    elements.yeasPercent.textContent    = `${yPct.toFixed(1)}%`;
+        if (elements.naysPercent)    elements.naysPercent.textContent    = `${nPct.toFixed(1)}%`;
+        if (elements.presentPercent) elements.presentPercent.textContent = `${pPct.toFixed(1)}%`;
         if (elements.yeasBar)    elements.yeasBar.style.width    = `${yPct}%`;
         if (elements.naysBar)    elements.naysBar.style.width    = `${nPct}%`;
         if (elements.presentBar) elements.presentBar.style.width = `${pPct}%`;
@@ -612,7 +980,7 @@ function startSSEStreaming() {
         isStreaming = true;
         
         // Use worker proxy for SSE streaming to avoid CORS issues
-        const eventSource = new EventSource('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/stream/votes/current');
+        const eventSource = new EventSource('https://api.evanhollander.org/house-floor/api/stream/votes/current');
         
         // Show connecting state initially
         const liveIndicator = document.querySelector('.live-indicator');
@@ -657,6 +1025,7 @@ function startSSEStreaming() {
                     timer: v.timer || floorData.timer,
                 };
                 syncVoteTimer(v.timer);
+                trackRollLog();
                 // Hot path: update count numbers immediately every tick
                 updateVoteCountsDisplay(v.counts);
                 // Slow path: full re-render throttled to 2s (floor grid etc.)
@@ -669,6 +1038,17 @@ function startSSEStreaming() {
         // connected: initial handshake — no data to process, just confirms stream is live
         eventSource.addEventListener('connected', (event) => {
             console.log('SSE connected event:', event.data);
+            // Start pinging the DO every 45s so it can detect and evict zombie connections.
+            try {
+                const { clientId } = JSON.parse(event.data);
+                if (clientId) {
+                    const pingUrl = `https://api.evanhollander.org/house-floor/api/stream/votes/current?ping=${encodeURIComponent(clientId)}`;
+                    const sendPing = () => fetch(pingUrl, { method: 'POST' }).catch(() => {});
+                    sendPing();
+                    const pingInterval = setInterval(sendPing, 45_000);
+                    eventSource.addEventListener('error', () => clearInterval(pingInterval), { once: true });
+                }
+            } catch {}
         });
 
         // Fallback for any unnamed default messages
@@ -699,6 +1079,7 @@ function startSSEStreaming() {
             eventSource.close();
             if (sseConnection === eventSource) sseConnection = null;
             isStreaming = false;
+            sseReconnectCount++;
             const liveIndicator = document.querySelector('.live-indicator');
             if (liveIndicator) {
                 liveIndicator.classList.remove('live');
@@ -725,6 +1106,7 @@ function startSSEStreaming() {
 
 // Fetch DomeWatch Floor Data (fallback)
 async function fetchFloorData(silent = false) {
+    lastFloorPollAt = Date.now();
     try {
         // Show loading state only on explicit (non-background) fetches
         if (!silent && elements.voteTitle) {
@@ -766,6 +1148,7 @@ async function fetchFloorData(silent = false) {
         if (data.now?.value !== 'vote' && data.now?.value !== 'voting') {
             clearVoteTimer();
         }
+        trackRollLog();
 
         // Update state with floor data for vote map
         if (floorData.voteCounts) {
@@ -877,13 +1260,13 @@ function updateFloorDisplay(status = null) {
 
         // Update percentages with better formatting
         if (totalVotes > 0) {
-            const yeasPct = Math.round((yeas / totalVotes) * 100);
-            const naysPct = Math.round((nays / totalVotes) * 100);
-            const presentPct = Math.round((present / totalVotes) * 100);
-            
-            elements.yeasPercent.textContent = `${yeasPct}%`;
-            elements.naysPercent.textContent = `${naysPct}%`;
-            elements.presentPercent.textContent = `${presentPct}%`;
+            const yeasPct    = (yeas    / totalVotes) * 100;
+            const naysPct    = (nays    / totalVotes) * 100;
+            const presentPct = (present / totalVotes) * 100;
+
+            elements.yeasPercent.textContent = `${yeasPct.toFixed(1)}%`;
+            elements.naysPercent.textContent = `${naysPct.toFixed(1)}%`;
+            elements.presentPercent.textContent = `${presentPct.toFixed(1)}%`;
             
             // Add visual indicators for leading side
             if (yeas > nays) {
@@ -1136,6 +1519,11 @@ const elements = {
     debateSupportLabel: document.getElementById('debate-support-label'),
     debateSupportBar: document.getElementById('debate-support-bar'),
     debateSupportLabels: document.getElementById('debate-support-labels'),
+    debateTime: document.getElementById('debate-time'),
+    debatePanelNav: document.getElementById('debate-panel-nav'),
+    debateBillPanel: document.getElementById('debate-bill-panel'),
+    debateAmendmentsPanel: document.getElementById('debate-amendments-panel'),
+    debateRuleTag: document.getElementById('debate-rule-tag'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
     debateSummarySection: document.getElementById('debate-summary-section'),
@@ -1240,7 +1628,7 @@ const elements = {
 
 // RSS Feed Configuration
 const RSS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/proceedings',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/proceedings',
     refreshInterval: 15000 // 15 seconds — proceedings drives mode switching
 };
 
@@ -1249,7 +1637,7 @@ let proceedingsDateOverride = null;
 
 // News Ticker Configuration
 const NEWS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/news',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/news',
     refreshInterval: 300000 // 5 minutes
 };
 
@@ -1257,7 +1645,7 @@ const NEWS_CONFIG = {
 const DOMEWATCH_CONFIG = {
     apiKey: 'dw_WukWf8avaMpRU7uk7UyHi94ny1pHFsE8',
     baseUrl: 'https://data.domewatch.us/v1',
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/domewatch-floor',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/domewatch-floor',
     refreshInterval: 10000 // 10 seconds for floor data
 };
 
@@ -1282,18 +1670,20 @@ let controllingParty = null;
 
 // Worker endpoint configurations
 const MEMBER_DATA_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/member-data',
     refreshInterval: 3600000 // 1 hour
 };
 
+// getMemberXml() — alias for getMemberDataXml(), defined further below
+
 const CONGRESS_INDEX_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/congress-index',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/congress-index',
     refreshInterval: 300000 // 5 minutes
 };
 
 // FAA Airport Status Configuration
 const FAA_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/airport-delays',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/airport-delays',
     wasAirports: ['DCA', 'IAD', 'BWI'], // Always show these WAS airports
     airportsCsvUrl: 'https://raw.githubusercontent.com/lxndrblz/Airports/main/airports.csv',
     refreshInterval: 300000 // Check every 5 minutes
@@ -1523,7 +1913,7 @@ function parseDebateLength(text) {
     const unit = m[2];
     const n = wordMap[numPart] ?? parseInt(numPart, 10);
     if (!n || isNaN(n)) return null;
-    return unit.startsWith('hour') ? (n === 1 ? '1 HR' : `${n} HRS`) : `${n} MIN`;
+    return unit.startsWith('hour') ? (n === 1 ? '1 HOUR' : `${n} HOURS`) : `${n} MIN`;
 }
 
 // Utility function to format dates
@@ -1533,9 +1923,9 @@ const MONTH_NAMES = [
 ];
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// "20 May 2026"
+// "02 May 2026"
 function fmtDate(d) {
-    return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 // "Tuesday, 20 May 2026"
@@ -1570,7 +1960,7 @@ function formatDate(dateStr) {
 
 // House Voting Days Configuration
 const VOTING_DAYS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/voting-days',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/voting-days',
     refreshInterval: 3600000 // 1 hour
 };
 
@@ -1585,7 +1975,7 @@ let votingCalendarData = [];
 
 // Bills This Week Configuration
 const BILLS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/bills',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/bills',
     refreshInterval: 60000 // 1 minute — status changes during active sessions
 };
 
@@ -1595,14 +1985,43 @@ const billDataMap = new Map();
 // Map from normalized bill ID -> rule info {hres, hresNum, pdfUrl, ruleStatus}
 const specialRulesMap = new Map();
 
+// Lookup map from member name -> casualty status (e.g. "Retiring", "Running for Senate")
+// Populated at startup from /api/casualty-list.  Keys: "FIRSTNAME LASTNAME" and "LASTNAME".
+let casualtyMap = {};
+
 // Normalize a bill ID to match the rules.house.gov slug format, e.g. "H.R. 1041" -> "HR1041"
 function normalizeBillIdForRules(billId) {
     return billId.toUpperCase().replace(/[.\s]/g, '');
 }
 
+// Load casualty list (members not returning) from worker endpoint.
+// Populates casualtyMap with "FIRSTNAME LASTNAME" and "LASTNAME" keys → status string.
+async function loadCasualtyList() {
+    try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/casualty-list');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data && typeof data === 'object' && !data.error) casualtyMap = data;
+    } catch {}
+}
+
+// Look up a member's casualty status using their match object from the Clerk XML.
+// Returns e.g. "Retiring", "Running for Senate", or null if not on the casualty list.
+function getCasualtyStatus(match) {
+    if (!match || !casualtyMap) return null;
+    const firstName = (match.firstName || '').toUpperCase();
+    const lastName  = (match.lastName  || '').toUpperCase();
+    if (firstName && lastName) {
+        const full = `${firstName} ${lastName}`;
+        if (full in casualtyMap) return casualtyMap[full];
+    }
+    if (lastName && lastName in casualtyMap) return casualtyMap[lastName];
+    return null;
+}
+
 async function fetchSpecialRules() {
     try {
-        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/rules');
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' });
         if (!resp.ok) return;
         const data = await resp.json();
         specialRulesMap.clear();
@@ -1612,8 +2031,12 @@ async function fetchSpecialRules() {
                 specialRulesMap.set(billKey, {
                     hres: rule.hres,
                     hresNum: rule.hresNum,
+                    title: rule.title || null,
+                    passageVote: rule.passageVote || null,
                     pdfUrl: rule.pdfUrl,
-                    ruleStatus: rule.ruleStatus
+                    ruleStatus: rule.ruleStatus,
+                    bills: rule.bills,
+                    sponsor: rule.sponsor || null,
                 });
             }
         }
@@ -1648,7 +2071,7 @@ let billsData = {
     lastUpdated: null
 };
 const BLUESKY_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/bluesky',
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/bluesky',
     refreshInterval: 60000 // 1 minute
 };
 
@@ -1731,6 +2154,12 @@ async function fetchBillsThisWeek() {
         console.log(`Found ${billsData.ruleBills.length} rule bills, ${billsData.suspensionBills.length} suspension bills, ${billsData.mayBeConsideredBills.length} may-be-considered bills`);
 
         updateBillsDisplay();
+
+        // Re-render debate/mode sections now that billDataMap is populated.
+        // This ensures the Bill ↔ Amendments toggle appears without waiting for
+        // the next floor data poll (which could be up to 10s later).
+        console.log('[bills→debate] proceedingsData.length=', proceedingsData.length, 'billDataMap.size=', billDataMap.size);
+        if (proceedingsData.length) updateDebateSection(proceedingsData);
 
         // Fetch special rules in parallel, then re-render cards with rule tags
         fetchSpecialRules().then(() => updateBillsDisplay());
@@ -1855,27 +2284,43 @@ function updateBillsDisplay() {
                     : rule.ruleStatus === 'reported' ? 'scheduled'
                     : 'scheduled';
                 const statusSymbol = rule.ruleStatus === 'passed' ? '✓' : '';
-                const href = rule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${rule.hresNum}`;
-                const actionText = rule.ruleStatus === 'passed' ? 'Agreed to by the House'
+                const voteStr = rule.passageVote ? ` ${rule.passageVote}` : '';
+                const actionText = rule.ruleStatus === 'passed' ? `Passed${voteStr}`
                     : rule.ruleStatus === 'reported' ? 'Reported by Rules Committee'
                     : 'Pending';
+                const ruleCardId = `hres-${rule.hresNum}`;
+                const congressUrl = `https://www.congress.gov/bill/119th-congress/house-resolution/${rule.hresNum}`;
+                billDataMap.set(ruleCardId, {
+                    id: rule.hres,
+                    title: rule.title || 'Special rule governing floor consideration',
+                    procedure: 'hres',
+                    status: rule.ruleStatus === 'passed' ? 'passed' : 'scheduled',
+                    statusText: actionText,
+                    latestAction: actionText,
+                    congressUrl,
+                    pdfUrl: rule.pdfUrl || null,
+                    coveredBills: rule.bills || [],
+                    sponsor: rule.sponsor || null,
+                });
                 cards.push(`
-                    <a class="bill-card bill-card-rule-link" href="${href}" target="_blank" rel="noopener">
+                    <div class="bill-card" data-bill-id="${ruleCardId}" data-status="${statusClass}" role="button" tabindex="0">
                         <div class="bill-status ${statusClass}">${statusSymbol}</div>
                         <div class="bill-info">
                             <div class="bill-id">${rule.hres}</div>
-                            <div class="bill-title">Special rule governing floor consideration</div>
+                            <div class="bill-title">${escapeHtml(rule.title || 'Special rule governing floor consideration')}</div>
                             <div class="bill-meta">
                                 <div class="bill-action">${actionText}</div>
                             </div>
                         </div>
                         <div class="bill-chevron">›</div>
-                    </a>
+                    </div>
                 `);
             }
         }
         ruleTagsContainer.innerHTML = cards.join('');
         const show = cards.length > 0;
+        const headerEl = document.getElementById('special-rules-header');
+        if (headerEl) headerEl.textContent = cards.length === 1 ? 'SPECIAL RULE' : 'SPECIAL RULES';
         if (ruleGoverningSection) ruleGoverningSection.style.display = show ? '' : 'none';
         ruleTagsContainer.style.display = show ? '' : 'none';
     } else {
@@ -1883,10 +2328,13 @@ function updateBillsDisplay() {
         if (ruleTagsContainer) ruleTagsContainer.style.display = 'none';
     }
 
-    // Populate MAY BE CONSIDERED section
+    // Populate MAY BE CONSIDERED section — exclude H.Res. bills already shown as special rules
     const mayBeConsideredList = document.getElementById('may-be-considered-list');
     const mayBeConsideredSection = document.getElementById('may-be-considered-section');
-    const sortedMaybe = sortBillsForDisplay(billsData.mayBeConsideredBills || []);
+    const shownHresNorms = new Set([...specialRulesMap.values()].map(r => normalizeBillIdForRules(r.hres)));
+    const sortedMaybe = sortBillsForDisplay(
+        (billsData.mayBeConsideredBills || []).filter(b => !shownHresNorms.has(normalizeBillIdForRules(b.id)))
+    );
     if (mayBeConsideredList) {
         if (sortedMaybe.length > 0) {
             setIfChanged(mayBeConsideredList, sortedMaybe.map(bill => createBillCard(bill, 'maybe')).join(''));
@@ -1906,11 +2354,11 @@ function createBillCard(bill, procedure) {
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     return `
-        <div class="bill-card" data-bill-id="${bill.id}" role="button" tabindex="0">
+        <div class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" role="button" tabindex="0">
             <div class="bill-status ${statusClass}">${statusSymbol}</div>
             <div class="bill-info">
                 <div class="bill-id">${bill.id}</div>
-                <div class="bill-title">${bill.title}</div>
+                <div class="bill-title">${escapeHtml(bill.title)}</div>
                 <div class="bill-meta">
                     <div class="bill-action">${actionText}</div>
                     <div class="bill-date">${actionDate}</div>
@@ -1942,12 +2390,26 @@ function billIdToRulesSlug(billId) {
     return `${typeSlug}-${m[2]}`;
 }
 
+function openBillModalToAmendments(billId) {
+    openBillModal(billId);
+    // Switch immediately to amendments panel after the modal is built
+    const nav = document.getElementById('bill-panel-nav');
+    const mainPanel = document.getElementById('bill-main-panel');
+    const amendmentsPanel = document.getElementById('bill-amendments-panel-el');
+    if (nav && mainPanel && amendmentsPanel) {
+        nav.querySelectorAll('.bill-panel-nav-btn').forEach(b => b.classList.remove('is-active'));
+        nav.querySelector('[data-panel="amendments"]')?.classList.add('is-active');
+        mainPanel.classList.remove('panel-visible');
+        amendmentsPanel.classList.add('panel-visible');
+    }
+}
+
 function openBillModal(billId) {
     const bill = billDataMap.get(billId);
     if (!bill) return;
 
-    const procedureClass = bill.procedure === 'suspension' ? 'suspension' : 'rule';
-    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : 'UNDER RULE';
+    const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
+    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'UNDER RULE';
     const statusClass = bill.status || 'scheduled';
     const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
@@ -1979,7 +2441,7 @@ function openBillModal(billId) {
         const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
         const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
         const name = `${s.firstName} ${s.lastName}`;
-        const loc = s.state + (s.district != null ? `-${s.district}` : '');
+        const loc = s.state + (s.district != null ? `-${String(s.district).padStart(2, '0')}` : '');
         const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
         sponsorHtml = `
             <div class="bill-modal-section">
@@ -2056,7 +2518,7 @@ function openBillModal(billId) {
         return `<a class="bill-rule-tag ${sc} bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`;
     })() : '';
 
-    const rulesSlug = bill.procedure === 'rule' ? billIdToRulesSlug(bill.id) : null;
+    const rulesSlug = (bill.procedure === 'rule') ? billIdToRulesSlug(bill.id) : null;
 
     if (rulesSlug) overlay.classList.add('has-amendments');
     else overlay.classList.remove('has-amendments');
@@ -2076,7 +2538,7 @@ function openBillModal(billId) {
                     <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
                     ${modalRuleTagHtml}
                 </div>
-                <h2 class="bill-modal-title">${bill.title}</h2>
+                <h2 class="bill-modal-title">${escapeHtml(bill.title)}</h2>
             </div>
             <div class="bill-modal-sections">
                 ${sponsorHtml}
@@ -2087,6 +2549,7 @@ function openBillModal(billId) {
             <div class="bill-modal-body">
                 <div class="bill-modal-section-label">SUMMARY</div>
                 <p class="bill-modal-summary">${bill.summary}</p>
+                <p class="bill-modal-crs-attr">Via CRS</p>
             </div>` : ''}
             <div class="bill-modal-foot">
                 ${actionText ? `
@@ -2139,14 +2602,14 @@ function openBillModal(billId) {
     }
 }
 
-async function loadAmendments(slug) {
-    const body = document.getElementById('amendments-body');
-    const countEl = document.getElementById('amendments-count');
+async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amendments-count') {
+    const body = document.getElementById(bodyId);
+    const countEl = document.getElementById(countId);
     if (!body) return;
     try {
         const congress = currentCongress || 119;
         const [resp, xmlText] = await Promise.all([
-            fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
+            fetch(`https://api.evanhollander.org/house-floor/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
             getMemberDataXml().catch(() => null)
         ]);
         const data = await resp.json();
@@ -2179,7 +2642,11 @@ async function loadAmendments(slug) {
             }).filter(t => t.raw);
 
         const partyLetter = p => partyClass(p) === 'rep' ? 'R' : partyClass(p) === 'dem' ? 'D' : 'I';
-        const cleanDistrict = d => d ? d.replace(/\b(\d+)(?:st|nd|rd|th)\b/gi, '$1') : d;
+        const cleanDistrict = d => {
+            if (!d) return d;
+            const stripped = d.replace(/\b(\d+)(?:st|nd|rd|th)\b/gi, '$1').trim();
+            return /^\d+$/.test(stripped) ? stripped.padStart(2, '0') : stripped;
+        };
 
         const renderSponsors = (a) => {
             const tokens = parseSponsorTokens(a.sponsors);
@@ -2561,7 +3028,10 @@ function autoSwitchModeFromProceedings(items) {
 async function updateProceedingsFeed() {
     if (!elements.proceedingsFeed) return;
 
-    setIfChanged(elements.proceedingsFeed, '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>');
+    // Only show the loading placeholder on the very first load (feed is empty)
+    if (!elements.proceedingsFeed.querySelector('.proceedings-item')) {
+        setIfChanged(elements.proceedingsFeed, '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>');
+    }
 
     try {
         const proceedingsUrl = proceedingsDateOverride
@@ -2588,9 +3058,6 @@ async function updateProceedingsFeed() {
             ? new Date(proceedingsDateOverride)
             : new Date(data.items[0]?.pubDate || new Date());
         const dateStr = fmtDate(proceedingsDate);
-        if (elements.proceedingsLastUpdate) {
-            elements.proceedingsLastUpdate.textContent = dateStr;
-        }
 
         // Pinned timeline item from DomeWatch (e.g. "First votes: Wednesday at 12:30 PM")
         const timelineText = floorData.timeline?.first_votes?.text || '';
@@ -2623,6 +3090,14 @@ async function updateProceedingsFeed() {
 
         setIfChanged(elements.proceedingsFeed, timelineHtml + html);
 
+
+        if (elements.proceedingsLastUpdate) {
+            elements.proceedingsLastUpdate.textContent = dateStr;
+        }
+
+        // Store items globally so debate/mode sections can re-render after bills load
+        proceedingsData = data.items;
+
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
 
@@ -2653,8 +3128,11 @@ async function updateProceedingsFeed() {
     }
 }
 
+let _debateLastBillId = null; // tracks which bill is shown so tab isn't reset on every poll
+
 // Update debate section with bill information
 function updateDebateSection(items) {
+    console.log('[debate] updateDebateSection called: items.length=', items?.length, 'hasTitleEl=', !!elements.debateBillTitle);
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
@@ -2725,7 +3203,7 @@ function updateDebateSection(items) {
         }
     }
 
-    // ── 4. Update debate length tag ───────────────────────────────────────
+    // ── 4. Update debate length tag + timestamp ───────────────────────────
     if (elements.debateLengthTag && elements.debateLengthText) {
         if (debateLengthLabel) {
             elements.debateLengthText.textContent = debateLengthLabel;
@@ -2734,8 +3212,67 @@ function updateDebateSection(items) {
             elements.debateLengthTag.style.display = 'none';
         }
     }
+    if (elements.debateTime) {
+        const pubDate = activeItem?.pubDate;
+        if (pubDate) {
+            elements.debateTime.textContent = new Date(pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        } else {
+            elements.debateTime.textContent = '';
+        }
+    }
 
-    // ── 5. Render bill details ────────────────────────────────────────────
+    // ── 5. Special rule tag ───────────────────────────────────────────────
+    const specialRule = foundBill ? specialRulesMap.get(normalizeBillIdForRules(foundBill.id)) : null;
+    if (elements.debateRuleTag) {
+        if (specialRule) {
+            const href = specialRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${specialRule.hresNum}`;
+            elements.debateRuleTag.innerHTML = `<a class="bill-rule-tag" href="${href}" target="_blank" rel="noopener">PURSUANT TO ${specialRule.hres}</a>`;
+        } else {
+            elements.debateRuleTag.innerHTML = '';
+        }
+    }
+
+    // ── 6. Panel nav (Bill Details ↔ Amendments toggle) ──────────────────
+    const rulesSlug = foundBill ? billIdToRulesSlug(foundBill.id) : null;
+    const hasAmendments = rulesSlug && (foundBill?.procedure === 'rule' || foundBill?.isRule === true);
+    console.log('[debate-nav] foundBillId:', foundBillId, '| foundBill:', foundBill?.id, '| procedure:', foundBill?.procedure, '| isRule:', foundBill?.isRule, '| rulesSlug:', rulesSlug, '| hasAmendments:', hasAmendments, '| billDataMap size:', billDataMap.size);
+    if (elements.debatePanelNav) {
+        if (hasAmendments) {
+            elements.debatePanelNav.style.display = 'flex';
+            // Wire up nav buttons once (avoid stacking listeners)
+            const navBtns = elements.debatePanelNav.querySelectorAll('.bill-panel-nav-btn');
+            const billPanel = elements.debateBillPanel;
+            const amendPanel = elements.debateAmendmentsPanel;
+            navBtns.forEach(btn => {
+                btn.onclick = () => {
+                    navBtns.forEach(b => b.classList.remove('is-active'));
+                    btn.classList.add('is-active');
+                    if (btn.dataset.panel === 'bill') {
+                        if (billPanel) billPanel.style.display = '';
+                        if (amendPanel) amendPanel.style.display = 'none';
+                    } else {
+                        if (billPanel) billPanel.style.display = 'none';
+                        if (amendPanel) amendPanel.style.display = '';
+                        loadAmendments(rulesSlug, 'debate-amendments-body', 'debate-amendments-count');
+                    }
+                };
+            });
+            // Reset to bill panel only when the bill changes (not on every 15s poll)
+            if (foundBillId !== _debateLastBillId) {
+                _debateLastBillId = foundBillId;
+                navBtns.forEach(b => b.classList.remove('is-active'));
+                navBtns[0]?.classList.add('is-active');
+                if (billPanel) billPanel.style.display = '';
+                if (amendPanel) amendPanel.style.display = 'none';
+            }
+        } else {
+            elements.debatePanelNav.style.display = 'none';
+        }
+    }
+
+    // ── 6. Render bill details ────────────────────────────────────────────
     if (foundBill) {
         elements.debateBillTitle.textContent = foundBill.title || '—';
         elements.debateBillId.textContent = foundBill.id || '';
@@ -2747,7 +3284,7 @@ function updateDebateSection(items) {
                 const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
                 const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
                 const name = `${s.firstName} ${s.lastName}`;
-                const loc = s.state + (s.district != null ? `-${s.district}` : '');
+                const loc = s.state + (s.district != null ? `-${String(s.district).padStart(2, '0')}` : '');
                 const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
                 elements.debateSponsorInner.innerHTML = `
                     <div class="absentee-member" style="padding:0;border:none;">
@@ -2815,16 +3352,15 @@ function updateDebateSection(items) {
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
-                elements.debateBillDescription.textContent = foundBill.summary;
+                elements.debateBillDescription.textContent = decodeHtml(foundBill.summary);
                 elements.debateSummarySection.style.display = '';
             } else {
                 elements.debateSummarySection.style.display = 'none';
             }
         }
     } else {
-        // Fallback: show raw description title and bill ID
-        const desc = (activeItem || items[0])?.description || '';
-        elements.debateBillTitle.textContent = desc.split(/[.\n]/)[0].trim().substring(0, 120) || '—';
+        // Bill not in map yet — show ID and a clean pending state
+        elements.debateBillTitle.textContent = foundBillId ? 'Bill details loading…' : '—';
         elements.debateBillId.textContent = foundBillId || '—';
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
@@ -3110,7 +3646,7 @@ async function fetchLastSessionDate() {
             const t = new Date();
             return `${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}/${t.getFullYear()}`;
         })();
-        const res = await fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/last-session-date?before=${encodeURIComponent(before)}`);
+        const res = await fetch(`https://api.evanhollander.org/house-floor/api/last-session-date?before=${encodeURIComponent(before)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { date } = await res.json();
         if (date) {
@@ -3126,9 +3662,7 @@ async function fetchJournalChairInfo(name) {
     try {
         const clean = name.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.|the\s+Honorable)\s+/i, '').trim();
         const lastName = clean.split(/\s+/).pop();
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
-        const memberData = await memberRes.json();
-        const xml = memberData.xmlData || '';
+        const xml = await getMemberXml();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, 'text/xml');
         const members = xmlDoc.querySelectorAll('member');
@@ -3146,13 +3680,11 @@ async function fetchJournalChairInfo(name) {
 
 async function fetchJournalSpeakerInfo() {
     try {
-        const res = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        const res = await fetch('https://api.evanhollander.org/house-floor/api/leadership');
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         if (elements.journalChairName) elements.journalChairName.textContent = data.name;
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
-        const memberData = await memberRes.json();
-        const xml = memberData.xmlData || '';
+        const xml = await getMemberXml();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, 'text/xml');
         const members = xmlDoc.querySelectorAll('member');
@@ -3204,7 +3736,7 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
 
 async function fetchSpeakerAsChair() {
     try {
-        const response = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        const response = await fetch('https://api.evanhollander.org/house-floor/api/leadership');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
@@ -3213,10 +3745,7 @@ async function fetchSpeakerAsChair() {
         if (elements.pledgeLeaderName) elements.pledgeLeaderName.textContent = name;
 
         // Fetch member details from member-data XML for party/district/etc
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
-        if (!memberRes.ok) throw new Error('member-data failed');
-        const memberData = await memberRes.json();
-        const xml = memberData.xmlData || '';
+        const xml = await getMemberXml();
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xml, 'text/xml');
         const members = xmlDoc.querySelectorAll('member');
@@ -3529,7 +4058,8 @@ const STATE_NAME_TO_ABBR = {
 function normalizeDistrict(district) {
     if (!district) return '';
     if (/^at\s+large$/i.test(district.trim())) return 'AL';
-    return district.trim().replace(/^(\d+)(?:st|nd|rd|th)$/i, '$1');
+    const num = district.trim().replace(/^(\d+)(?:st|nd|rd|th)$/i, '$1');
+    return /^\d+$/.test(num) ? num.padStart(2, '0') : num;
 }
 
 function formatOathDistrict(districtText) {
@@ -3545,7 +4075,8 @@ function formatOathDistrict(districtText) {
         if (word === 'at' || word === 'at large') {
             districtNum = 'AL';
         } else {
-            districtNum = ORDINAL_TO_NUM[word] ? String(ORDINAL_TO_NUM[word]) : ordinalMatch[1];
+            const n = ORDINAL_TO_NUM[word] ? String(ORDINAL_TO_NUM[word]) : ordinalMatch[1];
+            districtNum = /^\d+$/.test(n) ? n.padStart(2, '0') : n;
         }
     }
 
@@ -3731,33 +4262,14 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
 
         console.log(`Searching for member: ${lastName}${state ? ' from ' + state : ''}`);
 
-        // Try to fetch member data from the worker first
-        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
-        
         let clerkDataText;
         try {
-            const workerResponse = await fetch(workerUrl);
-            if (workerResponse.ok) {
-                const workerData = await workerResponse.json();
-                console.log('Worker response type:', typeof workerData);
-                
-                if (workerData && workerData.xmlData) {
-                    console.log('Worker returned XML data, length:', workerData.xmlData.length);
-                    clerkDataText = workerData.xmlData;
-                } else {
-                    console.log('Worker returned unexpected format:', workerData);
-                    throw new Error('Unexpected worker response format');
-                }
-            } else {
-                throw new Error(`Worker returned HTTP ${workerResponse.status}`);
-            }
+            clerkDataText = await getMemberXml();
         } catch (workerError) {
-            console.log('Worker endpoint failed, cannot fetch data:', workerError);
+            console.log('Member XML fetch failed:', workerError);
             showPledgePlaceholder();
             return;
         }
-
-        console.log('Parsing XML data from worker');
         
         // Parse the XML data
         const parser = new DOMParser();
@@ -3893,35 +4405,31 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
     }
 }
 
-let memberDataXmlCache = null;
-let memberDataXmlCachePromise = null;
+// ── Member XML cache (shared by all callers, 1-hour TTL, in-flight dedup) ──────
+let memberDataXmlCache    = null;
+let memberDataXmlCacheAt  = 0;
+let memberDataXmlInflight = null;
+const MEMBER_XML_TTL_MS   = 60 * 60 * 1000; // 1 hour
 
 async function getMemberDataXml() {
-    if (memberDataXmlCache) return memberDataXmlCache;
-    if (memberDataXmlCachePromise) return memberDataXmlCachePromise;
-
-    memberDataXmlCachePromise = (async () => {
-        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
-        const workerResponse = await fetch(workerUrl);
-        if (!workerResponse.ok) {
-            throw new Error(`Worker returned HTTP ${workerResponse.status}`);
-        }
-
-        const workerData = await workerResponse.json();
-        if (!workerData || !workerData.xmlData) {
-            throw new Error('Unexpected worker response format');
-        }
-
-        memberDataXmlCache = workerData.xmlData;
+    const now = Date.now();
+    if (memberDataXmlCache && (now - memberDataXmlCacheAt) < MEMBER_XML_TTL_MS) {
         return memberDataXmlCache;
-    })();
-
-    try {
-        return await memberDataXmlCachePromise;
-    } finally {
-        memberDataXmlCachePromise = null;
     }
+    if (memberDataXmlInflight) return memberDataXmlInflight;
+    memberDataXmlInflight = fetch(MEMBER_DATA_CONFIG.workerUrl)
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then(data => {
+            if (!data?.xmlData) throw new Error('No xmlData in response');
+            memberDataXmlCache   = data.xmlData;
+            memberDataXmlCacheAt = Date.now();
+            return memberDataXmlCache;
+        })
+        .finally(() => { memberDataXmlInflight = null; });
+    return memberDataXmlInflight;
 }
+
+const getMemberXml = getMemberDataXml; // alias used throughout
 
 function parseMemberDataXml(xmlText) {
     const parser = new DOMParser();
@@ -4191,7 +4699,7 @@ async function fetchHouseMakeup() {
                 // Get state abbreviation and district number
                 const stateAbbrev = member.querySelector('statedata')?.getAttribute('postal-code') || 
                                    member.querySelector('state')?.getAttribute('postal-code') || '';
-                const districtNum = member.querySelector('district')?.textContent?.replace(/[^0-9]/g, '') || '';
+                const districtNum = (member.querySelector('district')?.textContent?.replace(/[^0-9]/g, '') || '').padStart(2, '0').replace(/^0+$/, '');
                 const formattedDistrict = stateAbbrev && districtNum ? `${stateAbbrev}-${districtNum}` : districtInfo;
                 
                 // Only count as vacancy if predecessor info has valid vacate date and cause
@@ -4545,16 +5053,15 @@ function init() {
     
     elements.refreshBtn.addEventListener('click', fetchFloorData);
     
-    // Fetch voting days calendar first
+    // Fire all critical fetches immediately in parallel
+    loadCasualtyList();
+    loadRollLog();
     fetchVotingDays();
-    
-    // Fetch airport names first
-    fetchAirportNames().then(() => {
-        // Initialize other data after airport names are loaded
-        fetchFloorData(); // Initial DomeWatch floor data fetch
-        fetchWeather();
-        fetchAirportDelays();
-    });
+    fetchFloorData();
+    fetchWeather();
+
+    // Airport delays need the name lookup — start both in parallel, delays waits on names
+    fetchAirportNames().then(() => fetchAirportDelays());
     
     // Start SSE streaming for real-time updates (with polling fallback)
     startSSEStreaming();
@@ -4638,9 +5145,13 @@ function init() {
 
 async function initHlsPlayer() {
     const video = document.getElementById('player');
+    const snapshot = document.getElementById('player-snapshot');
     const fallback = document.getElementById('video-fallback');
     const endedLabel = document.getElementById('video-ended-label');
     if (!video) return;
+
+    let pollTimer = null;
+    let playing = false;
 
     function showFallback() {
         video.style.visibility = 'hidden';
@@ -4655,71 +5166,120 @@ async function initHlsPlayer() {
         video.style.visibility = 'visible';
     }
 
-    let streamUrl, isLive;
-    try {
-        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/hls-url');
-        const data = await resp.json();
-        if (!data.url) {
-            showFallback();
-            return;
-        }
-        streamUrl = data.url;
-        isLive = data.isLive;
-    } catch {
-        showFallback();
-        return;
-    }
+    function startPlayback(streamUrl, isLive) {
+        if (playing) return;
+        playing = true;
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        video.__hlsSrc    = streamUrl; // expose for PiP
+        video.__hlsIsLive = isLive;
 
-    function onReady() {
-        hideFallback();
-        if (isLive) {
-            if (endedLabel) endedLabel.hidden = true;
-            video.play().catch(() => {});
-        } else {
-            if (endedLabel) endedLabel.hidden = false;
-            // Seek to last frame once duration is known
-            function seekToEnd() {
+        function onReady() {
+            hideFallback();
+            if (isLive) {
+                if (endedLabel) endedLabel.hidden = true;
+                video.muted = true;
+                video.autoplay = true;
+                video.controls = true;
+                video.play().catch(() => {});
+            } else {
+                if (endedLabel) endedLabel.hidden = false;
+                function captureSnapshot() {
+                    if (!snapshot) return;
+                    try {
+                        snapshot.width = video.videoWidth || video.clientWidth;
+                        snapshot.height = video.videoHeight || video.clientHeight;
+                        const ctx = snapshot.getContext('2d');
+                        ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                        // Show canvas, hide video
+                        video.style.display = 'none';
+                        snapshot.hidden = false;
+                    } catch {}
+                }
+                function seekToEnd() {
+                    if (isFinite(video.duration) && video.duration > 1) {
+                        video.currentTime = video.duration - 0.5;
+                        video.addEventListener('seeked', captureSnapshot, { once: true });
+                    }
+                }
                 if (isFinite(video.duration) && video.duration > 1) {
-                    video.currentTime = video.duration - 0.5;
+                    seekToEnd();
+                } else {
+                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
+                    video.addEventListener('durationchange', seekToEnd, { once: true });
                 }
             }
-            if (isFinite(video.duration) && video.duration > 1) {
-                seekToEnd();
-            } else {
-                video.addEventListener('loadedmetadata', seekToEnd, { once: true });
-                video.addEventListener('durationchange', seekToEnd, { once: true });
-            }
+        }
+
+        if (window.Hls && Hls.isSupported()) {
+            const hlsCfg = isLive ? {
+                maxBufferLength: 2,
+                maxMaxBufferLength: 4,
+                liveSyncDurationCount: 1,       // target 1 segment (2s) behind live edge
+                liveMaxLatencyDurationCount: 2, // jump to live edge if >2 segments behind
+                liveDurationInfinity: true,
+                highBufferWatchdogPeriod: 1,
+            } : { maxBufferLength: 30 };
+            const hls = new Hls(hlsCfg);
+            hls.loadSource(streamUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+            // Whenever the live edge position is known, snap to it
+            hls.on(Hls.Events.LEVEL_UPDATED, () => {
+                if (isLive && hls.liveSyncPosition && video.readyState) {
+                    const drift = hls.liveSyncPosition - video.currentTime;
+                    if (drift > 3) video.currentTime = hls.liveSyncPosition;
+                }
+            });
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) { playing = false; showFallback(); startPolling(); }
+            });
+            video.addEventListener('ended', () => {
+                if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = streamUrl;
+            video.addEventListener('loadedmetadata', onReady, { once: true });
+            video.addEventListener('error', () => { playing = false; showFallback(); startPolling(); });
+            video.addEventListener('ended', () => {
+                if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
+            });
+        } else {
+            showFallback();
         }
     }
 
-    if (window.Hls && Hls.isSupported()) {
-        const hls = new Hls({ maxBufferLength: 30 });
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
-        hls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) showFallback();
-        });
-        video.addEventListener('ended', () => {
-            if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
-        });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamUrl;
-        video.addEventListener('loadedmetadata', onReady, { once: true });
-        video.addEventListener('error', showFallback);
-        video.addEventListener('ended', () => {
-            if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
-        });
-    } else {
-        showFallback();
+    async function tryFetchStream() {
+        try {
+            const resp = await fetch('https://api.evanhollander.org/house-floor/api/hls-url');
+            const data = await resp.json();
+            if (data.url) {
+                startPlayback(data.url, data.isLive);
+                return true;
+            }
+        } catch { /* network error — keep polling */ }
+        return false;
     }
+
+    function startPolling() {
+        if (pollTimer) return; // already polling
+        showFallback();
+        pollTimer = setInterval(async () => {
+            const found = await tryFetchStream();
+            if (found) { clearInterval(pollTimer); pollTimer = null; }
+        }, 10000); // check every 10 seconds
+        window.addEventListener('beforeunload', () => { if (pollTimer) clearInterval(pollTimer); }, { once: true });
+    }
+
+    // Initial check
+    const found = await tryFetchStream();
+    if (!found) startPolling();
 }
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
 
 async function fetchCommitteeFeeds() {
     try {
-        const res = await fetch(`${API_CONFIG.baseUrl}/committee-live`);
+        const res = await fetch('https://api.evanhollander.org/house-floor/api/committee-live');
         if (!res.ok) return;
         const { committees = [] } = await res.json();
         renderCommitteeTiles(committees);
@@ -5228,6 +5788,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
             const photoStyle = photoUrl ? 'display:block;' : '';
             const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
+            const casualtyStatus = getCasualtyStatus(match);
 
             return `
             <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
@@ -5239,6 +5800,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
                     <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
                     <span class="absentee-name">${displayName}</span>
                     <span class="absentee-state">${displayState}</span>
+                    ${casualtyStatus ? `<span class="absentee-casualty-status">${casualtyStatus}</span>` : ''}
                 </div>
             </div>
         `;}).join('');
@@ -5383,12 +5945,54 @@ function fillPartySeats(seats, statuses) {
 
 // Update Quorum Status
 async function updateQuorumStatus() {
+    // If a live vote is in progress, use DomeWatch data directly — the Clerk's XML file
+    // is often unavailable (404) while a vote is open, and the index is one roll behind.
+    const isLiveVote = floorData.currentStatus?.value === 'vote' ||
+                       floorData.currentStatus?.value === 'voting';
+    if (isLiveVote && floorData.rollCall?.number && floorData.voteCounts) {
+        const t          = floorData.voteCounts.totals || {};
+        const iv         = v => Math.max(parseInt(v) || 0, 0);
+        const yeas       = iv(t.yeas);
+        const nays       = iv(t.nays);
+        const present    = iv(t.present);
+        const notVoting  = iv(t.not_voting);
+        const totalVoted = yeas + nays + present;
+        const wholeNumber = totalVoted + notVoting;
+        const quorumRequired = Math.ceil(wholeNumber / 2);
+        const quorumMet  = totalVoted >= quorumRequired;
+        const rollNumber = floorData.rollCall.number;
+
+        elements.membersPresent.textContent = totalVoted;
+        if (elements.quorumSessionStatus) elements.quorumSessionStatus.textContent = wholeNumber;
+        const quorumRequiredEl = document.querySelector('.quorum-metrics .metric-item:nth-child(2) .metric-value');
+        if (quorumRequiredEl) quorumRequiredEl.textContent = quorumRequired;
+        const quorumLabels = document.querySelector('.quorum-labels');
+        if (quorumLabels) quorumLabels.innerHTML = `<span>0</span><span>${quorumRequired}</span><span>${wholeNumber}</span>`;
+
+        if (!elements.quorumIndicator) return;
+        const indicatorDot  = elements.quorumIndicator.querySelector('.indicator-dot');
+        const indicatorText = elements.quorumIndicator.querySelector('.indicator-text');
+        indicatorDot.classList.remove('quorum-not-met');
+        if (quorumMet) {
+            indicatorDot.classList.add('quorum-met');
+            indicatorText.textContent = `ROLL CALL ${rollNumber} • Quorum Met`;
+        } else if (totalVoted > 0) {
+            indicatorDot.classList.add('quorum-not-met');
+            indicatorText.textContent = `ROLL CALL ${rollNumber} • Quorum Not Met`;
+        } else {
+            indicatorText.textContent = 'INACTIVE';
+        }
+        const emptyPct = 100 - Math.min((totalVoted / wholeNumber) * 100, 100);
+        elements.quorumFill.style.width = `${emptyPct}%`;
+        return;
+    }
+
     try {
-        // Get latest roll call data from Clerk (same source as missing members)
+        // Not in a live vote — fetch the most recent completed roll from the Clerk index
         const indexResponse = await fetch(CONGRESS_INDEX_CONFIG.workerUrl);
         if (!indexResponse.ok) throw new Error(`HTTP ${indexResponse.status}`);
         const jsonData = await indexResponse.json();
-        
+
         const rollNumber = jsonData.latestRollNumber;
         const rollResponse = await fetch(`${CONGRESS_INDEX_CONFIG.workerUrl}/roll/${rollNumber}`);
         const rollXml = await rollResponse.text();
@@ -5533,124 +6137,145 @@ function updateLastUpdate() {
     }
 }
 
-// ── YouTube PIP & scroll-shrink ──────────────────────────────────────────────
+// ── HLS PiP — mirrors the main floor feed when scrolled out of view ──────────
 (function initYouTubePip() {
-    const SITE_HEADER_H = 100; // matches .main-header height in CSS
-    const YT_SRC = 'https://www.youtube.com/embed/live_stream?channel=UCqU8qiVHYmLsF0JIMByCTvw&autoplay=1&mute=1&controls=1&rel=0&modestbranding=1';
+    const panel    = document.getElementById('live');
+    const pip      = document.getElementById('youtube-pip');
+    const pipVideo = document.getElementById('player-pip');
+    if (!panel || !pip || !pipVideo) return;
 
-    const panel      = document.getElementById('youtube-panel');
-    const panelHdr   = document.getElementById('youtube-panel-header');
-    const container  = document.getElementById('youtube-container');
-    const pip        = document.getElementById('youtube-pip');
-    const pipIframe  = document.getElementById('youtube-pip-iframe');
-    const pipClose   = document.getElementById('youtube-pip-close');
-    if (!panel || !container || !pip) return;
+    pip.addEventListener('click', () => {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 
-    let pipDismissed = false;
+    const pipSnapshot = document.getElementById('player-pip-snapshot');
     let pipActive    = false;
+    let pipHls       = null;
+    let pipWaitTimer = null; // guards re-entry AND drives polling
     let rafPending   = false;
 
-    // Load PIP iframe src lazily (only when first activated)
-    function ensurePipSrc() {
-        if (!pipIframe.src || pipIframe.src === window.location.href) {
-            pipIframe.src = YT_SRC;
+    function startPipHls() {
+        // Prevent double-start: pipHls covers the live case, pipWaitTimer the pending/non-live case
+        if (pipHls || pipWaitTimer !== null) return;
+
+        const mainVideo = document.getElementById('player');
+        const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
+        const srcUrl    = mainVideo?.__hlsSrc || null;
+
+        // Always start hidden; specific branch will reveal what should show
+        pipVideo.style.display = 'none';
+        if (pipSnapshot) pipSnapshot.style.display = 'none';
+
+        // Main player hasn't loaded yet — fetch the URL ourselves so the PiP
+        // doesn't sit blank while initHlsPlayer() is still in flight.
+        if (isLive === undefined || isLive === null) {
+            pipWaitTimer = -1; // sentinel: fetch in progress (clearInterval(-1) is a safe no-op)
+            fetch('https://api.evanhollander.org/house-floor/api/hls-url')
+                .then(r => r.json())
+                .then(d => {
+                    if (!pipActive || pipWaitTimer !== -1) return; // cancelled by stopPipHls
+                    pipWaitTimer = null;
+                    if (!d?.url) return; // no stream — stay blank
+                    // Seed the main player's flags so startPipHls takes the right branch
+                    const mv = document.getElementById('player');
+                    if (mv && mv.__hlsIsLive === undefined) {
+                        mv.__hlsIsLive = !!d.isLive;
+                        mv.__hlsSrc    = d.isLive ? d.url : null;
+                    }
+                    startPipHls();
+                })
+                .catch(() => { if (pipWaitTimer === -1) pipWaitTimer = null; });
+            return;
+        }
+
+        // Session ended — show frozen snapshot from main player canvas
+        if (!isLive) {
+            function tryApplySnapshot() {
+                const ms = document.getElementById('player-snapshot');
+                if (!ms || ms.hidden || !ms.width) return false;
+                try {
+                    const dataUrl = ms.toDataURL();
+                    if (!dataUrl || dataUrl === 'data:,') return false;
+                    pipSnapshot.src           = dataUrl;
+                    pipSnapshot.style.display = 'block';
+                    return true;
+                } catch { return false; }
+            }
+
+            if (!tryApplySnapshot()) {
+                // Snapshot not captured yet (main video still seeking/decoding) — poll
+                pipWaitTimer = setInterval(() => {
+                    if (!pipActive) { clearInterval(pipWaitTimer); pipWaitTimer = null; return; }
+                    if (tryApplySnapshot()) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
+                }, 300);
+            }
+            return;
+        }
+
+        // Live — spin up a second hls.js instance
+        const load = (url) => {
+            if (!url) return;
+            pipVideo.style.display = 'block';
+            if (pipSnapshot) pipSnapshot.style.display = 'none';
+            pipVideo.muted = true;
+            if (window.Hls && Hls.isSupported()) {
+                pipHls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
+                pipHls.loadSource(url);
+                pipHls.attachMedia(pipVideo);
+                pipHls.on(Hls.Events.MANIFEST_PARSED, () => pipVideo.play().catch(() => {}));
+            } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                pipVideo.src = url;
+                pipVideo.play().catch(() => {});
+            }
+        };
+        if (srcUrl) {
+            load(srcUrl);
+        } else {
+            fetch('https://api.evanhollander.org/house-floor/api/hls-url')
+                .then(r => r.json())
+                .then(d => { if (d.url && d.isLive) load(d.url); }) // only load if actually live
+                .catch(() => {});
         }
     }
 
+    function stopPipHls() {
+        if (pipWaitTimer) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
+        if (pipHls) { pipHls.destroy(); pipHls = null; }
+        pipVideo.src = '';
+        pipVideo.load();
+        if (pipSnapshot) { pipSnapshot.src = ''; pipSnapshot.style.display = 'none'; }
+    }
+
     function showPip() {
-        if (pipDismissed || pipActive) return;
-        ensurePipSrc();
+        if (pipActive) return;
+        startPipHls();
         pip.classList.add('pip-active');
         pipActive = true;
     }
 
     function hidePip() {
         if (!pipActive) return;
+        stopPipHls();
         pip.classList.remove('pip-active');
         pipActive = false;
     }
 
-    pipClose.addEventListener('click', () => {
-        pipDismissed = true;
-        hidePip();
-    });
-
-    // Size PIP to fill the right margin beside the panel content
-    function updatePipWidth() {
-        const panelRect = panel.getBoundingClientRect();
-        // Space from panel's right edge to viewport right, minus 32px (16px each side)
-        const rightSpace = window.innerWidth - panelRect.right;
-        pip.style.width = Math.max(220, rightSpace - 32) + 'px';
-    }
-
-    function setNaturalHeight() {
-        container.classList.remove('scroll-sized');
-        container.style.height = '';
-        container.style.paddingBottom = '';
-    }
-
-    function setScrollHeight(h) {
-        container.classList.add('scroll-sized');
-        container.style.height = h + 'px';
-        container.style.paddingBottom = '0';
-    }
-
     function tick() {
         rafPending = false;
-        if (!panel) return;
-
-        const rect      = panel.getBoundingClientRect();
-        const panelHdrH = panelHdr ? panelHdr.offsetHeight : 48;
-        const winH      = window.innerHeight;
-        const tickerH   = 40;
-
-        // Fully above viewport → PIP
-        if (rect.bottom <= SITE_HEADER_H) {
-            showPip();
-            setNaturalHeight();
-            return;
-        }
-
-        hidePip();
-        pipDismissed = false;
-
-        const naturalH = panel.offsetWidth * 9 / 16;
-
-        // Visible slice: from below site header (or panel header, whichever is lower)
-        // down to above the bottom ticker.
-        const videoTopViewport    = Math.max(SITE_HEADER_H, rect.top + panelHdrH);
-        const videoBottomViewport = Math.min(winH - tickerH, rect.bottom - 1);
-        const available = Math.max(0, videoBottomViewport - videoTopViewport);
-
-        const h = Math.min(naturalH, available);
-
-        if (h >= naturalH - 1) {
-            setNaturalHeight();
-        } else {
-            setScrollHeight(h);
-        }
+        const rect = panel.getBoundingClientRect();
+        const inView = rect.bottom > 0 && rect.top < window.innerHeight;
+        if (inView) hidePip(); else showPip();
     }
 
     function onScroll() {
-        if (!rafPending) {
-            rafPending = true;
-            requestAnimationFrame(tick);
-        }
+        if (!rafPending) { rafPending = true; requestAnimationFrame(tick); }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', () => { updatePipWidth(); onScroll(); }, { passive: true });
-    // Run once on load to set correct initial state
-    document.addEventListener('DOMContentLoaded', () => { updatePipWidth(); tick(); });
-    // Also run after a brief delay in case layout hasn't settled
-    setTimeout(() => { updatePipWidth(); tick(); }, 300);
+    window.addEventListener('resize', onScroll, { passive: true });
+    setTimeout(tick, 300);
 })();
 
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
 
-// Immediate test - this should run as soon as app.js loads
-console.log('APP.JS LOADED SUCCESSFULLY');
-if (elements.voteTitle) {
-    elements.voteTitle.textContent = 'JS LOADED - TESTING FETCH...';
-}

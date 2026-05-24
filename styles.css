@@ -211,6 +211,11 @@ body {
     z-index: 1;
 }
 
+/* Anchor scroll offset — clear the fixed 100px header + 16px breathing room */
+#vote, #proceedings, #bills, #live {
+    scroll-margin-top: 116px;
+}
+
 /* Main Header */
 .main-header {
     position: fixed;
@@ -408,6 +413,26 @@ body {
 @keyframes live-pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+.header-logo-clip {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(calc(-50% - 15px));
+    height: 100px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+}
+
+.header-logo {
+    height: 160px;
+    width: 160px;
+    display: block;
+    flex-shrink: 0;
+    mix-blend-mode: screen;
 }
 
 .brand-text {
@@ -856,6 +881,140 @@ body {
     animation: pulse 2s infinite;
 }
 
+/* ── Connection dashboard tooltip ─────────────────────────────────────────── */
+.brand-tooltip-anchor {
+    position: relative;
+}
+
+.brand {
+    cursor: default;
+    user-select: none;
+}
+
+.conn-dashboard {
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 0;
+    width: 300px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    overflow: hidden;
+}
+
+.conn-dashboard.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* Arrow pointing up */
+.conn-dashboard::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 16px;
+    width: 10px;
+    height: 10px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
+    transform: rotate(45deg);
+}
+
+.conn-dash-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 10px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.conn-dash-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+}
+.conn-dash-dot.state-live       { background: var(--accent-green); box-shadow: 0 0 6px rgba(63,185,80,0.6); animation: pulse 2s infinite; }
+.conn-dash-dot.state-connecting { background: #ffa500; animation: pulse 1.5s infinite; }
+.conn-dash-dot.state-error      { background: var(--accent-red); }
+
+.conn-dash-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.conn-dash-section {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.conn-dash-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.conn-dash-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    gap: 8px;
+}
+.conn-dash-row > span:first-child {
+    flex-shrink: 0;
+}
+.conn-dash-row > span:last-child {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.conn-dash-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.conn-dash-badge.green { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
+.conn-dash-badge.amber { background: rgba(210,153,34,0.15); color: var(--accent-amber); }
+.conn-dash-badge.red   { background: rgba(248,81,73,0.15);  color: var(--accent-red); }
+
+.conn-dash-footer {
+    padding: 9px 14px 11px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    border-top: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.15);
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 .projection-details {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1067,7 +1226,8 @@ body {
 /* unified absolute layering so dimensions are identical */
 .video-container video,
 .video-container iframe,
-.video-container .video-fallback {
+.video-container .video-fallback,
+.video-container .player-snapshot {
   position: absolute;
   top: 0;
   left: 0;
@@ -1080,6 +1240,13 @@ body {
 /* video styling (hidden when fallback) */
 .video-container video {
   object-fit: cover; /* or contain for letterbox */
+  display: block;
+  background: #000;
+}
+
+/* snapshot canvas — shown in place of video when session ended */
+.video-container .player-snapshot {
+  object-fit: cover;
   display: block;
   background: #000;
 }
@@ -1147,8 +1314,8 @@ body {
 /* Weather Panel */
 .weather-panel {
   position: relative;
-  min-width: 60px;
-  min-height: 60px;
+  width: 76px;
+  height: 60px;
   max-width: 320px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
@@ -1160,17 +1327,21 @@ body {
   padding: 8px;
   margin-right: 16px;
   flex-shrink: 0;
+  overflow: hidden;
   z-index: 10;
+  transition: width 0.35s ease, height 0.35s ease,
+              transform 0.35s ease, background 0.35s ease,
+              border-color 0.25s ease, box-shadow 0.35s ease;
 }
 
 .weather-panel:hover {
   width: 320px;
   height: 180px;
   border-color: var(--accent-blue);
-  z-index: 100; /* Much higher z-index to appear above everything */
+  z-index: 100;
   background: #000;
-  transform: translateY(56px); /* Move down much further to avoid cropping */
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Add shadow for depth */
+  transform: translateY(56px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .weather-info {
@@ -1178,13 +1349,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease;
   padding: 4px;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
 }
 
 .weather-panel:hover .weather-info {
   opacity: 0;
-  display: none;
 }
 
 .weather-temp {
@@ -1212,13 +1383,12 @@ body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.35s ease;
   pointer-events: none;
 }
 
 .weather-panel:hover video {
   opacity: 1;
-  pointer-events: auto;
 }
 
 /* Quorum Panel */
@@ -1605,6 +1775,16 @@ body {
   letter-spacing: 0.5px;
 }
 
+.proceedings-time-dot {
+  font-size: 6px;
+  color: var(--text-muted);
+  margin-right: 5px;
+  cursor: default;
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
 .proceedings-feed {
   padding: 8px 16px;
   max-height: 200px;
@@ -1625,6 +1805,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .youtube-container {
@@ -1636,11 +1817,6 @@ body {
   transition: height 0.05s linear, padding-bottom 0.05s linear;
 }
 
-/* When JS is driving the height directly */
-.youtube-container.scroll-sized {
-  padding-bottom: 0;
-  /* height is set as inline style by JS */
-}
 
 .youtube-iframe {
   position: absolute;
@@ -1667,7 +1843,8 @@ body {
   position: fixed;
   bottom: 52px; /* above news ticker */
   right: 16px;
-  width: 280px;
+  /* fills the right margin: 16px gap on each side matching the right offset */
+  width: max(220px, calc((100vw - 1000px) / 2 - 32px));
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -1690,38 +1867,106 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-color);
 }
 
+.youtube-pip-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .youtube-pip-label {
-  font-size: 9px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-}
-
-.youtube-pip-close {
-  background: none;
-  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
   color: var(--text-muted);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.15s;
+  text-transform: uppercase;
 }
 
-.youtube-pip-close:hover { opacity: 1; }
+.youtube-pip-source {
+  font-size: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+}
+
+.youtube-pip-source a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.youtube-pip-source a:hover { opacity: 1; text-decoration: underline; }
+
+.pip-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  animation: pip-blink 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pip-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Blinking live dot overlay on CapCam video — only visible when expanded */
+.capcam-live-dot {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  z-index: 5;
+  pointer-events: none;
+  visibility: hidden;
+}
+.weather-panel:hover .capcam-live-dot {
+  visibility: visible;
+  animation: pip-blink 1.4s ease-in-out infinite;
+}
+
+/* Live dot spacing inside panel-label */
+.panel-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.youtube-pip-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: #000;
+}
 
 .youtube-pip-iframe {
   display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 16/9;
+  height: 100%;
   border: none;
+  object-fit: cover;
+}
+
+.youtube-pip-video { cursor: pointer; }
+.youtube-pip-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  background: transparent;
 }
 
 .proceedings-item {
@@ -2025,6 +2270,16 @@ body {
   font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono);
+}
+
+.absentee-casualty-status {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .weather-attribution {
@@ -2609,16 +2864,37 @@ body {
     width: 100%;
     max-width: 100%;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.voting-calendar-month:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .voting-calendar-month-center {
     background: rgba(88, 166, 255, 0.04);
     border-color: rgba(88, 166, 255, 0.25);
     box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.08) inset;
+}
+
+.voting-calendar-month .fc-view-harness {
+    border-radius: 8px;
+    overflow: hidden !important;
+    border: 1px solid var(--border-color);
+}
+
+/* fc-scroller-harness already has overflow:hidden (FullCalendar's own CSS).
+   Adding border-radius makes that clip rounded at the grid corners. */
+.voting-calendar-month .fc-scrollgrid-section-header .fc-scroller-harness {
+    border-radius: 7px 7px 0 0 !important;
+}
+.voting-calendar-month .fc-scroller-harness-liquid {
+    border-radius: 0 0 7px 7px !important;
 }
 
 .voting-calendar-month .fc {
@@ -2700,8 +2976,7 @@ body {
 .voting-calendar-month .fc .fc-scrollgrid-section,
 .voting-calendar-month .fc table,
 .voting-calendar-month .fc .fc-scrollgrid-sync-table {
-    background: rgba(255, 255, 255, 0.98) !important;
-    overflow: visible;
+    background: transparent !important;
 }
 
 .voting-calendar-month .fc .fc-daygrid-day-top {
@@ -2716,7 +2991,6 @@ body {
 
 .voting-calendar-month .fc .fc-daygrid-day {
     min-height: 0;
-    background: rgba(255, 255, 255, 0.98) !important;
 }
 
 .voting-calendar-month .fc .fc-daygrid-day-frame {
@@ -2736,7 +3010,7 @@ body {
 
 .voting-calendar-month .fc .fc-theme-standard td,
 .voting-calendar-month .fc .fc-theme-standard th {
-    border-color: rgba(15, 23, 32, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .calendar-event-label {
@@ -2744,16 +3018,11 @@ body {
     left: 50%;
     bottom: 2px;
     transform: translateX(-50%);
-    font-size: 5px;
     line-height: 1;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    color: rgba(230, 237, 243, 0.95);
     text-transform: uppercase;
     font-family: var(--font-mono);
     white-space: nowrap;
-    z-index: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+    z-index: 3;
     pointer-events: none;
 }
 
@@ -3116,7 +3385,7 @@ font-family: var(--font-mono);
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
 }
 
@@ -3131,11 +3400,33 @@ a.bill-card-rule-link {
     margin-bottom: 4px;
 }
 
-.bill-card:hover {
-    border-color: var(--accent-blue);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.1);
+.bill-card[data-status="passed"]:hover {
+    background: rgba(63, 185, 80, 0.06);
+    box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.4);
 }
+.bill-card[data-status="passed"]:hover .bill-chevron { color: var(--accent-green); }
+
+.bill-card[data-status="failed"]:hover {
+    background: rgba(248, 81, 73, 0.06);
+    box-shadow: 0 0 0 1px rgba(248, 81, 73, 0.4);
+}
+.bill-card[data-status="failed"]:hover .bill-chevron { color: var(--accent-red); }
+
+.bill-card[data-status="roll-call"]:hover {
+    background: rgba(210, 153, 34, 0.06);
+    box-shadow: 0 0 0 1px rgba(210, 153, 34, 0.4);
+}
+.bill-card[data-status="roll-call"]:hover .bill-chevron { color: var(--accent-amber); }
+
+.bill-card[data-status="scheduled"]:hover,
+.bill-card[data-status="pending"]:hover,
+.bill-card:not([data-status]):hover {
+    background: rgba(139, 148, 158, 0.06);
+    box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
+}
+.bill-card[data-status="scheduled"]:hover .bill-chevron,
+.bill-card[data-status="pending"]:hover .bill-chevron,
+.bill-card:not([data-status]):hover .bill-chevron { color: var(--text-secondary); }
 
 .bill-chevron {
     color: var(--text-muted);
@@ -3143,11 +3434,7 @@ a.bill-card-rule-link {
     line-height: 1;
     flex-shrink: 0;
     margin-top: 1px;
-    transition: color 0.2s ease;
-}
-
-.bill-card:hover .bill-chevron {
-    color: var(--accent-blue);
+    transition: color 0.15s ease;
 }
 
 .bill-status {
@@ -3227,8 +3514,13 @@ a.bill-card-rule-link {
 .bill-rule-tag:hover { opacity: 0.75; }
 
 .bill-rule-tag-modal {
-    font-size: 10px;
-    padding: 2px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    line-height: 1.5;
 }
 
 .bill-rule-tag.rule-tag-passed {
@@ -3460,6 +3752,14 @@ a.bill-card-rule-link {
     color: var(--text-secondary);
     line-height: 1.6;
     margin: 0;
+}
+
+.bill-modal-crs-attr {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
 }
 
 .bill-modal-action {
@@ -4205,8 +4505,7 @@ a.bill-card-rule-link {
     }
 }
 
-/* Recess Mode — hide vote/YouTube panels (HLS panel takes YouTube's place) */
-body.recess-mode .youtube-panel,
+/* Recess Mode — hide vote panels (YouTube panel stays visible for active streams) */
 body.recess-mode .vote-display,
 body.recess-mode .progress-section,
 body.recess-mode .vote-header,
@@ -4237,6 +4536,47 @@ body.debate-mode .debate-section {
     display: block;
 }
 
+/* Debate section panel nav (Bill Details ↔ Amendments toggle) */
+.debate-section .bill-panel-nav {
+    display: flex;
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.debate-section .bill-panel-nav + .debate-content,
+.debate-section .bill-panel-nav + * {
+    border-radius: 0 0 8px 8px;
+}
+
+.debate-section .bill-panel-nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.debate-section .bill-panel-nav-btn.is-active {
+    color: var(--text-primary);
+    background: var(--bg-card);
+}
+
+.debate-section .bill-panel-nav-btn:not(:last-child) {
+    border-right: 1px solid var(--border-color);
+}
+
 .debate-tags-row {
     display: flex;
     align-items: center;
@@ -4262,6 +4602,35 @@ body.debate-mode .debate-section {
     white-space: nowrap;
 }
 
+.debate-tag-time {
+    font-size: 10px;
+    margin-left: 8px;
+    opacity: 0.85;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.debate-amendments-count {
+    margin-left: 6px;
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+/* Rule tag sized to match debate row tags */
+.debate-section .bill-rule-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+    background: transparent;
+    text-transform: uppercase;
+}
+.debate-section .bill-rule-tag:hover { opacity: 0.75; }
+
 .debate-length-tag {
     display: inline-flex;
     align-items: center;
@@ -4282,6 +4651,12 @@ body.debate-mode .debate-section {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 24px;
+}
+
+/* When nav is shown above content, flatten top corners and merge borders */
+.debate-section .bill-panel-nav[style*="flex"] + .debate-content {
+    border-top: none;
+    border-radius: 0 0 8px 8px;
 }
 
 .debate-bill-header {
