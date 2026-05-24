@@ -1021,17 +1021,21 @@ async function handleCasualtyList(env) {
   }
 }
 
-// Cache the full (non-quick, no date) weekly bills response for 60s so that
-// parallel Congress.gov enrichment only runs once per minute instead of on every
-// client request — prevents Worker CPU-time-limit 503s under concurrent load.
+// Cache bills responses in KV to avoid Worker CPU-time-limit 503s.
+// Both the full fetch (XML parsing + Congress.gov enrichment) and the quick poll
+// (XML parsing + proceedings HTML parsing) are expensive enough to exceed the
+// free-tier 10ms CPU budget under concurrent load.
+//   full (no quick, no date): 60s — enrichment runs at most once/min
+//   quick=1: 30s — fresh enough for live vote-status badges
+//   date=*: no cache — historical one-offs
 async function handleBills(request, env) {
   const url = new URL(request.url);
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
-  if (!quick && !dateParam) {
-    return kvCache(env, 'bills-weekly', 60, () => _fetchBills(request, env));
-  }
-  return _fetchBills(request, env);
+  if (dateParam) return _fetchBills(request, env);
+  const cacheKey = quick ? 'bills-weekly-quick' : 'bills-weekly';
+  const ttl = quick ? 30 : 60;
+  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env));
 }
 
 async function _fetchBills(request, env) {
