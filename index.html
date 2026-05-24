@@ -4,15 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MONITORING THE HOUSE FLOOR</title>
+    <meta name="description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta name="theme-color" content="#0d1117">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://house-floor.evanhollander.org">
+    <meta property="og:title" content="Monitoring the House Floor">
+    <meta property="og:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta property="og:image" content="https://house-floor.evanhollander.org/social.webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <link rel="canonical" href="https://house-floor.evanhollander.org">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Monitoring the House Floor">
+    <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 </head>
 <body class="recess-mode">
     <!-- True Header -->
     <header class="main-header">
+        <div class="header-logo-clip">
+            <img src="logo.svg" alt="" class="header-logo">
+        </div>
         <div class="header-left">
-            <div class="brand">
-                <div class="live-indicator"></div>
-                <span class="brand-text">MONITORING THE HOUSE FLOOR</span>
+            <div class="brand-tooltip-anchor">
+                <div class="brand" id="brand-trigger">
+                    <div class="live-indicator"></div>
+                    <span class="brand-text">MONITORING THE HOUSE FLOOR</span>
+                </div>
+                <div class="conn-dashboard" id="connection-dashboard" aria-hidden="true">
+                    <div class="conn-dash-header">
+                        <span class="conn-dash-dot" id="cd-dot"></span>
+                        <span class="conn-dash-status" id="cd-status">—</span>
+                    </div>
+                    <div class="conn-dash-section">
+                        <div class="conn-dash-label">YOUR BROWSER</div>
+                        <div class="conn-dash-row"><span>Stream</span><span id="cd-stream">—</span></div>
+                        <div class="conn-dash-row"><span>Last data</span><span id="cd-last-data">—</span></div>
+                        <div class="conn-dash-row"><span>Reconnects</span><span id="cd-reconnects">—</span></div>
+                    </div>
+                    <div class="conn-dash-section">
+                        <div class="conn-dash-label">SERVER (WORKER)</div>
+                        <div class="conn-dash-row"><span>DomeWatch feed</span><span id="cd-upstream">—</span></div>
+                        <div class="conn-dash-row"><span>Connected browsers</span><span id="cd-clients">—</span></div>
+                        <div class="conn-dash-row"><span>Server reconnects</span><span id="cd-srv-reconnects">—</span></div>
+                        <div class="conn-dash-row"><span>Last DW event</span><span id="cd-last-event">—</span></div>
+                    </div>
+                    <div class="conn-dash-section">
+                        <div class="conn-dash-label">FLOOR</div>
+                        <div class="conn-dash-row"><span>Status</span><span id="cd-floor-status">—</span></div>
+                        <div class="conn-dash-row"><span>Next poll</span><span id="cd-next-poll">—</span></div>
+                    </div>
+                    <div class="conn-dash-footer">
+                        Floor data stream live from the U.S. House via DomeWatch. Vote tallies update in real time during roll calls.
+                    </div>
+                </div>
             </div>
             <div class="date-info">
                 <span class="today-date" id="today-date">--</span>
@@ -29,6 +82,7 @@
                     <div class="weather-condition" id="weather-condition">Loading...</div>
                 </div>
                 <video id="capcam-video" muted playsinline preload="auto" crossorigin="anonymous"></video>
+                <span class="capcam-live-dot"></span>
             </div>
             <div class="clock-group" aria-label="Current times">
                 <div class="clock">
@@ -83,7 +137,7 @@
             </div>
 
         <!-- Main Display -->
-        <div class="main-display">
+        <div class="main-display" id="vote">
             <!-- Vote Title -->
             <div class="vote-header">
                 <h1 class="vote-title" id="vote-title">Loading...</h1>
@@ -104,12 +158,20 @@
                 <div class="debate-tags-row">
                     <div class="debate-tag">
                         <span class="debate-tag-text">DEBATE</span>
+                        <span class="debate-tag-time" id="debate-time"></span>
                     </div>
                     <div class="debate-length-tag" id="debate-length-tag" style="display:none">
                         <span class="debate-length-text" id="debate-length-text"></span>
                     </div>
+                    <span id="debate-rule-tag"></span>
                 </div>
-                <div class="debate-content">
+                <!-- Panel nav — only shown when bill has amendments -->
+                <div class="bill-panel-nav" id="debate-panel-nav" style="display:none">
+                    <button class="bill-panel-nav-btn is-active" data-panel="bill">Bill Details</button>
+                    <button class="bill-panel-nav-btn" data-panel="amendments">Amendments<span class="debate-amendments-count" id="debate-amendments-count"></span></button>
+                </div>
+                <!-- Bill details panel -->
+                <div class="debate-content" id="debate-bill-panel">
                     <div class="debate-bill-header">
                         <span class="debate-bill-id" id="debate-bill-id">--</span>
                     </div>
@@ -134,7 +196,12 @@
                     <div class="bill-modal-section" id="debate-summary-section" style="display:none">
                         <div class="bill-modal-section-label">SUMMARY</div>
                         <p class="debate-bill-description" id="debate-bill-description"></p>
+                        <p class="bill-modal-crs-attr">Via CRS</p>
                     </div>
+                </div>
+                <!-- Amendments panel -->
+                <div class="debate-content debate-amendments-panel" id="debate-amendments-panel" style="display:none">
+                    <div class="bill-amendments-body" id="debate-amendments-body"></div>
                 </div>
             </div>
 
@@ -824,70 +891,14 @@
                     </div>
                 </div>
             </div>
-            <div class="youtube-panel" id="youtube-panel">
-                <div class="panel-header" id="youtube-panel-header">
-                    <span class="panel-label">LIVE STREAM</span>
-                    <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://youtube.com/@USHouseClerk/live" target="_blank" rel="noopener">US House Clerk (YouTube)</a></span>
-                    </div>
-                </div>
-                <div class="youtube-container" id="youtube-container">
-                    <iframe
-                        id="youtube-iframe"
-                        src="https://www.youtube.com/embed/live_stream?channel=UCqU8qiVHYmLsF0JIMByCTvw&autoplay=1&mute=1&controls=0&cc_load_policy=1&cc_lang_pref=en&rel=0&modestbranding=1"
-                        class="youtube-iframe"
-                        title="US House Clerk — Live"
-                        allow="autoplay; fullscreen"
-                        allowfullscreen>
-                    </iframe>
-                    <div class="youtube-overlay"></div>
-                </div>
-            </div>
-
-            <!-- Custom PIP — shown when YouTube panel is fully above viewport -->
-            <div id="youtube-pip" class="youtube-pip" aria-label="Live stream picture-in-picture">
-                <div class="youtube-pip-header">
-                    <span class="youtube-pip-label">LIVE STREAM</span>
-                    <button class="youtube-pip-close" id="youtube-pip-close" aria-label="Dismiss PIP">✕</button>
-                </div>
-                <iframe
-                    id="youtube-pip-iframe"
-                    class="youtube-pip-iframe"
-                    src=""
-                    title="US House Clerk — Live (PIP)"
-                    allow="autoplay; fullscreen"
-                    allowfullscreen>
-                </iframe>
-            </div>
-
-            <!-- Floor feed hidden until stream is reliable
-            <div class="video-section">
-                <div class="panel-header">
-                    <span class="panel-label">LIVE FLOOR FEED</span>
-                    <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
-                    </div>
-                </div>
-                <div class="video-container" aria-live="polite">
-                    <video id="player" controls playsinline muted></video>
-                    <div id="video-ended-label" class="video-ended-label" hidden>SESSION ENDED</div>
-                    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
-                        <div>
-                            <strong>Stream unavailable</strong>
-                            <div class="subtitle">The live feed is currently offline or unavailable.</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            -->
 
             <!-- Floor Proceedings -->
-            <div class="proceedings-panel">
+            <div class="proceedings-panel" id="proceedings">
                 <div class="panel-header">
                     <span class="panel-label">FLOOR PROCEEDINGS</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
-                        <span class="proceedings-time" id="proceedings-last-update">--:--</span>
+                        <span class="proceedings-time" id="proceedings-last-update"></span>
                     </div>
                 </div>
                 <div class="proceedings-feed" id="proceedings-feed">
@@ -994,7 +1005,7 @@
             </div>
 
             <!-- Bills This Week Section -->
-            <div class="bills-section">
+            <div class="bills-section" id="bills">
                 <div class="panel-header">
                     <span class="panel-label">BILLS THIS WEEK</span>
                     <div class="panel-header-right">
@@ -1015,8 +1026,9 @@
                         <!-- SPECIAL RULE(S) — shown above UNDER RULE when a rule is in play -->
                         <div class="bills-column-header" id="rule-governing-section" style="display:none">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">SPECIAL RULE(S)</span>
+                                <span class="bills-column-title" id="special-rules-header">SPECIAL RULES</span>
                             </div>
+                            <button class="info-btn" data-info="under-rule" aria-label="About special rules">?</button>
                         </div>
                         <div class="bills-list" id="rule-tags-container" style="display:none"></div>
                         <!-- UNDER RULE header -->
@@ -1090,6 +1102,63 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.20/index.global.min.js"></script>
 
+        <!-- Live Stream (HLS) -->
+        <div class="youtube-panel" id="live">
+            <div class="panel-header" id="youtube-panel-header">
+                <span class="panel-label"><span class="pip-live-dot"></span>LIVE FLOOR FEED</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
+                </div>
+            </div>
+            <div class="youtube-container" id="youtube-container">
+                <div class="video-container" aria-live="polite">
+                    <video id="player" playsinline muted></video>
+                    <canvas id="player-snapshot" class="player-snapshot" hidden></canvas>
+                    <div id="video-ended-label" class="video-ended-label" hidden>SESSION ENDED</div>
+                    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
+                        <div>
+                            <strong>Stream unavailable</strong>
+                            <div class="subtitle">The live feed is currently offline or unavailable.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom PiP — shown when live feed panel is not in viewport -->
+        <div id="youtube-pip" class="youtube-pip" aria-label="Live stream picture-in-picture">
+            <div class="youtube-pip-header">
+                <div class="youtube-pip-header-left">
+                    <span class="pip-live-dot"></span>
+                    <span class="youtube-pip-label">LIVE FLOOR FEED</span>
+                </div>
+                <span class="youtube-pip-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
+            </div>
+            <div class="youtube-pip-video">
+                <video id="player-pip" class="youtube-pip-iframe" playsinline muted autoplay disablePictureInPicture></video>
+                <img id="player-pip-snapshot" class="youtube-pip-iframe" hidden alt="">
+                <div class="youtube-pip-overlay"></div>
+            </div>
+        </div>
+
+        <!-- YouTube (commented out — replaced by HLS feed above)
+        <div class="youtube-panel" id="live-yt">
+            <div class="panel-header">
+                <span class="panel-label"><span class="pip-live-dot"></span>LIVE STREAM</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a href="https://youtube.com/@USHouseClerk/live" target="_blank" rel="noopener">US House Clerk (YouTube)</a></span>
+                </div>
+            </div>
+            <div class="youtube-container">
+                <iframe id="youtube-iframe"
+                    src="https://www.youtube.com/embed/live_stream?channel=UCqU8qiVHYmLsF0JIMByCTvw&autoplay=1&mute=1&controls=0&cc_load_policy=1&cc_lang_pref=en&rel=0&modestbranding=1"
+                    class="youtube-iframe" title="US House Clerk — Live"
+                    allow="autoplay; fullscreen" allowfullscreen></iframe>
+                <div class="youtube-overlay"></div>
+            </div>
+        </div>
+        -->
+
         <!-- Footer -->
         <div class="footer">
             <div class="footer-section">
@@ -1106,6 +1175,7 @@
                         <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a>
                         <a href="https://bsky.app/profile/did:plc:sqqvdfeilp5ozvkq3ullwtqo" target="_blank" rel="noopener">Legislative Actions (House Democratic Cloakroom via Bluesky)</a>
                         <a href="https://congress.gov/" target="_blank" rel="noopener">Legislative Information (Congress.gov)</a>
+                        <a href="https://pressgallery.house.gov/member-data/casualty-list" target="_blank" rel="noopener">Casualty List (House Press Gallery)</a>
                     </div>
                     <div class="source-group">
                         <span class="source-category">Weather:</span>
@@ -1139,12 +1209,17 @@
             <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener license">CC BY-NC 4.0</a>
+            <span class="site-footer-sep">&middot;</span>
+            <a class="site-footer-license" href="/legal">Legal</a>
+            <span class="site-footer-sep">&middot;</span>
+            <a class="site-footer-license" href="/contact">Contact</a>
         </div>
         <div class="site-footer-secondary">
             Not affiliated with the U.S. House of Representatives. For informational purposes only.
         </div>
     </footer>
 
-    <script src="app.js?v=20260521e"></script>
+    <script src="app.js?v=20260523q"></script>
+    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
