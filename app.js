@@ -924,6 +924,43 @@ function clearVoteTimer() {
 
 // Fast-path vote count update — called on every SSE tick, touches only the count
 // DOM elements. Keeps the numbers in sync without triggering the full render.
+// Flip-clock digit animator — animates only the digit places that changed.
+// e.g. 68→69 flips only the last digit; 69→70 flips both.
+function flipToNumber(el, newVal) {
+    const newStr = (newVal === null || newVal === undefined)
+        ? '--'
+        : String(Math.max(0, parseInt(newVal) || 0));
+    const oldStr = el.dataset.flipVal || '';
+    if (oldStr === newStr) return;
+
+    // Full rebuild when digit count changes, first render, or transitioning to/from placeholder
+    if (!el.dataset.flipVal || oldStr.length !== newStr.length || oldStr.includes('-') || newStr.includes('-')) {
+        el.innerHTML = [...newStr].map(ch =>
+            `<span class="flip-digit"><span class="flip-digit-char">${ch}</span></span>`
+        ).join('');
+        el.dataset.flipVal = newStr;
+        return;
+    }
+
+    // Animate only changed digit positions
+    const digitEls = el.querySelectorAll('.flip-digit');
+    [...newStr].forEach((newCh, i) => {
+        if (newCh === oldStr[i]) return;
+        const wrapper = digitEls[i];
+        const oldSpan = wrapper.querySelector('.flip-digit-char:not(.exiting)');
+        if (!oldSpan) return;
+        oldSpan.classList.add('exiting');
+        oldSpan.addEventListener('animationend', () => oldSpan.remove(), { once: true });
+        const newSpan = document.createElement('span');
+        newSpan.className = 'flip-digit-char entering';
+        newSpan.textContent = newCh;
+        wrapper.appendChild(newSpan);
+        newSpan.addEventListener('animationend', () => newSpan.classList.remove('entering'), { once: true });
+    });
+
+    el.dataset.flipVal = newStr;
+}
+
 function updateVoteCountsDisplay(counts) {
     if (!counts) return;
     const totals = counts.totals || {};
@@ -934,9 +971,9 @@ function updateVoteCountsDisplay(counts) {
     const notVoting = iv(totals.not_voting);
     const totalVotes = yeas + nays + present;
 
-    if (elements.yeasCount)    elements.yeasCount.textContent    = yeas.toLocaleString();
-    if (elements.naysCount)    elements.naysCount.textContent    = nays.toLocaleString();
-    if (elements.presentCount) elements.presentCount.textContent = present.toLocaleString();
+    if (elements.yeasCount)    flipToNumber(elements.yeasCount,    yeas);
+    if (elements.naysCount)    flipToNumber(elements.naysCount,    nays);
+    if (elements.presentCount) flipToNumber(elements.presentCount, present);
     if (elements.totalVotes)   elements.totalVotes.textContent   = `Total Votes: ${(yeas + nays + present + notVoting).toLocaleString()}`;
 
     if (totalVotes > 0) {
