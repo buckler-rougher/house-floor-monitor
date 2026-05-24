@@ -73,7 +73,12 @@
        y2="66.224495" />
     <clipPath id="revealClip">
       <rect x="-1" y="-1" width="0" height="134">
-        <animate attributeName="width" from="0" to="91" dur="1.5s" fill="freeze" begin="0s"/>
+        <animate attributeName="width"
+          values="1;7.8;14.23;22.17;26.46;30.29;40.17;51;61;76;91"
+          keyTimes="0;0.076;0.147;0.235;0.283;0.326;0.436;0.557;0.668;0.835;1"
+          dur="1.5s" fill="freeze" begin="0s"
+          calcMode="spline"
+          keySplines="0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 0.4 1"/>
       </rect>
     </clipPath>
   </defs>
@@ -100,7 +105,11 @@
        cx="0"
        cy="0"
        r="10.58333">
-      <animateMotion dur="1.5s" fill="freeze" keyPoints="1;0" keyTimes="0;1" calcMode="linear">
+      <animateMotion dur="1.5s" fill="freeze"
+        keyPoints="1;0.9568;0.8066;0.6186;0.5464;0.5184;0.4776;0.4259;0.3008;0.1354;0"
+        keyTimes="0;0.076;0.147;0.235;0.283;0.326;0.436;0.557;0.668;0.835;1"
+        calcMode="spline"
+        keySplines="0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 1 1;0 0 0.4 1">
         <mpath xlink:href="#path11"/>
       </animateMotion>
     </circle>
