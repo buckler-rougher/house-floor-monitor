@@ -31,11 +31,17 @@
     <!-- True Header -->
     <header class="main-header">
         <div class="header-logo-clip">
-            <img src="logo.svg" alt="" class="header-logo" id="header-logo-img"
+            <img alt="" class="header-logo" id="header-logo-img"
                  style="pointer-events:auto;cursor:pointer"
                  onclick="scrollTo({top:0,behavior:'smooth'})">
         </div>
-        <script>document.getElementById('header-logo-img').src='logo.svg?'+Date.now();</script>
+        <script>
+            // Wait for two rendered frames so the browser finishes initial layout/JS parse
+            // before the SVG loads and its SMIL animation begins — prevents jitter on load.
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                document.getElementById('header-logo-img').src = 'logo.svg?' + Date.now();
+            }));
+        </script>
         <div class="header-left">
             <div class="brand-tooltip-anchor">
                 <div class="brand" id="brand-trigger">
