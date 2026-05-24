@@ -2092,31 +2092,6 @@ async function handleLastSessionDate(request) {
   }
 }
 
-// ── Committee Live Feeds ─────────────────────────────────────────────────────
-
-const COMMITTEE_YOUTUBE = {
-  HSAG: { channelId: 'UCOWh2WJxPywHIaccDWb8Mvg', name: 'Agriculture' },
-  HSAP: { channelId: 'UCMaSlF09S0fpoRshS2t_7XA', name: 'Appropriations' },
-  HSAS: { channelId: 'UCD506yORW2voSanqEgLOUIQ', name: 'Armed Services' },
-  HSBA: { channelId: 'UCiGw0gRK-daU7Xv4oDMr9Hg', name: 'Financial Services' },
-  HSBU: { channelId: 'UCwzia2rpHJkowAXK-IF9E0w', name: 'Budget' },
-  HSED: { channelId: 'UCqAHNOSUqn0OByR-4vF81FQ', name: 'Education & Workforce' },
-  HSFA: { channelId: 'UCXCjgHrMgPEqDvCmPc9BbJA', name: 'Foreign Affairs' },
-  HSGO: { channelId: 'UCXSlyao4qkUFiPqghptHtZA', name: 'Oversight' },
-  HSHA: { channelId: 'UCTO94zQwJNB_gmud-4IyZXA', name: 'House Administration' },
-  HSHM: { channelId: 'UC6Vg3_8RRaIVLJFyo7WZfzA', name: 'Homeland Security' },
-  HSIF: { channelId: 'UCCbD3bkHRcwiBsaL1lWE_QQ', name: 'Energy & Commerce' },
-  HSII: { channelId: 'UCB6LGE5-_i-xxtZxk1_SeTg', name: 'Natural Resources' },
-  HLIG: { channelId: 'UCMF5z6BIrwwQTtcj2cacBPw', name: 'Intelligence' },
-  HSJU: { channelId: 'UCVvv3JRCVQAl6ovogDum4hA', name: 'Judiciary' },
-  HSPW: { channelId: 'UChc8bTPtZgTZDDLJ6UWJgxA', name: 'Transportation' },
-  HSRU: { channelId: 'UC3LTS2HRaURCmt_kkWorvFw', name: 'Rules' },
-  HSSM: { channelId: 'UCnYcuO2JQhVbnCR8ltmSacQ', name: 'Small Business' },
-  HSSO: { channelId: 'UCxZOzbhWkBPEimMti0NBvQQ', name: 'Ethics' },
-  HSSY: { channelId: 'UCtoUE3dJ-mLUo5dwGs7hXOw', name: 'Science & Tech' },
-  HSVR: { channelId: 'UCvI8xjyh45-XAJbfPcjUdbQ', name: "Veterans' Affairs" },
-  HSWM: { channelId: 'UCrz_XV52yquSiXvyjdh03Fw', name: 'Ways & Means' },
-};
 
 async function handleAmendments(request, env) {
   const url = new URL(request.url);
@@ -2188,71 +2163,6 @@ function toEasternDateStr(isoString) {
   return new Date(d.getTime() + offset * 3600000).toISOString().slice(0, 10);
 }
 
-async function checkYouTubeLive(channelId) {
-  try {
-    // When a channel is live, YouTube injects a <link rel="canonical" href="...watch?v=...">
-    // into the <head> of the /live page (within the first ~30KB). When not live, this tag
-    // only appears deep in the JS (~600KB in). We stream until we find it or hit 40KB.
-    const resp = await fetch(
-      `https://www.youtube.com/channel/${channelId}/live`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-      }
-    );
-    if (!resp.ok || !resp.body) return null;
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    const MAX_BYTES = 750000;
-    let bytesRead = 0;
-    let result = null;
-
-    while (bytesRead < MAX_BYTES) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      bytesRead += value.length;
-      buf += decoder.decode(value, { stream: true });
-      const m = buf.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})"/);
-      if (m) {
-        const videoId = m[1];
-        result = {
-          videoId,
-          thumbnail: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
-          streamTitle: 'Live',
-          publishedAt: new Date().toISOString(),
-        };
-        break;
-      }
-    }
-    reader.cancel();
-    return result;
-  } catch { return null; }
-}
-
-async function handleCommitteeLive(env) {
-  return kvCache(env, 'committee-live', 60, async () => {
-    try {
-      const results = await Promise.all(
-        Object.entries(COMMITTEE_YOUTUBE).map(async ([thomasId, info]) => {
-          const stream = await checkYouTubeLive(info.channelId);
-          return stream ? { thomasId, channelId: info.channelId, name: info.name, ...stream } : null;
-        })
-      );
-      return new Response(JSON.stringify({ committees: results.filter(Boolean), updatedAt: new Date().toISOString() }), {
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ committees: [], error: err.message }), {
-        status: 500,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-  }, 300);
-}
 
 async function handleLeadership(env) {
   return kvCache(env, 'leadership', 3600, async () => {
@@ -2439,8 +2349,6 @@ async function handleRequest(request, env) {
     return await handleRules(request, env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
-  } else if (path === '/api/committee-live' && request.method === 'GET') {
-    return await handleCommitteeLive(env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
