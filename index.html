@@ -31,9 +31,9 @@
     <!-- True Header -->
     <header class="main-header">
         <div class="header-logo-clip">
-            <a href="#" aria-label="Scroll to top" onclick="event.preventDefault();scrollTo({top:0,behavior:'smooth'})" style="display:contents;pointer-events:auto;cursor:pointer">
-                <img src="logo.svg" alt="" class="header-logo" id="header-logo-img">
-            </a>
+            <img src="logo.svg" alt="" class="header-logo" id="header-logo-img"
+                 style="pointer-events:auto;cursor:pointer"
+                 onclick="scrollTo({top:0,behavior:'smooth'})">
         </div>
         <script>document.getElementById('header-logo-img').src='logo.svg?'+Date.now();</script>
         <div class="header-left">
