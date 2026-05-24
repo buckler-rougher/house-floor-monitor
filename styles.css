@@ -669,6 +669,44 @@ body {
     line-height: 1;
     margin-bottom: 8px;
     font-feature-settings: 'tnum';
+    display: flex;
+    justify-content: center;
+}
+
+/* ── Flip-digit vote counter ───────────────────────────────────── */
+.flip-digit {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    height: 1em;
+    vertical-align: top;
+}
+
+.flip-digit-char {
+    display: block;
+    line-height: 1;
+}
+
+.flip-digit-char.exiting {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    animation: flip-exit 0.18s ease-in forwards;
+}
+
+.flip-digit-char.entering {
+    animation: flip-enter 0.18s ease-out forwards;
+}
+
+@keyframes flip-exit {
+    from { transform: translateY(0);     opacity: 1; }
+    to   { transform: translateY(110%);  opacity: 0; }
+}
+
+@keyframes flip-enter {
+    from { transform: translateY(-110%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
 }
 
 .count-percentage {
