@@ -2547,9 +2547,8 @@ function openBillModal(billId) {
             </div>
             ${bill.summary ? `
             <div class="bill-modal-body">
-                <div class="bill-modal-section-label">SUMMARY</div>
+                <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
                 <p class="bill-modal-summary">${bill.summary}</p>
-                <p class="bill-modal-crs-attr">Via CRS</p>
             </div>` : ''}
             <div class="bill-modal-foot">
                 ${actionText ? `

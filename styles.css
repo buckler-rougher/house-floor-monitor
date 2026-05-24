@@ -3754,14 +3754,6 @@ a.bill-card-rule-link {
     margin: 0;
 }
 
-.bill-modal-crs-attr {
-    font-size: 10px;
-    color: var(--text-muted);
-    margin: 6px 0 0;
-    font-family: var(--font-mono);
-    letter-spacing: 0.5px;
-}
-
 .bill-modal-action {
     font-size: 12px;
     color: var(--text-secondary);
