@@ -1,29 +1,73 @@
 // Cloudflare Worker for RSS Feed Processing
 // Handles CORS, caching, and XML parsing server-side
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+const ALLOWED_ORIGINS = new Set([
+  'https://house-floor.evanhollander.org',
+  'https://monitor-a6i.pages.dev',
+]);
+// Populated at the top of handleRequest() for each incoming request
+let CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://house-floor.evanhollander.org',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-// Maximum age (in hours) for items shown in the news scroll — easy to tune
+// Returns correct CORS headers for a given request object (used by the Durable Object,
+// which runs in its own isolate and never goes through handleRequest()).
+function corsForRequest(request) {
+  const origin = request?.headers?.get('Origin') || '';
+  return {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://house-floor.evanhollander.org',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
+// ── In-memory cache ──────────────────────────────────────────────────────────
+// A Worker isolate handles many concurrent requests from the same Cloudflare PoP.
+// Without this, every request calls KV.get() — at 100k reads/day free tier that
+// adds up fast for hot endpoints (domewatch-floor 10s TTL, proceedings-live 15s).
+// This layer collapses N reads/TTL-window down to 1 KV read per isolate.
+const _mem = new Map(); // key → { v: string, exp: number }
+function _mGet(k) {
+  const e = _mem.get(k);
+  if (!e) return null;
+  if (Date.now() > e.exp) { _mem.delete(k); return null; }
+  return e.v;
+}
+function _mSet(k, v, ttlMs) {
+  _mem.set(k, { v, exp: Date.now() + ttlMs });
+  // Evict expired entries when map grows large
+  if (_mem.size > 300) { const n = Date.now(); for (const [k2, e] of _mem) if (n > e.exp) _mem.delete(k2); }
+}
+
+// ─── NEWS SETTINGS (easy to tune) ────────────────────────────────────────────
+// Max age for ALL news feed items (Politico, Hill, Roll Call, journalists). Hours.
 const NEWS_MAX_AGE_HOURS = 48;
 
-// Nitter instances to try for each Twitter account (first success wins)
+// Nitter instances to try for Twitter-based journalist feeds (tried in order).
+// CF Workers IPs are sometimes blocked — update this list if feeds stop working.
+// RSS URL format: https://{instance}/{twitterHandle}/rss
 const NITTER_INSTANCES = [
-  'https://nitter.privacydev.net',
-  'https://nitter.poast.org',
-  'https://nitter.1d4.us',
-  'https://nitter.cz',
+  'nitter.poast.org',
+  'nitter.privacydev.net',
+  'nitter.cz',
+  'nitter.1d4.us',
+  'nitter.nl',
+  'nitter.unixfox.eu',
 ];
 
-// Twitter accounts to include in the news scroll
-const TWITTER_FEEDS = [
-  { handle: 'JakeSherman', label: 'SHERMAN' },
-  { handle: 'mkraju',      label: 'RAJU' },
-  { handle: 'jamiedupree', label: 'DUPREE' },
+// Journalist feeds.
+//   twitter:    Twitter handle — fetched via Nitter RSS (NITTER_INSTANCES list above)
+//   blueskyDid: Bluesky DID   — fetched via bskyrss.com
+// Set a field to null to skip that source for a journalist.
+// To find a Bluesky DID: https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=HANDLE.bsky.social
+const JOURNALIST_FEEDS = [
+  { label: 'JAKE SHERMAN', twitter: 'JakeSherman', blueskyDid: null },
+  { label: 'MANU RAJU',    twitter: 'mkraju',      blueskyDid: null },
+  { label: 'JAMIE DUPREE', twitter: null,           blueskyDid: 'did:plc:haw3ukxfc5ppinj2rhd5gcoa' },
 ];
+// ─────────────────────────────────────────────────────────────────────────────
 
 const RSS_FEEDS = {
   proceedings: 'https://clerk.house.gov/Home/Feed',
@@ -44,15 +88,21 @@ const RSS_FEEDS = {
 
 // DomeWatch API configuration
 const DOMEWATCH_CONFIG = {
-  apiKey: 'dw_WukWf8avaMpRU7uk7UyHi94ny1pHFsE8',
   baseUrl: 'https://data.domewatch.us/v1'
 };
-
-const CONGRESS_API_KEY = '5o7xqvVsCGdjdAIAdDLbdgpayABFrAtPuSfJo3EL';
 const CURRENT_CONGRESS = 119;
+// Resolved per-request from env secrets (set via `wrangler secret put`)
+let _congressApiKey = '';
+let _domewatchApiKey = '';
 
 const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator';
 const STREAM_FALLBACK_KEY = '__domewatch_stream_fallback__';
+
+function decodeHtmlEntities(str) {
+  return str
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x27;/g, "'");
+}
 
 function sseResponseInit() {
   return {
@@ -72,9 +122,10 @@ async function getStreamCoordinator(env) {
   return env.DOMEWATCH_STREAM_COORDINATOR.get(id);
 }
 
-async function fetchRSSFeed(url) {
+async function fetchRSSFeed(url, timeoutMs = 8000) {
   try {
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'application/rss+xml, application/xml, text/xml, */*'
@@ -85,10 +136,7 @@ async function fetchRSSFeed(url) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const text = await response.text();
-    
-    // For congress index, we expect HTML, so don't throw error for HTML responses
-    return text;
+    return await response.text();
   } catch (error) {
     throw new Error(`Failed to fetch feed: ${error.message}`);
   }
@@ -114,14 +162,25 @@ function parseRSSFeed(xmlText, feedType = 'proceedings') {
     const parsedItems = itemMatches.map(itemXml => {
       // Extract title
       const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/);
-      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : '';
-      
+      let title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : '';
+
       // Extract description (handle both <description> and <content>)
       let descMatch = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/);
       if (!descMatch) {
         descMatch = itemXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
       }
       const description = descMatch ? descMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : '';
+
+      // bskyrss Atom feeds: <title> is empty, actual post text is in <content type="html">
+      // as HTML-entity-encoded HTML. Fall back to content when title is empty.
+      if (!title && description) {
+        // Decode HTML entities, then strip tags to get plain text
+        title = decodeHtmlEntities(description)
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .substring(0, 280); // cap at tweet-length for ticker
+      }
       
       // Extract pubDate (handle both <pubDate> and <published>/<updated>)
       let pubDateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/);
@@ -147,9 +206,10 @@ function parseRSSFeed(xmlText, feedType = 'proceedings') {
         if (url.includes('politico')) return 'POLITICO';
         if (url.includes('thehill')) return 'THE HILL';
         if (url.includes('rollcall')) return 'ROLL CALL';
-        // Match Twitter handles by checking for the handle in the nitter URL path
-        for (const tf of TWITTER_FEEDS) {
-          if (url.includes(`/${tf.handle.toLowerCase()}/`)) return tf.label;
+        // Match journalist by twitter handle or bluesky DID embedded in the synthetic URL
+        for (const jf of JOURNALIST_FEEDS) {
+          if (jf.twitter && url.includes(`/${jf.twitter.toLowerCase()}`)) return jf.label;
+          if (jf.blueskyDid && url.includes(jf.blueskyDid.toLowerCase())) return jf.label;
         }
         return 'NEWS';
       };
@@ -259,114 +319,108 @@ function parseViewFloorActionsHtml(html) {
   }
 }
 
-async function handleProceedings(request) {
+async function handleProceedings(request, env) {
   try {
     const url = new URL(request.url);
     const date = url.searchParams.get('date'); // expected: mm/dd/yyyy
 
     if (date) {
-      const encodedDate = encodeURIComponent(date);
-      const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
-      const response = await fetch(actionsUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status} from ViewFloorActions`);
-      const html = await response.text();
-      const result = parseViewFloorActionsHtml(html);
-      return new Response(JSON.stringify(result), {
-        headers: {
-          ...CORS_HEADERS,
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60'
-        }
+      // Date-specific historical queries — cache 60s, keyed by date
+      return kvCache(env, `proceedings-date:${date}`, 60, async () => {
+        const encodedDate = encodeURIComponent(date);
+        const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
+        const response = await fetch(actionsUrl, {
+          signal: AbortSignal.timeout(10000),
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status} from ViewFloorActions`);
+        const html = await response.text();
+        const result = parseViewFloorActionsHtml(html);
+        return new Response(JSON.stringify(result), {
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
+        });
       });
     }
 
-    const xmlText = await fetchRSSFeed(RSS_FEEDS.proceedings);
-    const result = parseRSSFeed(xmlText, 'proceedings');
-
-    return new Response(JSON.stringify(result), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=120'
-      }
-    });
+    // Live feed — in-memory 15s; KV 300s so cross-PoP writes stay well under the free-tier limit
+    return kvCache(env, 'proceedings-live', 15, async () => {
+      const xmlText = await fetchRSSFeed(RSS_FEEDS.proceedings, 10000);
+      const result = parseRSSFeed(xmlText, 'proceedings');
+      return new Response(JSON.stringify(result), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' }
+      });
+    }, 300);
   } catch (error) {
-    return new Response(JSON.stringify({
-      items: [],
-      error: `Failed to fetch proceedings: ${error.message}`
-    }), {
+    return new Response(JSON.stringify({ items: [], error: `Failed to fetch proceedings: ${error.message}` }), {
       status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }
 
+// Fetch one nitter account — tries instances in parallel with a short per-instance
+// timeout and returns the first batch of items that comes back non-empty.
+async function fetchNitterFeed(handle) {
+  const results = await Promise.allSettled(
+    NITTER_INSTANCES.map(async instance => {
+      const url = `https://${instance}/${handle}/rss`;
+      const xml = await fetchRSSFeed(url, 5000);
+      const parsed = parseRSSFeed(xml, url);
+      if (parsed.error || !parsed.items.length) throw new Error('empty');
+      return parsed.items;
+    })
+  );
+  for (const r of results) {
+    if (r.status === 'fulfilled') return r.value;
+  }
+  return [];
+}
+
 async function handleNews() {
-  const allItems = [];
   const errors = [];
 
-  // Fetch standard news feeds
-  for (const feedUrl of RSS_FEEDS.news) {
-    try {
-      const xmlText = await fetchRSSFeed(feedUrl);
-      const result = parseRSSFeed(xmlText, feedUrl);
-      allItems.push(...result.items);
-      if (result.error) errors.push(`${feedUrl}: ${result.error}`);
-    } catch (error) {
-      errors.push(`${feedUrl}: ${error.message}`);
-    }
-  }
-
-  // Fetch Twitter accounts via nitter, trying each instance until one succeeds
-  for (const account of TWITTER_FEEDS) {
-    let fetched = false;
-    for (const instance of NITTER_INSTANCES) {
-      const feedUrl = `${instance}/${account.handle}/rss`;
-      try {
-        const xmlText = await fetchRSSFeed(feedUrl);
-        const result = parseRSSFeed(xmlText, feedUrl);
-        if (!result.error && result.items.length > 0) {
-          allItems.push(...result.items);
-          fetched = true;
-          break;
-        }
-      } catch (_) {
-        // try next instance
+  // All independent fetches run in parallel
+  const [stdResults, uscpResult, journalistResults] = await Promise.all([
+    // Standard RSS feeds (Politico, Hill, Roll Call)
+    Promise.allSettled(RSS_FEEDS.news.map(async feedUrl => {
+      const xml = await fetchRSSFeed(feedUrl);
+      return parseRSSFeed(xml, feedUrl);
+    })),
+    // USCP daily arrests
+    fetchRSSFeed(RSS_FEEDS.uscp).then(html => ({ arrests: parseUSCPArrests(html) })).catch(() => ({ arrests: [] })),
+    // Journalist feeds (Bluesky + nitter) — each account in parallel
+    Promise.allSettled(JOURNALIST_FEEDS.map(async account => {
+      if (account.blueskyDid) {
+        const url = `https://bskyrss.com/${account.blueskyDid}.xml`;
+        const xml = await fetchRSSFeed(url, 5000);
+        const parsed = parseRSSFeed(xml, url);
+        if (!parsed.error && parsed.items.length) return parsed.items;
       }
+      if (account.twitter) return fetchNitterFeed(account.twitter);
+      return [];
+    })),
+  ]);
+
+  const allItems = [];
+  for (const r of stdResults) {
+    if (r.status === 'fulfilled') {
+      allItems.push(...r.value.items);
+      if (r.value.error) errors.push(r.value.error);
+    } else {
+      errors.push(r.reason?.message ?? String(r.reason));
     }
-    if (!fetched) errors.push(`Twitter @${account.handle}: all nitter instances failed`);
   }
+  allItems.push(...uscpResult.arrests);
 
-  // Fetch and parse USCP Daily Arrests
-  try {
-    const htmlText = await fetchRSSFeed(RSS_FEEDS.uscp);
-    const arrestItems = parseUSCPArrests(htmlText);
-    allItems.push(...arrestItems);
-  } catch (error) {
-    errors.push(`USCP: ${error.message}`);
-  }
+  const journalistItems = journalistResults.flatMap(r => r.status === 'fulfilled' ? (r.value ?? []) : []);
 
-  // Sort all items by timestamp
-  allItems.sort((a, b) => b.timestamp - a.timestamp);
+  const cutoff = Date.now() - NEWS_MAX_AGE_HOURS * 3600_000;
+  const filteredItems = [...allItems, ...journalistItems]
+    .filter(item => item.timestamp > cutoff)
+    .sort((a, b) => b.timestamp - a.timestamp);
 
-  // Filter to items newer than NEWS_MAX_AGE_HOURS
-  const cutoffTime = Date.now() - (NEWS_MAX_AGE_HOURS * 60 * 60 * 1000);
-  const filteredItems = allItems.filter(item => item.timestamp > cutoffTime);
-
-  return new Response(JSON.stringify({ 
-    items: filteredItems,
-    errors: errors 
-  }), {
-    headers: {
-      ...CORS_HEADERS,
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=300' // 5 minutes
-    }
+  return new Response(JSON.stringify({ items: filteredItems, errors }), {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
   });
 }
 
@@ -414,31 +468,27 @@ function parseUSCPArrests(html) {
 }
 
 // Helper function to get current week range through Friday
+const W_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function wFmtDate(d) {
+    return `${String(d.getDate()).padStart(2, '0')} ${W_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function getWeekRange(date) {
     const today = new Date(date);
     const day = today.getDay();
-    
-    // Calculate start of current week (Monday or today if weekend)
+
     let startOfWeek = new Date(today);
-    if (day === 0) { // Sunday
-        startOfWeek.setDate(today.getDate() - 6); // Go back to Monday
-    } else if (day === 6) { // Saturday
-        startOfWeek.setDate(today.getDate() - 5); // Go back to Monday
-    } else {
-        startOfWeek.setDate(today.getDate() - (day - 1)); // Go back to Monday
-    }
-    
-    // Calculate Friday of current week
-    const fridayOffset = 5 - 1; // Friday = 5
+    if (day === 0) startOfWeek.setDate(today.getDate() - 6);
+    else if (day === 6) startOfWeek.setDate(today.getDate() - 5);
+    else startOfWeek.setDate(today.getDate() - (day - 1));
+
     const friday = new Date(startOfWeek);
-    friday.setDate(startOfWeek.getDate() + fridayOffset);
-    
-    // Format as "Month Day - Month Day, Year"
-    const options = { month: 'short', day: 'numeric' };
-    const startStr = startOfWeek.toLocaleDateString('en-US', options);
-    const endStr = friday.toLocaleDateString('en-US', options);
-    
-    return `${startStr} - ${endStr}, ${startOfWeek.getFullYear()}`;
+    friday.setDate(startOfWeek.getDate() + 4);
+
+    // "18 May – 22 May 2026"
+    const startStr = `${String(startOfWeek.getDate()).padStart(2, '0')} ${W_MONTHS[startOfWeek.getMonth()]}`;
+    const endStr = `${String(friday.getDate()).padStart(2, '0')} ${W_MONTHS[friday.getMonth()]} ${friday.getFullYear()}`;
+    return `${startStr} – ${endStr}`;
 }
 
 function getWeekRangeForDate(date) {
@@ -457,6 +507,158 @@ function getWeekRangeForDate(date) {
     end.setUTCDate(start.getUTCDate() + 4);
     return { start, end };
 }
+
+// ── Proceedings → Bill Status ────────────────────────────────────────────────
+// Convert a Congress.gov bill URL to our canonical bill ID string.
+// e.g. ".../house-bill/5317" → "H.R. 5317"
+const CONGRESS_URL_PREFIX = {
+  'house-bill':                  'H.R.',
+  'senate-bill':                 'S.',
+  'house-concurrent-resolution': 'H.Con.Res.',
+  'house-joint-resolution':      'H.J.Res.',
+  'house-resolution':            'H.Res.',   // actual Congress.gov URL segment
+  'house-simple-resolution':     'H.Res.',   // alias, just in case
+  'senate-concurrent-resolution':'S.Con.Res.',
+  'senate-joint-resolution':     'S.J.Res.',
+  'senate-resolution':           'S.Res.',   // actual Congress.gov URL segment
+  'senate-simple-resolution':    'S.Res.',   // alias, just in case
+};
+function congressUrlToBillId(url) {
+  const m = url.match(/congress\.gov\/bill\/[^/]+\/([^/?#]+)\/(\d+)/i);
+  if (!m) return null;
+  const prefix = CONGRESS_URL_PREFIX[m[1].toLowerCase()];
+  return prefix ? `${prefix} ${m[2]}` : null;
+}
+
+// Fetch House floor actions for every session day this week (Monday through today, ET).
+// Checking the full week prevents bills passed earlier in the week from losing their
+// status on later page loads when Congress.gov lags or the KV cache hasn't warmed yet.
+// Returns { "H.R. 5317": { status: "passed", statusText: "Passed 405-0" }, ... }
+// Later days win over earlier days (spread order: oldest first, today last).
+async function fetchProceedingsBillStatuses() {
+  try {
+    const now = new Date();
+    const etOffset = (now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10) ? -4 : -5;
+    const etNow = new Date(now.getTime() + etOffset * 3600000);
+
+    const fmtClerk = (d) => {
+      const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const dd   = String(d.getUTCDate()).padStart(2, '0');
+      const yyyy = d.getUTCFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    };
+
+    // Build list of dates from Monday through today (ET), skipping weekends.
+    const dow = etNow.getUTCDay(); // 0=Sun … 6=Sat
+    const daysFromMon = dow === 0 ? 6 : dow === 6 ? 5 : dow - 1;
+    const dates = [];
+    for (let i = daysFromMon; i >= 0; i--) {
+      const d = new Date(etNow);
+      d.setUTCDate(etNow.getUTCDate() - i);
+      const wd = d.getUTCDay();
+      if (wd !== 0 && wd !== 6) dates.push(d); // skip Sat/Sun
+    }
+
+    const responses = await Promise.all(
+      dates.map(d =>
+        fetch(`https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(fmtClerk(d))}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' } })
+          .then(r => ({ d, r }))
+          .catch(() => ({ d, r: null }))
+      )
+    );
+
+    // Merge oldest→newest so today's data takes precedence.
+    let merged = {};
+    for (const { d, r } of responses) {
+      if (!r?.ok) continue;
+      const url = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(fmtClerk(d))}`;
+      const dayStatuses = extractBillStatusesFromProceedings(await r.text(), url);
+      merged = { ...merged, ...dayStatuses };
+    }
+    return merged;
+  } catch { return {}; }
+}
+
+function extractBillStatusesFromProceedings(html, sourceUrl = null) {
+  const statuses = {};
+
+  // Parse each activity row: extract plain-text description + any Congress.gov bill link
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const rows = [];
+  let rowMatch;
+  while ((rowMatch = rowRegex.exec(html)) !== null) {
+    const row = rowMatch[1];
+    const tdMatch = row.match(/<td[^>]*data-label="Activity"[^>]*>([\s\S]*?)<\/td>/i);
+    if (!tdMatch) continue;
+    const tdContent = tdMatch[1];
+
+    // Extract Congress.gov bill link (rel="bill") — this is how we identify which bill
+    const billLinkMatch = tdContent.match(/href="(https?:\/\/www\.congress\.gov\/bill\/[^"]+)"/i);
+    const billId = billLinkMatch ? congressUrlToBillId(billLinkMatch[1]) : null;
+
+    // Extract description (prefer hidden span which has full untruncated text)
+    const hiddenSpan = tdContent.match(/<span[^>]*style="display:none;"[^>]*>([\s\S]*?)<\/span>/i);
+    const raw = hiddenSpan ? hiddenSpan[1] : tdContent;
+    const description = decodeHtmlEntities(raw).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+    rows.push({ billId, description });
+  }
+
+  // Rows are in reverse-chronological order.
+  // Pattern for suspension votes (typical):
+  //   [i-1] "Motion to reconsider laid on the table..."
+  //   [i]   "On motion to suspend the rules and pass... Agreed to by Yeas and Nays: 405-0"  ← outcome, NO bill link
+  //   [i+1] "Considered as unfinished business. <bill link>"  ← HAS bill link
+  // So for each outcome row, look up to 3 rows away for the associated bill link.
+  for (let i = 0; i < rows.length; i++) {
+    const { description } = rows[i];
+
+    // Only process rows that are actual bill passage/failure motions
+    const isPassageMotion =
+      /on motion to suspend the rules and (pass|agree)/i.test(description) ||
+      /\bon passage\b/i.test(description) ||
+      /on agreeing to the (resolution|amendment)\b/i.test(description);
+    if (!isPassageMotion) continue;
+
+    let status, statusText;
+    if (/(agreed to|passed)\b/i.test(description) && !/not agreed to|failed/i.test(description)) {
+      status = 'passed';
+      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+      if (/voice vote|without objection/i.test(description)) {
+        statusText = 'Passed (voice vote)';
+      } else if (votes) {
+        statusText = `Passed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}`;
+      } else {
+        statusText = 'Passed';
+      }
+    } else if (/\b(failed|not agreed to)\b/i.test(description)) {
+      status = 'failed';
+      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+      statusText = votes ? `Failed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}` : 'Failed';
+    } else {
+      continue;
+    }
+
+    // Find the bill ID: check current row first, then expanding window of ±3 rows
+    let billId = rows[i].billId;
+    for (let j = 1; j <= 3 && !billId; j++) {
+      if (i + j < rows.length && rows[i + j].billId) billId = rows[i + j].billId;
+      if (!billId && i - j >= 0 && rows[i - j].billId) billId = rows[i - j].billId;
+    }
+
+    if (billId && status) {
+      const existing = statuses[billId];
+      // "passed" and "failed" are final — don't downgrade
+      if (!existing || existing.status !== 'passed') {
+        statuses[billId] = { status, statusText, sourceUrl };
+      }
+    }
+  }
+
+  return statuses;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Map bill ID string to Congress.gov type slug
 function billIdToCongressType(billId) {
@@ -477,19 +679,30 @@ async function fetchCongressBillSummary(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   try {
-    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/summaries?api_key=${CONGRESS_API_KEY}&limit=1&sort=updateDate+desc`;
-    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    if (!resp.ok) return null;
+    // format=json is explicit — without it the API may return XML causing resp.json() to throw.
+    // limit=5 so we can try all available summaries if the first has empty text.
+    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/summaries?api_key=${_congressApiKey}&format=json&limit=5&sort=updateDate+desc`;
+    const resp = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    // 429/5xx = transient failure → throw so the caller doesn't cache null
+    if (resp.status === 429 || resp.status >= 500) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) return null; // 404 etc. = genuinely no summary
     const data = await resp.json();
     const summaries = data.summaries || [];
-    if (!summaries.length) return null;
-    const raw = summaries[0].text || '';
-    // Strip HTML tags, then strip leading bill citation ("H.R. 1234—" or "H.R. 1234 (119th Congress)—")
-    let text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    text = text.replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+(?:\s*\([^)]*\))?\s*[—–\-:]\s*/i, '');
-    return text || null;
-    // Note: bill-title prefix stripping happens in the enrichment pass where bill.title is available
-  } catch {
+    // Try all returned summaries — pick the first one with non-empty text after stripping
+    for (const s of summaries) {
+      const raw = s.text || '';
+      // Strip HTML tags then strip leading bill citation ("H.R. 1234—" or "H.R. 1234 (119th Congress)—")
+      let text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      text = text.replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+(?:\s*\([^)]*\))?\s*[—–\-:]\s*/i, '');
+      if (text.length > 20) return text; // ignore stub entries shorter than a real sentence
+    }
+    return null;
+  } catch (e) {
+    // Re-throw transient errors so the enrichment cache skips storing null
+    if (e.message?.startsWith('HTTP 4') || e.message?.startsWith('HTTP 5') || e.name === 'TimeoutError') throw e;
     return null;
   }
 }
@@ -499,7 +712,7 @@ async function fetchBillMeta(billId) {
   if (!parsed) return null;
   try {
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
-    const key = `?api_key=${CONGRESS_API_KEY}`;
+    const key = `?api_key=${_congressApiKey}`;
     const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
       fetch(`${base}${key}`, { headers: { 'Accept': 'application/json' } }),
       fetch(`${base}/cosponsors${key}&limit=100`, { headers: { 'Accept': 'application/json' } }),
@@ -527,13 +740,18 @@ async function fetchCongressBillStatus(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   try {
-    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${CONGRESS_API_KEY}&limit=20&sort=updateDate+desc`;
+    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${_congressApiKey}&limit=20&sort=updateDate+desc`;
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
     const actions = (data.actions || []).filter(a => a.type === 'Floor');
     for (const action of actions) {
       const t = (action.text || '').toLowerCase();
+      // Skip rule-adoption actions (e.g. "Rule H. Res. 1300 passed House.") — these
+      // describe the special rule governing floor consideration, not the bill's own passage.
+      const code = action.actionCode || '';
+      if (/^H1L/i.test(code)) continue; // H1L210 = rule reported, H1L220 = rule passed
+      if (/^rule\s+h\.?\s*res\./i.test(action.text || '')) continue;
       const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
                         t.includes('on passage passed') || t.includes('considered and passed') ||
                         t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree');
@@ -562,15 +780,261 @@ async function fetchCongressBillStatus(billId) {
   }
 }
 
-async function handleBills(request) {
+// Terminal statuses — once reached, never downgrade.
+const TERMINAL_STATUSES = new Set(['passed', 'failed']);
+const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
+
+// ── Generic KV response cache ─────────────────────────────────────────────────
+// kvCache(env, key, ttlSeconds, fn, kvTtl?) — returns cached JSON string, or calls fn()
+// to produce a Response, caches its body, and returns it.
+// kvTtl controls how long the value lives in KV (cross-PoP). Defaults to ttlSeconds.
+// Pass kvTtl=0 to skip KV entirely (in-memory only) — useful for very hot write paths.
+// On any KV error the function result is still returned — caching is best-effort.
+async function kvCache(env, key, ttlSeconds, fn, kvTtl = ttlSeconds) {
+  const ttlMs = ttlSeconds * 1000;
+  // 1. In-memory (zero I/O, shared within this isolate)
+  const mem = _mGet(key);
+  if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+  // 2. KV (shared across all isolates/PoPs) — skip if kvTtl=0
+  if (kvTtl > 0 && env?.HLS_CACHE) {
+    try {
+      const cached = await env.HLS_CACHE.get(key);
+      if (cached) {
+        _mSet(key, cached, ttlMs);
+        return new Response(cached, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+      }
+    } catch {}
+  }
+  // 3. Origin fetch
+  const response = await fn();
+  if (response.ok) {
+    try {
+      const body = await response.clone().text();
+      _mSet(key, body, ttlMs);
+      if (kvTtl > 0 && env?.HLS_CACHE) await env.HLS_CACHE.put(key, body, { expirationTtl: kvTtl });
+    } catch {}
+  }
+  return response;
+}
+
+// ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
+// 30 minutes: short enough to catch same-day floor action updates, long enough to
+// avoid hammering Congress.gov on every page load.
+const BILL_ENRICH_TTL = 30 * 60;
+
+async function getCachedBillEnrichment(env, billId) {
+  const key = `bill-enrich-v2:${billId}`;
+  const mem = _mGet(key);
+  if (mem) return JSON.parse(mem);
+  if (!env?.HLS_CACHE) return null;
+  try {
+    const raw = await env.HLS_CACHE.get(key);
+    if (raw) { _mSet(key, raw, BILL_ENRICH_TTL * 1000); return JSON.parse(raw); }
+    return null;
+  } catch { return null; }
+}
+
+async function setCachedBillEnrichment(env, billId, data) {
+  const key = `bill-enrich-v2:${billId}`;
+  const body = JSON.stringify(data);
+  _mSet(key, body, BILL_ENRICH_TTL * 1000);
+  if (!env?.HLS_CACHE) return;
+  try { await env.HLS_CACHE.put(key, body, { expirationTtl: BILL_ENRICH_TTL }); } catch {}
+}
+
+// KV key for persisted bill statuses for a given week (ISO week start date).
+function billStatusCacheKey(weekStartISO) {
+  return `bill_statuses_${weekStartISO}`;
+}
+
+// Read the persisted status map for this week from KV.
+async function loadCachedBillStatuses(env, weekStartISO) {
+  const key = billStatusCacheKey(weekStartISO);
+  const mem = _mGet(key);
+  if (mem) return JSON.parse(mem);
+  if (!env?.HLS_CACHE) return {};
+  try {
+    const raw = await env.HLS_CACHE.get(key);
+    if (raw) { _mSet(key, raw, 5 * 60 * 1000); return JSON.parse(raw); } // 5-min mem TTL: status changes during votes
+    return {};
+  } catch { return {}; }
+}
+
+// Merge live bill statuses into the cache using the ratchet rule:
+// terminal statuses (passed/failed) are never downgraded.
+// Returns the updated cache map and whether anything changed.
+function ratchetStatuses(cached, bills) {
+  const updated = { ...cached };
+  let changed = false;
+  for (const bill of bills) {
+    const prev = updated[bill.id];
+    const prevRank = STATUS_RANK[prev?.status] ?? 0;
+    const currRank = STATUS_RANK[bill.status] ?? 0;
+    if (!prev || currRank > prevRank) {
+      updated[bill.id] = {
+        status: bill.status,
+        statusText: bill.latestAction,
+        actionSource: bill.actionSource,
+        actionSourceUrl: bill.actionSourceUrl,
+        latestActionDate: bill.latestActionDate,
+      };
+      changed = true;
+    }
+  }
+  return { updated, changed };
+}
+
+// Write updated cache back to KV. TTL = Saturday 23:59 ET of the current week + 1 day buffer.
+async function saveCachedBillStatuses(env, weekStartISO, statusMap) {
+  const key = billStatusCacheKey(weekStartISO);
+  const body = JSON.stringify(statusMap);
+  _mSet(key, body, 5 * 60 * 1000); // keep in-memory copy fresh after write
+  if (!env?.HLS_CACHE) return;
+  try {
+    // Expire Sunday night (8 days after Monday week start)
+    await env.HLS_CACHE.put(key, body, { expirationTtl: 8 * 24 * 3600 });
+  } catch (_) {}
+}
+
+// ─────────────────────────────────────────────────────────
+// Casualty List  (House Press Gallery – members not returning)
+// ─────────────────────────────────────────────────────────
+const CASUALTY_LIST_TTL = 60 * 60; // 1 hour
+
+function formatCasualtyStatus(raw) {
+  if (!raw) return 'Retiring';
+  const up = raw.trim().toUpperCase();
+  if (['D', 'R', 'I'].includes(up)) return 'Retiring';
+  if (up.includes('SENATE')) return 'Running for Senate';
+  if (up.includes('GOVERNOR')) return 'Running for Governor';
+  if (up.includes('ATTORNEY GENERAL') || up.includes('ATTY')) return 'Running for Atty. General';
+  if (up.includes('LOST') && up.includes('PRIMARY')) return 'Lost Primary';
+  if (up.includes('LOST') && up.includes('ELECTION')) return 'Lost Election';
+  if (up.includes('RESIGN')) return 'Resigned';
+  if (up.includes('DIED') || up.includes('DECEASED')) return 'Deceased';
+  return raw.trim().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function parseCasualtyListHtml(html) {
+  // Press gallery table format (from actual HTML inspection):
+  //   Regular casualty rows:   1 cell  — "LastName[, FirstName] (Party), ST[ (Status)]"
+  //   Special election rows:   3 cells — "Departed Member | Election Date | Successor"
+  //
+  // The page has two logical sections:
+  //   1. Members not returning (1 cell per row)
+  //   2. Departed members + successors (3 cells per row — successor must be IGNORED)
+  //
+  // Parsing row-by-row lets us skip the Successor column, which was previously
+  // causing successors like Fine and Patronis to be mis-tagged as "Retiring".
+
+  // Pattern: LastName[, FirstName] (Party), StateAbbr[ (Status)]
+  const nameRe = /^([A-Z][A-Za-z'\-]+)(?:,\s+([A-Za-z][A-Za-z.'"\s\-]*?))?\s*\([DRI]\),\s*[A-Z]{2}(?:\s+\(([^)]+)\))?/i;
+  const members = {};
+
+  function processCell(rawHtml) {
+    const cell = rawHtml
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ').replace(/&[a-z#\d]+;/gi, '')
+      .replace(/\s+/g, ' ').trim();
+    const nm = nameRe.exec(cell);
+    if (!nm) return;
+    const lastName  = nm[1].trim().toUpperCase();
+    const firstName = (nm[2] || '').trim().toUpperCase();
+    const status = formatCasualtyStatus(nm[3] || null);
+    if (firstName) members[`${firstName} ${lastName}`] = status;
+    if (!members[lastName]) members[lastName] = status; // fallback for nickname mismatches
+  }
+
+  const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let row;
+  while ((row = trRe.exec(html)) !== null) {
+    const cells = [];
+    const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let c;
+    while ((c = cellRe.exec(row[1])) !== null) cells.push(c[1]);
+
+    if (cells.length === 1) {
+      // Regular casualty list row — single member cell
+      processCell(cells[0]);
+    } else if (cells.length === 3) {
+      // Special election table row: [Departed Member, Election Date, Successor]
+      // Process only the departed member (col 0); ignore the successor (col 2).
+      processCell(cells[0]);
+    }
+    // All other row widths (header colspan rows, etc.) are skipped
+  }
+
+  return members;
+}
+
+async function handleCasualtyList(env) {
+  const debug = false;
+  if (!debug) {
+    const mem = _mGet('casualty-list-v3');
+    if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+    if (env?.HLS_CACHE) {
+      try {
+        const raw = await env.HLS_CACHE.get('casualty-list-v3');
+        if (raw) {
+          _mSet('casualty-list-v3', raw, CASUALTY_LIST_TTL * 1000);
+          return new Response(raw, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+        }
+      } catch {}
+    }
+  }
+
+  try {
+    const resp = await fetch('https://pressgallery.house.gov/member-data/casualty-list', {
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml,*/*',
+        'User-Agent': 'Mozilla/5.0 (compatible)',
+        'Accept-Encoding': 'identity', // request uncompressed so resp.text() gets full HTML
+      }
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const html = await resp.text();
+    if (debug) {
+      return new Response(JSON.stringify({ raw: html.slice(0, 15000) }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      });
+    }
+    const members = parseCasualtyListHtml(html);
+
+    if (Object.keys(members).length > 0) {
+      const body = JSON.stringify(members);
+      _mSet('casualty-list-v3', body, CASUALTY_LIST_TTL * 1000);
+      if (env?.HLS_CACHE) {
+        try { await env.HLS_CACHE.put('casualty-list-v3', body, { expirationTtl: CASUALTY_LIST_TTL }); } catch {}
+      }
+      return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+    }
+
+    return new Response(JSON.stringify(members), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+    });
+  } catch {
+    // Return empty object — UI degrades gracefully (no status badges shown)
+    return new Response(JSON.stringify({}), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function handleBills(request, env) {
   try {
     const url = new URL(request.url);
     const dateParam = url.searchParams.get('date'); // e.g. "05/12/2026"
+    // quick=1: skip slow Congress.gov enrichment — used for recurring status polls.
+    // The client preserves summary/sponsor/committees from the initial full fetch.
+    const quick = url.searchParams.has('quick');
 
-    // Fetch both House.gov bills and Bluesky updates
-    const [billsXmlText, blueskyXmlText] = await Promise.all([
+    // Fetch House.gov bills schedule, Bluesky Dem Cloakroom, and today's proceedings in parallel.
+    // Proceedings is the fastest authoritative source for vote outcomes (updated within minutes).
+    const [billsXmlText, blueskyXmlText, proceedingsStatuses] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
-      fetchRSSFeed(RSS_FEEDS.bluesky)
+      fetchRSSFeed(RSS_FEEDS.bluesky),
+      fetchProceedingsBillStatuses(),
     ]);
 
     // Parse Atom feed entries
@@ -600,6 +1064,10 @@ async function handleBills(request) {
       referenceDate = new Date();
     }
     const { start: currentWeekStart } = getWeekRangeForDate(referenceDate);
+    const weekKey = currentWeekStart.toISOString().slice(0, 10); // "2026-05-18"
+
+    // Load any statuses already confirmed this week (survives across requests/days)
+    const cachedStatuses = await loadCachedBillStatuses(env, weekKey);
 
     // Parse "Week of Month Day, Year" from entry title to match by scheduled week,
     // not by publication date (House posts next week's schedule mid-current-week).
@@ -675,67 +1143,85 @@ async function handleBills(request) {
         const entryXml = entryMatch;
         const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
 
+        // Extract the post URL from <link rel="alternate" href="..."> or <id>
+        const postLinkMatch = entryXml.match(/<link[^>]+rel="alternate"[^>]+href="([^"]+)"/i)
+                           || entryXml.match(/<link[^>]+href="([^"]+)"[^>]+rel="alternate"/i);
+        const postIdMatch = entryXml.match(/<id>(https?:\/\/[^<]+)<\/id>/i);
+        const postUrl = (postLinkMatch?.[1] || postIdMatch?.[1] || '').trim() || null;
+
         if (contentMatch) {
-          // Decode HTML-encoded tags and entities
-          const raw = contentMatch[1]
-            .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-          const cleanContent = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          // Decode HTML-encoded tags and entities, then split into individual lines
+          // at HTML block boundaries (<br>, </p><p>, etc.) BEFORE stripping tags.
+          // This prevents compound posts like "H.R. 3726 Passed by Voice Vote.\n
+          // 40 minutes of debate on H.R. 1993 began at 4:44 pm." from tainting
+          // H.R. 1993 with the "passed" status that only applies to H.R. 3726.
+          const raw = decodeHtmlEntities(contentMatch[1]);
+          const lines = raw
+            .split(/<br\s*\/?>\s*|<\/p>\s*<p[^>]*>|<\/li>/)
+            .map(l => l.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+            .filter(Boolean);
+          const cleanContent = lines.join(' '); // used only for the bill ID scan
 
           // Match bill IDs: H.R. 1234, H.Con.Res. 75, H.Res. 12, S. 123, H.J.Res. 9
           const billIdMatches = cleanContent.matchAll(/\b(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.)\s*(\d+)/gi);
           for (const m of billIdMatches) {
-            const billId = `${m[1].replace(/\.$/, '').replace(/\bS$/, 'S.')} ${m[2]}`.trim();
             // Normalize: "H.R. 1234", "H.Con.Res. 75", etc.
             const normalized = `${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim();
-            const lc = cleanContent.toLowerCase();
 
-            let status = 'roll-call';
-            let statusText = 'Roll call vote';
+            // Scope status check to only the line(s) that mention this specific bill ID,
+            // so a "Passed" in one line doesn't bleed into unrelated bills on other lines.
+            const billRe = new RegExp(m[1].replace(/\./g, '\\.') + '\\s*' + m[2] + '\\b', 'i');
+            const context = lines.filter(l => billRe.test(l)).join(' ');
+            if (!context) continue;
 
-            if (/passed by voice vote/i.test(cleanContent)) {
+            let status, statusText;
+            if (/passed by voice vote/i.test(context)) {
               status = 'passed';
               statusText = 'Passed by voice vote';
-            } else if (/\b(passed|agreed to)\b/i.test(cleanContent)) {
+            } else if (/\b(passed|agreed to)\b/i.test(context)) {
               status = 'passed';
               statusText = 'Passed';
-            } else if (/\b(failed|not agreed to|rejected)\b/i.test(cleanContent)) {
+            } else if (/\b(failed|not agreed to|rejected)\b/i.test(context)) {
               status = 'failed';
               statusText = 'Failed';
-            } else if (/postponed/i.test(cleanContent)) {
+            } else if (/postponed/i.test(context)) {
               status = 'postponed';
               statusText = 'Postponed';
-            } else if (/vote.*began|began.*vote|passage|final passage/i.test(cleanContent)) {
+            } else if (/recorded vote.*requested|vote.*began|passage/i.test(context)) {
               status = 'roll-call';
               statusText = 'Roll call vote';
             } else {
-              continue; // Don't update status just from a mention without context
+              continue; // No actionable status in this line — skip
             }
 
             // Only update if this is a stronger status than what we already have
             const existing = blueskyUpdates[normalized];
             const priority = { 'passed': 4, 'failed': 4, 'postponed': 3, 'roll-call': 2 };
             if (!existing || (priority[status] || 0) >= (priority[existing.status] || 0)) {
-              blueskyUpdates[normalized] = { status, statusText };
+              blueskyUpdates[normalized] = { status, statusText, sourceUrl: postUrl };
             }
           }
         }
       }
     }
     
-    // Parse HTML content to extract bills
-    const ruleBills = [];
-    const suspensionBills = [];
-    
     // Prefer the week stated in the entry title (e.g. "...the Week of May 18, 2026...")
     const titleWeekMatch = selectedEntry.title.match(/week of (.+?)(?:\s*[-–]|$)/i);
-    const weekDate = titleWeekMatch ? `Week of ${titleWeekMatch[1].trim()}` : getWeekRange(referenceDate);
+    let weekDate;
+    if (titleWeekMatch) {
+        const raw = titleWeekMatch[1].trim();
+        const parsed = new Date(raw);
+        weekDate = `Week of ${!isNaN(parsed) ? wFmtDate(parsed) : raw}`;
+    } else {
+        weekDate = getWeekRange(referenceDate);
+    }
     const contentUpdatedAt = selectedEntry.updated;
 
     // Parse HTML content using regex
     let content = selectedEntry.content;
     
     // Decode HTML entities
-    content = content.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    content = decodeHtmlEntities(content);
     
     const extractSection = (source, startPattern, endPattern) => {
       const start = source.search(startPattern);
@@ -746,13 +1232,22 @@ async function handleBills(request) {
 
     const ruleHeaderMatch = content.match(/Items that may be considered pursuant to a rule/i);
     const suspensionHeaderMatch = content.match(/Items that may be considered under suspension of the rules/i);
+    const mayBeConsideredHeaderMatch = content.match(/Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i);
 
-    // Both sections stop at the next h-tag so ordering doesn't matter
+    // All sections stop at the next h-tag so ordering doesn't matter
     const nextHeader = /<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/i;
     const ruleSection = extractSection(content, /Items that may be considered pursuant to a rule/i, nextHeader);
     const suspensionSection = extractSection(content, /Items that may be considered under suspension of the rules/i, nextHeader);
+    const mayBeConsideredSection = extractSection(content, /Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i, nextHeader);
 
-    const parseBillsFromSection = (sectionHtml, isRule) => {
+    // Parse bills arrays for all three consideration types
+    const ruleBills = [];
+    const suspensionBills = [];
+    const mayBeConsideredBills = [];
+
+    const parseBillsFromSection = (sectionHtml, target) => {
+      if (!sectionHtml) return;
+      const isRule = target === ruleBills;
       const rows = sectionHtml.match(/<tr[^>]*class="floorItem"[^>]*>[\s\S]*?<\/tr>/g) || [];
 
       for (const row of rows) {
@@ -765,55 +1260,112 @@ async function handleBills(request) {
         const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
         if (!legisNum || !floorText || legisNum.includes('::')) continue;
 
+        // Normalize bill ID for lookups: "H. Res. 1300" → "H.Res. 1300", "H. Con. Res. 86" → "H.Con.Res. 86"
+        // The schedule XML is inconsistent with spacing inside type abbreviations.
+        const normId = legisNum.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
+
         // Default: bill is scheduled but not yet acted upon
         let billStatus = 'scheduled';
         let latestAction = 'Scheduled for consideration';
         let considered = false;
 
-        // Check Bluesky updates for this bill (roll call vote announcements, outcomes)
-        const blueskyUpdate = blueskyUpdates[legisNum];
+        // 1. Bluesky: vote start announcements (lowest priority — only knows votes began)
+        let actionSource = null;
+        let actionSourceUrl = null;
+        const blueskyUpdate = blueskyUpdates[normId];
         if (blueskyUpdate) {
           billStatus = blueskyUpdate.status;
           latestAction = blueskyUpdate.statusText;
           considered = true;
+          actionSource = 'bluesky';
+          actionSourceUrl = blueskyUpdate.sourceUrl || null;
         }
 
-        const bill = {
+        // 2. Proceedings: actual vote outcomes from House Clerk (updated within minutes)
+        //    Overrides Bluesky since it has the final result, not just the vote start.
+        const proceedingsUpdate = proceedingsStatuses[normId];
+        if (proceedingsUpdate) {
+          billStatus = proceedingsUpdate.status;
+          latestAction = proceedingsUpdate.statusText;
+          considered = true;
+          actionSource = 'proceedings';
+          actionSourceUrl = proceedingsUpdate.sourceUrl || null;
+        }
+
+        target.push({
           id: legisNum,
           title: floorText,
-          considerationType: isRule ? 'Under Rule' : 'Under Suspension',
           isRule,
           description: '',
           pubDate: new Date(contentUpdatedAt),
           status: billStatus,
           latestAction: latestAction,
           latestActionDate: new Date(contentUpdatedAt),
-          considered
-        };
-
-        if (isRule) {
-          ruleBills.push(bill);
-        } else {
-          suspensionBills.push(bill);
-        }
+          considered,
+          actionSource,
+          actionSourceUrl,
+        });
       }
     };
 
-    if (ruleSection) parseBillsFromSection(ruleSection, true);
-    if (suspensionSection) parseBillsFromSection(suspensionSection, false);
+    parseBillsFromSection(ruleSection, ruleBills);
+    parseBillsFromSection(suspensionSection, suspensionBills);
+    parseBillsFromSection(mayBeConsideredSection, mayBeConsideredBills);
 
-    // Second pass: enrich with Congress.gov floor actions + summaries + sponsor/cosponsors/committees
-    const allBills = [...ruleBills, ...suspensionBills];
-    await Promise.all(allBills.map(async (bill) => {
-      const [congressStatus, summary, meta] = await Promise.all([
-        fetchCongressBillStatus(bill.id),
-        fetchCongressBillSummary(bill.id),
-        fetchBillMeta(bill.id),
-      ]);
+    // Second pass: enrich with Congress.gov floor actions + summaries + sponsor/cosponsors/committees.
+    // Skipped on quick=1 requests — caller already has this data from the initial full fetch.
+    // Results are cached in KV for 30 minutes so Congress.gov is only hit on cold cache,
+    // not on every page load.
+    const allBills = [...ruleBills, ...suspensionBills, ...mayBeConsideredBills];
+    if (!quick) await Promise.all(allBills.map(async (bill) => {
+      // Check KV cache first — avoids hitting Congress.gov on warm loads
+      const enrichCached = await getCachedBillEnrichment(env, bill.id);
+      let congressStatus, summary, meta;
+      // fetchCongressBillSummary throws on transient errors (429, 5xx, timeout) so we can
+      // avoid caching null for failures — only cache null when the API genuinely has no summary.
+      const safeFetchSummary = (id) => fetchCongressBillSummary(id).catch(() => undefined);
+      if (enrichCached) {
+        congressStatus = enrichCached.congressStatus ?? null;
+        // If summary or meta were null in cache, retry them live — Congress.gov may have
+        // published data since the last fetch (CRS summaries, sponsor indexing, etc.).
+        // congressStatus is not retried since it's derived from floor actions which are
+        // updated separately via the weekly status cache.
+        const needsSummary = !enrichCached.summary;
+        const needsMeta    = !enrichCached.meta;
+        if (needsSummary || needsMeta) {
+          [summary, meta] = await Promise.all([
+            needsSummary ? safeFetchSummary(bill.id) : Promise.resolve(enrichCached.summary),
+            needsMeta    ? fetchBillMeta(bill.id)    : Promise.resolve(enrichCached.meta),
+          ]);
+          // undefined = transient fetch error — don't overwrite cache; null = confirmed no summary
+          const summaryToCache = summary === undefined ? enrichCached.summary : summary;
+          if (summaryToCache || meta) {
+            await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta });
+          }
+          if (summary === undefined) summary = enrichCached.summary; // fall back to cached value for this response
+        } else {
+          summary = enrichCached.summary;
+          meta    = enrichCached.meta;
+        }
+      } else {
+        let summaryResult;
+        [congressStatus, summaryResult, meta] = await Promise.all([
+          fetchCongressBillStatus(bill.id),
+          safeFetchSummary(bill.id),
+          fetchBillMeta(bill.id),
+        ]);
+        summary = summaryResult ?? null;
+        // Only cache if summary fetch didn't fail transiently (undefined = transient error)
+        if (summaryResult !== undefined || meta || congressStatus) {
+          await setCachedBillEnrichment(env, bill.id, { congressStatus, summary, meta });
+        }
+      }
       if (congressStatus) {
         bill.status = congressStatus.status;
         bill.latestAction = congressStatus.statusText;
         bill.considered = true;
+        bill.actionSource = 'congress';
+        bill.actionSourceUrl = null; // client builds the URL from billIdToCongressUrl()
         if (congressStatus.actionDate) {
           bill.latestActionDate = new Date(congressStatus.actionDate + 'T00:00:00Z');
         }
@@ -833,37 +1385,57 @@ async function handleBills(request) {
         if (meta.committees) bill.committees = meta.committees;
       }
     }));
-    
+
+    // Apply the KV ratchet: restore any terminal statuses (passed/failed) from cache
+    // that the live fetch missed (e.g. yesterday's voice votes, Congress.gov lag).
+    for (const bill of allBills) {
+      const cached = cachedStatuses[bill.id];
+      if (cached && (STATUS_RANK[cached.status] ?? 0) > (STATUS_RANK[bill.status] ?? 0)) {
+        bill.status = cached.status;
+        bill.latestAction = cached.statusText ?? bill.latestAction;
+        bill.considered = true;
+        if (cached.actionSource) bill.actionSource = cached.actionSource;
+        if (cached.actionSourceUrl) bill.actionSourceUrl = cached.actionSourceUrl;
+        if (cached.latestActionDate) bill.latestActionDate = cached.latestActionDate;
+      }
+    }
+
+    // Write back any newly reached terminal statuses so they persist for the week.
+    const { updated: newCache, changed } = ratchetStatuses(cachedStatuses, allBills);
+    if (changed) await saveCachedBillStatuses(env, weekKey, newCache);
+
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
       suspensionBills: suspensionBills,
+      mayBeConsideredBills: mayBeConsideredBills,
       lastUpdated: new Date(),
       weekDate: weekDate,
       rawHeaders: {
         weekTitle: selectedEntry.title,
         updated: contentUpdatedAt,
         ruleHeader: ruleHeaderMatch ? ruleHeaderMatch[0] : '',
-        suspensionHeader: suspensionHeaderMatch ? suspensionHeaderMatch[0] : ''
+        suspensionHeader: suspensionHeaderMatch ? suspensionHeaderMatch[0] : '',
+        mayBeConsideredHeader: mayBeConsideredHeaderMatch ? mayBeConsideredHeaderMatch[0] : ''
       },
-      consideredBills: [...ruleBills, ...suspensionBills].filter(b => b.considered).map(b => b.id)
+      consideredBills: [...ruleBills, ...suspensionBills, ...mayBeConsideredBills].filter(b => b.considered).map(b => b.id)
     }), {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // 5 minutes
+        'Cache-Control': 'public, max-age=30' // 30 seconds — bills update during active floor sessions
       }
     });
-    
+
   } catch (error) {
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       ruleBills: [],
       suspensionBills: [],
-      error: `Failed to fetch bills: ${error.message}` 
+      error: `Failed to fetch bills: ${error.message}`
     }), {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
@@ -924,7 +1496,7 @@ async function handleVotingDays() {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
@@ -950,36 +1522,26 @@ async function handleAirportDelays() {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
 }
 
-async function handleMemberData() {
-  try {
-    const xmlText = await fetchRSSFeed(RSS_FEEDS.memberData);
-    
-    return new Response(JSON.stringify({ 
-      xmlData: xmlText 
-    }), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600' // 1 hour
-      }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: `Failed to fetch member data: ${error.message}` 
-    }), {
-      status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      }
-    });
-  }
+async function handleMemberData(env) {
+  return kvCache(env, 'member-data-xml', 3600, async () => {
+    try {
+      const xmlText = await fetchRSSFeed(RSS_FEEDS.memberData, 15000);
+      return new Response(JSON.stringify({ xmlData: xmlText }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: `Failed to fetch member data: ${error.message}` }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
+    }
+  });
 }
 
 async function handleCongressIndex() {
@@ -1019,7 +1581,7 @@ async function handleCongressIndex() {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
@@ -1091,8 +1653,7 @@ async function handleBlueskyFeed() {
     // Sort by most recent first
     billUpdates.sort((a, b) => b.timestamp - a.timestamp);
     
-    const options = { month: 'long', day: 'numeric', year: 'numeric' };
-    const weekDate = new Date().toLocaleDateString('en-US', options);
+    const weekDate = wFmtDate(new Date());
     
     return new Response(JSON.stringify({
       billUpdates: billUpdates,
@@ -1112,7 +1673,7 @@ async function handleBlueskyFeed() {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
@@ -1138,136 +1699,200 @@ async function handleRollCall(rollNumber) {
       status: 500,
       headers: {
         ...CORS_HEADERS,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
       }
     });
   }
 }
 
-async function checkManifestLiveness(streamUrl) {
+// ── Roll Call Log ─────────────────────────────────────────────────────────────
+// Stores per-roll vote counts from DomeWatch as they stream in.
+// Key: roll-log-YYYYMMDD  Value: { entries: [ {roll, bill, question, dem, rep, totals, updatedAt}, ... ] }
+
+function rollLogKey() {
+  return `roll-log-${getTodayDateET()}`;
+}
+
+async function handleRollLogGet(env) {
+  if (!env?.HLS_CACHE) return new Response(JSON.stringify({ entries: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   try {
-    const mResp = await fetch(streamUrl);
-    if (!mResp.ok) return null; // URL is dead
-    const manifest = await mResp.text();
-    if (manifest.includes('#EXT-X-STREAM-INF')) {
-      const variantLine = manifest.split('\n').find(l => l.trim() && !l.startsWith('#'));
+    const data = await env.HLS_CACHE.get(rollLogKey(), 'json');
+    return new Response(JSON.stringify(data || { entries: [] }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    });
+  } catch {
+    return new Response(JSON.stringify({ entries: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  }
+}
+
+async function handleRollLogPost(request, env) {
+  if (!env?.HLS_CACHE) return new Response('{}', { headers: CORS_HEADERS });
+  try {
+    const entry = await request.json();
+    const key = rollLogKey();
+    const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
+    const entries = existing.entries || [];
+
+    // Overwrite existing entry for this roll number, or append
+    const idx = entries.findIndex(e => e.roll === entry.roll);
+    if (idx >= 0) entries[idx] = entry;
+    else entries.push(entry);
+
+    // Keep only the last 50 rolls (one session's worth)
+    if (entries.length > 50) entries.splice(0, entries.length - 50);
+
+    await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 24 * 3600 });
+    return new Response('{}', { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: CORS_HEADERS });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Check if an HLS manifest is live (no #EXT-X-ENDLIST) by probing a variant stream.
+async function checkManifestLiveness(masterUrl) {
+  try {
+    const resp = await fetch(masterUrl, { signal: AbortSignal.timeout(4000) });
+    if (!resp.ok) return null;
+    const text = await resp.text();
+    // Master playlist — find first variant and check it
+    if (text.includes('#EXT-X-STREAM-INF')) {
+      const variantLine = text.split('\n').find(l => l.trim() && !l.startsWith('#'));
       if (variantLine) {
         const variantUrl = variantLine.trim().startsWith('http')
           ? variantLine.trim()
-          : new URL(variantLine.trim(), streamUrl).href;
-        const vResp = await fetch(variantUrl);
+          : new URL(variantLine.trim(), masterUrl).href;
+        const vResp = await fetch(variantUrl, { signal: AbortSignal.timeout(4000) });
         if (!vResp.ok) return null;
-        const variantManifest = await vResp.text();
-        return !variantManifest.includes('#EXT-X-ENDLIST');
+        const vText = await vResp.text();
+        return !vText.includes('#EXT-X-ENDLIST');
       }
     }
-    return !manifest.includes('#EXT-X-ENDLIST');
-  } catch {
-    return null; // treat as dead
-  }
+    return !text.includes('#EXT-X-ENDLIST');
+  } catch { return null; }
+}
+
+// Extract the best HLS URL from a /broadcastevents response array.
+// Prefers the "east" region; falls back to any HLS entry.
+function extractHlsFromBroadcastEvents(data) {
+  if (!Array.isArray(data) || !data[0]) return null;
+  const event = data[0];
+  const files = (event.asset || {}).files || [];
+  const hlsFiles = files.filter(f => (f.type || '').toUpperCase() === 'HLS');
+  if (!hlsFiles.length) return null;
+
+  // Prefer east region; fall back to first available
+  const preferred = hlsFiles.find(f => f.url && f.url.includes('/east/')) || hlsFiles[0];
+  if (!preferred?.url) return null;
+
+  // Strip the fragment (#s=... or #t=...) — hls.js handles live edge itself
+  const url = preferred.url.replace(/#.*$/, '');
+  // isLiveBroadcast can be "True", "False", or null (null = stream just started, assume live)
+  const liveFlagStr = String(event.isLiveBroadcast || '').toLowerCase();
+  const isLiveByFlag = liveFlagStr === 'true' ? true : liveFlagStr === 'false' ? false : null;
+  return { url, isLiveByFlag, assetName: (event.asset || {}).name || null };
+}
+
+// Format today's date as YYYYMMDD in Eastern Time (House operates on ET)
+function getTodayDateET() {
+  const now = new Date();
+  // UTC offset for Eastern: EST = -5, EDT = -4. Approximate with -5 (worst case off by 1hr during DST transition).
+  const et = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+  const y = et.getUTCFullYear();
+  const m = String(et.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(et.getUTCDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
+async function fetchBroadcastEvents(dateId) {
+  const resp = await fetch(
+    `https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${dateId}`,
+    { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(3000) }
+  );
+  if (!resp.ok) return null;
+  const text = await resp.text();
+  if (!text || !text.trim()) return null; // empty body before session starts
+  try {
+    const data = JSON.parse(text);
+    // Both "[]" and {"responseCode":404,...} should return null
+    if (!Array.isArray(data) || !data.length) return null;
+    return data;
+  } catch { return null; }
 }
 
 async function handleHlsUrl(env) {
+  // In-memory cache only (no KV writes — this endpoint is called on every page load).
+  const MEM_KEY = 'hls-url';
+  const memHit = _mGet(MEM_KEY);
+  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20' } });
+
+  const reply = (body, ttlMs, maxAge) => {
+    if (ttlMs > 0) _mSet(MEM_KEY, body, ttlMs);
+    return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` } });
+  };
+
   try {
-    // Ask the live.house.gov proxy for the current stream URL.
-    // Returns 404 when House is not in session.
-    const proxyResp = await fetch(
-      'https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/streamingUrl',
-      { headers: { 'Accept': 'application/json' } }
-    );
+    const todayId = getTodayDateET();
 
-    let streamUrl = null;
+    // ── Try today's broadcast event ──────────────────────────────────────────
+    let broadcastData = null;
+    try { broadcastData = await fetchBroadcastEvents(todayId); } catch { /* timeout or error */ }
 
-    if (proxyResp.ok) {
-      const raw = await proxyResp.text();
-      try {
-        const parsed = JSON.parse(raw);
-        streamUrl = parsed?.url || parsed?.streamingUrl || parsed?.hlsUrl
-                  || (Array.isArray(parsed) ? parsed[0] : null) || null;
-        if (!streamUrl) {
-          const m = raw.match(/https?:\/\/[^"'\s]+\.m3u8/i);
-          if (m) streamUrl = m[0];
-        }
-      } catch {
-        const m = raw.trim().match(/^https?:\/\/\S+/);
-        if (m) streamUrl = m[0];
-      }
-    }
+    if (broadcastData) {
+      const result = extractHlsFromBroadcastEvents(broadcastData);
+      if (result) {
+        // If isLiveBroadcast flag is null, check the manifest directly
+        let isLive = result.isLiveByFlag;
+        if (isLive === null) isLive = await checkManifestLiveness(result.url) ?? false;
 
-    if (streamUrl) {
-      // Check if actually live
-      const isLive = await checkManifestLiveness(streamUrl);
-      if (isLive !== null) {
-        // Save to KV so we can show the last frame later
         if (env?.HLS_CACHE) {
-          await env.HLS_CACHE.put('last_url', streamUrl, { expirationTtl: 7 * 24 * 3600 });
+          try { await env.HLS_CACHE.put('last_url', result.url, { expirationTtl: 7 * 24 * 3600 }); } catch (_) {}
         }
-        return new Response(JSON.stringify({ url: streamUrl, isLive }), {
-          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' }
-        });
+        return reply(JSON.stringify({ url: result.url, isLive }), 20_000, 20);
       }
     }
 
-    // Liveproxy returned nothing or URL is dead — try last cached URL for last-frame display
+    // ── No data for today yet — return last cached URL for last-frame display ──
     if (env?.HLS_CACHE) {
       const cachedUrl = await env.HLS_CACHE.get('last_url');
       if (cachedUrl) {
-        const isLive = await checkManifestLiveness(cachedUrl);
-        if (isLive !== null) {
-          return new Response(JSON.stringify({ url: cachedUrl, isLive: false }), {
-            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-          });
-        }
+        return reply(JSON.stringify({ url: cachedUrl, isLive: false }), 60_000, 60);
       }
     }
 
-    // Nothing available
-    return new Response(JSON.stringify({ url: null, isLive: false }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-    });
+    // Nothing available — cache briefly so we don't hammer the broadcast API
+    return reply(JSON.stringify({ url: null, isLive: false }), 15_000, 30);
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }
 
-async function handleDomeWatchFloor() {
-  try {
-    const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/floor`, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': DOMEWATCH_CONFIG.apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+async function handleDomeWatchFloor(env) {
+  // kvTtl=0: skip KV writes entirely. SSE is the real-time channel; REST is a supplement.
+  // Each PoP caches independently in memory (10s), avoiding cross-PoP KV write churn.
+  return kvCache(env, 'domewatch-floor', 10, async () => {
+    try {
+      const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/floor`, {
+        headers: { 'X-API-Key': _domewatchApiKey, 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const data = await response.json();
+      return new Response(JSON.stringify(data), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=10' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: `Failed to fetch DomeWatch floor data: ${error.message}` }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
     }
-
-    const data = await response.json();
-    
-    return new Response(JSON.stringify(data), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=10' // 10 seconds for real-time data
-      }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: `Failed to fetch DomeWatch floor data: ${error.message}` 
-    }), {
-      status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      }
-    });
-  }
+  }, 0);
 }
 
 async function handleDomeWatchStream(request, env) {
@@ -1291,7 +1916,8 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
       upstreamReconnects: 0,
       lastEventAt: null,
       lastError: priorError ? priorError.message : null,
-      encoder: new TextEncoder()
+      encoder: new TextEncoder(),
+      heartbeatInterval: null
     };
   }
 
@@ -1314,6 +1940,18 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
     syncRelay();
   };
 
+  const startHeartbeat = () => {
+    if (relay.heartbeatInterval) return;
+    relay.heartbeatInterval = setInterval(() => {
+      if (relay.clients.size === 0) {
+        clearInterval(relay.heartbeatInterval);
+        relay.heartbeatInterval = null;
+        return;
+      }
+      broadcast(`: heartbeat\n\n`);
+    }, 20000);
+  };
+
   const ensureUpstream = async () => {
     if (relay.upstreamReader) return;
     relay.upstreamConnected = true;
@@ -1323,7 +1961,7 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
       const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/stream/votes/current`, {
         method: 'GET',
         headers: {
-          'X-API-Key': DOMEWATCH_CONFIG.apiKey,
+          'X-API-Key': _domewatchApiKey,
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache'
         }
@@ -1337,8 +1975,16 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
       relay.upstreamReader = reader;
       const decoder = new TextDecoder();
 
+      const STALE_MS = 300_000; // 5 min — DomeWatch goes silent during recess; 45s caused ~1800 reconnects/day
+      const readWithTimeout = () => Promise.race([
+        reader.read(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SSE stale: no data for 45s')), STALE_MS)
+        )
+      ]);
+
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } = await readWithTimeout();
         if (done) break;
         relay.lastEventAt = new Date().toISOString();
         broadcast(decoder.decode(value, { stream: true }));
@@ -1349,7 +1995,7 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
       relay.upstreamReader = null;
       relay.upstreamConnected = false;
       syncRelay();
-      broadcast(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      // Reconnect silently — do not broadcast errors to clients
       setTimeout(() => {
         relay.upstreamReader = null;
         ensureUpstream();
@@ -1364,6 +2010,7 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
       relay.clients.add(controller);
       syncRelay();
       controller.enqueue(relay.encoder.encode(`event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: 'worker-singleton-fallback', priorError: priorError?.message || null })}\n\n`));
+      startHeartbeat();
       ensureUpstream();
     },
     cancel: () => {
@@ -1423,7 +2070,7 @@ async function handleLastSessionDate(request) {
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }
@@ -1457,20 +2104,23 @@ const COMMITTEE_YOUTUBE = {
 async function handleAmendments(request, env) {
   const url = new URL(request.url);
   const slug = url.searchParams.get('bill'); // e.g. "hr-1041"
-  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+  const congress = url.searchParams.get('congress') || '119';
+  if (!slug || !/^[a-z0-9-]+$/.test(slug) || !/^\d+$/.test(congress)) {
     return new Response(JSON.stringify({ amendments: [], error: 'Missing or invalid bill slug' }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
     });
   }
 
-  const cacheKey = `amendments_${slug}`;
+  const cacheKey = `amendments_${congress}_${slug}`;
+  const memAmend = _mGet(cacheKey);
+  if (memAmend) return new Response(memAmend, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
   if (env?.HLS_CACHE) {
     const cached = await env.HLS_CACHE.get(cacheKey);
-    if (cached) return new Response(cached, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+    if (cached) { _mSet(cacheKey, cached, 10 * 60 * 1000); return new Response(cached, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }); }
   }
 
   try {
-    const resp = await fetch(`https://rules.house.gov/bill/119/${slug}`, {
+    const resp = await fetch(`https://rules.house.gov/bill/${congress}/${slug}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
     });
     if (!resp.ok) throw new Error(`rules.house.gov returned ${resp.status}`);
@@ -1485,10 +2135,13 @@ async function handleAmendments(request, env) {
         if (cells.length < 6) continue;
         const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         const linkMatch = cells[2].match(/href="([^"]+)"/);
+        const num = clean(cells[0]);
+        const sponsors = clean(cells[2]);
+        if (!/^\d+$/.test(num) || !sponsors) continue; // skip sub-headers / empty rows
         amendments.push({
-          num: clean(cells[0]),
+          num,
           version: clean(cells[1]),
-          sponsors: clean(cells[2]),
+          sponsors,
           pdfUrl: linkMatch ? linkMatch[1] : null,
           party: clean(cells[3]),
           summary: clean(cells[4]),
@@ -1498,6 +2151,7 @@ async function handleAmendments(request, env) {
     }
 
     const result = JSON.stringify({ amendments });
+    _mSet(cacheKey, result, 10 * 60 * 1000);
     if (env?.HLS_CACHE) {
       try { await env.HLS_CACHE.put(cacheKey, result, { expirationTtl: 10 * 60 }); } catch (_) {}
     }
@@ -1562,60 +2216,161 @@ async function checkYouTubeLive(channelId) {
   } catch { return null; }
 }
 
-async function handleCommitteeLive() {
-  try {
-    const nowStr = new Date().toISOString();
-
-    // Check all known committee YouTube channels in parallel.
-    // YouTube redirects /channel/{id}/live → /watch?v=... when live — no heuristics needed.
-    const results = await Promise.all(
-      Object.entries(COMMITTEE_YOUTUBE).map(async ([thomasId, info]) => {
-        const stream = await checkYouTubeLive(info.channelId);
-        return stream ? { thomasId, channelId: info.channelId, name: info.name, ...stream } : null;
-      })
-    );
-
-    const liveResults = results.filter(Boolean);
-
-    return new Response(JSON.stringify({ committees: liveResults, updatedAt: nowStr }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ committees: [], error: err.message }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-    });
-  }
+async function handleCommitteeLive(env) {
+  return kvCache(env, 'committee-live', 60, async () => {
+    try {
+      const results = await Promise.all(
+        Object.entries(COMMITTEE_YOUTUBE).map(async ([thomasId, info]) => {
+          const stream = await checkYouTubeLive(info.channelId);
+          return stream ? { thomasId, channelId: info.channelId, name: info.name, ...stream } : null;
+        })
+      );
+      return new Response(JSON.stringify({ committees: results.filter(Boolean), updatedAt: new Date().toISOString() }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ committees: [], error: err.message }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
+    }
+  }, 300);
 }
 
-async function handleLeadership() {
-  try {
-    const response = await fetch('https://clerk.house.gov/Members/ViewLeadership', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
+async function handleLeadership(env) {
+  return kvCache(env, 'leadership', 3600, async () => {
+    try {
+      const response = await fetch('https://clerk.house.gov/Members/ViewLeadership', {
+        signal: AbortSignal.timeout(10000),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
 
-    // Speaker is the first leadership-box_hero section
-    // BioGuide ID comes from the image path: /images/members/J000299.jpg
-    const bioguideMatch = html.match(/\/images\/members\/([A-Z]\d+)\.jpg/);
-    const nameMatch = html.match(/<h1[^>]*>\s*Rep\.\s+([^<]+)<\/h1>/);
-    const titleMatch = html.match(/<p class="title"[^>]*>([^<]+)<\/p>/);
+      const bioguideMatch = html.match(/\/images\/members\/([A-Z]\d+)\.jpg/);
+      const nameMatch = html.match(/<h1[^>]*>\s*Rep\.\s+([^<]+)<\/h1>/);
+      const titleMatch = html.match(/<p class="title"[^>]*>([^<]+)<\/p>/);
 
-    if (!bioguideMatch || !nameMatch) throw new Error('Could not parse Speaker from leadership page');
+      if (!bioguideMatch || !nameMatch) throw new Error('Could not parse Speaker from leadership page');
 
-    const bioguideId = bioguideMatch[1];
-    const name = nameMatch[1].trim();
-    const title = titleMatch ? titleMatch[1].trim() : 'Speaker of the House';
+      return new Response(JSON.stringify({
+        bioguideId: bioguideMatch[1],
+        name: nameMatch[1].trim(),
+        title: titleMatch ? titleMatch[1].trim() : 'Speaker of the House',
+      }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
+    }
+  });
+}
 
-    return new Response(JSON.stringify({ bioguideId, name, title }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-    });
-  }
+// Fetch special rules (H.Res.) for bills currently under consideration.
+// Uses Congress.gov to find recent H.Res. bills whose titles indicate they are
+// "providing for consideration of" a floor bill.
+async function handleRules(request, env) {
+  return kvCache(env, 'rules_v6', 30 * 60, async () => {
+    try {
+      // Fetch the most recently-updated H.Res. bills for the current Congress.
+      // Special rules are always H.Res. and their titles start with "Providing for consideration of…"
+      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres?api_key=${_congressApiKey}&sort=updateDate+desc&limit=20&format=json`;
+      const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!resp.ok) throw new Error(`Congress.gov /hres returned ${resp.status}`);
+      const data = await resp.json();
+
+      // Filter to only special rules (bills whose title starts with "Providing for consideration of…")
+      const candidates = (data.bills || []).filter(bill => /providing for consideration/i.test(bill.title || ''));
+
+      // Fetch individual bill detail + actions in parallel to get sponsor and passage vote.
+      // The list endpoint (/hres) does not include sponsors, and latestAction is the
+      // post-vote procedural motion — the actual vote count is in the actions list.
+      const details = await Promise.all(
+        candidates.map(async bill => {
+          try {
+            const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres/${bill.number}`;
+            const key = `?api_key=${_congressApiKey}&format=json`;
+            const [detailResp, actionsResp] = await Promise.all([
+              fetch(`${base}${key}`, { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(5000) }),
+              fetch(`${base}/actions${key}&limit=15&sort=updateDate+desc`, { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(5000) }),
+            ]);
+            const billDetail = detailResp.ok ? (await detailResp.json()).bill || null : null;
+            // Find the House passage action that contains a vote count (e.g. "208 - 207")
+            let passageVote = null;
+            if (actionsResp.ok) {
+              const actionsData = await actionsResp.json();
+              const passageAction = (actionsData.actions || []).find(a => {
+                const t = a.text || '';
+                return /on agreeing to the resolution|passed house|on passage|agreed to by the yeas/i.test(t)
+                    && /\d+\s*[-–]\s*\d+/.test(t);
+              });
+              if (passageAction) {
+                const m = passageAction.text.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+                if (m) passageVote = `${m[1].replace(/,/g,'')}-${m[2].replace(/,/g,'')}`;
+              }
+            }
+            return { billDetail, passageVote };
+          } catch { return { billDetail: null, passageVote: null }; }
+        })
+      );
+
+      const rules = [];
+      for (let i = 0; i < candidates.length; i++) {
+        const bill = candidates[i];
+        const { billDetail, passageVote } = details[i] || {};
+        const title = bill.title || '';
+
+        // Extract all bill IDs mentioned in the title (the bills this rule covers).
+        // Use the same normalization as normalizeBillIdForRules() on the client:
+        //   "H.R. 1041" → "HR1041", "S. 123" → "S123"
+        const billPattern = /\b(H\.R\.|S\.|H\.J\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|S\.J\.Res\.|S\.Res\.)\s*(\d+)/gi;
+        const bills = [];
+        for (const m of title.matchAll(billPattern)) {
+          bills.push((m[1] + m[2]).toUpperCase().replace(/[.\s]/g, ''));
+        }
+        if (!bills.length) continue;
+
+        // Status: passed = cleared the House; reported = out of Rules Committee only
+        const actionText = (bill.latestAction?.text || '').toLowerCase();
+        const ruleStatus = /passed|agreed to/i.test(actionText) ? 'passed'
+                         : /reported|ordered reported/i.test(actionText) ? 'reported'
+                         : 'filed';
+
+        // Sponsor comes from the detail endpoint (not present in list response)
+        const sponsorList = billDetail?.sponsors || [];
+        const sp = sponsorList.length ? sponsorList[0] : null;
+
+        rules.push({
+          hres: `H.Res. ${bill.number}`,
+          hresNum: bill.number,
+          title: bill.title || null,
+          passageVote: passageVote || null,  // e.g. "208-207", null if voice vote or not yet passed
+          pdfUrl: null,
+          ruleStatus,
+          bills,
+          sponsor: sp ? {
+            bioguideId: sp.bioguideId || null,
+            firstName: sp.firstName || null,
+            lastName: sp.lastName || null,
+            party: sp.party || null,
+            state: sp.state || null,
+            district: sp.district ?? null,
+          } : null,
+        });
+      }
+
+      return new Response(JSON.stringify({ rules }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ rules: [], error: err.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+      });
+    }
+  });
 }
 
 function handleOptions() {
@@ -1626,8 +2381,18 @@ function handleOptions() {
 }
 
 async function handleRequest(request, env) {
+  _congressApiKey  = env?.CONGRESS_API_KEY  || '';
+  _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
+
+  const origin = request.headers.get('Origin') || '';
+  CORS_HEADERS = {
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://house-floor.evanhollander.org',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
   const url = new URL(request.url);
-  const path = url.pathname;
+  const path = url.pathname.replace(/^\/house-floor/, '');
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
@@ -1636,38 +2401,46 @@ async function handleRequest(request, env) {
 
   // Route handling
   if (path === '/api/proceedings' && request.method === 'GET') {
-    return await handleProceedings(request);
+    return await handleProceedings(request, env);
   } else if (path === '/api/news' && request.method === 'GET') {
     return await handleNews();
   } else if (path === '/api/bills' && request.method === 'GET') {
-    return await handleBills(request);
+    return await handleBills(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
     return await handleVotingDays();
   } else if (path === '/api/airport-delays' && request.method === 'GET') {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
-    return await handleMemberData();
+    return await handleMemberData(env);
   } else if (path === '/api/congress-index' && request.method === 'GET') {
     return await handleCongressIndex();
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed();
+  } else if (path === '/api/casualty-list' && request.method === 'GET') {
+    return await handleCasualtyList(env);
+  } else if (path === '/api/rules' && request.method === 'GET') {
+    return await handleRules(request, env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
   } else if (path === '/api/committee-live' && request.method === 'GET') {
-    return await handleCommitteeLive();
+    return await handleCommitteeLive(env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
-    return await handleLeadership();
+    return await handleLeadership(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
+  } else if (path === '/api/roll-log' && request.method === 'GET') {
+    return await handleRollLogGet(env);
+  } else if (path === '/api/roll-log' && request.method === 'POST') {
+    return await handleRollLogPost(request, env);
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
-    return await handleDomeWatchFloor();
+    return await handleDomeWatchFloor(env);
   } else if (path === '/api/stream/votes/current' && request.method === 'GET') {
     return await handleDomeWatchStream(request, env);
   } else if (path === '/api/stream/votes/current/status' && request.method === 'GET') {
     const coordinator = await getStreamCoordinator(env);
-    return await coordinator.fetch(new Request(request.url, { method: 'POST' }));
+    return await coordinator.fetch(new Request(`${url.origin}${path}?status=1`, { method: 'POST' }));
   } else if (path.startsWith('/api/congress-index/roll/') && request.method === 'GET') {
     // Handle individual roll call requests
     const rollNumber = path.split('/').pop();
@@ -1686,15 +2459,11 @@ async function handleRequest(request, env) {
         'Content-Type': 'application/json'
       }
     });
-  } else if (path.startsWith('/api/congress-index/roll/') && request.method === 'GET') {
-    return new Response(JSON.stringify({ 
-      error: 'Not found' 
-    }), {
+  } else {
+    // Catch-all: return 404 with CORS headers so browsers don't log a CORS error
+    return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json'
-      }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
     });
   }
 }
@@ -1709,13 +2478,16 @@ export class DomeWatchStreamCoordinator {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    this.clients = new Set();
+    // Map<connectionId, { controller, lastPingAt }>
+    this.clients = new Map();
     this.upstreamReader = null;
     this.upstreamConnected = false;
     this.upstreamReconnects = 0;
     this.lastEventAt = null;
     this.currentEventId = 0;
     this.encoder = new TextEncoder();
+    this.heartbeatInterval = null;
+    this.nextClientId = 1;
     this.health = {
       sourceOfTruth: true,
       upstreamConnected: false,
@@ -1726,50 +2498,81 @@ export class DomeWatchStreamCoordinator {
     };
   }
 
+  startHeartbeat() {
+    if (this.heartbeatInterval) return;
+    this.heartbeatInterval = setInterval(() => {
+      // Evict clients whose browser hasn't pinged in 2 minutes (zombie cleanup).
+      const staleMs = 2 * 60 * 1000;
+      const now = Date.now();
+      for (const [id, entry] of this.clients) {
+        if (now - entry.lastPingAt > staleMs) {
+          try { entry.controller.close(); } catch {}
+          this.clients.delete(id);
+        }
+      }
+      if (this.clients.size === 0) {
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = null;
+        return;
+      }
+      this.broadcast(`: heartbeat\n\n`);
+    }, 55000);
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
+    const cors = corsForRequest(request);
     if (request.method === 'POST' && url.searchParams.has('status')) {
       return new Response(JSON.stringify(this.getStatus()), {
         headers: {
           'Content-Type': 'application/json',
-          ...CORS_HEADERS
+          ...cors
         }
       });
     }
 
-    if (request.method !== 'GET') {
-      return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+    // Ping endpoint — browser POSTs here every 45s to prove it's still alive.
+    if (request.method === 'POST' && url.searchParams.has('ping')) {
+      const id = url.searchParams.get('ping');
+      const entry = this.clients.get(id);
+      if (entry) entry.lastPingAt = Date.now();
+      return new Response(null, { status: 204, headers: cors });
     }
 
-    let controllerRef = null;
+    if (request.method !== 'GET') {
+      return new Response('Method Not Allowed', { status: 405, headers: cors });
+    }
+
+    const clientId = String(this.nextClientId++);
+    let removed = false;
+
+    const removeClient = () => {
+      if (!removed) {
+        removed = true;
+        this.clients.delete(clientId);
+        this.syncHealth();
+      }
+    };
+
     const readable = new ReadableStream({
       start: (controller) => {
-        controllerRef = controller;
-        this.clients.add(controller);
+        this.clients.set(clientId, { controller, lastPingAt: Date.now() });
         this.syncHealth();
-        controller.enqueue(this.encoder.encode(`event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true })}\n\n`));
+        controller.enqueue(this.encoder.encode(
+          `event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true, clientId })}\n\n`
+        ));
+        this.startHeartbeat();
         this.ensureUpstream();
       },
-      cancel: () => {
-        if (controllerRef) {
-          this.clients.delete(controllerRef);
-          controllerRef = null;
-          this.syncHealth();
-        }
-      }
+      cancel: removeClient
     });
 
-    request.signal?.addEventListener('abort', () => {
-      if (controllerRef) {
-        this.clients.delete(controllerRef);
-        controllerRef = null;
-        this.syncHealth();
-      }
-    }, { once: true });
+    request.signal?.addEventListener('abort', removeClient, { once: true });
 
     return new Response(readable, {
       headers: {
         ...sseResponseInit().headers,
+        ...cors,
         'X-Connected-Clients': String(this.clients.size)
       }
     });
@@ -1796,6 +2599,11 @@ export class DomeWatchStreamCoordinator {
     };
   }
 
+  pingClient(clientId) {
+    const entry = this.clients.get(clientId);
+    if (entry) entry.lastPingAt = Date.now();
+  }
+
   async ensureUpstream() {
     if (this.upstreamReader) return;
     this.upstreamConnected = true;
@@ -1805,7 +2613,7 @@ export class DomeWatchStreamCoordinator {
       const response = await fetch(`${DOMEWATCH_CONFIG.baseUrl}/stream/votes/current`, {
         method: 'GET',
         headers: {
-          'X-API-Key': DOMEWATCH_CONFIG.apiKey,
+          'X-API-Key': this.env.DOMEWATCH_API_KEY || '',
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache'
         }
@@ -1820,8 +2628,19 @@ export class DomeWatchStreamCoordinator {
       const decoder = new TextDecoder();
       let buffer = '';
 
+      // If DomeWatch goes silent (e.g. between votes), the TCP connection stays
+      // open but no bytes arrive. 45s gives plenty of room before we force a
+      // reconnect; clients stay connected via the 20s heartbeat comment.
+      const STALE_MS = 300_000; // 5 min — DomeWatch goes silent during recess; 45s caused ~1800 reconnects/day
+      const readWithTimeout = () => Promise.race([
+        reader.read(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SSE stale: no data for 45s')), STALE_MS)
+        )
+      ]);
+
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } = await readWithTimeout();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -1835,7 +2654,8 @@ export class DomeWatchStreamCoordinator {
       this.upstreamConnected = false;
       this.upstreamReader = null;
       this.syncHealth();
-      await this.broadcast(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      // Do NOT broadcast upstream errors to clients — reconnect silently so
+      // clients never see a disruption during normal between-vote quiet periods.
       await this.scheduleReconnect();
     }
   }
@@ -1850,15 +2670,16 @@ export class DomeWatchStreamCoordinator {
     const text = typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk);
     const encoded = this.encoder.encode(text);
     const dead = [];
-    for (const client of this.clients) {
+    for (const [id, { controller }] of this.clients) {
       try {
-        client.enqueue(encoded);
+        if (controller.desiredSize === null) { dead.push(id); continue; }
+        controller.enqueue(encoded);
       } catch {
-        dead.push(client);
+        dead.push(id);
       }
     }
-    for (const client of dead) {
-      this.clients.delete(client);
+    for (const id of dead) {
+      this.clients.delete(id);
     }
     this.syncHealth();
   }
