@@ -2026,7 +2026,7 @@ let votingCalendarData = [];
 // Bills This Week Configuration
 const BILLS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/bills',
-    refreshInterval: 60000 // 1 minute — status changes during active sessions
+    refreshInterval: 300000 // 5 minutes — SSE + fetchFloorData() already trigger bills refresh on vote events
 };
 
 // State for bills data
@@ -2122,7 +2122,7 @@ let billsData = {
 };
 const BLUESKY_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/bluesky',
-    refreshInterval: 60000 // 1 minute
+    refreshInterval: 180000 // 3 minutes — KV-cached at 2 min; Cloakroom posts don't arrive faster than this
 };
 
 
@@ -5143,7 +5143,7 @@ function init() {
     setInterval(updateProceedingsFeed, RSS_CONFIG.refreshInterval); // Refresh proceedings every 15s
     setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
     setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
-    setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 1 minute
+    setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 3 minutes
     setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
     // Initialize
     initWeatherPanel();
