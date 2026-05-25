@@ -376,7 +376,10 @@ async function fetchNitterFeed(handle) {
   return [];
 }
 
-async function handleNews() {
+async function handleNews(env) {
+  // Cache news in KV for 5 min to absorb concurrent page loads and reduce origin fetches.
+  // Memory TTL also 300s — news items are hours old so 5-min staleness is imperceptible.
+  return kvCache(env, 'news-feed', 300, async () => {
   const errors = [];
 
   // All independent fetches run in parallel
@@ -422,6 +425,7 @@ async function handleNews() {
   return new Response(JSON.stringify({ items: filteredItems, errors }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
   });
+  }); // end kvCache
 }
 
 function parseUSCPArrests(html) {
@@ -1035,7 +1039,12 @@ async function handleBills(request, env) {
   if (dateParam) return _fetchBills(request, env);
   const cacheKey = quick ? 'bills-weekly-quick' : 'bills-weekly';
   const ttl = quick ? 30 : 60;
-  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env));
+  // KV TTL is intentionally much longer than memory TTL.
+  // Memory TTL (30/60s) drives freshness within an isolate.
+  // KV TTL (600/1200s) only needs to warm new/cold isolates — not expire faster than polls.
+  // Short KV TTLs caused every poll to be a KV miss → write, burning the 1k/day write quota.
+  const kvTtl = quick ? 600 : 1200;
+  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env), kvTtl);
 }
 
 async function _fetchBills(request, env) {
@@ -1604,7 +1613,9 @@ async function handleCongressIndex() {
   }
 }
 
-async function handleBlueskyFeed() {
+async function handleBlueskyFeed(env) {
+  // Cache in KV for 2 min — polled every 1-3 min by clients; bill status posts don't change second-to-second.
+  return kvCache(env, 'bluesky-ticker', 120, async () => {
   try {
     const xmlText = await fetchRSSFeed(RSS_FEEDS.bluesky);
     
@@ -1684,7 +1695,7 @@ async function handleBlueskyFeed() {
       }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: `Failed to fetch bluesky feed: ${error.message}`
     }), {
       status: 500,
@@ -1694,6 +1705,7 @@ async function handleBlueskyFeed() {
       }
     });
   }
+  }); // end kvCache
 }
 
 async function handleRollCall(rollNumber) {
@@ -2330,7 +2342,7 @@ async function handleRequest(request, env) {
   if (path === '/api/proceedings' && request.method === 'GET') {
     return await handleProceedings(request, env);
   } else if (path === '/api/news' && request.method === 'GET') {
-    return await handleNews();
+    return await handleNews(env);
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
@@ -2342,7 +2354,7 @@ async function handleRequest(request, env) {
   } else if (path === '/api/congress-index' && request.method === 'GET') {
     return await handleCongressIndex();
   } else if (path === '/api/bluesky' && request.method === 'GET') {
-    return await handleBlueskyFeed();
+    return await handleBlueskyFeed(env);
   } else if (path === '/api/casualty-list' && request.method === 'GET') {
     return await handleCasualtyList(env);
   } else if (path === '/api/rules' && request.method === 'GET') {
