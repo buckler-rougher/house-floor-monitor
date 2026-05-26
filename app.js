@@ -150,7 +150,7 @@ async function fetchVotingDays() {
                 todayStatus = 'fly-in';
             } else if (todayEvent.summary.toLowerCase().includes('fly-in')) {
                 todayStatus = 'fly-in';
-            } else if (todayEvent.summary.toLowerCase().includes('pro-forma')) {
+            } else if (/pro[- ]?forma/i.test(todayEvent.summary)) {
                 todayStatus = 'pro-forma';
             } else if (todayEvent.summary.toLowerCase().includes('added')) {
                 todayStatus = 'added-votes';
