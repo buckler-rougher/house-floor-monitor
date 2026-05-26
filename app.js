@@ -612,7 +612,7 @@ function startSSEStreaming() {
         isStreaming = true;
         
         // Use worker proxy for SSE streaming to avoid CORS issues
-        const eventSource = new EventSource('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/stream/votes/current');
+        const eventSource = new EventSource('https://house-floor-api.pmzzg4fpnj.workers.dev/api/stream/votes/current');
         
         // Show connecting state initially
         const liveIndicator = document.querySelector('.live-indicator');
@@ -1240,7 +1240,7 @@ const elements = {
 
 // RSS Feed Configuration
 const RSS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/proceedings',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/proceedings',
     refreshInterval: 15000 // 15 seconds — proceedings drives mode switching
 };
 
@@ -1249,7 +1249,7 @@ let proceedingsDateOverride = null;
 
 // News Ticker Configuration
 const NEWS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/news',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/news',
     refreshInterval: 300000 // 5 minutes
 };
 
@@ -1257,7 +1257,7 @@ const NEWS_CONFIG = {
 const DOMEWATCH_CONFIG = {
     apiKey: 'dw_WukWf8avaMpRU7uk7UyHi94ny1pHFsE8',
     baseUrl: 'https://data.domewatch.us/v1',
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/domewatch-floor',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/domewatch-floor',
     refreshInterval: 10000 // 10 seconds for floor data
 };
 
@@ -1282,18 +1282,18 @@ let controllingParty = null;
 
 // Worker endpoint configurations
 const MEMBER_DATA_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data',
     refreshInterval: 3600000 // 1 hour
 };
 
 const CONGRESS_INDEX_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/congress-index',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/congress-index',
     refreshInterval: 300000 // 5 minutes
 };
 
 // FAA Airport Status Configuration
 const FAA_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/airport-delays',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/airport-delays',
     wasAirports: ['DCA', 'IAD', 'BWI'], // Always show these WAS airports
     airportsCsvUrl: 'https://raw.githubusercontent.com/lxndrblz/Airports/main/airports.csv',
     refreshInterval: 300000 // Check every 5 minutes
@@ -1570,7 +1570,7 @@ function formatDate(dateStr) {
 
 // House Voting Days Configuration
 const VOTING_DAYS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/voting-days',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/voting-days',
     refreshInterval: 3600000 // 1 hour
 };
 
@@ -1585,7 +1585,7 @@ let votingCalendarData = [];
 
 // Bills This Week Configuration
 const BILLS_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/bills',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/bills',
     refreshInterval: 60000 // 1 minute — status changes during active sessions
 };
 
@@ -1602,7 +1602,7 @@ function normalizeBillIdForRules(billId) {
 
 async function fetchSpecialRules() {
     try {
-        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/rules');
+        const resp = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/rules');
         if (!resp.ok) return;
         const data = await resp.json();
         specialRulesMap.clear();
@@ -1648,7 +1648,7 @@ let billsData = {
     lastUpdated: null
 };
 const BLUESKY_CONFIG = {
-    workerUrl: 'https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/bluesky',
+    workerUrl: 'https://house-floor-api.pmzzg4fpnj.workers.dev/api/bluesky',
     refreshInterval: 60000 // 1 minute
 };
 
@@ -2146,7 +2146,7 @@ async function loadAmendments(slug) {
     try {
         const congress = currentCongress || 119;
         const [resp, xmlText] = await Promise.all([
-            fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
+            fetch(`https://house-floor-api.pmzzg4fpnj.workers.dev/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
             getMemberDataXml().catch(() => null)
         ]);
         const data = await resp.json();
@@ -3110,7 +3110,7 @@ async function fetchLastSessionDate() {
             const t = new Date();
             return `${String(t.getMonth()+1).padStart(2,'0')}/${String(t.getDate()).padStart(2,'0')}/${t.getFullYear()}`;
         })();
-        const res = await fetch(`https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/last-session-date?before=${encodeURIComponent(before)}`);
+        const res = await fetch(`https://house-floor-api.pmzzg4fpnj.workers.dev/api/last-session-date?before=${encodeURIComponent(before)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { date } = await res.json();
         if (date) {
@@ -3126,7 +3126,7 @@ async function fetchJournalChairInfo(name) {
     try {
         const clean = name.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.|the\s+Honorable)\s+/i, '').trim();
         const lastName = clean.split(/\s+/).pop();
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        const memberRes = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data');
         const memberData = await memberRes.json();
         const xml = memberData.xmlData || '';
         const parser = new DOMParser();
@@ -3146,11 +3146,11 @@ async function fetchJournalChairInfo(name) {
 
 async function fetchJournalSpeakerInfo() {
     try {
-        const res = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        const res = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/leadership');
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         if (elements.journalChairName) elements.journalChairName.textContent = data.name;
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        const memberRes = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data');
         const memberData = await memberRes.json();
         const xml = memberData.xmlData || '';
         const parser = new DOMParser();
@@ -3204,7 +3204,7 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
 
 async function fetchSpeakerAsChair() {
     try {
-        const response = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/leadership');
+        const response = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/leadership');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
@@ -3213,7 +3213,7 @@ async function fetchSpeakerAsChair() {
         if (elements.pledgeLeaderName) elements.pledgeLeaderName.textContent = name;
 
         // Fetch member details from member-data XML for party/district/etc
-        const memberRes = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data');
+        const memberRes = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data');
         if (!memberRes.ok) throw new Error('member-data failed');
         const memberData = await memberRes.json();
         const xml = memberData.xmlData || '';
@@ -3732,7 +3732,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
         console.log(`Searching for member: ${lastName}${state ? ' from ' + state : ''}`);
 
         // Try to fetch member data from the worker first
-        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
+        const workerUrl = `https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data`;
         
         let clerkDataText;
         try {
@@ -3901,7 +3901,7 @@ async function getMemberDataXml() {
     if (memberDataXmlCachePromise) return memberDataXmlCachePromise;
 
     memberDataXmlCachePromise = (async () => {
-        const workerUrl = `https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/member-data`;
+        const workerUrl = `https://house-floor-api.pmzzg4fpnj.workers.dev/api/member-data`;
         const workerResponse = await fetch(workerUrl);
         if (!workerResponse.ok) {
             throw new Error(`Worker returned HTTP ${workerResponse.status}`);
@@ -4657,7 +4657,7 @@ async function initHlsPlayer() {
 
     let streamUrl, isLive;
     try {
-        const resp = await fetch('https://dome-watch-worker.pmzzg4fpnj.workers.dev/api/hls-url');
+        const resp = await fetch('https://house-floor-api.pmzzg4fpnj.workers.dev/api/hls-url');
         const data = await resp.json();
         if (!data.url) {
             showFallback();
