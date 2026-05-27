@@ -7238,14 +7238,37 @@ body.admin-oath-mode .floor-grid-panel {
         margin-left: auto;
     }
 
-    /* Balance of Power: move majority badge to bottom-right of header.
-       Source needs flex:1 (not width:100%) so badge can share its row. */
-    #majority-control-badge {
-        order: 3;           /* after source (order 2) */
+    /* Balance of Power: switch to CSS Grid so each item can be placed
+       explicitly — flex order tricks don't work reliably here because
+       the panel has an extra direct child (the badge).
+
+       Grid:  col 1 (1fr)              | col 2 (auto)
+         r1:  BALANCE OF POWER         | 01 May 2026
+         r2:  Source: House Clerk      | REPUBLICAN CONTROL
+    */
+    .party-breakdown-panel .panel-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        align-items: center;
+        column-gap: 8px;
+        row-gap: 3px;
+    }
+    .party-breakdown-panel .panel-label {
+        grid-column: 1; grid-row: 1;
+    }
+    .party-breakdown-time {
+        grid-column: 2; grid-row: 1;
+        margin-left: 0;   /* reset flex auto-margin */
     }
     .party-breakdown-panel .panel-header .panel-source {
-        width: auto;
-        flex: 1;
+        grid-column: 1; grid-row: 2;
+        width: auto;      /* reset width:100% from generic rule */
+        margin-top: 0;
+    }
+    #majority-control-badge {
+        grid-column: 2; grid-row: 2;
+        justify-self: end;
     }
 
     /* absentee-info bar: long explainer text + roll-call number */
