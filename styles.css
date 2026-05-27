@@ -7238,6 +7238,16 @@ body.admin-oath-mode .floor-grid-panel {
         margin-left: auto;
     }
 
+    /* Balance of Power: move majority badge to bottom-right of header.
+       Source needs flex:1 (not width:100%) so badge can share its row. */
+    #majority-control-badge {
+        order: 3;           /* after source (order 2) */
+    }
+    .party-breakdown-panel .panel-header .panel-source {
+        width: auto;
+        flex: 1;
+    }
+
     /* absentee-info bar: long explainer text + roll-call number */
     .absentee-info {
         flex-wrap: wrap;
