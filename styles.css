@@ -7109,68 +7109,155 @@ body.admin-oath-mode .floor-grid-panel {
 /* ─────────────────────────────────────────────────────────────────────────────
    Mobile responsive layout (≤ 640 px)
    ─────────────────────────────────────────────────────────────────────────────
-   Header anatomy on desktop:
-     [absolute centred logo] | [.header-left: brand + date-info] … [.header-right: weather + 3 clocks]
-   On a 390 px phone (358 px usable), the full set is ~580 px — badly overflows.
-   Fix: hide logo + weather + UTC clock, shrink gaps and clock faces.
-   Left (~200 px) + right (~96 px) = ~296 px — fits comfortably in 358 px.
+   Header anatomy on desktop (single row, 100 px):
+     [absolute centred logo] | [header-left: brand + date-info] … [header-right: weather + 3 clocks]
+   On a 390 px phone (358 px usable) the full set is ~580 px — badly overflows.
+
+   Fix: switch to TWO ROWS so logo, weather and all clocks are preserved.
+   ┌─────────────────────────────────────────────┐
+   │  ● MONITORING THE HOUSE FLOOR  Mon May 26   │  ← header-left (full width)
+   │  In Session · 2:30 PM                       │
+   ├─────────────────────────────────────────────┤
+   │  [weather]  ⌚LOCAL  ⌚DC  ⌚UTC             │  ← header-right (full width)
+   └─────────────────────────────────────────────┘
+   Logo moves in-flow above the brand text (no longer absolute).
 ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
 
-    /* Shrink header to its natural content height (~83 px) */
+    /* Two-row header: let left and right each take a full row */
     .main-header {
         height: auto;
+        flex-wrap: wrap;
         padding: 8px 16px;
+        gap: 6px 0;
+        align-items: center;
     }
 
-    /* Absolute-positioned logo sits at x=50% and visually overlaps both sides */
+    /* Pull the logo out of absolute positioning into the left row.
+       It sits before header-left in DOM order; make it inline-flex
+       so it flows left-to-right alongside the brand. */
     .header-logo-clip {
-        display: none;
+        position: static;
+        transform: none;
+        height: auto;
+        width: auto;
+        flex-shrink: 0;
+        order: -1;          /* keep it at the far left of row 1 */
     }
 
-    /* Tighten flex gaps */
-    .header-left  { gap: 12px; }
-    .header-right { gap:  8px; }
+    .header-logo {
+        height: 40px;
+        width: 40px;
+    }
 
-    /* Slightly smaller text to reclaim horizontal space */
-    .brand-text { font-size: 11px; }
-    .today-date { font-size: 12px; }
+    /* Row 1: logo + brand + date — push header-right to its own row */
+    .header-left {
+        flex: 1;            /* fill remaining space on row 1 */
+        gap: 10px;
+        min-width: 0;       /* allow text to shrink/truncate */
+    }
 
-    /* Weather panel (76 px + 16 px margin) is non-critical — hide on phones */
-    .weather-panel { display: none; }
+    /* Row 2: weather + clocks — full width, left-aligned */
+    .header-right {
+        width: 100%;
+        gap: 12px;
+        justify-content: flex-start;
+    }
 
-    /* Keep LOCAL + DC; drop UTC (least useful for a US legislative site) */
+    /* Weather panel: keep it but shrink the right margin */
+    .weather-panel {
+        margin-right: 0;
+        flex-shrink: 0;
+    }
+
+    /* Drop UTC clock (saves ~52 px; LOCAL + DC sufficient on a US site) */
     .clock-group .clock:last-child { display: none; }
 
-    /* Scale the two remaining clock faces from 56 px → 40 px */
+    /* Smaller clock faces: 56 px → 40 px */
     .analog-clock {
         width:  40px;
         height: 40px;
     }
     .clock { min-width: 40px; }
 
-    /* Re-offset the content area for the shorter header.
-       The ≤ 768 px breakpoint sets container padding: 16px (all sides);
-       this declaration comes later in the file so it overrides just the top. */
-    .container { padding-top: 90px; }
+    /* Slightly smaller text to prevent overflow on row 1 */
+    .brand-text { font-size: 11px; }
+    .today-date { font-size: 12px; }
+
+    /* Re-offset content area for the taller two-row header (~148 px).
+       The ≤ 768 px breakpoint sets padding: 16px (all sides) earlier in
+       the file; this longhand overrides just the top. */
+    .container { padding-top: 152px; }
 
     /* Adjust anchor-scroll offset to match new header height */
     #vote, #proceedings, #bills, #live {
-        scroll-margin-top: 98px;
+        scroll-margin-top: 160px;
     }
 
     /* ── Missing members list: single column on narrow screens ───────────── */
     .absentee-list {
         grid-template-columns: 1fr;
     }
+
+    /* ── Section / panel headers: prevent left title from colliding with
+       right metadata on ~358 px phones. Allow the right-side content
+       to wrap to a second row instead. ──────────────────────────────────── */
+
+    /* Generic panel header (used by bills, proceedings, vote map, etc.) */
+    .panel-header {
+        flex-wrap: wrap;
+        height: auto;          /* was 52px fixed */
+        padding: 10px 16px;    /* was 16px 32px  */
+        gap: 4px 0;
+    }
+
+    /* absentee-info bar: long explainer text + roll-call number */
+    .absentee-info {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    /* All debate / proceedings section headers */
+    .one-minute-section-header,
+    .special-order-section-header,
+    .morning-hour-section-header,
+    .prayer-section-header,
+    .silence-section-header,
+    .oath-section-header,
+    .speaker-section-header,
+    .committee-chair-section-header,
+    .pledge-section-header,
+    .message-section-header,
+    .joint-session-section-header,
+    .joint-meeting-section-header,
+    .cert-election-section-header,
+    .cert-electoral-section-header,
+    .sine-die-section-header,
+    .new-session-section-header,
+    .admin-oath-section-header,
+    .journal-section-header {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    /* Bills panel: two-column grid is too narrow on phones */
+    .bills-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .bills-column-header {
+        flex-wrap: wrap;
+        height: auto;
+    }
 }
 
 /* ── Extra-small phones (≤ 400 px) ──────────────────────────────────────────
-   At 360–375 px the header can still crowd; drop the "next votes" line
-   and tighten text a touch further.
+   At 360–375 px the header-left row can still crowd; drop "next votes"
+   and tighten text a touch more.
 ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 400px) {
     .next-votes  { display: none; }
     .brand-text  { font-size: 10px; }
     .today-date  { font-size: 11px; }
+    .header-logo { height: 32px; width: 32px; }
 }
