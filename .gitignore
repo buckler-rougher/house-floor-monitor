@@ -1,0 +1,16 @@
+# Wrangler local state (contains account ID and cached credentials)
+.wrangler/
+
+# Environment / secret files
+.env
+.env.*
+.dev.vars
+
+# Claude Code local overrides (personal settings, not team config)
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/
