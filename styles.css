@@ -7215,27 +7215,27 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: flex-start;
     }
 
-    /* Right side: stack as a column — date on top, source below */
+    /* Dissolve the right-side wrapper so its children become direct flex
+       items of .panel-header — lets us place date and source independently */
     .panel-header-right {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 3px;
-        flex-shrink: 0;
-        max-width: 55%;        /* prevent source text from dominating width */
+        display: contents;
     }
 
-    /* Source attribution: allow wrapping within the narrowed column */
+    /* Source: always left-aligned on its own second row */
     .panel-header .panel-source {
-        text-align: right;
+        order: 2;
+        width: 100%;
+        text-align: left;
         white-space: normal;
-        line-height: 1.4;
+        margin-top: 3px;
     }
 
-    /* Date / timestamp: float to top of the right column so it sits
-       level with the panel title on row 1 */
+    /* Date / timestamp: row 1, pushed right with an auto left margin */
     .bills-last-update,
-    .proceedings-time {
-        order: -1;
+    .proceedings-time,
+    .party-breakdown-time {
+        order: 1;
+        margin-left: auto;
     }
 
     /* absentee-info bar: long explainer text + roll-call number */
