@@ -7133,28 +7133,18 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: center;
     }
 
-    /* Pull the logo out of absolute positioning into the left row.
-       It sits before header-left in DOM order; make it inline-flex
-       so it flows left-to-right alongside the brand. */
+    /* Logo SVG is too complex to read at small sizes — hide on mobile */
     .header-logo-clip {
-        position: static;
-        transform: none;
-        height: auto;
-        width: auto;
-        flex-shrink: 0;
-        order: -1;          /* keep it at the far left of row 1 */
+        display: none;
     }
 
-    .header-logo {
-        height: 40px;
-        width: 40px;
-    }
-
-    /* Row 1: logo + brand + date — push header-right to its own row */
+    /* Row 1: brand (left) + date-info (right) */
     .header-left {
-        flex: 1;            /* fill remaining space on row 1 */
+        flex: 1;
         gap: 10px;
-        min-width: 0;       /* allow text to shrink/truncate */
+        min-width: 0;
+        justify-content: space-between;
+        align-items: flex-start;
     }
 
     /* Row 2: weather + clocks — full width, left-aligned */
@@ -7164,11 +7154,15 @@ body.admin-oath-mode .floor-grid-panel {
         justify-content: flex-start;
     }
 
-    /* Weather panel: keep it but shrink the right margin */
+    /* Weather panel: keep it, just remove the desktop right margin */
     .weather-panel {
         margin-right: 0;
         flex-shrink: 0;
     }
+
+    /* Condition text ("CHANCE SHOWERS AND THUNDERSTORMS") wraps to 4 lines
+       inside the 76px panel — show only the temperature on mobile */
+    .weather-condition { display: none; }
 
     /* Drop UTC clock (saves ~52 px; LOCAL + DC sufficient on a US site) */
     .clock-group .clock:last-child { display: none; }
@@ -7184,14 +7178,15 @@ body.admin-oath-mode .floor-grid-panel {
     .brand-text { font-size: 11px; }
     .today-date { font-size: 12px; }
 
-    /* Re-offset content area for the taller two-row header (~148 px).
+    /* Re-offset content area for the two-row header (~136 px).
+       Row 1: brand+date ~44px. Row 2: clocks ~67px. Gaps+padding ~25px.
        The ≤ 768 px breakpoint sets padding: 16px (all sides) earlier in
        the file; this longhand overrides just the top. */
-    .container { padding-top: 152px; }
+    .container { padding-top: 140px; }
 
     /* Adjust anchor-scroll offset to match new header height */
     #vote, #proceedings, #bills, #live {
-        scroll-margin-top: 160px;
+        scroll-margin-top: 148px;
     }
 
     /* ── Missing members list: single column on narrow screens ───────────── */
