@@ -5193,7 +5193,6 @@ async function initHlsPlayer() {
     const video = document.getElementById('player');
     const snapshot = document.getElementById('player-snapshot');
     const fallback = document.getElementById('video-fallback');
-    const endedLabel = document.getElementById('video-ended-label');
     if (!video) return;
 
     let pollTimer = null;
@@ -5222,13 +5221,11 @@ async function initHlsPlayer() {
         function onReady() {
             hideFallback();
             if (isLive) {
-                if (endedLabel) endedLabel.hidden = true;
                 video.muted = true;
                 video.autoplay = true;
                 video.controls = true;
                 video.play().catch(() => {});
             } else {
-                if (endedLabel) endedLabel.hidden = false;
                 function captureSnapshot() {
                     if (!snapshot) return;
                     try {
