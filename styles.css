@@ -7260,6 +7260,8 @@ body.admin-oath-mode .floor-grid-panel {
     .party-breakdown-time {
         grid-column: 2; grid-row: 1;
         margin-left: 0;   /* reset flex auto-margin */
+        justify-self: end;
+        text-align: right;
     }
     .party-breakdown-panel .panel-header .panel-source {
         grid-column: 1; grid-row: 2;
