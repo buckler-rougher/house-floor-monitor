@@ -325,7 +325,12 @@ async function handleProceedings(request, env) {
     const date = url.searchParams.get('date'); // expected: mm/dd/yyyy
 
     if (date) {
-      // Date-specific historical queries — cache 60s, keyed by date
+      // Historical dates are immutable once the day is over — use a long KV TTL.
+      // Today's date is still accumulating actions so use a shorter TTL.
+      const todayEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
+      const isToday = date === todayStr;
+      const dateKvTtl = isToday ? 600 : 24 * 3600; // 10 min today, 1 day for past dates
       return kvCache(env, `proceedings-date:${date}`, 60, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
@@ -339,7 +344,7 @@ async function handleProceedings(request, env) {
         return new Response(JSON.stringify(result), {
           headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
         });
-      });
+      }, dateKvTtl);
     }
 
     // Live feed — in-memory 15s; KV 300s so cross-PoP writes stay well under the free-tier limit
@@ -377,8 +382,7 @@ async function fetchNitterFeed(handle) {
 }
 
 async function handleNews(env) {
-  // Cache news in KV for 5 min to absorb concurrent page loads and reduce origin fetches.
-  // Memory TTL also 300s — news items are hours old so 5-min staleness is imperceptible.
+  // In-memory TTL 5 min; KV TTL 30 min — news items are hours old, cross-PoP staleness is imperceptible.
   return kvCache(env, 'news-feed', 300, async () => {
   const errors = [];
 
@@ -425,7 +429,7 @@ async function handleNews(env) {
   return new Response(JSON.stringify({ items: filteredItems, errors }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
   });
-  }); // end kvCache
+  }, 1800); // end kvCache — KV TTL 30 min
 }
 
 function parseUSCPArrests(html) {
@@ -1614,7 +1618,7 @@ async function handleCongressIndex() {
 }
 
 async function handleBlueskyFeed(env) {
-  // Cache in KV for 2 min — polled every 1-3 min by clients; bill status posts don't change second-to-second.
+  // In-memory TTL 2 min (same isolate); KV TTL 30 min — Bluesky posts don't update second-to-second.
   return kvCache(env, 'bluesky-ticker', 120, async () => {
   try {
     const xmlText = await fetchRSSFeed(RSS_FEEDS.bluesky);
@@ -1705,7 +1709,7 @@ async function handleBlueskyFeed(env) {
       }
     });
   }
-  }); // end kvCache
+  }, 1800); // end kvCache — KV TTL 30 min
 }
 
 async function handleRollCall(rollNumber) {
