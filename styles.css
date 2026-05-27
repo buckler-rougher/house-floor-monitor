@@ -7107,24 +7107,22 @@ body.admin-oath-mode .floor-grid-panel {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Mobile responsive layout (≤ 640 px)
+   Mobile header — designed for the small screen, not just reflowed.
    ─────────────────────────────────────────────────────────────────────────────
-   Header anatomy on desktop (single row, 100 px):
-     [absolute centred logo] | [header-left: brand + date-info] … [header-right: weather + 3 clocks]
-   On a 390 px phone (358 px usable) the full set is ~580 px — badly overflows.
+   Two intentional rows:
 
-   Fix: switch to TWO ROWS so logo, weather and all clocks are preserved.
-   ┌─────────────────────────────────────────────┐
-   │  ● MONITORING THE HOUSE FLOOR  Mon May 26   │  ← header-left (full width)
-   │  In Session · 2:30 PM                       │
-   ├─────────────────────────────────────────────┤
-   │  [weather]  ⌚LOCAL  ⌚DC  ⌚UTC             │  ← header-right (full width)
-   └─────────────────────────────────────────────┘
-   Logo moves in-flow above the brand text (no longer absolute).
+   ROW 1 (~44 px):
+   [logo 40px] [● MONITORING     ] [Tuesday, 26 May]
+               [  THE HOUSE FLOOR] [IN SESSION     ]
+
+   ROW 2 (~28 px) — compact info strip, no analog clock faces:
+   [73°F]  LOCAL 20:50:34   DC 20:50:34
+
+   Total header ≈ 8+44+6+28+8 = 94 px
 ───────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
 
-    /* Two-row header: let left and right each take a full row */
+    /* ── Header shell ─────────────────────────────────────────────────────── */
     .main-header {
         height: auto;
         flex-wrap: wrap;
@@ -7133,7 +7131,7 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: center;
     }
 
-    /* Logo: pull out of absolute positioning, flow inline at start of row 1 */
+    /* ── Logo (row 1, far left) ───────────────────────────────────────────── */
     .header-logo-clip {
         position: static;
         transform: none;
@@ -7142,69 +7140,54 @@ body.admin-oath-mode .floor-grid-panel {
         flex-shrink: 0;
         overflow: visible;
     }
+    .header-logo { height: 40px; width: 40px; }
 
-    .header-logo {
-        height: 36px;
-        width: 36px;
-    }
-
-    /* Row 1: logo + brand (left) + date-info pushed right */
+    /* ── Brand + date (row 1, fills remaining width) ─────────────────────── */
     .header-left {
         flex: 1;
-        gap: 10px;
         min-width: 0;
+        gap: 12px;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
     }
+    .brand-text  { font-size: 11px; }
+    .today-date  { font-size: 11px; }
+    .date-info   { align-items: flex-end; } /* right-align date stack */
 
-    /* Row 2: weather + clocks — full width, left-aligned */
+    /* ── Info strip (row 2) ──────────────────────────────────────────────── */
     .header-right {
         width: 100%;
-        gap: 12px;
+        gap: 16px;
         justify-content: flex-start;
+        align-items: center;
     }
 
-    /* Weather panel: keep it, just remove the desktop right margin */
+    /* Weather: compact chip — temperature only, no condition text */
     .weather-panel {
+        width: 52px;
+        height: 32px;
         margin-right: 0;
         flex-shrink: 0;
+        padding: 4px;
     }
+    .weather-temp      { font-size: 15px; }
+    .weather-condition { display: none; }
 
-    /* Condition text ("CHANCE SHOWERS AND THUNDERSTORMS") wraps to 4 lines
-       inside the 76px panel — clamp to 2 lines on mobile */
-    .weather-condition {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+    /* Clocks: drop the analog dial — just show label + digital time */
+    .analog-clock { display: none; }
+    .clock        { min-width: 0; gap: 2px; }
+    .clock-label  { font-size: 7px; letter-spacing: 0.8px; }
+    .clock-time   { font-size: 10px; }
 
-    /* Drop UTC clock (saves ~52 px; LOCAL + DC sufficient on a US site) */
+    /* UTC not relevant for this use case */
     .clock-group .clock:last-child { display: none; }
 
-    /* Smaller clock faces: 56 px → 40 px */
-    .analog-clock {
-        width:  40px;
-        height: 40px;
-    }
-    .clock { min-width: 40px; }
-
-    /* Slightly smaller text to prevent overflow on row 1 */
-    .brand-text { font-size: 11px; }
-    .today-date { font-size: 12px; }
-
-    /* Re-offset content area for the two-row header.
-       Row 1: logo(36) / brand(~44px) / date-info(~50px) → ~50px
-       Row 2: clocks ~67px. Gaps + padding ~25px. Total ~142px.
-       Using 160px gives comfortable breathing room.
-       The ≤ 768 px breakpoint sets padding: 16px (all sides) earlier in
-       the file; this longhand overrides just the top. */
-    .container { padding-top: 160px; }
-
-    /* Adjust anchor-scroll offset to match */
-    #vote, #proceedings, #bills, #live {
-        scroll-margin-top: 168px;
-    }
+    /* ── Content offset ──────────────────────────────────────────────────── */
+    /* Header ≈ 94 px; 108 px gives breathing room.
+       The ≤768 px breakpoint sets padding:16px (all sides) earlier in the
+       file — this longhand overrides just the top. */
+    .container { padding-top: 108px; }
+    #vote, #proceedings, #bills, #live { scroll-margin-top: 116px; }
 
     /* ── Missing members list: single column on narrow screens ───────────── */
     .absentee-list {
