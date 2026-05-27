@@ -7200,8 +7200,11 @@ body.admin-oath-mode .floor-grid-panel {
     }
 
     /* ── Section / panel headers: prevent left title from colliding with
-       right metadata on ~358 px phones. Allow the right-side content
-       to wrap to a second row instead. ──────────────────────────────────── */
+       right metadata on ~358 px phones.
+       Layout goal:
+         [PANEL TITLE]        [Week of 18 May 2026]   ← row 1: title + date
+                              [Source: House Docs …]  ← row 2: source below
+    ──────────────────────────────────────────────────────────────────────── */
 
     /* Generic panel header (used by bills, proceedings, vote map, etc.) */
     .panel-header {
@@ -7209,6 +7212,36 @@ body.admin-oath-mode .floor-grid-panel {
         height: auto;          /* was 52px fixed */
         padding: 10px 16px;    /* was 16px 32px  */
         gap: 4px 0;
+        align-items: flex-start;
+    }
+
+    /* Let the label grow and shrink properly */
+    .panel-label {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Right side: stack as a column — date on top, source below */
+    .panel-header-right {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 3px;
+        flex-shrink: 0;
+        max-width: 55%;        /* prevent source text from dominating width */
+    }
+
+    /* Source attribution: allow wrapping within the narrowed column */
+    .panel-header .panel-source {
+        text-align: right;
+        white-space: normal;
+        line-height: 1.4;
+    }
+
+    /* Date / timestamp: float to top of the right column so it sits
+       level with the panel title on row 1 */
+    .bills-last-update,
+    .proceedings-time {
+        order: -1;
     }
 
     /* absentee-info bar: long explainer text + roll-call number */
