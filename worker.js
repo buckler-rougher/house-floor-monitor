@@ -330,7 +330,7 @@ async function handleProceedings(request, env) {
       const todayEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
       const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
       const isToday = date === todayStr;
-      const dateKvTtl = isToday ? 600 : 24 * 3600; // 10 min today, 1 day for past dates
+      const dateKvTtl = isToday ? 600 : 7 * 24 * 3600; // 10 min today, 7 days for past dates (immutable)
       return kvCache(env, `proceedings-date:${date}`, 60, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
