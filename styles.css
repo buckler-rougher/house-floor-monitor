@@ -7133,12 +7133,22 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: center;
     }
 
-    /* Logo SVG is too complex to read at small sizes — hide on mobile */
+    /* Logo: pull out of absolute positioning, flow inline at start of row 1 */
     .header-logo-clip {
-        display: none;
+        position: static;
+        transform: none;
+        height: auto;
+        width: auto;
+        flex-shrink: 0;
+        overflow: visible;
     }
 
-    /* Row 1: brand (left) + date-info (right) */
+    .header-logo {
+        height: 36px;
+        width: 36px;
+    }
+
+    /* Row 1: logo + brand (left) + date-info pushed right */
     .header-left {
         flex: 1;
         gap: 10px;
@@ -7161,8 +7171,13 @@ body.admin-oath-mode .floor-grid-panel {
     }
 
     /* Condition text ("CHANCE SHOWERS AND THUNDERSTORMS") wraps to 4 lines
-       inside the 76px panel — show only the temperature on mobile */
-    .weather-condition { display: none; }
+       inside the 76px panel — clamp to 2 lines on mobile */
+    .weather-condition {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 
     /* Drop UTC clock (saves ~52 px; LOCAL + DC sufficient on a US site) */
     .clock-group .clock:last-child { display: none; }
@@ -7178,15 +7193,17 @@ body.admin-oath-mode .floor-grid-panel {
     .brand-text { font-size: 11px; }
     .today-date { font-size: 12px; }
 
-    /* Re-offset content area for the two-row header (~136 px).
-       Row 1: brand+date ~44px. Row 2: clocks ~67px. Gaps+padding ~25px.
+    /* Re-offset content area for the two-row header.
+       Row 1: logo(36) / brand(~44px) / date-info(~50px) → ~50px
+       Row 2: clocks ~67px. Gaps + padding ~25px. Total ~142px.
+       Using 160px gives comfortable breathing room.
        The ≤ 768 px breakpoint sets padding: 16px (all sides) earlier in
        the file; this longhand overrides just the top. */
-    .container { padding-top: 140px; }
+    .container { padding-top: 160px; }
 
-    /* Adjust anchor-scroll offset to match new header height */
+    /* Adjust anchor-scroll offset to match */
     #vote, #proceedings, #bills, #live {
-        scroll-margin-top: 148px;
+        scroll-margin-top: 168px;
     }
 
     /* ── Missing members list: single column on narrow screens ───────────── */
