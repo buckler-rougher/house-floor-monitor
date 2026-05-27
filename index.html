@@ -28,9 +28,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 </head>
 <body class="recess-mode">
+    <a class="skip-link" href="#congress-info">Skip to main content</a>
     <!-- True Header -->
     <header class="main-header">
-        <div class="header-logo-clip" onclick="scrollTo({top:0,behavior:'smooth'})">
+        <div class="header-logo-clip">
             <img alt="" class="header-logo" id="header-logo-img" style="visibility:hidden">
         </div>
         <script>
@@ -42,9 +43,9 @@
         </script>
         <div class="header-left">
             <div class="brand-tooltip-anchor">
-                <div class="brand" id="brand-trigger">
-                    <div class="live-indicator"></div>
-                    <span class="brand-text">MONITORING <span class="brand-nl"><br></span>THE HOUSE <span class="brand-nl"><br></span>FLOOR</span>
+                <div class="brand" id="brand-trigger" role="button" tabindex="0" aria-expanded="false" aria-controls="connection-dashboard">
+                    <div class="live-indicator" aria-hidden="true"></div>
+                    <h1 class="brand-text">MONITORING <span class="brand-nl"><br></span>THE HOUSE <span class="brand-nl"><br></span>FLOOR</h1>
                 </div>
                 <div class="conn-dashboard" id="connection-dashboard" aria-hidden="true">
                     <div class="conn-dash-header">
@@ -135,7 +136,7 @@
                     </div>
     </header>
     
-    <div class="container">
+    <main class="container">
                     <!-- Congress Info Display -->
             <div class="congress-info" id="congress-info">
                 <span class="congress-text">--</span>
@@ -150,13 +151,6 @@
                 <h1 class="vote-title" id="vote-title">Loading...</h1>
                 <div class="vote-meta">
                     <span class="vote-id" id="vote-id">--</span>
-                    <button class="refresh-btn" id="refresh-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 4v6h-6"></path>
-                            <path d="M1 20v-6h6"></path>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </button>
                 </div>
             </div>
 
@@ -765,7 +759,7 @@
 
             <!-- Vote Count Display -->
             <div class="vote-display">
-                <div class="vote-counts-row">
+                <div class="vote-counts-row" aria-live="polite" aria-atomic="true" aria-label="Current vote tallies">
                     <div class="vote-count-section yeas">
                         <div class="count-label">YEA</div>
                         <div class="count-number" id="yeas-count">--</div>
@@ -797,7 +791,7 @@
 
             <!-- Progress Bar -->
             <div class="progress-section">
-                <div class="progress-bar">
+                <div class="progress-bar" id="vote-progress-bar" role="progressbar" aria-label="Vote progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                     <div class="progress-fill yeas" id="yeas-bar"></div>
                     <div class="progress-fill present" id="present-bar"></div>
                     <div class="progress-fill nays" id="nays-bar"></div>
@@ -861,7 +855,7 @@
                         </div>
                     </div>
                     <div class="quorum-visual">
-                        <div class="quorum-bar">
+                        <div class="quorum-bar" id="quorum-progress-bar" role="progressbar" aria-label="Members present" aria-valuemin="0" aria-valuemax="435" aria-valuenow="0">
                             <div class="quorum-fill" id="quorum-fill"></div>
                         </div>
                         <div class="quorum-labels">
@@ -1105,10 +1099,10 @@
                 </div>
             </div>
             <div class="youtube-container" id="youtube-container">
-                <div class="video-container" aria-live="polite">
+                <div class="video-container">
                     <video id="player" playsinline muted></video>
                     <canvas id="player-snapshot" class="player-snapshot" hidden></canvas>
-                    <div id="video-fallback" class="video-fallback" role="status" aria-hidden="true">
+                    <div id="video-fallback" class="video-fallback" role="status" aria-live="polite" aria-hidden="true">
                         <div>
                             <strong>Stream unavailable</strong>
                             <div class="subtitle">The live feed is currently offline or unavailable.</div>
@@ -1193,7 +1187,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <footer class="site-footer">
         <div class="site-footer-primary">
