@@ -841,6 +841,23 @@ let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdow
     trigger.addEventListener('mouseleave', scheduleHide);
     dashboard.addEventListener('mouseenter', cancelHide);
     dashboard.addEventListener('mouseleave', scheduleHide);
+
+    // Keyboard: toggle on Enter/Space, close on Escape
+    trigger.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            dashboard.classList.contains('visible') ? scheduleHide() : show();
+        } else if (e.key === 'Escape') {
+            scheduleHide();
+            trigger.focus();
+        }
+    });
+
+    // Keep aria-expanded in sync
+    const observer = new MutationObserver(() => {
+        trigger.setAttribute('aria-expanded', dashboard.classList.contains('visible') ? 'true' : 'false');
+    });
+    observer.observe(dashboard, { attributes: true, attributeFilter: ['class'] });
 })();
 // ── End connection dashboard ──────────────────────────────────────────────────
 
@@ -1345,6 +1362,8 @@ function updateFloorDisplay(status = null) {
             elements.yeasBar.style.width = `${yeasWidth}%`;
             elements.naysBar.style.width = `${naysWidth}%`;
             elements.presentBar.style.width = `${presentWidth}%`;
+            const voteProgressBar = document.getElementById('vote-progress-bar');
+            if (voteProgressBar) voteProgressBar.setAttribute('aria-valuenow', Math.round(yeasWidth));
             
             // Add color coding based on vote status
             if (totalVotes === 0) {
@@ -1525,7 +1544,6 @@ const elements = {
     naysToBlock: document.getElementById('nays-to-block'),
     maxPossibleYeas: document.getElementById('max-possible-yeas'),
     lastUpdate: document.getElementById('last-update'),
-    refreshBtn: document.getElementById('refresh-btn'),
         weatherPanel: document.getElementById('weather-panel'),
     capcamVideo: document.getElementById('capcam-video'),
     weatherTemp: document.getElementById('weather-temp'),
@@ -2353,8 +2371,8 @@ function updateBillsDisplay() {
                     sponsor: rule.sponsor || null,
                 });
                 cards.push(`
-                    <div class="bill-card" data-bill-id="${ruleCardId}" data-status="${statusClass}" role="button" tabindex="0">
-                        <div class="bill-status ${statusClass}">${statusSymbol}</div>
+                    <button class="bill-card" data-bill-id="${ruleCardId}" data-status="${statusClass}" type="button">
+                        <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
                         <div class="bill-info">
                             <div class="bill-id">${rule.hres}</div>
                             <div class="bill-title">${escapeHtml(rule.title || 'Special rule governing floor consideration')}</div>
@@ -2362,8 +2380,8 @@ function updateBillsDisplay() {
                                 <div class="bill-action">${actionText}</div>
                             </div>
                         </div>
-                        <div class="bill-chevron">›</div>
-                    </div>
+                        <div class="bill-chevron" aria-hidden="true">›</div>
+                    </button>
                 `);
             }
         }
@@ -2404,8 +2422,8 @@ function createBillCard(bill, procedure) {
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     return `
-        <div class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" role="button" tabindex="0">
-            <div class="bill-status ${statusClass}">${statusSymbol}</div>
+        <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" type="button">
+            <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
             <div class="bill-info">
                 <div class="bill-id">${bill.id}</div>
                 <div class="bill-title">${escapeHtml(bill.title)}</div>
@@ -2414,8 +2432,8 @@ function createBillCard(bill, procedure) {
                     <div class="bill-date">${actionDate}</div>
                 </div>
             </div>
-            <div class="bill-chevron">›</div>
-        </div>
+            <div class="bill-chevron" aria-hidden="true">›</div>
+        </button>
     `;
 }
 
@@ -2624,8 +2642,12 @@ function openBillModal(billId) {
         </div>` : ''}
     `;
     overlay.hidden = false;
-    document.getElementById('bill-modal-close').addEventListener('click', closeBillModal);
+    _billModalTrigger = document.activeElement;
+    const closeBtn = document.getElementById('bill-modal-close');
+    closeBtn.addEventListener('click', closeBillModal);
     document.addEventListener('keydown', onBillModalKey);
+    const modal = document.getElementById('bill-main-panel');
+    if (modal) { _billModalTrapCleanup = trapFocus(overlay); closeBtn.focus(); }
 
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');
@@ -2744,10 +2766,30 @@ async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amend
     }
 }
 
+// Focus trap utility — returns a cleanup function
+function trapFocus(el) {
+    const sel = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    function handler(e) {
+        if (e.key !== 'Tab') return;
+        const nodes = [...el.querySelectorAll(sel)];
+        if (!nodes.length) return;
+        const first = nodes[0], last = nodes[nodes.length - 1];
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+    }
+    el.addEventListener('keydown', handler);
+    return () => el.removeEventListener('keydown', handler);
+}
+
+let _billModalTrigger = null;
+let _billModalTrapCleanup = null;
+
 function closeBillModal() {
     const overlay = document.getElementById('bill-modal-overlay');
     if (overlay) overlay.hidden = true;
     document.removeEventListener('keydown', onBillModalKey);
+    if (_billModalTrapCleanup) { _billModalTrapCleanup(); _billModalTrapCleanup = null; }
+    if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
 }
 
 function onBillModalKey(e) {
@@ -2830,18 +2872,24 @@ function openInfoPopup(key) {
         </div>
     `;
     overlay.hidden = false;
-    document.getElementById('info-popup-close').addEventListener('click', closeInfoPopup);
-    document.addEventListener('keydown', onInfoPopupKey);
+    const _infoTrigger = document.activeElement;
+    const infoClose = document.getElementById('info-popup-close');
+    infoClose.addEventListener('click', () => closeInfoPopup(_infoTrigger));
+    document.addEventListener('keydown', e => onInfoPopupKey(e, _infoTrigger));
+    trapFocus(overlay);
+    infoClose.focus();
 }
 
-function closeInfoPopup() {
+let _infoPopupTrapCleanup = null;
+function closeInfoPopup(trigger) {
     const overlay = document.getElementById('info-popup-overlay');
     if (overlay) overlay.hidden = true;
     document.removeEventListener('keydown', onInfoPopupKey);
+    if (trigger) trigger.focus();
 }
 
-function onInfoPopupKey(e) {
-    if (e.key === 'Escape') closeInfoPopup();
+function onInfoPopupKey(e, trigger) {
+    if (e.key === 'Escape') closeInfoPopup(trigger);
 }
 
 // Auto-switch mode based on latest proceeding
@@ -3560,6 +3608,7 @@ function updatePrayerSection(items) {
         // For House Chaplain, use the specific Margaret Kibben photo
         elements.prayerImagePlaceholder.style.display = 'none';
         elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original';
+        elements.prayerImage.alt = 'Rev. Margaret Kibben, House Chaplain';
         elements.prayerImage.style.display = 'block';
     }
 }
@@ -3776,6 +3825,7 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
                 elements.journalImage.style.display = 'none';
             };
             elements.journalImage.src = photoUrl;
+            elements.journalImage.alt = `${firstName} ${lastName}`;
             elements.journalImage.style.display = 'block';
             if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'none';
         }
@@ -3827,6 +3877,7 @@ async function fetchSpeakerAsChair() {
                 elements.pledgeImage.style.display = 'none';
             };
             elements.pledgeImage.src = photoUrl;
+            elements.pledgeImage.alt = name || 'Speaker of the House';
             elements.pledgeImage.style.display = 'block';
             if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'none';
         }
@@ -3922,6 +3973,7 @@ const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
                 elements.speakerImage.style.display = 'none';
             };
             elements.speakerImage.src = photoUrl;
+            elements.speakerImage.alt = match.fullName || 'Speaker Pro Tempore';
             elements.speakerImage.style.display = 'block';
         }
     } catch (error) {
@@ -4070,6 +4122,7 @@ async function fetchCommitteeChairMemberInfo(leaderName) {
                 if (elements.committeeChairImagePlaceholder) elements.committeeChairImagePlaceholder.style.display = 'flex';
             };
             elements.committeeChairImage.src = photoUrl;
+            elements.committeeChairImage.alt = bestMatch.fullName || 'Committee Chair';
         }
     } catch (e) {
         console.error('fetchCommitteeChairMemberInfo error:', e);
@@ -5100,7 +5153,6 @@ function init() {
     updateTodayDate();
     setInterval(updateTodayDate, 60000); // Update date every minute
     
-    elements.refreshBtn.addEventListener('click', fetchFloorData);
     
     // Fire all critical fetches immediately in parallel
     loadCasualtyList();
@@ -5961,6 +6013,7 @@ async function updateQuorumStatus() {
         }
         const emptyPct = 100 - Math.min((totalVoted / wholeNumber) * 100, 100);
         elements.quorumFill.style.width = `${emptyPct}%`;
+        document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
         return;
     }
 
@@ -6033,6 +6086,7 @@ async function updateQuorumStatus() {
         const percentage = Math.min((totalVoted / totalLegislators) * 100, 100);
         const emptyPercentage = 100 - percentage;
         elements.quorumFill.style.width = `${emptyPercentage}%`;
+        document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
         
     } catch (error) {
         console.error('Error updating quorum status:', error);
@@ -6063,6 +6117,7 @@ async function updateQuorumStatus() {
         
         const percentage = Math.min((totalVoted / quorumRequired) * 100, 100);
         elements.quorumFill.style.width = `${percentage}%`;
+        document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
     }
 }
 
