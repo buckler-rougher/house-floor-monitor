@@ -7215,12 +7215,6 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: flex-start;
     }
 
-    /* Let the label grow and shrink properly */
-    .panel-label {
-        flex: 1;
-        min-width: 0;
-    }
-
     /* Right side: stack as a column — date on top, source below */
     .panel-header-right {
         flex-direction: column;
