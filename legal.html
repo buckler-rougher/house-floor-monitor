@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal — Monitoring the House Floor</title>
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        .legal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+        }
+        .legal-header a {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+        .legal-header a:hover { color: var(--accent-green); }
+        .legal-content {
+            max-width: 740px;
+            margin: 48px auto;
+            padding: 0 24px;
+        }
+        .legal-nav {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .legal-nav a {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .legal-nav a:hover { color: var(--accent-green); }
+        .legal-section { margin-bottom: 56px; }
+        .legal-section h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .legal-section .effective {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-bottom: 28px;
+        }
+        .legal-section h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 28px 0 10px;
+            font-family: var(--font-mono);
+        }
+        .legal-section p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .legal-section a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        .legal-section a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <a href="/">&larr; Monitoring the House Floor</a>
+    </header>
+
+    <div class="legal-content">
+        <nav class="legal-nav">
+            <a href="#privacy">Privacy Policy</a>
+            <a href="#terms">Terms of Service</a>
+        </nav>
+
+        <!-- Privacy Policy -->
+        <section class="legal-section" id="privacy">
+            <h1>Privacy Policy</h1>
+            <p class="effective">Effective May 23, 2026</p>
+
+            <h2>What we collect</h2>
+            <p>This site does not collect, store, or sell personal information. There are no accounts, no logins, and no cookies placed by this site.</p>
+
+            <h2>Analytics</h2>
+            <p>This site uses <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>, a privacy-first analytics tool. It collects anonymized data about page visits (such as page URL, referrer, browser type, and country) without using cookies or tracking you across other sites. No personally identifiable information is stored.</p>
+
+            <h2>Infrastructure</h2>
+            <p>This site is hosted on <a href="https://www.cloudflare.com" target="_blank" rel="noopener">Cloudflare</a>. As part of normal network operations, Cloudflare may process your IP address and request metadata. See <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a> for details.</p>
+
+            <h2>Third-party data sources</h2>
+            <p>This site displays data from public U.S. government sources including the U.S. House of Representatives, the Library of Congress, and other federal agencies. No data is transmitted to these sources based on your visit.</p>
+
+            <h2>Changes</h2>
+            <p>This policy may be updated from time to time. The effective date above reflects the most recent revision.</p>
+        </section>
+
+        <!-- Terms of Service -->
+        <section class="legal-section" id="terms">
+            <h1>Terms of Service</h1>
+            <p class="effective">Effective May 23, 2026</p>
+
+            <h2>Informational use only</h2>
+            <p>This site aggregates publicly available information about U.S. House floor activity for informational purposes only. It is not an official government resource and is not affiliated with, endorsed by, or operated by the U.S. House of Representatives or any other government entity.</p>
+
+            <h2>Accuracy</h2>
+            <p>While we strive to display timely and accurate information, we make no representations or warranties regarding the completeness, accuracy, or timeliness of any data shown. Do not rely on this site for legal, legislative, or official purposes.</p>
+
+            <h2>No liability</h2>
+            <p>This site is provided "as is" without warranty of any kind. We are not liable for any damages arising from your use of or inability to use this site, or from any errors or omissions in the data displayed.</p>
+
+            <h2>Availability</h2>
+            <p>We make no guarantee of uptime or continued availability. The site may be modified, suspended, or discontinued at any time without notice.</p>
+
+            <h2>License</h2>
+            <p>Original content on this site is licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener license">CC BY-NC 4.0</a>. Data sourced from government agencies remains in the public domain.</p>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        <div class="site-footer-primary">
+            <span class="site-footer-brand">Monitoring the House Floor</span>
+            <span class="site-footer-sep">&middot;</span>
+            <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
+        </div>
+    </footer>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
