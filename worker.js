@@ -91,6 +91,10 @@ const DOMEWATCH_CONFIG = {
   baseUrl: 'https://data.domewatch.us/v1'
 };
 const CURRENT_CONGRESS = 119;
+// Physical KV storage lifetime for all cached entries.
+// Entries never auto-expire so we always have a previous value to compare against.
+// Freshness is controlled by the ttlSeconds parameter inside kvCache, not by this TTL.
+const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
 // Resolved per-request from env secrets (set via `wrangler secret put`)
 let _congressApiKey = '';
 let _domewatchApiKey = '';
@@ -325,13 +329,15 @@ async function handleProceedings(request, env) {
     const date = url.searchParams.get('date'); // expected: mm/dd/yyyy
 
     if (date) {
-      // Historical dates are immutable once the day is over — use a long KV TTL.
-      // Today's date is still accumulating actions so use a shorter TTL.
+      // Today's data accumulates throughout the session; past dates are immutable.
+      // ttlSeconds controls how often we re-fetch from origin AND the KV freshness window.
+      // Past dates: re-check every 2 hours — compare-and-write will always skip the write
+      // since content never changes after the session ends.
       const todayEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
       const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
       const isToday = date === todayStr;
-      const dateKvTtl = isToday ? 1800 : 7 * 24 * 3600; // 30 min today, 7 days for past dates (immutable)
-      return kvCache(env, `proceedings-date:${date}`, 60, async () => {
+      const dateTtl = isToday ? 60 : 2 * 3600; // 60s today, 2hr for past (immutable → compare skips write)
+      return kvCache(env, `proceedings-date:${date}`, dateTtl, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
         const response = await fetch(actionsUrl, {
@@ -342,9 +348,9 @@ async function handleProceedings(request, env) {
         const html = await response.text();
         const result = parseViewFloorActionsHtml(html);
         return new Response(JSON.stringify(result), {
-          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${dateTtl}` }
         });
-      }, dateKvTtl);
+      }); // kvTtl defaults to KV_STORAGE_TTL (30 days); compare-and-write skips re-writing unchanged content
     }
 
     // Live feed — in-memory 15s only; skip KV (kvTtl=0) to avoid 288 writes/day
@@ -429,7 +435,7 @@ async function handleNews(env) {
   return new Response(JSON.stringify({ items: filteredItems, errors }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
   });
-  }, 1800); // end kvCache — KV TTL 30 min
+  }); // end kvCache — kvTtl defaults to KV_STORAGE_TTL; write-on-change
 }
 
 function parseUSCPArrests(html) {
@@ -793,42 +799,73 @@ const TERMINAL_STATUSES = new Set(['passed', 'failed']);
 const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
 
 // ── Generic KV response cache ─────────────────────────────────────────────────
-// kvCache(env, key, ttlSeconds, fn, kvTtl?) — returns cached JSON string, or calls fn()
-// to produce a Response, caches its body, and returns it.
-// kvTtl controls how long the value lives in KV (cross-PoP). Defaults to ttlSeconds.
-// Pass kvTtl=0 to skip KV entirely (in-memory only) — useful for very hot write paths.
-// On any KV error the function result is still returned — caching is best-effort.
-async function kvCache(env, key, ttlSeconds, fn, kvTtl = ttlSeconds) {
+// kvCache(env, key, ttlSeconds, fn, kvTtl?)
+//
+// Caching layers:
+//   1. In-memory (_mem Map) — zero I/O, per-isolate, TTL = ttlSeconds
+//   2. KV — shared across all PoPs, physical TTL = kvTtl (default KV_STORAGE_TTL = 30 days)
+//   3. Origin fetch — only when both caches miss or are stale
+//
+// Write-on-change: KV entries are stored as { body, cachedAt } with a long physical TTL
+// so the previous value is always available for comparison. After an origin fetch we only
+// write to KV if the body actually changed — stable data (casualty list, leadership, member
+// data, rules) may never write again after the first fetch.
+//
+// Pass kvTtl=0 to skip KV entirely (in-memory only) — for very hot or real-time paths.
+async function kvCache(env, key, ttlSeconds, fn, kvTtl = KV_STORAGE_TTL) {
   const ttlMs = ttlSeconds * 1000;
+  const now = Date.now();
+
   // 1. In-memory (zero I/O, shared within this isolate)
   const mem = _mGet(key);
   if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
-  // 2. KV (shared across all isolates/PoPs) — skip if kvTtl=0
+
+  // 2. KV — skip if kvTtl=0
+  let prevBody = null;
   if (kvTtl > 0 && env?.HLS_CACHE) {
     try {
-      const cached = await env.HLS_CACHE.get(key);
-      if (cached) {
-        _mSet(key, cached, ttlMs);
-        return new Response(cached, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+      const raw = await env.HLS_CACHE.get(key);
+      if (raw !== null) {
+        // Entries are stored as { body, cachedAt }. Legacy entries are raw strings — treat as stale.
+        let body = raw, age = Infinity;
+        try {
+          const w = JSON.parse(raw);
+          if (typeof w?.body === 'string' && typeof w?.cachedAt === 'number') {
+            body = w.body;
+            age = now - w.cachedAt;
+          }
+        } catch {}
+        prevBody = body; // saved for post-fetch comparison
+        if (age < ttlMs) {
+          // Still fresh — serve from KV, warm in-memory for remaining TTL
+          _mSet(key, body, ttlMs - age);
+          return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+        }
+        // Stale — fall through to origin fetch; prevBody is set for comparison
       }
     } catch {}
   }
+
   // 3. Origin fetch
   const response = await fn();
   if (response.ok) {
     try {
       const body = await response.clone().text();
       _mSet(key, body, ttlMs);
-      if (kvTtl > 0 && env?.HLS_CACHE) await env.HLS_CACHE.put(key, body, { expirationTtl: kvTtl });
+      if (kvTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
+        // Write only if content changed (prevBody===null means first write; any difference writes)
+        await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: kvTtl });
+      }
     } catch {}
   }
   return response;
 }
 
 // ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
-// 6 hours: summaries/sponsors never change; status is covered by the proceedings ratchet.
-// 30 min was generating ~48 KV writes/day × 20 bills = 960 writes — the biggest single offender.
-const BILL_ENRICH_TTL = 6 * 60 * 60;
+// Summaries and sponsors are permanent once published; status is covered by the proceedings ratchet.
+// Physical KV TTL = KV_STORAGE_TTL (30 days). Write-on-change: only writes when enrichment data
+// actually differs from what is already in KV (e.g. newly published CRS summary, updated status).
+const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
 
 async function getCachedBillEnrichment(env, billId) {
   const key = `bill-enrich-v2:${billId}`;
@@ -847,7 +884,13 @@ async function setCachedBillEnrichment(env, billId, data) {
   const body = JSON.stringify(data);
   _mSet(key, body, BILL_ENRICH_TTL * 1000);
   if (!env?.HLS_CACHE) return;
-  try { await env.HLS_CACHE.put(key, body, { expirationTtl: BILL_ENRICH_TTL }); } catch {}
+  try {
+    // Read before write — skip the KV write if data hasn't changed
+    const existing = await env.HLS_CACHE.get(key);
+    if (existing !== body) {
+      await env.HLS_CACHE.put(key, body, { expirationTtl: KV_STORAGE_TTL });
+    }
+  } catch {}
 }
 
 // KV key for persisted bill statuses for a given week (ISO week start date).
@@ -978,54 +1021,75 @@ function parseCasualtyListHtml(html) {
 
 async function handleCasualtyList(env) {
   const debug = false;
+  const now = Date.now();
+  const ttlMs = CASUALTY_LIST_TTL * 1000;
+
   if (!debug) {
+    // 1. In-memory
     const mem = _mGet('casualty-list-v3');
     if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+
+    // 2. KV — stored as { body, cachedAt } for compare-and-write support
+    let prevBody = null;
     if (env?.HLS_CACHE) {
       try {
         const raw = await env.HLS_CACHE.get('casualty-list-v3');
-        if (raw) {
-          _mSet('casualty-list-v3', raw, CASUALTY_LIST_TTL * 1000);
-          return new Response(raw, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+        if (raw !== null) {
+          let body = raw, age = Infinity;
+          try {
+            const w = JSON.parse(raw);
+            if (typeof w?.body === 'string' && typeof w?.cachedAt === 'number') {
+              body = w.body; age = now - w.cachedAt;
+            }
+          } catch {}
+          prevBody = body;
+          if (age < ttlMs) {
+            _mSet('casualty-list-v3', body, ttlMs - age);
+            return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+          }
+          // Stale — fall through to origin fetch; prevBody held for comparison
         }
       } catch {}
     }
+
+    // 3. Origin fetch — only write KV if content changed
+    try {
+      const resp = await fetch('https://pressgallery.house.gov/member-data/casualty-list', {
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,*/*',
+          'User-Agent': 'Mozilla/5.0 (compatible)',
+          'Accept-Encoding': 'identity',
+        }
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const html = await resp.text();
+      const members = parseCasualtyListHtml(html);
+      if (Object.keys(members).length > 0) {
+        const body = JSON.stringify(members);
+        _mSet('casualty-list-v3', body, ttlMs);
+        if (env?.HLS_CACHE && body !== prevBody) {
+          // Only write if the list actually changed — changes maybe once a month
+          try { await env.HLS_CACHE.put('casualty-list-v3', JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL }); } catch {}
+        }
+        return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+      }
+      return new Response(JSON.stringify(members), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+    } catch {
+      // Return empty object — UI degrades gracefully (no status badges shown)
+      return new Response(JSON.stringify({}), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
   }
 
+  // debug=true path
   try {
     const resp = await fetch('https://pressgallery.house.gov/member-data/casualty-list', {
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,*/*',
-        'User-Agent': 'Mozilla/5.0 (compatible)',
-        'Accept-Encoding': 'identity', // request uncompressed so resp.text() gets full HTML
-      }
+      headers: { 'Accept': 'text/html,application/xhtml+xml,*/*', 'User-Agent': 'Mozilla/5.0 (compatible)', 'Accept-Encoding': 'identity' }
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const html = await resp.text();
-    if (debug) {
-      return new Response(JSON.stringify({ raw: html.slice(0, 15000) }), {
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-      });
-    }
-    const members = parseCasualtyListHtml(html);
-
-    if (Object.keys(members).length > 0) {
-      const body = JSON.stringify(members);
-      _mSet('casualty-list-v3', body, CASUALTY_LIST_TTL * 1000);
-      if (env?.HLS_CACHE) {
-        try { await env.HLS_CACHE.put('casualty-list-v3', body, { expirationTtl: CASUALTY_LIST_TTL }); } catch {}
-      }
-      return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
-    }
-
-    return new Response(JSON.stringify(members), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
-    });
+    return new Response(JSON.stringify({ raw: html.slice(0, 15000) }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } catch {
-    // Return empty object — UI degrades gracefully (no status badges shown)
-    return new Response(JSON.stringify({}), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({}), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   }
 }
 
@@ -1043,11 +1107,9 @@ async function handleBills(request, env) {
   if (dateParam) return _fetchBills(request, env);
   const cacheKey = quick ? 'bills-weekly-quick' : 'bills-weekly';
   const ttl = quick ? 30 : 60;
-  // KV TTL is intentionally much longer than memory TTL.
-  // Memory TTL (30/60s) drives freshness within an isolate.
-  // KV TTL only needs to warm new/cold isolates — 3600s = 24 writes/day per key.
-  const kvTtl = 3600;
-  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env), kvTtl);
+  // kvTtl defaults to KV_STORAGE_TTL (30 days). Write-on-change means bills data
+  // only writes to KV when the schedule or bill statuses actually change.
+  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env));
 }
 
 async function _fetchBills(request, env) {
@@ -1708,7 +1770,7 @@ async function handleBlueskyFeed(env) {
       }
     });
   }
-  }, 1800); // end kvCache — KV TTL 30 min
+  }); // end kvCache — kvTtl defaults to KV_STORAGE_TTL; write-on-change
 }
 
 async function handleRollCall(rollNumber) {
