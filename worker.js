@@ -330,7 +330,7 @@ async function handleProceedings(request, env) {
       const todayEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
       const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
       const isToday = date === todayStr;
-      const dateKvTtl = isToday ? 600 : 7 * 24 * 3600; // 10 min today, 7 days for past dates (immutable)
+      const dateKvTtl = isToday ? 1800 : 7 * 24 * 3600; // 30 min today, 7 days for past dates (immutable)
       return kvCache(env, `proceedings-date:${date}`, 60, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
@@ -347,14 +347,14 @@ async function handleProceedings(request, env) {
       }, dateKvTtl);
     }
 
-    // Live feed — in-memory 15s; KV 300s so cross-PoP writes stay well under the free-tier limit
+    // Live feed — in-memory 15s only; skip KV (kvTtl=0) to avoid 288 writes/day
     return kvCache(env, 'proceedings-live', 15, async () => {
       const xmlText = await fetchRSSFeed(RSS_FEEDS.proceedings, 10000);
       const result = parseRSSFeed(xmlText, 'proceedings');
       return new Response(JSON.stringify(result), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' }
       });
-    }, 300);
+    }, 0);
   } catch (error) {
     return new Response(JSON.stringify({ items: [], error: `Failed to fetch proceedings: ${error.message}` }), {
       status: 500,
@@ -826,9 +826,9 @@ async function kvCache(env, key, ttlSeconds, fn, kvTtl = ttlSeconds) {
 }
 
 // ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
-// 30 minutes: short enough to catch same-day floor action updates, long enough to
-// avoid hammering Congress.gov on every page load.
-const BILL_ENRICH_TTL = 30 * 60;
+// 6 hours: summaries/sponsors never change; status is covered by the proceedings ratchet.
+// 30 min was generating ~48 KV writes/day × 20 bills = 960 writes — the biggest single offender.
+const BILL_ENRICH_TTL = 6 * 60 * 60;
 
 async function getCachedBillEnrichment(env, billId) {
   const key = `bill-enrich-v2:${billId}`;
@@ -1045,9 +1045,8 @@ async function handleBills(request, env) {
   const ttl = quick ? 30 : 60;
   // KV TTL is intentionally much longer than memory TTL.
   // Memory TTL (30/60s) drives freshness within an isolate.
-  // KV TTL (600/1200s) only needs to warm new/cold isolates — not expire faster than polls.
-  // Short KV TTLs caused every poll to be a KV miss → write, burning the 1k/day write quota.
-  const kvTtl = quick ? 600 : 1200;
+  // KV TTL only needs to warm new/cold isolates — 3600s = 24 writes/day per key.
+  const kvTtl = 3600;
   return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env), kvTtl);
 }
 
