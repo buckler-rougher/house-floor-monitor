@@ -341,8 +341,8 @@ async function handleProceedings(request, env) {
       //             (max staleness = 60s). Write-on-change means KV writes only happen when
       //             floor actions actually change during the session, so write count stays low.
       //             7200s past (re-check every 2hr; compare always skips write — data never changes).
-      const dateTtl = isToday ? 60 : 2 * 3600;
-      const dateKvFresh = isToday ? 60 : 2 * 3600;
+      const dateTtl = isToday ? 15 : 2 * 3600;
+      const dateKvFresh = isToday ? 15 : 2 * 3600;
       return kvCache(env, `proceedings-date:${date}`, dateTtl, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
