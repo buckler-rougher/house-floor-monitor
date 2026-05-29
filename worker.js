@@ -337,10 +337,12 @@ async function handleProceedings(request, env) {
       const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
       const isToday = date === todayStr;
       // in-memory TTL: 60s today (live data), 2hr past (immutable).
-      // kvFreshTtl: 1800s today (re-check KV every 30 min, write only if actions changed),
+      // kvFreshTtl: 60s today — matches in-memory TTL so cold isolates always fetch fresh data
+      //             (max staleness = 60s). Write-on-change means KV writes only happen when
+      //             floor actions actually change during the session, so write count stays low.
       //             7200s past (re-check every 2hr; compare always skips write — data never changes).
       const dateTtl = isToday ? 60 : 2 * 3600;
-      const dateKvFresh = isToday ? 1800 : 2 * 3600;
+      const dateKvFresh = isToday ? 60 : 2 * 3600;
       return kvCache(env, `proceedings-date:${date}`, dateTtl, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
