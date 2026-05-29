@@ -336,7 +336,11 @@ async function handleProceedings(request, env) {
       const todayEt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
       const todayStr = `${(todayEt.getMonth()+1).toString().padStart(2,'0')}/${todayEt.getDate().toString().padStart(2,'0')}/${todayEt.getFullYear()}`;
       const isToday = date === todayStr;
-      const dateTtl = isToday ? 60 : 2 * 3600; // 60s today, 2hr for past (immutable → compare skips write)
+      // in-memory TTL: 60s today (live data), 2hr past (immutable).
+      // kvFreshTtl: 1800s today (re-check KV every 30 min, write only if actions changed),
+      //             7200s past (re-check every 2hr; compare always skips write — data never changes).
+      const dateTtl = isToday ? 60 : 2 * 3600;
+      const dateKvFresh = isToday ? 1800 : 2 * 3600;
       return kvCache(env, `proceedings-date:${date}`, dateTtl, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
@@ -350,7 +354,7 @@ async function handleProceedings(request, env) {
         return new Response(JSON.stringify(result), {
           headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${dateTtl}` }
         });
-      }); // kvTtl defaults to KV_STORAGE_TTL (30 days); compare-and-write skips re-writing unchanged content
+      }, dateKvFresh);
     }
 
     // Live feed — in-memory 15s only; skip KV (kvTtl=0) to avoid 288 writes/day
@@ -435,7 +439,7 @@ async function handleNews(env) {
   return new Response(JSON.stringify({ items: filteredItems, errors }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
   });
-  }); // end kvCache — kvTtl defaults to KV_STORAGE_TTL; write-on-change
+  }, 1800); // kvFreshTtl=1800s — re-check KV every 30 min; in-memory TTL is 5 min
 }
 
 function parseUSCPArrests(html) {
@@ -811,22 +815,30 @@ const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, schedu
 // write to KV if the body actually changed — stable data (casualty list, leadership, member
 // data, rules) may never write again after the first fetch.
 //
-// Pass kvTtl=0 to skip KV entirely (in-memory only) — for very hot or real-time paths.
-async function kvCache(env, key, ttlSeconds, fn, kvTtl = KV_STORAGE_TTL) {
+// Pass kvFreshTtl=0 to skip KV entirely (in-memory only) — for very hot or real-time paths.
+//
+// TWO separate TTL concepts:
+//   ttlSeconds   — in-memory freshness AND Cache-Control header. Fast path within one isolate.
+//   kvFreshTtl   — how long KV data is considered fresh before we re-fetch from origin.
+//                  Often longer than ttlSeconds so cold isolates don't re-fetch too aggressively.
+//                  Defaults to ttlSeconds when not specified.
+//   Physical KV storage is always KV_STORAGE_TTL (30 days) so old values persist for comparison.
+async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
   const ttlMs = ttlSeconds * 1000;
+  const kvFreshMs = kvFreshTtl * 1000;
   const now = Date.now();
 
   // 1. In-memory (zero I/O, shared within this isolate)
   const mem = _mGet(key);
   if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
 
-  // 2. KV — skip if kvTtl=0
+  // 2. KV — skip if kvFreshTtl=0
   let prevBody = null;
-  if (kvTtl > 0 && env?.HLS_CACHE) {
+  if (kvFreshTtl > 0 && env?.HLS_CACHE) {
     try {
       const raw = await env.HLS_CACHE.get(key);
       if (raw !== null) {
-        // Entries are stored as { body, cachedAt }. Legacy entries are raw strings — treat as stale.
+        // Entries are stored as { body, cachedAt }. Legacy raw strings → treat as stale (age=Infinity).
         let body = raw, age = Infinity;
         try {
           const w = JSON.parse(raw);
@@ -836,12 +848,12 @@ async function kvCache(env, key, ttlSeconds, fn, kvTtl = KV_STORAGE_TTL) {
           }
         } catch {}
         prevBody = body; // saved for post-fetch comparison
-        if (age < ttlMs) {
-          // Still fresh — serve from KV, warm in-memory for remaining TTL
-          _mSet(key, body, ttlMs - age);
+        if (age < kvFreshMs) {
+          // Still fresh per KV freshness window — serve, warm in-memory
+          _mSet(key, body, Math.min(ttlMs, kvFreshMs - age));
           return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
         }
-        // Stale — fall through to origin fetch; prevBody is set for comparison
+        // Stale by KV window — fall through to origin; prevBody held for comparison
       }
     } catch {}
   }
@@ -852,9 +864,9 @@ async function kvCache(env, key, ttlSeconds, fn, kvTtl = KV_STORAGE_TTL) {
     try {
       const body = await response.clone().text();
       _mSet(key, body, ttlMs);
-      if (kvTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
-        // Write only if content changed (prevBody===null means first write; any difference writes)
-        await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: kvTtl });
+      if (kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
+        // Write only if content changed — stable data may never write again after first fetch
+        await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
       }
     } catch {}
   }
@@ -1107,9 +1119,9 @@ async function handleBills(request, env) {
   if (dateParam) return _fetchBills(request, env);
   const cacheKey = quick ? 'bills-weekly-quick' : 'bills-weekly';
   const ttl = quick ? 30 : 60;
-  // kvTtl defaults to KV_STORAGE_TTL (30 days). Write-on-change means bills data
-  // only writes to KV when the schedule or bill statuses actually change.
-  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env));
+  // in-memory TTL (30/60s) drives per-isolate freshness.
+  // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
+  return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env), 3600);
 }
 
 async function _fetchBills(request, env) {
@@ -1770,7 +1782,7 @@ async function handleBlueskyFeed(env) {
       }
     });
   }
-  }); // end kvCache — kvTtl defaults to KV_STORAGE_TTL; write-on-change
+  }, 1800); // kvFreshTtl=1800s — re-check KV every 30 min; in-memory TTL is 2 min
 }
 
 async function handleRollCall(rollNumber) {
