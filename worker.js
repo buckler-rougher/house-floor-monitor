@@ -866,6 +866,7 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
       _mSet(key, body, ttlMs);
       if (kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
         // Write only if content changed — stable data may never write again after first fetch
+        console.log(`[KV-WRITE] key=${key} prevNull=${prevBody===null} bodyLen=${body.length}`);
         await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
       }
     } catch {}
@@ -900,6 +901,7 @@ async function setCachedBillEnrichment(env, billId, data) {
     // Read before write — skip the KV write if data hasn't changed
     const existing = await env.HLS_CACHE.get(key);
     if (existing !== body) {
+      console.log(`[KV-WRITE] key=${key} prevNull=${existing===null}`);
       await env.HLS_CACHE.put(key, body, { expirationTtl: KV_STORAGE_TTL });
     }
   } catch {}
@@ -955,6 +957,7 @@ async function saveCachedBillStatuses(env, weekStartISO, statusMap) {
   if (!env?.HLS_CACHE) return;
   try {
     // Expire Sunday night (8 days after Monday week start)
+    console.log(`[KV-WRITE] key=${key}`);
     await env.HLS_CACHE.put(key, body, { expirationTtl: 8 * 24 * 3600 });
   } catch (_) {}
 }
@@ -1081,6 +1084,7 @@ async function handleCasualtyList(env) {
         _mSet('casualty-list-v3', body, ttlMs);
         if (env?.HLS_CACHE && body !== prevBody) {
           // Only write if the list actually changed — changes maybe once a month
+          console.log(`[KV-WRITE] key=casualty-list-v3 prevNull=${prevBody===null}`);
           try { await env.HLS_CACHE.put('casualty-list-v3', JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL }); } catch {}
         }
         return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
@@ -1847,6 +1851,7 @@ async function handleRollLogPost(request, env) {
     // Keep only the last 50 rolls (one session's worth)
     if (entries.length > 50) entries.splice(0, entries.length - 50);
 
+    console.log(`[KV-WRITE] key=${key} entries=${entries.length}`);
     await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 24 * 3600 });
     return new Response('{}', { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } catch (e) {
@@ -1953,6 +1958,7 @@ async function handleHlsUrl(env) {
         if (isLive === null) isLive = await checkManifestLiveness(result.url) ?? false;
 
         if (env?.HLS_CACHE) {
+          console.log(`[KV-WRITE] key=last_url`);
           try { await env.HLS_CACHE.put('last_url', result.url, { expirationTtl: 7 * 24 * 3600 }); } catch (_) {}
         }
         return reply(JSON.stringify({ url: result.url, isLive }), 20_000, 20);
@@ -2234,6 +2240,7 @@ async function handleAmendments(request, env) {
     const result = JSON.stringify({ amendments });
     _mSet(cacheKey, result, 10 * 60 * 1000);
     if (env?.HLS_CACHE) {
+      console.log(`[KV-WRITE] key=${cacheKey}`);
       try { await env.HLS_CACHE.put(cacheKey, result, { expirationTtl: 10 * 60 }); } catch (_) {}
     }
     return new Response(result, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
