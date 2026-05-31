@@ -1870,7 +1870,7 @@ body {
 }
 .proceedings-feed::-webkit-scrollbar-thumb {
   background: rgba(0, 255, 65, 0.6);
-  border-radius: 0;
+  border-radius: 0 !important;
   box-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
 }
 .proceedings-feed::-webkit-scrollbar-thumb:hover {
