@@ -1862,22 +1862,25 @@ body {
   font-family: var(--font-mono);
 }
 .proceedings-feed::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 .proceedings-feed::-webkit-scrollbar-track {
-  background: rgba(0, 255, 65, 0.05);
+  background: rgba(0, 255, 65, 0.08);
+  border-left: 1px solid rgba(0, 255, 65, 0.12);
 }
 .proceedings-feed::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 65, 0.4);
+  background: rgba(0, 255, 65, 0.6);
   border-radius: 0;
+  box-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
 }
 .proceedings-feed::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 255, 65, 0.75);
+  background: rgba(0, 255, 65, 0.9);
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.6);
 }
 /* Firefox */
 .proceedings-feed {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 65, 0.4) rgba(0, 255, 65, 0.05);
+  scrollbar-color: rgba(0, 255, 65, 0.6) rgba(0, 255, 65, 0.08);
 }
 
 .proceedings-item {
