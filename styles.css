@@ -1861,30 +1861,6 @@ body {
   background: rgba(13, 17, 23, 0.5);
   font-family: var(--font-mono);
 }
-@keyframes proceedings-neon-flow {
-  0%   { background: rgba(0,255,65,0.45); filter: drop-shadow(0 0 2px rgba(0,255,65,0.5)); }
-  50%  { background: rgba(0,255,65,0.95); filter: drop-shadow(0 0 5px rgba(0,255,65,1)) drop-shadow(0 0 12px rgba(0,255,65,0.6)); }
-  100% { background: rgba(0,255,65,0.45); filter: drop-shadow(0 0 2px rgba(0,255,65,0.5)); }
-}
-.proceedings-feed::-webkit-scrollbar {
-  width: 6px;
-}
-.proceedings-feed::-webkit-scrollbar-track {
-  background: rgba(0, 255, 65, 0.06);
-  border-left: 1px solid rgba(0, 255, 65, 0.1);
-}
-.proceedings-feed::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 65, 0.45);
-  filter: drop-shadow(0 0 1px rgba(0, 255, 65, 0.4));
-}
-.proceedings-feed::-webkit-scrollbar-thumb:hover {
-  animation: proceedings-neon-flow 1.2s ease-in-out infinite;
-}
-/* Firefox */
-.proceedings-feed {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 65, 0.45) rgba(0, 255, 65, 0.06);
-}
 
 .proceedings-item {
   padding: 4px 0;
