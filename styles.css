@@ -1862,9 +1862,9 @@ body {
   font-family: var(--font-mono);
 }
 @keyframes proceedings-neon-flow {
-  0%   { background: rgba(0,255,65,0.45); box-shadow: 0 0 3px rgba(0,255,65,0.4), 0 0 7px rgba(0,255,65,0.15); }
-  50%  { background: rgba(0,255,65,0.9);  box-shadow: 0 0 6px rgba(0,255,65,1),   0 0 14px rgba(0,255,65,0.6), 0 0 26px rgba(0,255,65,0.25); }
-  100% { background: rgba(0,255,65,0.45); box-shadow: 0 0 3px rgba(0,255,65,0.4), 0 0 7px rgba(0,255,65,0.15); }
+  0%   { background: rgba(0,255,65,0.45); filter: drop-shadow(0 0 2px rgba(0,255,65,0.5)); }
+  50%  { background: rgba(0,255,65,0.95); filter: drop-shadow(0 0 5px rgba(0,255,65,1)) drop-shadow(0 0 12px rgba(0,255,65,0.6)); }
+  100% { background: rgba(0,255,65,0.45); filter: drop-shadow(0 0 2px rgba(0,255,65,0.5)); }
 }
 .proceedings-feed::-webkit-scrollbar {
   width: 6px;
@@ -1875,7 +1875,7 @@ body {
 }
 .proceedings-feed::-webkit-scrollbar-thumb {
   background: rgba(0, 255, 65, 0.45);
-  box-shadow: 0 0 3px rgba(0, 255, 65, 0.3);
+  filter: drop-shadow(0 0 1px rgba(0, 255, 65, 0.4));
 }
 .proceedings-feed::-webkit-scrollbar-thumb:hover {
   animation: proceedings-neon-flow 1.2s ease-in-out infinite;
