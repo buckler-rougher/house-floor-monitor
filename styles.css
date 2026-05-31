@@ -1861,6 +1861,24 @@ body {
   background: rgba(13, 17, 23, 0.5);
   font-family: var(--font-mono);
 }
+.proceedings-feed::-webkit-scrollbar {
+  width: 3px;
+}
+.proceedings-feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+.proceedings-feed::-webkit-scrollbar-thumb {
+  background: rgba(63, 185, 80, 0.35);
+  border-radius: 2px;
+}
+.proceedings-feed::-webkit-scrollbar-thumb:hover {
+  background: rgba(63, 185, 80, 0.7);
+}
+/* Firefox */
+.proceedings-feed {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63, 185, 80, 0.35) transparent;
+}
 
 .proceedings-item {
   padding: 4px 0;
