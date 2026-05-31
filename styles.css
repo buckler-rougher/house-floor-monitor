@@ -35,6 +35,32 @@ body {
     padding-bottom: 40px; /* clear the fixed news ticker */
 }
 
+/* ── Custom Scrollbars ───────────────────────────────────────────────────────
+   Thin, dark-toned bars on all scrollable panels (proceedings, bill modals,
+   info popups). Matches the card/border palette so they recede into the UI.  */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+}
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
 /* Container */
 .container {
     max-width: 1400px;
