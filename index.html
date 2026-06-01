@@ -1101,9 +1101,11 @@
             <div class="youtube-container" id="youtube-container">
                 <div class="video-container">
                     <div id="video-loading" class="video-loading" aria-label="Acquiring feed">
-                        <div class="video-loading-radar">
-                            <div class="video-loading-sweep"></div>
-                            <div class="video-loading-cross"></div>
+                        <div class="video-loading-inner">
+                            <div class="video-loading-bars">
+                                <span></span><span></span><span></span><span></span><span></span>
+                            </div>
+                            <div class="video-loading-label">ACQUIRING FEED</div>
                         </div>
                     </div>
                     <video id="player" playsinline muted></video>
@@ -1129,9 +1131,11 @@
             </div>
             <div class="youtube-pip-video">
                 <div id="pip-loading" class="video-loading" aria-label="Acquiring feed">
-                    <div class="video-loading-radar">
-                        <div class="video-loading-sweep"></div>
-                        <div class="video-loading-cross"></div>
+                    <div class="video-loading-inner">
+                        <div class="video-loading-bars">
+                            <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                        <div class="video-loading-label">ACQUIRING FEED</div>
                     </div>
                 </div>
                 <video id="player-pip" class="youtube-pip-iframe" playsinline muted autoplay disablePictureInPicture></video>
@@ -1222,7 +1226,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260601c"></script>
+    <script src="app.js?v=20260601d"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
