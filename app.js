@@ -6207,10 +6207,18 @@ function updateLastUpdate() {
     });
 
     const pipSnapshot = document.getElementById('player-pip-snapshot');
+    const pipLoading  = document.getElementById('pip-loading');
     let pipActive    = false;
     let pipHls       = null;
     let pipWaitTimer = null; // guards re-entry AND drives polling
     let rafPending   = false;
+
+    function hidePipLoading() {
+        if (pipLoading) pipLoading.style.display = 'none';
+    }
+    function resetPipLoading() {
+        if (pipLoading) pipLoading.style.display = 'flex';
+    }
 
     function startPipHls() {
         // Prevent double-start: pipHls covers the live case, pipWaitTimer the pending/non-live case
@@ -6233,7 +6241,7 @@ function updateLastUpdate() {
                 .then(d => {
                     if (!pipActive || pipWaitTimer !== -1) return; // cancelled by stopPipHls
                     pipWaitTimer = null;
-                    if (!d?.url) return; // no stream — stay blank
+                    if (!d?.url) { hidePipLoading(); return; } // no stream — clear loading
                     // Seed the main player's flags so startPipHls takes the right branch
                     const mv = document.getElementById('player');
                     if (mv && mv.__hlsIsLive === undefined) {
@@ -6256,6 +6264,7 @@ function updateLastUpdate() {
                     if (!dataUrl || dataUrl === 'data:,') return false;
                     pipSnapshot.src           = dataUrl;
                     pipSnapshot.style.display = 'block';
+                    hidePipLoading();
                     return true;
                 } catch { return false; }
             }
@@ -6280,6 +6289,7 @@ function updateLastUpdate() {
                 pipHls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
                 pipHls.loadSource(url);
                 pipHls.attachMedia(pipVideo);
+                pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
                 pipHls.on(Hls.Events.MANIFEST_PARSED, () => pipVideo.play().catch(() => {}));
             } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
                 pipVideo.src = url;
@@ -6302,6 +6312,7 @@ function updateLastUpdate() {
         pipVideo.src = '';
         pipVideo.load();
         if (pipSnapshot) { pipSnapshot.src = ''; pipSnapshot.style.display = 'none'; }
+        resetPipLoading(); // ready to show again on next open
     }
 
     function showPip() {
