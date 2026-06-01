@@ -5279,7 +5279,8 @@ async function initHlsPlayer() {
     }
 
     function hideFallback() {
-        hideLoadingOverlay();
+        // NOTE: loading overlay is NOT dismissed here — it stays until we actually
+        // have a frame to show (live: canplay event; non-live: after snapshot drawn).
         fallback.style.display = 'none';
         fallback.setAttribute('aria-hidden', 'true');
         video.style.visibility = 'visible';
@@ -5298,6 +5299,8 @@ async function initHlsPlayer() {
                 video.muted = true;
                 video.autoplay = true;
                 video.controls = true;
+                // Hide loading overlay only once the browser has decoded a frame
+                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
                 video.play().catch(() => {});
             } else {
                 function captureSnapshot() {
@@ -5307,9 +5310,10 @@ async function initHlsPlayer() {
                         snapshot.height = video.videoHeight || video.clientHeight;
                         const ctx = snapshot.getContext('2d');
                         ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                        // Show canvas, hide video
+                        // Show canvas, hide video — loading overlay dismissed once frame is drawn
                         video.style.display = 'none';
                         snapshot.hidden = false;
+                        hideLoadingOverlay();
                     } catch {}
                 }
                 function seekToEnd() {
