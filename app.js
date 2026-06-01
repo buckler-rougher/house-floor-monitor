@@ -5153,8 +5153,6 @@ function init() {
     // the actual deployed build rather than the latest git commit.
     const deployVersion = document.querySelector('script[src^="app.js"]')
         ?.src?.match(/[?&]v=([^&]+)/)?.[1] ?? '—';
-    const footerBuild = document.getElementById('footer-build');
-    if (footerBuild) footerBuild.textContent = deployVersion;
     const cdBuild = document.getElementById('cd-build');
     if (cdBuild) cdBuild.textContent = deployVersion;
 
