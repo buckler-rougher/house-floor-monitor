@@ -1100,6 +1100,9 @@
             </div>
             <div class="youtube-container" id="youtube-container">
                 <div class="video-container">
+                    <div id="video-loading" class="video-loading" aria-label="Acquiring feed">
+                        <div class="video-loading-text">ACQUIRING FEED<span class="video-loading-cursor">_</span></div>
+                    </div>
                     <video id="player" playsinline muted></video>
                     <canvas id="player-snapshot" class="player-snapshot" hidden></canvas>
                     <div id="video-fallback" class="video-fallback" role="status" aria-live="polite" aria-hidden="true">
@@ -1202,6 +1205,8 @@
             <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the House Floor" target="_blank" rel="noopener">Contact</a>
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source Code</a>
+            <span class="site-footer-sep">&middot;</span>
+            <span class="site-footer-build" id="footer-build" title="Latest deployed commit">—</span>
         </div>
         <div class="site-footer-secondary">
             Not affiliated with the U.S. House of Representatives. For informational purposes only.

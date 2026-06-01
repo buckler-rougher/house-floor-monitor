@@ -5148,6 +5148,21 @@ function init() {
     const footerYear = document.getElementById('footer-year');
     if (footerYear) footerYear.textContent = new Date().getFullYear();
 
+    // Version indicator — shows latest commit SHA from GitHub (cached per session)
+    (async () => {
+        const el = document.getElementById('footer-build');
+        if (!el) return;
+        try {
+            const cached = sessionStorage.getItem('__build_sha');
+            if (cached) { el.textContent = cached; return; }
+            const r = await fetch('https://api.github.com/repos/buckler-rougher/house-floor-monitor/commits/main', {
+                headers: { Accept: 'application/vnd.github.sha' }
+            });
+            const sha = (await r.text()).trim().slice(0, 7);
+            if (sha) { el.textContent = sha; sessionStorage.setItem('__build_sha', sha); }
+        } catch {}
+    })();
+
     updateTimestamp();
     setInterval(updateTimestamp, 1000);
     updateTodayDate();
@@ -5250,7 +5265,13 @@ async function initHlsPlayer() {
     let pollTimer = null;
     let playing = false;
 
+    const loadingOverlay = document.getElementById('video-loading');
+    function hideLoadingOverlay() {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+    }
+
     function showFallback() {
+        hideLoadingOverlay();
         video.style.visibility = 'hidden';
         fallback.style.display = 'flex';
         fallback.setAttribute('aria-hidden', 'false');
@@ -5258,6 +5279,7 @@ async function initHlsPlayer() {
     }
 
     function hideFallback() {
+        hideLoadingOverlay();
         fallback.style.display = 'none';
         fallback.setAttribute('aria-hidden', 'true');
         video.style.visibility = 'visible';
