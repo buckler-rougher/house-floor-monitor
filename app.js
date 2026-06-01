@@ -5148,20 +5148,15 @@ function init() {
     const footerYear = document.getElementById('footer-year');
     if (footerYear) footerYear.textContent = new Date().getFullYear();
 
-    // Version indicator — shows latest commit SHA from GitHub (cached per session)
-    (async () => {
-        const el = document.getElementById('footer-build');
-        if (!el) return;
-        try {
-            const cached = sessionStorage.getItem('__build_sha');
-            if (cached) { el.textContent = cached; return; }
-            const r = await fetch('https://api.github.com/repos/buckler-rougher/house-floor-monitor/commits/main', {
-                headers: { Accept: 'application/vnd.github.sha' }
-            });
-            const sha = (await r.text()).trim().slice(0, 7);
-            if (sha) { el.textContent = sha; sessionStorage.setItem('__build_sha', sha); }
-        } catch {}
-    })();
+    // Version indicator — read from the ?v= cache-buster on the app.js script tag.
+    // This value is hardcoded in the HTML file that Pages serves, so it reflects
+    // the actual deployed build rather than the latest git commit.
+    const deployVersion = document.querySelector('script[src^="app.js"]')
+        ?.src?.match(/[?&]v=([^&]+)/)?.[1] ?? '—';
+    const footerBuild = document.getElementById('footer-build');
+    if (footerBuild) footerBuild.textContent = deployVersion;
+    const cdBuild = document.getElementById('cd-build');
+    if (cdBuild) cdBuild.textContent = deployVersion;
 
     updateTimestamp();
     setInterval(updateTimestamp, 1000);
