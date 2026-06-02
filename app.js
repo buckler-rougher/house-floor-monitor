@@ -5432,32 +5432,40 @@ async function initHlsPlayer() {
                 setTimeout(() => hideLoadingOverlay(), 4000);
                 video.play().catch(() => {});
             } else {
+                let snapshotDone = false;
                 function captureSnapshot() {
-                    // Always dismiss the loading overlay — even if capture fails the
-                    // video element is visible and better than an infinite spinner.
+                    if (snapshotDone) return;
+                    snapshotDone = true;
                     try {
-                        if (snapshot) {
-                            snapshot.width = video.videoWidth || video.clientWidth;
-                            snapshot.height = video.videoHeight || video.clientHeight;
-                            const ctx = snapshot.getContext('2d');
-                            ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                        if (snapshot && video.videoWidth > 0) {
+                            snapshot.width  = video.videoWidth;
+                            snapshot.height = video.videoHeight;
+                            snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
                             video.style.display = 'none';
                             snapshot.hidden = false;
                         }
                     } catch {}
+                    // Always dismiss — even if capture failed, showing the video is
+                    // better than an infinite loading overlay.
                     hideLoadingOverlay();
                 }
+                // Hard fallback: dismiss overlay after 6s no matter what.
+                const snapshotTimeout = setTimeout(captureSnapshot, 6000);
                 function seekToEnd() {
                     if (isFinite(video.duration) && video.duration > 1) {
                         video.currentTime = video.duration - 0.5;
-                        video.addEventListener('seeked', captureSnapshot, { once: true });
+                        video.addEventListener('seeked', () => { clearTimeout(snapshotTimeout); captureSnapshot(); }, { once: true });
+                    } else {
+                        // Duration is Infinity (ended live stream) — capture current position.
+                        // Wait briefly for the buffer to have a frame.
+                        setTimeout(() => { clearTimeout(snapshotTimeout); captureSnapshot(); }, 500);
                     }
                 }
                 if (isFinite(video.duration) && video.duration > 1) {
                     seekToEnd();
                 } else {
-                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
-                    video.addEventListener('durationchange', seekToEnd, { once: true });
+                    video.addEventListener('loadedmetadata', () => seekToEnd(), { once: true });
+                    video.addEventListener('durationchange', () => seekToEnd(), { once: true });
                 }
             }
         }
