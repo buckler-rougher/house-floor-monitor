@@ -2353,42 +2353,56 @@ async function updateBillStatus(bill) {
     }
 }
 
-// Mark bills as passed when proceedings contain a voice vote or agreed-to passage.
-// Roll call votes are handled separately via DomeWatch SSE; this covers voice votes
-// which never produce a roll call entry.
+// Mark bills as passed when proceedings contain a voice vote passage.
+// Roll call votes are handled via DomeWatch SSE. This covers voice votes, which
+// emit two separate items: the outcome row ("On motion to suspend the rules…
+// Agreed to by voice vote") contains no bill ID — the bill ID lives in a nearby
+// item ("H.R. 1234 – Considered under suspension…"). Mirror the worker's
+// ±3-row window to correlate the two.
 function updateBillStatusFromProceedings(items) {
     if (!items || items.length === 0) return;
 
-    const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/gi;
+    const billIdPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
     const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
     let changed = false;
 
-    for (const item of items) {
-        const desc = item.description || '';
-        const descLower = desc.toLowerCase();
+    const extractBillId = desc => {
+        const m = desc.match(billIdPattern);
+        return m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
+    };
 
-        const isPassage = descLower.includes('voice vote') ||
-                          (descLower.includes('agreed to') && !descLower.includes('motion to')) ||
-                          descLower.includes('passed by unanimous consent');
-        if (!isPassage) continue;
+    const isOutcomeRow = desc =>
+        /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
+        /\bon passage\b/i.test(desc) ||
+        /on agreeing to the (resolution|amendment)\b/i.test(desc);
 
-        for (const m of desc.matchAll(billPattern)) {
-            const prefix = m[1].replace(/\s+/g, '');
-            const normId = `${prefix} ${m[2]}`;
+    const isPassed = desc =>
+        /(agreed to|passed)\b/i.test(desc) &&
+        !/not agreed to|failed/i.test(desc) &&
+        /voice vote|without objection/i.test(desc);
 
-            for (const key of allArrays) {
-                const bill = (billsData[key] || []).find(b => {
-                    const bNorm = b.id.replace(/\s+/g, '');
-                    return bNorm === normId.replace(/\s+/g, '');
-                });
-                if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
-                    bill.status = 'passed';
-                    bill.latestAction = 'Passed by voice vote';
-                    bill.latestActionDate = item.pubDate || '';
-                    bill.actionSource = 'proceedings';
-                    bill.actionSourceUrl = item.link || '';
-                    changed = true;
-                }
+    for (let i = 0; i < items.length; i++) {
+        const desc = items[i].description || '';
+        if (!isOutcomeRow(desc) || !isPassed(desc)) continue;
+
+        // Outcome row rarely contains the bill ID itself; look at nearby items
+        let billId = extractBillId(desc);
+        for (let j = 1; j <= 3 && !billId; j++) {
+            if (i + j < items.length) billId = extractBillId(items[i + j].description || '');
+            if (!billId && i - j >= 0) billId = extractBillId(items[i - j].description || '');
+        }
+        if (!billId) continue;
+
+        const normId = billId.replace(/\s+/g, '');
+        for (const key of allArrays) {
+            const bill = (billsData[key] || []).find(b => b.id.replace(/\s+/g, '') === normId);
+            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+                bill.status = 'passed';
+                bill.latestAction = 'Passed (voice vote)';
+                bill.latestActionDate = items[i].pubDate || '';
+                bill.actionSource = 'proceedings';
+                bill.actionSourceUrl = items[i].link || '';
+                changed = true;
             }
         }
     }
