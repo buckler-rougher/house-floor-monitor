@@ -1699,7 +1699,7 @@ const elements = {
 // RSS Feed Configuration
 const RSS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/proceedings',
-    refreshInterval: 15000 // 15 seconds — proceedings drives mode switching
+    refreshInterval: 5000 // 5 seconds — proceedings drives mode switching
 };
 
 // Date override for testing proceedings from a specific date (set via console)
