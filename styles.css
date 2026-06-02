@@ -66,7 +66,7 @@ body {
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 116px 0 24px; /* Remove horizontal padding, let sections control their own */
+    padding: calc(100px + var(--section-gap)) 0 24px; /* 100px fixed header + section-gap breathing room */
     width: 100%;
     flex: 1;
     display: flex;
@@ -250,9 +250,9 @@ body {
     z-index: 1;
 }
 
-/* Anchor scroll offset — clear the fixed 100px header + 16px breathing room */
+/* Anchor scroll offset — clear the fixed 100px header + section-gap breathing room */
 #vote, #proceedings, #bills, #live {
-    scroll-margin-top: 116px;
+    scroll-margin-top: calc(100px + var(--section-gap));
 }
 
 /* Main Header */
