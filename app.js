@@ -1820,6 +1820,12 @@ function isFaaFullAirportClosure(reason) {
     if (/\bRUNWAY\s+\d/.test(upper)) return false;
     if (/\bTAXIWAY\s+/.test(upper)) return false;
 
+    // Closures restricted to a specific aircraft class — commercial/scheduled ops unaffected
+    if (/\b(CLSD|CLOSED)\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+TRANSIENT\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(GA|GENERAL\s+AVIATION)\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(VFR|IFR)\b/.test(upper)) return false;
+
     // Unclassifiable — assume full closure to avoid missing genuine closures
     return true;
 }
