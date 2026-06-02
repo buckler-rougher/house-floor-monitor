@@ -1595,6 +1595,8 @@ const elements = {
     debateCommitteesSection: document.getElementById('debate-committees-section'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
     debateSummarySection: document.getElementById('debate-summary-section'),
+    debateCongressFoot: document.getElementById('debate-congress-foot'),
+    debateCongressLink: document.getElementById('debate-congress-link'),
     prayerSection: document.getElementById('prayer-section'),
     prayerImage: document.getElementById('prayer-image'),
     prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
@@ -3087,7 +3089,16 @@ function autoSwitchModeFromProceedings(items) {
     // overriding afternoon floor debate.
     const itemTime = i => i?.pubDate ? new Date(i.pubDate).getTime() : 0;
 
-    const cotwItem = items.find(i => {
+    // Don't surface episodic items from before the most recent recess/adjournment.
+    // items[0] is the most recent; recess at index N means only items[0..N-1] are post-recess.
+    const recessIdx = items.findIndex(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('do now recess') || d.includes('stands in recess') ||
+               d.includes('house do now recess') || d.includes('adjourn');
+    });
+    const candidateItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
+
+    const cotwItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         if (d.includes('morning-hour debate') || d.includes('morning hour debate')) return false;
         return d.includes('act as chairman of the committee') ||
@@ -3097,17 +3108,17 @@ function autoSwitchModeFromProceedings(items) {
                (d.includes('proceeded with') && d.includes('debate'));
     });
 
-    const soItem = items.find(i => {
+    const soItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('special order speech') || d.includes('special orders');
     });
 
-    const omItem = items.find(i => {
+    const omItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('one minute speech') || d.includes('one-minute speech');
     });
 
-    const mhItem = items.find(i => {
+    const mhItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('morning-hour debate') || d.includes('morning hour debate');
     });
@@ -3498,10 +3509,23 @@ function updateDebateSection(items) {
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
-                elements.debateBillDescription.textContent = decodeHtml(foundBill.summary);
+                elements.debateBillDescription.innerHTML = foundBill.summary;
                 elements.debateSummarySection.style.display = '';
             } else {
                 elements.debateSummarySection.style.display = 'none';
+            }
+        }
+
+        // Congress.gov link
+        const congressUrl = billIdToCongressUrl(foundBill.id);
+        const procedureClass = foundBill.procedure === 'suspension' ? 'suspension' : 'rule';
+        if (elements.debateCongressFoot && elements.debateCongressLink) {
+            if (congressUrl) {
+                elements.debateCongressLink.href = congressUrl;
+                elements.debateCongressLink.className = `bill-modal-link ${procedureClass}`;
+                elements.debateCongressFoot.style.display = '';
+            } else {
+                elements.debateCongressFoot.style.display = 'none';
             }
         }
     } else {
@@ -3512,6 +3536,7 @@ function updateDebateSection(items) {
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
         if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
         if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
+        if (elements.debateCongressFoot) elements.debateCongressFoot.style.display = 'none';
     }
 }
 
