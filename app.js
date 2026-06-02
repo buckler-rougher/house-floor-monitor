@@ -3052,6 +3052,36 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // These modes are driven purely by the most-recent item. They must be checked
+    // before the candidates block, which scans all history and would otherwise let
+    // a stale morning-hour item win over a just-started prayer, pledge, etc.
+    if (latest.startsWith('the house received a message from')) {
+        window.setMode('message');
+        return;
+    }
+    if (latest.includes('prayer') || latest.includes('chaplain')) {
+        window.setMode('prayer');
+        return;
+    }
+    if (latest.includes('pledge') || latest.includes('allegiance')) {
+        window.setMode('pledge');
+        return;
+    }
+    if (latest.includes('moment of silence') || latest.includes('silence')) {
+        window.setMode('silence');
+        updateSilenceSection(items);
+        return;
+    }
+    if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
+        window.setMode('committee-chair');
+        updateCommitteeChairSection(items);
+        return;
+    }
+    if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
+        window.setMode('speaker');
+        return;
+    }
+
     // For episodic modes (one-minute, special-order, morning-hour) vs persistent debate (COWH),
     // pick whichever has the most recent matching item — avoids stale morning speeches
     // overriding afternoon floor debate.
@@ -3123,35 +3153,6 @@ function autoSwitchModeFromProceedings(items) {
                 });
             }
         }
-        return;
-    }
-
-    if (latest.startsWith('the house received a message from')) {
-        window.setMode('message');
-        return;
-    }
-
-    if (latest.includes('prayer') || latest.includes('chaplain')) {
-        window.setMode('prayer');
-        return;
-    }
-    if (latest.includes('pledge') || latest.includes('allegiance')) {
-        window.setMode('pledge');
-        return;
-    }
-    if (latest.includes('moment of silence') || latest.includes('silence')) {
-        window.setMode('silence');
-        updateSilenceSection(items);
-        return;
-    }
-    if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
-        window.setMode('committee-chair');
-        updateCommitteeChairSection(items);
-        return;
-    }
-
-    if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
-        window.setMode('speaker');
         return;
     }
 
