@@ -5406,8 +5406,7 @@ async function initHlsPlayer() {
     }
 
     function hideFallback() {
-        // NOTE: loading overlay is NOT dismissed here — it stays until we actually
-        // have a frame to show (live: canplay event; non-live: after snapshot drawn).
+        hideLoadingOverlay();
         fallback.style.display = 'none';
         fallback.setAttribute('aria-hidden', 'true');
         video.style.visibility = 'visible';
@@ -5426,46 +5425,30 @@ async function initHlsPlayer() {
                 video.muted = true;
                 video.autoplay = true;
                 video.controls = true;
-                // Hide loading overlay when the browser has a decoded frame.
-                // Fallback: if canplay never fires (already buffered edge case), clear after 4s.
-                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                setTimeout(() => hideLoadingOverlay(), 4000);
                 video.play().catch(() => {});
             } else {
-                let snapshotDone = false;
                 function captureSnapshot() {
-                    if (snapshotDone) return;
-                    snapshotDone = true;
+                    if (!snapshot) return;
                     try {
-                        if (snapshot && video.videoWidth > 0) {
-                            snapshot.width  = video.videoWidth;
-                            snapshot.height = video.videoHeight;
-                            snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                            video.style.display = 'none';
-                            snapshot.hidden = false;
-                        }
+                        snapshot.width = video.videoWidth || video.clientWidth;
+                        snapshot.height = video.videoHeight || video.clientHeight;
+                        const ctx = snapshot.getContext('2d');
+                        ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                        video.style.display = 'none';
+                        snapshot.hidden = false;
                     } catch {}
-                    // Always dismiss — even if capture failed, showing the video is
-                    // better than an infinite loading overlay.
-                    hideLoadingOverlay();
                 }
-                // Hard fallback: dismiss overlay after 6s no matter what.
-                const snapshotTimeout = setTimeout(captureSnapshot, 6000);
                 function seekToEnd() {
                     if (isFinite(video.duration) && video.duration > 1) {
                         video.currentTime = video.duration - 0.5;
-                        video.addEventListener('seeked', () => { clearTimeout(snapshotTimeout); captureSnapshot(); }, { once: true });
-                    } else {
-                        // Duration is Infinity (ended live stream) — capture current position.
-                        // Wait briefly for the buffer to have a frame.
-                        setTimeout(() => { clearTimeout(snapshotTimeout); captureSnapshot(); }, 500);
+                        video.addEventListener('seeked', captureSnapshot, { once: true });
                     }
                 }
                 if (isFinite(video.duration) && video.duration > 1) {
                     seekToEnd();
                 } else {
-                    video.addEventListener('loadedmetadata', () => seekToEnd(), { once: true });
-                    video.addEventListener('durationchange', () => seekToEnd(), { once: true });
+                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
+                    video.addEventListener('durationchange', seekToEnd, { once: true });
                 }
             }
         }
