@@ -5470,6 +5470,15 @@ async function initHlsPlayer() {
             const hls = new Hls(hlsCfg);
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
+            if (isLive) {
+                function enableCaptions() {
+                    for (let i = 0; i < video.textTracks.length; i++) {
+                        const t = video.textTracks[i];
+                        if (t.kind === 'captions' || t.kind === 'subtitles') { t.mode = 'showing'; return; }
+                    }
+                }
+                video.textTracks.addEventListener('addtrack', enableCaptions);
+            }
             hls.on(Hls.Events.MANIFEST_PARSED, onReady);
             // Whenever the live edge position is known, snap to it
             hls.on(Hls.Events.LEVEL_UPDATED, () => {
@@ -6348,8 +6357,18 @@ function updateLastUpdate() {
     }
 
     function startPipHls() {
-        // Prevent double-start: pipHls covers the live case, pipWaitTimer the pending/non-live case
-        if (pipHls || pipWaitTimer !== null) return;
+        // Fast resume: HLS instance still alive from last session — just restart loading
+        if (pipHls) {
+            pipVideo.style.display = 'block';
+            if (pipSnapshot) pipSnapshot.style.display = 'none';
+            resetPipLoading();
+            pipHls.startLoad(-1);
+            pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            pipVideo.play().catch(() => {});
+            return;
+        }
+        // Prevent double-start in fetch/timer state
+        if (pipWaitTimer !== null) return;
 
         const mainVideo = document.getElementById('player');
         const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
@@ -6434,12 +6453,11 @@ function updateLastUpdate() {
     }
 
     function stopPipHls() {
-        if (pipWaitTimer) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
-        if (pipHls) { pipHls.destroy(); pipHls = null; }
-        pipVideo.src = '';
-        pipVideo.load();
-        if (pipSnapshot) { pipSnapshot.src = ''; pipSnapshot.style.display = 'none'; }
-        resetPipLoading(); // ready to show again on next open
+        if (pipWaitTimer && pipWaitTimer !== -1) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
+        if (pipWaitTimer === -1) pipWaitTimer = null; // cancel pending fetch sentinel
+        if (pipHls) { pipHls.stopLoad(); pipVideo.pause(); }
+        // Keep pipHls alive — startPipHls resumes it without full teardown
+        if (pipSnapshot) pipSnapshot.style.display = 'none';
     }
 
     function showPip() {

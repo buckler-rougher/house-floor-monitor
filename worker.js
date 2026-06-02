@@ -1967,11 +1967,12 @@ async function handleHlsUrl(env) {
       }
     }
 
-    // ── No data for today yet — return last cached URL for last-frame display ──
+    // ── No data for today yet — check if the cached URL is actually live ────────
     if (env?.HLS_CACHE) {
       const cachedUrl = await env.HLS_CACHE.get('last_url');
       if (cachedUrl) {
-        return reply(JSON.stringify({ url: cachedUrl, isLive: false }), 60_000, 60);
+        const isLive = await checkManifestLiveness(cachedUrl) ?? false;
+        return reply(JSON.stringify({ url: cachedUrl, isLive }), isLive ? 10_000 : 60_000, isLive ? 10 : 60);
       }
     }
 
