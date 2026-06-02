@@ -2353,6 +2353,49 @@ async function updateBillStatus(bill) {
     }
 }
 
+// Mark bills as passed when proceedings contain a voice vote or agreed-to passage.
+// Roll call votes are handled separately via DomeWatch SSE; this covers voice votes
+// which never produce a roll call entry.
+function updateBillStatusFromProceedings(items) {
+    if (!items || items.length === 0) return;
+
+    const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/gi;
+    const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
+    let changed = false;
+
+    for (const item of items) {
+        const desc = item.description || '';
+        const descLower = desc.toLowerCase();
+
+        const isPassage = descLower.includes('voice vote') ||
+                          (descLower.includes('agreed to') && !descLower.includes('motion to')) ||
+                          descLower.includes('passed by unanimous consent');
+        if (!isPassage) continue;
+
+        for (const m of desc.matchAll(billPattern)) {
+            const prefix = m[1].replace(/\s+/g, '');
+            const normId = `${prefix} ${m[2]}`;
+
+            for (const key of allArrays) {
+                const bill = (billsData[key] || []).find(b => {
+                    const bNorm = b.id.replace(/\s+/g, '');
+                    return bNorm === normId.replace(/\s+/g, '');
+                });
+                if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+                    bill.status = 'passed';
+                    bill.latestAction = 'Passed by voice vote';
+                    bill.latestActionDate = item.pubDate || '';
+                    bill.actionSource = 'proceedings';
+                    bill.actionSourceUrl = item.link || '';
+                    changed = true;
+                }
+            }
+        }
+    }
+
+    if (changed) updateBillsDisplay();
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -3257,6 +3300,9 @@ async function updateProceedingsFeed() {
 
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
+
+        // Mark any voice-vote or agreed-to passages reflected in proceedings
+        updateBillStatusFromProceedings(data.items);
 
         // Update debate section with latest bill information
         updateDebateSection(data.items);
