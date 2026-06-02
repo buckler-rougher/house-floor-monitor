@@ -6373,9 +6373,15 @@ function updateLastUpdate() {
         if (pipHls) {
             pipVideo.style.display = 'block';
             if (pipSnapshot) pipSnapshot.style.display = 'none';
-            resetPipLoading();
+            if (pipVideo.readyState < 3) {
+                // Buffer lost — show loading until a frame is available
+                resetPipLoading();
+                pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            } else {
+                // Buffer still warm — resume silently, no loading flash
+                hidePipLoading();
+            }
             pipHls.startLoad(-1);
-            pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
             pipVideo.play().catch(() => {});
             return;
         }
