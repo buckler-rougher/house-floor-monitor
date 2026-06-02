@@ -21,6 +21,7 @@
     --accent-purple: #a371f7;
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+    --section-gap: 24px;
 }
 
 body {
@@ -72,10 +73,22 @@ body {
     flex-direction: column;
 }
 
+/* ── Section spacing — all direct children of <main> share the same gap ──── */
+.container > .congress-info,
+.container > .main-display,
+.container > .voting-calendar-panel,
+.container > .youtube-panel,
+.container > .footer {
+    margin-bottom: var(--section-gap);
+}
+.container > .footer:last-of-type,
+.container > footer {
+    margin-bottom: 0;
+}
+
 /* Main Display */
 .main-display {
     padding: 0 200px;
-    margin-bottom: 24px;
 }
 
 
@@ -2798,7 +2811,6 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
-    margin-bottom: 16px;
 }
 
 .bills-raw-headers {
@@ -2815,7 +2827,6 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     overflow: hidden;
-    margin-bottom: 16px;
     padding-bottom: 0;
     box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.05) inset;
 }
@@ -4140,7 +4151,6 @@ a.bill-card-rule-link {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px 16px;
-    margin-bottom: 16px;
     text-align: center;
 }
 
