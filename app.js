@@ -5426,22 +5426,26 @@ async function initHlsPlayer() {
                 video.muted = true;
                 video.autoplay = true;
                 video.controls = true;
-                // Hide loading overlay only once the browser has decoded a frame
+                // Hide loading overlay when the browser has a decoded frame.
+                // Fallback: if canplay never fires (already buffered edge case), clear after 4s.
                 video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+                setTimeout(() => hideLoadingOverlay(), 4000);
                 video.play().catch(() => {});
             } else {
                 function captureSnapshot() {
-                    if (!snapshot) return;
+                    // Always dismiss the loading overlay — even if capture fails the
+                    // video element is visible and better than an infinite spinner.
                     try {
-                        snapshot.width = video.videoWidth || video.clientWidth;
-                        snapshot.height = video.videoHeight || video.clientHeight;
-                        const ctx = snapshot.getContext('2d');
-                        ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                        // Show canvas, hide video — loading overlay dismissed once frame is drawn
-                        video.style.display = 'none';
-                        snapshot.hidden = false;
-                        hideLoadingOverlay();
+                        if (snapshot) {
+                            snapshot.width = video.videoWidth || video.clientWidth;
+                            snapshot.height = video.videoHeight || video.clientHeight;
+                            const ctx = snapshot.getContext('2d');
+                            ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                            video.style.display = 'none';
+                            snapshot.hidden = false;
+                        }
                     } catch {}
+                    hideLoadingOverlay();
                 }
                 function seekToEnd() {
                     if (isFinite(video.duration) && video.duration > 1) {

@@ -1946,6 +1946,25 @@ body {
   cursor: pointer;
 }
 
+/* ── Closed captions — tactical monospace style ─────────────────────────── */
+::cue {
+  background-color: rgba(13, 17, 23, 0.88);
+  color: #e6edf3;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  font-size: 0.82em;
+  line-height: 1.5;
+  text-shadow: none;
+}
+::cue(b), ::cue(strong) {
+  color: rgba(0, 255, 65, 0.9);
+  font-weight: 600;
+}
+::cue(i), ::cue(em) {
+  color: var(--text-secondary);
+  font-style: normal;
+  font-weight: 400;
+}
+
 .youtube-container {
   position: relative;
   width: 100%;
