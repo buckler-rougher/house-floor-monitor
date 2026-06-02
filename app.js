@@ -1802,6 +1802,28 @@ async function fetchAirportNames() {
     }
 }
 
+// Returns true only for full airport closures; runway/taxiway-only NOTAMs return false.
+function isFaaFullAirportClosure(reason) {
+    const upper = reason.toUpperCase();
+
+    // Explicit full-airport closure phrases take priority
+    if (/\bAP\s+CLSD\b/.test(upper)) return true;
+    if (/\bARPT\s+CLSD\b/.test(upper)) return true;
+    if (/\bAIRPORT\s+CLSD\b/.test(upper)) return true;
+    if (/\bAD\s+CLSD\b/.test(upper)) return true;
+    if (/\bCLSD\s+TO\s+ALL\s+(ACFT|ARCRFT|AIRCRAFT)\b/.test(upper)) return true;
+    if (/\bAP\s+NOT\s+AVBL\b/.test(upper)) return true;
+
+    // Runway- or taxiway-specific closures — airport remains operational
+    if (/\bRWY\s+[\dLRC]/.test(upper)) return false;
+    if (/\bTWY\s+[A-Z]/.test(upper)) return false;
+    if (/\bRUNWAY\s+\d/.test(upper)) return false;
+    if (/\bTAXIWAY\s+/.test(upper)) return false;
+
+    // Unclassifiable — assume full closure to avoid missing genuine closures
+    return true;
+}
+
 // Fetch FAA airport status information
 async function fetchAirportDelays() {
     try {
@@ -1856,17 +1878,36 @@ async function fetchAirportDelays() {
                     if (typeName === 'Airport Closures') {
                         const closures = delayType.querySelectorAll('Airport_Closure_List Airport');
                         closures.forEach(closure => {
-                            const airport = closure.querySelector('ARPT')?.textContent;
-                            const reason = closure.querySelector('Reason')?.textContent || 'Airport closed';
-                            
-                            if (airport) {
-                                delays[airport] = {
-                                    status: 'delay',
-                                    delay: 'CLOSED',
-                                    reason: reason,
-                                    trend: 'Closed'
-                                };
+                            const airport = closure.querySelector('ARPT')?.textContent?.trim();
+                            const reason = closure.querySelector('Reason')?.textContent?.trim() || 'Airport closed';
+                            const reopenText = closure.querySelector('Reopen')?.textContent?.trim();
+                            const beginText = closure.querySelector('Begin')?.textContent?.trim();
+
+                            if (!airport) return;
+
+                            const now = new Date();
+
+                            // Skip closures whose window has already ended
+                            if (reopenText) {
+                                const reopenTime = new Date(reopenText);
+                                if (!isNaN(reopenTime.getTime()) && reopenTime < now) return;
                             }
+
+                            // Skip closures that haven't started yet
+                            if (beginText) {
+                                const beginTime = new Date(beginText);
+                                if (!isNaN(beginTime.getTime()) && beginTime > now) return;
+                            }
+
+                            // Skip runway/taxiway-only NOTAMs — the airport itself is open
+                            if (!isFaaFullAirportClosure(reason)) return;
+
+                            delays[airport] = {
+                                status: 'delay',
+                                delay: 'CLOSED',
+                                reason: reason,
+                                trend: 'Closed'
+                            };
                         });
                     }
                     
