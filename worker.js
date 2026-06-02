@@ -360,7 +360,7 @@ async function handleProceedings(request, env) {
     }
 
     // Live feed — in-memory 15s only; skip KV (kvTtl=0) to avoid 288 writes/day
-    return kvCache(env, 'proceedings-live', 15, async () => {
+    return kvCache(env, 'proceedings-live', 5, async () => {
       const xmlText = await fetchRSSFeed(RSS_FEEDS.proceedings, 10000);
       const result = parseRSSFeed(xmlText, 'proceedings');
       return new Response(JSON.stringify(result), {
