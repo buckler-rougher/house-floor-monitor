@@ -1806,7 +1806,14 @@ async function fetchAirportNames() {
 function isFaaFullAirportClosure(reason) {
     const upper = reason.toUpperCase();
 
-    // Explicit full-airport closure phrases take priority
+    // Aircraft-class restrictions take priority — "AP CLSD TO NON SKED" is still partial
+    if (/\b(CLSD|CLOSED)\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+TRANSIENT\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(GA|GENERAL\s+AVIATION)\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(VFR|IFR)\b/.test(upper)) return false;
+    if (/\bNOT\s+AVBL\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
+
+    // Explicit full-airport closure phrases
     if (/\bAP\s+CLSD\b/.test(upper)) return true;
     if (/\bARPT\s+CLSD\b/.test(upper)) return true;
     if (/\bAIRPORT\s+CLSD\b/.test(upper)) return true;
@@ -1819,12 +1826,6 @@ function isFaaFullAirportClosure(reason) {
     if (/\bTWY\s+[A-Z]/.test(upper)) return false;
     if (/\bRUNWAY\s+\d/.test(upper)) return false;
     if (/\bTAXIWAY\s+/.test(upper)) return false;
-
-    // Closures restricted to a specific aircraft class — commercial/scheduled ops unaffected
-    if (/\b(CLSD|CLOSED)\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
-    if (/\b(CLSD|CLOSED)\s+TO\s+TRANSIENT\b/.test(upper)) return false;
-    if (/\b(CLSD|CLOSED)\s+TO\s+(GA|GENERAL\s+AVIATION)\b/.test(upper)) return false;
-    if (/\b(CLSD|CLOSED)\s+TO\s+(VFR|IFR)\b/.test(upper)) return false;
 
     // Unclassifiable — assume full closure to avoid missing genuine closures
     return true;
