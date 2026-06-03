@@ -2697,12 +2697,19 @@ function openBillModal(billId) {
     }
 
     const modalRule = bill.procedure === 'rule' ? specialRulesMap.get(normalizeBillIdForRules(bill.id)) : null;
+    // Fall back to governingHres from the schedule XML when specialRulesMap doesn't have a match
+    // (e.g. the H.Res fell outside the top-50 Congress.gov results or the rules endpoint is stale).
+    const fallbackHres = (!modalRule && bill.procedure === 'rule' && bill.governingHres) ? bill.governingHres : null;
     const modalRuleTagHtml = modalRule ? (() => {
         const sc = modalRule.ruleStatus === 'passed' ? 'rule-tag-passed'
             : modalRule.ruleStatus === 'reported' ? 'rule-tag-reported'
             : 'rule-tag-unknown';
         const href = modalRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${modalRule.hresNum}`;
         return `<a class="bill-rule-tag ${sc} bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`;
+    })() : fallbackHres ? (() => {
+        const hresNum = fallbackHres.match(/(\d+)$/)?.[1];
+        const href = hresNum ? `https://www.congress.gov/bill/119th-congress/house-resolution/${hresNum}` : '#';
+        return `<a class="bill-rule-tag rule-tag-unknown bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${fallbackHres}</a>`;
     })() : '';
 
     const rulesSlug = (bill.procedure === 'rule') ? billIdToRulesSlug(bill.id) : null;
@@ -3456,10 +3463,15 @@ function updateDebateSection(items) {
 
     // ── 5. Special rule tag ───────────────────────────────────────────────
     const specialRule = foundBill ? specialRulesMap.get(normalizeBillIdForRules(foundBill.id)) : null;
+    const fallbackDebateHres = (!specialRule && foundBill?.governingHres) ? foundBill.governingHres : null;
     if (elements.debateRuleTag) {
         if (specialRule) {
             const href = specialRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${specialRule.hresNum}`;
             elements.debateRuleTag.innerHTML = `<a class="bill-rule-tag" href="${href}" target="_blank" rel="noopener">PURSUANT TO ${specialRule.hres}</a>`;
+        } else if (fallbackDebateHres) {
+            const hresNum = fallbackDebateHres.match(/(\d+)$/)?.[1];
+            const href = hresNum ? `https://www.congress.gov/bill/119th-congress/house-resolution/${hresNum}` : '#';
+            elements.debateRuleTag.innerHTML = `<a class="bill-rule-tag" href="${href}" target="_blank" rel="noopener">PURSUANT TO ${fallbackDebateHres}</a>`;
         } else {
             elements.debateRuleTag.innerHTML = '';
         }
