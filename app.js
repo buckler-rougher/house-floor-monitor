@@ -5433,27 +5433,29 @@ async function initHlsPlayer() {
                 video.play().catch(() => {});
             } else {
                 function captureSnapshot() {
-                    video.pause();
                     if (!snapshot) return;
                     try {
                         snapshot.width = video.videoWidth || video.clientWidth;
                         snapshot.height = video.videoHeight || video.clientHeight;
                         const ctx = snapshot.getContext('2d');
                         ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                        // Show canvas, hide video
                         video.style.display = 'none';
                         snapshot.hidden = false;
                     } catch {}
                 }
-                // Play briefly — HLS.js startPosition:-1 puts us at the live edge.
-                // Capture the first decoded frame, then pause. No seeking needed.
-                video.muted = true;
-                video.addEventListener('playing', captureSnapshot, { once: true });
-                // Fallback: if playing never fires (autoplay blocked etc), capture anyway
-                setTimeout(() => {
-                    video.removeEventListener('playing', captureSnapshot);
-                    captureSnapshot();
-                }, 4000);
-                video.play().catch(() => {});
+                function seekToEnd() {
+                    if (isFinite(video.duration) && video.duration > 1) {
+                        video.currentTime = video.duration - 0.5;
+                        video.addEventListener('seeked', captureSnapshot, { once: true });
+                    }
+                }
+                if (isFinite(video.duration) && video.duration > 1) {
+                    seekToEnd();
+                } else {
+                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
+                    video.addEventListener('durationchange', seekToEnd, { once: true });
+                }
             }
         }
 
@@ -5465,10 +5467,7 @@ async function initHlsPlayer() {
                 liveMaxLatencyDurationCount: 2, // jump to live edge if >2 segments behind
                 liveDurationInfinity: true,
                 highBufferWatchdogPeriod: 1,
-            } : {
-                maxBufferLength: 30,
-                startPosition: -1, // start at live edge, not position 0
-            };
+            } : { maxBufferLength: 30 };
             const hls = new Hls(hlsCfg);
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
