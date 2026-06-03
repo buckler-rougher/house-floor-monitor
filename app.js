@@ -5433,6 +5433,7 @@ async function initHlsPlayer() {
                 video.play().catch(() => {});
             } else {
                 function captureSnapshot() {
+                    video.pause();
                     if (!snapshot) return;
                     try {
                         snapshot.width = video.videoWidth || video.clientWidth;
@@ -5443,31 +5444,16 @@ async function initHlsPlayer() {
                         snapshot.hidden = false;
                     } catch {}
                 }
-                function seekToEnd() {
-                    // Prefer duration (finite VOD). For ended live streams HLS.js
-                    // keeps duration=Infinity — use seekable.end() to find the last
-                    // available position (the actual end of the recorded content).
-                    let target = null;
-                    if (isFinite(video.duration) && video.duration > 1) {
-                        target = video.duration - 0.5;
-                    } else if (video.seekable.length > 0) {
-                        const edge = video.seekable.end(video.seekable.length - 1);
-                        if (isFinite(edge) && edge > 1) target = edge - 0.5;
-                    }
-                    if (target !== null) {
-                        video.currentTime = target;
-                        video.addEventListener('seeked', captureSnapshot, { once: true });
-                    } else {
-                        // Seekable not populated yet — retry once after HLS loads more
-                        setTimeout(seekToEnd, 500);
-                    }
-                }
-                if ((isFinite(video.duration) && video.duration > 1) || video.seekable.length > 0) {
-                    seekToEnd();
-                } else {
-                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
-                    video.addEventListener('durationchange', seekToEnd, { once: true });
-                }
+                // Play briefly — HLS.js startPosition:-1 puts us at the live edge.
+                // Capture the first decoded frame, then pause. No seeking needed.
+                video.muted = true;
+                video.addEventListener('playing', captureSnapshot, { once: true });
+                // Fallback: if playing never fires (autoplay blocked etc), capture anyway
+                setTimeout(() => {
+                    video.removeEventListener('playing', captureSnapshot);
+                    captureSnapshot();
+                }, 4000);
+                video.play().catch(() => {});
             }
         }
 
