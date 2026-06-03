@@ -1026,9 +1026,15 @@ function parseCasualtyListHtml(html) {
       // Regular casualty list row — single member cell
       processCell(cells[0]);
     } else if (cells.length === 3) {
-      // Special election table row: [Departed Member, Election Date, Successor]
-      // Process only the departed member (col 0); ignore the successor (col 2).
+      // Two different 3-column layouts share this width:
+      //   • Special election table: [Departed Member, Election Date, Successor]
+      //   • Casualty list rows:      [spacer, Member, spacer]
+      // Process col 0 (departed member) AND col 1 (member). Col 1 is the
+      // election DATE in the special-election table, which never matches the
+      // name regex, so it's harmless there. NEVER process col 2 — that's the
+      // successor (e.g. Fine, Patronis), which must not be tagged as departing.
       processCell(cells[0]);
+      processCell(cells[1]);
     }
     // All other row widths (header colspan rows, etc.) are skipped
   }
@@ -1043,14 +1049,14 @@ async function handleCasualtyList(env) {
 
   if (!debug) {
     // 1. In-memory
-    const mem = _mGet('casualty-list-v3');
+    const mem = _mGet('casualty-list-v4');
     if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
 
     // 2. KV — stored as { body, cachedAt } for compare-and-write support
     let prevBody = null;
     if (env?.HLS_CACHE) {
       try {
-        const raw = await env.HLS_CACHE.get('casualty-list-v3');
+        const raw = await env.HLS_CACHE.get('casualty-list-v4');
         if (raw !== null) {
           let body = raw, age = Infinity;
           try {
@@ -1061,7 +1067,7 @@ async function handleCasualtyList(env) {
           } catch {}
           prevBody = body;
           if (age < ttlMs) {
-            _mSet('casualty-list-v3', body, ttlMs - age);
+            _mSet('casualty-list-v4', body, ttlMs - age);
             return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
           }
           // Stale — fall through to origin fetch; prevBody held for comparison
@@ -1083,11 +1089,11 @@ async function handleCasualtyList(env) {
       const members = parseCasualtyListHtml(html);
       if (Object.keys(members).length > 0) {
         const body = JSON.stringify(members);
-        _mSet('casualty-list-v3', body, ttlMs);
+        _mSet('casualty-list-v4', body, ttlMs);
         if (env?.HLS_CACHE && body !== prevBody) {
           // Only write if the list actually changed — changes maybe once a month
-          console.log(`[KV-WRITE] key=casualty-list-v3 prevNull=${prevBody===null}`);
-          try { await env.HLS_CACHE.put('casualty-list-v3', JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL }); } catch {}
+          console.log(`[KV-WRITE] key=casualty-list-v4 prevNull=${prevBody===null}`);
+          try { await env.HLS_CACHE.put('casualty-list-v4', JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL }); } catch {}
         }
         return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
       }
