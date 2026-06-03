@@ -5452,89 +5452,78 @@ async function initHlsPlayer() {
         video.__hlsSrc    = streamUrl; // expose for PiP
         video.__hlsIsLive = isLive;
 
+        // PLAY-AT-EDGE: genuinely live (growing / Infinity duration). Keep at live edge.
+        function playAtEdge() {
+            video.style.display = '';
+            if (snapshot) snapshot.hidden = true;
+            video.muted = true;
+            video.autoplay = true;
+            video.controls = true;
+            video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+            video.play().catch(() => {});
+        }
+
+        // FREEZE-AT-END: ended session (finite duration). Seek to last frame,
+        // decode it, pause, and leave the paused video showing that frame.
+        let frozen = false;
+        function freezeAtEnd() {
+            if (frozen) return;
+            const end = isFinite(video.duration) && video.duration > 1
+                ? video.duration
+                : (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN);
+            if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
+            frozen = true;
+            video.controls = false;
+            video.muted = true;
+            const target = end - 0.3;
+            const onSeeked = () => {
+                // Play one beat so Safari decodes the frame at this position, then pause.
+                video.play().then(() => {
+                    const grab = () => {
+                        if (video.videoWidth > 0) {
+                            video.pause();
+                            if (snapshot) {
+                                try {
+                                    snapshot.width = video.videoWidth;
+                                    snapshot.height = video.videoHeight;
+                                    snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                                    snapshot.hidden = false;
+                                    video.style.display = 'none';
+                                } catch {}
+                            }
+                            hideLoadingOverlay();
+                        } else {
+                            requestAnimationFrame(grab);
+                        }
+                    };
+                    requestAnimationFrame(grab);
+                }).catch(() => { video.pause(); hideLoadingOverlay(); });
+            };
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.currentTime = target;
+        }
+
         function onReady() {
             hideFallback();
-            if (isLive) {
-                video.muted = true;
-                video.autoplay = true;
-                video.controls = true;
-                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                // Jump to the live edge before playing so we never start from
-                // position 0 (start of the manifest = this morning's footage).
-                // Works whether the stream is genuinely live (edge keeps advancing)
-                // or ended (edge is the last recorded frame, freezes there).
-                function jumpToLiveEdge() {
-                    if (video.seekable.length > 0) {
-                        const edge = video.seekable.end(video.seekable.length - 1);
-                        if (isFinite(edge) && edge > 1 && (edge - video.currentTime) > 5) {
-                            video.currentTime = edge - 0.5;
-                        }
-                    }
-                }
-                video.addEventListener('loadedmetadata', jumpToLiveEdge, { once: true });
-                video.addEventListener('canplay', jumpToLiveEdge, { once: true });
-                jumpToLiveEdge();
-                video.play().catch(() => {});
-            } else {
-                // Non-live: stop any autoplay immediately, seek to last frame.
-                video.pause();
-
-
-                function captureSnapshot() {
-                    video.pause();
-                    const w = video.videoWidth;
-                    const h = video.videoHeight;
-                    if (snapshot && w > 0 && h > 0) {
-                        try {
-                            snapshot.width = w;
-                            snapshot.height = h;
-                            snapshot.getContext('2d').drawImage(video, 0, 0, w, h);
-                            snapshot.hidden = false;
-                            video.style.display = 'none';
-                        } catch {}
-                    }
-                    // Whether canvas draw succeeded or not, overlay comes down.
-                    // If draw failed video stays visible — it is paused at correct position.
-                    hideLoadingOverlay();
-                }
-
-                let seekDone = false;
-                function seekToEnd() {
-                    if (seekDone) return;
-                    video.pause();
-                    let target = null;
-                    if (isFinite(video.duration) && video.duration > 1) {
-                        target = video.duration - 0.5;
-                    } else if (video.seekable.length > 0) {
-                        const end = video.seekable.end(video.seekable.length - 1);
-                        if (isFinite(end) && end > 1) target = end - 0.5;
-                    }
-                    if (target !== null) {
-                        seekDone = true;
-                        video.currentTime = target;
-                        video.addEventListener('seeked', () => {
-                            // Safari won't decode a frame while paused — play briefly
-                            // until videoWidth > 0 (first decoded frame), then capture.
-                            video.muted = true;
-                            video.play().then(() => {
-                                function tryCapture() {
-                                    if (video.videoWidth > 0 && video.videoHeight > 0) {
-                                        captureSnapshot();
-                                    } else {
-                                        requestAnimationFrame(tryCapture);
-                                    }
-                                }
-                                requestAnimationFrame(tryCapture);
-                            }).catch(() => captureSnapshot());
-                        }, { once: true });
-                    } else {
-                        setTimeout(seekToEnd, 400);
-                    }
-                }
-
-                video.addEventListener('canplay', seekToEnd, { once: true });
-                video.addEventListener('loadedmetadata', seekToEnd, { once: true });
+            // Decide by the stream's ACTUAL nature, not the worker's isLive flag
+            // (which is unreliable for sessions that ended without a clean signal).
+            // Finite duration  = ended recording → freeze last frame.
+            // Infinite duration = genuinely live  → play at the live edge.
+            // Wait briefly for duration to be reported if it isn't yet.
+            let decided = false;
+            function decide() {
+                if (decided) return;
+                const d = video.duration;
+                if (Number.isNaN(d)) { return; } // not known yet
+                decided = true;
+                if (d === Infinity) playAtEdge();
+                else freezeAtEnd();
             }
+            video.addEventListener('durationchange', decide);
+            video.addEventListener('loadedmetadata', decide);
+            decide();
+            // Safety net: if duration never resolves, default to freeze (safer for recess)
+            setTimeout(() => { if (!decided) { decided = true; freezeAtEnd(); } }, 2500);
         }
 
         if (window.Hls && Hls.isSupported()) {
@@ -5561,7 +5550,9 @@ async function initHlsPlayer() {
             hls.on(Hls.Events.MANIFEST_PARSED, onReady);
             // Whenever the live edge position is known, snap to it
             hls.on(Hls.Events.LEVEL_UPDATED, () => {
-                if (isLive && hls.liveSyncPosition && video.readyState) {
+                // Only snap to live edge for genuinely-live playback. If we've
+                // frozen the last frame of an ended session, leave currentTime alone.
+                if (video.duration === Infinity && hls.liveSyncPosition && video.readyState) {
                     const drift = hls.liveSyncPosition - video.currentTime;
                     if (drift > 3) video.currentTime = hls.liveSyncPosition;
                 }
