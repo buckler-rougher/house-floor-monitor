@@ -5400,11 +5400,13 @@ async function initHlsPlayer() {
         const snap = document.getElementById('player-snapshot');
         _dbg.textContent = [
             `v=${_ver}`,
+            `isLive=${video.__hlsIsLive}`,
+            `paused=${video.paused}`,
             `dur=${video.duration?.toFixed(1)}`,
             `seek ${ss}→${se}`,
             `ct=${video.currentTime?.toFixed(1)}`,
             `rs=${video.readyState}`,
-            `vid.disp=${video.style.display||'(css)'}`,
+            `vw=${video.videoWidth}`,
             `snap.hidden=${snap?.hidden}`,
             `snap.w=${snap?.width}`,
             `overlay=${document.getElementById('video-loading')?.style.display}`,
