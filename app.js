@@ -5549,14 +5549,6 @@ async function initHlsPlayer() {
                 // Safety: dismiss loading overlay after 8s if canplay never fires
                 setTimeout(hideLoadingOverlay, 8000);
                 video.play().catch(() => {});
-
-                // After playback starts, detect ended sessions by watching duration.
-                // A live stream stays Infinity; a finished recording settles on a finite value.
-                function checkIfEnded() {
-                    const d = video.duration;
-                    if (isFinite(d) && d > 1) freezeAtEnd();
-                }
-                video.addEventListener('durationchange', checkIfEnded);
                 video.addEventListener('ended', () => freezeAtEnd());
             });
 
