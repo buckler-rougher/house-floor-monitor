@@ -802,9 +802,14 @@ async function fetchCongressBillStatus(billId) {
         if (/^H1L/i.test(code) || /^rule\s+h\.?\s*res\./i.test(action.text || '')) {
           // not a bill passage action — skip
         } else {
+          // "suspend the rules and pass/agree" alone matches the MOTION text that Congress.gov
+          // logs when a bill is called up — NOT the outcome. Require an outcome word ("agreed to"
+          // or "passed") to confirm the vote actually succeeded.
+          const suspensionPassed = (t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree'))
+                                 && (t.includes('agreed to') || t.includes('passed'));
           const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
                             t.includes('on passage passed') || t.includes('considered and passed') ||
-                            t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree');
+                            suspensionPassed;
           const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
           if (isPassage || isFailed) {
             let statusText;
@@ -970,6 +975,11 @@ function ratchetStatuses(cached, bills) {
     const prev = updated[bill.id];
     const prevRank = STATUS_RANK[prev?.status] ?? 0;
     const currRank = STATUS_RANK[bill.status] ?? 0;
+    // Only ratchet statuses from proceedings/bluesky — those sources are ephemeral and the
+    // status can vanish from the live feed once a bill falls off the schedule.
+    // Congress.gov statuses are always re-fetchable from the API, so we never lock them in;
+    // persisting a congress-sourced status would freeze incorrect data (e.g. false passage).
+    if (bill.actionSource === 'congress') continue;
     if (!prev || currRank > prevRank) {
       updated[bill.id] = {
         status: bill.status,
@@ -1483,26 +1493,29 @@ async function _fetchBills(request, env) {
       if (enrichCached) {
         congressStatus = enrichCached.congressStatus ?? null;
         // Retry summary/meta when null — Congress.gov may have published since last fetch.
-        // Also retry congressStatus when the cached entry predates committeeReport support
-        // (identified by the absence of the committeeReport key on the cached object).
+        // Always re-verify a cached terminal status (passed/failed) from Congress.gov — the
+        // original detection may have been a false positive (e.g. motion text misread as passage).
+        // Also retry when the cached entry predates committeeReport support.
         const needsSummary         = !enrichCached.summary;
         const needsMeta            = !enrichCached.meta;
         const needsCommitteeReport = !('committeeReport' in (enrichCached.congressStatus || {}));
-        if (needsSummary || needsMeta || needsCommitteeReport) {
+        const needsStatusVerify    = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
+        const needsStatusRefresh   = needsCommitteeReport || needsStatusVerify;
+        if (needsSummary || needsMeta || needsStatusRefresh) {
           const [summaryResult, newMeta, freshStatus] = await Promise.all([
-            needsSummary         ? safeFetchSummary(bill.id)         : Promise.resolve(enrichCached.summary),
-            needsMeta            ? safeFetchMeta(bill.id)            : Promise.resolve(enrichCached.meta),
-            needsCommitteeReport ? fetchCongressBillStatus(bill.id)  : Promise.resolve(undefined),
+            needsSummary       ? safeFetchSummary(bill.id)        : Promise.resolve(enrichCached.summary),
+            needsMeta          ? safeFetchMeta(bill.id)           : Promise.resolve(enrichCached.meta),
+            needsStatusRefresh ? fetchCongressBillStatus(bill.id) : Promise.resolve(undefined),
           ]);
           // undefined = transient error (don't overwrite cache); null = confirmed no data
           const summaryToCache = summaryResult === undefined ? enrichCached.summary : summaryResult;
           const metaToCache    = newMeta      === undefined ? enrichCached.meta    : newMeta;
           summary = summaryResult === undefined ? enrichCached.summary : summaryResult;
           meta    = newMeta === undefined ? enrichCached.meta : newMeta;
-          // Merge freshStatus: preserve any existing floor action, only add/update committeeReport.
-          // freshStatus === null means transient error; undefined means we didn't re-fetch.
+          // freshStatus != null: replace the full congressStatus (floor action + committeeReport)
+          // so a false-positive terminal status gets corrected with the live API result.
           if (freshStatus != null) {
-            congressStatus = { ...(enrichCached.congressStatus || {}), committeeReport: freshStatus.committeeReport ?? null };
+            congressStatus = freshStatus;
           }
           if (summaryToCache || metaToCache || freshStatus != null) {
             await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta: metaToCache });
