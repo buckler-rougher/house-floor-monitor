@@ -5444,15 +5444,25 @@ async function initHlsPlayer() {
                     } catch {}
                 }
                 function seekToEnd() {
+                    // Prefer duration (finite VOD). For ended live streams HLS.js
+                    // keeps duration=Infinity — use seekable.end() to find the last
+                    // available position (the actual end of the recorded content).
+                    let target = null;
                     if (isFinite(video.duration) && video.duration > 1) {
-                        video.currentTime = video.duration - 0.5;
+                        target = video.duration - 0.5;
+                    } else if (video.seekable.length > 0) {
+                        const edge = video.seekable.end(video.seekable.length - 1);
+                        if (isFinite(edge) && edge > 1) target = edge - 0.5;
+                    }
+                    if (target !== null) {
+                        video.currentTime = target;
                         video.addEventListener('seeked', captureSnapshot, { once: true });
                     } else {
-                        // Ended live stream keeps Infinity duration — capture current position
-                        setTimeout(captureSnapshot, 600);
+                        // Seekable not populated yet — retry once after HLS loads more
+                        setTimeout(seekToEnd, 500);
                     }
                 }
-                if (isFinite(video.duration) && video.duration > 1) {
+                if ((isFinite(video.duration) && video.duration > 1) || video.seekable.length > 0) {
                     seekToEnd();
                 } else {
                     video.addEventListener('loadedmetadata', seekToEnd, { once: true });
