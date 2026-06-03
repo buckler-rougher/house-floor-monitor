@@ -5459,6 +5459,21 @@ async function initHlsPlayer() {
                 video.autoplay = true;
                 video.controls = true;
                 video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+                // Jump to the live edge before playing so we never start from
+                // position 0 (start of the manifest = this morning's footage).
+                // Works whether the stream is genuinely live (edge keeps advancing)
+                // or ended (edge is the last recorded frame, freezes there).
+                function jumpToLiveEdge() {
+                    if (video.seekable.length > 0) {
+                        const edge = video.seekable.end(video.seekable.length - 1);
+                        if (isFinite(edge) && edge > 1 && (edge - video.currentTime) > 5) {
+                            video.currentTime = edge - 0.5;
+                        }
+                    }
+                }
+                video.addEventListener('loadedmetadata', jumpToLiveEdge, { once: true });
+                video.addEventListener('canplay', jumpToLiveEdge, { once: true });
+                jumpToLiveEdge();
                 video.play().catch(() => {});
             } else {
                 // Non-live: stop any autoplay immediately, seek to last frame.
