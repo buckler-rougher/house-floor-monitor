@@ -1,6 +1,7 @@
 name = "house-floor-api"
 main = "worker.js"
 compatibility_date = "2023-12-01"
+account_id = "ce55e9960094bcc712fc82a8086248d5"
 
 [[kv_namespaces]]
 binding = "HLS_CACHE"

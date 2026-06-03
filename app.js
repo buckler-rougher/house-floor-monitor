@@ -1276,10 +1276,13 @@ function updateFloorDisplay(status = null) {
     const statusText = floorData.currentStatus.text || 'Unknown';
     const statusValue = floorData.currentStatus.value || 'unknown';
     
-    // Auto-switch mode based on DomeWatch status
+    // Auto-switch mode based on DomeWatch status.
+    // Only switch INTO vote mode when SSE tallies are actively coming in — this prevents
+    // stale DomeWatch REST data from locking the app in vote mode after a vote ends.
     // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
-    if (statusLower.includes('vote') || statusLower.includes('voting')) {
+    const sseIsLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive) {
         window.setMode('vote');
     } else if (statusLower.includes('debate')) {
         window.setMode('debate');
@@ -1594,7 +1597,11 @@ const elements = {
     debateRuleTag: document.getElementById('debate-rule-tag'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
+    debateCommitteeReportSection: document.getElementById('debate-committee-report-section'),
+    debateCommitteeReportText: document.getElementById('debate-committee-report-text'),
     debateSummarySection: document.getElementById('debate-summary-section'),
+    debateCongressFoot: document.getElementById('debate-congress-foot'),
+    debateCongressLink: document.getElementById('debate-congress-link'),
     prayerSection: document.getElementById('prayer-section'),
     prayerImage: document.getElementById('prayer-image'),
     prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
@@ -1697,7 +1704,7 @@ const elements = {
 // RSS Feed Configuration
 const RSS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/proceedings',
-    refreshInterval: 15000 // 15 seconds — proceedings drives mode switching
+    refreshInterval: 5000 // 5 seconds — proceedings drives mode switching
 };
 
 // Date override for testing proceedings from a specific date (set via console)
@@ -1802,6 +1809,35 @@ async function fetchAirportNames() {
     }
 }
 
+// Returns true only for full airport closures; runway/taxiway-only NOTAMs return false.
+function isFaaFullAirportClosure(reason) {
+    const upper = reason.toUpperCase();
+
+    // Aircraft-class restrictions take priority — "AP CLSD TO NON SKED" is still partial
+    if (/\b(CLSD|CLOSED)\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+TRANSIENT\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(GA|GENERAL\s+AVIATION)\b/.test(upper)) return false;
+    if (/\b(CLSD|CLOSED)\s+TO\s+(VFR|IFR)\b/.test(upper)) return false;
+    if (/\bNOT\s+AVBL\s+TO\s+NON[\s-]?SKED\b/.test(upper)) return false;
+
+    // Explicit full-airport closure phrases
+    if (/\bAP\s+CLSD\b/.test(upper)) return true;
+    if (/\bARPT\s+CLSD\b/.test(upper)) return true;
+    if (/\bAIRPORT\s+CLSD\b/.test(upper)) return true;
+    if (/\bAD\s+CLSD\b/.test(upper)) return true;
+    if (/\bCLSD\s+TO\s+ALL\s+(ACFT|ARCRFT|AIRCRAFT)\b/.test(upper)) return true;
+    if (/\bAP\s+NOT\s+AVBL\b/.test(upper)) return true;
+
+    // Runway- or taxiway-specific closures — airport remains operational
+    if (/\bRWY\s+[\dLRC]/.test(upper)) return false;
+    if (/\bTWY\s+[A-Z]/.test(upper)) return false;
+    if (/\bRUNWAY\s+\d/.test(upper)) return false;
+    if (/\bTAXIWAY\s+/.test(upper)) return false;
+
+    // Unclassifiable — assume full closure to avoid missing genuine closures
+    return true;
+}
+
 // Fetch FAA airport status information
 async function fetchAirportDelays() {
     try {
@@ -1856,17 +1892,36 @@ async function fetchAirportDelays() {
                     if (typeName === 'Airport Closures') {
                         const closures = delayType.querySelectorAll('Airport_Closure_List Airport');
                         closures.forEach(closure => {
-                            const airport = closure.querySelector('ARPT')?.textContent;
-                            const reason = closure.querySelector('Reason')?.textContent || 'Airport closed';
-                            
-                            if (airport) {
-                                delays[airport] = {
-                                    status: 'delay',
-                                    delay: 'CLOSED',
-                                    reason: reason,
-                                    trend: 'Closed'
-                                };
+                            const airport = closure.querySelector('ARPT')?.textContent?.trim();
+                            const reason = closure.querySelector('Reason')?.textContent?.trim() || 'Airport closed';
+                            const reopenText = closure.querySelector('Reopen')?.textContent?.trim();
+                            const beginText = closure.querySelector('Begin')?.textContent?.trim();
+
+                            if (!airport) return;
+
+                            const now = new Date();
+
+                            // Skip closures whose window has already ended
+                            if (reopenText) {
+                                const reopenTime = new Date(reopenText);
+                                if (!isNaN(reopenTime.getTime()) && reopenTime < now) return;
                             }
+
+                            // Skip closures that haven't started yet
+                            if (beginText) {
+                                const beginTime = new Date(beginText);
+                                if (!isNaN(beginTime.getTime()) && beginTime > now) return;
+                            }
+
+                            // Skip runway/taxiway-only NOTAMs — the airport itself is open
+                            if (!isFaaFullAirportClosure(reason)) return;
+
+                            delays[airport] = {
+                                status: 'delay',
+                                delay: 'CLOSED',
+                                reason: reason,
+                                trend: 'Closed'
+                            };
                         });
                     }
                     
@@ -2303,6 +2358,63 @@ async function updateBillStatus(bill) {
     }
 }
 
+// Mark bills as passed when proceedings contain a voice vote passage.
+// Roll call votes are handled via DomeWatch SSE. This covers voice votes, which
+// emit two separate items: the outcome row ("On motion to suspend the rules…
+// Agreed to by voice vote") contains no bill ID — the bill ID lives in a nearby
+// item ("H.R. 1234 – Considered under suspension…"). Mirror the worker's
+// ±3-row window to correlate the two.
+function updateBillStatusFromProceedings(items) {
+    if (!items || items.length === 0) return;
+
+    const billIdPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
+    const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
+    let changed = false;
+
+    const extractBillId = desc => {
+        const m = desc.match(billIdPattern);
+        return m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
+    };
+
+    const isOutcomeRow = desc =>
+        /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
+        /\bon passage\b/i.test(desc) ||
+        /on agreeing to the (resolution|amendment)\b/i.test(desc);
+
+    const isPassed = desc =>
+        /(agreed to|passed)\b/i.test(desc) &&
+        !/not agreed to|failed/i.test(desc) &&
+        /voice vote|without objection/i.test(desc);
+
+    for (let i = 0; i < items.length; i++) {
+        const desc = items[i].description || '';
+        if (!isOutcomeRow(desc) || !isPassed(desc)) continue;
+
+        // Outcome row rarely contains the bill ID itself; look at nearby items
+        let billId = extractBillId(desc);
+        for (let j = 1; j <= 3 && !billId; j++) {
+            if (i + j < items.length) billId = extractBillId(items[i + j].description || '');
+            if (!billId && i - j >= 0) billId = extractBillId(items[i - j].description || '');
+        }
+        if (!billId) continue;
+
+        const normId = billId.replace(/\s+/g, '');
+        for (const key of allArrays) {
+            const bill = (billsData[key] || []).find(b => b.id.replace(/\s+/g, '') === normId);
+            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+                bill.status = 'passed';
+                bill.latestAction = 'Passed (voice vote)';
+                bill.latestActionDate = items[i].pubDate || '';
+                bill.actionSource = 'proceedings';
+                bill.actionSourceUrl = items[i].link || '';
+                changed = true;
+            }
+        }
+    }
+
+    if (changed) updateBillsDisplay();
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -2568,6 +2680,13 @@ function openBillModal(billId) {
             </div>
         </div>` : '';
 
+    // Committee report action ("Reported by Committee xx – yy")
+    const committeeReportHtml = bill.committeeReport ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">COMMITTEE ACTION</div>
+            <div class="bill-modal-action">${escapeHtml(bill.committeeReport)}${bill.committeeReportDate ? `<span class="bill-modal-date"> — ${formatDate(bill.committeeReportDate)}</span>` : ''}</div>
+        </div>` : '';
+
     let overlay = document.getElementById('bill-modal-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -2612,6 +2731,7 @@ function openBillModal(billId) {
                 ${sponsorHtml}
                 ${cosponsorsHtml}
                 ${committeeHtml}
+                ${committeeReportHtml}
             </div>
             ${bill.summary ? `
             <div class="bill-modal-body">
@@ -2896,10 +3016,11 @@ function onInfoPopupKey(e, trigger) {
 function autoSwitchModeFromProceedings(items) {
     if (!items || items.length === 0) return;
 
-    // Never override an active vote with proceedings-derived mode.
-    // DomeWatch SSE is authoritative for vote state; the RSS feed lags.
+    // Respect DomeWatch vote status only while SSE is actively sending tallies.
+    // After 90s of SSE silence the vote is almost certainly over; let proceedings drive.
     const liveStatus = floorData.currentStatus?.value;
-    if (liveStatus === 'vote' || liveStatus === 'voting') {
+    const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    if ((liveStatus === 'vote' || liveStatus === 'voting') && sseIsLive) {
         window.setMode('vote');
         return;
     }
@@ -3004,12 +3125,51 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // These modes are driven purely by the most-recent item. They must be checked
+    // before the candidates block, which scans all history and would otherwise let
+    // a stale morning-hour item win over a just-started prayer, pledge, etc.
+    if (latest.startsWith('the house received a message from')) {
+        window.setMode('message');
+        return;
+    }
+    if (latest.includes('prayer') || latest.includes('chaplain')) {
+        window.setMode('prayer');
+        return;
+    }
+    if (latest.includes('pledge') || latest.includes('allegiance')) {
+        window.setMode('pledge');
+        return;
+    }
+    if (latest.includes('moment of silence') || latest.includes('silence')) {
+        window.setMode('silence');
+        updateSilenceSection(items);
+        return;
+    }
+    if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
+        window.setMode('committee-chair');
+        updateCommitteeChairSection(items);
+        return;
+    }
+    if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
+        window.setMode('speaker');
+        return;
+    }
+
     // For episodic modes (one-minute, special-order, morning-hour) vs persistent debate (COWH),
     // pick whichever has the most recent matching item — avoids stale morning speeches
     // overriding afternoon floor debate.
     const itemTime = i => i?.pubDate ? new Date(i.pubDate).getTime() : 0;
 
-    const cotwItem = items.find(i => {
+    // Don't surface episodic items from before the most recent recess/adjournment.
+    // items[0] is the most recent; recess at index N means only items[0..N-1] are post-recess.
+    const recessIdx = items.findIndex(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('do now recess') || d.includes('stands in recess') ||
+               d.includes('house do now recess') || d.includes('adjourn');
+    });
+    const candidateItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
+
+    const cotwItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         if (d.includes('morning-hour debate') || d.includes('morning hour debate')) return false;
         return d.includes('act as chairman of the committee') ||
@@ -3019,17 +3179,17 @@ function autoSwitchModeFromProceedings(items) {
                (d.includes('proceeded with') && d.includes('debate'));
     });
 
-    const soItem = items.find(i => {
+    const soItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('special order speech') || d.includes('special orders');
     });
 
-    const omItem = items.find(i => {
+    const omItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('one minute speech') || d.includes('one-minute speech');
     });
 
-    const mhItem = items.find(i => {
+    const mhItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('morning-hour debate') || d.includes('morning hour debate');
     });
@@ -3075,35 +3235,6 @@ function autoSwitchModeFromProceedings(items) {
                 });
             }
         }
-        return;
-    }
-
-    if (latest.startsWith('the house received a message from')) {
-        window.setMode('message');
-        return;
-    }
-
-    if (latest.includes('prayer') || latest.includes('chaplain')) {
-        window.setMode('prayer');
-        return;
-    }
-    if (latest.includes('pledge') || latest.includes('allegiance')) {
-        window.setMode('pledge');
-        return;
-    }
-    if (latest.includes('moment of silence') || latest.includes('silence')) {
-        window.setMode('silence');
-        updateSilenceSection(items);
-        return;
-    }
-    if (latest.includes('act as chairman of the committee') || latest.includes('act as chair of the committee')) {
-        window.setMode('committee-chair');
-        updateCommitteeChairSection(items);
-        return;
-    }
-
-    if (latest.includes('speaker pro tempore') || latest.includes('pro tempore')) {
-        window.setMode('speaker');
         return;
     }
 
@@ -3197,6 +3328,9 @@ async function updateProceedingsFeed() {
 
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
+
+        // Mark any voice-vote or agreed-to passages reflected in proceedings
+        updateBillStatusFromProceedings(data.items);
 
         // Update debate section with latest bill information
         updateDebateSection(data.items);
@@ -3446,13 +3580,37 @@ function updateDebateSection(items) {
             }
         }
 
+        // Committee Action
+        if (elements.debateCommitteeReportSection && elements.debateCommitteeReportText) {
+            if (foundBill.committeeReport) {
+                const crDate = foundBill.committeeReportDate ? ` — ${formatDate(foundBill.committeeReportDate)}` : '';
+                elements.debateCommitteeReportText.innerHTML = `${escapeHtml(foundBill.committeeReport)}<span class="bill-modal-date">${crDate}</span>`;
+                elements.debateCommitteeReportSection.style.display = '';
+            } else {
+                elements.debateCommitteeReportSection.style.display = 'none';
+            }
+        }
+
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
-                elements.debateBillDescription.textContent = decodeHtml(foundBill.summary);
+                elements.debateBillDescription.innerHTML = foundBill.summary;
                 elements.debateSummarySection.style.display = '';
             } else {
                 elements.debateSummarySection.style.display = 'none';
+            }
+        }
+
+        // Congress.gov link
+        const congressUrl = billIdToCongressUrl(foundBill.id);
+        const procedureClass = foundBill.procedure === 'suspension' ? 'suspension' : 'rule';
+        if (elements.debateCongressFoot && elements.debateCongressLink) {
+            if (congressUrl) {
+                elements.debateCongressLink.href = congressUrl;
+                elements.debateCongressLink.className = `bill-modal-link ${procedureClass}`;
+                elements.debateCongressFoot.style.display = '';
+            } else {
+                elements.debateCongressFoot.style.display = 'none';
             }
         }
     } else {
@@ -3462,7 +3620,9 @@ function updateDebateSection(items) {
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
         if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
+        if (elements.debateCommitteeReportSection) elements.debateCommitteeReportSection.style.display = 'none';
         if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
+        if (elements.debateCongressFoot) elements.debateCongressFoot.style.display = 'none';
     }
 }
 
@@ -5257,11 +5417,19 @@ async function initHlsPlayer() {
 
     let pollTimer = null;
     let playing = false;
+    let currentHls = null; // track active HLS instance so we can destroy it before restarting
 
     const loadingOverlay = document.getElementById('video-loading');
     function hideLoadingOverlay() {
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            loadingOverlay.hidden = true;
+        }
     }
+    // Overlay is dismissed by captureSnapshot (non-live) or canplay (live).
+    // showFallback also dismisses it if the stream is unavailable.
+    // No timeout — a premature dismiss would reveal ct=0 (start of stream)
+    // while a seek to the live edge is still in flight.
 
     function showFallback() {
         hideLoadingOverlay();
@@ -5272,8 +5440,9 @@ async function initHlsPlayer() {
     }
 
     function hideFallback() {
-        // NOTE: loading overlay is NOT dismissed here — it stays until we actually
-        // have a frame to show (live: canplay event; non-live: after snapshot drawn).
+        // Loading overlay stays up for non-live until captureSnapshot draws
+        // the correct last frame. For live it's dismissed by showFallback or
+        // the 3s timeout.
         fallback.style.display = 'none';
         fallback.setAttribute('aria-hidden', 'true');
         video.style.visibility = 'visible';
@@ -5283,45 +5452,107 @@ async function initHlsPlayer() {
         if (playing) return;
         playing = true;
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        // Destroy any previous HLS instance before attaching a new one to the same element.
+        if (currentHls) { try { currentHls.destroy(); } catch {} currentHls = null; }
         video.__hlsSrc    = streamUrl; // expose for PiP
         video.__hlsIsLive = isLive;
 
+        // PLAY-AT-EDGE: genuinely live (growing / Infinity duration). Keep at live edge.
+        function playAtEdge() {
+            video.__hlsIsLive = true; // correct the (possibly wrong) worker flag for the PiP
+            video.style.display = '';
+            if (snapshot) snapshot.hidden = true;
+            video.muted = true;
+            video.autoplay = true;
+            video.controls = true;
+            video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+            // Safety: dismiss overlay after 8s in case canplay never fires (stalled stream)
+            setTimeout(hideLoadingOverlay, 8000);
+            video.play().catch(() => {});
+        }
+
+        // FREEZE-AT-END: ended session (finite duration). Seek to last frame,
+        // decode it, pause, and leave the paused video showing that frame.
+        let frozen = false;
+        function freezeAtEnd() {
+            if (frozen) return;
+            const end = isFinite(video.duration) && video.duration > 1
+                ? video.duration
+                : (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN);
+            if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
+            frozen = true;
+            video.__hlsIsLive = false; // correct the (wrong) worker flag → PiP uses snapshot path
+            window.__hlsSessionEnded = true;
+            // Tell the PiP (which may already be playing) to stop and switch to snapshot.
+            window.dispatchEvent(new CustomEvent('hls-session-ended'));
+            video.controls = false;
+            video.muted = true;
+            const target = end - 0.3;
+            const onSeeked = () => {
+                // Play one beat so Safari decodes the frame at this position, then pause.
+                video.play().then(() => {
+                    const grab = () => {
+                        if (video.videoWidth > 0) {
+                            video.pause();
+                            if (snapshot) {
+                                try {
+                                    snapshot.width = video.videoWidth;
+                                    snapshot.height = video.videoHeight;
+                                    snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                                    snapshot.hidden = false;
+                                    video.style.display = 'none';
+                                } catch {}
+                            }
+                            hideLoadingOverlay();
+                        } else {
+                            requestAnimationFrame(grab);
+                        }
+                    };
+                    requestAnimationFrame(grab);
+                }).catch(() => { video.pause(); hideLoadingOverlay(); });
+            };
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.currentTime = target;
+
+            // After freezing, poll every 30s for a new live session.
+            // When a different URL appears (new session), restart playback.
+            const frozenUrl = streamUrl;
+            const resumeTimer = setInterval(async () => {
+                try {
+                    const resp = await fetch('https://api.evanhollander.org/house-floor/api/hls-url');
+                    const newData = await resp.json();
+                    if (newData.url && newData.isLive && newData.url !== frozenUrl) {
+                        clearInterval(resumeTimer);
+                        playing = false;
+                        window.__hlsSessionEnded = false;
+                        if (loadingOverlay) { loadingOverlay.style.display = ''; loadingOverlay.hidden = false; }
+                        startPlayback(newData.url, true);
+                    }
+                } catch { /* network error — keep polling */ }
+            }, 30_000);
+        }
+
         function onReady() {
             hideFallback();
-            if (isLive) {
-                video.muted = true;
-                video.autoplay = true;
-                video.controls = true;
-                // Hide loading overlay only once the browser has decoded a frame
-                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                video.play().catch(() => {});
-            } else {
-                function captureSnapshot() {
-                    if (!snapshot) return;
-                    try {
-                        snapshot.width = video.videoWidth || video.clientWidth;
-                        snapshot.height = video.videoHeight || video.clientHeight;
-                        const ctx = snapshot.getContext('2d');
-                        ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                        // Show canvas, hide video — loading overlay dismissed once frame is drawn
-                        video.style.display = 'none';
-                        snapshot.hidden = false;
-                        hideLoadingOverlay();
-                    } catch {}
-                }
-                function seekToEnd() {
-                    if (isFinite(video.duration) && video.duration > 1) {
-                        video.currentTime = video.duration - 0.5;
-                        video.addEventListener('seeked', captureSnapshot, { once: true });
-                    }
-                }
-                if (isFinite(video.duration) && video.duration > 1) {
-                    seekToEnd();
-                } else {
-                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
-                    video.addEventListener('durationchange', seekToEnd, { once: true });
-                }
+            // Decide by the stream's ACTUAL nature, not the worker's isLive flag
+            // (which is unreliable for sessions that ended without a clean signal).
+            // Finite duration  = ended recording → freeze last frame.
+            // Infinite duration = genuinely live  → play at the live edge.
+            // Wait briefly for duration to be reported if it isn't yet.
+            let decided = false;
+            function decide() {
+                if (decided) return;
+                const d = video.duration;
+                if (Number.isNaN(d)) { return; } // not known yet
+                decided = true;
+                if (d === Infinity) playAtEdge();
+                else freezeAtEnd();
             }
+            video.addEventListener('durationchange', decide);
+            video.addEventListener('loadedmetadata', decide);
+            decide();
+            // Safety net: if duration never resolves, default to freeze (safer for recess)
+            setTimeout(() => { if (!decided) { decided = true; freezeAtEnd(); } }, 2500);
         }
 
         if (window.Hls && Hls.isSupported()) {
@@ -5334,12 +5565,24 @@ async function initHlsPlayer() {
                 highBufferWatchdogPeriod: 1,
             } : { maxBufferLength: 30 };
             const hls = new Hls(hlsCfg);
+            currentHls = hls;
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
+            if (isLive) {
+                function enableCaptions() {
+                    for (let i = 0; i < video.textTracks.length; i++) {
+                        const t = video.textTracks[i];
+                        if (t.kind === 'captions' || t.kind === 'subtitles') { t.mode = 'showing'; return; }
+                    }
+                }
+                video.textTracks.addEventListener('addtrack', enableCaptions);
+            }
             hls.on(Hls.Events.MANIFEST_PARSED, onReady);
             // Whenever the live edge position is known, snap to it
             hls.on(Hls.Events.LEVEL_UPDATED, () => {
-                if (isLive && hls.liveSyncPosition && video.readyState) {
+                // Only snap to live edge for genuinely-live playback. If we've
+                // frozen the last frame of an ended session, leave currentTime alone.
+                if (video.duration === Infinity && hls.liveSyncPosition && video.readyState) {
                     const drift = hls.liveSyncPosition - video.currentTime;
                     if (drift > 3) video.currentTime = hls.liveSyncPosition;
                 }
@@ -5352,6 +5595,7 @@ async function initHlsPlayer() {
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = streamUrl;
+            if (!isLive) video.pause(); // prevent Safari autoplay before we seek
             video.addEventListener('loadedmetadata', onReady, { once: true });
             video.addEventListener('error', () => { playing = false; showFallback(); startPolling(); });
             video.addEventListener('ended', () => {
@@ -6214,12 +6458,31 @@ function updateLastUpdate() {
     }
 
     function startPipHls() {
-        // Prevent double-start: pipHls covers the live case, pipWaitTimer the pending/non-live case
-        if (pipHls || pipWaitTimer !== null) return;
-
         const mainVideo = document.getElementById('player');
         const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
         const srcUrl    = mainVideo?.__hlsSrc || null;
+
+        // Session ended (main player frozen): never play in the PiP. Tear down any
+        // live HLS instance and fall through to the snapshot path below.
+        if (isLive === false) {
+            if (pipHls) { pipHls.destroy(); pipHls = null; }
+            pipVideo.pause();
+        } else if (pipHls) {
+            // Fast resume: HLS instance still alive from last session — just restart loading
+            pipVideo.style.display = 'block';
+            if (pipSnapshot) pipSnapshot.style.display = 'none';
+            if (pipVideo.readyState < 3) {
+                resetPipLoading();
+                pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            } else {
+                hidePipLoading();
+            }
+            pipHls.startLoad(-1);
+            pipVideo.play().catch(() => {});
+            return;
+        }
+        // Prevent double-start in fetch/timer state
+        if (pipWaitTimer !== null) return;
 
         // Always start hidden; specific branch will reveal what should show
         pipVideo.style.display = 'none';
@@ -6300,13 +6563,38 @@ function updateLastUpdate() {
     }
 
     function stopPipHls() {
-        if (pipWaitTimer) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
-        if (pipHls) { pipHls.destroy(); pipHls = null; }
-        pipVideo.src = '';
-        pipVideo.load();
-        if (pipSnapshot) { pipSnapshot.src = ''; pipSnapshot.style.display = 'none'; }
-        resetPipLoading(); // ready to show again on next open
+        if (pipWaitTimer && pipWaitTimer !== -1) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
+        if (pipWaitTimer === -1) pipWaitTimer = null; // cancel pending fetch sentinel
+        if (pipHls) { pipHls.stopLoad(); pipVideo.pause(); }
+        // Keep pipHls alive — startPipHls resumes it without full teardown
+        if (pipSnapshot) pipSnapshot.style.display = 'none';
     }
+
+    // Apply the main player's frozen snapshot to the PiP (ended session).
+    function applyMainSnapshotToPip() {
+        const ms = document.getElementById('player-snapshot');
+        if (!ms || ms.hidden || !ms.width) return false;
+        try {
+            const dataUrl = ms.toDataURL();
+            if (!dataUrl || dataUrl === 'data:,') return false;
+            pipVideo.style.display = 'none';
+            pipSnapshot.src = dataUrl;
+            pipSnapshot.style.display = 'block';
+            hidePipLoading();
+            return true;
+        } catch { return false; }
+    }
+
+    // Main player froze (session ended) — stop any live PiP playback immediately
+    // and switch to the frozen snapshot, even if the PiP is mid-playback.
+    window.addEventListener('hls-session-ended', () => {
+        if (pipHls) { pipHls.destroy(); pipHls = null; }
+        pipVideo.pause();
+        if (!applyMainSnapshotToPip()) {
+            // Snapshot not drawn yet — poll until it is
+            const t = setInterval(() => { if (applyMainSnapshotToPip()) clearInterval(t); }, 200);
+        }
+    });
 
     function showPip() {
         if (pipActive) return;
