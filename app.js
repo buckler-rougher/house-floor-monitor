@@ -5451,6 +5451,7 @@ async function initHlsPlayer() {
 
         // PLAY-AT-EDGE: genuinely live (growing / Infinity duration). Keep at live edge.
         function playAtEdge() {
+            video.__hlsIsLive = true; // correct the (possibly wrong) worker flag for the PiP
             video.style.display = '';
             if (snapshot) snapshot.hidden = true;
             video.muted = true;
@@ -5470,6 +5471,7 @@ async function initHlsPlayer() {
                 : (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN);
             if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
             frozen = true;
+            video.__hlsIsLive = false; // correct the (wrong) worker flag → PiP uses snapshot path
             video.controls = false;
             video.muted = true;
             const target = end - 0.3;
@@ -6425,16 +6427,23 @@ function updateLastUpdate() {
     }
 
     function startPipHls() {
-        // Fast resume: HLS instance still alive from last session — just restart loading
-        if (pipHls) {
+        const mainVideo = document.getElementById('player');
+        const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
+        const srcUrl    = mainVideo?.__hlsSrc || null;
+
+        // Session ended (main player frozen): never play in the PiP. Tear down any
+        // live HLS instance and fall through to the snapshot path below.
+        if (isLive === false) {
+            if (pipHls) { pipHls.destroy(); pipHls = null; }
+            pipVideo.pause();
+        } else if (pipHls) {
+            // Fast resume: HLS instance still alive from last session — just restart loading
             pipVideo.style.display = 'block';
             if (pipSnapshot) pipSnapshot.style.display = 'none';
             if (pipVideo.readyState < 3) {
-                // Buffer lost — show loading until a frame is available
                 resetPipLoading();
                 pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
             } else {
-                // Buffer still warm — resume silently, no loading flash
                 hidePipLoading();
             }
             pipHls.startLoad(-1);
@@ -6443,10 +6452,6 @@ function updateLastUpdate() {
         }
         // Prevent double-start in fetch/timer state
         if (pipWaitTimer !== null) return;
-
-        const mainVideo = document.getElementById('player');
-        const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
-        const srcUrl    = mainVideo?.__hlsSrc || null;
 
         // Always start hidden; specific branch will reveal what should show
         pipVideo.style.display = 'none';
