@@ -5516,14 +5516,14 @@ async function initHlsPlayer() {
         }
 
         if (window.Hls && Hls.isSupported()) {
-            const hlsCfg = isLive ? {
+            const hlsCfg = {
                 maxBufferLength: 2,
                 maxMaxBufferLength: 4,
                 liveSyncDurationCount: 1,
                 liveMaxLatencyDurationCount: 2,
                 liveDurationInfinity: true,
                 highBufferWatchdogPeriod: 1,
-            } : { maxBufferLength: 30 };
+            };
             const hls = new Hls(hlsCfg);
             currentHls = hls;
             hls.loadSource(streamUrl);
@@ -5540,7 +5540,6 @@ async function initHlsPlayer() {
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 hideFallback();
-                video.__hlsIsLive = true;
                 video.style.display = '';
                 if (snapshot) snapshot.hidden = true;
                 video.muted = true;
