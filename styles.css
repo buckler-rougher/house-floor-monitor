@@ -21,6 +21,7 @@
     --accent-purple: #a371f7;
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+    --section-gap: 24px;
 }
 
 body {
@@ -65,17 +66,29 @@ body {
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 116px 0 24px; /* Remove horizontal padding, let sections control their own */
+    padding: calc(100px + var(--section-gap)) 0 24px; /* 100px fixed header + section-gap breathing room */
     width: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
+/* ── Section spacing — all direct children of <main> share the same gap ──── */
+.container > .congress-info,
+.container > .main-display,
+.container > .voting-calendar-panel,
+.container > .youtube-panel,
+.container > .footer {
+    margin-bottom: var(--section-gap);
+}
+.container > .footer:last-of-type,
+.container > footer {
+    margin-bottom: 0;
+}
+
 /* Main Display */
 .main-display {
     padding: 0 200px;
-    margin-bottom: 24px;
 }
 
 
@@ -237,9 +250,9 @@ body {
     z-index: 1;
 }
 
-/* Anchor scroll offset — clear the fixed 100px header + 16px breathing room */
+/* Anchor scroll offset — clear the fixed 100px header + section-gap breathing room */
 #vote, #proceedings, #bills, #live {
-    scroll-margin-top: 116px;
+    scroll-margin-top: calc(100px + var(--section-gap));
 }
 
 /* Main Header */
@@ -605,7 +618,14 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--section-gap);
+}
+/* Sections inside main-display are flex items — gap handles all spacing.
+   Zero out any per-section margin-bottom so nothing double-stacks.
+   !important needed because individual panel rules later in the file
+   have equal specificity and would otherwise win by source order. */
+.main-display > * {
+    margin-bottom: 0 !important;
 }
 
 /* Vote Header */
@@ -1926,6 +1946,25 @@ body {
   cursor: pointer;
 }
 
+/* ── Closed captions — tactical monospace style ─────────────────────────── */
+::cue {
+  background-color: rgba(13, 17, 23, 0.88);
+  color: #e6edf3;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  font-size: 0.82em;
+  line-height: 1.5;
+  text-shadow: none;
+}
+::cue(b), ::cue(strong) {
+  color: rgba(0, 255, 65, 0.9);
+  font-weight: 600;
+}
+::cue(i), ::cue(em) {
+  color: var(--text-secondary);
+  font-style: normal;
+  font-weight: 400;
+}
+
 .youtube-container {
   position: relative;
   width: 100%;
@@ -2798,7 +2837,6 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
-    margin-bottom: 16px;
 }
 
 .bills-raw-headers {
@@ -2815,7 +2853,6 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     overflow: hidden;
-    margin-bottom: 16px;
     padding-bottom: 0;
     box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.05) inset;
 }
@@ -4140,7 +4177,6 @@ a.bill-card-rule-link {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px 16px;
-    margin-bottom: 16px;
     text-align: center;
 }
 
