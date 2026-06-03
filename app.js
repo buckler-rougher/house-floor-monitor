@@ -5412,193 +5412,118 @@ function init() {
 async function initHlsPlayer() {
     const video = document.getElementById('player');
     const snapshot = document.getElementById('player-snapshot');
+    const loadingOverlay = document.getElementById('video-loading');
     const fallback = document.getElementById('video-fallback');
     if (!video) return;
 
+    let currentHls = null;
     let pollTimer = null;
-    let playing = false;
-    let currentHls = null; // track active HLS instance so we can destroy it before restarting
+    let frozen = false;
 
-    const loadingOverlay = document.getElementById('video-loading');
-    function hideLoadingOverlay() {
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-            loadingOverlay.hidden = true;
-        }
+    function hideOverlay() {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
-    // Overlay is dismissed by captureSnapshot (non-live) or canplay (live).
-    // showFallback also dismisses it if the stream is unavailable.
-    // No timeout — a premature dismiss would reveal ct=0 (start of stream)
-    // while a seek to the live edge is still in flight.
-
-    function showFallback() {
-        hideLoadingOverlay();
-        video.style.visibility = 'hidden';
-        fallback.style.display = 'flex';
-        fallback.setAttribute('aria-hidden', 'false');
-        if (endedLabel) endedLabel.hidden = true;
+    function showUnavailable() {
+        hideOverlay();
+        video.style.display = 'none';
+        if (fallback) fallback.style.display = 'flex';
+    }
+    function startPolling() {
+        if (pollTimer) return;
+        pollTimer = setInterval(async () => {
+            try {
+                const d = await (await fetch('https://api.evanhollander.org/house-floor/api/hls-url')).json();
+                if (d.url) { clearInterval(pollTimer); pollTimer = null; loadStream(d.url, d.isLive); }
+            } catch {}
+        }, 10_000);
     }
 
-    function hideFallback() {
-        // Loading overlay stays up for non-live until captureSnapshot draws
-        // the correct last frame. For live it's dismissed by showFallback or
-        // the 3s timeout.
-        fallback.style.display = 'none';
-        fallback.setAttribute('aria-hidden', 'true');
-        video.style.visibility = 'visible';
-    }
-
-    function startPlayback(streamUrl, isLive) {
-        if (playing) return;
-        playing = true;
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-        // Destroy any previous HLS instance before attaching a new one to the same element.
-        if (currentHls) { try { currentHls.destroy(); } catch {} currentHls = null; }
-        video.__hlsSrc    = streamUrl; // expose for PiP
-        video.__hlsIsLive = isLive;
-
-        // Capture the last frame of an ended session onto the snapshot canvas,
-        // hide the video element, and start polling for the next live session.
-        let frozen = false;
-        function freezeAtEnd() {
-            if (frozen) return;
-            const end = isFinite(video.duration) && video.duration > 1
-                ? video.duration
-                : (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN);
-            if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
-            frozen = true;
-            video.__hlsIsLive = false;
-            window.__hlsSessionEnded = true;
-            window.dispatchEvent(new CustomEvent('hls-session-ended'));
-            video.controls = false;
-            video.muted = true;
-            const target = end - 0.3;
-            const onSeeked = () => {
-                video.play().then(() => {
-                    const grab = () => {
-                        if (video.videoWidth > 0) {
-                            video.pause();
-                            if (snapshot) {
-                                try {
-                                    snapshot.width = video.videoWidth;
-                                    snapshot.height = video.videoHeight;
-                                    snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                                    snapshot.hidden = false;
-                                    video.style.display = 'none';
-                                } catch {}
-                            }
-                            hideLoadingOverlay();
-                        } else {
-                            requestAnimationFrame(grab);
+    function freezeAtEnd() {
+        if (frozen) return;
+        const end = video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN;
+        if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
+        frozen = true;
+        video.__hlsIsLive = false;
+        window.__hlsSessionEnded = true;
+        window.dispatchEvent(new CustomEvent('hls-session-ended'));
+        video.controls = false;
+        const onSeeked = () => {
+            video.play().then(() => {
+                const grab = () => {
+                    if (video.videoWidth > 0) {
+                        video.pause();
+                        if (snapshot) {
+                            try {
+                                snapshot.width  = video.videoWidth;
+                                snapshot.height = video.videoHeight;
+                                snapshot.getContext('2d').drawImage(video, 0, 0, snapshot.width, snapshot.height);
+                                snapshot.hidden = false;
+                                video.style.display = 'none';
+                            } catch {}
                         }
-                    };
-                    requestAnimationFrame(grab);
-                }).catch(() => { video.pause(); hideLoadingOverlay(); });
-            };
-            video.addEventListener('seeked', onSeeked, { once: true });
-            video.currentTime = target;
+                    } else { requestAnimationFrame(grab); }
+                };
+                requestAnimationFrame(grab);
+            }).catch(() => video.pause());
+        };
+        video.addEventListener('seeked', onSeeked, { once: true });
+        video.currentTime = end - 0.3;
+        const frozenUrl = video.__hlsSrc;
+        const t = setInterval(async () => {
+            try {
+                const d = await (await fetch('https://api.evanhollander.org/house-floor/api/hls-url')).json();
+                if (d.url && d.isLive && d.url !== frozenUrl) {
+                    clearInterval(t);
+                    frozen = false;
+                    window.__hlsSessionEnded = false;
+                    if (loadingOverlay) loadingOverlay.style.display = '';
+                    loadStream(d.url, true);
+                }
+            } catch {}
+        }, 30_000);
+    }
 
-            // Poll every 30s for a new live session after freeze.
-            const frozenUrl = streamUrl;
-            const resumeTimer = setInterval(async () => {
-                try {
-                    const resp = await fetch('https://api.evanhollander.org/house-floor/api/hls-url');
-                    const newData = await resp.json();
-                    if (newData.url && newData.isLive && newData.url !== frozenUrl) {
-                        clearInterval(resumeTimer);
-                        playing = false;
-                        window.__hlsSessionEnded = false;
-                        if (loadingOverlay) { loadingOverlay.style.display = ''; loadingOverlay.hidden = false; }
-                        startPlayback(newData.url, true);
-                    }
-                } catch { /* network error — keep polling */ }
-            }, 30_000);
-        }
+    function loadStream(url, isLive) {
+        if (currentHls) { try { currentHls.destroy(); } catch {} currentHls = null; }
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        frozen = false;
+        video.__hlsSrc = url;
+        video.__hlsIsLive = isLive;
+        // Show video, hide fallback/snapshot — identical to PiP load()
+        video.style.display = 'block';
+        video.muted = true;
+        video.controls = true;
+        if (snapshot) { snapshot.hidden = true; }
+        if (fallback) fallback.style.display = 'none';
 
         if (window.Hls && Hls.isSupported()) {
-            const hls = new Hls({
-                maxBufferLength: 2,
-                maxMaxBufferLength: 4,
-                liveSyncDurationCount: 1,
-                liveMaxLatencyDurationCount: 2,
-                liveDurationInfinity: true,
-            });
+            const hls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
             currentHls = hls;
-            hls.loadSource(streamUrl);
+            hls.loadSource(url);
             hls.attachMedia(video);
-
-            // Enable captions
-            function enableCaptions() {
-                for (let i = 0; i < video.textTracks.length; i++) {
-                    const t = video.textTracks[i];
-                    if (t.kind === 'captions' || t.kind === 'subtitles') { t.mode = 'showing'; return; }
-                }
-            }
-            video.textTracks.addEventListener('addtrack', enableCaptions);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                hideFallback();
-                video.style.display = '';
-                if (snapshot) snapshot.hidden = true;
-                video.muted = true;
-                video.controls = true;
-                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                setTimeout(hideLoadingOverlay, 5000);
-                video.play().catch(() => {});
-                video.addEventListener('ended', () => freezeAtEnd());
-            });
-
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) { playing = false; showFallback(); startPolling(); }
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Safari native HLS
-            video.src = streamUrl;
-            video.muted = true;
-            video.autoplay = true;
-            video.controls = true;
-            video.addEventListener('loadedmetadata', () => {
-                hideFallback();
-                video.__hlsIsLive = video.duration === Infinity;
-                video.style.display = '';
-                if (snapshot) snapshot.hidden = true;
-                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                setTimeout(hideLoadingOverlay, 8000);
-                video.play().catch(() => {});
-                if (!video.__hlsIsLive) freezeAtEnd();
-            }, { once: true });
+            video.addEventListener('canplay', hideOverlay, { once: true });
+            setTimeout(hideOverlay, 5000);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+            hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { showUnavailable(); startPolling(); } });
             video.addEventListener('ended', () => freezeAtEnd());
-            video.addEventListener('error', () => { playing = false; showFallback(); startPolling(); });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.play().catch(() => {});
+            video.addEventListener('canplay', hideOverlay, { once: true });
+            setTimeout(hideOverlay, 5000);
+            video.addEventListener('ended', () => freezeAtEnd());
         } else {
-            showFallback();
+            showUnavailable();
         }
     }
 
-    async function tryFetchStream() {
-        try {
-            const resp = await fetch('https://api.evanhollander.org/house-floor/api/hls-url');
-            const data = await resp.json();
-            if (data.url) {
-                startPlayback(data.url, data.isLive);
-                return true;
-            }
-        } catch { /* network error — keep polling */ }
-        return false;
-    }
-
-    function startPolling() {
-        if (pollTimer) return; // already polling
-        showFallback();
-        pollTimer = setInterval(async () => {
-            const found = await tryFetchStream();
-            if (found) { clearInterval(pollTimer); pollTimer = null; }
-        }, 10000); // check every 10 seconds
-        window.addEventListener('beforeunload', () => { if (pollTimer) clearInterval(pollTimer); }, { once: true });
-    }
-
-    // Initial check
-    const found = await tryFetchStream();
-    if (!found) startPolling();
+    // Initial load
+    try {
+        const d = await (await fetch('https://api.evanhollander.org/house-floor/api/hls-url')).json();
+        if (d.url) { loadStream(d.url, d.isLive); return; }
+    } catch {}
+    showUnavailable();
+    startPolling();
 }
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
