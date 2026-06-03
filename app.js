@@ -5394,8 +5394,13 @@ async function initHlsPlayer() {
 
     const loadingOverlay = document.getElementById('video-loading');
     function hideLoadingOverlay() {
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            loadingOverlay.hidden = true;
+        }
     }
+    // Hard guarantee: overlay is gone after 3s no matter what
+    setTimeout(hideLoadingOverlay, 3000);
 
     function showFallback() {
         hideLoadingOverlay();
@@ -5442,6 +5447,9 @@ async function initHlsPlayer() {
                     if (isFinite(video.duration) && video.duration > 1) {
                         video.currentTime = video.duration - 0.5;
                         video.addEventListener('seeked', captureSnapshot, { once: true });
+                    } else {
+                        // Ended live stream keeps Infinity duration — capture current position
+                        setTimeout(captureSnapshot, 600);
                     }
                 }
                 if (isFinite(video.duration) && video.duration > 1) {
