@@ -730,30 +730,38 @@ async function fetchCongressBillSummary(billId) {
 async function fetchBillMeta(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
-  try {
-    const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
-    const key = `?api_key=${_congressApiKey}`;
-    const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
-      fetch(`${base}${key}`, { headers: { 'Accept': 'application/json' } }),
-      fetch(`${base}/cosponsors${key}&limit=100`, { headers: { 'Accept': 'application/json' } }),
-      fetch(`${base}/committees${key}&limit=5`, { headers: { 'Accept': 'application/json' } }),
-    ]);
-    const result = {};
-    if (billResp.ok) {
+  const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
+  const apiKey = `?api_key=${_congressApiKey}`;
+  // Network errors propagate as thrown exceptions — callers use safeFetchMeta to avoid caching null for transient failures
+  const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
+    fetch(`${base}${apiKey}`, { headers: { 'Accept': 'application/json' } }),
+    fetch(`${base}/cosponsors${apiKey}&limit=100`, { headers: { 'Accept': 'application/json' } }),
+    fetch(`${base}/committees${apiKey}&limit=5`, { headers: { 'Accept': 'application/json' } }),
+  ]);
+  if ([billResp, cosponsorsResp, committeesResp].some(r => r.status === 429 || r.status >= 500)) {
+    throw new Error(`Congress.gov fetchBillMeta transient error: ${billResp.status}`);
+  }
+  const result = {};
+  if (billResp.ok) {
+    try {
       const data = await billResp.json();
       const s = (data.bill?.sponsors || [])[0];
       if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
-    }
-    if (cosponsorsResp.ok) {
+    } catch {}
+  }
+  if (cosponsorsResp.ok) {
+    try {
       const data = await cosponsorsResp.json();
       result.cosponsors = (data.cosponsors || []).map(c => ({ bioguideId: c.bioguideId, firstName: c.firstName, lastName: c.lastName, party: c.party, state: c.state, district: c.district ?? null }));
-    }
-    if (committeesResp.ok) {
+    } catch {}
+  }
+  if (committeesResp.ok) {
+    try {
       const data = await committeesResp.json();
       result.committees = (data.committees || []).map(c => c.name).filter(Boolean).slice(0, 3);
-    }
-    return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
-  } catch { return null; }
+    } catch {}
+  }
+  return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
 }
 
 // "Ordered to be Reported" → "Reported by Committee xx – yy" / "Reported out of cmte by unanimous consent"
@@ -1461,9 +1469,10 @@ async function _fetchBills(request, env) {
       // Check KV cache first — avoids hitting Congress.gov on warm loads
       const enrichCached = await getCachedBillEnrichment(env, bill.id);
       let congressStatus, summary, meta;
-      // fetchCongressBillSummary throws on transient errors (429, 5xx, timeout) so we can
-      // avoid caching null for failures — only cache null when the API genuinely has no summary.
+      // Both safe wrappers return undefined on transient errors (429, 5xx, network) so callers
+      // can distinguish "genuinely no data" (null) from "failed this time" (undefined).
       const safeFetchSummary = (id) => fetchCongressBillSummary(id).catch(() => undefined);
+      const safeFetchMeta    = (id) => fetchBillMeta(id).catch(() => undefined);
       if (enrichCached) {
         congressStatus = enrichCached.congressStatus ?? null;
         // Retry summary/meta when null — Congress.gov may have published since last fetch.
@@ -1475,36 +1484,42 @@ async function _fetchBills(request, env) {
         if (needsSummary || needsMeta || needsCommitteeReport) {
           const [summaryResult, newMeta, freshStatus] = await Promise.all([
             needsSummary         ? safeFetchSummary(bill.id)         : Promise.resolve(enrichCached.summary),
-            needsMeta            ? fetchBillMeta(bill.id)            : Promise.resolve(enrichCached.meta),
+            needsMeta            ? safeFetchMeta(bill.id)            : Promise.resolve(enrichCached.meta),
             needsCommitteeReport ? fetchCongressBillStatus(bill.id)  : Promise.resolve(undefined),
           ]);
-          summary = summaryResult;
-          meta    = newMeta;
+          // undefined = transient error (don't overwrite cache); null = confirmed no data
+          const summaryToCache = summaryResult === undefined ? enrichCached.summary : summaryResult;
+          const metaToCache    = newMeta      === undefined ? enrichCached.meta    : newMeta;
+          summary = summaryResult === undefined ? enrichCached.summary : summaryResult;
+          meta    = newMeta === undefined ? enrichCached.meta : newMeta;
           // Merge freshStatus: preserve any existing floor action, only add/update committeeReport.
           // freshStatus === null means transient error; undefined means we didn't re-fetch.
           if (freshStatus != null) {
             congressStatus = { ...(enrichCached.congressStatus || {}), committeeReport: freshStatus.committeeReport ?? null };
           }
-          const summaryToCache = summaryResult === undefined ? enrichCached.summary : summaryResult;
-          if (summaryToCache || meta || freshStatus != null) {
-            await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta });
+          if (summaryToCache || metaToCache || freshStatus != null) {
+            await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta: metaToCache });
           }
-          if (summaryResult === undefined) summary = enrichCached.summary;
         } else {
           summary = enrichCached.summary;
           meta    = enrichCached.meta;
         }
       } else {
-        let summaryResult;
-        [congressStatus, summaryResult, meta] = await Promise.all([
+        let summaryResult, metaResult;
+        [congressStatus, summaryResult, metaResult] = await Promise.all([
           fetchCongressBillStatus(bill.id),
           safeFetchSummary(bill.id),
-          fetchBillMeta(bill.id),
+          safeFetchMeta(bill.id),
         ]);
+        // undefined = transient error — don't cache as null so next request retries
         summary = summaryResult ?? null;
-        // Only cache if summary fetch didn't fail transiently (undefined = transient error)
-        if (summaryResult !== undefined || meta || congressStatus) {
-          await setCachedBillEnrichment(env, bill.id, { congressStatus, summary, meta });
+        meta    = metaResult ?? null;
+        if (summaryResult !== undefined || metaResult !== undefined || congressStatus) {
+          await setCachedBillEnrichment(env, bill.id, {
+            congressStatus,
+            summary: summaryResult !== undefined ? summaryResult : null,
+            meta:    metaResult    !== undefined ? metaResult    : null,
+          });
         }
       }
       if (congressStatus) {
