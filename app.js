@@ -5389,6 +5389,17 @@ async function initHlsPlayer() {
     const fallback = document.getElementById('video-fallback');
     if (!video) return;
 
+    // TEMP DEBUG
+    const _dbg = document.createElement('div');
+    _dbg.style.cssText = 'position:fixed;top:120px;right:8px;background:#000;color:#0f0;font:12px monospace;padding:8px;z-index:99999;border:2px solid #0f0;white-space:pre;';
+    _dbg.textContent = 'DEBUG INIT';
+    document.body.appendChild(_dbg);
+    setInterval(() => {
+        const se = video.seekable.length > 0 ? video.seekable.end(video.seekable.length-1).toFixed(1) : 'none';
+        const ss = video.seekable.length > 0 ? video.seekable.start(0).toFixed(1) : 'none';
+        _dbg.textContent = `v=w\ndur=${video.duration?.toFixed(1)}\nseek ${ss}→${se}\nct=${video.currentTime?.toFixed(1)}\nrs=${video.readyState}`;
+    }, 300);
+
     let pollTimer = null;
     let playing = false;
 
@@ -5435,16 +5446,6 @@ async function initHlsPlayer() {
                 // Non-live: stop any autoplay immediately, seek to last frame.
                 video.pause();
 
-                // TEMP DEBUG — remove after diagnosing
-                const _dbg = document.createElement('div');
-                _dbg.id = 'hls-debug';
-                _dbg.style.cssText = 'position:fixed;bottom:60px;left:8px;background:rgba(0,0,0,.85);color:#0f0;font:11px monospace;padding:6px 10px;z-index:9999;pointer-events:none;border:1px solid #0f0;';
-                document.body.appendChild(_dbg);
-                setInterval(() => {
-                    const se = video.seekable.length > 0 ? video.seekable.end(video.seekable.length-1).toFixed(1) : 'none';
-                    const ss = video.seekable.length > 0 ? video.seekable.start(0).toFixed(1) : 'none';
-                    _dbg.textContent = `dur=${video.duration?.toFixed(1)} seek=${ss}→${se} ct=${video.currentTime?.toFixed(1)} rs=${video.readyState}`;
-                }, 500);
 
                 function captureSnapshot() {
                     video.pause();
