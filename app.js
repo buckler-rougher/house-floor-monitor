@@ -5432,30 +5432,50 @@ async function initHlsPlayer() {
                 video.controls = true;
                 video.play().catch(() => {});
             } else {
+                // Non-live: stop any autoplay immediately, seek to last frame.
+                video.pause();
+
                 function captureSnapshot() {
+                    video.pause();
                     if (!snapshot) return;
                     try {
                         snapshot.width = video.videoWidth || video.clientWidth;
                         snapshot.height = video.videoHeight || video.clientHeight;
                         const ctx = snapshot.getContext('2d');
                         ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                        // Show canvas, hide video
                         video.style.display = 'none';
                         snapshot.hidden = false;
                     } catch {}
                 }
+
+                let seekDone = false;
                 function seekToEnd() {
+                    if (seekDone) return;
+                    video.pause();
+                    // Finite VOD duration
                     if (isFinite(video.duration) && video.duration > 1) {
+                        seekDone = true;
                         video.currentTime = video.duration - 0.5;
                         video.addEventListener('seeked', captureSnapshot, { once: true });
+                        return;
                     }
+                    // Live manifest (no EXT-X-ENDLIST): seek to end of seekable range
+                    if (video.seekable.length > 0) {
+                        const end = video.seekable.end(video.seekable.length - 1);
+                        if (isFinite(end) && end > 1) {
+                            seekDone = true;
+                            video.currentTime = end - 0.5;
+                            video.addEventListener('seeked', captureSnapshot, { once: true });
+                            return;
+                        }
+                    }
+                    // Not ready yet — retry
+                    setTimeout(seekToEnd, 400);
                 }
-                if (isFinite(video.duration) && video.duration > 1) {
-                    seekToEnd();
-                } else {
-                    video.addEventListener('loadedmetadata', seekToEnd, { once: true });
-                    video.addEventListener('durationchange', seekToEnd, { once: true });
-                }
+
+                // canplay = seekable range is populated; loadedmetadata as backup
+                video.addEventListener('canplay', seekToEnd, { once: true });
+                video.addEventListener('loadedmetadata', seekToEnd, { once: true });
             }
         }
 
@@ -5496,6 +5516,7 @@ async function initHlsPlayer() {
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = streamUrl;
+            if (!isLive) video.pause(); // prevent Safari autoplay before we seek
             video.addEventListener('loadedmetadata', onReady, { once: true });
             video.addEventListener('error', () => { playing = false; showFallback(); startPolling(); });
             video.addEventListener('ended', () => {
