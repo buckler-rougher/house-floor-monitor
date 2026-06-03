@@ -5435,6 +5435,17 @@ async function initHlsPlayer() {
                 // Non-live: stop any autoplay immediately, seek to last frame.
                 video.pause();
 
+                // TEMP DEBUG — remove after diagnosing
+                const _dbg = document.createElement('div');
+                _dbg.id = 'hls-debug';
+                _dbg.style.cssText = 'position:fixed;bottom:60px;left:8px;background:rgba(0,0,0,.85);color:#0f0;font:11px monospace;padding:6px 10px;z-index:9999;pointer-events:none;border:1px solid #0f0;';
+                document.body.appendChild(_dbg);
+                setInterval(() => {
+                    const se = video.seekable.length > 0 ? video.seekable.end(video.seekable.length-1).toFixed(1) : 'none';
+                    const ss = video.seekable.length > 0 ? video.seekable.start(0).toFixed(1) : 'none';
+                    _dbg.textContent = `dur=${video.duration?.toFixed(1)} seek=${ss}→${se} ct=${video.currentTime?.toFixed(1)} rs=${video.readyState}`;
+                }, 500);
+
                 function captureSnapshot() {
                     video.pause();
                     if (!snapshot) return;
