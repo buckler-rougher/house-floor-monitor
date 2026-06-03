@@ -5472,6 +5472,9 @@ async function initHlsPlayer() {
             if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
             frozen = true;
             video.__hlsIsLive = false; // correct the (wrong) worker flag → PiP uses snapshot path
+            window.__hlsSessionEnded = true;
+            // Tell the PiP (which may already be playing) to stop and switch to snapshot.
+            window.dispatchEvent(new CustomEvent('hls-session-ended'));
             video.controls = false;
             video.muted = true;
             const target = end - 0.3;
@@ -6538,6 +6541,32 @@ function updateLastUpdate() {
         // Keep pipHls alive — startPipHls resumes it without full teardown
         if (pipSnapshot) pipSnapshot.style.display = 'none';
     }
+
+    // Apply the main player's frozen snapshot to the PiP (ended session).
+    function applyMainSnapshotToPip() {
+        const ms = document.getElementById('player-snapshot');
+        if (!ms || ms.hidden || !ms.width) return false;
+        try {
+            const dataUrl = ms.toDataURL();
+            if (!dataUrl || dataUrl === 'data:,') return false;
+            pipVideo.style.display = 'none';
+            pipSnapshot.src = dataUrl;
+            pipSnapshot.style.display = 'block';
+            hidePipLoading();
+            return true;
+        } catch { return false; }
+    }
+
+    // Main player froze (session ended) — stop any live PiP playback immediately
+    // and switch to the frozen snapshot, even if the PiP is mid-playback.
+    window.addEventListener('hls-session-ended', () => {
+        if (pipHls) { pipHls.destroy(); pipHls = null; }
+        pipVideo.pause();
+        if (!applyMainSnapshotToPip()) {
+            // Snapshot not drawn yet — poll until it is
+            const t = setInterval(() => { if (applyMainSnapshotToPip()) clearInterval(t); }, 200);
+        }
+    });
 
     function showPip() {
         if (pipActive) return;
