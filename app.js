@@ -5410,8 +5410,10 @@ async function initHlsPlayer() {
             loadingOverlay.hidden = true;
         }
     }
-    // Hard guarantee: overlay is gone after 3s no matter what
-    setTimeout(hideLoadingOverlay, 3000);
+    // Overlay is dismissed by captureSnapshot (non-live) or canplay (live).
+    // showFallback also dismisses it if the stream is unavailable.
+    // No timeout — a premature dismiss would reveal ct=0 (start of stream)
+    // while a seek to the live edge is still in flight.
 
     function showFallback() {
         hideLoadingOverlay();
