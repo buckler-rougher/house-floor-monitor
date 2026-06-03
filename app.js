@@ -5422,7 +5422,9 @@ async function initHlsPlayer() {
     }
 
     function hideFallback() {
-        hideLoadingOverlay();
+        // Loading overlay stays up for non-live until captureSnapshot draws
+        // the correct last frame. For live it's dismissed by showFallback or
+        // the 3s timeout.
         fallback.style.display = 'none';
         fallback.setAttribute('aria-hidden', 'true');
         video.style.visibility = 'visible';
@@ -5441,6 +5443,7 @@ async function initHlsPlayer() {
                 video.muted = true;
                 video.autoplay = true;
                 video.controls = true;
+                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
                 video.play().catch(() => {});
             } else {
                 // Non-live: stop any autoplay immediately, seek to last frame.
@@ -5449,7 +5452,7 @@ async function initHlsPlayer() {
 
                 function captureSnapshot() {
                     video.pause();
-                    if (!snapshot) return;
+                    if (!snapshot) { hideLoadingOverlay(); return; }
                     try {
                         snapshot.width = video.videoWidth || video.clientWidth;
                         snapshot.height = video.videoHeight || video.clientHeight;
@@ -5458,6 +5461,7 @@ async function initHlsPlayer() {
                         video.style.display = 'none';
                         snapshot.hidden = false;
                     } catch {}
+                    hideLoadingOverlay();
                 }
 
                 let seekDone = false;
