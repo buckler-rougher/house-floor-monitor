@@ -1276,10 +1276,13 @@ function updateFloorDisplay(status = null) {
     const statusText = floorData.currentStatus.text || 'Unknown';
     const statusValue = floorData.currentStatus.value || 'unknown';
     
-    // Auto-switch mode based on DomeWatch status
+    // Auto-switch mode based on DomeWatch status.
+    // Only switch INTO vote mode when SSE tallies are actively coming in — this prevents
+    // stale DomeWatch REST data from locking the app in vote mode after a vote ends.
     // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
-    if (statusLower.includes('vote') || statusLower.includes('voting')) {
+    const sseIsLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive) {
         window.setMode('vote');
     } else if (statusLower.includes('debate')) {
         window.setMode('debate');
@@ -1594,6 +1597,8 @@ const elements = {
     debateRuleTag: document.getElementById('debate-rule-tag'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
+    debateCommitteeReportSection: document.getElementById('debate-committee-report-section'),
+    debateCommitteeReportText: document.getElementById('debate-committee-report-text'),
     debateSummarySection: document.getElementById('debate-summary-section'),
     debateCongressFoot: document.getElementById('debate-congress-foot'),
     debateCongressLink: document.getElementById('debate-congress-link'),
@@ -2675,6 +2680,13 @@ function openBillModal(billId) {
             </div>
         </div>` : '';
 
+    // Committee report action ("Reported by Committee xx – yy")
+    const committeeReportHtml = bill.committeeReport ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">COMMITTEE ACTION</div>
+            <div class="bill-modal-action">${escapeHtml(bill.committeeReport)}${bill.committeeReportDate ? `<span class="bill-modal-date"> — ${formatDate(bill.committeeReportDate)}</span>` : ''}</div>
+        </div>` : '';
+
     let overlay = document.getElementById('bill-modal-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -2719,6 +2731,7 @@ function openBillModal(billId) {
                 ${sponsorHtml}
                 ${cosponsorsHtml}
                 ${committeeHtml}
+                ${committeeReportHtml}
             </div>
             ${bill.summary ? `
             <div class="bill-modal-body">
@@ -3003,10 +3016,11 @@ function onInfoPopupKey(e, trigger) {
 function autoSwitchModeFromProceedings(items) {
     if (!items || items.length === 0) return;
 
-    // Never override an active vote with proceedings-derived mode.
-    // DomeWatch SSE is authoritative for vote state; the RSS feed lags.
+    // Respect DomeWatch vote status only while SSE is actively sending tallies.
+    // After 90s of SSE silence the vote is almost certainly over; let proceedings drive.
     const liveStatus = floorData.currentStatus?.value;
-    if (liveStatus === 'vote' || liveStatus === 'voting') {
+    const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    if ((liveStatus === 'vote' || liveStatus === 'voting') && sseIsLive) {
         window.setMode('vote');
         return;
     }
@@ -3566,6 +3580,17 @@ function updateDebateSection(items) {
             }
         }
 
+        // Committee Action
+        if (elements.debateCommitteeReportSection && elements.debateCommitteeReportText) {
+            if (foundBill.committeeReport) {
+                const crDate = foundBill.committeeReportDate ? ` — ${formatDate(foundBill.committeeReportDate)}` : '';
+                elements.debateCommitteeReportText.innerHTML = `${escapeHtml(foundBill.committeeReport)}<span class="bill-modal-date">${crDate}</span>`;
+                elements.debateCommitteeReportSection.style.display = '';
+            } else {
+                elements.debateCommitteeReportSection.style.display = 'none';
+            }
+        }
+
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
@@ -3595,6 +3620,7 @@ function updateDebateSection(items) {
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
         if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
+        if (elements.debateCommitteeReportSection) elements.debateCommitteeReportSection.style.display = 'none';
         if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
         if (elements.debateCongressFoot) elements.debateCongressFoot.style.display = 'none';
     }
@@ -5482,6 +5508,23 @@ async function initHlsPlayer() {
             };
             video.addEventListener('seeked', onSeeked, { once: true });
             video.currentTime = target;
+
+            // After freezing, poll every 30s for a new live session.
+            // When a different URL appears (new session), restart playback.
+            const frozenUrl = streamUrl;
+            const resumeTimer = setInterval(async () => {
+                try {
+                    const resp = await fetch('https://api.evanhollander.org/house-floor/api/hls-url');
+                    const newData = await resp.json();
+                    if (newData.url && newData.isLive && newData.url !== frozenUrl) {
+                        clearInterval(resumeTimer);
+                        playing = false;
+                        window.__hlsSessionEnded = false;
+                        if (loadingOverlay) { loadingOverlay.style.display = ''; loadingOverlay.hidden = false; }
+                        startPlayback(newData.url, true);
+                    }
+                } catch { /* network error — keep polling */ }
+            }, 30_000);
         }
 
         function onReady() {

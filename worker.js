@@ -756,6 +756,16 @@ async function fetchBillMeta(billId) {
   } catch { return null; }
 }
 
+// "Ordered to be Reported" → "Reported by Committee xx – yy" / "Reported out of cmte by unanimous consent"
+function formatCommitteeReport(text) {
+  const t = text || '';
+  if (/unanimous consent/i.test(t)) return 'Reported out of cmte by unanimous consent';
+  const m = t.match(/yeas? and nays?:\s*(\d+)\s*[-–]\s*(\d+)/i);
+  if (m) return `Reported by Committee ${m[1]} – ${m[2]}`;
+  if (/voice vote/i.test(t)) return 'Reported by Committee (voice vote)';
+  return 'Reported by Committee';
+}
+
 async function fetchCongressBillStatus(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
@@ -764,39 +774,54 @@ async function fetchCongressBillStatus(billId) {
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
-    const actions = (data.actions || []).filter(a => a.type === 'Floor');
-    for (const action of actions) {
-      const t = (action.text || '').toLowerCase();
-      // Skip rule-adoption actions (e.g. "Rule H. Res. 1300 passed House.") — these
-      // describe the special rule governing floor consideration, not the bill's own passage.
-      const code = action.actionCode || '';
-      if (/^H1L/i.test(code)) continue; // H1L210 = rule reported, H1L220 = rule passed
-      if (/^rule\s+h\.?\s*res\./i.test(action.text || '')) continue;
-      const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
-                        t.includes('on passage passed') || t.includes('considered and passed') ||
-                        t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree');
-      const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
-      if (!isPassage && !isFailed) continue;
-      let statusText;
-      if (isFailed) {
-        statusText = 'Failed';
-      } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
-        statusText = 'Passed (voice vote)';
-      } else if (t.includes('yeas and nays') || t.includes('roll no') || t.includes('record vote no')) {
-        statusText = 'Passed (roll call)';
-      } else {
-        statusText = 'Passed';
+
+    let floorStatus = null;
+    let committeeReport = null;
+
+    for (const action of (data.actions || [])) {
+      // Committee: "Ordered to be Reported" — pick the first (most recent) match
+      if (!committeeReport && action.type === 'Committee') {
+        if (/ordered to be reported/i.test(action.text || '')) {
+          committeeReport = { text: formatCommitteeReport(action.text), date: action.actionDate };
+        }
       }
-      return {
-        status: isFailed ? 'failed' : 'passed',
-        statusText,
-        actionDate: action.actionDate,
-        actionText: action.text
-      };
+
+      // Floor: passage / failure
+      if (!floorStatus && action.type === 'Floor') {
+        const t = (action.text || '').toLowerCase();
+        const code = action.actionCode || '';
+        // Skip rule-adoption actions (e.g. "Rule H. Res. 1300 passed House.")
+        if (/^H1L/i.test(code) || /^rule\s+h\.?\s*res\./i.test(action.text || '')) {
+          // not a bill passage action — skip
+        } else {
+          const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
+                            t.includes('on passage passed') || t.includes('considered and passed') ||
+                            t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree');
+          const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
+          if (isPassage || isFailed) {
+            let statusText;
+            if (isFailed) {
+              statusText = 'Failed';
+            } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
+              statusText = 'Passed (voice vote)';
+            } else if (t.includes('yeas and nays') || t.includes('roll no') || t.includes('record vote no')) {
+              statusText = 'Passed (roll call)';
+            } else {
+              statusText = 'Passed';
+            }
+            floorStatus = { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: action.text };
+          }
+        }
+      }
+
+      if (floorStatus && committeeReport) break;
     }
-    return null;
+
+    // Always return an object (even if both are null) as a sentinel that the API was checked.
+    // null return is reserved for transient errors (don't cache).
+    return { ...floorStatus, committeeReport };
   } catch {
-    return null;
+    return null; // transient error — caller should not cache
   }
 }
 
@@ -1441,23 +1466,30 @@ async function _fetchBills(request, env) {
       const safeFetchSummary = (id) => fetchCongressBillSummary(id).catch(() => undefined);
       if (enrichCached) {
         congressStatus = enrichCached.congressStatus ?? null;
-        // If summary or meta were null in cache, retry them live — Congress.gov may have
-        // published data since the last fetch (CRS summaries, sponsor indexing, etc.).
-        // congressStatus is not retried since it's derived from floor actions which are
-        // updated separately via the weekly status cache.
-        const needsSummary = !enrichCached.summary;
-        const needsMeta    = !enrichCached.meta;
-        if (needsSummary || needsMeta) {
-          [summary, meta] = await Promise.all([
-            needsSummary ? safeFetchSummary(bill.id) : Promise.resolve(enrichCached.summary),
-            needsMeta    ? fetchBillMeta(bill.id)    : Promise.resolve(enrichCached.meta),
+        // Retry summary/meta when null — Congress.gov may have published since last fetch.
+        // Also retry congressStatus when the cached entry predates committeeReport support
+        // (identified by the absence of the committeeReport key on the cached object).
+        const needsSummary         = !enrichCached.summary;
+        const needsMeta            = !enrichCached.meta;
+        const needsCommitteeReport = !('committeeReport' in (enrichCached.congressStatus || {}));
+        if (needsSummary || needsMeta || needsCommitteeReport) {
+          const [summaryResult, newMeta, freshStatus] = await Promise.all([
+            needsSummary         ? safeFetchSummary(bill.id)         : Promise.resolve(enrichCached.summary),
+            needsMeta            ? fetchBillMeta(bill.id)            : Promise.resolve(enrichCached.meta),
+            needsCommitteeReport ? fetchCongressBillStatus(bill.id)  : Promise.resolve(undefined),
           ]);
-          // undefined = transient fetch error — don't overwrite cache; null = confirmed no summary
-          const summaryToCache = summary === undefined ? enrichCached.summary : summary;
-          if (summaryToCache || meta) {
+          summary = summaryResult;
+          meta    = newMeta;
+          // Merge freshStatus: preserve any existing floor action, only add/update committeeReport.
+          // freshStatus === null means transient error; undefined means we didn't re-fetch.
+          if (freshStatus != null) {
+            congressStatus = { ...(enrichCached.congressStatus || {}), committeeReport: freshStatus.committeeReport ?? null };
+          }
+          const summaryToCache = summaryResult === undefined ? enrichCached.summary : summaryResult;
+          if (summaryToCache || meta || freshStatus != null) {
             await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta });
           }
-          if (summary === undefined) summary = enrichCached.summary; // fall back to cached value for this response
+          if (summaryResult === undefined) summary = enrichCached.summary;
         } else {
           summary = enrichCached.summary;
           meta    = enrichCached.meta;
@@ -1476,13 +1508,20 @@ async function _fetchBills(request, env) {
         }
       }
       if (congressStatus) {
-        bill.status = congressStatus.status;
-        bill.latestAction = congressStatus.statusText;
-        bill.considered = true;
-        bill.actionSource = 'congress';
-        bill.actionSourceUrl = null; // client builds the URL from billIdToCongressUrl()
-        if (congressStatus.actionDate) {
-          bill.latestActionDate = new Date(congressStatus.actionDate + 'T00:00:00Z');
+        // Only apply floor-action fields when a floor action was actually found
+        if (congressStatus.status) {
+          bill.status = congressStatus.status;
+          bill.latestAction = congressStatus.statusText;
+          bill.considered = true;
+          bill.actionSource = 'congress';
+          bill.actionSourceUrl = null; // client builds the URL from billIdToCongressUrl()
+          if (congressStatus.actionDate) {
+            bill.latestActionDate = new Date(congressStatus.actionDate + 'T00:00:00Z');
+          }
+        }
+        if (congressStatus.committeeReport) {
+          bill.committeeReport     = congressStatus.committeeReport.text;
+          bill.committeeReportDate = congressStatus.committeeReport.date;
         }
       }
       if (summary) {
