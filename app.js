@@ -5398,18 +5398,15 @@ async function initHlsPlayer() {
         const se = video.seekable.length > 0 ? video.seekable.end(video.seekable.length-1).toFixed(1) : 'none';
         const ss = video.seekable.length > 0 ? video.seekable.start(0).toFixed(1) : 'none';
         const snap = document.getElementById('player-snapshot');
+        const pv = document.getElementById('player-pip');
         _dbg.textContent = [
             `v=${_ver}`,
-            `isLive=${video.__hlsIsLive}`,
-            `paused=${video.paused}`,
-            `dur=${video.duration?.toFixed(1)}`,
-            `seek ${ss}→${se}`,
-            `ct=${video.currentTime?.toFixed(1)}`,
-            `rs=${video.readyState}`,
-            `vw=${video.videoWidth}`,
-            `snap.hidden=${snap?.hidden}`,
-            `snap.w=${snap?.width}`,
-            `overlay=${document.getElementById('video-loading')?.style.display}`,
+            `MAIN paused=${video.paused} ct=${video.currentTime?.toFixed(1)}`,
+            `MAIN vid.disp=${video.style.display||'(css)'}`,
+            `snap.hidden=${snap?.hidden} snap.w=${snap?.width}`,
+            `PIP paused=${pv?.paused} ct=${pv?.currentTime?.toFixed(1)}`,
+            `PIP dur=${pv?.duration?.toFixed?.(1)}`,
+            `dur=${video.duration?.toFixed(1)} rs=${video.readyState}`,
         ].join('\n');
     }, 300);
 
