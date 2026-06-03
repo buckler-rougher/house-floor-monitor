@@ -5479,7 +5479,10 @@ async function initHlsPlayer() {
                 liveMaxLatencyDurationCount: 2, // jump to live edge if >2 segments behind
                 liveDurationInfinity: true,
                 highBufferWatchdogPeriod: 1,
-            } : { maxBufferLength: 30 };
+            } : {
+                maxBufferLength: 30,
+                startPosition: -1, // start at live edge, not position 0
+            };
             const hls = new Hls(hlsCfg);
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
