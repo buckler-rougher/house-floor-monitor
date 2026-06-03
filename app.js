@@ -5485,28 +5485,36 @@ async function initHlsPlayer() {
                 function seekToEnd() {
                     if (seekDone) return;
                     video.pause();
-                    // Finite VOD duration
+                    let target = null;
                     if (isFinite(video.duration) && video.duration > 1) {
-                        seekDone = true;
-                        video.currentTime = video.duration - 0.5;
-                        video.addEventListener('seeked', captureSnapshot, { once: true });
-                        return;
-                    }
-                    // Live manifest (no EXT-X-ENDLIST): seek to end of seekable range
-                    if (video.seekable.length > 0) {
+                        target = video.duration - 0.5;
+                    } else if (video.seekable.length > 0) {
                         const end = video.seekable.end(video.seekable.length - 1);
-                        if (isFinite(end) && end > 1) {
-                            seekDone = true;
-                            video.currentTime = end - 0.5;
-                            video.addEventListener('seeked', captureSnapshot, { once: true });
-                            return;
-                        }
+                        if (isFinite(end) && end > 1) target = end - 0.5;
                     }
-                    // Not ready yet — retry
-                    setTimeout(seekToEnd, 400);
+                    if (target !== null) {
+                        seekDone = true;
+                        video.currentTime = target;
+                        video.addEventListener('seeked', () => {
+                            // Safari won't decode a frame while paused — play briefly
+                            // until videoWidth > 0 (first decoded frame), then capture.
+                            video.muted = true;
+                            video.play().then(() => {
+                                function tryCapture() {
+                                    if (video.videoWidth > 0 && video.videoHeight > 0) {
+                                        captureSnapshot();
+                                    } else {
+                                        requestAnimationFrame(tryCapture);
+                                    }
+                                }
+                                requestAnimationFrame(tryCapture);
+                            }).catch(() => captureSnapshot());
+                        }, { once: true });
+                    } else {
+                        setTimeout(seekToEnd, 400);
+                    }
                 }
 
-                // canplay = seekable range is populated; loadedmetadata as backup
                 video.addEventListener('canplay', seekToEnd, { once: true });
                 video.addEventListener('loadedmetadata', seekToEnd, { once: true });
             }
