@@ -5457,22 +5457,8 @@ async function initHlsPlayer() {
         video.__hlsSrc    = streamUrl; // expose for PiP
         video.__hlsIsLive = isLive;
 
-        // PLAY-AT-EDGE: genuinely live (growing / Infinity duration). Keep at live edge.
-        function playAtEdge() {
-            video.__hlsIsLive = true; // correct the (possibly wrong) worker flag for the PiP
-            video.style.display = '';
-            if (snapshot) snapshot.hidden = true;
-            video.muted = true;
-            video.autoplay = true;
-            video.controls = true;
-            video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-            // Safety: dismiss overlay after 8s in case canplay never fires (stalled stream)
-            setTimeout(hideLoadingOverlay, 8000);
-            video.play().catch(() => {});
-        }
-
-        // FREEZE-AT-END: ended session (finite duration). Seek to last frame,
-        // decode it, pause, and leave the paused video showing that frame.
+        // Capture the last frame of an ended session onto the snapshot canvas,
+        // hide the video element, and start polling for the next live session.
         let frozen = false;
         function freezeAtEnd() {
             if (frozen) return;
@@ -5481,15 +5467,13 @@ async function initHlsPlayer() {
                 : (video.seekable.length ? video.seekable.end(video.seekable.length - 1) : NaN);
             if (!isFinite(end) || end <= 1) { setTimeout(freezeAtEnd, 300); return; }
             frozen = true;
-            video.__hlsIsLive = false; // correct the (wrong) worker flag → PiP uses snapshot path
+            video.__hlsIsLive = false;
             window.__hlsSessionEnded = true;
-            // Tell the PiP (which may already be playing) to stop and switch to snapshot.
             window.dispatchEvent(new CustomEvent('hls-session-ended'));
             video.controls = false;
             video.muted = true;
             const target = end - 0.3;
             const onSeeked = () => {
-                // Play one beat so Safari decodes the frame at this position, then pause.
                 video.play().then(() => {
                     const grab = () => {
                         if (video.videoWidth > 0) {
@@ -5514,8 +5498,7 @@ async function initHlsPlayer() {
             video.addEventListener('seeked', onSeeked, { once: true });
             video.currentTime = target;
 
-            // After freezing, poll every 30s for a new live session.
-            // When a different URL appears (new session), restart playback.
+            // Poll every 30s for a new live session after freeze.
             const frozenUrl = streamUrl;
             const resumeTimer = setInterval(async () => {
                 try {
@@ -5532,35 +5515,12 @@ async function initHlsPlayer() {
             }, 30_000);
         }
 
-        function onReady() {
-            hideFallback();
-            // Decide by the stream's ACTUAL nature, not the worker's isLive flag
-            // (which is unreliable for sessions that ended without a clean signal).
-            // Finite duration  = ended recording → freeze last frame.
-            // Infinite duration = genuinely live  → play at the live edge.
-            // Wait briefly for duration to be reported if it isn't yet.
-            let decided = false;
-            function decide() {
-                if (decided) return;
-                const d = video.duration;
-                if (Number.isNaN(d)) { return; } // not known yet
-                decided = true;
-                if (d === Infinity) playAtEdge();
-                else freezeAtEnd();
-            }
-            video.addEventListener('durationchange', decide);
-            video.addEventListener('loadedmetadata', decide);
-            decide();
-            // Safety net: if duration never resolves, default to freeze (safer for recess)
-            setTimeout(() => { if (!decided) { decided = true; freezeAtEnd(); } }, 2500);
-        }
-
         if (window.Hls && Hls.isSupported()) {
             const hlsCfg = isLive ? {
                 maxBufferLength: 2,
                 maxMaxBufferLength: 4,
-                liveSyncDurationCount: 1,       // target 1 segment (2s) behind live edge
-                liveMaxLatencyDurationCount: 2, // jump to live edge if >2 segments behind
+                liveSyncDurationCount: 1,
+                liveMaxLatencyDurationCount: 2,
                 liveDurationInfinity: true,
                 highBufferWatchdogPeriod: 1,
             } : { maxBufferLength: 30 };
@@ -5568,20 +5528,40 @@ async function initHlsPlayer() {
             currentHls = hls;
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
-            if (isLive) {
-                function enableCaptions() {
-                    for (let i = 0; i < video.textTracks.length; i++) {
-                        const t = video.textTracks[i];
-                        if (t.kind === 'captions' || t.kind === 'subtitles') { t.mode = 'showing'; return; }
-                    }
+
+            // Enable captions on both live and non-live streams
+            function enableCaptions() {
+                for (let i = 0; i < video.textTracks.length; i++) {
+                    const t = video.textTracks[i];
+                    if (t.kind === 'captions' || t.kind === 'subtitles') { t.mode = 'showing'; return; }
                 }
-                video.textTracks.addEventListener('addtrack', enableCaptions);
             }
-            hls.on(Hls.Events.MANIFEST_PARSED, onReady);
-            // Whenever the live edge position is known, snap to it
+            video.textTracks.addEventListener('addtrack', enableCaptions);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                hideFallback();
+                video.__hlsIsLive = true;
+                video.style.display = '';
+                if (snapshot) snapshot.hidden = true;
+                video.muted = true;
+                video.autoplay = true;
+                video.controls = true;
+                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+                // Safety: dismiss loading overlay after 8s if canplay never fires
+                setTimeout(hideLoadingOverlay, 8000);
+                video.play().catch(() => {});
+
+                // After playback starts, detect ended sessions by watching duration.
+                // A live stream stays Infinity; a finished recording settles on a finite value.
+                function checkIfEnded() {
+                    const d = video.duration;
+                    if (isFinite(d) && d > 1) freezeAtEnd();
+                }
+                video.addEventListener('durationchange', checkIfEnded);
+                video.addEventListener('ended', () => freezeAtEnd());
+            });
+
             hls.on(Hls.Events.LEVEL_UPDATED, () => {
-                // Only snap to live edge for genuinely-live playback. If we've
-                // frozen the last frame of an ended session, leave currentTime alone.
                 if (video.duration === Infinity && hls.liveSyncPosition && video.readyState) {
                     const drift = hls.liveSyncPosition - video.currentTime;
                     if (drift > 3) video.currentTime = hls.liveSyncPosition;
@@ -5590,17 +5570,24 @@ async function initHlsPlayer() {
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) { playing = false; showFallback(); startPolling(); }
             });
-            video.addEventListener('ended', () => {
-                if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
-            });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari native HLS
             video.src = streamUrl;
-            if (!isLive) video.pause(); // prevent Safari autoplay before we seek
-            video.addEventListener('loadedmetadata', onReady, { once: true });
+            video.muted = true;
+            video.autoplay = true;
+            video.controls = true;
+            video.addEventListener('loadedmetadata', () => {
+                hideFallback();
+                video.__hlsIsLive = video.duration === Infinity;
+                video.style.display = '';
+                if (snapshot) snapshot.hidden = true;
+                video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+                setTimeout(hideLoadingOverlay, 8000);
+                video.play().catch(() => {});
+                if (!video.__hlsIsLive) freezeAtEnd();
+            }, { once: true });
+            video.addEventListener('ended', () => freezeAtEnd());
             video.addEventListener('error', () => { playing = false; showFallback(); startPolling(); });
-            video.addEventListener('ended', () => {
-                if (isFinite(video.duration)) video.currentTime = video.duration - 0.05;
-            });
         } else {
             showFallback();
         }
