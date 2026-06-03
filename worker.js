@@ -1388,6 +1388,12 @@ async function _fetchBills(request, env) {
     const suspensionSection = extractSection(content, /Items that may be considered under suspension of the rules/i, nextHeader);
     const mayBeConsideredSection = extractSection(content, /Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i, nextHeader);
 
+    // Extract the governing H.Res number from the rule section header, e.g.
+    // "…pursuant to a rule (H. Res. 630, Agreed to 232-195)…"
+    // This is the authoritative source — the schedule XML always names the governing rule.
+    const governingHresMatch = ruleSection.match(/H\.?\s*Res\.?\s*(\d+)/i);
+    const governingHres = governingHresMatch ? `H.Res. ${governingHresMatch[1]}` : null;
+
     // Parse bills arrays for all three consideration types
     const ruleBills = [];
     const suspensionBills = [];
@@ -1452,6 +1458,7 @@ async function _fetchBills(request, env) {
           considered,
           actionSource,
           actionSourceUrl,
+          ...(isRule && governingHres ? { governingHres } : {}),
         });
       }
     };
@@ -1583,6 +1590,7 @@ async function _fetchBills(request, env) {
         weekTitle: selectedEntry.title,
         updated: contentUpdatedAt,
         ruleHeader: ruleHeaderMatch ? ruleHeaderMatch[0] : '',
+        ruleHres: governingHres || '',
         suspensionHeader: suspensionHeaderMatch ? suspensionHeaderMatch[0] : '',
         mayBeConsideredHeader: mayBeConsideredHeaderMatch ? mayBeConsideredHeaderMatch[0] : ''
       },
@@ -2363,7 +2371,8 @@ async function handleRules(request, env) {
     try {
       // Fetch the most recently-updated H.Res. bills for the current Congress.
       // Special rules are always H.Res. and their titles start with "Providing for consideration of…"
-      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres?api_key=${_congressApiKey}&sort=updateDate+desc&limit=20&format=json`;
+      // Limit 50 to avoid missing current-week rules that may have slipped out of the top 20 by updateDate.
+      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres?api_key=${_congressApiKey}&sort=updateDate+desc&limit=50&format=json`;
       const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (!resp.ok) throw new Error(`Congress.gov /hres returned ${resp.status}`);
       const data = await resp.json();
