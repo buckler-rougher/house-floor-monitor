@@ -5516,20 +5516,18 @@ async function initHlsPlayer() {
         }
 
         if (window.Hls && Hls.isSupported()) {
-            const hlsCfg = {
+            const hls = new Hls({
                 maxBufferLength: 2,
                 maxMaxBufferLength: 4,
                 liveSyncDurationCount: 1,
                 liveMaxLatencyDurationCount: 2,
                 liveDurationInfinity: true,
-                highBufferWatchdogPeriod: 1,
-            };
-            const hls = new Hls(hlsCfg);
+            });
             currentHls = hls;
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
 
-            // Enable captions on both live and non-live streams
+            // Enable captions
             function enableCaptions() {
                 for (let i = 0; i < video.textTracks.length; i++) {
                     const t = video.textTracks[i];
@@ -5543,21 +5541,13 @@ async function initHlsPlayer() {
                 video.style.display = '';
                 if (snapshot) snapshot.hidden = true;
                 video.muted = true;
-                video.autoplay = true;
                 video.controls = true;
                 video.addEventListener('canplay', hideLoadingOverlay, { once: true });
-                // Safety: dismiss loading overlay after 8s if canplay never fires
-                setTimeout(hideLoadingOverlay, 8000);
+                setTimeout(hideLoadingOverlay, 5000);
                 video.play().catch(() => {});
                 video.addEventListener('ended', () => freezeAtEnd());
             });
 
-            hls.on(Hls.Events.LEVEL_UPDATED, () => {
-                if (video.duration === Infinity && hls.liveSyncPosition && video.readyState) {
-                    const drift = hls.liveSyncPosition - video.currentTime;
-                    if (drift > 3) video.currentTime = hls.liveSyncPosition;
-                }
-            });
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) { playing = false; showFallback(); startPolling(); }
             });
