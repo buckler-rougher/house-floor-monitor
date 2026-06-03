@@ -1577,9 +1577,12 @@ async function _fetchBills(request, env) {
 
     // Apply the KV ratchet: restore any terminal statuses (passed/failed) from cache
     // that the live fetch missed (e.g. yesterday's voice votes, Congress.gov lag).
+    // Skip congress-sourced entries — those are always re-verified from the live API,
+    // so a stale/incorrect congress status in the ratchet must not override the fresh result.
     for (const bill of allBills) {
       const cached = cachedStatuses[bill.id];
-      if (cached && (STATUS_RANK[cached.status] ?? 0) > (STATUS_RANK[bill.status] ?? 0)) {
+      if (!cached || cached.actionSource === 'congress') continue;
+      if ((STATUS_RANK[cached.status] ?? 0) > (STATUS_RANK[bill.status] ?? 0)) {
         bill.status = cached.status;
         bill.latestAction = cached.statusText ?? bill.latestAction;
         bill.considered = true;
