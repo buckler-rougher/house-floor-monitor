@@ -5383,8 +5383,6 @@ function init() {
     fetchBlueskyFeed();
     fetchNewsTicker();
 
-    initHlsPlayer();
-
     // Info popup click delegation
     document.addEventListener('click', e => {
         const btn = e.target.closest('.info-btn');
@@ -5409,13 +5407,11 @@ function init() {
     }
 }
 
-async function initHlsPlayer() {
-    const video = document.getElementById('player');
-    const snapshot = document.getElementById('player-snapshot');
-    const loadingOverlay = document.getElementById('video-loading');
-    const fallback = document.getElementById('video-fallback');
-    if (!video) return;
+// initHlsPlayer removed — video is now handled entirely by initYouTubePip (always-on PiP)
 
+async function initHlsPlayer_UNUSED() {
+    const video = document.getElementById('player');
+    if (!video) return;
     let currentHls = null;
     let pollTimer = null;
     let frozen = false;
@@ -6325,198 +6321,91 @@ function updateLastUpdate() {
     }
 }
 
-// ── HLS PiP — mirrors the main floor feed when scrolled out of view ──────────
+// ── HLS PiP — always-on live feed, click to expand ───────────────────────────
 (function initYouTubePip() {
-    const panel    = document.getElementById('live');
-    const pip      = document.getElementById('youtube-pip');
-    const pipVideo = document.getElementById('player-pip');
-    if (!panel || !pip || !pipVideo) return;
-
-    pip.addEventListener('click', () => {
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    const pip         = document.getElementById('youtube-pip');
+    const pipVideo    = document.getElementById('player-pip');
+    const backdrop    = document.getElementById('pip-backdrop');
+    const pipOverlay  = pip?.querySelector('.youtube-pip-overlay');
+    const closeBtn    = document.getElementById('pip-close-btn');
+    if (!pip || !pipVideo) return;
 
     const pipSnapshot = document.getElementById('player-pip-snapshot');
     const pipLoading  = document.getElementById('pip-loading');
-    let pipActive    = false;
     let pipHls       = null;
-    let pipWaitTimer = null; // guards re-entry AND drives polling
-    let rafPending   = false;
+    let pipWaitTimer = null;
+    let expanded     = false;
 
-    function hidePipLoading() {
-        if (pipLoading) pipLoading.style.display = 'none';
+    function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
+    function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
+
+    function expand() {
+        if (expanded) return;
+        expanded = true;
+        pip.classList.add('pip-expanded');
+        if (backdrop) backdrop.classList.add('pip-backdrop-visible');
+        if (pipOverlay) pipOverlay.style.pointerEvents = 'none';
+        pipVideo.muted = false;
     }
-    function resetPipLoading() {
-        if (pipLoading) pipLoading.style.display = 'flex';
+
+    function collapse() {
+        if (!expanded) return;
+        expanded = false;
+        pip.classList.remove('pip-expanded');
+        if (backdrop) backdrop.classList.remove('pip-backdrop-visible');
+        if (pipOverlay) pipOverlay.style.pointerEvents = 'auto';
+        pipVideo.muted = true;
     }
 
-    function startPipHls() {
-        const mainVideo = document.getElementById('player');
-        const isLive    = mainVideo?.__hlsIsLive; // undefined = not yet loaded
-        const srcUrl    = mainVideo?.__hlsSrc || null;
+    if (pipOverlay) pipOverlay.addEventListener('click', expand);
+    if (backdrop) backdrop.addEventListener('click', collapse);
+    if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); collapse(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && expanded) collapse(); });
 
-        // Session ended (main player frozen): never play in the PiP. Tear down any
-        // live HLS instance and fall through to the snapshot path below.
-        if (isLive === false) {
-            if (pipHls) { pipHls.destroy(); pipHls = null; }
-            pipVideo.pause();
-        } else if (pipHls) {
-            // Fast resume: HLS instance still alive from last session — just restart loading
-            pipVideo.style.display = 'block';
-            if (pipSnapshot) pipSnapshot.style.display = 'none';
-            if (pipVideo.readyState < 3) {
-                resetPipLoading();
-                pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
-            } else {
-                hidePipLoading();
-            }
-            pipHls.startLoad(-1);
+    // Load the live stream
+    function loadPip(url) {
+        pipVideo.style.display = 'block';
+        if (pipSnapshot) pipSnapshot.style.display = 'none';
+        pipVideo.muted = true;
+        if (window.Hls && Hls.isSupported()) {
+            if (pipHls) { try { pipHls.destroy(); } catch {} pipHls = null; }
+            pipHls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
+            pipHls.loadSource(url);
+            pipHls.attachMedia(pipVideo);
+            pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            pipHls.on(Hls.Events.MANIFEST_PARSED, () => pipVideo.play().catch(() => {}));
+            pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); } });
+        } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
+            pipVideo.src = url;
             pipVideo.play().catch(() => {});
-            return;
+            pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
         }
-        // Prevent double-start in fetch/timer state
+    }
+
+    // Fetch stream and load; retry every 30s if unavailable
+    function fetchAndLoad() {
         if (pipWaitTimer !== null) return;
-
-        // Always start hidden; specific branch will reveal what should show
-        pipVideo.style.display = 'none';
-        if (pipSnapshot) pipSnapshot.style.display = 'none';
-
-        // Main player hasn't loaded yet — fetch the URL ourselves so the PiP
-        // doesn't sit blank while initHlsPlayer() is still in flight.
-        if (isLive === undefined || isLive === null) {
-            pipWaitTimer = -1; // sentinel: fetch in progress (clearInterval(-1) is a safe no-op)
-            fetch('https://api.evanhollander.org/house-floor/api/hls-url')
-                .then(r => r.json())
-                .then(d => {
-                    if (!pipActive || pipWaitTimer !== -1) return; // cancelled by stopPipHls
-                    pipWaitTimer = null;
-                    if (!d?.url) { hidePipLoading(); return; } // no stream — clear loading
-                    // Seed the main player's flags so startPipHls takes the right branch
-                    const mv = document.getElementById('player');
-                    if (mv && mv.__hlsIsLive === undefined) {
-                        mv.__hlsIsLive = !!d.isLive;
-                        mv.__hlsSrc    = d.isLive ? d.url : null;
-                    }
-                    startPipHls();
-                })
-                .catch(() => { if (pipWaitTimer === -1) pipWaitTimer = null; });
-            return;
-        }
-
-        // Session ended — show frozen snapshot from main player canvas
-        if (!isLive) {
-            function tryApplySnapshot() {
-                const ms = document.getElementById('player-snapshot');
-                if (!ms || ms.hidden || !ms.width) return false;
-                try {
-                    const dataUrl = ms.toDataURL();
-                    if (!dataUrl || dataUrl === 'data:,') return false;
-                    pipSnapshot.src           = dataUrl;
-                    pipSnapshot.style.display = 'block';
+        pipWaitTimer = -1;
+        fetch('https://api.evanhollander.org/house-floor/api/hls-url')
+            .then(r => r.json())
+            .then(d => {
+                pipWaitTimer = null;
+                if (d?.url && d.isLive) {
+                    loadPip(d.url);
+                } else {
                     hidePipLoading();
-                    return true;
-                } catch { return false; }
-            }
-
-            if (!tryApplySnapshot()) {
-                // Snapshot not captured yet (main video still seeking/decoding) — poll
-                pipWaitTimer = setInterval(() => {
-                    if (!pipActive) { clearInterval(pipWaitTimer); pipWaitTimer = null; return; }
-                    if (tryApplySnapshot()) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
-                }, 300);
-            }
-            return;
-        }
-
-        // Live — spin up a second hls.js instance
-        const load = (url) => {
-            if (!url) return;
-            pipVideo.style.display = 'block';
-            if (pipSnapshot) pipSnapshot.style.display = 'none';
-            pipVideo.muted = true;
-            if (window.Hls && Hls.isSupported()) {
-                pipHls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
-                pipHls.loadSource(url);
-                pipHls.attachMedia(pipVideo);
-                pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
-                pipHls.on(Hls.Events.MANIFEST_PARSED, () => pipVideo.play().catch(() => {}));
-            } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
-                pipVideo.src = url;
-                pipVideo.play().catch(() => {});
-            }
-        };
-        if (srcUrl) {
-            load(srcUrl);
-        } else {
-            fetch('https://api.evanhollander.org/house-floor/api/hls-url')
-                .then(r => r.json())
-                .then(d => { if (d.url && d.isLive) load(d.url); }) // only load if actually live
-                .catch(() => {});
-        }
+                    pipWaitTimer = setTimeout(fetchAndLoad, 30_000);
+                }
+            })
+            .catch(() => {
+                pipWaitTimer = null;
+                pipWaitTimer = setTimeout(fetchAndLoad, 30_000);
+            });
     }
 
-    function stopPipHls() {
-        if (pipWaitTimer && pipWaitTimer !== -1) { clearInterval(pipWaitTimer); pipWaitTimer = null; }
-        if (pipWaitTimer === -1) pipWaitTimer = null; // cancel pending fetch sentinel
-        if (pipHls) { pipHls.stopLoad(); pipVideo.pause(); }
-        // Keep pipHls alive — startPipHls resumes it without full teardown
-        if (pipSnapshot) pipSnapshot.style.display = 'none';
-    }
-
-    // Apply the main player's frozen snapshot to the PiP (ended session).
-    function applyMainSnapshotToPip() {
-        const ms = document.getElementById('player-snapshot');
-        if (!ms || ms.hidden || !ms.width) return false;
-        try {
-            const dataUrl = ms.toDataURL();
-            if (!dataUrl || dataUrl === 'data:,') return false;
-            pipVideo.style.display = 'none';
-            pipSnapshot.src = dataUrl;
-            pipSnapshot.style.display = 'block';
-            hidePipLoading();
-            return true;
-        } catch { return false; }
-    }
-
-    // Main player froze (session ended) — stop any live PiP playback immediately
-    // and switch to the frozen snapshot, even if the PiP is mid-playback.
-    window.addEventListener('hls-session-ended', () => {
-        if (pipHls) { pipHls.destroy(); pipHls = null; }
-        pipVideo.pause();
-        if (!applyMainSnapshotToPip()) {
-            // Snapshot not drawn yet — poll until it is
-            const t = setInterval(() => { if (applyMainSnapshotToPip()) clearInterval(t); }, 200);
-        }
-    });
-
-    function showPip() {
-        if (pipActive) return;
-        startPipHls();
-        pip.classList.add('pip-active');
-        pipActive = true;
-    }
-
-    function hidePip() {
-        if (!pipActive) return;
-        stopPipHls();
-        pip.classList.remove('pip-active');
-        pipActive = false;
-    }
-
-    function tick() {
-        rafPending = false;
-        const rect = panel.getBoundingClientRect();
-        const inView = rect.bottom > 0 && rect.top < window.innerHeight;
-        if (inView) hidePip(); else showPip();
-    }
-
-    function onScroll() {
-        if (!rafPending) { rafPending = true; requestAnimationFrame(tick); }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    setTimeout(tick, 300);
+    // Always show PiP immediately
+    pip.classList.add('pip-active');
+    fetchAndLoad();
 })();
 
 // Start the application
