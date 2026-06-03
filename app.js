@@ -5417,6 +5417,7 @@ async function initHlsPlayer() {
 
     let pollTimer = null;
     let playing = false;
+    let currentHls = null; // track active HLS instance so we can destroy it before restarting
 
     const loadingOverlay = document.getElementById('video-loading');
     function hideLoadingOverlay() {
@@ -5451,6 +5452,8 @@ async function initHlsPlayer() {
         if (playing) return;
         playing = true;
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        // Destroy any previous HLS instance before attaching a new one to the same element.
+        if (currentHls) { try { currentHls.destroy(); } catch {} currentHls = null; }
         video.__hlsSrc    = streamUrl; // expose for PiP
         video.__hlsIsLive = isLive;
 
@@ -5463,6 +5466,8 @@ async function initHlsPlayer() {
             video.autoplay = true;
             video.controls = true;
             video.addEventListener('canplay', hideLoadingOverlay, { once: true });
+            // Safety: dismiss overlay after 8s in case canplay never fires (stalled stream)
+            setTimeout(hideLoadingOverlay, 8000);
             video.play().catch(() => {});
         }
 
@@ -5560,6 +5565,7 @@ async function initHlsPlayer() {
                 highBufferWatchdogPeriod: 1,
             } : { maxBufferLength: 30 };
             const hls = new Hls(hlsCfg);
+            currentHls = hls;
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
             if (isLive) {
