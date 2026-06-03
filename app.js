@@ -5465,15 +5465,19 @@ async function initHlsPlayer() {
 
                 function captureSnapshot() {
                     video.pause();
-                    if (!snapshot) { hideLoadingOverlay(); return; }
-                    try {
-                        snapshot.width = video.videoWidth || video.clientWidth;
-                        snapshot.height = video.videoHeight || video.clientHeight;
-                        const ctx = snapshot.getContext('2d');
-                        ctx.drawImage(video, 0, 0, snapshot.width, snapshot.height);
-                        video.style.display = 'none';
-                        snapshot.hidden = false;
-                    } catch {}
+                    const w = video.videoWidth;
+                    const h = video.videoHeight;
+                    if (snapshot && w > 0 && h > 0) {
+                        try {
+                            snapshot.width = w;
+                            snapshot.height = h;
+                            snapshot.getContext('2d').drawImage(video, 0, 0, w, h);
+                            snapshot.hidden = false;
+                            video.style.display = 'none';
+                        } catch {}
+                    }
+                    // Whether canvas draw succeeded or not, overlay comes down.
+                    // If draw failed video stays visible — it is paused at correct position.
                     hideLoadingOverlay();
                 }
 
