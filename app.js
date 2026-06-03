@@ -5389,27 +5389,6 @@ async function initHlsPlayer() {
     const fallback = document.getElementById('video-fallback');
     if (!video) return;
 
-    // TEMP DEBUG
-    const _dbg = document.createElement('div');
-    _dbg.style.cssText = 'position:fixed;top:120px;right:8px;background:#000;color:#0f0;font:12px monospace;padding:8px;z-index:99999;border:2px solid #0f0;white-space:pre;';
-    document.body.appendChild(_dbg);
-    const _ver = document.querySelector('script[src^="app.js"]')?.src?.match(/v=([^&]+)/)?.[1] ?? '?';
-    setInterval(() => {
-        const se = video.seekable.length > 0 ? video.seekable.end(video.seekable.length-1).toFixed(1) : 'none';
-        const ss = video.seekable.length > 0 ? video.seekable.start(0).toFixed(1) : 'none';
-        const snap = document.getElementById('player-snapshot');
-        const pv = document.getElementById('player-pip');
-        _dbg.textContent = [
-            `v=${_ver}`,
-            `MAIN paused=${video.paused} ct=${video.currentTime?.toFixed(1)}`,
-            `MAIN vid.disp=${video.style.display||'(css)'}`,
-            `snap.hidden=${snap?.hidden} snap.w=${snap?.width}`,
-            `PIP paused=${pv?.paused} ct=${pv?.currentTime?.toFixed(1)}`,
-            `PIP dur=${pv?.duration?.toFixed?.(1)}`,
-            `dur=${video.duration?.toFixed(1)} rs=${video.readyState}`,
-        ].join('\n');
-    }, 300);
-
     let pollTimer = null;
     let playing = false;
 
