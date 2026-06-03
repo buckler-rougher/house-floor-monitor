@@ -2126,6 +2126,57 @@ body {
   background: transparent;
 }
 
+/* Backdrop — blurs page behind expanded PiP */
+.pip-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1099;
+  cursor: pointer;
+}
+.pip-backdrop.pip-backdrop-visible {
+  display: block;
+}
+
+/* Expanded PiP — centered, large */
+.youtube-pip.pip-expanded {
+  bottom: auto;
+  right: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 1100px);
+  z-index: 1100;
+  border-radius: 12px;
+}
+.youtube-pip.pip-expanded .youtube-pip-overlay {
+  pointer-events: none; /* let user interact with video controls */
+}
+
+/* Close button — only visible when expanded */
+.pip-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.pip-close-btn:hover { opacity: 1; }
+.youtube-pip.pip-expanded .pip-close-btn { display: inline; }
+.youtube-pip-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .proceedings-item {
   padding: 4px 0;
   display: block;

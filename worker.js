@@ -908,7 +908,7 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
 const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
 
 async function getCachedBillEnrichment(env, billId) {
-  const key = `bill-enrich-v2:${billId}`;
+  const key = `bill-enrich-v3:${billId}`;
   const mem = _mGet(key);
   if (mem) return JSON.parse(mem);
   if (!env?.HLS_CACHE) return null;
@@ -920,7 +920,7 @@ async function getCachedBillEnrichment(env, billId) {
 }
 
 async function setCachedBillEnrichment(env, billId, data) {
-  const key = `bill-enrich-v2:${billId}`;
+  const key = `bill-enrich-v3:${billId}`;
   const body = JSON.stringify(data);
   _mSet(key, body, BILL_ENRICH_TTL * 1000);
   if (!env?.HLS_CACHE) return;
