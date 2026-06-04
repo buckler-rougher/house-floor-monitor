@@ -3707,6 +3707,53 @@ a.bill-card-rule-link {
     margin-bottom: 2px;
 }
 
+.bill-id-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+.bill-id-row .bill-id { margin-bottom: 0; }
+
+/* ── Dem Whip recommendation tag ──────────────────────────────────────────
+   Clearly attributed to the House Democratic Whip (the only whip source we
+   have); the site is non-partisan. YES=green / NO=red conveys the recommended
+   direction, with a small confidence note. */
+.whip-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    border: 1px solid rgba(88, 166, 255, 0.35);
+    border-radius: 4px;
+    background: rgba(88, 166, 255, 0.06);
+    font-family: var(--font-mono);
+    line-height: 1.4;
+    white-space: nowrap;
+}
+.whip-tag-label {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+}
+.whip-tag-rec {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.whip-tag-rec.whip-yes { color: var(--accent-green); }
+.whip-tag-rec.whip-no  { color: var(--accent-red); }
+.whip-tag-conf {
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+}
+
 .bill-rule-tag {
     display: inline-flex;
     align-items: center;
