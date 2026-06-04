@@ -2383,12 +2383,14 @@ async function handleLeadership(env) {
 // Uses Congress.gov to find recent H.Res. bills whose titles indicate they are
 // "providing for consideration of" a floor bill.
 async function handleRules(request, env) {
-  return kvCache(env, 'rules_v6', 30 * 60, async () => {
+  return kvCache(env, 'rules_v7', 30 * 60, async () => {
     try {
       // Fetch the most recently-updated H.Res. bills for the current Congress.
       // Special rules are always H.Res. and their titles start with "Providing for consideration of…"
-      // Limit 50 to avoid missing current-week rules that may have slipped out of the top 20 by updateDate.
-      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres?api_key=${_congressApiKey}&sort=updateDate+desc&limit=50&format=json`;
+      // Limit 250 (Congress.gov max): during busy weeks dozens of commemorative
+      // H.Res. resolutions get updated daily and were pushing the current week's
+      // rule out of a smaller top-N window by updateDate.
+      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres?api_key=${_congressApiKey}&sort=updateDate+desc&limit=250&format=json`;
       const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (!resp.ok) throw new Error(`Congress.gov /hres returned ${resp.status}`);
       const data = await resp.json();
