@@ -3252,11 +3252,16 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
-    const hasJournal = items.some(i => {
-        const d = i.description.toLowerCase();
-        return d.includes('approval of the journal') || d.includes('approved the journal') || d.includes('announced approval of the journal');
-    });
-    if (hasJournal) window.setMode('journal');
+    // Journal mode is NOT sticky. Only enter it when the journal approval is the
+    // single most-recent proceeding (items[0]). Previously this scanned the entire
+    // day with .some(), so a journal approval from hours ago became a catch-all that
+    // overrode active business (votes, debate) whenever live status was unavailable.
+    const latestDesc = items[0].description.toLowerCase();
+    const latestIsJournal =
+        latestDesc.includes('approval of the journal') ||
+        latestDesc.includes('approved the journal') ||
+        latestDesc.includes('announced approval of the journal');
+    if (latestIsJournal) window.setMode('journal');
 }
 
 // Update proceedings feed (autoscroll removed)
@@ -6347,6 +6352,20 @@ function updateLastUpdate() {
     let pipHls       = null;
     let pipWaitTimer = null;
     let expanded     = false;
+    let edgeKeeper   = null; // interval pinning live playback to the edge
+
+    // Enable embedded CEA-608/708 captions on the PiP video. Tracks may appear
+    // before or after load, so scan now + poll briefly until one is shown.
+    function enablePipCaptions() {
+        for (let i = 0; i < pipVideo.textTracks.length; i++) {
+            const t = pipVideo.textTracks[i];
+            if (t.kind === 'captions' || t.kind === 'subtitles') {
+                if (t.mode !== 'showing') t.mode = 'showing';
+                return true;
+            }
+        }
+        return false;
+    }
 
     function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
     function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
@@ -6374,6 +6393,19 @@ function updateLastUpdate() {
     if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); collapse(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && expanded) collapse(); });
 
+    // Keep live playback pinned to the edge. HLS live-sync alone let the feed
+    // fall ~40s behind real time; this snaps forward whenever drift exceeds 8s.
+    function startEdgeKeeper() {
+        if (edgeKeeper) clearInterval(edgeKeeper);
+        edgeKeeper = setInterval(() => {
+            if (pipVideo.paused || pipVideo.seekable.length === 0) return;
+            const edge = pipVideo.seekable.end(pipVideo.seekable.length - 1);
+            if (isFinite(edge) && (edge - pipVideo.currentTime) > 8) {
+                pipVideo.currentTime = edge - 1.5;
+            }
+        }, 5000);
+    }
+
     // Load the live stream
     function loadPip(url) {
         pipVideo.style.display = 'block';
@@ -6381,17 +6413,37 @@ function updateLastUpdate() {
         pipVideo.muted = true;
         if (window.Hls && Hls.isSupported()) {
             if (pipHls) { try { pipHls.destroy(); } catch {} pipHls = null; }
-            pipHls = new Hls({ maxBufferLength: 2, maxMaxBufferLength: 4, liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2, liveDurationInfinity: true });
+            pipHls = new Hls({
+                maxBufferLength: 2, maxMaxBufferLength: 4,
+                liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2,
+                liveDurationInfinity: true,
+                // Don't cap quality to the small PiP box — keep it sharp at any size.
+                capLevelToPlayerSize: false,
+                startLevel: -1,
+            });
             pipHls.loadSource(url);
             pipHls.attachMedia(pipVideo);
             pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
-            pipHls.on(Hls.Events.MANIFEST_PARSED, () => pipVideo.play().catch(() => {}));
+            pipHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                // Force the highest rendition regardless of the player's size.
+                if (pipHls.levels && pipHls.levels.length) pipHls.nextLevel = pipHls.levels.length - 1;
+                pipVideo.play().catch(() => {});
+                startEdgeKeeper();
+            });
+            pipHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, enablePipCaptions);
             pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); } });
         } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
             pipVideo.src = url;
             pipVideo.play().catch(() => {});
             pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            startEdgeKeeper();
         }
+        // Captions: scan now, on new tracks, and poll for the first 20s.
+        pipVideo.textTracks.addEventListener('addtrack', enablePipCaptions);
+        let capTries = 0;
+        const capPoll = setInterval(() => {
+            if (enablePipCaptions() || ++capTries > 20) clearInterval(capPoll);
+        }, 1000);
     }
 
     // Fetch stream and load; retry every 30s if unavailable
