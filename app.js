@@ -1595,6 +1595,7 @@ const elements = {
     debateBillPanel: document.getElementById('debate-bill-panel'),
     debateAmendmentsPanel: document.getElementById('debate-amendments-panel'),
     debateRuleTag: document.getElementById('debate-rule-tag'),
+    debateSourceLink: document.getElementById('debate-source-link'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
     debateCommitteeReportSection: document.getElementById('debate-committee-report-section'),
@@ -3553,6 +3554,19 @@ function updateDebateSection(items) {
     const rulesSlug = foundBill ? billIdToRulesSlug(foundBill.id) : null;
     const hasAmendments = rulesSlug && (foundBill?.procedure === 'rule' || foundBill?.isRule === true);
     console.log('[debate-nav] foundBillId:', foundBillId, '| foundBill:', foundBill?.id, '| procedure:', foundBill?.procedure, '| isRule:', foundBill?.isRule, '| rulesSlug:', rulesSlug, '| hasAmendments:', hasAmendments, '| billDataMap size:', billDataMap.size);
+    // Header source follows the active panel: Bill Details → House Clerk;
+    // Amendments → House Rules Committee (where amendments are filed).
+    const setDebateSource = (panel) => {
+        const a = elements.debateSourceLink;
+        if (!a) return;
+        if (panel === 'amendments' && rulesSlug) {
+            a.href = `https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}`;
+            a.textContent = 'House Rules Committee';
+        } else {
+            a.href = 'https://clerk.house.gov/FloorSummary';
+            a.textContent = 'Legislative Activity (House Clerk)';
+        }
+    };
     if (elements.debatePanelNav) {
         if (hasAmendments) {
             elements.debatePanelNav.style.display = 'flex';
@@ -3567,10 +3581,12 @@ function updateDebateSection(items) {
                     if (btn.dataset.panel === 'bill') {
                         if (billPanel) billPanel.style.display = '';
                         if (amendPanel) amendPanel.style.display = 'none';
+                        setDebateSource('bill');
                     } else {
                         if (billPanel) billPanel.style.display = 'none';
                         if (amendPanel) amendPanel.style.display = '';
                         loadAmendments(rulesSlug, 'debate-amendments-body', 'debate-amendments-count');
+                        setDebateSource('amendments');
                     }
                 };
             });
@@ -3581,9 +3597,11 @@ function updateDebateSection(items) {
                 navBtns[0]?.classList.add('is-active');
                 if (billPanel) billPanel.style.display = '';
                 if (amendPanel) amendPanel.style.display = 'none';
+                setDebateSource('bill');
             }
         } else {
             elements.debatePanelNav.style.display = 'none';
+            setDebateSource('bill'); // no amendments tab → always Clerk
         }
     }
 
