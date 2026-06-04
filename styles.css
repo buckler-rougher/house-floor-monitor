@@ -724,21 +724,25 @@ body {
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
 .sine-die-source, .new-session-source, .admin-oath-source {
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-2xs) !important; /* match .panel-source over per-section rules */
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.8;
 }
 
-/* Padded body to match other panels. */
+/* Padded body to match other panels — strip the old inner card (border/radius/
+   bg) so the body sits flush inside the new outer panel instead of nesting. */
 .one-minute-content, .special-order-content, .morning-hour-content,
 .prayer-content, .silence-content, .oath-content, .speaker-content,
 .committee-chair-content, .pledge-content, .message-content,
 .joint-meeting-content, .journal-content, .joint-session-content,
 .cert-election-content, .cert-electoral-content, .sine-die-content,
 .new-session-content, .admin-oath-content {
-    padding: 16px 24px;
+    padding: 16px 24px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
 }
 
 /* Vote Header */
