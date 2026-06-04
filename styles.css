@@ -1972,21 +1972,28 @@ body {
   cursor: pointer;
 }
 
-/* ── Closed captions — tactical monospace style ─────────────────────────── */
+/* ── Closed captions — tactical monospace style ─────────────────────────────
+   No per-cue background box: CEA-608 roll-up captions repaint on every new
+   line, and a boxed background flickers as it resizes. A transparent cue with
+   a strong text outline updates smoothly (no box flash) while staying legible
+   over the video. */
 ::cue {
-  background-color: rgba(13, 17, 23, 0.88);
-  color: #e6edf3;
+  background-color: transparent;
+  color: #ffffff;
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
   font-size: 0.82em;
   line-height: 1.5;
-  text-shadow: none;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.95),
+    0 0 6px rgba(0, 0, 0, 0.85);
 }
 ::cue(b), ::cue(strong) {
-  color: rgba(0, 255, 65, 0.9);
+  color: rgba(0, 255, 65, 0.95);
   font-weight: 600;
 }
 ::cue(i), ::cue(em) {
-  color: var(--text-secondary);
+  color: #c9d1d9;
   font-style: normal;
   font-weight: 400;
 }
