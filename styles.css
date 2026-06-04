@@ -3999,10 +3999,51 @@ a.bill-card-rule-link {
     gap: 6px;
 }
 
-/* When a report-action row follows the committee chips inside the combined
-   COMMITTEE section, give them breathing room. */
-.bill-modal-committees + .bill-modal-action-row {
-    margin-top: 8px;
+/* Committee report row: "Reported  30–3" with the count as a prominent
+   green/red tally, date pinned to the right edge. */
+.committee-report-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.committee-report-main {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
+.committee-report-verb {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.committee-tally {
+    font-family: var(--font-mono);
+    font-size: var(--fs-6xl); /* 24px — read the numbers at a glance */
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.5px;
+}
+
+.committee-tally .ct-aye { color: var(--accent-green); }
+.committee-tally .ct-nay { color: var(--accent-red); }
+.committee-tally .ct-sep { color: var(--text-muted); font-weight: 400; margin: 0 5px; }
+
+.committee-report-pill {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 4px;
 }
 
 .bill-modal-committee {
