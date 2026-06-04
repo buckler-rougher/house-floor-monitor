@@ -654,6 +654,93 @@ body {
     margin-bottom: 0 !important;
 }
 
+/* ── Live-mode panels ─────────────────────────────────────────────────────
+   Each live floor-business mode (speeches, prayer, oath, ceremonies, …) is
+   styled as a standard card panel like FLOOR PROCEEDINGS etc.: a header bar
+   titled HAPPENING NOW, the mode's own colored tag beside it, source pinned
+   right, and a padded body. Implemented as grouped rules over the existing
+   .X-section / .X-section-header / .X-header-right / .X-content structure so
+   no per-section HTML changes are needed. Votes are intentionally excluded. */
+.one-minute-section, .special-order-section, .morning-hour-section,
+.prayer-section, .silence-section, .oath-section, .speaker-section,
+.committee-chair-section, .pledge-section, .message-section,
+.joint-meeting-section, .journal-section, .joint-session-section,
+.cert-election-section, .cert-electoral-section, .sine-die-section,
+.new-session-section, .admin-oath-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0 !important; /* card replaces the old vertical padding */
+}
+
+/* Header bar — HAPPENING NOW title (::before) + mode tag, source pushed right. */
+.one-minute-section-header, .special-order-section-header, .morning-hour-section-header,
+.prayer-section-header, .silence-section-header, .oath-section-header,
+.speaker-section-header, .committee-chair-section-header, .pledge-section-header,
+.message-section-header, .joint-meeting-section-header, .journal-section-header,
+.joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
+.sine-die-section-header, .new-session-section-header, .admin-oath-section-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 24px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+    margin: 0 !important;
+}
+
+.one-minute-section-header::before, .special-order-section-header::before, .morning-hour-section-header::before,
+.prayer-section-header::before, .silence-section-header::before, .oath-section-header::before,
+.speaker-section-header::before, .committee-chair-section-header::before, .pledge-section-header::before,
+.message-section-header::before, .joint-meeting-section-header::before, .journal-section-header::before,
+.joint-session-section-header::before, .cert-election-section-header::before, .cert-electoral-section-header::before,
+.sine-die-section-header::before, .new-session-section-header::before, .admin-oath-section-header::before {
+    content: "HAPPENING NOW";
+    flex-shrink: 0;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Source block: pin to the right edge and match .panel-source. */
+.one-minute-header-right, .special-order-header-right, .morning-hour-header-right,
+.prayer-header-right, .silence-header-right, .oath-header-right, .speaker-header-right,
+.committee-chair-header-right, .pledge-header-right, .message-header-right,
+.joint-meeting-header-right, .journal-header-right, .joint-session-header-right,
+.cert-election-header-right, .cert-electoral-header-right, .sine-die-header-right,
+.new-session-header-right, .admin-oath-header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.one-minute-source, .special-order-source, .morning-hour-source, .prayer-source,
+.silence-source, .oath-source, .speaker-source, .committee-chair-source,
+.pledge-source, .message-source, .joint-meeting-source, .journal-source,
+.joint-session-source, .cert-election-source, .cert-electoral-source,
+.sine-die-source, .new-session-source, .admin-oath-source {
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+}
+
+/* Padded body to match other panels. */
+.one-minute-content, .special-order-content, .morning-hour-content,
+.prayer-content, .silence-content, .oath-content, .speaker-content,
+.committee-chair-content, .pledge-content, .message-content,
+.joint-meeting-content, .journal-content, .joint-session-content,
+.cert-election-content, .cert-electoral-content, .sine-die-content,
+.new-session-content, .admin-oath-content {
+    padding: 16px 24px;
+}
+
 /* Vote Header */
 .vote-header {
     display: flex;
@@ -4712,7 +4799,7 @@ body.debate-mode .floor-grid-panel {
 /* Debate Section */
 .debate-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -4873,7 +4960,7 @@ body.debate-mode .debate-section {
 /* One Minute Speeches */
 .one-minute-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -4981,7 +5068,7 @@ body.one-minute-mode .floor-grid-panel {
 /* Special Order Speeches */
 .special-order-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5089,7 +5176,7 @@ body.special-order-mode .floor-grid-panel {
 /* Morning-Hour Debate */
 .morning-hour-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5212,7 +5299,7 @@ body.morning-hour-mode .floor-grid-panel {
 
 .prayer-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5222,7 +5309,7 @@ body.prayer-mode .prayer-section {
 
 .silence-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5232,7 +5319,7 @@ body.silence-mode .silence-section {
 
 .oath-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5242,7 +5329,7 @@ body.oath-mode .oath-section {
 
 .speaker-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5253,7 +5340,7 @@ body.speaker-mode .speaker-section {
 /* ── Committee Chair Mode ─────────────────────────── */
 .committee-chair-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -5642,7 +5729,7 @@ body.committee-chair-mode .committee-chair-section {
 /* Pledge Section */
 .pledge-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6200,7 +6287,7 @@ body.pledge-mode .floor-grid-panel {
 /* Message Mode */
 .message-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6288,7 +6375,7 @@ body.message-mode .floor-grid-panel {
 /* Joint Meeting Mode */
 .joint-meeting-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6365,7 +6452,7 @@ body.joint-meeting-mode .floor-grid-panel {
 /* ── Journal Mode ────────────────────────────── */
 .journal-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6658,7 +6745,7 @@ body.committee-chair-mode .floor-grid-panel {
 /* ── Joint Session Mode ────────────────────────────── */
 .joint-session-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6741,7 +6828,7 @@ body.joint-session-mode .floor-grid-panel {
 /* ── Certification of Election Mode ────────────────────────────── */
 .cert-election-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -6874,7 +6961,7 @@ body.cert-election-mode .floor-grid-panel {
 /* ── Certification of Electoral Votes Mode ────────────────────────────── */
 .cert-electoral-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -7007,7 +7094,7 @@ body.cert-electoral-mode .floor-grid-panel {
 /* ── Sine Die Mode ────────────────────────────── */
 .sine-die-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -7117,7 +7204,7 @@ body.sine-die-mode .floor-grid-panel {
 /* ── New Session Mode ────────────────────────────── */
 .new-session-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
@@ -7227,7 +7314,7 @@ body.new-session-mode .floor-grid-panel {
 /* ── Admin Oath Mode ────────────────────────────── */
 .admin-oath-section {
     display: none;
-    padding: 24px 0;
+    padding: 24px 0 0;
     margin-bottom: 24px;
 }
 
