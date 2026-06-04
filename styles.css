@@ -4919,6 +4919,21 @@ body.debate-mode .debate-section {
     color: var(--text-muted);
     text-transform: uppercase;
 }
+.debate-source {
+    margin-left: auto;
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+.debate-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    opacity: 0.9;
+}
+.debate-source a:hover { opacity: 1; text-decoration: underline; }
 
 .debate-tag {
     display: inline-flex;
