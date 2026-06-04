@@ -6226,6 +6226,19 @@ function fillPartySeats(seats, statuses) {
     });
 }
 
+// Set the quorum bar fill. The fill is a left-anchored rounded pill whose width
+// is numerator/denominator; its gradient is sized to the full track width so the
+// gradient appears "revealed" by the fill rather than compressed (5 of 435 votes
+// shows just the red→orange start, with a rounded right cap).
+function setQuorumFill(numerator, denominator) {
+    const el = elements.quorumFill;
+    if (!el) return;
+    const frac = denominator > 0 ? Math.min(Math.max(numerator / denominator, 0), 1) : 0;
+    el.style.width = `${frac * 100}%`;
+    // Gradient image width = track width = fill width / frac → background-size %
+    el.style.backgroundSize = frac > 0 ? `${100 / frac}% 100%` : '100% 100%';
+}
+
 // Update Quorum Status
 async function updateQuorumStatus() {
     // If a live vote is in progress, use DomeWatch data directly — the Clerk's XML file
@@ -6265,8 +6278,7 @@ async function updateQuorumStatus() {
         } else {
             indicatorText.textContent = 'INACTIVE';
         }
-        const emptyPct = 100 - Math.min((totalVoted / wholeNumber) * 100, 100);
-        elements.quorumFill.style.width = `${emptyPct}%`;
+        setQuorumFill(totalVoted, wholeNumber);
         document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
         return;
     }
@@ -6336,10 +6348,8 @@ async function updateQuorumStatus() {
             indicatorText.textContent = 'INACTIVE';
         }
         
-        // Update progress bar - shrink from right to reveal gradient underneath
-        const percentage = Math.min((totalVoted / totalLegislators) * 100, 100);
-        const emptyPercentage = 100 - percentage;
-        elements.quorumFill.style.width = `${emptyPercentage}%`;
+        // Fill reveals the gradient left-to-right by the vote fraction.
+        setQuorumFill(totalVoted, totalLegislators);
         document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
         
     } catch (error) {
@@ -6369,8 +6379,9 @@ async function updateQuorumStatus() {
             indicatorText.textContent = 'INACTIVE';
         }
         
-        const percentage = Math.min((totalVoted / quorumRequired) * 100, 100);
-        elements.quorumFill.style.width = `${percentage}%`;
+        // Fallback path: scale against the full chamber (435) so the fill,
+        // gradient, and 0/218/435 labels all stay aligned.
+        setQuorumFill(totalVoted, 435);
         document.getElementById('quorum-progress-bar')?.setAttribute('aria-valuenow', totalVoted);
     }
 }

@@ -1743,23 +1743,28 @@ body {
 .quorum-bar {
   position: relative;
   height: 8px;
-  background: linear-gradient(90deg, var(--accent-red) 0%, var(--accent-amber) 50%, var(--accent-green) 100%);
-  border-radius: 100px 0 0 100px;
+  background: var(--bg-elevated); /* empty track */
+  border-radius: 100px;           /* full pill, rounded both ends */
   overflow: hidden;
   margin-bottom: 8px;
 }
 
+/* The fill IS the revealed gradient: a rounded pill anchored left whose width
+   is the vote fraction. The gradient is sized (via background-size, set in JS)
+   to the full track width so it stays fixed and is "revealed" by the fill
+   rather than compressed — 5 votes shows just the red→orange start. */
 .quorum-fill {
-  height: 100%;
-  width: 100%;
-  background: var(--bg-card);
-  border-radius: 0 100px 0 0;
-  transition: width 0.6s ease;
   position: absolute;
-  right: 0;
+  left: 0;
   top: 0;
-  margin: 0;
-  padding: 0;
+  height: 100%;
+  width: 0;
+  background-image: linear-gradient(90deg, var(--accent-red) 0%, var(--accent-amber) 50%, var(--accent-green) 100%);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100% 100%; /* JS overrides to keep the gradient track-scaled */
+  border-radius: 100px;
+  transition: width 0.6s ease;
   box-sizing: border-box;
 }
 
