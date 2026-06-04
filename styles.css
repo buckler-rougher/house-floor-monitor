@@ -3919,6 +3919,18 @@ a.bill-card-rule-link {
     border-color: var(--accent-amber);
 }
 
+/* MAY BE CONSIDERED — neutral slate, matching the .scheduled/.pending badge
+   palette (these bills aren't yet under a rule or suspension). */
+.bill-modal-link.maybe {
+    color: var(--text-secondary);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.bill-modal-link.maybe:hover {
+    background: rgba(100, 116, 139, 0.12);
+    border-color: var(--text-secondary);
+}
+
 .bill-modal-support-bar {
     height: 8px;
     border-radius: 4px;
