@@ -4847,32 +4847,34 @@ body.debate-mode .floor-grid-panel {
     display: none !important;
 }
 
-/* Debate Section */
+/* Debate Section — styled as a panel like the other live modes:
+   HAPPENING NOW header (::before on .debate-tags-row) + the DEBATE tag, with a
+   flush body. */
 .debate-section {
     display: none;
-    padding: 24px 0 0;
-    margin-bottom: 24px;
+    padding: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 body.debate-mode .debate-section {
     display: block;
 }
 
-/* Debate section panel nav (Bill Details ↔ Amendments toggle) */
+/* Debate section panel nav (Bill Details ↔ Amendments toggle) — a sub-bar
+   inside the panel card, below the HAPPENING NOW header. */
 .debate-section .bill-panel-nav {
     display: flex;
     width: 100%;
     background: var(--bg-elevated);
-    border: 1px solid var(--border-color);
-    border-radius: 8px 8px 0 0;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
     overflow: hidden;
     flex-shrink: 0;
     margin-bottom: 0;
-}
-
-.debate-section .bill-panel-nav + .debate-content,
-.debate-section .bill-panel-nav + * {
-    border-radius: 0 0 8px 8px;
 }
 
 .debate-section .bill-panel-nav-btn {
@@ -4902,8 +4904,20 @@ body.debate-mode .debate-section {
 .debate-tags-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 0;
+    padding: 12px 24px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+}
+.debate-tags-row::before {
+    content: "HAPPENING NOW";
+    flex-shrink: 0;
+    font-size: var(--fs-base);
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
 }
 
 .debate-tag {
@@ -4969,16 +4983,10 @@ body.debate-mode .debate-section {
 }
 
 .debate-content {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 24px;
-}
-
-/* When nav is shown above content, flatten top corners and merge borders */
-.debate-section .bill-panel-nav[style*="flex"] + .debate-content {
-    border-top: none;
-    border-radius: 0 0 8px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 16px 24px;
 }
 
 .debate-bill-header {
