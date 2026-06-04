@@ -2486,6 +2486,56 @@ async function handleRules(request, env) {
   });
 }
 
+// ── Democratic Whip recommendations ──────────────────────────────────────────
+// DomeWatch's /whip-notices endpoint publishes the House Democratic Whip's
+// recommended position (YES/NO) on some upcoming votes. We surface only the
+// bills with an actual recommendation (DomeWatch nulls it for low-confidence
+// items). Returns a map keyed by normalized bill id so the client can match it
+// to this week's bills:  { "HR8646": { recommendation: "NO", confidence: "high",
+// billNumber: "H.R. 8646" }, ... }
+function normalizeWhipBillId(s) {
+  return (s || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+async function handleWhipNotices(env) {
+  // Notices post ~twice daily (daily + nightly). 30-min freshness is plenty;
+  // write-on-change keeps KV writes minimal.
+  return kvCache(env, 'whip-notices-v1', 30 * 60, async () => {
+    try {
+      const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!resp.ok) throw new Error(`whip-notices returned ${resp.status}`);
+      const data = await resp.json();
+      const notices = data.data || [];
+
+      // Notices are newest-first; the first recommendation we see for a bill wins.
+      const recs = {};
+      for (const notice of notices) {
+        for (const item of (notice.items || [])) {
+          const rec = (item.recommendation || '').toUpperCase();
+          if (rec !== 'YES' && rec !== 'NO') continue; // skip null / non-recommendations
+          const key = normalizeWhipBillId(item.billNumber || item.billId);
+          if (!key || recs[key]) continue; // keep the most-recent occurrence
+          recs[key] = {
+            recommendation: rec,
+            confidence: item.confidence || null,
+            billNumber: item.billNumber || null,
+          };
+        }
+      }
+      return new Response(JSON.stringify({ recs }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=900' }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ recs: {}, error: err.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+      });
+    }
+  }, 1800);
+}
+
 function handleOptions() {
   return new Response(null, {
     status: 200,
@@ -2533,6 +2583,8 @@ async function handleRequest(request, env) {
     return await handleCasualtyList(env);
   } else if (path === '/api/rules' && request.method === 'GET') {
     return await handleRules(request, env);
+  } else if (path === '/api/whip-notices' && request.method === 'GET') {
+    return await handleWhipNotices(env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {

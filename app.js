@@ -2108,6 +2108,10 @@ const billDataMap = new Map();
 // Map from normalized bill ID -> rule info {hres, hresNum, pdfUrl, ruleStatus}
 const specialRulesMap = new Map();
 
+// Map from normalized bill ID -> Democratic Whip recommendation
+// { recommendation: "YES"|"NO", confidence: "high"|"medium"|"low" }
+const whipRecMap = new Map();
+
 // Lookup map from member name -> casualty status (e.g. "Retiring", "Running for Senate")
 // Populated at startup from /api/casualty-list.  Keys: "FIRSTNAME LASTNAME" and "LASTNAME".
 let casualtyMap = {};
@@ -2166,6 +2170,39 @@ async function fetchSpecialRules() {
     } catch (e) {
         console.error('fetchSpecialRules error:', e);
     }
+}
+
+// Fetch the House Democratic Whip's recommendations (from DomeWatch whip-notices)
+// and index them by normalized bill id for matching against this week's bills.
+async function fetchWhipRecs() {
+    try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        whipRecMap.clear();
+        for (const [key, rec] of Object.entries(data.recs || {})) {
+            // key is already normalized worker-side (e.g. "HR8646")
+            whipRecMap.set(key, rec);
+        }
+    } catch (e) {
+        console.error('fetchWhipRecs error:', e);
+    }
+}
+
+// Build the Dem Whip recommendation tag for a bill, or '' if none.
+function whipRecTagHtml(billId) {
+    const rec = whipRecMap.get(normalizeBillIdForRules(billId));
+    if (!rec || (rec.recommendation !== 'YES' && rec.recommendation !== 'NO')) return '';
+    const dir = rec.recommendation === 'YES' ? 'yes' : 'no';
+    const conf = (rec.confidence || '').toLowerCase();
+    const confShort = conf === 'high' ? 'high' : conf === 'medium' ? 'med' : conf === 'low' ? 'low' : '';
+    const title = `House Democratic Whip recommends voting ${rec.recommendation}` +
+        (conf ? ` (${conf} confidence)` : '') + ' — source: DomeWatch';
+    return `<span class="whip-tag" title="${title}">` +
+        `<span class="whip-tag-label">DEM WHIP</span>` +
+        `<span class="whip-tag-rec whip-${dir}">${rec.recommendation}</span>` +
+        (confShort ? `<span class="whip-tag-conf">${confShort}</span>` : '') +
+        `</span>`;
 }
 
 // Sort mode: 'status' (default) | 'listed'
@@ -2286,8 +2323,8 @@ async function fetchBillsThisWeek() {
         console.log('[bills→debate] proceedingsData.length=', proceedingsData.length, 'billDataMap.size=', billDataMap.size);
         if (proceedingsData.length) updateDebateSection(proceedingsData);
 
-        // Fetch special rules in parallel, then re-render cards with rule tags
-        fetchSpecialRules().then(() => updateBillsDisplay());
+        // Fetch special rules + Dem Whip recs in parallel, then re-render cards
+        Promise.all([fetchSpecialRules(), fetchWhipRecs()]).then(() => updateBillsDisplay());
 
     } catch (error) {
         console.error('Error fetching bills:', error);
@@ -2539,7 +2576,10 @@ function createBillCard(bill, procedure) {
         <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" type="button">
             <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
             <div class="bill-info">
-                <div class="bill-id">${bill.id}</div>
+                <div class="bill-id-row">
+                    <span class="bill-id">${bill.id}</span>
+                    ${whipRecTagHtml(bill.id)}
+                </div>
                 <div class="bill-title">${escapeHtml(bill.title)}</div>
                 <div class="bill-meta">
                     <div class="bill-action">${actionText}</div>
@@ -2754,6 +2794,7 @@ function openBillModal(billId) {
                     <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
                     <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
                     ${modalRuleTagHtml}
+                    ${whipRecTagHtml(bill.id)}
                 </div>
                 <h2 class="bill-modal-title">${escapeHtml(bill.title)}</h2>
             </div>
