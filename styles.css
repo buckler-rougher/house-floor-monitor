@@ -3999,61 +3999,44 @@ a.bill-card-rule-link {
     gap: 6px;
 }
 
-/* Committee report row: "Reported  30–3" with the count as a prominent
-   green/red tally, date pinned to the right edge. */
-.committee-report-row {
+/* Committee tag row: chips on the left, report date pinned to the right edge. */
+.bill-modal-committee-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    margin-top: 10px;
 }
 
-.committee-report-main {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    min-width: 0;
-}
-
-.committee-report-verb {
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
+/* Vote tally embedded inside the committee chip. */
+.committee-chip-tally {
     font-family: var(--font-mono);
-}
-
-.committee-tally {
-    font-family: var(--font-mono);
-    font-size: var(--fs-6xl); /* 24px — read the numbers at a glance */
+    font-size: var(--fs-4xl); /* 18px — prominent within the chip */
     font-weight: 700;
     line-height: 1;
     letter-spacing: 0.5px;
 }
 
-.committee-tally .ct-aye { color: var(--accent-green); }
-.committee-tally .ct-nay { color: var(--accent-red); }
-.committee-tally .ct-sep { color: var(--text-muted); font-weight: 400; margin: 0 5px; }
-
-.committee-report-pill {
+.committee-chip-tally-text {
     font-size: var(--fs-md);
     font-weight: 600;
     color: var(--text-secondary);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-color);
-    padding: 4px 10px;
-    border-radius: 4px;
 }
 
+.ct-aye { color: var(--accent-green); }
+.ct-nay { color: var(--accent-red); }
+.ct-sep { color: var(--text-muted); font-weight: 400; margin: 0 4px; }
+
 .bill-modal-committee {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
     font-size: var(--fs-base);
     font-weight: 600;
     color: var(--text-primary);
     background: var(--bg-elevated);
     border: 1px solid var(--border-color);
     border-left: 3px solid var(--accent-blue);
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 4px;
 }
 
