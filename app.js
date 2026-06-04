@@ -2673,8 +2673,31 @@ function openBillModal(billId) {
             </div>`;
     }
 
-    // Committee — combines referral (which committee) + report action ("Reported
-    // by Committee xx – yy") into one scannable section. Report date right-aligned.
+    // Committee — combines referral (which committee) + report action into one
+    // scannable section. The report vote count is rendered as a prominent
+    // green-ayes / red-nays tally so the numbers read at a glance.
+    const committeeReportRow = (() => {
+        if (!bill.committeeReport) return '';
+        const dateHtml = bill.committeeReportDate
+            ? `<span class="bill-modal-date">${formatDate(bill.committeeReportDate)}</span>` : '';
+        const m = bill.committeeReport.match(/(\d+)\s*[–-]\s*(\d+)/);
+        let main;
+        if (m) {
+            main = `<span class="committee-report-verb">Reported</span>
+                <span class="committee-tally"><b class="ct-aye">${m[1]}</b><span class="ct-sep">–</span><b class="ct-nay">${m[2]}</b></span>`;
+        } else {
+            // voice vote / unanimous consent / generic — show as a pill
+            const label = /unanimous consent/i.test(bill.committeeReport) ? 'Reported · Unanimous Consent'
+                : /voice vote/i.test(bill.committeeReport) ? 'Reported · Voice Vote'
+                : escapeHtml(bill.committeeReport);
+            main = `<span class="committee-report-pill">${label}</span>`;
+        }
+        return `<div class="committee-report-row">
+            <div class="committee-report-main">${main}</div>
+            ${dateHtml}
+        </div>`;
+    })();
+
     const committeeHtml = (bill.committees?.length || bill.committeeReport) ? `
         <div class="bill-modal-section">
             <div class="bill-modal-section-label">COMMITTEE</div>
@@ -2682,11 +2705,7 @@ function openBillModal(billId) {
             <div class="bill-modal-committees">
                 ${bill.committees.map(c => `<span class="bill-modal-committee">${c}</span>`).join('')}
             </div>` : ''}
-            ${bill.committeeReport ? `
-            <div class="bill-modal-action bill-modal-action-row">
-                <span class="bill-modal-action-text">${escapeHtml(bill.committeeReport)}</span>
-                ${bill.committeeReportDate ? `<span class="bill-modal-date">${formatDate(bill.committeeReportDate)}</span>` : ''}
-            </div>` : ''}
+            ${committeeReportRow}
         </div>` : '';
 
     // Kept for the sections list below (committee report now lives inside committeeHtml).
