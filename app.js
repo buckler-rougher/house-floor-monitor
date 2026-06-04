@@ -6381,17 +6381,24 @@ function updateLastUpdate() {
     let expanded     = false;
     let edgeKeeper   = null; // interval pinning live playback to the edge
 
-    // Enable embedded CEA-608/708 captions on the PiP video. Tracks may appear
-    // before or after load, so scan now + poll briefly until one is shown.
+    // Enable embedded CEA-608/708 captions on the PiP video. The House feed
+    // carries multiple tracks (English CC1 + Spanish), so prefer English and
+    // explicitly disable the others — otherwise the first track (sometimes
+    // Spanish) would show. Tracks may appear before or after load.
+    function isEnglishTrack(t) {
+        const lang = (t.language || '').toLowerCase();
+        const label = (t.label || '').toLowerCase();
+        if (lang) return lang.startsWith('en');
+        // No language tag (common for CEA-608): fall back to label heuristics.
+        // CC1 is the primary English service; treat unlabeled as English too.
+        return /english|cc1|^cc$|primary/.test(label) || label === '';
+    }
     function enablePipCaptions() {
-        for (let i = 0; i < pipVideo.textTracks.length; i++) {
-            const t = pipVideo.textTracks[i];
-            if (t.kind === 'captions' || t.kind === 'subtitles') {
-                if (t.mode !== 'showing') t.mode = 'showing';
-                return true;
-            }
-        }
-        return false;
+        const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
+        if (!tracks.length) return false;
+        const english = tracks.find(isEnglishTrack) || tracks[0];
+        for (const t of tracks) t.mode = (t === english) ? 'showing' : 'disabled';
+        return true;
     }
 
     function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
