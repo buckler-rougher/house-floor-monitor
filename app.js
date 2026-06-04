@@ -2253,10 +2253,12 @@ async function fetchBillsThisWeek() {
 
                 // On quick refresh carry over enrichment the server didn't re-fetch
                 const enrichment = isQuick ? {
-                    summary:     bill.summary     ?? prev.summary,
-                    sponsor:     bill.sponsor     ?? prev.sponsor,
-                    cosponsors:  bill.cosponsors  ?? prev.cosponsors,
-                    committees:  bill.committees  ?? prev.committees,
+                    summary:            bill.summary            ?? prev.summary,
+                    sponsor:            bill.sponsor            ?? prev.sponsor,
+                    cosponsors:         bill.cosponsors         ?? prev.cosponsors,
+                    committees:         bill.committees         ?? prev.committees,
+                    committeeReport:    bill.committeeReport    ?? prev.committeeReport,
+                    committeeReportDate:bill.committeeReportDate ?? prev.committeeReportDate,
                 } : {};
 
                 return { ...bill, ...enrichment, ...statusFields, _origIdx: i };
