@@ -2673,21 +2673,24 @@ function openBillModal(billId) {
             </div>`;
     }
 
-    // Committees
-    const committeeHtml = bill.committees?.length ? `
+    // Committee — combines referral (which committee) + report action ("Reported
+    // by Committee xx – yy") into one scannable section. Report date right-aligned.
+    const committeeHtml = (bill.committees?.length || bill.committeeReport) ? `
         <div class="bill-modal-section">
-            <div class="bill-modal-section-label">REFERRED TO</div>
+            <div class="bill-modal-section-label">COMMITTEE</div>
+            ${bill.committees?.length ? `
             <div class="bill-modal-committees">
                 ${bill.committees.map(c => `<span class="bill-modal-committee">${c}</span>`).join('')}
-            </div>
+            </div>` : ''}
+            ${bill.committeeReport ? `
+            <div class="bill-modal-action bill-modal-action-row">
+                <span class="bill-modal-action-text">${escapeHtml(bill.committeeReport)}</span>
+                ${bill.committeeReportDate ? `<span class="bill-modal-date">${formatDate(bill.committeeReportDate)}</span>` : ''}
+            </div>` : ''}
         </div>` : '';
 
-    // Committee report action ("Reported by Committee xx – yy")
-    const committeeReportHtml = bill.committeeReport ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">COMMITTEE ACTION</div>
-            <div class="bill-modal-action">${escapeHtml(bill.committeeReport)}${bill.committeeReportDate ? `<span class="bill-modal-date"> — ${formatDate(bill.committeeReportDate)}</span>` : ''}</div>
-        </div>` : '';
+    // Kept for the sections list below (committee report now lives inside committeeHtml).
+    const committeeReportHtml = '';
 
     let overlay = document.getElementById('bill-modal-overlay');
     if (!overlay) {
@@ -2751,7 +2754,10 @@ function openBillModal(billId) {
                 ${actionText ? `
                 <div class="bill-modal-section" style="margin-bottom:12px;">
                     <div class="bill-modal-section-label">LATEST ACTION</div>
-                    <div class="bill-modal-action">${actionText}${actionDate ? `<span class="bill-modal-date"> — ${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}</div>
+                    <div class="bill-modal-action bill-modal-action-row">
+                        <span class="bill-modal-action-text">${actionText}</span>
+                        ${actionDate ? `<span class="bill-modal-date">${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}
+                    </div>
                 </div>` : ''}
                 ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
             </div>

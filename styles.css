@@ -3882,10 +3882,26 @@ a.bill-card-rule-link {
     line-height: 1.4;
 }
 
+/* Action + date on one line: text left, date pinned to the right edge. */
+.bill-modal-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+}
+
+.bill-modal-action-text {
+    flex: 1;
+    min-width: 0;
+}
+
 .bill-modal-date {
     color: var(--text-muted);
     font-family: var(--font-mono);
     font-size: var(--fs-md);
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: right;
 }
 
 .bill-modal-link {
@@ -3983,12 +3999,20 @@ a.bill-card-rule-link {
     gap: 6px;
 }
 
+/* When a report-action row follows the committee chips inside the combined
+   COMMITTEE section, give them breathing room. */
+.bill-modal-committees + .bill-modal-action-row {
+    margin-top: 8px;
+}
+
 .bill-modal-committee {
-    font-size: var(--fs-md);
-    color: var(--text-secondary);
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--text-primary);
     background: var(--bg-elevated);
     border: 1px solid var(--border-color);
-    padding: 3px 8px;
+    border-left: 3px solid var(--accent-blue);
+    padding: 5px 10px;
     border-radius: 4px;
 }
 
