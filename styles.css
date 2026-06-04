@@ -4365,7 +4365,7 @@ a.bill-card-rule-link {
 }
 
 .vacancies-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -4373,7 +4373,7 @@ a.bill-card-rule-link {
 }
 
 .vacancies-count {
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--accent-amber);
     font-family: var(--font-mono);
@@ -4382,21 +4382,26 @@ a.bill-card-rule-link {
 .vacancies-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .vacancy-item {
     display: grid;
-    grid-template-columns: 80px 60px 1fr 100px;
-    gap: 8px;
+    grid-template-columns: 92px 56px 1fr auto;
+    gap: 12px;
     align-items: center;
-    padding: 4px 0;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+}
+
+.vacancy-item:last-child {
+    border-bottom: none;
 }
 
 .vacancy-tag {
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 3px 7px;
     border-radius: 3px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -4414,35 +4419,34 @@ a.bill-card-rule-link {
 }
 
 .vacancy-date {
-    font-size: 8px;
+    font-size: 12px;
     color: var(--text-muted);
     font-family: var(--font-mono);
     justify-self: end;
-    min-width: 100px;
     text-align: right;
 }
 
 .vacancy-member {
-    font-size: 8px;
+    font-size: 13px;
     color: var(--text-primary);
     font-weight: 500;
     justify-self: start;
 }
 
 .vacancy-district {
-    font-size: 8px;
+    font-size: 12px;
     color: var(--text-secondary);
     font-family: var(--font-mono);
     justify-self: start;
-    min-width: 60px;
+    min-width: 56px;
 }
 
 .no-vacancies {
-    font-size: 8px;
+    font-size: 12px;
     color: var(--text-muted);
     font-style: italic;
     text-align: center;
-    padding: 8px 0;
+    padding: 10px 0;
 }
 
 
