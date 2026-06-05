@@ -6445,11 +6445,12 @@ function updateLastUpdate() {
 
     const pipSnapshot = document.getElementById('player-pip-snapshot');
     const pipLoading  = document.getElementById('pip-loading');
-    let pipHls       = null;
-    let pipWaitTimer = null;
-    let expanded     = false;
-    let edgeKeeper   = null; // interval pinning live playback to the edge
-    let pipFrozen    = false; // true once a last-frame snapshot has been captured
+    let pipHls          = null;
+    let pipSnapshotHls  = null; // short-lived HLS instance used only to grab the last frame of a finished VOD
+    let pipWaitTimer    = null;
+    let expanded        = false;
+    let edgeKeeper      = null; // interval pinning live playback to the edge
+    let pipFrozen       = false; // true once a last-frame snapshot has been captured
 
     // Enable embedded CEA-608/708 captions on the PiP video. The House feed
     // carries multiple tracks (English CC1 + Spanish), so prefer English and
@@ -6618,6 +6619,54 @@ function updateLastUpdate() {
         pipVideo.currentTime = end - 0.3;
     }
 
+    // Load a finished VOD URL, seek to the last second, and freeze on that frame.
+    // Used when the page loads while the house is already adjourned.
+    function loadPipSnapshot(url) {
+        if (pipFrozen) return;
+        if (pipSnapshotHls) { try { pipSnapshotHls.destroy(); } catch {} pipSnapshotHls = null; }
+        if (window.Hls && Hls.isSupported()) {
+            const hls = new Hls({ capLevelToPlayerSize: false, startLevel: 0 });
+            pipSnapshotHls = hls;
+            hls.loadSource(url);
+            hls.attachMedia(pipVideo);
+            pipVideo.muted = true;
+            let grabbed = false;
+            hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
+                if (grabbed) return;
+                const dur = data.details?.totalduration;
+                if (!isFinite(dur) || dur < 2) return;
+                grabbed = true;
+                const onSeeked = () => {
+                    const tryGrab = () => {
+                        if (pipVideo.videoWidth > 0) {
+                            pipVideo.pause();
+                            captureCurrentFrame();
+                            try { hls.destroy(); } catch {}
+                            if (pipSnapshotHls === hls) pipSnapshotHls = null;
+                        } else { requestAnimationFrame(tryGrab); }
+                    };
+                    pipVideo.play().then(() => requestAnimationFrame(tryGrab)).catch(() => {
+                        try { hls.destroy(); } catch {}
+                        if (pipSnapshotHls === hls) pipSnapshotHls = null;
+                    });
+                };
+                pipVideo.addEventListener('seeked', onSeeked, { once: true });
+                pipVideo.currentTime = dur - 1;
+            });
+            hls.on(Hls.Events.ERROR, (_, d) => {
+                if (d.fatal) { try { hls.destroy(); } catch {} if (pipSnapshotHls === hls) pipSnapshotHls = null; }
+            });
+        } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
+            pipVideo.src = url;
+            pipVideo.muted = true;
+            pipVideo.addEventListener('loadedmetadata', () => {
+                if (isFinite(pipVideo.duration) && pipVideo.duration > 2) pipVideo.currentTime = pipVideo.duration - 1;
+            }, { once: true });
+            pipVideo.addEventListener('seeked', freezePipAtEnd, { once: true });
+            pipVideo.load();
+        }
+    }
+
     // Audio is controlled explicitly by the mute button (below), NOT by
     // expanding/collapsing — so expand/collapse no longer touch muted state.
     function expand() {
@@ -6695,6 +6744,7 @@ function updateLastUpdate() {
     // Load the live stream
     function loadPip(url) {
         pipFrozen = false;
+        if (pipSnapshotHls) { try { pipSnapshotHls.destroy(); } catch {} pipSnapshotHls = null; }
         pipVideo.style.display = 'block';
         if (pipSnapshot) { pipSnapshot.style.display = 'none'; pipSnapshot.setAttribute('hidden', ''); }
         pipVideo.muted = true;
@@ -6747,6 +6797,7 @@ function updateLastUpdate() {
                     loadPip(d.url);
                 } else {
                     hidePipLoading();
+                    if (d?.url && !pipFrozen) loadPipSnapshot(d.url);
                     pipWaitTimer = setTimeout(fetchAndLoad, 30_000);
                 }
             })
