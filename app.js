@@ -6498,14 +6498,13 @@ function updateLastUpdate() {
             if (t && t !== lines[lines.length - 1]) lines.push(t);
         }
         const text = lines.slice(-2).join('\n');
-        // Opt-in debug: run `window.__capDebug = true` in the console to inspect
-        // the raw cue stream if captions still misbehave.
-        if (window.__capDebug) console.log('[cap]', cues.length, 'cues:', cues.map(c => [c.startTime?.toFixed?.(1), (c.text || '').replace(/\s+/g, ' ').trim()]));
 
         if (text) {
             // New/updated caption — show immediately and cancel any pending clear.
             if (pipCaptionClearTimer) { clearTimeout(pipCaptionClearTimer); pipCaptionClearTimer = null; }
             if (text !== pipCaptionText) {
+                // Opt-in debug (logs only on change): `window.__capDebug = true`.
+                if (window.__capDebug) console.log('[cap]', cues.length, 'cues →', JSON.stringify(text));
                 pipCaptionText = text;
                 el.textContent = text;
                 el.classList.add('has-text');
@@ -6522,17 +6521,22 @@ function updateLastUpdate() {
             }, 1000);
         }
     }
+    let pipCaptionPoll = null;
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
         if (!tracks.length) return false;
         const english = tracks.find(isEnglishTrack) || tracks[0];
         // 'hidden' (not 'showing') keeps cues active without native rendering.
         for (const t of tracks) t.mode = (t === english) ? 'hidden' : 'disabled';
-        if (pipCaptionTrack !== english) {
-            if (pipCaptionTrack) pipCaptionTrack.removeEventListener('cuechange', renderActiveCues);
-            pipCaptionTrack = english;
-            pipCaptionTrack.addEventListener('cuechange', renderActiveCues);
-        }
+        pipCaptionTrack = english;
+        // Poll activeCues rather than relying on 'cuechange': Safari does NOT
+        // reliably fire cuechange on hidden tracks, but it DOES keep activeCues
+        // populated. renderActiveCues dedupes, so a 250ms poll is cheap and
+        // repaints only when the caption text actually changes.
+        if (!pipCaptionPoll) pipCaptionPoll = setInterval(renderActiveCues, 250);
+        // Also listen for cuechange where it does fire (Chrome) for instant updates.
+        english.removeEventListener('cuechange', renderActiveCues);
+        english.addEventListener('cuechange', renderActiveCues);
         renderActiveCues();
         return true;
     }
