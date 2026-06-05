@@ -2414,30 +2414,26 @@ body {
   text-overflow: ellipsis;
 }
 
-/* CC (closed captions) toggle */
+/* CC (closed captions) toggle — icon, not a tag. */
 .pip-cc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   background: none;
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
+  border: none;
+  padding: 0;
+  line-height: 0;
   color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  padding: 2px 5px;
+  opacity: 0.65;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: color 0.15s ease, opacity 0.15s ease;
 }
-.pip-cc-btn:hover { color: var(--text-secondary); }
-.pip-cc-btn.is-on {
-  color: var(--accent-green);
-  border-color: rgba(63, 185, 80, 0.5);
-  background: rgba(63, 185, 80, 0.1);
-}
+.pip-cc-btn svg { display: block; }
+.pip-cc-btn:hover { opacity: 1; color: var(--text-secondary); }
+.pip-cc-btn.is-on { color: var(--accent-green); opacity: 1; }
 .pip-cc-btn:focus { outline: none; }
-.pip-cc-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.pip-cc-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; border-radius: 3px; }
 
 .proceedings-item {
   padding: var(--sp-4) 0;
