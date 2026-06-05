@@ -6483,12 +6483,14 @@ function updateLastUpdate() {
     }
     let pipCaptionText = '';       // currently displayed text (for dedupe)
     let pipCaptionClearTimer = null;
-    // Pop-on framing state: instead of scrolling up one line at a time, we fill a
-    // 2-line frame (top, then bottom), hold both while they're spoken, then start
-    // a fresh frame — so the display advances two lines at a time, TV-style.
-    let capFrame = ['', ''];
-    let capSlot = 0;               // which frame line the building line fills
-    let capBuilding = '';          // the line currently being spoken (roll-up bottom)
+    // True pop-on: hold the last COMPLETE two-line block on screen, and only swap
+    // to the next block once both of its lines are finished — so the caption never
+    // scrolls line-by-line and is always a stable two-line frame (one pair behind
+    // the audio, like TV pop-on).
+    let capDisp = ['', '']; // the held block currently shown
+    let capPend = ['', '']; // the next block being built (top, then bottom)
+    let capPendSlot = 0;    // which pending line the building line fills
+    let capBuilding = '';   // the line currently being spoken (roll-up bottom)
 
     function commitCaption(el, text) {
         if (text === pipCaptionText) return;
@@ -6514,11 +6516,11 @@ function updateLastUpdate() {
         const building = lines[lines.length - 1] || ''; // bottom = newest = in-progress line
 
         if (!building) {
-            // Silence — hold the last frame briefly, then clear after a real gap.
+            // Silence — keep the block up, then clear everything after a real gap.
             if (pipCaptionText && !pipCaptionClearTimer) {
                 pipCaptionClearTimer = setTimeout(() => {
                     pipCaptionClearTimer = null;
-                    capFrame = ['', '']; capSlot = 0; capBuilding = '';
+                    capDisp = ['', '']; capPend = ['', '']; capPendSlot = 0; capBuilding = '';
                     commitCaption(el, '');
                 }, 1500);
             }
@@ -6527,21 +6529,30 @@ function updateLastUpdate() {
         if (pipCaptionClearTimer) { clearTimeout(pipCaptionClearTimer); pipCaptionClearTimer = null; }
 
         if (building === capBuilding) {
-            // unchanged — nothing to do
-        } else if (!capBuilding || building.startsWith(capBuilding)) {
-            // First line, or the same line still growing word-by-word.
-            capBuilding = building;
-            capFrame[capSlot] = building;
-        } else {
-            // A new line started → the previous line finalized. Advance: fill the
-            // bottom slot next; once both slots are filled, start a fresh frame so
-            // the pair only moves on after both lines are complete.
-            if (capSlot === 0) { capSlot = 1; }
-            else { capFrame = ['', '']; capSlot = 0; }
-            capBuilding = building;
-            capFrame[capSlot] = building;
+            return; // no change
         }
-        commitCaption(el, capFrame.filter(Boolean).join('\n'));
+        if (!capBuilding || building.startsWith(capBuilding)) {
+            // First line of a block, or the same line still growing word-by-word.
+            capBuilding = building;
+            capPend[capPendSlot] = building;
+        } else {
+            // A new line started → the current pending line just finalized.
+            if (capPendSlot === 0) {
+                // Top line of the pending block is done; start filling the bottom.
+                capPendSlot = 1;
+                capPend[1] = building;
+            } else {
+                // Bottom line done → the pending PAIR is complete. Pop it onto the
+                // display (both lines swap at once), and begin the next block.
+                capDisp = [capPend[0], capPend[1]];
+                capPend = [building, ''];
+                capPendSlot = 0;
+            }
+            capBuilding = building;
+        }
+        // Only the held, complete block is shown — the in-progress pending block
+        // is not displayed until it finishes (true pop-on).
+        commitCaption(el, capDisp.filter(Boolean).join('\n'));
     }
     let pipCaptionPoll = null;
     function enablePipCaptions() {
