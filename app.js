@@ -6481,6 +6481,8 @@ function updateLastUpdate() {
         pipCaptionOverlay = el;
         return el;
     }
+    let pipCaptionText = '';       // currently displayed text (for dedupe)
+    let pipCaptionClearTimer = null;
     function renderActiveCues() {
         const el = captionOverlay();
         if (!el) return;
@@ -6490,8 +6492,26 @@ function updateLastUpdate() {
             .filter(Boolean)
             .join('\n')
             .trim();
-        el.textContent = text;
-        el.classList.toggle('has-text', !!text);
+
+        if (text) {
+            // New/updated caption — show immediately and cancel any pending clear.
+            if (pipCaptionClearTimer) { clearTimeout(pipCaptionClearTimer); pipCaptionClearTimer = null; }
+            if (text !== pipCaptionText) {
+                pipCaptionText = text;
+                el.textContent = text;
+                el.classList.add('has-text');
+            }
+        } else if (pipCaptionText && !pipCaptionClearTimer) {
+            // Hysteresis: CEA-608 roll-up briefly empties activeCues between lines,
+            // which caused flashing. Keep the last caption up and only clear after a
+            // genuine ~1s gap of silence.
+            pipCaptionClearTimer = setTimeout(() => {
+                pipCaptionClearTimer = null;
+                pipCaptionText = '';
+                el.textContent = '';
+                el.classList.remove('has-text');
+            }, 1000);
+        }
     }
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
