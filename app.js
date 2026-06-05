@@ -6497,7 +6497,19 @@ function updateLastUpdate() {
             const t = (c.text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             if (t && t !== lines[lines.length - 1]) lines.push(t);
         }
-        const text = lines.slice(-2).join('\n');
+        let text = lines.slice(-2).join('\n');
+
+        // Anti-flip: during roll-up the active set briefly drops to a single line
+        // (the new bottom line) before the next line joins, making the top line
+        // flash out and back in. If the new text is just one line that equals the
+        // bottom line we're already showing, keep the current two-line display.
+        if (text && pipCaptionText) {
+            const curLines = pipCaptionText.split('\n');
+            const newLines = text.split('\n');
+            if (newLines.length === 1 && curLines.length === 2 && curLines[1] === newLines[0]) {
+                text = pipCaptionText; // hold steady
+            }
+        }
 
         if (text) {
             // New/updated caption — show immediately and cancel any pending clear.
