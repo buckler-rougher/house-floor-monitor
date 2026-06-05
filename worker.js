@@ -634,6 +634,23 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   for (let i = 0; i < rows.length; i++) {
     const { description } = rows[i];
 
+    // Recorded vote requested and deferred to a later vote series. The Clerk
+    // posts these as "POSTPONED PROCEEDINGS - ... further proceedings on <bill>
+    // would be postponed." The bill link is in this same row. Maps to the
+    // "roll-call" (VOTE REQUESTED) status. Only set it if the bill has no
+    // stronger status yet — passage/failure rows are processed earlier in this
+    // same (reverse-chronological) loop, so they already win.
+    const isPostponed =
+      /postponed proceedings/i.test(description) ||
+      /further proceedings\b[\s\S]*\bwould be postponed/i.test(description);
+    if (isPostponed) {
+      const pid = rows[i].billId;
+      if (pid && !statuses[pid]) {
+        statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
+      }
+      continue;
+    }
+
     // Only process rows that are actual bill passage/failure motions
     const isPassageMotion =
       /on motion to suspend the rules and (pass|agree)/i.test(description) ||
@@ -1178,7 +1195,7 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  const cacheKey = quick ? 'bills-weekly-quick-v2' : 'bills-weekly-v2';
+  const cacheKey = quick ? 'bills-weekly-quick-v3' : 'bills-weekly-v3';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -1193,11 +1210,12 @@ async function _fetchBills(request, env) {
     // The client preserves summary/sponsor/committees from the initial full fetch.
     const quick = url.searchParams.has('quick');
 
-    // Fetch House.gov bills schedule, Bluesky Dem Cloakroom, and today's proceedings in parallel.
-    // Proceedings is the fastest authoritative source for vote outcomes (updated within minutes).
-    const [billsXmlText, blueskyXmlText, proceedingsStatuses] = await Promise.all([
+    // Fetch House.gov bills schedule + today's proceedings in parallel.
+    // Proceedings (House Clerk) is the authoritative source for the full vote
+    // lifecycle — recorded vote requested/postponed → passed/failed — so the
+    // partisan Bluesky/Dem Cloakroom feed is no longer used for bill status.
+    const [billsXmlText, proceedingsStatuses] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
-      fetchRSSFeed(RSS_FEEDS.bluesky),
       fetchProceedingsBillStatuses(),
     ]);
 
@@ -1298,77 +1316,6 @@ async function _fetchBills(request, env) {
       });
     }
     
-    // Parse Bluesky updates for status information
-    const blueskyEntryMatches = blueskyXmlText.match(/<entry>[\s\S]*?<\/entry>/gs);
-    const blueskyUpdates = {};
-    
-    if (blueskyEntryMatches) {
-      for (const entryMatch of blueskyEntryMatches) {
-        const entryXml = entryMatch;
-        const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-
-        // Extract the post URL from <link rel="alternate" href="..."> or <id>
-        const postLinkMatch = entryXml.match(/<link[^>]+rel="alternate"[^>]+href="([^"]+)"/i)
-                           || entryXml.match(/<link[^>]+href="([^"]+)"[^>]+rel="alternate"/i);
-        const postIdMatch = entryXml.match(/<id>(https?:\/\/[^<]+)<\/id>/i);
-        const postUrl = (postLinkMatch?.[1] || postIdMatch?.[1] || '').trim() || null;
-
-        if (contentMatch) {
-          // Decode HTML-encoded tags and entities, then split into individual lines
-          // at HTML block boundaries (<br>, </p><p>, etc.) BEFORE stripping tags.
-          // This prevents compound posts like "H.R. 3726 Passed by Voice Vote.\n
-          // 40 minutes of debate on H.R. 1993 began at 4:44 pm." from tainting
-          // H.R. 1993 with the "passed" status that only applies to H.R. 3726.
-          const raw = decodeHtmlEntities(contentMatch[1]);
-          const lines = raw
-            .split(/<br\s*\/?>\s*|<\/p>\s*<p[^>]*>|<\/li>/)
-            .map(l => l.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
-            .filter(Boolean);
-          const cleanContent = lines.join(' '); // used only for the bill ID scan
-
-          // Match bill IDs: H.R. 1234, H.Con.Res. 75, H.Res. 12, S. 123, H.J.Res. 9
-          const billIdMatches = cleanContent.matchAll(/\b(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.)\s*(\d+)/gi);
-          for (const m of billIdMatches) {
-            // Normalize: "H.R. 1234", "H.Con.Res. 75", etc.
-            const normalized = `${m[1]} ${m[2]}`.replace(/\s+/g, ' ').trim();
-
-            // Scope status check to only the line(s) that mention this specific bill ID,
-            // so a "Passed" in one line doesn't bleed into unrelated bills on other lines.
-            const billRe = new RegExp(m[1].replace(/\./g, '\\.') + '\\s*' + m[2] + '\\b', 'i');
-            const context = lines.filter(l => billRe.test(l)).join(' ');
-            if (!context) continue;
-
-            let status, statusText;
-            if (/passed by voice vote/i.test(context)) {
-              status = 'passed';
-              statusText = 'Passed by voice vote';
-            } else if (/\b(passed|agreed to)\b/i.test(context)) {
-              status = 'passed';
-              statusText = 'Passed';
-            } else if (/\b(failed|not agreed to|rejected)\b/i.test(context)) {
-              status = 'failed';
-              statusText = 'Failed';
-            } else if (/postponed/i.test(context)) {
-              status = 'postponed';
-              statusText = 'Postponed';
-            } else if (/recorded vote.*requested|vote.*began|passage/i.test(context)) {
-              status = 'roll-call';
-              statusText = 'Roll call vote';
-            } else {
-              continue; // No actionable status in this line — skip
-            }
-
-            // Only update if this is a stronger status than what we already have
-            const existing = blueskyUpdates[normalized];
-            const priority = { 'passed': 4, 'failed': 4, 'postponed': 3, 'roll-call': 2 };
-            if (!existing || (priority[status] || 0) >= (priority[existing.status] || 0)) {
-              blueskyUpdates[normalized] = { status, statusText, sourceUrl: postUrl };
-            }
-          }
-        }
-      }
-    }
-    
     // Prefer the week stated in the entry title (e.g. "...the Week of May 18, 2026...")
     const titleWeekMatch = selectedEntry.title.match(/week of (.+?)(?:\s*[-–]|$)/i);
     let weekDate;
@@ -1438,21 +1385,11 @@ async function _fetchBills(request, env) {
         let billStatus = 'scheduled';
         let latestAction = 'Scheduled for consideration';
         let considered = false;
-
-        // 1. Bluesky: vote start announcements (lowest priority — only knows votes began)
         let actionSource = null;
         let actionSourceUrl = null;
-        const blueskyUpdate = blueskyUpdates[normId];
-        if (blueskyUpdate) {
-          billStatus = blueskyUpdate.status;
-          latestAction = blueskyUpdate.statusText;
-          considered = true;
-          actionSource = 'bluesky';
-          actionSourceUrl = blueskyUpdate.sourceUrl || null;
-        }
 
-        // 2. Proceedings: actual vote outcomes from House Clerk (updated within minutes)
-        //    Overrides Bluesky since it has the final result, not just the vote start.
+        // Proceedings (House Clerk) — the authoritative source for the full vote
+        // lifecycle: recorded vote requested/postponed (roll-call) → passed/failed.
         const proceedingsUpdate = proceedingsStatuses[normId];
         if (proceedingsUpdate) {
           billStatus = proceedingsUpdate.status;
