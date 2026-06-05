@@ -6449,6 +6449,7 @@ function updateLastUpdate() {
     let pipWaitTimer = null;
     let expanded     = false;
     let edgeKeeper   = null; // interval pinning live playback to the edge
+    let pipFrozen    = false; // true once a last-frame snapshot has been captured
 
     // Enable embedded CEA-608/708 captions on the PiP video. The House feed
     // carries multiple tracks (English CC1 + Spanish), so prefer English and
@@ -6583,6 +6584,40 @@ function updateLastUpdate() {
     function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
     function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
 
+    // Grab the current video frame into pipSnapshot and switch to the still image.
+    function captureCurrentFrame() {
+        if (pipFrozen || !pipSnapshot || !pipVideo.videoWidth) return;
+        try {
+            const c = document.createElement('canvas');
+            c.width  = pipVideo.videoWidth;
+            c.height = pipVideo.videoHeight;
+            c.getContext('2d').drawImage(pipVideo, 0, 0, c.width, c.height);
+            const dataUrl = c.toDataURL();
+            if (!dataUrl || dataUrl === 'data:,') return;
+            pipFrozen = true;
+            pipSnapshot.src           = dataUrl;
+            pipSnapshot.style.display = 'block';
+            pipSnapshot.removeAttribute('hidden');
+            pipVideo.style.display    = 'none';
+        } catch {}
+    }
+
+    // Seek to the last buffered frame, play one frame to decode it, then freeze.
+    function freezePipAtEnd() {
+        if (pipFrozen) return;
+        const end = pipVideo.seekable.length ? pipVideo.seekable.end(pipVideo.seekable.length - 1) : NaN;
+        if (!isFinite(end) || end <= 1) { setTimeout(freezePipAtEnd, 300); return; }
+        const onSeeked = () => {
+            const tryGrab = () => {
+                if (pipVideo.videoWidth > 0) { pipVideo.pause(); captureCurrentFrame(); }
+                else { requestAnimationFrame(tryGrab); }
+            };
+            pipVideo.play().then(() => requestAnimationFrame(tryGrab)).catch(() => requestAnimationFrame(tryGrab));
+        };
+        pipVideo.addEventListener('seeked', onSeeked, { once: true });
+        pipVideo.currentTime = end - 0.3;
+    }
+
     // Audio is controlled explicitly by the mute button (below), NOT by
     // expanding/collapsing — so expand/collapse no longer touch muted state.
     function expand() {
@@ -6659,8 +6694,9 @@ function updateLastUpdate() {
 
     // Load the live stream
     function loadPip(url) {
+        pipFrozen = false;
         pipVideo.style.display = 'block';
-        if (pipSnapshot) pipSnapshot.style.display = 'none';
+        if (pipSnapshot) { pipSnapshot.style.display = 'none'; pipSnapshot.setAttribute('hidden', ''); }
         pipVideo.muted = true;
         if (window.Hls && Hls.isSupported()) {
             if (pipHls) { try { pipHls.destroy(); } catch {} pipHls = null; }
@@ -6682,11 +6718,13 @@ function updateLastUpdate() {
                 startEdgeKeeper();
             });
             pipHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, enablePipCaptions);
-            pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); } });
+            pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); captureCurrentFrame(); } });
+            pipVideo.addEventListener('ended', freezePipAtEnd);
         } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
             pipVideo.src = url;
             pipVideo.play().catch(() => {});
             pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
+            pipVideo.addEventListener('ended', freezePipAtEnd);
             startEdgeKeeper();
         }
         // Captions: scan now, on new tracks, and poll for the first 20s.
