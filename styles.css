@@ -2267,6 +2267,12 @@ body {
   bottom: 7%;
   transform: translateX(-50%);
   max-width: 92%;
+  /* Reserve two lines and pin content to the bottom, so the strip doesn't jump
+     vertically as it goes from one line to two (roll-up). */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 2.7em; /* ~2 lines at line-height 1.35 */
   text-align: center;
   font-family: var(--font-mono);
   font-weight: 600;
