@@ -2564,6 +2564,9 @@ function updateBillsDisplay() {
             if (mayBeConsideredSection) mayBeConsideredSection.style.display = 'none';
         }
     }
+
+    // Auto-open a ?bill=<slug> deep link once its bill has loaded.
+    maybeOpenDeepLinkedBill();
 }
 
 function createBillCard(bill, procedure) {
@@ -2625,6 +2628,35 @@ function openBillModalToAmendments(billId) {
         mainPanel.classList.remove('panel-visible');
         amendmentsPanel.classList.add('panel-visible');
     }
+}
+
+// ── Deep links ───────────────────────────────────────────────────────────────
+// A bill modal is shareable via ?bill=<slug> (e.g. ?bill=hr8646). Opening a modal
+// writes the param; closing clears it; on load we auto-open the linked bill once
+// the bills data has arrived.
+function billSlug(id) { return normalizeBillIdForRules(id).toLowerCase(); } // "H.R. 8646" → "hr8646"
+
+function setBillUrlParam(slug) {
+    try {
+        const url = new URL(location.href);
+        if (slug) url.searchParams.set('bill', slug);
+        else url.searchParams.delete('bill');
+        history.replaceState(history.state, '', url);
+    } catch {}
+}
+
+let _deepLinkOpened = false;
+function maybeOpenDeepLinkedBill() {
+    if (_deepLinkOpened) return;
+    let slug;
+    try { slug = new URL(location.href).searchParams.get('bill'); } catch { slug = null; }
+    if (!slug) { _deepLinkOpened = true; return; } // nothing to open
+    slug = slug.toLowerCase();
+    for (const id of billDataMap.keys()) {
+        if (billSlug(id) === slug) { _deepLinkOpened = true; openBillModal(id); return; }
+    }
+    // Not in billDataMap yet (bills still loading) — leave the flag false to retry
+    // on the next updateBillsDisplay.
 }
 
 function openBillModal(billId) {
@@ -2819,7 +2851,16 @@ function openBillModal(billId) {
                         ${actionDate ? `<span class="bill-modal-date">${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}
                     </div>
                 </div>` : ''}
-                ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+                <div class="bill-modal-section">
+                    <div class="bill-modal-section-label">DOCUMENTS</div>
+                    <div class="bill-doc-links">
+                        ${congressUrl ? `<a href="${congressUrl}/text" class="bill-doc-link" target="_blank" rel="noopener">Bill text</a>` : ''}
+                        ${congressUrl ? `<a href="${congressUrl}/all-actions" class="bill-doc-link" target="_blank" rel="noopener">All actions</a>` : ''}
+                        ${congressUrl ? `<a href="${congressUrl}" class="bill-doc-link" target="_blank" rel="noopener">Congress.gov</a>` : ''}
+                        ${rulesSlug ? `<a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-doc-link" target="_blank" rel="noopener">Rule (Rules Cmte)</a>` : ''}
+                        <button class="bill-doc-link bill-copy-link" id="bill-copy-link" type="button">Copy link</button>
+                    </div>
+                </div>
             </div>
         </div>
         ${rulesSlug ? `
@@ -2838,11 +2879,27 @@ function openBillModal(billId) {
     `;
     overlay.hidden = false;
     _billModalTrigger = document.activeElement;
+    // Deep link: reflect the open bill in the URL so it's shareable.
+    setBillUrlParam(billSlug(billId));
     const closeBtn = document.getElementById('bill-modal-close');
     closeBtn.addEventListener('click', closeBillModal);
     document.addEventListener('keydown', onBillModalKey);
     const modal = document.getElementById('bill-main-panel');
     if (modal) { _billModalTrapCleanup = trapFocus(overlay); closeBtn.focus(); }
+
+    // Copy-link button — copies the current (deep-linked) URL.
+    const copyBtn = document.getElementById('bill-copy-link');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(location.href);
+                const prev = copyBtn.textContent;
+                copyBtn.textContent = 'Copied ✓';
+                copyBtn.classList.add('copied');
+                setTimeout(() => { copyBtn.textContent = prev; copyBtn.classList.remove('copied'); }, 1500);
+            } catch {}
+        });
+    }
 
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');
@@ -2985,6 +3042,7 @@ function closeBillModal() {
     document.removeEventListener('keydown', onBillModalKey);
     if (_billModalTrapCleanup) { _billModalTrapCleanup(); _billModalTrapCleanup = null; }
     if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
+    setBillUrlParam(null); // drop ?bill= so the URL reflects the closed state
 }
 
 function onBillModalKey(e) {
