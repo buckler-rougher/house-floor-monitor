@@ -6462,11 +6462,49 @@ function updateLastUpdate() {
         // CC1 is the primary English service; treat unlabeled as English too.
         return /english|cc1|^cc$|primary/.test(label) || label === '';
     }
+    // Custom caption rendering: we set the chosen track to 'hidden' (cues stay
+    // active and fire cuechange, but the browser does NOT draw them), then paint
+    // the active cues into our own overlay. This gives full control over size
+    // (scales to the PiP via cq units) and position (always bottom-center),
+    // instead of the native 608 renderer's fixed sizing/positioning.
+    let pipCaptionTrack = null;
+    let pipCaptionOverlay = null;
+    function captionOverlay() {
+        if (pipCaptionOverlay && pipCaptionOverlay.isConnected) return pipCaptionOverlay;
+        const host = pipVideo.parentElement; // .youtube-pip-video
+        let el = host?.querySelector('.pip-caption-overlay');
+        if (!el && host) {
+            el = document.createElement('div');
+            el.className = 'pip-caption-overlay';
+            host.appendChild(el);
+        }
+        pipCaptionOverlay = el;
+        return el;
+    }
+    function renderActiveCues() {
+        const el = captionOverlay();
+        if (!el) return;
+        const cues = pipCaptionTrack && pipCaptionTrack.activeCues ? [...pipCaptionTrack.activeCues] : [];
+        const text = cues
+            .map(c => (c.text || '').replace(/<[^>]+>/g, '').trim())
+            .filter(Boolean)
+            .join('\n')
+            .trim();
+        el.textContent = text;
+        el.classList.toggle('has-text', !!text);
+    }
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
         if (!tracks.length) return false;
         const english = tracks.find(isEnglishTrack) || tracks[0];
-        for (const t of tracks) t.mode = (t === english) ? 'showing' : 'disabled';
+        // 'hidden' (not 'showing') keeps cues active without native rendering.
+        for (const t of tracks) t.mode = (t === english) ? 'hidden' : 'disabled';
+        if (pipCaptionTrack !== english) {
+            if (pipCaptionTrack) pipCaptionTrack.removeEventListener('cuechange', renderActiveCues);
+            pipCaptionTrack = english;
+            pipCaptionTrack.addEventListener('cuechange', renderActiveCues);
+        }
+        renderActiveCues();
         return true;
     }
 
