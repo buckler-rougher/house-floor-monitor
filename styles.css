@@ -2254,7 +2254,34 @@ body {
   aspect-ratio: 16/9;
   overflow: hidden;
   background: #000;
+  container-type: size; /* lets captions scale to the PiP via cq units */
 }
+
+/* Custom caption overlay — we render CEA-608 cues ourselves (track set to
+   'hidden') so captions are always bottom-centered and scale to the PiP size,
+   instead of the native renderer's fixed-resolution sizing / off-to-the-side
+   608 positioning. */
+.pip-caption-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  transform: translateX(-50%);
+  max-width: 92%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #fff;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.95),
+    0 0 6px rgba(0, 0, 0, 0.85);
+  font-size: clamp(10px, 6cqh, 28px);
+  line-height: 1.35;
+  white-space: pre-wrap;
+  pointer-events: none;
+  z-index: 4;
+}
+.pip-caption-overlay:not(.has-text) { display: none; }
 
 .youtube-pip-iframe {
   display: block;
