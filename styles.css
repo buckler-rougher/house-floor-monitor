@@ -2286,6 +2286,8 @@ body {
   z-index: 4;
 }
 .pip-caption-overlay:not(.has-text) { display: none; }
+/* CC toggled off: hide the overlay but keep building it in the background. */
+.pip-caption-overlay.captions-off { display: none; }
 
 /* Hide the browser's native CEA-608 caption layer for the PiP — we render
    captions ourselves in .pip-caption-overlay. mode='hidden' should suppress

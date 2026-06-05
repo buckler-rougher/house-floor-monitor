@@ -6500,11 +6500,12 @@ function updateLastUpdate() {
         el.classList.toggle('has-text', !!text);
     }
 
-    let captionsEnabled = true; // toggled by the CC button
+    let captionsEnabled = true; // CC button only HIDES the overlay (via the
+    // .captions-off class); the pop-on frame keeps building in the background so
+    // re-enabling shows the current caption immediately.
     function renderActiveCues() {
         const el = captionOverlay();
         if (!el) return;
-        if (!captionsEnabled) { el.classList.remove('has-text'); el.textContent = ''; pipCaptionText = ''; return; }
         const cues = pipCaptionTrack && pipCaptionTrack.activeCues ? [...pipCaptionTrack.activeCues] : [];
         // Order top→bottom by reading order. Roll-up cues share a startTime and
         // hls.js hands them newest-first, so reverse the array index on ties.
@@ -6629,7 +6630,9 @@ function updateLastUpdate() {
             captionsEnabled = !captionsEnabled;
             ccBtn.classList.toggle('is-on', captionsEnabled);
             ccBtn.setAttribute('aria-pressed', String(captionsEnabled));
-            renderActiveCues(); // immediately show or clear
+            // Just hide/show the overlay — captions keep building in the background.
+            const ov = captionOverlay();
+            if (ov) ov.classList.toggle('captions-off', !captionsEnabled);
         });
     }
 
