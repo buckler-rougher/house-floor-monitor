@@ -6516,13 +6516,16 @@ function updateLastUpdate() {
         const building = lines[lines.length - 1] || ''; // bottom = newest = in-progress line
 
         if (!building) {
-            // Silence — keep the block up, then clear everything after a real gap.
+            // The cue stream briefly empties between speech segments (~1-3s). Keep
+            // the current block on screen and only clear after a genuinely long
+            // gap, so normal pauses don't blank the captions (which then skipped
+            // content while the pop-on rebuilt).
             if (pipCaptionText && !pipCaptionClearTimer) {
                 pipCaptionClearTimer = setTimeout(() => {
                     pipCaptionClearTimer = null;
                     capDisp = ['', '']; capPend = ['', '']; capPendSlot = 0; capBuilding = '';
                     commitCaption(el, '');
-                }, 1500);
+                }, 6000);
             }
             return;
         }
