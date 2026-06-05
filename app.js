@@ -6487,13 +6487,14 @@ function updateLastUpdate() {
         const el = captionOverlay();
         if (!el) return;
         const cues = pipCaptionTrack && pipCaptionTrack.activeCues ? [...pipCaptionTrack.activeCues] : [];
-        // CEA-608 roll-up keeps many line-cues active at once and they pile up,
-        // which made the block grow upward and churn. Order by start time, dedupe
-        // consecutive repeats, and show only the most recent 2 lines (a standard
-        // closed-caption window) so it stays a stable two-line strip.
-        cues.sort((a, b) => (a.startTime - b.startTime) || 0);
+        // Order top→bottom by reading order, then show the bottom-most two lines
+        // (a standard CC window). Roll-up cues all share the same startTime and
+        // hls.js hands them newest-first, so for tied start times reverse the
+        // array index (oldest line on top, newest on the bottom).
+        const indexed = cues.map((c, idx) => ({ c, idx }));
+        indexed.sort((a, b) => (a.c.startTime - b.c.startTime) || (b.idx - a.idx));
         const lines = [];
-        for (const c of cues) {
+        for (const { c } of indexed) {
             const t = (c.text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             if (t && t !== lines[lines.length - 1]) lines.push(t);
         }
