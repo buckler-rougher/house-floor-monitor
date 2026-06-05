@@ -2286,56 +2286,53 @@ async function handleAmendments(request, env) {
   }
 
   const cacheKey = `amendments_${congress}_${slug}`;
-  const memAmend = _mGet(cacheKey);
-  if (memAmend) return new Response(memAmend, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
-  if (env?.HLS_CACHE) {
-    const cached = await env.HLS_CACHE.get(cacheKey);
-    if (cached) { _mSet(cacheKey, cached, 10 * 60 * 1000); return new Response(cached, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }); }
-  }
-
-  try {
-    const resp = await fetch(`https://rules.house.gov/bill/${congress}/${slug}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
-    });
-    if (!resp.ok) throw new Error(`rules.house.gov returned ${resp.status}`);
-    const html = await resp.text();
-
-    const amendments = [];
-    const tableMatch = html.match(/<table[^>]*class="sortable"[^>]*>([\s\S]*?)<\/table>/);
-    if (tableMatch) {
-      const rows = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
-      for (const row of rows.slice(1)) { // skip header row
-        const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1]);
-        if (cells.length < 6) continue;
-        const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        const linkMatch = cells[2].match(/href="([^"]+)"/);
-        const num = clean(cells[0]);
-        const sponsors = clean(cells[2]);
-        if (!/^\d+$/.test(num) || !sponsors) continue; // skip sub-headers / empty rows
-        amendments.push({
-          num,
-          version: clean(cells[1]),
-          sponsors,
-          pdfUrl: linkMatch ? linkMatch[1] : null,
-          party: clean(cells[3]),
-          summary: clean(cells[4]),
-          status: clean(cells[5]),
+  // in-memory 10 min; KV re-checked hourly; write-on-change (via kvCache) only
+  // writes when the amendment list actually changes, instead of every 10 min.
+  return kvCache(env, cacheKey, 600, async () => {
+    try {
+      const resp = await fetch(`https://rules.house.gov/bill/${congress}/${slug}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+      });
+      // Non-ok → return a non-ok Response so kvCache does NOT cache the failure.
+      if (!resp.ok) {
+        return new Response(JSON.stringify({ amendments: [], error: `rules.house.gov returned ${resp.status}` }), {
+          status: 502, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
         });
       }
-    }
+      const html = await resp.text();
 
-    const result = JSON.stringify({ amendments });
-    _mSet(cacheKey, result, 10 * 60 * 1000);
-    if (env?.HLS_CACHE) {
-      console.log(`[KV-WRITE] key=${cacheKey}`);
-      try { await env.HLS_CACHE.put(cacheKey, result, { expirationTtl: 10 * 60 }); } catch (_) {}
+      const amendments = [];
+      const tableMatch = html.match(/<table[^>]*class="sortable"[^>]*>([\s\S]*?)<\/table>/);
+      if (tableMatch) {
+        const rows = tableMatch[1].match(/<tr>([\s\S]*?)<\/tr>/g) || [];
+        for (const row of rows.slice(1)) { // skip header row
+          const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => m[1]);
+          if (cells.length < 6) continue;
+          const clean = s => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          const linkMatch = cells[2].match(/href="([^"]+)"/);
+          const num = clean(cells[0]);
+          const sponsors = clean(cells[2]);
+          if (!/^\d+$/.test(num) || !sponsors) continue; // skip sub-headers / empty rows
+          amendments.push({
+            num,
+            version: clean(cells[1]),
+            sponsors,
+            pdfUrl: linkMatch ? linkMatch[1] : null,
+            party: clean(cells[3]),
+            summary: clean(cells[4]),
+            status: clean(cells[5]),
+          });
+        }
+      }
+      return new Response(JSON.stringify({ amendments }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ amendments: [], error: err.message }), {
+        status: 502, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+      });
     }
-    return new Response(result, { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
-  } catch (err) {
-    return new Response(JSON.stringify({ amendments: [], error: err.message }), {
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
-    });
-  }
+  }, 3600);
 }
 
 // Convert ISO string to Eastern date string (YYYY-MM-DD), approximate DST
