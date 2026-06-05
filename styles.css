@@ -2362,26 +2362,31 @@ body {
 .pip-close-btn:hover { opacity: 1; }
 .youtube-pip.pip-expanded .pip-close-btn { display: inline; }
 
-/* Mute/unmute control — always visible (collapsed + expanded). */
+/* Mute/unmute control — always visible (collapsed + expanded). Fixed-size box
+   and block icons so hover/blur and the icon swap never shift layout. */
 .pip-mute-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
   background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px;
-  line-height: 0;
-  opacity: 0.8;
-  transition: opacity 0.15s, color 0.15s;
-  flex-shrink: 0;
+  padding: 0;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 .pip-mute-btn:hover { opacity: 1; color: var(--text-primary); }
+.pip-mute-btn:focus { outline: none; }
+.pip-mute-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; border-radius: 4px; }
+.pip-mute-btn svg { display: block; }
 .pip-mute-btn .pip-icon-sound { display: none; }
 .pip-mute-btn.is-unmuted { color: var(--accent-green); }
 .pip-mute-btn.is-unmuted .pip-icon-muted { display: none; }
-.pip-mute-btn.is-unmuted .pip-icon-sound { display: inline; }
+.pip-mute-btn.is-unmuted .pip-icon-sound { display: block; }
 
 .youtube-pip-header-right {
   display: flex;
@@ -2389,12 +2394,21 @@ body {
   gap: var(--sp-8);
   min-width: 0;
 }
-
-/* Keep the header on one line and stop it breaking on the narrow collapsed PiP:
-   never wrap the label, and drop the long "Source:" text unless expanded. */
 .youtube-pip-label { white-space: nowrap; }
-.youtube-pip:not(.pip-expanded) .youtube-pip-source { display: none; }
-.youtube-pip-source { white-space: nowrap; }
+
+/* Source footer at the bottom of the PiP. */
+.youtube-pip-footer {
+  padding: var(--sp-6) var(--sp-12);
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-color);
+  overflow: hidden;
+}
+.youtube-pip-footer .youtube-pip-source {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .proceedings-item {
   padding: var(--sp-4) 0;

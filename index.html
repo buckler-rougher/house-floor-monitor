@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260604x">
+    <link rel="stylesheet" href="styles.css?v=20260604y">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1113,7 +1113,6 @@
                     <span class="youtube-pip-label">LIVE FLOOR FEED</span>
                 </div>
                 <div class="youtube-pip-header-right">
-                    <span class="youtube-pip-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
                     <button class="pip-mute-btn" id="pip-mute-btn" aria-label="Unmute" aria-pressed="false" title="Unmute">
                         <svg class="pip-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z" opacity="0"/><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2"/></svg>
                         <svg class="pip-icon-sound" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
@@ -1133,6 +1132,9 @@
                 <video id="player-pip" class="youtube-pip-iframe" playsinline muted autoplay disablePictureInPicture></video>
                 <img id="player-pip-snapshot" class="youtube-pip-iframe" hidden alt="">
                 <div class="youtube-pip-overlay"></div>
+            </div>
+            <div class="youtube-pip-footer">
+                <span class="youtube-pip-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
             </div>
         </div>
 
@@ -1216,7 +1218,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260604x"></script>
+    <script src="app.js?v=20260604y"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
