@@ -6624,17 +6624,20 @@ function updateLastUpdate() {
     if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); collapse(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && expanded) collapse(); });
 
-    // Keep live playback pinned to the edge. HLS live-sync alone let the feed
-    // fall ~40s behind real time; this snaps forward whenever drift exceeds 8s.
+    // Keep live playback near the edge WITHOUT causing jitter. Frequent small
+    // seeks (old: >8s drift every 5s) made the video stutter as it kept snapping
+    // forward. Now we only correct a genuinely large fall-behind (>20s), checked
+    // every 12s, and land a few seconds back from the edge so it settles instead
+    // of immediately drifting past the threshold again.
     function startEdgeKeeper() {
         if (edgeKeeper) clearInterval(edgeKeeper);
         edgeKeeper = setInterval(() => {
             if (pipVideo.paused || pipVideo.seekable.length === 0) return;
             const edge = pipVideo.seekable.end(pipVideo.seekable.length - 1);
-            if (isFinite(edge) && (edge - pipVideo.currentTime) > 8) {
-                pipVideo.currentTime = edge - 1.5;
+            if (isFinite(edge) && (edge - pipVideo.currentTime) > 20) {
+                pipVideo.currentTime = edge - 4;
             }
-        }, 5000);
+        }, 12000);
     }
 
     // Load the live stream
