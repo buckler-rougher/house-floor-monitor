@@ -6580,13 +6580,14 @@ function updateLastUpdate() {
     function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
     function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
 
+    // Audio is controlled explicitly by the mute button (below), NOT by
+    // expanding/collapsing — so expand/collapse no longer touch muted state.
     function expand() {
         if (expanded) return;
         expanded = true;
         pip.classList.add('pip-expanded');
         if (backdrop) backdrop.classList.add('pip-backdrop-visible');
         if (pipOverlay) pipOverlay.style.pointerEvents = 'none';
-        pipVideo.muted = false;
     }
 
     function collapse() {
@@ -6595,7 +6596,27 @@ function updateLastUpdate() {
         pip.classList.remove('pip-expanded');
         if (backdrop) backdrop.classList.remove('pip-backdrop-visible');
         if (pipOverlay) pipOverlay.style.pointerEvents = 'auto';
-        pipVideo.muted = true;
+    }
+
+    // Mute/unmute control, available in both collapsed and expanded PiP.
+    const muteBtn = document.getElementById('pip-mute-btn');
+    function syncMuteBtn() {
+        if (!muteBtn) return;
+        const unmuted = !pipVideo.muted;
+        muteBtn.classList.toggle('is-unmuted', unmuted);
+        muteBtn.setAttribute('aria-pressed', String(unmuted));
+        muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
+        muteBtn.title = unmuted ? 'Mute' : 'Unmute';
+    }
+    if (muteBtn) {
+        muteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pipVideo.muted = !pipVideo.muted;
+            if (!pipVideo.muted) pipVideo.play().catch(() => {}); // ensure audio resumes
+            syncMuteBtn();
+        });
+        pipVideo.addEventListener('volumechange', syncMuteBtn);
+        syncMuteBtn();
     }
 
     if (pipOverlay) pipOverlay.addEventListener('click', expand);
