@@ -2396,19 +2396,48 @@ body {
 }
 .youtube-pip-label { white-space: nowrap; }
 
-/* Source footer at the bottom of the PiP. */
+/* Source footer at the bottom of the PiP, with a CC toggle on the right. */
 .youtube-pip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-8);
   padding: var(--sp-6) var(--sp-12);
   background: var(--bg-elevated);
   border-top: 1px solid var(--border-color);
   overflow: hidden;
 }
 .youtube-pip-footer .youtube-pip-source {
-  display: block;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* CC (closed captions) toggle */
+.pip-cc-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  padding: 2px 5px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.pip-cc-btn:hover { color: var(--text-secondary); }
+.pip-cc-btn.is-on {
+  color: var(--accent-green);
+  border-color: rgba(63, 185, 80, 0.5);
+  background: rgba(63, 185, 80, 0.1);
+}
+.pip-cc-btn:focus { outline: none; }
+.pip-cc-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 .proceedings-item {
   padding: var(--sp-4) 0;

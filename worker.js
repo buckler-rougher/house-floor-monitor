@@ -660,11 +660,17 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       continue;
     }
 
-    // Find the bill ID: check current row first, then expanding window of ±3 rows
+    // Find the bill ID for this passage motion. The bill-link row ("Considered
+    // as unfinished business. H.R. ####") follows the passage in the reverse-
+    // chronological feed, but intervening rows (motion to recommit, previous
+    // question, etc.) can push it several rows down — so search FORWARD up to 6
+    // rows first, then a smaller backward window.
     let billId = rows[i].billId;
-    for (let j = 1; j <= 3 && !billId; j++) {
+    for (let j = 1; j <= 6 && !billId; j++) {
       if (i + j < rows.length && rows[i + j].billId) billId = rows[i + j].billId;
-      if (!billId && i - j >= 0 && rows[i - j].billId) billId = rows[i - j].billId;
+    }
+    for (let j = 1; j <= 3 && !billId; j++) {
+      if (i - j >= 0 && rows[i - j].billId) billId = rows[i - j].billId;
     }
 
     if (billId && status) {
