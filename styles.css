@@ -4196,6 +4196,37 @@ a.bill-card-rule-link {
     transition: all 0.15s ease;
 }
 
+/* Document quick-links + copy-link in the bill modal */
+.bill-doc-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-6);
+}
+.bill-doc-link {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--accent-blue);
+    text-decoration: none;
+    background: rgba(88, 166, 255, 0.06);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    border-radius: 4px;
+    padding: 4px 9px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.bill-doc-link:hover { background: rgba(88, 166, 255, 0.14); border-color: var(--accent-blue); }
+.bill-copy-link {
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border-color: var(--border-color);
+}
+.bill-copy-link:hover { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--text-muted); }
+.bill-copy-link.copied { color: var(--accent-green); border-color: rgba(63, 185, 80, 0.5); background: rgba(63, 185, 80, 0.1); }
+
 .bill-modal-link.rule {
     color: var(--accent-blue);
     border: 1px solid rgba(88, 166, 255, 0.3);
