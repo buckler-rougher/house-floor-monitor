@@ -6487,11 +6487,20 @@ function updateLastUpdate() {
         const el = captionOverlay();
         if (!el) return;
         const cues = pipCaptionTrack && pipCaptionTrack.activeCues ? [...pipCaptionTrack.activeCues] : [];
-        const text = cues
-            .map(c => (c.text || '').replace(/<[^>]+>/g, '').trim())
-            .filter(Boolean)
-            .join('\n')
-            .trim();
+        // CEA-608 roll-up keeps many line-cues active at once and they pile up,
+        // which made the block grow upward and churn. Order by start time, dedupe
+        // consecutive repeats, and show only the most recent 2 lines (a standard
+        // closed-caption window) so it stays a stable two-line strip.
+        cues.sort((a, b) => (a.startTime - b.startTime) || 0);
+        const lines = [];
+        for (const c of cues) {
+            const t = (c.text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            if (t && t !== lines[lines.length - 1]) lines.push(t);
+        }
+        const text = lines.slice(-2).join('\n');
+        // Opt-in debug: run `window.__capDebug = true` in the console to inspect
+        // the raw cue stream if captions still misbehave.
+        if (window.__capDebug) console.log('[cap]', cues.length, 'cues:', cues.map(c => [c.startTime?.toFixed?.(1), (c.text || '').replace(/\s+/g, ' ').trim()]));
 
         if (text) {
             // New/updated caption — show immediately and cancel any pending clear.
