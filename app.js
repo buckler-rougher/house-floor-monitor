@@ -6451,6 +6451,10 @@ function updateLastUpdate() {
     let expanded        = false;
     let edgeKeeper      = null; // interval pinning live playback to the edge
     let pipFrozen       = false; // true once a last-frame snapshot has been captured
+    // Bumped on every loadPip(). Snapshot/freeze callbacks capture the value at
+    // schedule time and bail if it changed — so an in-flight last-frame grab can
+    // never pause/hide a newer live stream that started in the meantime.
+    let pipGen          = 0;
 
     // Enable embedded CEA-608/708 captions on the PiP video. The House feed
     // carries multiple tracks (English CC1 + Spanish), so prefer English and
@@ -6586,8 +6590,10 @@ function updateLastUpdate() {
     function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
 
     // Grab the current video frame into pipSnapshot and switch to the still image.
-    function captureCurrentFrame() {
-        if (pipFrozen || !pipSnapshot || !pipVideo.videoWidth) return;
+    // `gen` is the loadPip generation this grab belongs to; if a newer stream has
+    // loaded since it was scheduled, abort so we never freeze/hide a live video.
+    function captureCurrentFrame(gen) {
+        if (gen !== pipGen || pipFrozen || !pipSnapshot || !pipVideo.videoWidth) return;
         try {
             const c = document.createElement('canvas');
             c.width  = pipVideo.videoWidth;
@@ -6595,6 +6601,7 @@ function updateLastUpdate() {
             c.getContext('2d').drawImage(pipVideo, 0, 0, c.width, c.height);
             const dataUrl = c.toDataURL();
             if (!dataUrl || dataUrl === 'data:,') return;
+            if (gen !== pipGen) return; // a live stream loaded during the draw — don't freeze it
             pipFrozen = true;
             pipSnapshot.src           = dataUrl;
             pipSnapshot.style.display = 'block';
@@ -6604,13 +6611,18 @@ function updateLastUpdate() {
     }
 
     // Seek to the last buffered frame, play one frame to decode it, then freeze.
-    function freezePipAtEnd() {
-        if (pipFrozen) return;
+    // Bails if a newer stream loaded (gen mismatch); retry is capped (~6s).
+    function freezePipAtEnd(gen, tries = 0) {
+        if (gen !== pipGen || pipFrozen) return;
         const end = pipVideo.seekable.length ? pipVideo.seekable.end(pipVideo.seekable.length - 1) : NaN;
-        if (!isFinite(end) || end <= 1) { setTimeout(freezePipAtEnd, 300); return; }
+        if (!isFinite(end) || end <= 1) {
+            if (tries < 20) setTimeout(() => freezePipAtEnd(gen, tries + 1), 300);
+            return;
+        }
         const onSeeked = () => {
             const tryGrab = () => {
-                if (pipVideo.videoWidth > 0) { pipVideo.pause(); captureCurrentFrame(); }
+                if (gen !== pipGen) return;
+                if (pipVideo.videoWidth > 0) { pipVideo.pause(); captureCurrentFrame(gen); }
                 else { requestAnimationFrame(tryGrab); }
             };
             pipVideo.play().then(() => requestAnimationFrame(tryGrab)).catch(() => requestAnimationFrame(tryGrab));
@@ -6623,6 +6635,7 @@ function updateLastUpdate() {
     // Used when the page loads while the house is already adjourned.
     function loadPipSnapshot(url) {
         if (pipFrozen) return;
+        const gen = pipGen; // tied to the current load; a live loadPip bumps pipGen and invalidates this
         if (pipSnapshotHls) { try { pipSnapshotHls.destroy(); } catch {} pipSnapshotHls = null; }
         if (window.Hls && Hls.isSupported()) {
             const hls = new Hls({ capLevelToPlayerSize: false, startLevel: 0 });
@@ -6632,15 +6645,16 @@ function updateLastUpdate() {
             pipVideo.muted = true;
             let grabbed = false;
             hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
-                if (grabbed) return;
+                if (grabbed || gen !== pipGen) return;
                 const dur = data.details?.totalduration;
                 if (!isFinite(dur) || dur < 2) return;
                 grabbed = true;
                 const onSeeked = () => {
                     const tryGrab = () => {
+                        if (gen !== pipGen) { try { hls.destroy(); } catch {} if (pipSnapshotHls === hls) pipSnapshotHls = null; return; }
                         if (pipVideo.videoWidth > 0) {
                             pipVideo.pause();
-                            captureCurrentFrame();
+                            captureCurrentFrame(gen);
                             try { hls.destroy(); } catch {}
                             if (pipSnapshotHls === hls) pipSnapshotHls = null;
                         } else { requestAnimationFrame(tryGrab); }
@@ -6662,7 +6676,7 @@ function updateLastUpdate() {
             pipVideo.addEventListener('loadedmetadata', () => {
                 if (isFinite(pipVideo.duration) && pipVideo.duration > 2) pipVideo.currentTime = pipVideo.duration - 1;
             }, { once: true });
-            pipVideo.addEventListener('seeked', freezePipAtEnd, { once: true });
+            pipVideo.addEventListener('seeked', () => freezePipAtEnd(gen), { once: true });
             pipVideo.load();
         }
     }
@@ -6741,9 +6755,14 @@ function updateLastUpdate() {
         }, 12000);
     }
 
+    // When the live stream ends, freeze on the last frame. Registered once on the
+    // persistent video element; reads pipGen at fire time (the current stream's).
+    pipVideo.addEventListener('ended', () => freezePipAtEnd(pipGen));
+
     // Load the live stream
     function loadPip(url) {
         pipFrozen = false;
+        const gen = ++pipGen; // invalidates any in-flight snapshot/freeze from a prior load
         if (pipSnapshotHls) { try { pipSnapshotHls.destroy(); } catch {} pipSnapshotHls = null; }
         pipVideo.style.display = 'block';
         if (pipSnapshot) { pipSnapshot.style.display = 'none'; pipSnapshot.setAttribute('hidden', ''); }
@@ -6768,13 +6787,11 @@ function updateLastUpdate() {
                 startEdgeKeeper();
             });
             pipHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, enablePipCaptions);
-            pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); captureCurrentFrame(); } });
-            pipVideo.addEventListener('ended', freezePipAtEnd);
+            pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); captureCurrentFrame(gen); } });
         } else if (pipVideo.canPlayType('application/vnd.apple.mpegurl')) {
             pipVideo.src = url;
             pipVideo.play().catch(() => {});
             pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
-            pipVideo.addEventListener('ended', freezePipAtEnd);
             startEdgeKeeper();
         }
         // Captions: scan now, on new tracks, and poll for the first 20s.
