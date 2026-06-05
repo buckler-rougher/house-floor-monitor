@@ -6483,14 +6483,27 @@ function updateLastUpdate() {
     }
     let pipCaptionText = '';       // currently displayed text (for dedupe)
     let pipCaptionClearTimer = null;
+    // Pop-on framing state: instead of scrolling up one line at a time, we fill a
+    // 2-line frame (top, then bottom), hold both while they're spoken, then start
+    // a fresh frame — so the display advances two lines at a time, TV-style.
+    let capFrame = ['', ''];
+    let capSlot = 0;               // which frame line the building line fills
+    let capBuilding = '';          // the line currently being spoken (roll-up bottom)
+
+    function commitCaption(el, text) {
+        if (text === pipCaptionText) return;
+        if (window.__capDebug) console.log('[cap] →', JSON.stringify(text));
+        pipCaptionText = text;
+        el.textContent = text;
+        el.classList.toggle('has-text', !!text);
+    }
+
     function renderActiveCues() {
         const el = captionOverlay();
         if (!el) return;
         const cues = pipCaptionTrack && pipCaptionTrack.activeCues ? [...pipCaptionTrack.activeCues] : [];
-        // Order top→bottom by reading order, then show the bottom-most two lines
-        // (a standard CC window). Roll-up cues all share the same startTime and
-        // hls.js hands them newest-first, so for tied start times reverse the
-        // array index (oldest line on top, newest on the bottom).
+        // Order top→bottom by reading order. Roll-up cues share a startTime and
+        // hls.js hands them newest-first, so reverse the array index on ties.
         const indexed = cues.map((c, idx) => ({ c, idx }));
         indexed.sort((a, b) => (a.c.startTime - b.c.startTime) || (b.idx - a.idx));
         const lines = [];
@@ -6498,41 +6511,37 @@ function updateLastUpdate() {
             const t = (c.text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             if (t && t !== lines[lines.length - 1]) lines.push(t);
         }
-        let text = lines.slice(-2).join('\n');
+        const building = lines[lines.length - 1] || ''; // bottom = newest = in-progress line
 
-        // Anti-flip: during roll-up the active set briefly drops to a single line
-        // (the new bottom line) before the next line joins, making the top line
-        // flash out and back in. If the new text is just one line that equals the
-        // bottom line we're already showing, keep the current two-line display.
-        if (text && pipCaptionText) {
-            const curLines = pipCaptionText.split('\n');
-            const newLines = text.split('\n');
-            if (newLines.length === 1 && curLines.length === 2 && curLines[1] === newLines[0]) {
-                text = pipCaptionText; // hold steady
+        if (!building) {
+            // Silence — hold the last frame briefly, then clear after a real gap.
+            if (pipCaptionText && !pipCaptionClearTimer) {
+                pipCaptionClearTimer = setTimeout(() => {
+                    pipCaptionClearTimer = null;
+                    capFrame = ['', '']; capSlot = 0; capBuilding = '';
+                    commitCaption(el, '');
+                }, 1500);
             }
+            return;
         }
+        if (pipCaptionClearTimer) { clearTimeout(pipCaptionClearTimer); pipCaptionClearTimer = null; }
 
-        if (text) {
-            // New/updated caption — show immediately and cancel any pending clear.
-            if (pipCaptionClearTimer) { clearTimeout(pipCaptionClearTimer); pipCaptionClearTimer = null; }
-            if (text !== pipCaptionText) {
-                // Opt-in debug (logs only on change): `window.__capDebug = true`.
-                if (window.__capDebug) console.log('[cap]', cues.length, 'cues →', JSON.stringify(text));
-                pipCaptionText = text;
-                el.textContent = text;
-                el.classList.add('has-text');
-            }
-        } else if (pipCaptionText && !pipCaptionClearTimer) {
-            // Hysteresis: CEA-608 roll-up briefly empties activeCues between lines,
-            // which caused flashing. Keep the last caption up and only clear after a
-            // genuine ~1s gap of silence.
-            pipCaptionClearTimer = setTimeout(() => {
-                pipCaptionClearTimer = null;
-                pipCaptionText = '';
-                el.textContent = '';
-                el.classList.remove('has-text');
-            }, 1000);
+        if (building === capBuilding) {
+            // unchanged — nothing to do
+        } else if (!capBuilding || building.startsWith(capBuilding)) {
+            // First line, or the same line still growing word-by-word.
+            capBuilding = building;
+            capFrame[capSlot] = building;
+        } else {
+            // A new line started → the previous line finalized. Advance: fill the
+            // bottom slot next; once both slots are filled, start a fresh frame so
+            // the pair only moves on after both lines are complete.
+            if (capSlot === 0) { capSlot = 1; }
+            else { capFrame = ['', '']; capSlot = 0; }
+            capBuilding = building;
+            capFrame[capSlot] = building;
         }
+        commitCaption(el, capFrame.filter(Boolean).join('\n'));
     }
     let pipCaptionPoll = null;
     function enablePipCaptions() {
