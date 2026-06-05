@@ -1178,7 +1178,7 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  const cacheKey = quick ? 'bills-weekly-quick' : 'bills-weekly';
+  const cacheKey = quick ? 'bills-weekly-quick-v2' : 'bills-weekly-v2';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
