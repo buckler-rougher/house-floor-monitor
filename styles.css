@@ -2289,6 +2289,17 @@ body {
 }
 .pip-caption-overlay:not(.has-text) { display: none; }
 
+/* Hide the browser's native CEA-608 caption layer for the PiP — we render
+   captions ourselves in .pip-caption-overlay. mode='hidden' should suppress
+   native drawing, but hls.js/Safari sometimes still paint the native layer
+   (huge, multi-line, fixed to the video resolution), so kill it explicitly. */
+#player-pip::-webkit-media-text-track-container,
+#player-pip::-webkit-media-text-track-display,
+#player-pip::cue {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 .youtube-pip-iframe {
   display: block;
   position: absolute;
