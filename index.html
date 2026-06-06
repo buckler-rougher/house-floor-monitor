@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606h">
+    <link rel="stylesheet" href="styles.css?v=20260606i">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1093,7 +1093,7 @@
                 </div>
             </div>
 
-        <!-- Floor Reporters (X/Twitter List) -->
+        <!-- Floor Reporters -->
         <div class="twitter-panel">
             <div class="panel-header">
                 <span class="panel-label">FLOOR REPORTERS</span>
@@ -1101,16 +1101,10 @@
                     <span class="panel-source">Source: <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">X List</a></span>
                 </div>
             </div>
-            <div class="twitter-embed-wrap">
-                <a class="twitter-timeline"
-                   data-theme="dark"
-                   data-chrome="noheader nofooter noborders transparent"
-                   data-tweet-limit="10"
-                   data-dnt="true"
-                   href="https://twitter.com/i/lists/1593329859010301953">Tweets by Floor Reporters</a>
+            <div class="tweets-feed" id="tweets-feed">
+                <div class="tweets-loading">Loading…</div>
             </div>
         </div>
-        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
         <!-- Bottom Ticker -->
         <div class="bottom-ticker" id="bottom-ticker">
@@ -1255,7 +1249,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606h"></script>
+    <script src="app.js?v=20260606i"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

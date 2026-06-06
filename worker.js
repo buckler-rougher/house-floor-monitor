@@ -49,6 +49,7 @@ const NEWS_MAX_AGE_HOURS = 48;
 // CF Workers IPs are sometimes blocked — update this list if feeds stop working.
 // RSS URL format: https://{instance}/{twitterHandle}/rss
 const NITTER_INSTANCES = [
+  'nitter.perennialte.ch',
   'nitter.poast.org',
   'nitter.privacydev.net',
   'nitter.cz',
@@ -56,6 +57,8 @@ const NITTER_INSTANCES = [
   'nitter.nl',
   'nitter.unixfox.eu',
 ];
+
+const FLOOR_REPORTERS_LIST_ID = '1593329859010301953';
 
 // Journalist feeds.
 //   twitter:    Twitter handle — fetched via Nitter RSS (NITTER_INSTANCES list above)
@@ -373,6 +376,36 @@ async function handleProceedings(request, env) {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
+}
+
+async function handleTweets(env) {
+  return kvCache(env, 'tweets-feed', 120, async () => {
+    // Try each nitter instance in order until one returns data for the list RSS
+    let items = [];
+    for (const instance of NITTER_INSTANCES) {
+      try {
+        const url = `https://${instance}/i/lists/${FLOOR_REPORTERS_LIST_ID}/rss`;
+        const xml = await fetchRSSFeed(url, 6000);
+        // Reject if nitter returned an error page or disabled RSS
+        if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) continue;
+        const parsed = parseRSSFeed(xml, url);
+        if (!parsed.error && parsed.items.length) {
+          items = parsed.items.slice(0, 30).map(item => {
+            // dc:creator in nitter list feeds is "@handle"
+            const creatorMatch = xml.match(new RegExp(`<guid[^>]*>${item.id || ''}`)) || [];
+            // Extract @handle from the link e.g. nitter.x.com/@handle/status/...
+            const handleMatch = (item.link || '').match(/\/([^/]+)\/status\//);
+            const handle = handleMatch ? handleMatch[1] : null;
+            return { ...item, handle };
+          });
+          break;
+        }
+      } catch (_) { continue; }
+    }
+    return new Response(JSON.stringify({ tweets: items }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
+    });
+  }, 300);
 }
 
 // Fetch one nitter account — tries instances in parallel with a short per-instance
@@ -2599,6 +2632,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/congress-index' && request.method === 'GET') {
     return await handleCongressIndex();
+  } else if (path === '/api/tweets' && request.method === 'GET') {
+    return await handleTweets(env);
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed(env);
   } else if (path === '/api/casualty-list' && request.method === 'GET') {

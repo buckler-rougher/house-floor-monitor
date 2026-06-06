@@ -5397,6 +5397,37 @@ function updatePartyBreakdownDisplay() {
 
 }
 
+// Floor Reporters (X list via nitter proxy)
+async function fetchTweets() {
+    const feed = document.getElementById('tweets-feed');
+    if (!feed) return;
+    try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/tweets');
+        const data = await resp.json();
+        if (!data.tweets || !data.tweets.length) {
+            feed.innerHTML = '<div class="tweets-loading">No tweets available.</div>';
+            return;
+        }
+        feed.innerHTML = data.tweets.map(t => {
+            const handle = t.handle || '';
+            const author = handle ? `@${handle}` : (t.source || '');
+            const text = escapeHtml(t.title || '');
+            const time = t.relativeTime || '';
+            const url = (t.link || '').replace(/^https?:\/\/[^/]+/, 'https://x.com');
+            return `<div class="tweet-item">
+                <div class="tweet-meta">
+                    <span class="tweet-author">${escapeHtml(author)}</span>
+                    <span class="tweet-time">${escapeHtml(time)}</span>
+                </div>
+                <div class="tweet-text">${text}</div>
+                ${url ? `<a class="tweet-link" href="${url}" target="_blank" rel="noopener">View on X →</a>` : ''}
+            </div>`;
+        }).join('');
+    } catch (e) {
+        feed.innerHTML = '<div class="tweets-loading">Failed to load tweets.</div>';
+    }
+}
+
 // Bluesky Functions
 async function fetchBlueskyFeed() {
     try {
@@ -5690,6 +5721,7 @@ function init() {
     setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
     setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
     setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 3 minutes
+    setInterval(fetchTweets, 120000); // Refresh floor reporters every 2 minutes
     setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
     // Initialize
     initWeatherPanel();
@@ -5708,6 +5740,7 @@ function init() {
     fetchHouseMakeup();
     fetchBlueskyFeed();
     fetchNewsTicker();
+    fetchTweets();
 
     // Info popup click delegation
     document.addEventListener('click', e => {
