@@ -520,6 +520,10 @@ function renderVotingDaysCalendar() {
         const d = monthDates[mobileIdx];
         const titleEl = document.getElementById('calendar-mobile-title');
         if (titleEl) titleEl.textContent = `${MONTH_NAMES_LONG[d.getMonth()]} ${d.getFullYear()}`;
+        // FullCalendar sizes itself at render time; if the cell was hidden it gets
+        // zero dimensions. Force a recalculate now that it's visible.
+        const visibleCal = mobileEls[mobileIdx]?._calendar;
+        if (visibleCal) requestAnimationFrame(() => { visibleCal.updateSize(); applyHarnessCorners(); });
     };
 
     updateMobileView();
