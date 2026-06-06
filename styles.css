@@ -4436,6 +4436,17 @@ a.bill-card-rule-link {
     gap: var(--sp-8);
 }
 
+.amdt-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+}
+.amdt-sort-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--sp-10);
+}
+
 .bill-amendments-panel-title {
     font-size: var(--fs-sm);
     font-weight: 700;
