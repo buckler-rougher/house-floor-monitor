@@ -2049,29 +2049,6 @@ async function handleRollLogGet(env) {
   }
 }
 
-async function handleRollLogPost(request, env) {
-  if (!env?.HLS_CACHE) return new Response('{}', { headers: CORS_HEADERS });
-  try {
-    const entry = await request.json();
-    const key = rollLogKey();
-    const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
-    const entries = existing.entries || [];
-
-    // Overwrite existing entry for this roll number, or append
-    const idx = entries.findIndex(e => e.roll === entry.roll);
-    if (idx >= 0) entries[idx] = entry;
-    else entries.push(entry);
-
-    // Keep only the last 50 rolls (one session's worth)
-    if (entries.length > 50) entries.splice(0, entries.length - 50);
-
-    console.log(`[KV-WRITE] key=${key} entries=${entries.length}`);
-    await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 24 * 3600 });
-    return new Response('{}', { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: CORS_HEADERS });
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2199,6 +2176,44 @@ async function handleHlsUrl(env) {
   }
 }
 
+// Build a roll-log entry from raw DomeWatch floor data (server-side equivalent of
+// the client-side rollLogEntry() that was previously sent via POST).
+function buildRollLogEntry(data) {
+  const iv = v => Math.max(parseInt(v) || 0, 0);
+  const t = data.voteCounts?.totals || {};
+  const d = data.voteCounts?.blue   || {};
+  const r = data.voteCounts?.red    || {};
+  return {
+    roll:     data.rollCall?.number ?? null,
+    bill:     data.rollCall?.bill?.legisNum || data.rollCall?.bill?.title || null,
+    question: data.rollCall?.question || null,
+    totals: { yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), notVoting: iv(t.not_voting) },
+    dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
+    rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// Write a roll-log entry to KV when the floor is in an active vote state.
+// Called as a side-effect inside handleDomeWatchFloor (only when cache is cold).
+async function maybeWriteRollLog(data, env) {
+  if (!env?.HLS_CACHE) return;
+  const status = data.currentStatus?.value || data.now?.value;
+  if (status !== 'vote' && status !== 'voting') return;
+  const roll = data.rollCall?.number;
+  if (!roll) return;
+  try {
+    const key = rollLogKey();
+    const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
+    const entries = existing.entries || [];
+    const entry = buildRollLogEntry(data);
+    const idx = entries.findIndex(e => e.roll === roll);
+    if (idx >= 0) entries[idx] = entry; else entries.push(entry);
+    if (entries.length > 50) entries.splice(0, entries.length - 50);
+    await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 24 * 3600 });
+  } catch { /* non-critical — don't let roll-log errors affect the floor response */ }
+}
+
 async function handleDomeWatchFloor(env) {
   // kvTtl=0: skip KV writes entirely. SSE is the real-time channel; REST is a supplement.
   // Each PoP caches independently in memory (10s), avoiding cross-PoP KV write churn.
@@ -2210,6 +2225,8 @@ async function handleDomeWatchFloor(env) {
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       const data = await response.json();
+      // Write roll-log server-side — eliminates the need for a public POST endpoint.
+      await maybeWriteRollLog(data, env);
       return new Response(JSON.stringify(data), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=10' }
       });
@@ -2754,8 +2771,6 @@ async function handleRequest(request, env) {
     return await handleLastSessionDate(request);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
     return await handleRollLogGet(env);
-  } else if (path === '/api/roll-log' && request.method === 'POST') {
-    return await handleRollLogPost(request, env);
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
@@ -2766,8 +2781,11 @@ async function handleRequest(request, env) {
     const coordinator = await getStreamCoordinator(env);
     return await coordinator.fetch(new Request(`${url.origin}${path}?status=1`, { method: 'POST' }));
   } else if (path.startsWith('/api/congress-index/roll/') && request.method === 'GET') {
-    // Handle individual roll call requests
+    // Handle individual roll call requests — validate to digits only to prevent path traversal
     const rollNumber = path.split('/').pop();
+    if (!/^\d{1,6}$/.test(rollNumber)) {
+      return new Response('Bad request', { status: 400, headers: CORS_HEADERS });
+    }
     return await handleRollCall(rollNumber);
   } else if (path === '/api/health' && request.method === 'GET') {
     const coordinator = await getStreamCoordinator(env);

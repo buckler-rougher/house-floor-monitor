@@ -484,66 +484,7 @@ let floorData = {
 let rollLog = [];           // in-memory mirror of what's been POSTed to worker
 let rollLogCurrentRoll = null; // roll number we're currently tracking
 
-function rollLogEntry(rollCall, voteCounts) {
-    const iv = v => Math.max(parseInt(v) || 0, 0);
-    const t = (voteCounts?.totals) || {};
-    const d = (voteCounts?.blue)   || {};
-    const r = (voteCounts?.red)    || {};
-    return {
-        roll:      rollCall?.number ?? null,
-        bill:      rollCall?.bill?.legisNum || rollCall?.bill?.title || null,
-        question:  rollCall?.question || null,
-        totals: {
-            yeas:       iv(t.yeas),
-            nays:       iv(t.nays),
-            present:    iv(t.present),
-            notVoting:  iv(t.not_voting),
-        },
-        dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
-        rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
-        updatedAt: new Date().toISOString(),
-    };
-}
 
-// KV write debounce: at most one write per 60s per roll, plus one final write on roll change
-let _rollLogDebounceTimer = null;
-let _rollLogPendingEntry  = null;
-const ROLL_LOG_DEBOUNCE_MS = 60_000;
-
-function postRollLogEntry(entry, immediate = false) {
-    if (!entry?.roll) return;
-    // Always update in-memory log instantly
-    const idx = rollLog.findIndex(e => e.roll === entry.roll);
-    if (idx >= 0) rollLog[idx] = entry; else rollLog.push(entry);
-
-    if (immediate) {
-        // Flush any pending debounce and write now
-        clearTimeout(_rollLogDebounceTimer);
-        _rollLogDebounceTimer = null;
-        _rollLogPendingEntry  = null;
-        fetch('https://api.evanhollander.org/house-floor/api/roll-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(entry),
-        }).catch(() => {});
-        return;
-    }
-
-    // Debounced path — coalesce rapid SSE ticks into one write per minute
-    _rollLogPendingEntry = entry;
-    if (_rollLogDebounceTimer) return; // already scheduled
-    _rollLogDebounceTimer = setTimeout(() => {
-        _rollLogDebounceTimer = null;
-        const e = _rollLogPendingEntry;
-        _rollLogPendingEntry = null;
-        if (!e) return;
-        fetch('https://api.evanhollander.org/house-floor/api/roll-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(e),
-        }).catch(() => {});
-    }, ROLL_LOG_DEBOUNCE_MS);
-}
 
 async function loadRollLog() {
     try {
@@ -553,26 +494,6 @@ async function loadRollLog() {
     } catch {}
 }
 
-// Call whenever floorData.rollCall / floorData.voteCounts changes during a vote
-function trackRollLog() {
-    // Only log during an active vote — DomeWatch returns stale roll call data
-    // even when the chamber is in recess, which would burn KV writes all day.
-    const status = floorData.currentStatus?.value;
-    if (status !== 'vote' && status !== 'voting') return;
-
-    const roll = floorData.rollCall?.number;
-    const counts = floorData.voteCounts;
-    if (!roll || !counts) return;
-
-    const rollChanged = rollLogCurrentRoll !== null && rollLogCurrentRoll !== roll;
-    if (rollChanged) {
-        // Previous roll is final — flush immediately so we don't lose last known counts
-        const prev = rollLog.find(e => e.roll === rollLogCurrentRoll);
-        if (prev) postRollLogEntry(prev, /* immediate */ true);
-    }
-    rollLogCurrentRoll = roll;
-    postRollLogEntry(rollLogEntry(floorData.rollCall, counts)); // debounced
-}
 // ─────────────────────────────────────────────────────────────────────────────
 
 // SSE streaming state
@@ -990,7 +911,6 @@ function startSSEStreaming() {
                     timer: v.timer || floorData.timer,
                 };
                 syncVoteTimer(v.timer);
-                trackRollLog();
                 // Hot path: update count numbers immediately every tick
                 updateVoteCountsDisplay(v.counts);
                 // Slow path: full re-render throttled to 2s (floor grid etc.)
@@ -1112,7 +1032,6 @@ async function fetchFloorData(silent = false) {
         if (data.now?.value !== 'vote' && data.now?.value !== 'voting') {
             clearVoteTimer();
         }
-        trackRollLog();
 
         // Update state with floor data for vote map
         if (floorData.voteCounts) {
@@ -2704,7 +2623,7 @@ function openBillModal(billId) {
             ${bill.summary ? `
             <div class="bill-modal-body">
                 <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
-                <p class="bill-modal-summary">${bill.summary}</p>
+                <p class="bill-modal-summary">${escapeHtml(bill.summary)}</p>
             </div>` : ''}
             <div class="bill-modal-foot">
                 ${actionText ? `
@@ -2952,10 +2871,10 @@ function renderAmendmentsTable({ amendments }, body) {
             <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th><th></th></tr></thead>
             <tbody>${display.map(a => `
                 <tr>
-                    <td class="amdt-num">${a.num}</td>
+                    <td class="amdt-num">${escapeHtml(String(a.num ?? ''))}</td>
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
-                    <td class="amdt-summary">${a.summary}</td>
-                    <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${a.status}</span></td>
+                    <td class="amdt-summary">${escapeHtml(a.summary ?? '')}</td>
+                    <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${escapeHtml(a.status ?? '')}</span></td>
                     <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${a.pdfUrl}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF">↗</a>` : ''}</td>
                 </tr>`).join('')}
             </tbody>
