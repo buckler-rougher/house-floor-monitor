@@ -5196,6 +5196,31 @@ body.debate-mode .debate-section {
 }
 .debate-section .bill-rule-tag:hover { opacity: 0.75; }
 
+/* Committee of the Whole badge — shown in debate mode when CoTW is in session */
+.debate-cotw-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-6);
+    background: rgba(63, 185, 80, 0.08);
+    color: var(--accent-green);
+    padding: 5px var(--sp-10);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+}
+.debate-cotw-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--accent-green);
+    flex-shrink: 0;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
 .debate-length-tag {
     display: inline-flex;
     align-items: center;
@@ -5691,6 +5716,7 @@ body.committee-chair-mode .committee-chair-section {
     letter-spacing: 0.6px;
     color: var(--text-muted);
     text-transform: uppercase;
+    padding: var(--sp-4) var(--sp-24) var(--sp-4);
     margin-bottom: var(--sp-14);
     opacity: 0.8;
 }

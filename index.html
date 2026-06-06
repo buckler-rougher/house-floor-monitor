@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260605r">
+    <link rel="stylesheet" href="styles.css?v=20260605s">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -164,6 +164,9 @@
                     <div class="debate-tag">
                         <span class="debate-tag-text">DEBATE</span>
                         <span class="debate-tag-time" id="debate-time"></span>
+                    </div>
+                    <div class="debate-cotw-badge" id="debate-cotw-badge" style="display:none">
+                        <span class="debate-cotw-dot"></span>COMMITTEE OF THE WHOLE
                     </div>
                     <div class="debate-length-tag" id="debate-length-tag" style="display:none">
                         <span class="debate-length-text" id="debate-length-text"></span>
@@ -437,7 +440,7 @@
                 <div class="committee-chair-section-header">
                     <div class="section-tag-wrap">
                         <div class="committee-chair-tag">
-                            <span class="committee-chair-tag-text">CHAIRMAN OF THE COMMITTEE</span>
+                            <span class="committee-chair-tag-text">CHAIR OF THE COMMITTEE</span>
                             <span class="committee-chair-tag-time" id="committee-chair-time"></span>
                         </div>
                     </div>
@@ -458,7 +461,7 @@
                         </div>
                     </div>
                     <div class="committee-chair-info">
-                        <h2 class="committee-chair-member-title" id="committee-chair-member-title">Chairman of the Committee</h2>
+                        <h2 class="committee-chair-member-title" id="committee-chair-member-title">Chair of the Committee of the Whole House on the State of the Union</h2>
                         <p class="committee-chair-member-name" id="committee-chair-member-name">--</p>
                         <div class="committee-chair-member-meta">
                             <span class="committee-chair-party-tag" id="committee-chair-party-tag"></span>
@@ -1221,7 +1224,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260605r"></script>
+    <script src="app.js?v=20260605s"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
