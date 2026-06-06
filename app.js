@@ -197,6 +197,7 @@ async function fetchVotingDays() {
             })
             .filter(item => item.type);
         renderVotingDaysCalendar();
+        renderThisWeek();
 
         updateSessionStatus();
         
@@ -204,6 +205,59 @@ async function fetchVotingDays() {
         console.error('Error fetching voting days:', error);
         updateSessionStatus('error');
     }
+}
+
+function renderThisWeek() {
+    const el = document.getElementById('this-week-body');
+    if (!el || !votingCalendarData.length) return;
+
+    // Get Mon–Sun of the current week
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const toDateStr = d => d.toISOString().slice(0, 10);
+    const weekDates = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return toDateStr(d);
+    });
+
+    // Collect events falling in this week
+    const weekEvents = votingCalendarData.filter(e => weekDates.includes(e.date));
+
+    if (!weekEvents.length) {
+        el.innerHTML = '<span class="this-week-empty">No votes scheduled this week</span>';
+        return;
+    }
+
+    const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const TYPE_CLASS = {
+        'fly-in':    'this-week-day-fly',
+        'fly-out':   'this-week-day-fly',
+        'vote-day':  'this-week-day-vote',
+        'added':     'this-week-day-vote',
+        'cancelled': 'this-week-day-recess',
+    };
+    const TYPE_LABEL = {
+        'fly-in':    'Fly In',
+        'fly-out':   'Fly Out',
+        'vote-day':  'Votes',
+        'added':     'Votes+',
+        'cancelled': 'Cancelled',
+    };
+
+    el.innerHTML = weekEvents.map(e => {
+        const [y, m, d] = e.date.split('-').map(Number);
+        const dayName = DAY_SHORT[new Date(y, m - 1, d).getDay()];
+        const cls = TYPE_CLASS[e.type] || 'this-week-day-vote';
+        const lbl = TYPE_LABEL[e.type] || 'Votes';
+        return `<span class="this-week-day ${cls}">${dayName} · ${lbl}</span>`;
+    }).join('');
 }
 
 function renderVotingDaysCalendar() {
