@@ -91,7 +91,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-bottom: var(--sp-40); /* clear the fixed news ticker */
+    padding-bottom: 0; /* ticker hidden — no clearance needed */
 }
 
 /* ── Custom Scrollbars ───────────────────────────────────────────────────────
@@ -2959,7 +2959,7 @@ body {
     border-top: 2px solid var(--accent-orange);
     z-index: 1000;
     overflow: hidden;
-    display: flex;
+    display: none; /* Hidden — infrastructure kept for future re-enable */
     align-items: center;
 }
 
