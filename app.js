@@ -508,6 +508,27 @@ function renderVotingDaysCalendar() {
     renderCalendar(currentEl, monthDates[1]);
     renderCalendar(nextEl, monthDates[2]);
 
+    // Mobile nav: show one month at a time with ‹ › buttons
+    const mobileEls = [prevEl, currentEl, nextEl];
+    const MONTH_NAMES_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    let mobileIdx = 1; // start on current month
+
+    const updateMobileView = () => {
+        mobileEls.forEach((el, i) => {
+            el.classList.toggle('cal-mobile-visible', i === mobileIdx);
+        });
+        const d = monthDates[mobileIdx];
+        const titleEl = document.getElementById('calendar-mobile-title');
+        if (titleEl) titleEl.textContent = `${MONTH_NAMES_LONG[d.getMonth()]} ${d.getFullYear()}`;
+    };
+
+    updateMobileView();
+
+    const prevBtn = document.getElementById('calendar-mobile-prev');
+    const nextBtn = document.getElementById('calendar-mobile-next');
+    if (prevBtn) prevBtn.onclick = () => { if (mobileIdx > 0) { mobileIdx--; updateMobileView(); } };
+    if (nextBtn) nextBtn.onclick = () => { if (mobileIdx < 2) { mobileIdx++; updateMobileView(); } };
+
     if (!window.__votingCalendarResizeBound) {
         window.__votingCalendarResizeBound = true;
         window.addEventListener('resize', () => requestAnimationFrame(syncCalendarSizes));
