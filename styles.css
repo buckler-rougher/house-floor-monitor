@@ -3458,6 +3458,13 @@ body {
 }
 .voting-calendar-month .fc-scroller-harness-liquid {
     border-radius: 0 0 var(--radius-7) var(--radius-7) !important;
+    overflow: hidden !important;
+}
+/* The .fc-scroller div (non-table) wraps the grid table — border-radius +
+   overflow:hidden on a div reliably clips border-collapse table borders */
+.voting-calendar-month .fc-scroller-harness-liquid .fc-scroller {
+    border-radius: 0 0 var(--radius-7) var(--radius-7) !important;
+    overflow: hidden !important;
 }
 
 .voting-calendar-month .fc {
@@ -3625,16 +3632,7 @@ body {
     table-layout: fixed !important;
 }
 
-/* Round the bottom corners of the last calendar row */
-.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td:first-child {
-    border-bottom-left-radius: var(--radius-7);
-    overflow: hidden;
-}
-.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: var(--radius-7);
-    overflow: hidden;
-}
-/* Kill the bottom border on the scrollgrid so it doesn't poke out */
+/* Kill the bottom border on the scrollgrid so it doesn't poke out below the clip */
 .voting-calendar-month .fc .fc-scrollgrid {
     border-bottom: none !important;
 }
