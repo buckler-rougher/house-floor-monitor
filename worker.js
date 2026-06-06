@@ -779,6 +779,21 @@ async function fetchBillMeta(billId) {
       const data = await billResp.json();
       const s = (data.bill?.sponsors || [])[0];
       if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
+
+      // Committee report: derive a stable PDF URL from the citation
+      // e.g. "H. Rept. 119-632" → https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf
+      const crpt = (data.bill?.committeeReports || [])[0];
+      if (crpt?.citation) {
+        const m = crpt.citation.match(/^(H|S)\.\s*Rept\.\s*(\d+)-(\d+)$/i);
+        if (m) {
+          const chamber = m[1].toLowerCase(); // h or s
+          const congress = m[2];
+          const num = m[3];
+          const slug = `${chamber}rpt${num}`; // hrpt632 / srpt632
+          result.committeeReportCitation = crpt.citation;
+          result.committeeReportUrl = `https://www.congress.gov/${congress}/crpt/${slug}/CRPT-${congress}${slug}.pdf`;
+        }
+      }
     } catch {}
   }
   if (cosponsorsResp.ok) {
@@ -1456,11 +1471,12 @@ async function _fetchBills(request, env) {
         // Always re-verify a cached terminal status (passed/failed) from Congress.gov — the
         // original detection may have been a false positive (e.g. motion text misread as passage).
         // Also retry when the cached entry predates committeeReport support.
-        const needsSummary         = !enrichCached.summary;
-        const needsMeta            = !enrichCached.meta;
-        const needsCommitteeReport = !('committeeReport' in (enrichCached.congressStatus || {}));
-        const needsStatusVerify    = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
-        const needsStatusRefresh   = needsCommitteeReport || needsStatusVerify;
+        const needsSummary            = !enrichCached.summary;
+        // Re-fetch meta when missing, or when cached entry predates committeeReportUrl support.
+        const needsMeta               = !enrichCached.meta || !enrichCached.meta.committeeReportUrl && enrichCached.meta.sponsor;
+        const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
+        const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
+        const needsStatusRefresh      = needsCommitteeReport || needsStatusVerify;
         if (needsSummary || needsMeta || needsStatusRefresh) {
           const [summaryResult, newMeta, freshStatus] = await Promise.all([
             needsSummary       ? safeFetchSummary(bill.id)        : Promise.resolve(enrichCached.summary),
@@ -1532,6 +1548,8 @@ async function _fetchBills(request, env) {
         if (meta.sponsor) bill.sponsor = meta.sponsor;
         if (meta.cosponsors) bill.cosponsors = meta.cosponsors;
         if (meta.committees) bill.committees = meta.committees;
+        if (meta.committeeReportUrl) bill.committeeReportUrl = meta.committeeReportUrl;
+        if (meta.committeeReportCitation) bill.committeeReportCitation = meta.committeeReportCitation;
       }
     }));
 
