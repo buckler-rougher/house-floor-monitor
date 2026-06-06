@@ -2222,6 +2222,11 @@ let billsSortMode = 'status';
 
 const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, postponed: 2 };
 
+// Amendment sort mode: 'status' | 'party' | 'listed'
+let amendmentsSortMode = 'status';
+const AMENDMENT_STATUS_SORT_ORDER = { submitted: 0, adopted: 1, failed: 2 };
+const AMENDMENT_PARTY_SORT_ORDER = { rep: 0, dem: 1, ind: 2 };
+
 function sortBillsForDisplay(bills) {
     const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
     if (billsSortMode === 'status') {
@@ -2881,8 +2886,15 @@ function openBillModal(billId) {
         ${rulesSlug ? `
         <div class="bill-amendments-panel" id="bill-amendments-panel-el">
             <div class="bill-amendments-panel-header">
-                <span class="bill-amendments-panel-title">Amendments</span>
-                <span class="bill-amendments-count" id="amendments-count"></span>
+                <div class="amdt-header-left">
+                    <span class="bill-amendments-panel-title">Amendments</span>
+                    <span class="bill-amendments-count" id="amendments-count"></span>
+                </div>
+                <div class="bills-sort-switcher amdt-sort-switcher">
+                    <button class="bills-sort-btn amdt-sort-btn" data-sort="status">Status</button>
+                    <button class="bills-sort-btn amdt-sort-btn" data-sort="party">Party</button>
+                    <button class="bills-sort-btn amdt-sort-btn" data-sort="listed">Listed</button>
+                </div>
             </div>
             <div class="bill-amendments-panel-body" id="amendments-body">
                 <div class="bill-amendments-empty">Loading…</div>
@@ -2924,6 +2936,10 @@ function openBillModal(billId) {
         btn.addEventListener('click', () => openBillModal(btn.dataset.billId));
     });
 
+    // Sync amendment sort buttons to current mode (buttons are freshly rendered each open)
+    overlay.querySelectorAll('.amdt-sort-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
+
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');
         const amendmentsPanel = document.getElementById('bill-amendments-panel-el');
@@ -2948,94 +2964,129 @@ function openBillModal(billId) {
     }
 }
 
+// ── Amendment rendering helpers (module-level so sort re-render can call them) ──
+
+const _amendmentsDataCache = new Map(); // slug → { amendments, xmlDoc }
+
+function amendmentStatusClass(s) {
+    const l = (s || '').toLowerCase();
+    if (l.includes('made in order') || l.includes('adopted')) return 'adopted';
+    if (l.includes('not') || l.includes('failed') || l.includes('withdrawn')) return 'failed';
+    return 'submitted';
+}
+const _amdtPartyClass = p => {
+    const l = (p || '').toLowerCase();
+    if (l === 'r' || l.startsWith('rep')) return 'rep';
+    if (l === 'd' || l.startsWith('dem')) return 'dem';
+    return 'ind';
+};
+const _amdtPartyLetter = p => _amdtPartyClass(p) === 'rep' ? 'R' : _amdtPartyClass(p) === 'dem' ? 'D' : 'I';
+const _amdtParseSponsorTokens = str =>
+    str.split(/,\s*(?=[A-Z])/).map(t => {
+        const m = t.trim().match(/^(.+?)\s*\(([A-Z]{2})\)$/);
+        return m ? { raw: t.trim(), lastName: m[1].trim(), state: m[2] } : { raw: t.trim(), lastName: null, state: null };
+    }).filter(t => t.raw);
+const _amdtCleanDistrict = d => {
+    if (!d) return d;
+    const stripped = d.replace(/\b(\d+)(?:st|nd|rd|th)\b/gi, '$1').trim();
+    return /^\d+$/.test(stripped) ? stripped.padStart(2, '0') : stripped;
+};
+
+function sortAmendmentsForDisplay(amendments) {
+    const indexed = amendments.map((a, i) => ({ ...a, _origIdx: i }));
+    if (amendmentsSortMode === 'status') {
+        return indexed.sort((a, b) => {
+            const sa = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(a.status)] ?? 0;
+            const sb = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(b.status)] ?? 0;
+            if (sa !== sb) return sa - sb;
+            return a._origIdx - b._origIdx;
+        });
+    }
+    if (amendmentsSortMode === 'party') {
+        return indexed.sort((a, b) => {
+            const pa = AMENDMENT_PARTY_SORT_ORDER[_amdtPartyClass(a.party)] ?? 2;
+            const pb = AMENDMENT_PARTY_SORT_ORDER[_amdtPartyClass(b.party)] ?? 2;
+            if (pa !== pb) return pa - pb;
+            return a._origIdx - b._origIdx;
+        });
+    }
+    return indexed.sort((a, b) => a._origIdx - b._origIdx); // 'listed'
+}
+
+function renderAmendmentsTable({ amendments, xmlDoc }, body) {
+    const sorted = sortAmendmentsForDisplay(amendments);
+
+    const renderSponsors = (a) => {
+        const tokens = _amdtParseSponsorTokens(a.sponsors);
+        const amendmentDot = _amdtPartyClass(a.party);
+        const chips = tokens.map(t => {
+            const match = (xmlDoc && t.lastName && t.state)
+                ? findBestMemberMatchByName(xmlDoc, t.lastName, t.state)
+                : null;
+            const pc = match ? _amdtPartyClass(match.party) : _amdtPartyClass(a.party);
+            const pl = match ? _amdtPartyLetter(match.party) : _amdtPartyLetter(a.party);
+            const name = match ? match.fullName : t.raw;
+            const photoUrl = match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null;
+            const profileUrl = match ? buildCongressProfileUrl(match.bioguideId) : null;
+            const dist = match && match.district && match.district !== '0' ? _amdtCleanDistrict(match.district) : '';
+            const distLabel = match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || '');
+            const nameHtml = a.pdfUrl
+                ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${name}</a>`
+                : name;
+            const imgHtml = `<img class="amdt-sponsor-photo" src="${photoUrl || ''}" alt="">`;
+            const wrapHtml = `<div class="amdt-sponsor-photo-wrap">${imgHtml}</div>`;
+            const photoHtml = photoUrl
+                ? (profileUrl ? `<a href="${profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
+                : wrapHtml;
+            return `<div class="amdt-sponsor-chip">
+                ${photoHtml}
+                <span class="amdt-sponsor-name"><span class="amdt-sponsor-party-tag ${pc}">${pl}</span>${nameHtml}${distLabel ? `<span class="amdt-sponsor-dist"> ${distLabel}</span>` : ''}</span>
+            </div>`;
+        });
+        return `<span class="amdt-party ${amendmentDot}"></span><div class="amdt-sponsor-list">${chips.join('')}</div>`;
+    };
+
+    body.innerHTML = `
+        <table class="amendments-table">
+            <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th></tr></thead>
+            <tbody>${sorted.map(a => `
+                <tr>
+                    <td class="amdt-num">${a.num}</td>
+                    <td class="amdt-sponsors">${renderSponsors(a)}</td>
+                    <td class="amdt-summary">${a.summary}</td>
+                    <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${a.status}</span></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
+
 async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amendments-count') {
     const body = document.getElementById(bodyId);
     const countEl = document.getElementById(countId);
     if (!body) return;
     try {
-        const congress = currentCongress || 119;
-        const [resp, xmlText] = await Promise.all([
-            fetch(`https://api.evanhollander.org/house-floor/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
-            getMemberDataXml().catch(() => null)
-        ]);
-        const data = await resp.json();
-        if (!data.amendments?.length) {
+        let cached = _amendmentsDataCache.get(slug);
+        if (!cached) {
+            const congress = currentCongress || 119;
+            const [resp, xmlText] = await Promise.all([
+                fetch(`https://api.evanhollander.org/house-floor/api/amendments?bill=${encodeURIComponent(slug)}&congress=${congress}`),
+                getMemberDataXml().catch(() => null)
+            ]);
+            const data = await resp.json();
+            const xmlDoc = xmlText ? parseMemberDataXml(xmlText) : null;
+            cached = { amendments: data.amendments || [], xmlDoc };
+            _amendmentsDataCache.set(slug, cached);
+        }
+        if (!cached.amendments.length) {
             body.innerHTML = '<div class="bill-amendments-empty">No amendments submitted.</div>';
             return;
         }
-        if (countEl) countEl.textContent = `${data.amendments.length} submitted`;
-
-        const xmlDoc = xmlText ? parseMemberDataXml(xmlText) : null;
-
-        const sc = s => {
-            const l = s.toLowerCase();
-            if (l.includes('made in order') || l.includes('adopted')) return 'adopted';
-            if (l.includes('not') || l.includes('failed') || l.includes('withdrawn')) return 'failed';
-            return 'submitted';
-        };
-
-        const partyClass = p => {
-            const l = (p || '').toLowerCase();
-            if (l === 'r' || l.startsWith('rep')) return 'rep';
-            if (l === 'd' || l.startsWith('dem')) return 'dem';
-            return 'ind';
-        };
-
-        const parseSponsorTokens = str =>
-            str.split(/,\s*(?=[A-Z])/).map(t => {
-                const m = t.trim().match(/^(.+?)\s*\(([A-Z]{2})\)$/);
-                return m ? { raw: t.trim(), lastName: m[1].trim(), state: m[2] } : { raw: t.trim(), lastName: null, state: null };
-            }).filter(t => t.raw);
-
-        const partyLetter = p => partyClass(p) === 'rep' ? 'R' : partyClass(p) === 'dem' ? 'D' : 'I';
-        const cleanDistrict = d => {
-            if (!d) return d;
-            const stripped = d.replace(/\b(\d+)(?:st|nd|rd|th)\b/gi, '$1').trim();
-            return /^\d+$/.test(stripped) ? stripped.padStart(2, '0') : stripped;
-        };
-
-        const renderSponsors = (a) => {
-            const tokens = parseSponsorTokens(a.sponsors);
-            const amendmentDot = partyClass(a.party); // one dot per amendment
-            const chips = tokens.map(t => {
-                const match = (xmlDoc && t.lastName && t.state)
-                    ? findBestMemberMatchByName(xmlDoc, t.lastName, t.state)
-                    : null;
-                const pc = match ? partyClass(match.party) : partyClass(a.party);
-                const pl = match ? partyLetter(match.party) : partyLetter(a.party);
-                const name = match ? match.fullName : t.raw;
-                const photoUrl = match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null;
-                const profileUrl = match ? buildCongressProfileUrl(match.bioguideId) : null;
-                const dist = match && match.district && match.district !== '0' ? cleanDistrict(match.district) : '';
-                const distLabel = match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || '');
-                const nameHtml = a.pdfUrl
-                    ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${name}</a>`
-                    : name;
-                const imgHtml = `<img class="amdt-sponsor-photo" src="${photoUrl || ''}" alt="">`;
-                const wrapHtml = `<div class="amdt-sponsor-photo-wrap">${imgHtml}</div>`;
-                const photoHtml = photoUrl
-                    ? (profileUrl ? `<a href="${profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
-                    : wrapHtml;
-                return `<div class="amdt-sponsor-chip">
-                    ${photoHtml}
-                    <span class="amdt-sponsor-name"><span class="amdt-sponsor-party-tag ${pc}">${pl}</span>${nameHtml}${distLabel ? `<span class="amdt-sponsor-dist"> ${distLabel}</span>` : ''}</span>
-                </div>`;
-            });
-            return `<span class="amdt-party ${amendmentDot}"></span><div class="amdt-sponsor-list">${chips.join('')}</div>`;
-        };
-
-        body.innerHTML = `
-            <table class="amendments-table">
-                <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th></tr></thead>
-                <tbody>${data.amendments.map(a => `
-                    <tr>
-                        <td class="amdt-num">${a.num}</td>
-                        <td class="amdt-sponsors">${renderSponsors(a)}</td>
-                        <td class="amdt-summary">${a.summary}</td>
-                        <td><span class="amdt-status-badge ${sc(a.status)}">${a.status}</span></td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>`;
+        if (countEl) countEl.textContent = `${cached.amendments.length} submitted`;
+        body.dataset.amendmentsSlug = slug;
+        renderAmendmentsTable(cached, body);
+        // Sync sort buttons to current mode
+        document.querySelectorAll('.amdt-sort-btn').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
     } catch (e) {
         body.innerHTML = '<div class="bill-amendments-empty">Failed to load amendments.</div>';
     }
@@ -5599,12 +5650,25 @@ function init() {
         if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
     });
 
+    // Amendment sort button — global delegation (spans modal + debate panels)
+    document.addEventListener('click', e => {
+        const amdtSortBtn = e.target.closest('.amdt-sort-btn');
+        if (!amdtSortBtn) return;
+        amendmentsSortMode = amdtSortBtn.dataset.sort;
+        document.querySelectorAll('.amdt-sort-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.sort === amendmentsSortMode));
+        document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
+            const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
+            if (cached) renderAmendmentsTable(cached, bodyEl);
+        });
+    });
+
     // Bill card click → modal; sort button click → re-sort
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
         billsSection.addEventListener('click', e => {
             const sortBtn = e.target.closest('.bills-sort-btn');
-            if (sortBtn) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
+            if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
             const card = e.target.closest('[data-bill-id]');
             if (card) openBillModal(card.dataset.billId);
         });
