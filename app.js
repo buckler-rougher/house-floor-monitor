@@ -260,6 +260,9 @@ function renderThisWeek() {
     }).join('');
 }
 
+let calendarMonthOffset = 0; // months offset from today's month (desktop window center)
+let calendarMobileIdx = 1;   // which of the 3 rendered months is visible on mobile
+
 function renderVotingDaysCalendar() {
     const prevEl = document.getElementById('voting-calendar-prev');
     const currentEl = document.getElementById('voting-calendar-current');
@@ -267,11 +270,9 @@ function renderVotingDaysCalendar() {
 
     if (!prevEl || !currentEl || !nextEl) return;
 
-
-
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
-    const baseMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const baseMonth = new Date(now.getFullYear(), now.getMonth() + calendarMonthOffset, 1);
     const monthDates = [
         new Date(baseMonth.getFullYear(), baseMonth.getMonth() - 1, 1),
         new Date(baseMonth.getFullYear(), baseMonth.getMonth(), 1),
@@ -346,12 +347,12 @@ function renderVotingDaysCalendar() {
     buildMonth(currentEl, monthDates[1]);
     buildMonth(nextEl, monthDates[2]);
 
-    // Mobile nav
+    // Mobile nav: mobileIdx 0/1/2 picks which rendered month is shown.
+    // Pressing past the edge shifts the 3-month window and wraps around.
     const mobileEls = [prevEl, currentEl, nextEl];
-    let mobileIdx = 1;
     const updateMobileView = () => {
-        mobileEls.forEach((el, i) => el.classList.toggle('cal-mobile-visible', i === mobileIdx));
-        const d = monthDates[mobileIdx];
+        mobileEls.forEach((el, i) => el.classList.toggle('cal-mobile-visible', i === calendarMobileIdx));
+        const d = monthDates[calendarMobileIdx];
         const titleEl = document.getElementById('calendar-mobile-title');
         if (titleEl) titleEl.textContent = `${MONTH_NAMES_LONG[d.getMonth()]} ${d.getFullYear()}`;
     };
@@ -359,8 +360,37 @@ function renderVotingDaysCalendar() {
 
     const prevBtn = document.getElementById('calendar-mobile-prev');
     const nextBtn = document.getElementById('calendar-mobile-next');
-    if (prevBtn) prevBtn.onclick = () => { if (mobileIdx > 0) { mobileIdx--; updateMobileView(); } };
-    if (nextBtn) nextBtn.onclick = () => { if (mobileIdx < 2) { mobileIdx++; updateMobileView(); } };
+    if (prevBtn) prevBtn.onclick = () => {
+        if (calendarMobileIdx > 0) {
+            calendarMobileIdx--;
+            updateMobileView();
+        } else {
+            calendarMonthOffset -= 3;
+            calendarMobileIdx = 2;
+            renderVotingDaysCalendar();
+        }
+    };
+    if (nextBtn) nextBtn.onclick = () => {
+        if (calendarMobileIdx < 2) {
+            calendarMobileIdx++;
+            updateMobileView();
+        } else {
+            calendarMonthOffset += 3;
+            calendarMobileIdx = 0;
+            renderVotingDaysCalendar();
+        }
+    };
+
+    // Desktop nav
+    const dPrev = document.getElementById('calendar-desktop-prev');
+    const dNext = document.getElementById('calendar-desktop-next');
+    const dToday = document.getElementById('calendar-desktop-today');
+    if (dPrev) dPrev.onclick = () => { calendarMonthOffset -= 3; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
+    if (dNext) dNext.onclick = () => { calendarMonthOffset += 3; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
+    if (dToday) {
+        dToday.classList.toggle('calendar-today-hidden', calendarMonthOffset === 0);
+        dToday.onclick = () => { calendarMonthOffset = 0; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
+    }
 }
 
 // Parse ICS content
@@ -2114,7 +2144,6 @@ function whipRecTagHtml(billId) {
     return `<span class="whip-tag" title="${title}">` +
         `<span class="whip-tag-label">DEM WHIP</span>` +
         `<span class="whip-tag-rec whip-${dir}">${rec.recommendation}</span>` +
-        (confShort ? `<span class="whip-tag-conf">${confShort}</span>` : '') +
         `</span>`;
 }
 

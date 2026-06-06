@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606al">
+    <link rel="stylesheet" href="styles.css?v=20260606am">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1118,6 +1118,11 @@
             <div class="panel-header">
                 <span class="panel-label">HOUSE CALENDAR</span>
                 <div class="panel-header-right">
+                    <div class="calendar-desktop-nav" id="calendar-desktop-nav">
+                        <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months">&#8249;</button>
+                        <button class="calendar-desktop-today calendar-today-hidden" id="calendar-desktop-today">TODAY</button>
+                        <button class="calendar-desktop-btn" id="calendar-desktop-next" aria-label="Next months">&#8250;</button>
+                    </div>
                     <span class="panel-source">Source: <a href="https://votingdays.house.gov/voting-days.ics" target="_blank" rel="noopener">House Voting Days Calendar</a></span>
                 </div>
             </div>
@@ -1264,7 +1269,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606al"></script>
+    <script src="app.js?v=20260606am"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
