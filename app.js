@@ -1596,6 +1596,7 @@ const elements = {
     debatePanelNav: document.getElementById('debate-panel-nav'),
     debateBillPanel: document.getElementById('debate-bill-panel'),
     debateAmendmentsPanel: document.getElementById('debate-amendments-panel'),
+    debateCotwBadge: document.getElementById('debate-cotw-badge'),
     debateRuleTag: document.getElementById('debate-rule-tag'),
     debateSourceLink: document.getElementById('debate-source-link'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
@@ -3603,7 +3604,18 @@ function updateDebateSection(items) {
         }
     }
 
-    // ── 5. Special rule tag ───────────────────────────────────────────────
+    // ── 5. Committee of the Whole badge ──────────────────────────────────
+    // Show when proceedings confirm the House has resolved into CoTW and
+    // hide once it has risen. "resolved itself into" = in session; "rose from" = ended.
+    if (elements.debateCotwBadge) {
+        const cotwIn  = items.findIndex(i => /resolved itself into the committee of the whole/i.test(i.description));
+        const cotwOut = items.findIndex(i => /rose from the committee of the whole/i.test(i.description));
+        // items[0] is most recent; lower index = more recent event
+        const inSession = cotwIn >= 0 && (cotwOut < 0 || cotwIn < cotwOut);
+        elements.debateCotwBadge.style.display = inSession ? '' : 'none';
+    }
+
+    // ── 6. Special rule tag ───────────────────────────────────────────────
     const specialRule = foundBill ? specialRulesMap.get(normalizeBillIdForRules(foundBill.id)) : null;
     const fallbackDebateHres = (!specialRule && foundBill?.governingHres) ? foundBill.governingHres : null;
     if (elements.debateRuleTag) {
