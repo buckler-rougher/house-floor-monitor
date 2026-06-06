@@ -5413,16 +5413,18 @@ async function fetchTweets() {
                 ? `<div class="tweet-rt-bar">↩ ${escapeHtml(t.rtBy || '')} retweeted</div>`
                 : '';
 
+            const onImgError = `this.style.display='none';const w=this.closest('.tweet-images,.tweet-card');if(w&&!w.querySelector('img:not([style*="none"])')&&w!==null)w.style.display='none'`;
+
             const imagesHtml = t.images && t.images.length
                 ? `<div class="tweet-images tweet-images-${Math.min(t.images.length, 4)}">${
                     t.images.slice(0, 4).map(src =>
-                        `<img class="tweet-img" src="${src}" loading="lazy" alt="">`
+                        `<img class="tweet-img" src="${src}" loading="lazy" alt="" onerror="${onImgError}">`
                     ).join('')
                   }</div>`
                 : '';
 
             const cardHtml = t.cardImage && !t.images.length
-                ? `<div class="tweet-card"><img class="tweet-card-img" src="${t.cardImage}" loading="lazy" alt=""></div>`
+                ? `<div class="tweet-card"><img class="tweet-card-img" src="${t.cardImage}" loading="lazy" alt="" onerror="this.closest('.tweet-card').style.display='none'"></div>`
                 : '';
 
             const quoteHtml = t.quoteAuthor
@@ -5434,9 +5436,11 @@ async function fetchTweets() {
 
             const bodyHtml = t.html || escapeHtml(t.title || '');
 
+            const avatarLetter = (t.handle || '?').replace('@', '')[0].toUpperCase();
             return `<div class="tweet-item">
                 ${rtBar}
                 <div class="tweet-header">
+                    <div class="tweet-avatar">${avatarLetter}</div>
                     <span class="tweet-author">${escapeHtml(t.handle || '')}</span>
                     <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}

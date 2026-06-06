@@ -2823,6 +2823,21 @@ body {
     gap: var(--sp-8);
     margin-bottom: var(--sp-8);
 }
+.tweet-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(88, 166, 255, 0.2);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
 .tweet-author {
     font-size: var(--fs-sm);
     font-family: var(--font-mono);
