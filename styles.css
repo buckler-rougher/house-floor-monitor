@@ -3625,6 +3625,23 @@ body {
     table-layout: fixed !important;
 }
 
+/* Round the bottom corners of the last calendar row */
+.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-7);
+    overflow: hidden;
+}
+.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-7);
+    overflow: hidden;
+}
+/* Kill the bottom border on the scrollgrid so it doesn't poke out */
+.voting-calendar-month .fc .fc-scrollgrid {
+    border-bottom: none !important;
+}
+.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
 .voting-calendar-month .fc .fc-daygrid-day-frame,
 .voting-calendar-month .fc .fc-scrollgrid-sync-table td {
     aspect-ratio: 1 / 1;
