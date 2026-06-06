@@ -2226,8 +2226,10 @@ const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed
 let amendmentsSortMode = 'status';
 // Made-in-order/adopted first (most actionable), pending middle, withdrawn/failed last
 const AMENDMENT_STATUS_SORT_ORDER = { adopted: 0, submitted: 1, failed: 2 };
-// Amendment party filter: 'all' | 'rep' | 'dem' | 'ind'
+// Amendment party filter: 'all' | 'rep' | 'dem' | 'bipartisan'
 let amendmentsPartyFilter = 'all';
+// Amendment member filter: null = no filter, string = only amendments with this sponsor
+let amendmentsMemberFilter = null;
 
 function sortBillsForDisplay(bills) {
     const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
@@ -2894,9 +2896,10 @@ function openBillModal(billId) {
                 </div>
                 <div class="amdt-controls">
                     <div class="bills-sort-switcher amdt-filter-switcher">
-                        <button class="bills-sort-btn amdt-filter-btn" data-filter="all">All</button>
-                        <button class="bills-sort-btn amdt-filter-btn" data-filter="rep">R</button>
+                        <button class="bills-sort-btn amdt-filter-btn active" data-filter="all">All</button>
                         <button class="bills-sort-btn amdt-filter-btn" data-filter="dem">D</button>
+                        <button class="bills-sort-btn amdt-filter-btn" data-filter="rep">R</button>
+                        <button class="bills-sort-btn amdt-filter-btn" data-filter="bipartisan">Bipartisan</button>
                     </div>
                     <div class="bills-sort-switcher amdt-sort-switcher">
                         <button class="bills-sort-btn amdt-sort-btn" data-sort="status">Status</button>
@@ -3002,6 +3005,36 @@ const _amdtCleanDistrict = d => {
     return /^\d+$/.test(stripped) ? stripped.padStart(2, '0') : stripped;
 };
 
+// Pre-compute enriched sponsors + bipartisan flag once after fetch,
+// so renderAmendmentsTable never needs xmlDoc at render time.
+function enrichAmendments(amendments, xmlDoc) {
+    return amendments.map(a => {
+        const tokens = _amdtParseSponsorTokens(a.sponsors || '');
+        const enrichedSponsors = tokens.map(t => {
+            const match = (xmlDoc && t.lastName && t.state)
+                ? findBestMemberMatchByName(xmlDoc, t.lastName, t.state) : null;
+            const party = match ? _amdtPartyClass(match.party) : _amdtPartyClass(a.party);
+            const dist = match?.district && match.district !== '0' ? _amdtCleanDistrict(match.district) : '';
+            return {
+                name: match ? match.fullName : t.raw,
+                party,
+                letter: party === 'rep' ? 'R' : party === 'dem' ? 'D' : 'I',
+                photoUrl: match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null,
+                profileUrl: match ? buildCongressProfileUrl(match.bioguideId) : null,
+                distLabel: match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || ''),
+            };
+        });
+        const parties = new Set([...enrichedSponsors.map(s => s.party), _amdtPartyClass(a.party)]);
+        const isBipartisan = parties.has('rep') && parties.has('dem');
+        return {
+            ...a,
+            _enrichedSponsors: enrichedSponsors,
+            _isBipartisan: isBipartisan,
+            _dotParty: isBipartisan ? 'bipartisan' : _amdtPartyClass(a.party),
+        };
+    });
+}
+
 function sortAmendmentsForDisplay(amendments) {
     const indexed = amendments.map((a, i) => ({ ...a, _origIdx: i }));
     if (amendmentsSortMode === 'status') {
@@ -3015,50 +3048,55 @@ function sortAmendmentsForDisplay(amendments) {
     return indexed.sort((a, b) => a._origIdx - b._origIdx); // 'listed'
 }
 
-function renderAmendmentsTable({ amendments, xmlDoc }, body) {
-    const sorted = sortAmendmentsForDisplay(amendments);
-    const display = amendmentsPartyFilter === 'all' ? sorted
-        : sorted.filter(a => _amdtPartyClass(a.party) === amendmentsPartyFilter);
+function renderAmendmentsTable({ amendments }, body) {
+    let display = sortAmendmentsForDisplay(amendments);
+
+    // Party filter
+    if (amendmentsPartyFilter === 'bipartisan') {
+        display = display.filter(a => a._isBipartisan);
+    } else if (amendmentsPartyFilter !== 'all') {
+        display = display.filter(a => a._dotParty === amendmentsPartyFilter);
+    }
+
+    // Member filter (show only amendments that include this sponsor)
+    if (amendmentsMemberFilter) {
+        display = display.filter(a =>
+            a._enrichedSponsors?.some(s => s.name === amendmentsMemberFilter));
+    }
 
     const renderSponsors = (a) => {
-        const tokens = _amdtParseSponsorTokens(a.sponsors);
-        const amendmentDot = _amdtPartyClass(a.party);
-        const chips = tokens.map(t => {
-            const match = (xmlDoc && t.lastName && t.state)
-                ? findBestMemberMatchByName(xmlDoc, t.lastName, t.state)
-                : null;
-            const pc = match ? _amdtPartyClass(match.party) : _amdtPartyClass(a.party);
-            const pl = match ? _amdtPartyLetter(match.party) : _amdtPartyLetter(a.party);
-            const name = match ? match.fullName : t.raw;
-            const photoUrl = match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null;
-            const profileUrl = match ? buildCongressProfileUrl(match.bioguideId) : null;
-            const dist = match && match.district && match.district !== '0' ? _amdtCleanDistrict(match.district) : '';
-            const distLabel = match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || '');
-            const nameHtml = a.pdfUrl
-                ? `<a href="${a.pdfUrl}" target="_blank" rel="noopener" class="amdt-sponsor-link">${name}</a>`
-                : name;
-            const imgHtml = `<img class="amdt-sponsor-photo" src="${photoUrl || ''}" alt="">`;
+        const dotParty = a._dotParty || _amdtPartyClass(a.party);
+        const chips = (a._enrichedSponsors || []).map(s => {
+            const isActive = amendmentsMemberFilter === s.name;
+            const safeAttr = s.name.replace(/"/g, '&quot;');
+            const imgHtml = `<img class="amdt-sponsor-photo" src="${s.photoUrl || ''}" alt="">`;
             const wrapHtml = `<div class="amdt-sponsor-photo-wrap">${imgHtml}</div>`;
-            const photoHtml = photoUrl
-                ? (profileUrl ? `<a href="${profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
+            const photoHtml = s.photoUrl
+                ? (s.profileUrl ? `<a href="${s.profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
                 : wrapHtml;
             return `<div class="amdt-sponsor-chip">
                 ${photoHtml}
-                <span class="amdt-sponsor-name"><span class="amdt-sponsor-party-tag ${pc}">${pl}</span>${nameHtml}${distLabel ? `<span class="amdt-sponsor-dist"> ${distLabel}</span>` : ''}</span>
+                <span class="amdt-sponsor-name">
+                    <span class="amdt-sponsor-party-tag ${s.party}">${s.letter}</span>
+                    <button class="amdt-member-btn${isActive ? ' active' : ''}" type="button" data-member-name="${safeAttr}" title="Filter to ${s.name}'s amendments">${s.name}</button>
+                    ${s.distLabel ? `<span class="amdt-sponsor-dist"> ${s.distLabel}</span>` : ''}
+                </span>
             </div>`;
         });
-        return `<span class="amdt-party ${amendmentDot}"></span><div class="amdt-sponsor-list">${chips.join('')}</div>`;
+        return `<button class="amdt-party ${dotParty}" type="button" data-filter-party="${dotParty}" title="Filter by party" aria-label="Filter by ${dotParty}"></button>
+                <div class="amdt-sponsor-list">${chips.join('')}</div>`;
     };
 
     body.innerHTML = display.length ? `
         <table class="amendments-table">
-            <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th></tr></thead>
+            <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th><th></th></tr></thead>
             <tbody>${display.map(a => `
                 <tr>
                     <td class="amdt-num">${a.num}</td>
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
                     <td class="amdt-summary">${a.summary}</td>
                     <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${a.status}</span></td>
+                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${a.pdfUrl}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open PDF">PDF ↗</a>` : ''}</td>
                 </tr>`).join('')}
             </tbody>
         </table>` : '<div class="bill-amendments-empty">No amendments match this filter.</div>';
@@ -3078,7 +3116,7 @@ async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amend
             ]);
             const data = await resp.json();
             const xmlDoc = xmlText ? parseMemberDataXml(xmlText) : null;
-            cached = { amendments: data.amendments || [], xmlDoc };
+            cached = { amendments: enrichAmendments(data.amendments || [], xmlDoc) };
             _amendmentsDataCache.set(slug, cached);
         }
         if (!cached.amendments.length) {
@@ -5656,28 +5694,49 @@ function init() {
         if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
     });
 
-    // Amendment sort + filter buttons — global delegation (spans modal + debate panels)
+    // Amendment sort + filter + dot + member — global delegation (spans modal + debate panels)
+    const _reRenderAllAmendmentBodies = () => {
+        document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
+            const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
+            if (cached) renderAmendmentsTable(cached, bodyEl);
+        });
+    };
     document.addEventListener('click', e => {
+        // Sort buttons
         const amdtSortBtn = e.target.closest('.amdt-sort-btn');
         if (amdtSortBtn) {
             amendmentsSortMode = amdtSortBtn.dataset.sort;
             document.querySelectorAll('.amdt-sort-btn').forEach(b =>
                 b.classList.toggle('active', b.dataset.sort === amendmentsSortMode));
-            document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
-                const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
-                if (cached) renderAmendmentsTable(cached, bodyEl);
-            });
+            _reRenderAllAmendmentBodies();
             return;
         }
+        // Party filter buttons (All / D / R / Bipartisan)
         const amdtFilterBtn = e.target.closest('.amdt-filter-btn');
         if (amdtFilterBtn) {
             amendmentsPartyFilter = amdtFilterBtn.dataset.filter;
+            if (amendmentsPartyFilter === 'all') amendmentsMemberFilter = null; // "All" resets member filter too
             document.querySelectorAll('.amdt-filter-btn').forEach(b =>
                 b.classList.toggle('active', b.dataset.filter === amendmentsPartyFilter));
-            document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
-                const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
-                if (cached) renderAmendmentsTable(cached, bodyEl);
-            });
+            _reRenderAllAmendmentBodies();
+            return;
+        }
+        // Party dot click — toggle that party filter
+        const dotBtn = e.target.closest('[data-filter-party]');
+        if (dotBtn) {
+            const party = dotBtn.dataset.filterParty;
+            amendmentsPartyFilter = amendmentsPartyFilter === party ? 'all' : party;
+            document.querySelectorAll('.amdt-filter-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.filter === amendmentsPartyFilter));
+            _reRenderAllAmendmentBodies();
+            return;
+        }
+        // Member name click — toggle member filter
+        const memberBtn = e.target.closest('.amdt-member-btn');
+        if (memberBtn) {
+            const name = memberBtn.dataset.memberName;
+            amendmentsMemberFilter = amendmentsMemberFilter === name ? null : name;
+            _reRenderAllAmendmentBodies();
         }
     });
 
