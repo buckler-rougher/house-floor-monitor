@@ -332,9 +332,10 @@ function renderVotingDaysCalendar() {
                                         lbls.push(`<span class="cal-lbl cal-lbl-strike" style="color:${c.lbl}">VOTES</span>`);
 
             const numStyle = c ? `style="color:${c.num}"` : '';
+            const lblsHtml = lbls.length ? `<div class="cal-lbls">${lbls.join('')}</div>` : '';
             html += `<div class="${cellClass}">
                 <span class="cal-num" ${numStyle}>${d}</span>
-                ${lbls.join('')}
+                ${lblsHtml}
             </div>`;
         }
         html += `</div>`;

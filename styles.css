@@ -3472,40 +3472,41 @@ body {
 }
 .cal-day {
     aspect-ratio: 1 / 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     border-radius: 4px;
     position: relative;
     cursor: default;
     transition: background 0.1s;
+    border: 1px solid transparent;
 }
 .cal-day:not(.cal-day-empty):hover { background: rgba(255,255,255,0.06); }
-.cal-day-vote    { background: rgba(63,185,80,0.16); }
+.cal-day-vote      { background: rgba(63,185,80,0.16); }
 .cal-day-vote:hover { background: rgba(63,185,80,0.26); }
-.cal-day-added   { background: rgba(210,153,34,0.16); }
+.cal-day-added     { background: rgba(210,153,34,0.16); }
 .cal-day-added:hover { background: rgba(210,153,34,0.26); }
 .cal-day-cancelled { background: rgba(139,148,158,0.10); }
 .cal-day-cancelled:hover { background: rgba(139,148,158,0.18); }
+.cal-day-today     { border-color: rgba(255,255,255,0.45) !important; }
 .cal-num {
+    position: absolute;
+    top: 2px;
+    right: 3px;
     font-size: 7px;
     font-weight: 600;
     color: var(--text-muted);
     line-height: 1;
     font-family: var(--font-mono);
 }
-.cal-day-today .cal-num {
-    color: #fff;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 50%;
-    width: 14px;
-    height: 14px;
+.cal-day-today .cal-num { color: #fff; font-weight: 800; }
+/* Labels stacked in center of cell */
+.cal-lbls {
+    position: absolute;
+    inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
+    gap: 1px;
+    pointer-events: none;
 }
 .cal-lbl {
     font-size: 5.5px;
