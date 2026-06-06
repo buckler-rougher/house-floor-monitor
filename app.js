@@ -391,7 +391,7 @@ function renderVotingDaysCalendar() {
     if (dPrev) dPrev.onclick = () => { calendarMonthOffset -= 3; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
     if (dNext) dNext.onclick = () => { calendarMonthOffset += 3; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
     if (dToday) {
-        dToday.classList.toggle('calendar-today-hidden', calendarMonthOffset === 0);
+        dToday.classList.toggle('calendar-today-at-current', calendarMonthOffset === 0);
         dToday.onclick = () => { calendarMonthOffset = 0; calendarMobileIdx = 1; renderVotingDaysCalendar(); };
     }
 }

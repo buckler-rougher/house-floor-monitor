@@ -8200,7 +8200,7 @@ body.admin-oath-mode .floor-grid-panel {
     transition: border-color 0.15s, color 0.15s;
 }
 .calendar-desktop-today:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-.calendar-today-hidden { display: none !important; }
+.calendar-today-at-current { opacity: 0.35; cursor: default; pointer-events: none; }
 
 .calendar-mobile-nav {
     display: none; /* shown only on mobile via media query */
