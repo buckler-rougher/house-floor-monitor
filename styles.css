@@ -3390,18 +3390,21 @@ body {
     flex-shrink: 0;
 }
 .this-week-body {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
     font-size: var(--fs-base);
     color: var(--text-primary);
-    line-height: 1.5;
 }
 .this-week-day {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     font-family: var(--font-mono);
     font-size: var(--fs-xs);
     font-weight: 600;
     padding: 1px 6px;
     border-radius: var(--radius-3);
-    margin-right: var(--sp-4);
 }
 .this-week-day-vote   { background: rgba(63,185,80,0.15);  color: #4ade80; }
 .this-week-day-fly    { background: rgba(63,185,80,0.10);  color: #86efac; }
