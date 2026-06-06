@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606at">
+    <link rel="stylesheet" href="styles.css?v=20260606au">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -988,11 +988,101 @@
             <div class="road-closures-panel" id="road-closures-panel">
                 <div class="panel-header">
                     <span class="panel-label">CAPITOL AREA ROAD CLOSURES</span>
-                    <span class="panel-source">Source: <a href="https://maps2.dcgis.dc.gov/dcgis/rest/services/DDOT/HSEMA_RoadClosures/MapServer" target="_blank" rel="noopener">DC HSEMA / DDOT</a></span>
+                    <div class="panel-header-right">
+                        <span class="road-closures-updated-badge" id="road-closures-updated-badge"></span>
+                        <span class="panel-source">Source: <a href="https://maps2.dcgis.dc.gov/dcgis/rest/services/DDOT/HSEMA_RoadClosures/MapServer" target="_blank" rel="noopener">DC HSEMA / DDOT</a></span>
+                    </div>
                 </div>
-                <div class="road-closures-content" id="road-closures-content">
-                    <div class="road-closures-loading">Loading…</div>
+                <!-- Tactical SVG map — bbox: lon -77.016→-77.001, lat 38.884→38.895, 560×290px -->
+                <div class="road-closures-map-wrap">
+                  <svg id="road-closures-map" viewBox="0 0 560 290" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <!-- Background -->
+                    <rect width="560" height="290" fill="#080c10"/>
+                    <!-- Capitol grounds (bounded by 1st St NW/NE and Constitution/Independence) -->
+                    <polygon points="149,79 373,79 373,212 149,212" fill="#0d1117" stroke="#21262d" stroke-width="0.5"/>
+                    <!-- === ROADS — stroke set by JS; default = open (#1e3a1e dim green) === -->
+                    <!-- Constitution Ave NW -->
+                    <path class="rc-road" data-road="CONSTITUTION AVE NW" data-label="CONSTITUTION AVE NW"
+                          d="M 105,84 L 88,85 L 74,85 L 66,85 L 49,85 L 37,85 L 29,85 L 6,86 L -15,93"/>
+                    <!-- Constitution Ave NE (manual extension east of N Capitol St) -->
+                    <path class="rc-road" data-road="CONSTITUTION AVE NE" data-label="CONSTITUTION AVE NE"
+                          d="M 261,79 L 373,79 L 560,79"/>
+                    <!-- Gap fill: Constitution Ave between GIS data end and N Capitol St -->
+                    <path class="rc-road rc-road-fill" data-road="CONSTITUTION AVE NW" data-label=""
+                          d="M 105,84 L 261,82"/>
+                    <!-- Independence Ave SW -->
+                    <path class="rc-road" data-road="INDEPENDENCE AVE SW" data-label="INDEPENDENCE AVE SW"
+                          d="M -22,216 L 0,216 L 37,216 L 81,216 L 144,216 L 196,216 L 259,215"/>
+                    <!-- Independence Ave SE -->
+                    <path class="rc-road" data-road="INDEPENDENCE AVE SE" data-label="INDEPENDENCE AVE SE"
+                          d="M 259,215 L 295,215 L 377,215 L 466,215 L 521,215 L 576,215"/>
+                    <!-- Pennsylvania Ave NW (diagonal, from 3rd St NW toward upper-left) -->
+                    <path class="rc-road" data-road="PENNSYLVANIA AVE NW" data-label="PENNSYLVANIA AVE NW"
+                          d="M 30,103 L 15,97 L -15,93"/>
+                    <!-- Pennsylvania Ave SE (diagonal, from Capitol toward lower-right) -->
+                    <path class="rc-road" data-road="PENNSYLVANIA AVE SE" data-label="PENNSYLVANIA AVE SE"
+                          d="M 466,215 L 498,223 L 521,231 L 576,248"/>
+                    <!-- Louisiana Ave NW (diagonal, NW of Capitol) -->
+                    <path class="rc-road" data-road="LOUISIANA AVE NW" data-label="LOUISIANA AVE NW"
+                          d="M 105,84 L 143,62 L 181,41 L 199,30 L 243,6"/>
+                    <!-- 3rd St NW + SW (N-S, left side) -->
+                    <path class="rc-road" data-road="3RD ST NW" data-label="3RD ST NW"
+                          d="M 30,103 L 30,151"/>
+                    <path class="rc-road" data-road="3RD ST SW" data-label="3RD ST SW"
+                          d="M 30,151 L 31,179 L 31,198 L 31,216"/>
+                    <!-- 1st St NW (N-S, one block west of Capitol) -->
+                    <path class="rc-road" data-road="1ST ST NW" data-label="1ST ST NW"
+                          d="M 149,79 L 149,215"/>
+                    <!-- 1st St NE (N-S, one block east of Capitol) -->
+                    <path class="rc-road" data-road="1ST ST NE" data-label="1ST ST NE"
+                          d="M 373,79 L 373,215"/>
+                    <!-- North Capitol St (N-S, through Capitol) -->
+                    <path class="rc-road" data-road="NORTH CAPITOL ST" data-label="N CAPITOL ST"
+                          d="M 261,0 L 261,79"/>
+                    <!-- East Capitol St (E-W, through Capitol eastward) -->
+                    <path class="rc-road" data-road="EAST CAPITOL ST" data-label="E CAPITOL ST"
+                          d="M 261,149 L 373,149 L 560,149"/>
+                    <!-- Maryland Ave NE (diagonal NE from Capitol) -->
+                    <path class="rc-road" data-road="MARYLAND AVE NE" data-label="MARYLAND AVE NE"
+                          d="M 261,149 L 373,79"/>
+                    <!-- C St NW (parallel to Constitution, 1 block north) -->
+                    <path class="rc-road" data-road="C ST NW" data-label="C ST NW"
+                          d="M -15,55 L 30,52 L 105,50 L 149,50"/>
+                    <!-- C St NE -->
+                    <path class="rc-road" data-road="C ST NE" data-label="C ST NE"
+                          d="M 261,50 L 373,50 L 560,50"/>
+                    <!-- D St NW -->
+                    <path class="rc-road" data-road="D ST NW" data-label="D ST NW"
+                          d="M -15,20 L 30,18 L 149,15"/>
+                    <!-- Capitol Building footprint (simplified) -->
+                    <rect x="222" y="132" width="78" height="36" rx="2" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+                    <!-- Dome circle -->
+                    <circle cx="261" cy="150" r="10" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
+                    <circle cx="261" cy="150" r="3" fill="#388bfd" opacity="0.7"/>
+                    <!-- CAPITOL label -->
+                    <text x="261" y="179" text-anchor="middle" font-family="monospace" font-size="7" fill="#8b949e" letter-spacing="1">U.S. CAPITOL</text>
+                    <!-- Street labels -->
+                    <text x="52" y="80" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(0)">CONSTITUTION AVE NW</text>
+                    <text x="52" y="221" font-family="monospace" font-size="7" fill="#484f58">INDEPENDENCE AVE SW</text>
+                    <text x="390" y="221" font-family="monospace" font-size="7" fill="#484f58">INDEPENDENCE AVE SE</text>
+                    <text x="112" y="75" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-25,112,75)">LOUISIANA AVE NW</text>
+                    <text x="154" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,154,145)">1ST ST NW</text>
+                    <text x="378" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,378,145)">1ST ST NE</text>
+                    <text x="32" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,32,145)">3RD ST</text>
+                    <text x="266" y="40" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,266,40)">N CAPITOL</text>
+                    <text x="390" y="146" font-family="monospace" font-size="7" fill="#484f58">E CAPITOL ST</text>
+                    <!-- Map legend -->
+                    <rect x="10" y="265" width="8" height="3" rx="1" fill="#3fb950"/>
+                    <text x="22" y="269" font-family="monospace" font-size="7" fill="#8b949e">OPEN</text>
+                    <rect x="62" y="265" width="8" height="3" rx="1" fill="#f85149"/>
+                    <text x="74" y="269" font-family="monospace" font-size="7" fill="#8b949e">CLOSED</text>
+                    <rect x="122" y="265" width="8" height="3" rx="1" fill="#d29922"/>
+                    <text x="134" y="269" font-family="monospace" font-size="7" fill="#8b949e">DETOUR</text>
+                    <text x="550" y="269" text-anchor="end" font-family="monospace" font-size="7" fill="#484f58" id="road-closures-map-timestamp"></text>
+                  </svg>
                 </div>
+                <!-- Active closure list (hidden when none) -->
+                <div class="road-closures-list" id="road-closures-content"></div>
             </div>
 
             <!-- Party Breakdown Panel -->
@@ -1280,7 +1370,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606at"></script>
+    <script src="app.js?v=20260606au"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

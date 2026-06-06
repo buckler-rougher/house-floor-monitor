@@ -1934,73 +1934,130 @@ const ROAD_CLOSURES_CONFIG = {
 };
 
 async function fetchRoadClosures() {
-    const el = document.getElementById('road-closures-content');
-    if (!el) return;
     try {
         const resp = await fetch(ROAD_CLOSURES_CONFIG.workerUrl);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        renderRoadClosures(data, el);
+        renderRoadClosures(data);
     } catch (e) {
-        // Keep whatever was showing on error; only update if empty
-        if (el.querySelector('.road-closures-loading')) {
-            el.innerHTML = '<div class="road-closures-empty"><span class="road-closures-empty-icon">⚠</span>Unable to load closures</div>';
-        }
+        // Leave map as-is on error; just note it if we've never loaded
+        const el = document.getElementById('road-closures-content');
+        if (el && !el._hasData) el.innerHTML = '';
     }
 }
 
-function renderRoadClosures(data, el) {
+// Normalize a street name from HSEMA API (e.g. "Pennsylvania Ave. NW") to match
+// DC GIS ROUTENAME format (e.g. "PENNSYLVANIA AVE NW")
+function normalizeStreetName(s) {
+    if (!s) return '';
+    return s.toUpperCase()
+        .replace(/\./g, '')
+        .replace(/\bSTREET\b/g, 'ST')
+        .replace(/\bAVENUE\b/g, 'AVE')
+        .replace(/\bBOULEVARD\b/g, 'BLVD')
+        .replace(/\bDRIVE\b/g, 'DR')
+        .replace(/\bROAD\b/g, 'RD')
+        .replace(/\bPLACE\b/g, 'PL')
+        .replace(/\bCIRCLE\b/g, 'CIR')
+        .replace(/,/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function renderRoadClosures(data) {
     const closures = data?.closures ?? [];
     const fetchedAt = data?.fetchedAt ? new Date(data.fetchedAt) : null;
+    const listEl = document.getElementById('road-closures-content');
+    const tsEl   = document.getElementById('road-closures-map-timestamp');
+    const badge  = document.getElementById('road-closures-updated-badge');
 
+    // Reset all road paths to "open" state
+    document.querySelectorAll('#road-closures-map .rc-road').forEach(path => {
+        path.setAttribute('stroke', '#1a3a1a');
+        path.setAttribute('stroke-width', path.dataset.road?.includes('AVE') || path.dataset.road?.includes('PENNSYLVANIA') ? '2.5' : '1.5');
+        path.setAttribute('opacity', '0.9');
+    });
+
+    // Build a map: normalized name → layer type
+    const closureMap = new Map(); // normalizedName → 'close'|'block'|'detour'
+    for (const c of closures) {
+        const norm = normalizeStreetName(c.street);
+        const existing = closureMap.get(norm);
+        // Priority: closure > block > detour
+        const newType = c.layer === 'Road Closures' ? 'close'
+                      : c.layer === 'Road Blocks'   ? 'block'
+                      : 'detour';
+        if (!existing || newType === 'close' || (newType === 'block' && existing === 'detour')) {
+            closureMap.set(norm, newType);
+        }
+    }
+
+    // Color matched road paths
+    document.querySelectorAll('#road-closures-map .rc-road').forEach(path => {
+        const roadName = normalizeStreetName(path.dataset.road || '');
+        const status = closureMap.get(roadName);
+        if (status === 'close' || status === 'block') {
+            path.setAttribute('stroke', '#f85149');
+            path.setAttribute('opacity', '1');
+        } else if (status === 'detour') {
+            path.setAttribute('stroke', '#d29922');
+            path.setAttribute('opacity', '1');
+        } else {
+            // Open — use bright green for roads that ARE in our monitor set, dim for others
+            path.setAttribute('stroke', '#238636');
+        }
+    });
+
+    // Timestamp in map
+    if (tsEl && fetchedAt) {
+        tsEl.textContent = fetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Badge
+    if (badge) {
+        if (closures.length > 0) {
+            badge.textContent = `${closures.length} ACTIVE`;
+            badge.className = 'road-closures-updated-badge road-closures-badge-alert';
+        } else {
+            badge.textContent = 'ALL CLEAR';
+            badge.className = 'road-closures-updated-badge road-closures-badge-clear';
+        }
+    }
+
+    // Closure list below map
+    if (!listEl) return;
+    listEl._hasData = true;
     if (closures.length === 0) {
-        el.innerHTML = '<div class="road-closures-empty"><span class="road-closures-empty-icon">✓</span>No active closures near the Capitol</div>'
-            + (fetchedAt ? `<div class="road-closures-updated">Updated ${fetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>` : '');
+        setIfChanged(listEl, '');
         return;
     }
 
-    const badgeClass = layer => {
-        if (layer === 'Road Blocks')  return 'road-closure-badge-block';
-        if (layer === 'Road Closures') return 'road-closure-badge-close';
-        return 'road-closure-badge-detour';
-    };
-    const shortLabel = layer => {
-        if (layer === 'Road Blocks')   return 'BLOCK';
-        if (layer === 'Road Closures') return 'CLOSED';
-        return 'DETOUR';
-    };
     const fmtTime = iso => {
         if (!iso) return null;
         try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
         catch { return null; }
     };
+    const badgeClass = layer => layer === 'Road Detours' ? 'road-closure-badge-detour' : 'road-closure-badge-close';
+    const shortLabel = layer => layer === 'Road Detours' ? 'DETOUR' : (layer === 'Road Blocks' ? 'BLOCK' : 'CLOSED');
 
     let html = '';
     for (const c of closures) {
-        const label = shortLabel(c.layer);
-        const cls   = badgeClass(c.layer);
         const street = escapeHtml(c.street || 'Unknown street');
         const desc   = c.description ? escapeHtml(c.description) : '';
         const dir    = c.direction   ? ` (${escapeHtml(c.direction)})` : '';
-        const alt    = c.altRoute    ? `Alt route: ${escapeHtml(c.altRoute)}` : '';
-        const start  = fmtTime(c.startTime);
+        const alt    = c.altRoute    ? `Alt: ${escapeHtml(c.altRoute)}` : '';
         const end    = fmtTime(c.endTime);
-        const times  = start && end ? `${start} – ${end}` : (end ? `Until ${end}` : '');
-
         html += `<div class="road-closure-item">
-  <span class="road-closure-badge ${cls}">${label}</span>
+  <span class="road-closure-badge ${badgeClass(c.layer)}">${shortLabel(c.layer)}</span>
   <div class="road-closure-body">
     <div class="road-closure-street">${street}${dir}</div>
     ${desc ? `<div class="road-closure-desc">${desc}</div>` : ''}
-    ${times ? `<div class="road-closure-meta">${escapeHtml(times)}</div>` : ''}
+    ${end ? `<div class="road-closure-meta">Until ${escapeHtml(end)}</div>` : ''}
     ${alt ? `<div class="road-closure-alt">${alt}</div>` : ''}
   </div>
 </div>`;
     }
-    if (fetchedAt) {
-        html += `<div class="road-closures-updated">Updated ${fetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${closures.length} closure${closures.length !== 1 ? 's' : ''} within ~3 blocks of Capitol</div>`;
-    }
-    setIfChanged(el, html);
+    setIfChanged(listEl, html);
 }
 
 // Bills This Week Configuration
