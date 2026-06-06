@@ -718,6 +718,15 @@ function billIdToCongressType(billId) {
   return slug ? { type: slug, number: m[2] } : null;
 }
 
+// GovInfo "link service" → redirects to the latest official version PDF of a bill
+// (e.g. .../link/bills/119/hr/8646?link-type=pdf → BILLS-119hr8646rh.pdf). Used as a
+// fallback when the schedule feed didn't carry a direct floor-text PDF for a bill.
+function billIdToGovInfoPdf(billId) {
+  const parsed = billIdToCongressType(billId);
+  if (!parsed) return null;
+  return `https://www.govinfo.gov/link/bills/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}?link-type=pdf`;
+}
+
 async function fetchCongressBillSummary(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
@@ -1195,7 +1204,7 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  const cacheKey = quick ? 'bills-weekly-quick-v3' : 'bills-weekly-v3';
+  const cacheKey = quick ? 'bills-weekly-quick-v4' : 'bills-weekly-v4';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -1377,6 +1386,13 @@ async function _fetchBills(request, env) {
         const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
         if (!legisNum || !floorText || legisNum.includes('::')) continue;
 
+        // Bill-text PDF: the schedule row links the exact document on the floor.
+        // Prefer the docs.house.gov floor doc (often a Rules Committee Print — the precise
+        // text being considered, incl. manager's amendments), then any .pdf in the row,
+        // then fall back to GovInfo's latest official version. http→https for mixed content.
+        const pdfHrefs = [...row.matchAll(/href="([^"]+\.pdf)"/gi)].map((mm) => mm[1].replace(/^http:/, 'https:'));
+        const textUrl = pdfHrefs.find((h) => /docs\.house\.gov/i.test(h)) || pdfHrefs[0] || null;
+
         // Normalize bill ID for lookups: "H. Res. 1300" → "H.Res. 1300", "H. Con. Res. 86" → "H.Con.Res. 86"
         // The schedule XML is inconsistent with spacing inside type abbreviations.
         const normId = legisNum.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
@@ -1411,6 +1427,7 @@ async function _fetchBills(request, env) {
           considered,
           actionSource,
           actionSourceUrl,
+          textUrl: textUrl || billIdToGovInfoPdf(legisNum),
           ...(isRule && governingHres ? { governingHres } : {}),
         });
       }
