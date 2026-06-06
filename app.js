@@ -5437,11 +5437,18 @@ async function fetchTweets() {
             const bodyHtml = t.html || escapeHtml(t.title || '');
 
             const avatarLetter = (t.handle || '?').replace('@', '')[0].toUpperCase();
+            const avatarInner = t.photoUrl
+                ? `<img src="${t.photoUrl}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+                  + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${avatarLetter}</span>`
+                : avatarLetter;
+            const profileUrl = t.handle ? `https://twitter.com/${t.handle.replace('@', '')}` : null;
             return `<div class="tweet-item">
                 ${rtBar}
                 <div class="tweet-header">
-                    <div class="tweet-avatar">${avatarLetter}</div>
-                    <span class="tweet-author">${escapeHtml(t.handle || '')}</span>
+                    <div class="tweet-avatar">${avatarInner}</div>
+                    ${profileUrl
+                        ? `<a class="tweet-author" href="${profileUrl}" target="_blank" rel="noopener">${escapeHtml(t.handle || '')}</a>`
+                        : `<span class="tweet-author">${escapeHtml(t.handle || '')}</span>`}
                     <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
                 </div>
