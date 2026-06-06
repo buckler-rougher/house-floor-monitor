@@ -4454,6 +4454,34 @@ a.bill-card-rule-link {
     margin-bottom: var(--sp-10);
 }
 
+.amdt-search-bar {
+    flex-shrink: 0;
+    padding: var(--sp-6) var(--sp-18) var(--sp-10);
+    border-bottom: 1px solid var(--border-color);
+}
+.amdt-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-6);
+    padding: var(--sp-6) var(--sp-10);
+    color: var(--text-primary);
+    font-size: var(--fs-sm);
+    font-family: var(--font-mono);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.amdt-search-input:focus { border-color: rgba(88, 166, 255, 0.5); }
+.amdt-search-input::placeholder { color: var(--text-muted); opacity: 0.55; }
+.amdt-search-input::-webkit-search-cancel-button,
+.amdt-search-input::-webkit-search-decoration { display: none; }
+/* Debate panel: full-width with bottom margin, no extra wrapper needed */
+.amdt-search-debate {
+    display: block;
+    margin-bottom: var(--sp-10);
+}
+
 .bill-amendments-panel-title {
     font-size: var(--fs-sm);
     font-weight: 700;
@@ -4675,42 +4703,53 @@ a.bill-card-rule-link {
 .amdt-member-btn.active { color: var(--accent-blue); font-weight: 600; }
 
 .amdt-pdf-cell {
-    text-align: right;
+    text-align: center;
     vertical-align: middle;
-    padding-right: var(--sp-8) !important;
+    padding-right: var(--sp-14) !important;
+    padding-left: var(--sp-6) !important;
 }
 .amdt-pdf-btn {
-    display: inline-block;
-    font-size: var(--fs-xs);
-    font-family: var(--font-mono);
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-sm);
     color: var(--text-muted);
     text-decoration: none;
-    padding: 2px 5px;
+    width: 22px;
+    height: 22px;
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-3);
-    white-space: nowrap;
-    transition: color 0.12s, border-color 0.12s;
+    border-radius: var(--radius-4);
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    line-height: 1;
 }
-.amdt-pdf-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.amdt-pdf-btn:hover { color: var(--text-primary); border-color: var(--text-muted); background: rgba(255,255,255,0.04); }
 
 .amdt-party {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
-    margin-top: 5px;
+    margin-top: 4px;
     border: none;
     padding: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: content-box;
     cursor: pointer;
+    display: block;
     transition: opacity 0.15s;
 }
 .amdt-party:hover { opacity: 0.65; }
 .amdt-party.rep { background: var(--accent-red); }
 .amdt-party.dem { background: var(--accent-blue); }
 .amdt-party.ind { background: #a371f7; }
-.amdt-party.bipartisan { background: conic-gradient(var(--accent-red) 180deg, var(--accent-blue) 180deg); }
+.amdt-party.bipartisan {
+    /* Half red / half blue — slightly wider to make the split legible */
+    width: 12px;
+    height: 12px;
+    margin-top: 2px;
+    background: linear-gradient(90deg, var(--accent-red) 50%, var(--accent-blue) 50%);
+}
 
 .amdt-sponsor-link {
     color: var(--text-secondary);
