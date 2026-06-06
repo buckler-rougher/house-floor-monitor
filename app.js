@@ -264,282 +264,102 @@ function renderVotingDaysCalendar() {
     const prevEl = document.getElementById('voting-calendar-prev');
     const currentEl = document.getElementById('voting-calendar-current');
     const nextEl = document.getElementById('voting-calendar-next');
-    const timeEl = document.getElementById('voting-calendar-time');
 
-    if (!prevEl || !currentEl || !nextEl || !window.FullCalendar || !window.FullCalendar.Calendar) return;
+    if (!prevEl || !currentEl || !nextEl) return;
 
 
 
     const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
     const baseMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthDates = [
         new Date(baseMonth.getFullYear(), baseMonth.getMonth() - 1, 1),
         new Date(baseMonth.getFullYear(), baseMonth.getMonth(), 1),
-        new Date(baseMonth.getFullYear(), baseMonth.getMonth() + 1, 1)
+        new Date(baseMonth.getFullYear(), baseMonth.getMonth() + 1, 1),
     ];
 
-    const events = votingCalendarData.map((item, index) => {
-        const type = item.type || 'vote-day';
-        const indicatorRank = { 'fly-in': 0, 'fly-out': 1, 'added': 2, 'vote-day': 3, 'cancelled': 4 }[type] ?? 5;
-        return {
-            start: item.date,
-            title: '',
-            id: `${item.date}-${index}-${type}`,
-            extendedProps: {
-                type,
-                label: item.summary || 'Voting Day',
-                indicatorRank
-            }
-        };
-    });
+    // Build date → events map
     const eventMap = new Map();
-    events.forEach((event) => {
-        const list = eventMap.get(event.start) || [];
-        list.push(event.extendedProps);
-        eventMap.set(event.start, list);
+    votingCalendarData.forEach(item => {
+        const list = eventMap.get(item.date) || [];
+        list.push(item);
+        eventMap.set(item.date, list);
     });
-    const indicatorTypes = new Set(['vote-day', 'fly-in', 'fly-out', 'added', 'cancelled']);
 
-    const applyHarnessCorners = () => {
-        [prevEl, currentEl, nextEl].forEach(calEl => {
-            if (!calEl) return;
-            calEl.querySelectorAll('.fc-view-harness').forEach(h => {
-                h.style.setProperty('border', '1px solid #30363d', 'important');
-                h.style.setProperty('border-radius', '8px', 'important');
-                h.style.setProperty('clip-path', 'inset(0 round 8px)', 'important');
-            });
-        });
-    };
-
-    const syncCalendarSizes = () => {
-        const monthEls = [prevEl, currentEl, nextEl];
-        monthEls.forEach((monthEl) => {
-            if (!monthEl) return;
-            if (monthEl._calendar) {
-                monthEl.style.height = 'auto';
-                monthEl._calendar.setOption('height', 'auto');
-            }
-        });
-        // setOption triggers an internal re-render; apply corner fix after it settles
-        setTimeout(applyHarnessCorners, 50);
-    };
-
-    const renderCalendar = (el, monthDate) => {
-        if (el._calendar) {
-            el._calendar.destroy();
-        }
-
-        const calendar = new FullCalendar.Calendar(el, {
-            initialView: 'dayGridMonth',
-            initialDate: monthDate,
-            headerToolbar: { left: '', center: 'title', right: '' },
-            fixedWeekCount: false,
-            showNonCurrentDates: false,
-            height: 'auto',
-            selectable: false,
-            editable: false,
-            navLinks: false,
-            datesSet: applyHarnessCorners,
-            dayMaxEvents: false,
-            dayMaxEventRows: false,
-            moreLinkClick: false,
-            events,
-            eventDidMount: (arg) => {
-                const type = arg.event.extendedProps.type || 'vote-day';
-                const label = arg.event.extendedProps.label || 'Voting Day';
-                arg.el.setAttribute('title', label);
-                arg.el.classList.add(`calendar-event-${type}`);
-                arg.el.style.background = 'transparent';
-                arg.el.style.border = 'none';
-                arg.el.style.padding = '0';
-                arg.el.style.margin = '0';
-            },
-            dayCellDidMount: (arg) => {
-                const dateStr = arg.dateStr || arg.date.toISOString().slice(0, 10);
-                const frame = arg.el.querySelector('.fc-daygrid-day-frame');
-                const header = arg.el.querySelector('.fc-daygrid-day-top');
-                const number = arg.el.querySelector('.fc-daygrid-day-number');
-
-                // Override FullCalendar's white cell background
-                arg.el.style.setProperty('background', 'transparent', 'important');
-
-                if (frame) {
-                    frame.style.aspectRatio = '1 / 1';
-                    frame.style.position = 'relative';
-                }
-                if (header) {
-                    header.style.position = 'relative';
-                    header.style.zIndex = '1';
-                }
-                const isToday = arg.el.classList.contains('fc-day-today');
-                if (number) {
-                    number.style.setProperty('color', '#8b949e', 'important');
-                    number.style.fontSize = '7px';
-                    number.style.fontWeight = '600';
-                    number.style.opacity = '1';
-                    number.style.position = 'absolute';
-                    number.style.top = '1px';
-                    number.style.right = '2px';
-                    number.style.zIndex = '2';
-                    number.style.textShadow = 'none';
-                    number.style.lineHeight = '1';
-                    // padding so text never touches the circle edge
-                    number.style.padding = '2px 2px';
-
-                    // Today: circle grows around the padded number, not the other way around
-                    if (isToday) {
-                        number.style.setProperty('color', '#ffffff', 'important');
-                        number.style.fontWeight = '800';
-                        number.style.display = 'inline-flex';
-                        number.style.alignItems = 'center';
-                        number.style.justifyContent = 'center';
-                        number.style.borderRadius = '50%';
-                        number.style.background = 'rgba(255,255,255,0.15)';
-                        number.style.border = '1px solid rgba(255,255,255,0.35)';
-                        number.style.boxSizing = 'border-box';
-                        number.style.minWidth = '14px';
-                        number.style.minHeight = '14px';
-                    }
-                }
-
-                if (arg.isOther) return;
-
-                const matches = eventMap.get(dateStr) || [];
-                const filtered = matches
-                    .filter(m => indicatorTypes.has(m.type))
-                    .sort((a, b) => (a.indicatorRank ?? 9) - (b.indicatorRank ?? 9));
-
-                if (!filtered.length) {
-                    arg.el.addEventListener('mouseenter', () =>
-                        arg.el.style.setProperty('background', 'rgba(255,255,255,0.05)', 'important'));
-                    arg.el.addEventListener('mouseleave', () =>
-                        arg.el.style.setProperty('background', 'transparent', 'important'));
-                    return;
-                }
-
-                const VOTE_COLORS = {
-                    'fly-in':    { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
-                    'fly-out':   { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
-                    'vote-day':  { base: 'rgba(63,185,80,0.16)',   hover: 'rgba(63,185,80,0.28)',   label: '#86efac', num: '#4ade80' },
-                    'added':     { base: 'rgba(210,153,34,0.16)',  hover: 'rgba(210,153,34,0.28)',  label: '#fcd34d', num: '#fbbf24' },
-                    'cancelled': { base: 'rgba(139,148,158,0.10)', hover: 'rgba(139,148,158,0.20)', label: '#6e7681', num: '#6e7681' },
-                };
-
-                const typesPresent = new Set(filtered.map(m => m.type));
-                const tipText  = filtered.map(m => m.label).join(' · ') || 'Voting Day';
-                // Color priority: added (amber) > fly-in/fly-out/vote-day (green) > cancelled (grey)
-                const colorType = typesPresent.has('added') ? 'added'
-                                : typesPresent.has('cancelled') && typesPresent.size === 1 ? 'cancelled'
-                                : filtered[0]?.type || 'vote-day';
-                const voteType = filtered[0]?.type || 'vote-day';
-                const c = VOTE_COLORS[colorType] || VOTE_COLORS['vote-day'];
-
-                arg.el.dataset.voteType = voteType;
-                arg.el.style.setProperty('background', c.base, 'important');
-                if (number) number.style.setProperty('color', c.num, 'important');
-
-                arg.el.addEventListener('mouseenter', () =>
-                    arg.el.style.setProperty('background', c.hover, 'important'));
-                arg.el.addEventListener('mouseleave', () =>
-                    arg.el.style.setProperty('background', c.base, 'important'));
-
-                // Build stacked label lines
-                const AMBER = '#fcd34d';
-                const GREEN = '#86efac';
-                const GREY  = '#6e7681';
-                const labelLines = [];
-                if (typesPresent.has('fly-in'))  labelLines.push({ text: 'FLY IN',  color: c.label, strike: false });
-                if (typesPresent.has('fly-out')) labelLines.push({ text: 'FLY OUT', color: c.label, strike: false });
-                const hasVote       = typesPresent.has('vote-day') || typesPresent.has('added');
-                const onlyCancelled = typesPresent.has('cancelled') && !hasVote && !typesPresent.has('fly-in') && !typesPresent.has('fly-out');
-                if (hasVote)        labelLines.push({ text: typesPresent.has('added') ? 'VOTES+' : 'VOTES', color: c.label, strike: false });
-                if (onlyCancelled)  labelLines.push({ text: 'VOTES', color: GREY, strike: true });
-
-                if (!frame || !labelLines.length) return;
-
-                let container = frame.querySelector('.calendar-event-label');
-                if (!container) {
-                    container = document.createElement('div');
-                    container.className = 'calendar-event-label';
-                    frame.appendChild(container);
-                }
-                container.innerHTML = '';
-                container.title = tipText;
-                container.dataset.type = voteType;
-                container.style.display = 'flex';
-                container.style.flexDirection = 'column';
-                container.style.alignItems = 'center';
-                container.style.gap = '1px';
-
-                for (const line of labelLines) {
-                    const span = document.createElement('span');
-                    span.textContent = line.text;
-                    span.style.color = line.color;
-                    span.style.fontSize = '5.5px';
-                    span.style.fontWeight = '800';
-                    span.style.lineHeight = '1';
-                    span.style.letterSpacing = '0.5px';
-                    span.style.fontFamily = 'var(--font-mono)';
-                    if (line.strike) span.style.textDecoration = 'line-through';
-                    container.appendChild(span);
-                }
-            },
-            dayHeaderDidMount: (arg) => {
-                arg.el.style.background = '#1f2937';
-                arg.el.style.color = '#ffffff';
-                arg.el.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                arg.el.style.padding = '0';
-                const label = arg.el.querySelector('.fc-col-header-cell-cushion');
-                if (label) {
-                    label.style.color = '#ffffff';
-                    label.style.fontSize = '7px';
-                    label.style.fontWeight = '700';
-                    label.style.opacity = '1';
-                }
-            }
-        });
-
-        calendar.render();
-        el._calendar = calendar;
-
-        requestAnimationFrame(syncCalendarSizes);
-    };
-
-    renderCalendar(prevEl, monthDates[0]);
-    renderCalendar(currentEl, monthDates[1]);
-    renderCalendar(nextEl, monthDates[2]);
-
-    // Mobile nav: show one month at a time with ‹ › buttons
-    const mobileEls = [prevEl, currentEl, nextEl];
     const MONTH_NAMES_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    let mobileIdx = 1; // start on current month
+    const DOW = ['S','M','T','W','T','F','S'];
 
+    const COLORS = {
+        'fly-in':    { cell: 'cal-day-vote', num: '#4ade80', lbl: '#86efac' },
+        'fly-out':   { cell: 'cal-day-vote', num: '#4ade80', lbl: '#86efac' },
+        'vote-day':  { cell: 'cal-day-vote', num: '#4ade80', lbl: '#86efac' },
+        'added':     { cell: 'cal-day-added', num: '#fbbf24', lbl: '#fcd34d' },
+        'cancelled': { cell: 'cal-day-cancelled', num: '#6e7681', lbl: '#6e7681' },
+    };
+
+    const buildMonth = (el, monthStart) => {
+        const year = monthStart.getFullYear();
+        const month = monthStart.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDow = monthStart.getDay();
+
+        let html = `<div class="cal-title">${MONTH_NAMES_LONG[month]} ${year}</div>`;
+        html += `<div class="cal-grid">`;
+        DOW.forEach(d => { html += `<div class="cal-dow">${d}</div>`; });
+        for (let i = 0; i < firstDow; i++) html += `<div class="cal-day cal-day-empty"></div>`;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const evts = eventMap.get(ds) || [];
+            const types = new Set(evts.map(e => e.type));
+            const isToday = ds === todayStr;
+
+            // Determine color priority: added > vote/fly > cancelled
+            const colorType = types.has('added') ? 'added'
+                : (types.has('vote-day') || types.has('fly-in') || types.has('fly-out')) ? 'vote-day'
+                : types.has('cancelled') ? 'cancelled'
+                : null;
+            const c = colorType ? COLORS[colorType] : null;
+            const cellClass = ['cal-day', c?.cell, isToday ? 'cal-day-today' : ''].filter(Boolean).join(' ');
+
+            // Labels in priority order
+            const lbls = [];
+            if (types.has('fly-in'))    lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">FLY IN</span>`);
+            if (types.has('fly-out'))   lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">FLY OUT</span>`);
+            if (types.has('vote-day'))  lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">VOTES</span>`);
+            if (types.has('added'))     lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">VOTES+</span>`);
+            if (types.has('cancelled') && !types.has('vote-day') && !types.has('added'))
+                                        lbls.push(`<span class="cal-lbl cal-lbl-strike" style="color:${c.lbl}">VOTES</span>`);
+
+            const numStyle = c ? `style="color:${c.num}"` : '';
+            html += `<div class="${cellClass}">
+                <span class="cal-num" ${numStyle}>${d}</span>
+                ${lbls.join('')}
+            </div>`;
+        }
+        html += `</div>`;
+        el.innerHTML = html;
+    };
+
+    buildMonth(prevEl, monthDates[0]);
+    buildMonth(currentEl, monthDates[1]);
+    buildMonth(nextEl, monthDates[2]);
+
+    // Mobile nav
+    const mobileEls = [prevEl, currentEl, nextEl];
+    let mobileIdx = 1;
     const updateMobileView = () => {
-        mobileEls.forEach((el, i) => {
-            el.classList.toggle('cal-mobile-visible', i === mobileIdx);
-        });
+        mobileEls.forEach((el, i) => el.classList.toggle('cal-mobile-visible', i === mobileIdx));
         const d = monthDates[mobileIdx];
         const titleEl = document.getElementById('calendar-mobile-title');
         if (titleEl) titleEl.textContent = `${MONTH_NAMES_LONG[d.getMonth()]} ${d.getFullYear()}`;
-        // FullCalendar sizes itself at render time; if the cell was hidden it gets
-        // zero dimensions. Force a recalculate now that it's visible.
-        const visibleCal = mobileEls[mobileIdx]?._calendar;
-        if (visibleCal) requestAnimationFrame(() => { visibleCal.updateSize(); applyHarnessCorners(); });
     };
-
     updateMobileView();
 
     const prevBtn = document.getElementById('calendar-mobile-prev');
     const nextBtn = document.getElementById('calendar-mobile-next');
     if (prevBtn) prevBtn.onclick = () => { if (mobileIdx > 0) { mobileIdx--; updateMobileView(); } };
     if (nextBtn) nextBtn.onclick = () => { if (mobileIdx < 2) { mobileIdx++; updateMobileView(); } };
-
-    if (!window.__votingCalendarResizeBound) {
-        window.__votingCalendarResizeBound = true;
-        window.addEventListener('resize', () => requestAnimationFrame(syncCalendarSizes));
-    }
-
-    requestAnimationFrame(syncCalendarSizes);
 }
 
 // Parse ICS content

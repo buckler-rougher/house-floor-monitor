@@ -3446,209 +3446,77 @@ body {
     box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.08) inset;
 }
 
-.voting-calendar-month .fc-view-harness {
-    border-radius: var(--radius-8);
-    overflow: hidden !important;
-    border: 1px solid var(--border-color);
-}
-
-/* fc-scroller-harness already has overflow:hidden (FullCalendar's own CSS).
-   Adding border-radius makes that clip rounded at the grid corners. */
-.voting-calendar-month .fc-scrollgrid-section-header .fc-scroller-harness {
-    border-radius: var(--radius-7) var(--radius-7) 0 0 !important;
-}
-.voting-calendar-month .fc-scroller-harness-liquid {
-    border-radius: 0 0 var(--radius-7) var(--radius-7) !important;
-    overflow: hidden !important;
-}
-/* The .fc-scroller div (non-table) wraps the grid table — border-radius +
-   overflow:hidden on a div reliably clips border-collapse table borders */
-.voting-calendar-month .fc-scroller-harness-liquid .fc-scroller {
-    border-radius: 0 0 var(--radius-7) var(--radius-7) !important;
-    overflow: hidden !important;
-}
-
-.voting-calendar-month .fc {
-    flex: 1;
-    min-height: 0;
-    height: auto;
-    --fc-page-bg-color: transparent;
-    --fc-border-color: var(--border-color);
-    --fc-neutral-bg-color: transparent;
-    --fc-today-bg-color: rgba(88, 166, 255, 0.08);
-    --fc-event-bg-color: transparent;
-    --fc-event-border-color: transparent;
-    --fc-event-text-color: var(--text-primary);
-    --fc-button-bg-color: var(--bg-elevated);
-    --fc-button-border-color: var(--border-color);
-    --fc-button-hover-bg-color: var(--bg-card);
-    --fc-button-hover-border-color: var(--accent-blue);
-    --fc-button-active-bg-color: var(--accent-blue);
-    --fc-button-active-border-color: var(--accent-blue);
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-}
-
-.voting-calendar-month .fc .fc-toolbar {
-    margin: 0 0 -34px 0 !important;
-    padding: 0 var(--sp-2) !important;
-    min-height: 0;
-}
-
-.voting-calendar-month .fc .fc-toolbar-title {
-    font-size: var(--fs-2xs) !important;
+/* ── Custom calendar grid (FullCalendar removed) ─────────────────────────── */
+.cal-title {
+    text-align: center;
+    font-size: var(--fs-xs);
     font-weight: 700;
     color: var(--text-primary);
-    line-height: 1.15;
-    margin: 0 !important;
-    padding: 0 !important;
+    letter-spacing: 0.5px;
+    padding: var(--sp-6) 0 var(--sp-4);
 }
-
-.voting-calendar-month .fc .fc-col-header-cell-cushion,
-.voting-calendar-month .fc .fc-col-header-cell-cushion {
-    color: #ffffff !important;
-    text-decoration: none;
-    font-size: var(--fs-2xs) !important;
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 0 2px 2px;
+}
+.cal-dow {
+    text-align: center;
+    font-size: 7px;
     font-weight: 700;
-    opacity: 1 !important;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    padding: 2px 0;
+    background: rgba(255,255,255,0.03);
 }
-
-.voting-calendar-month .fc .fc-daygrid-day-number {
-    color: #d7dde5 !important;
-    text-decoration: none;
-    font-size: var(--fs-2xs) !important;
-    font-weight: 700;
-    z-index: 2;
-    position: relative;
-    opacity: 1 !important;
-    text-shadow: none !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-number a,
-.voting-calendar-month .fc .fc-daygrid-day-top a {
-    color: #d7dde5 !important;
-    opacity: 1 !important;
-    text-decoration: none !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-number,
-.voting-calendar-month .fc .fc-daygrid-day-number a {
-    display: inline-block;
-    min-width: 12px;
-    min-height: 12px;
-}
-
-.voting-calendar-month .fc .fc-col-header-cell {
-    background: #1f2937 !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.voting-calendar-month .fc .fc-scrollgrid,
-.voting-calendar-month .fc .fc-scrollgrid-section,
-.voting-calendar-month .fc table,
-.voting-calendar-month .fc .fc-scrollgrid-sync-table {
-    background: transparent !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-top {
-    justify-content: flex-end;
-    padding-top: 0 !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-body,
-.voting-calendar-month .fc .fc-scrollgrid {
-    min-height: 0;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day {
-    min-height: 0;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-frame {
-    padding: 0 1px 1px 1px;
-    min-height: 0;
-    width: 100%;
-    box-sizing: border-box;
-    overflow: hidden;
+.cal-day {
     aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
     position: relative;
+    cursor: default;
+    transition: background 0.1s;
 }
-
-.voting-calendar-month .fc .fc-daygrid-day-top,
-.voting-calendar-month .fc .fc-daygrid-day-number {
-    color: #d7dde5 !important;
+.cal-day:not(.cal-day-empty):hover { background: rgba(255,255,255,0.06); }
+.cal-day-vote    { background: rgba(63,185,80,0.16); }
+.cal-day-vote:hover { background: rgba(63,185,80,0.26); }
+.cal-day-added   { background: rgba(210,153,34,0.16); }
+.cal-day-added:hover { background: rgba(210,153,34,0.26); }
+.cal-day-cancelled { background: rgba(139,148,158,0.10); }
+.cal-day-cancelled:hover { background: rgba(139,148,158,0.18); }
+.cal-num {
+    font-size: 7px;
+    font-weight: 600;
+    color: var(--text-muted);
+    line-height: 1;
+    font-family: var(--font-mono);
 }
-
-.voting-calendar-month .fc .fc-theme-standard td,
-.voting-calendar-month .fc .fc-theme-standard th {
-    border-color: rgba(255, 255, 255, 0.05) !important;
+.cal-day-today .cal-num {
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
 }
-
-.calendar-event-label {
-    position: absolute;
-    left: 50%;
-    bottom: 2px;
-    transform: translateX(-50%);
+.cal-lbl {
+    font-size: 5.5px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    letter-spacing: 0.4px;
     line-height: 1;
     text-transform: uppercase;
-    font-family: var(--font-mono);
-    white-space: nowrap;
-    z-index: 3;
-    pointer-events: none;
+    display: block;
 }
-
-.voting-calendar-month .fc .fc-daygrid-event {
-    width: 100% !important;
-    position: static !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-event-dot {
-    display: none !important;
-}
-
-.voting-calendar-month .fc .fc-event-main {
-    padding: 0 !important;
-}
-
-.voting-calendar-month .fc .fc-event-title,
-.voting-calendar-month .fc .fc-event-time {
-    display: none !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-event-harness {
-    position: static !important;
-    margin-top: 0 !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-events {
-    position: static !important;
-    min-height: 0;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-bottom {
-    display: none !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-body table {
-    table-layout: fixed !important;
-}
-
-/* Kill the bottom border on the scrollgrid so it doesn't poke out below the clip */
-.voting-calendar-month .fc .fc-scrollgrid {
-    border-bottom: none !important;
-}
-.voting-calendar-month .fc .fc-daygrid-body table tbody tr:last-child td {
-    border-bottom: none !important;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day-frame,
-.voting-calendar-month .fc .fc-scrollgrid-sync-table td {
-    aspect-ratio: 1 / 1;
-}
-
-.voting-calendar-month .fc .fc-daygrid-day {
-    aspect-ratio: 1 / 1;
-}
+.cal-lbl-strike { text-decoration: line-through; }
 
 
 .bills-label {
