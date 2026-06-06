@@ -2878,7 +2878,9 @@ function openBillModal(billId) {
                 <div class="bill-amendments-empty">Loading…</div>
             </div>
             <div class="bill-modal-foot">
-                <a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-modal-link rule" target="_blank" rel="noopener">View on rules.house.gov →</a>
+                <div class="bill-doc-links">
+                    <a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-modal-link rule" target="_blank" rel="noopener">View on rules.house.gov →</a>
+                </div>
             </div>
         </div>` : ''}
     `;
