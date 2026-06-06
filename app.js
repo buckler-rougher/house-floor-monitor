@@ -5397,7 +5397,7 @@ function updatePartyBreakdownDisplay() {
 
 }
 
-// Floor Reporters (X list via nitter proxy)
+// Floor Reporters (via nitter proxy)
 async function fetchTweets() {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
@@ -5405,26 +5405,48 @@ async function fetchTweets() {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/tweets');
         const data = await resp.json();
         if (!data.tweets || !data.tweets.length) {
-            feed.innerHTML = '<div class="tweets-loading">No tweets available.</div>';
+            feed.innerHTML = '<div class="tweets-empty">No posts available.</div>';
             return;
         }
         feed.innerHTML = data.tweets.map(t => {
-            const handle = t.handle || '';
-            const author = handle ? `@${handle}` : (t.source || '');
-            const text = escapeHtml(t.title || '');
-            const time = t.relativeTime || '';
-            const url = (t.link || '').replace(/^https?:\/\/[^/]+/, 'https://x.com');
+            const rtBar = t.isRT
+                ? `<div class="tweet-rt-bar">↩ ${escapeHtml(t.rtBy || '')} retweeted</div>`
+                : '';
+
+            const imagesHtml = t.images && t.images.length
+                ? `<div class="tweet-images tweet-images-${Math.min(t.images.length, 4)}">${
+                    t.images.slice(0, 4).map(src =>
+                        `<img class="tweet-img" src="${src}" loading="lazy" alt="">`
+                    ).join('')
+                  }</div>`
+                : '';
+
+            const cardHtml = t.cardImage && !t.images.length
+                ? `<div class="tweet-card"><img class="tweet-card-img" src="${t.cardImage}" loading="lazy" alt=""></div>`
+                : '';
+
+            const quoteHtml = t.quoteAuthor
+                ? `<div class="tweet-quote">
+                    <span class="tweet-quote-author">${escapeHtml(t.quoteAuthor)}</span>
+                    <div class="tweet-quote-text">${t.quoteHtml || ''}</div>
+                  </div>`
+                : '';
+
+            const bodyHtml = t.html || escapeHtml(t.title || '');
+
             return `<div class="tweet-item">
-                <div class="tweet-meta">
-                    <span class="tweet-author">${escapeHtml(author)}</span>
-                    <span class="tweet-time">${escapeHtml(time)}</span>
+                ${rtBar}
+                <div class="tweet-header">
+                    <span class="tweet-author">${escapeHtml(t.handle || '')}</span>
+                    <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
+                    ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
                 </div>
-                <div class="tweet-text">${text}</div>
-                ${url ? `<a class="tweet-link" href="${url}" target="_blank" rel="noopener">View on X →</a>` : ''}
+                <div class="tweet-body">${bodyHtml}</div>
+                ${imagesHtml}${cardHtml}${quoteHtml}
             </div>`;
         }).join('');
     } catch (e) {
-        feed.innerHTML = '<div class="tweets-loading">Failed to load tweets.</div>';
+        feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
 }
 
