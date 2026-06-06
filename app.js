@@ -347,6 +347,9 @@ function renderVotingDaysCalendar() {
     buildMonth(currentEl, monthDates[1]);
     buildMonth(nextEl, monthDates[2]);
 
+    // Only highlight the center month if it's actually the current real month
+    currentEl.classList.toggle('voting-calendar-month-center', calendarMonthOffset === 0);
+
     // Mobile nav: mobileIdx 0/1/2 picks which rendered month is shown.
     // Pressing past the edge shifts the 3-month window and wraps around.
     const mobileEls = [prevEl, currentEl, nextEl];
