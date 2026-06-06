@@ -2222,10 +2222,12 @@ let billsSortMode = 'status';
 
 const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, postponed: 2 };
 
-// Amendment sort mode: 'status' | 'party' | 'listed'
+// Amendment sort mode: 'status' | 'listed'
 let amendmentsSortMode = 'status';
-const AMENDMENT_STATUS_SORT_ORDER = { submitted: 0, adopted: 1, failed: 2 };
-const AMENDMENT_PARTY_SORT_ORDER = { rep: 0, dem: 1, ind: 2 };
+// Made-in-order/adopted first (most actionable), pending middle, withdrawn/failed last
+const AMENDMENT_STATUS_SORT_ORDER = { adopted: 0, submitted: 1, failed: 2 };
+// Amendment party filter: 'all' | 'rep' | 'dem' | 'ind'
+let amendmentsPartyFilter = 'all';
 
 function sortBillsForDisplay(bills) {
     const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
@@ -2890,10 +2892,16 @@ function openBillModal(billId) {
                     <span class="bill-amendments-panel-title">Amendments</span>
                     <span class="bill-amendments-count" id="amendments-count"></span>
                 </div>
-                <div class="bills-sort-switcher amdt-sort-switcher">
-                    <button class="bills-sort-btn amdt-sort-btn" data-sort="status">Status</button>
-                    <button class="bills-sort-btn amdt-sort-btn" data-sort="party">Party</button>
-                    <button class="bills-sort-btn amdt-sort-btn" data-sort="listed">Listed</button>
+                <div class="amdt-controls">
+                    <div class="bills-sort-switcher amdt-filter-switcher">
+                        <button class="bills-sort-btn amdt-filter-btn" data-filter="all">All</button>
+                        <button class="bills-sort-btn amdt-filter-btn" data-filter="rep">R</button>
+                        <button class="bills-sort-btn amdt-filter-btn" data-filter="dem">D</button>
+                    </div>
+                    <div class="bills-sort-switcher amdt-sort-switcher">
+                        <button class="bills-sort-btn amdt-sort-btn" data-sort="status">Status</button>
+                        <button class="bills-sort-btn amdt-sort-btn" data-sort="listed">Listed</button>
+                    </div>
                 </div>
             </div>
             <div class="bill-amendments-panel-body" id="amendments-body">
@@ -2936,9 +2944,11 @@ function openBillModal(billId) {
         btn.addEventListener('click', () => openBillModal(btn.dataset.billId));
     });
 
-    // Sync amendment sort buttons to current mode (buttons are freshly rendered each open)
+    // Sync amendment sort + filter buttons to current mode (freshly rendered each open)
     overlay.querySelectorAll('.amdt-sort-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
+    overlay.querySelectorAll('.amdt-filter-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.filter === amendmentsPartyFilter));
 
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');
@@ -2996,17 +3006,9 @@ function sortAmendmentsForDisplay(amendments) {
     const indexed = amendments.map((a, i) => ({ ...a, _origIdx: i }));
     if (amendmentsSortMode === 'status') {
         return indexed.sort((a, b) => {
-            const sa = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(a.status)] ?? 0;
-            const sb = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(b.status)] ?? 0;
+            const sa = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(a.status)] ?? 1;
+            const sb = AMENDMENT_STATUS_SORT_ORDER[amendmentStatusClass(b.status)] ?? 1;
             if (sa !== sb) return sa - sb;
-            return a._origIdx - b._origIdx;
-        });
-    }
-    if (amendmentsSortMode === 'party') {
-        return indexed.sort((a, b) => {
-            const pa = AMENDMENT_PARTY_SORT_ORDER[_amdtPartyClass(a.party)] ?? 2;
-            const pb = AMENDMENT_PARTY_SORT_ORDER[_amdtPartyClass(b.party)] ?? 2;
-            if (pa !== pb) return pa - pb;
             return a._origIdx - b._origIdx;
         });
     }
@@ -3015,6 +3017,8 @@ function sortAmendmentsForDisplay(amendments) {
 
 function renderAmendmentsTable({ amendments, xmlDoc }, body) {
     const sorted = sortAmendmentsForDisplay(amendments);
+    const display = amendmentsPartyFilter === 'all' ? sorted
+        : sorted.filter(a => _amdtPartyClass(a.party) === amendmentsPartyFilter);
 
     const renderSponsors = (a) => {
         const tokens = _amdtParseSponsorTokens(a.sponsors);
@@ -3046,10 +3050,10 @@ function renderAmendmentsTable({ amendments, xmlDoc }, body) {
         return `<span class="amdt-party ${amendmentDot}"></span><div class="amdt-sponsor-list">${chips.join('')}</div>`;
     };
 
-    body.innerHTML = `
+    body.innerHTML = display.length ? `
         <table class="amendments-table">
             <thead><tr><th>#</th><th>Sponsor(s)</th><th>Summary</th><th>Status</th></tr></thead>
-            <tbody>${sorted.map(a => `
+            <tbody>${display.map(a => `
                 <tr>
                     <td class="amdt-num">${a.num}</td>
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
@@ -3057,7 +3061,7 @@ function renderAmendmentsTable({ amendments, xmlDoc }, body) {
                     <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${a.status}</span></td>
                 </tr>`).join('')}
             </tbody>
-        </table>`;
+        </table>` : '<div class="bill-amendments-empty">No amendments match this filter.</div>';
 }
 
 async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amendments-count') {
@@ -3084,9 +3088,11 @@ async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amend
         if (countEl) countEl.textContent = `${cached.amendments.length} submitted`;
         body.dataset.amendmentsSlug = slug;
         renderAmendmentsTable(cached, body);
-        // Sync sort buttons to current mode
+        // Sync sort + filter buttons to current mode
         document.querySelectorAll('.amdt-sort-btn').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
+        document.querySelectorAll('.amdt-filter-btn').forEach(btn =>
+            btn.classList.toggle('active', btn.dataset.filter === amendmentsPartyFilter));
     } catch (e) {
         body.innerHTML = '<div class="bill-amendments-empty">Failed to load amendments.</div>';
     }
@@ -5650,17 +5656,29 @@ function init() {
         if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
     });
 
-    // Amendment sort button — global delegation (spans modal + debate panels)
+    // Amendment sort + filter buttons — global delegation (spans modal + debate panels)
     document.addEventListener('click', e => {
         const amdtSortBtn = e.target.closest('.amdt-sort-btn');
-        if (!amdtSortBtn) return;
-        amendmentsSortMode = amdtSortBtn.dataset.sort;
-        document.querySelectorAll('.amdt-sort-btn').forEach(b =>
-            b.classList.toggle('active', b.dataset.sort === amendmentsSortMode));
-        document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
-            const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
-            if (cached) renderAmendmentsTable(cached, bodyEl);
-        });
+        if (amdtSortBtn) {
+            amendmentsSortMode = amdtSortBtn.dataset.sort;
+            document.querySelectorAll('.amdt-sort-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.sort === amendmentsSortMode));
+            document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
+                const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
+                if (cached) renderAmendmentsTable(cached, bodyEl);
+            });
+            return;
+        }
+        const amdtFilterBtn = e.target.closest('.amdt-filter-btn');
+        if (amdtFilterBtn) {
+            amendmentsPartyFilter = amdtFilterBtn.dataset.filter;
+            document.querySelectorAll('.amdt-filter-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.filter === amendmentsPartyFilter));
+            document.querySelectorAll('[data-amendments-slug]').forEach(bodyEl => {
+                const cached = _amendmentsDataCache.get(bodyEl.dataset.amendmentsSlug);
+                if (cached) renderAmendmentsTable(cached, bodyEl);
+            });
+        }
     });
 
     // Bill card click → modal; sort button click → re-sort
