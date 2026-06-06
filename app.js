@@ -2809,6 +2809,9 @@ function openBillModal(billId) {
     })() : '';
 
     const rulesSlug = (bill.procedure === 'rule') ? billIdToRulesSlug(bill.id) : null;
+    // Bill-text PDF — provided by the worker (the exact floor doc, GovInfo fallback).
+    // Last resort if missing: the Congress.gov text page (has a PDF download button).
+    const textUrl = bill.textUrl || (congressUrl ? `${congressUrl}/text` : null);
 
     if (rulesSlug) overlay.classList.add('has-amendments');
     else overlay.classList.remove('has-amendments');
@@ -2821,6 +2824,7 @@ function openBillModal(billId) {
         </div>` : ''}
         <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true">
             <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
+            <div class="bill-modal-scroll">
             <div class="bill-modal-top">
                 <div class="bill-modal-header">
                     <span class="bill-modal-id">${bill.id}</span>
@@ -2852,15 +2856,14 @@ function openBillModal(billId) {
                     </div>
                 </div>` : ''}
                 <div class="bill-modal-section">
-                    <div class="bill-modal-section-label">DOCUMENTS</div>
+                    <div class="bill-modal-section-label">LINKS</div>
                     <div class="bill-doc-links">
-                        ${congressUrl ? `<a href="${congressUrl}/text" class="bill-doc-link" target="_blank" rel="noopener">Bill text</a>` : ''}
-                        ${congressUrl ? `<a href="${congressUrl}/all-actions" class="bill-doc-link" target="_blank" rel="noopener">All actions</a>` : ''}
-                        ${congressUrl ? `<a href="${congressUrl}" class="bill-doc-link" target="_blank" rel="noopener">Congress.gov</a>` : ''}
-                        ${rulesSlug ? `<a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-doc-link" target="_blank" rel="noopener">Rule (Rules Cmte)</a>` : ''}
-                        <button class="bill-doc-link bill-copy-link" id="bill-copy-link" type="button">Copy link</button>
+                        ${textUrl ? `<a href="${textUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View Bill Text →</a>` : ''}
+                        ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
+                        <button class="bill-modal-link bill-copy-link" id="bill-copy-link" type="button" aria-label="Copy link to this bill"><svg class="bill-copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="bill-copy-text">Copy link</span></button>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
         ${rulesSlug ? `
@@ -2890,13 +2893,14 @@ function openBillModal(billId) {
     // Copy-link button — copies the current (deep-linked) URL.
     const copyBtn = document.getElementById('bill-copy-link');
     if (copyBtn) {
+        const copyLabel = copyBtn.querySelector('.bill-copy-text');
         copyBtn.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(location.href);
-                const prev = copyBtn.textContent;
-                copyBtn.textContent = 'Copied ✓';
+                const prev = copyLabel ? copyLabel.textContent : '';
+                if (copyLabel) copyLabel.textContent = 'Copied';
                 copyBtn.classList.add('copied');
-                setTimeout(() => { copyBtn.textContent = prev; copyBtn.classList.remove('copied'); }, 1500);
+                setTimeout(() => { if (copyLabel) copyLabel.textContent = prev; copyBtn.classList.remove('copied'); }, 1500);
             } catch {}
         });
     }

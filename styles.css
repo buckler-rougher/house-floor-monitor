@@ -4020,10 +4020,15 @@ a.bill-card-rule-link {
     padding: var(--sp-8) var(--sp-24) var(--sp-4);
 }
 
-.bill-modal-body {
+/* The whole modal interior scrolls as one block so nothing (e.g. the LINKS row)
+   gets clipped on tall bills like multi-bill special rules. The close button stays
+   pinned because it's absolutely positioned on .bill-modal, outside this wrapper. */
+.bill-modal-scroll {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+}
+.bill-modal-body {
     padding: 0 var(--sp-24) var(--sp-16);
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
@@ -4219,11 +4224,25 @@ a.bill-card-rule-link {
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .bill-doc-link:hover { background: rgba(88, 166, 255, 0.14); border-color: var(--accent-blue); }
+
+/* LINKS row: the two source links + copy button sit inline, consistent size.
+   The links are .bill-modal-link (colored by procedure); reset their stacked margin. */
+.bill-doc-links .bill-modal-link {
+    margin-top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-6);
+    font-size: var(--fs-md);
+}
+/* Copy button — neutral, outlined, matches the link pills but visually secondary. */
 .bill-copy-link {
     color: var(--text-secondary);
     background: var(--bg-elevated);
-    border-color: var(--border-color);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-family: inherit;
 }
+.bill-copy-icon { flex: none; opacity: 0.85; }
 .bill-copy-link:hover { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--text-muted); }
 .bill-copy-link.copied { color: var(--accent-green); border-color: rgba(63, 185, 80, 0.5); background: rgba(63, 185, 80, 0.1); }
 
