@@ -5398,6 +5398,48 @@ function updatePartyBreakdownDisplay() {
 }
 
 // Floor Reporters (via nitter proxy)
+const REPORTER_NAMES = {
+    '@AlecAHernandez':  'Alec Hernandez',
+    '@AndrewSolender':  'Andrew Solender',
+    '@BBCWorld':        'BBC World',
+    '@BarakRavid':      'Barak Ravid',
+    '@Cat_Zakrzewski':  'Cat Zakrzewski',
+    '@ChadPergram':     'Chad Pergram',
+    '@CraigCaplan':     'Craig Caplan',
+    '@DanielStrauss4':  'Daniel Strauss',
+    '@DefenseBaron':    'Jon Harper',
+    '@FarnoushAmiri':   'Farnoush Amiri',
+    '@InsidePolitics':  'Inside Politics',
+    '@John_Hudson':     'John Hudson',
+    '@JonathanTamari':  'Jonathan Tamari',
+    '@LisaMascaro':     'Lisa Mascaro',
+    '@MacFarlaneNews':  'Scott MacFarlane',
+    '@MattGlassman312': 'Matt Glassman',
+    '@NormOrnstein':    'Norm Ornstein',
+    '@ReutersZengerle': 'Patricia Zengerle',
+    '@UrsulaPerano':    'Ursula Perano',
+    '@bresreports':     'Jake Bres',
+    '@cami_mondeaux':   'Cami Mondeaux',
+    '@connorobrienNH':  'Connor O\'Brien',
+    '@emilybrooksnews': 'Emily Brooks',
+    '@grace_panetta':   'Grace Panetta',
+    '@greggiroux':      'Greg Giroux',
+    '@gtconway3d':      'George Conway',
+    '@jamiedupree':     'Jamie Dupree',
+    '@lisakashinsky':   'Lisa Kashinsky',
+    '@maxwelltani':     'Maxwell Tani',
+    '@mikedebonis':     'Mike DeBonis',
+    '@mychaelschnell':  'Mychael Schnell',
+    '@nancyayoussef':   'Nancy Youssef',
+    '@natalieandrews':  'Natalie Andrews',
+    '@pkcapitol':       'Paul Kane',
+    '@politico':        'Politico',
+    '@ryanjreilly':     'Ryan J. Reilly',
+    '@sahilkapur':      'Sahil Kapur',
+    '@scottwongDC':     'Scott Wong',
+    '@seungminkim':     'Seung Min Kim',
+};
+
 async function fetchTweets() {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
@@ -5444,13 +5486,21 @@ async function fetchTweets() {
                   + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${avatarLetter}</span>`
                 : avatarLetter;
             const profileUrl = t.handle ? `https://twitter.com/${t.handle.replace('@', '')}` : null;
+            const displayName = REPORTER_NAMES[t.handle] || null;
+            const authorHtml = profileUrl
+                ? `<a class="tweet-author-block" href="${profileUrl}" target="_blank" rel="noopener">
+                    ${displayName ? `<span class="tweet-display-name">${escapeHtml(displayName)}</span>` : ''}
+                    <span class="tweet-handle">${escapeHtml(t.handle || '')}</span>
+                  </a>`
+                : `<span class="tweet-author-block">
+                    ${displayName ? `<span class="tweet-display-name">${escapeHtml(displayName)}</span>` : ''}
+                    <span class="tweet-handle">${escapeHtml(t.handle || '')}</span>
+                  </span>`;
             return `<div class="tweet-item">
                 ${rtBar}
                 <div class="tweet-header">
                     <div class="tweet-avatar">${avatarInner}</div>
-                    ${profileUrl
-                        ? `<a class="tweet-author" href="${profileUrl}" target="_blank" rel="noopener">${escapeHtml(t.handle || '')}</a>`
-                        : `<span class="tweet-author">${escapeHtml(t.handle || '')}</span>`}
+                    ${authorHtml}
                     <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
                 </div>

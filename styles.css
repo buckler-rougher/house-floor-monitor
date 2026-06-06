@@ -2846,14 +2846,24 @@ body {
     object-fit: cover;
     border-radius: 50%;
 }
-.tweet-author {
-    font-size: var(--fs-md);
-    font-family: var(--font-mono);
-    font-weight: 700;
-    color: var(--accent-blue);
+.tweet-author-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
     text-decoration: none;
+    line-height: 1.2;
 }
-.tweet-author:hover { text-decoration: underline; }
+.tweet-display-name {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.tweet-handle {
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+}
+.tweet-author-block:hover .tweet-display-name { color: var(--accent-blue); }
 .tweet-time {
     font-size: var(--fs-xs);
     font-family: var(--font-mono);
