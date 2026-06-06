@@ -2499,8 +2499,6 @@ body {
   color: var(--accent-green);
   font-family: var(--font-mono);
   letter-spacing: 0.5px;
-  display: block;
-  margin-bottom: var(--sp-2);
 }
 
 .proceedings-loading {
