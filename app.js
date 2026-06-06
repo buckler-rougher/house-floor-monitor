@@ -2230,6 +2230,8 @@ const AMENDMENT_STATUS_SORT_ORDER = { adopted: 0, submitted: 1, failed: 2 };
 let amendmentsPartyFilter = 'all';
 // Amendment member filter: null = no filter, string = only amendments with this sponsor
 let amendmentsMemberFilter = null;
+// Amendment text search query
+let amendmentsSearchQuery = '';
 
 function sortBillsForDisplay(bills) {
     const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
@@ -2907,6 +2909,9 @@ function openBillModal(billId) {
                     </div>
                 </div>
             </div>
+            <div class="amdt-search-bar">
+                <input type="search" class="amdt-search-input" data-amdt-search placeholder="Search by #, sponsor, or summary…" autocomplete="off">
+            </div>
             <div class="bill-amendments-panel-body" id="amendments-body">
                 <div class="bill-amendments-empty">Loading…</div>
             </div>
@@ -2947,7 +2952,11 @@ function openBillModal(billId) {
         btn.addEventListener('click', () => openBillModal(btn.dataset.billId));
     });
 
-    // Sync amendment sort + filter buttons to current mode (freshly rendered each open)
+    // Reset amendment filters on every new modal open so All is always active initially
+    amendmentsPartyFilter = 'all';
+    amendmentsMemberFilter = null;
+    amendmentsSearchQuery = '';
+    // Sync sort + filter buttons to reset state
     overlay.querySelectorAll('.amdt-sort-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
     overlay.querySelectorAll('.amdt-filter-btn').forEach(btn =>
@@ -3064,6 +3073,15 @@ function renderAmendmentsTable({ amendments }, body) {
             a._enrichedSponsors?.some(s => s.name === amendmentsMemberFilter));
     }
 
+    // Text search — matches amendment #, sponsor names, summary
+    if (amendmentsSearchQuery) {
+        const q = amendmentsSearchQuery.toLowerCase();
+        display = display.filter(a =>
+            String(a.num).includes(q) ||
+            (a.summary || '').toLowerCase().includes(q) ||
+            (a._enrichedSponsors || []).some(s => s.name.toLowerCase().includes(q)));
+    }
+
     const renderSponsors = (a) => {
         const dotParty = a._dotParty || _amdtPartyClass(a.party);
         const chips = (a._enrichedSponsors || []).map(s => {
@@ -3096,7 +3114,7 @@ function renderAmendmentsTable({ amendments }, body) {
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
                     <td class="amdt-summary">${a.summary}</td>
                     <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${a.status}</span></td>
-                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${a.pdfUrl}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open PDF">PDF ↗</a>` : ''}</td>
+                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${a.pdfUrl}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF">↗</a>` : ''}</td>
                 </tr>`).join('')}
             </tbody>
         </table>` : '<div class="bill-amendments-empty">No amendments match this filter.</div>';
@@ -5692,6 +5710,13 @@ function init() {
     document.addEventListener('click', e => {
         const btn = e.target.closest('.info-btn');
         if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
+    });
+
+    // Amendment search input — live filter
+    document.addEventListener('input', e => {
+        if (!e.target.closest('[data-amdt-search]')) return;
+        amendmentsSearchQuery = e.target.value.trim();
+        _reRenderAllAmendmentBodies();
     });
 
     // Amendment sort + filter + dot + member — global delegation (spans modal + debate panels)
