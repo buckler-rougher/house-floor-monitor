@@ -8253,6 +8253,9 @@ h1.brand-text {
     stroke-linejoin: round;
     transition: stroke 0.4s ease, opacity 0.4s ease;
 }
+#road-closures-map .rc-road-major {
+    stroke-width: 2.5;
+}
 /* Status badges in panel header */
 .road-closures-updated-badge {
     font-family: var(--font-mono);

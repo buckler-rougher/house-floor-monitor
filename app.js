@@ -1959,6 +1959,10 @@ function normalizeStreetName(s) {
         .replace(/\bROAD\b/g, 'RD')
         .replace(/\bPLACE\b/g, 'PL')
         .replace(/\bCIRCLE\b/g, 'CIR')
+        .replace(/\bNORTHWEST\b/g, 'NW')
+        .replace(/\bNORTHEAST\b/g, 'NE')
+        .replace(/\bSOUTHWEST\b/g, 'SW')
+        .replace(/\bSOUTHEAST\b/g, 'SE')
         .replace(/,/g, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -1971,10 +1975,9 @@ function renderRoadClosures(data) {
     const tsEl   = document.getElementById('road-closures-map-timestamp');
     const badge  = document.getElementById('road-closures-updated-badge');
 
-    // Reset all road paths to "open" state
+    // Reset all road paths to "open" state (stroke-width handled by CSS class)
     document.querySelectorAll('#road-closures-map .rc-road').forEach(path => {
         path.setAttribute('stroke', '#1a3a1a');
-        path.setAttribute('stroke-width', path.dataset.road?.includes('AVE') || path.dataset.road?.includes('PENNSYLVANIA') ? '2.5' : '1.5');
         path.setAttribute('opacity', '0.9');
     });
 

@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606au">
+    <link rel="stylesheet" href="styles.css?v=20260606av">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -993,92 +993,145 @@
                         <span class="panel-source">Source: <a href="https://maps2.dcgis.dc.gov/dcgis/rest/services/DDOT/HSEMA_RoadClosures/MapServer" target="_blank" rel="noopener">DC HSEMA / DDOT</a></span>
                     </div>
                 </div>
-                <!-- Tactical SVG map — bbox: lon -77.016→-77.001, lat 38.884→38.895, 560×290px -->
+                <!-- Tactical SVG map — OSM geometry, bbox lon -77.016→-77.001, lat 38.884→38.895
+                     Coordinate system: W=700 H=320, viewBox crops to y=-5..235 (D St→Independence Ave) -->
                 <div class="road-closures-map-wrap">
-                  <svg id="road-closures-map" viewBox="0 0 560 290" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <svg id="road-closures-map" viewBox="0 -5 700 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <!-- Background -->
-                    <rect width="560" height="290" fill="#080c10"/>
-                    <!-- Capitol grounds (bounded by 1st St NW/NE and Constitution/Independence) -->
-                    <polygon points="149,79 373,79 373,212 149,212" fill="#0d1117" stroke="#21262d" stroke-width="0.5"/>
-                    <!-- === ROADS — stroke set by JS; default = open (#1e3a1e dim green) === -->
-                    <!-- Constitution Ave NW -->
-                    <path class="rc-road" data-road="CONSTITUTION AVE NW" data-label="CONSTITUTION AVE NW"
-                          d="M 105,84 L 88,85 L 74,85 L 66,85 L 49,85 L 37,85 L 29,85 L 6,86 L -15,93"/>
-                    <!-- Constitution Ave NE (manual extension east of N Capitol St) -->
-                    <path class="rc-road" data-road="CONSTITUTION AVE NE" data-label="CONSTITUTION AVE NE"
-                          d="M 261,79 L 373,79 L 560,79"/>
-                    <!-- Gap fill: Constitution Ave between GIS data end and N Capitol St -->
-                    <path class="rc-road rc-road-fill" data-road="CONSTITUTION AVE NW" data-label=""
-                          d="M 105,84 L 261,82"/>
-                    <!-- Independence Ave SW -->
-                    <path class="rc-road" data-road="INDEPENDENCE AVE SW" data-label="INDEPENDENCE AVE SW"
-                          d="M -22,216 L 0,216 L 37,216 L 81,216 L 144,216 L 196,216 L 259,215"/>
-                    <!-- Independence Ave SE -->
-                    <path class="rc-road" data-road="INDEPENDENCE AVE SE" data-label="INDEPENDENCE AVE SE"
-                          d="M 259,215 L 295,215 L 377,215 L 466,215 L 521,215 L 576,215"/>
-                    <!-- Pennsylvania Ave NW (diagonal, from 3rd St NW toward upper-left) -->
-                    <path class="rc-road" data-road="PENNSYLVANIA AVE NW" data-label="PENNSYLVANIA AVE NW"
-                          d="M 30,103 L 15,97 L -15,93"/>
-                    <!-- Pennsylvania Ave SE (diagonal, from Capitol toward lower-right) -->
-                    <path class="rc-road" data-road="PENNSYLVANIA AVE SE" data-label="PENNSYLVANIA AVE SE"
-                          d="M 466,215 L 498,223 L 521,231 L 576,248"/>
-                    <!-- Louisiana Ave NW (diagonal, NW of Capitol) -->
-                    <path class="rc-road" data-road="LOUISIANA AVE NW" data-label="LOUISIANA AVE NW"
-                          d="M 105,84 L 143,62 L 181,41 L 199,30 L 243,6"/>
-                    <!-- 3rd St NW + SW (N-S, left side) -->
-                    <path class="rc-road" data-road="3RD ST NW" data-label="3RD ST NW"
-                          d="M 30,103 L 30,151"/>
-                    <path class="rc-road" data-road="3RD ST SW" data-label="3RD ST SW"
-                          d="M 30,151 L 31,179 L 31,198 L 31,216"/>
-                    <!-- 1st St NW (N-S, one block west of Capitol) -->
-                    <path class="rc-road" data-road="1ST ST NW" data-label="1ST ST NW"
-                          d="M 149,79 L 149,215"/>
-                    <!-- 1st St NE (N-S, one block east of Capitol) -->
-                    <path class="rc-road" data-road="1ST ST NE" data-label="1ST ST NE"
-                          d="M 373,79 L 373,215"/>
-                    <!-- North Capitol St (N-S, through Capitol) -->
-                    <path class="rc-road" data-road="NORTH CAPITOL ST" data-label="N CAPITOL ST"
-                          d="M 261,0 L 261,79"/>
-                    <!-- East Capitol St (E-W, through Capitol eastward) -->
-                    <path class="rc-road" data-road="EAST CAPITOL ST" data-label="E CAPITOL ST"
-                          d="M 261,149 L 373,149 L 560,149"/>
-                    <!-- Maryland Ave NE (diagonal NE from Capitol) -->
-                    <path class="rc-road" data-road="MARYLAND AVE NE" data-label="MARYLAND AVE NE"
-                          d="M 261,149 L 373,79"/>
-                    <!-- C St NW (parallel to Constitution, 1 block north) -->
-                    <path class="rc-road" data-road="C ST NW" data-label="C ST NW"
-                          d="M -15,55 L 30,52 L 105,50 L 149,50"/>
-                    <!-- C St NE -->
-                    <path class="rc-road" data-road="C ST NE" data-label="C ST NE"
-                          d="M 261,50 L 373,50 L 560,50"/>
-                    <!-- D St NW -->
-                    <path class="rc-road" data-road="D ST NW" data-label="D ST NW"
-                          d="M -15,20 L 30,18 L 149,15"/>
-                    <!-- Capitol Building footprint (simplified) -->
-                    <rect x="222" y="132" width="78" height="36" rx="2" fill="#161b22" stroke="#30363d" stroke-width="1"/>
-                    <!-- Dome circle -->
-                    <circle cx="261" cy="150" r="10" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
-                    <circle cx="261" cy="150" r="3" fill="#388bfd" opacity="0.7"/>
-                    <!-- CAPITOL label -->
-                    <text x="261" y="179" text-anchor="middle" font-family="monospace" font-size="7" fill="#8b949e" letter-spacing="1">U.S. CAPITOL</text>
+                    <rect x="0" y="-10" width="700" height="350" fill="#080c10"/>
+                    <!-- Capitol grounds (1st St NW x≈179 → 1st St NE x≈470, Constitution y≈85 → Independence y≈216) -->
+                    <rect x="179" y="85" width="291" height="131" fill="#0c1117" stroke="#1c2128" stroke-width="0.5"/>
+
+                    <!-- === ROADS — stroke initialized by JS; all get class rc-road === -->
+                    <!-- D ST NW -->
+                    <path class="rc-road" data-road="D ST NORTHWEST"
+                      d="M 338.8,6.0 L 314.9,6.1 L 302.7,6.0 M 235.7,6.1 L 228.0,6.1 L 183.7,6.1 L 178.7,6.1 L 174.2,6.2 L 136.2,6.1 L 114.7,6.1 L 108.6,6.1 M 102.5,6.0 L 83.6,5.9 L 72.4,5.8 L 44.2,5.6 L 38.2,5.5 L 31.4,5.5 L -3.5,5.6 L -8.9,5.4 M 302.7,6.0 L 290.2,5.9 L 242.7,6.1 L 235.7,6.1 M 108.6,6.1 L 102.5,6.0"/>
+                    <!-- D ST NE -->
+                    <path class="rc-road" data-road="D ST NORTHEAST"
+                      d="M 651.6,5.8 L 647.0,5.7 L 638.4,5.6 L 629.7,5.8 L 618.9,6.0 L 615.6,6.1 L 586.8,6.2 L 582.8,6.2 L 578.6,6.0 L 547.6,6.0 L 542.1,6.0 L 513.3,5.9 L 478.3,5.8 L 471.8,5.9 L 465.2,5.8 L 419.1,5.9 L 411.8,5.9 L 405.7,5.9 L 343.0,6.0 L 338.8,6.0"/>
+                    <!-- C ST NW -->
+                    <path class="rc-road" data-road="C ST NORTHWEST"
+                      d="M 224.3,41.3 L 212.5,41.4 L 205.8,41.3 L 193.3,42.5 L 185.8,42.5 L 178.9,42.1 L 172.7,41.6 L 163.6,41.5 M 36.7,40.0 L 29.0,39.9 L 20.3,41.1 L 10.5,41.1 L 7.3,41.1 L -10.3,41.1 L -33.1,41.0 M 36.6,42.0 L 36.7,40.0"/>
+                    <!-- C ST NE -->
+                    <path class="rc-road" data-road="C ST NORTHEAST"
+                      d="M 582.6,41.2 L 587.1,41.1 L 642.1,41.1 L 647.0,41.1 L 651.6,41.0 L 655.8,41.0 L 659.8,40.9 L 673.9,40.9 L 714.6,40.8 L 719.7,40.8"/>
+                    <!-- LOUISIANA AVE NW (diagonal NW→SE into Constitution) -->
+                    <path class="rc-road rc-road-major" data-road="LOUISIANA AVE NORTHWEST"
+                      d="M 325.0,-4.0 L 310.5,2.5 L 302.7,6.0 M 302.7,6.0 L 286.5,13.5 L 268.8,21.4 L 255.4,27.4 L 249.5,30.2 L 243.7,32.8 L 238.7,35.0 L 230.4,38.6 L 224.3,41.3 M 194.0,55.2 L 185.2,59.2 L 178.9,62.1 L 172.5,65.1 L 154.3,73.0 L 140.3,79.7 L 135.2,82.0 L 130.7,83.5 L 127.7,84.2 L 124.7,84.7 M 224.3,41.3 L 216.6,45.0 L 194.0,55.2"/>
+                    <!-- INDIANA AVE NW (diagonal, NW side) -->
+                    <path class="rc-road rc-road-major" data-road="INDIANA AVE NORTHWEST"
+                      d="M 205.8,41.3 L 193.7,40.2 L 185.3,38.7 L 178.9,37.6 L 172.3,36.5 L 149.5,32.7 M 38.1,8.4 L 44.2,5.6"/>
+                    <!-- NEW JERSEY AVE NW (diagonal) -->
+                    <path class="rc-road rc-road-major" data-road="NEW JERSEY AVE NORTHWEST"
+                      d="M 249.5,30.2 L 246.6,25.6 L 237.1,8.5 L 235.7,6.1 L 229.2,-5.0 L 224.3,-13.0 L 217.8,-24.5"/>
+                    <!-- CONSTITUTION AVE NW -->
+                    <path class="rc-road rc-road-major" data-road="CONSTITUTION AVE NORTHWEST"
+                      d="M 363.1,86.2 L 356.4,85.9 L 333.5,85.1 L 321.0,84.8 L 314.4,84.7 L 307.6,84.6 L 278.3,84.8 L 272.3,84.7 L 258.5,84.8 L 187.4,84.7 L 179.0,84.7 L 172.4,84.7 L 142.5,84.8 L 124.7,84.7 L 110.3,84.6 L 83.3,84.5 L 62.6,84.5 L 45.3,84.6 L 36.5,84.6 L 28.3,83.1 L 21.4,83.0 L 12.4,83.9 L 6.3,84.8 L -10.5,88.1 L -18.3,90.6"/>
+                    <!-- CONSTITUTION AVE NE -->
+                    <path class="rc-road rc-road-major" data-road="CONSTITUTION AVE NORTHEAST"
+                      d="M 363.1,86.2 L 368.5,86.5 L 372.4,86.7 L 453.6,86.7 L 471.1,86.6 L 477.2,86.6 L 516.7,86.6 L 530.8,85.8 L 552.5,85.8 L 560.4,85.8 L 575.4,85.9 L 578.5,85.9 L 582.4,85.9 M 547.3,89.1 L 555.2,89.9 L 564.2,90.5 L 575.1,90.4 L 582.3,90.1 L 597.9,87.0 L 608.8,86.8 L 617.1,86.8 L 647.4,86.9 L 651.6,86.9 L 665.6,86.8 M 516.7,86.6 L 531.2,87.7 L 541.8,88.5 L 547.3,89.1"/>
+                    <!-- PENNSYLVANIA AVE NW -->
+                    <path class="rc-road rc-road-major" data-road="PENNSYLVANIA AVE NORTHWEST"
+                      d="M -9.9,92.0 L -3.9,90.6 L 6.7,88.4 L 12.3,87.4 L 17.8,86.6 L 25.8,86.2 L 28.5,85.9 L 36.5,84.6 L 36.6,102.1 L 36.9,100.5 M -5.0,98.3 L 25.4,103.5 L 28.0,104.0 L 36.5,105.4 M 36.9,100.5 L 40.9,98.2 L 41.0,90.7 L 40.1,89.3 L 36.5,84.6"/>
+                    <!-- 3RD ST NW -->
+                    <path class="rc-road" data-road="3RD ST NORTHWEST"
+                      d="M 38.5,-5.4 L 38.2,5.5 L 38.1,8.4 L 37.9,15.1 L 37.5,23.5 L 37.1,35.1 L 37.0,36.2 L 36.7,40.0 L 36.6,42.0 L 36.7,45.1 L 36.6,79.8 L 36.5,84.6 L 36.6,102.1 L 36.6,109.8 L 36.7,122.9 L 36.7,127.1 L 36.7,130.1"/>
+                    <!-- 3RD ST SW -->
+                    <path class="rc-road" data-road="3RD ST SOUTHWEST"
+                      d="M 36.7,130.1 L 36.9,143.8 L 37.0,162.3 L 37.1,176.4 L 37.1,179.4 L 37.2,181.9 L 37.3,195.1 L 37.2,198.2 L 37.3,201.6 L 37.4,212.9 L 37.4,216.3 L 36.8,220.9 L 36.9,241.7"/>
+                    <!-- 2ND ST NW -->
+                    <path class="rc-road" data-road="2ND ST NORTHWEST"
+                      d="M 108.6,6.1 L 108.6,3.5 L 109.5,-29.1"/>
+                    <!-- 2ND ST SW -->
+                    <path class="rc-road" data-road="2ND ST SOUTHWEST"
+                      d="M 123.3,230.1 L 117.5,232.6 L 113.1,234.4 L 110.7,236.2 L 110.0,237.6 L 110.1,241.1 L 110.1,246.1 L 110.1,251.5 L 110.3,254.8 L 110.4,260.6"/>
+                    <!-- 1ST ST NW -->
+                    <path class="rc-road" data-road="1ST ST NORTHWEST"
+                      d="M 179.0,-20.6 L 178.9,-6.3 L 178.7,3.7 L 178.7,6.1 L 178.7,8.1 L 178.7,34.7 L 178.9,37.6 L 178.9,42.1 L 178.9,45.2 L 178.9,54.2 L 178.9,56.9 L 178.9,62.1 L 178.8,67.5 L 179.1,80.9 L 179.0,84.7"/>
+                    <!-- 1ST ST SW -->
+                    <path class="rc-road" data-road="1ST ST SOUTHWEST"
+                      d="M 179.0,84.7 L 179.0,110.0 L 179.0,140.0 L 179.0,160.0 L 179.0,190.0 L 179.0,216.3"/>
+                    <!-- NORTH CAPITOL ST -->
+                    <path class="rc-road" data-road="NORTH CAPITOL STREET"
+                      d="M 338.8,6.0 L 338.7,3.9 L 337.8,3.9 L 330.6,0.7 L 327.2,-1.1 L 325.0,-5.0"/>
+                    <!-- EAST CAPITOL ST (runs east from 1st St NE) -->
+                    <path class="rc-road rc-road-major" data-road="EAST CAPITOL STREET"
+                      d="M 470.0,150.9 L 475.3,150.9 L 526.2,150.9 L 541.3,150.9 L 567.6,150.9 L 582.7,150.9 L 587.3,150.9 L 647.6,150.8 L 651.6,150.8 L 665.6,150.8"/>
+                    <!-- MARYLAND AVE NE (diagonal NE from Capitol area) -->
+                    <path class="rc-road rc-road-major" data-road="MARYLAND AVE NORTHEAST"
+                      d="M 470.0,114.5 L 486.8,111.3 L 505.7,106.7 L 520.0,103.0 L 532.7,99.0 L 537.0,96.4 L 543.6,91.7 L 547.3,89.1 M 582.4,85.9 L 578.5,85.9 L 575.4,85.9 L 560.4,85.8 L 547.3,89.1 M 582.3,90.1 L 597.9,87.0 L 618.7,78.4 L 632.2,79.5 L 644.6,71.6 L 651.6,69.9 L 660.2,68.8 L 704.1,57.9"/>
+                    <!-- MARYLAND AVE SW -->
+                    <path class="rc-road rc-road-major" data-road="MARYLAND AVE SOUTHWEST"
+                      d="M 37.2,198.2 L 30.3,199.4 L 16.7,201.6 L 6.0,204.7 L -2.0,206.9 L -9.0,209.9 L -18.6,216.1 L -32.4,216.1"/>
+                    <!-- WASHINGTON AVE SW (diagonal SW) -->
+                    <path class="rc-road rc-road-major" data-road="WASHINGTON AVE SOUTHWEST"
+                      d="M 97.2,216.4 L 99.5,220.7 L 112.3,229.7 L 117.5,232.6 L 123.9,236.5 L 134.2,241.5 L 149.1,248.4 L 162.6,249.7 L 170.3,258.5 L 176.0,256.1 L 186.4,261.0 M 107.1,216.3 L 107.2,217.7 L 107.5,218.5 L 108.1,219.4 L 108.8,220.2 L 110.6,221.9 L 112.5,223.3 L 119.2,227.4 L 123.3,230.1"/>
+                    <!-- 1ST ST NE -->
+                    <path class="rc-road" data-road="1ST ST NORTHEAST"
+                      d="M 471.1,86.6 L 470.8,91.1 L 470.8,95.5 L 470.5,106.7 L 470.0,114.5 L 470.0,122.7 L 469.9,147.7 L 470.0,150.9"/>
+                    <!-- 1ST ST SE -->
+                    <path class="rc-road" data-road="1ST ST SOUTHEAST"
+                      d="M 470.0,150.9 L 470.1,160.0 L 469.9,171.9 L 470.1,189.9 L 469.9,205.4 L 470.1,212.1 L 470.2,215.0 L 470.2,215.0"/>
+                    <!-- 2ND ST NE -->
+                    <path class="rc-road" data-road="2ND ST NORTHEAST"
+                      d="M 582.8,6.2 L 582.7,15.5 L 582.6,30.5 L 582.6,39.0 L 582.6,41.2 L 582.6,43.2 L 582.7,67.8 L 582.7,83.4 L 582.4,85.9 M 582.3,90.1 L 582.2,92.5 L 582.6,114.4 L 582.6,115.9 L 582.7,118.2 L 582.7,140.5 L 582.7,148.3 L 582.7,150.9"/>
+                    <!-- 2ND ST SE -->
+                    <path class="rc-road" data-road="2ND ST SOUTHEAST"
+                      d="M 582.7,150.9 L 582.5,168.6 L 582.4,177.4 L 582.5,185.4 L 582.5,189.5 L 582.4,193.3 L 582.1,207.5 L 582.4,214.0 L 582.5,216.7 L 582.5,220.7 L 582.5,258.5"/>
+                    <!-- INDEPENDENCE AVE SW -->
+                    <path class="rc-road rc-road-major" data-road="INDEPENDENCE AVE SOUTHWEST"
+                      d="M -18.6,216.1 L 23.7,216.2 L 30.7,216.2 L 37.4,216.3 L 45.2,216.4 L 64.6,216.4 L 80.3,216.5 L 97.2,216.4 L 107.1,216.3 L 115.4,216.2 L 124.6,216.2 L 163.9,216.2 L 173.5,216.0 L 179.6,215.5 L 184.5,215.3 L 201.3,215.4 L 242.8,215.4 L 255.8,215.4 L 266.7,215.5 L 271.3,215.5 L 283.3,215.5 L 316.4,215.6 L 323.6,215.6"/>
+                    <!-- INDEPENDENCE AVE SE -->
+                    <path class="rc-road rc-road-major" data-road="INDEPENDENCE AVE SOUTHEAST"
+                      d="M 323.6,215.6 L 330.7,215.6 L 343.6,215.5 L 359.5,215.3 L 363.0,215.2 L 367.9,215.0 L 372.3,214.9 L 453.8,215.0 L 470.2,215.0 L 477.1,214.9 L 526.8,214.8 L 558.7,214.9 L 576.7,214.0 L 582.4,214.0 L 587.1,214.1 L 590.7,214.2 L 596.7,214.7 L 599.5,215.1 M 609.0,216.5 L 611.4,217.1 L 612.4,216.4 L 613.3,216.0 L 614.3,215.7 L 615.4,215.5 L 616.8,215.3 L 618.4,215.1 L 647.2,215.2 L 651.5,215.2 L 668.6,215.2"/>
+                    <!-- PENNSYLVANIA AVE SE (diagonal) -->
+                    <path class="rc-road rc-road-major" data-road="PENNSYLVANIA AVE SOUTHEAST"
+                      d="M 558.7,214.9 L 568.1,215.7 L 576.7,216.0 L 582.5,216.7 L 587.0,217.5 L 607.5,222.7 L 609.0,216.5 M 607.5,222.7 L 647.3,232.9 L 651.4,233.9 L 712.2,249.3 L 720.2,251.3"/>
+                    <!-- NEW JERSEY AVE SE (diagonal SW) -->
+                    <path class="rc-road rc-road-major" data-road="NEW JERSEY AVE SOUTHEAST"
+                      d="M 408.1,288.9 L 421.2,311.7 L 434.1,334.1 L 437.8,340.6"/>
+
+                    <!-- Capitol Building (simplified H-shape) -->
+                    <!-- House wing (south) -->
+                    <rect x="268" y="155" width="55" height="20" rx="1" fill="#161b22" stroke="#21262d" stroke-width="0.8"/>
+                    <!-- Senate wing (north) -->
+                    <rect x="268" y="128" width="55" height="20" rx="1" fill="#161b22" stroke="#21262d" stroke-width="0.8"/>
+                    <!-- Center section -->
+                    <rect x="278" y="128" width="35" height="47" rx="1" fill="#1c2128" stroke="#21262d" stroke-width="0.8"/>
+                    <!-- Dome -->
+                    <circle cx="296" cy="151" r="11" fill="#1c2128" stroke="#388bfd" stroke-width="1.5"/>
+                    <circle cx="296" cy="151" r="4" fill="#388bfd" opacity="0.8"/>
+                    <!-- Capitol label -->
+                    <text x="296" y="186" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b949e" letter-spacing="0.08em">U.S. CAPITOL</text>
+
                     <!-- Street labels -->
-                    <text x="52" y="80" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(0)">CONSTITUTION AVE NW</text>
-                    <text x="52" y="221" font-family="monospace" font-size="7" fill="#484f58">INDEPENDENCE AVE SW</text>
-                    <text x="390" y="221" font-family="monospace" font-size="7" fill="#484f58">INDEPENDENCE AVE SE</text>
-                    <text x="112" y="75" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-25,112,75)">LOUISIANA AVE NW</text>
-                    <text x="154" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,154,145)">1ST ST NW</text>
-                    <text x="378" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,378,145)">1ST ST NE</text>
-                    <text x="32" y="145" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,32,145)">3RD ST</text>
-                    <text x="266" y="40" font-family="monospace" font-size="7" fill="#484f58" transform="rotate(-90,266,40)">N CAPITOL</text>
-                    <text x="390" y="146" font-family="monospace" font-size="7" fill="#484f58">E CAPITOL ST</text>
-                    <!-- Map legend -->
-                    <rect x="10" y="265" width="8" height="3" rx="1" fill="#3fb950"/>
-                    <text x="22" y="269" font-family="monospace" font-size="7" fill="#8b949e">OPEN</text>
-                    <rect x="62" y="265" width="8" height="3" rx="1" fill="#f85149"/>
-                    <text x="74" y="269" font-family="monospace" font-size="7" fill="#8b949e">CLOSED</text>
-                    <rect x="122" y="265" width="8" height="3" rx="1" fill="#d29922"/>
-                    <text x="134" y="269" font-family="monospace" font-size="7" fill="#8b949e">DETOUR</text>
-                    <text x="550" y="269" text-anchor="end" font-family="monospace" font-size="7" fill="#484f58" id="road-closures-map-timestamp"></text>
+                    <text x="50"  y="1"   font-family="monospace" font-size="6.5" fill="#404850">D ST NW</text>
+                    <text x="400" y="1"   font-family="monospace" font-size="6.5" fill="#404850">D ST NE</text>
+                    <text x="50"  y="37"  font-family="monospace" font-size="6.5" fill="#404850">C ST NW</text>
+                    <text x="500" y="37"  font-family="monospace" font-size="6.5" fill="#404850">C ST NE</text>
+                    <text x="12"  y="81"  font-family="monospace" font-size="6.5" fill="#404850">CONSTITUTION AVE NW</text>
+                    <text x="390" y="81"  font-family="monospace" font-size="6.5" fill="#404850">CONSTITUTION AVE NE</text>
+                    <text x="12"  y="221" font-family="monospace" font-size="6.5" fill="#404850">INDEPENDENCE AVE SW</text>
+                    <text x="390" y="221" font-family="monospace" font-size="6.5" fill="#404850">INDEPENDENCE AVE SE</text>
+                    <text x="140" y="48"  font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-27,140,48)">LOUISIANA AVE NW</text>
+                    <text x="543" y="105" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-13,543,105)">MARYLAND AVE NE</text>
+                    <!-- N-S street labels (rotated) -->
+                    <text x="38"  y="140" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,38,140)">3RD ST</text>
+                    <text x="110" y="140" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,110,140)">2ND ST NW</text>
+                    <text x="180" y="135" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,180,135)">1ST ST NW</text>
+                    <text x="332" y="50"  font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,332,50)">N CAPITOL ST</text>
+                    <text x="471" y="130" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,471,130)">1ST ST NE</text>
+                    <text x="583" y="130" font-family="monospace" font-size="6.5" fill="#404850" transform="rotate(-90,583,130)">2ND ST NE</text>
+                    <text x="490" y="147" font-family="monospace" font-size="6.5" fill="#404850">E CAPITOL ST</text>
+
+                    <!-- Legend -->
+                    <rect x="8"  y="226" width="10" height="3" rx="1" fill="#238636"/>
+                    <text x="22" y="230" font-family="monospace" font-size="7" fill="#8b949e">OPEN</text>
+                    <rect x="65" y="226" width="10" height="3" rx="1" fill="#f85149"/>
+                    <text x="79" y="230" font-family="monospace" font-size="7" fill="#8b949e">CLOSED</text>
+                    <rect x="134" y="226" width="10" height="3" rx="1" fill="#d29922"/>
+                    <text x="148" y="230" font-family="monospace" font-size="7" fill="#8b949e">DETOUR</text>
+                    <text x="695" y="230" text-anchor="end" font-family="monospace" font-size="7" fill="#404850" id="road-closures-map-timestamp"></text>
                   </svg>
                 </div>
                 <!-- Active closure list (hidden when none) -->
@@ -1370,7 +1423,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606au"></script>
+    <script src="app.js?v=20260606av"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
