@@ -2880,6 +2880,7 @@ body {
     overflow: hidden;
     margin-bottom: var(--sp-10);
     margin-left: 46px;
+    max-width: 320px;
 }
 .tweet-images-1 { grid-template-columns: 1fr; }
 .tweet-images-2 { grid-template-columns: 1fr 1fr; }
@@ -2887,22 +2888,23 @@ body {
 .tweet-images-4 { grid-template-columns: 1fr 1fr; }
 .tweet-img {
     width: 100%;
-    height: 160px;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
     display: block;
+    background: #000;
 }
-.tweet-images-1 .tweet-img { height: 220px; }
 .tweet-card {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-8);
     overflow: hidden;
     margin-bottom: var(--sp-10);
     margin-left: 46px;
+    max-width: 320px;
 }
 .tweet-card-img {
     width: 100%;
-    height: 140px;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
     display: block;
 }
 .tweet-quote {
