@@ -2280,24 +2280,29 @@ body {
   left: 50%;
   bottom: 7%;
   transform: translateX(-50%);
-  max-width: 92%;
-  width: max-content; /* size to the longest line (capped by max-width) so the
-                         text doesn't shrink-wrap narrow and wrap into 4 lines */
+  max-width: 88%;
+  width: max-content;
   text-align: center;
   font-family: var(--font-mono);
   font-weight: 600;
-  color: #fff;
-  text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.95),
-    0 1px 3px rgba(0, 0, 0, 0.95),
-    0 0 6px rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.4px;
+  color: var(--text-primary);
+  /* Dark panel with green top accent — matches the site's "HAPPENING NOW"
+     panel language. Background handles contrast so no text-shadow needed. */
+  background: rgba(13, 17, 23, 0.92);
+  border: 1px solid rgba(63, 185, 80, 0.18);
+  border-top: 2px solid rgba(63, 185, 80, 0.55);
+  border-radius: var(--radius-4);
+  /* Padding scales with font-size so the box stays proportional on small PiP */
+  padding: clamp(3px, 1.1cqi, 8px) clamp(7px, 2.6cqi, 18px);
   /* Scales with PiP width (cqi). Low min so 2 lines don't wrap to 4 on the
      narrow collapsed PiP; capped for fullscreen. */
   font-size: clamp(7px, 3.6cqi, 28px);
-  line-height: 1.3;
+  line-height: 1.5;
   white-space: pre-wrap;
   pointer-events: none;
   z-index: 4;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75);
 }
 .pip-caption-overlay:not(.has-text) { display: none; }
 /* CC toggled off: hide the overlay but keep building it in the background. */
