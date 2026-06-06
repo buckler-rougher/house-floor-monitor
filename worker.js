@@ -378,34 +378,125 @@ async function handleProceedings(request, env) {
   }
 }
 
+function parseTweetDescription(html, instance) {
+  if (!html) return { tweetHtml: '', tweetImages: [], cardImage: null, quoteAuthor: null, quoteHtml: null };
+
+  const escaped = instance.replace(/\./g, '\\.');
+  const rewriteUrl = url =>
+    url.replace(new RegExp(`https?://${escaped}/`), 'https://twitter.com/').replace(/#m$/, '');
+
+  // Split at <hr/> — everything before is the main tweet, after is quote tweet
+  const [mainPart = '', quotePart = ''] = html.split(/<hr\s*\/?>/i);
+
+  // Extract first <p> as tweet HTML
+  const pMatch = mainPart.match(/<p>([\s\S]*?)<\/p>/i);
+  let tweetHtml = pMatch ? pMatch[1] : mainPart.replace(/<(?!br)[^>]+>/g, '').trim();
+
+  // Rewrite hrefs, add target=_blank, strip title attrs
+  tweetHtml = tweetHtml
+    .replace(/href="([^"]+)"/g, (_, h) => `href="${rewriteUrl(h)}"`)
+    .replace(/<a /g, '<a target="_blank" rel="noopener" ')
+    .replace(/ title="[^"]*"/g, '')
+    .replace(/<br\s*\/?>/gi, '<br>');
+
+  // Collect images from full description
+  const tweetImages = [], cardImageArr = [];
+  for (const [, src] of html.matchAll(/<img\s+src="([^"]+)"/g)) {
+    const absolute = src.startsWith('http') ? src : `https://${instance}${src}`;
+    const proxied = `https://api.evanhollander.org/house-floor/api/img-proxy?url=${encodeURIComponent(absolute)}`;
+    if (src.includes('card_img')) { if (!cardImageArr.length) cardImageArr.push(proxied); }
+    else if (src.includes('/pic/')) tweetImages.push(proxied);
+  }
+
+  // Extract quote tweet from blockquote in quotePart
+  let quoteAuthor = null, quoteHtml = null;
+  const bqMatch = quotePart.match(/<blockquote>([\s\S]*?)<\/blockquote>/i);
+  if (bqMatch) {
+    const bqInner = bqMatch[1];
+    const authorM = bqInner.match(/<b>([^<]+)<\/b>/);
+    quoteAuthor = authorM ? authorM[1].trim() : null;
+    const qpM = bqInner.match(/<p>([\s\S]*?)<\/p>/i);
+    if (qpM) {
+      quoteHtml = qpM[1]
+        .replace(/href="([^"]+)"/g, (_, h) => `href="${rewriteUrl(h)}"`)
+        .replace(/<a /g, '<a target="_blank" rel="noopener" ')
+        .replace(/ title="[^"]*"/g, '')
+        .replace(/<br\s*\/?>/gi, '<br>');
+    }
+  }
+
+  return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml };
+}
+
 async function handleTweets(env) {
   return kvCache(env, 'tweets-feed', 120, async () => {
-    // Try each nitter instance in order until one returns data for the list RSS
-    let items = [];
+    let rawXml = null, usedInstance = null;
     for (const instance of NITTER_INSTANCES) {
       try {
         const url = `https://${instance}/i/lists/${FLOOR_REPORTERS_LIST_ID}/rss`;
         const xml = await fetchRSSFeed(url, 6000);
-        // Reject if nitter returned an error page or disabled RSS
         if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) continue;
-        const parsed = parseRSSFeed(xml, url);
-        if (!parsed.error && parsed.items.length) {
-          items = parsed.items.slice(0, 30).map(item => {
-            // dc:creator in nitter list feeds is "@handle"
-            const creatorMatch = xml.match(new RegExp(`<guid[^>]*>${item.id || ''}`)) || [];
-            // Extract @handle from the link e.g. nitter.x.com/@handle/status/...
-            const handleMatch = (item.link || '').match(/\/([^/]+)\/status\//);
-            const handle = handleMatch ? handleMatch[1] : null;
-            return { ...item, handle };
-          });
-          break;
-        }
+        rawXml = xml; usedInstance = instance; break;
       } catch (_) { continue; }
     }
-    return new Response(JSON.stringify({ tweets: items }), {
+    if (!rawXml || !usedInstance) {
+      return new Response(JSON.stringify({ tweets: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
+
+    const getTag = (tag, xml) => {
+      const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
+      return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+    };
+
+    const tweets = (rawXml.match(/<item[^>]*>[\s\S]*?<\/item>/g) || []).slice(0, 30).map(itemXml => {
+      const creator = getTag('dc:creator', itemXml);
+      let title = getTag('title', itemXml);
+      const description = getTag('description', itemXml);
+      let link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
+      const pubDate = getTag('pubDate', itemXml);
+
+      // RT detection
+      let isRT = false, rtBy = null;
+      const rtM = title.match(/^RT by (@\w+):\s*/);
+      if (rtM) { isRT = true; rtBy = rtM[1]; title = title.slice(rtM[0].length); }
+
+      // Handle from link or dc:creator
+      const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
+      const handle = hM ? `@${hM[1]}` : (creator || '');
+
+      // Relative time
+      let relativeTime = '';
+      try {
+        const diff = Math.floor((Date.now() - new Date(pubDate).getTime()) / 60000);
+        relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff/60)}h` : `${Math.floor(diff/1440)}d`;
+      } catch (_) {}
+
+      const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml } = parseTweetDescription(description, usedInstance);
+      return { handle, relativeTime, link, isRT, rtBy, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml };
+    });
+
+    return new Response(JSON.stringify({ tweets }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
     });
   }, 300);
+}
+
+async function handleImageProxy(request) {
+  const url = new URL(request.url);
+  const imageUrl = url.searchParams.get('url');
+  if (!imageUrl) return new Response('Missing url', { status: 400, headers: CORS_HEADERS });
+  let allowed = false;
+  try { const p = new URL(imageUrl); allowed = NITTER_INSTANCES.some(i => p.hostname === i); } catch (_) {}
+  if (!allowed) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+  try {
+    const resp = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(8000),
+      headers: { 'Referer': `https://${new URL(imageUrl).hostname}/`, 'User-Agent': 'Mozilla/5.0' }
+    });
+    return new Response(resp.body, {
+      headers: { ...CORS_HEADERS, 'Content-Type': resp.headers.get('content-type') || 'image/jpeg', 'Cache-Control': 'public, max-age=86400' }
+    });
+  } catch (e) { return new Response('Failed', { status: 502, headers: CORS_HEADERS }); }
 }
 
 // Fetch one nitter account — tries instances in parallel with a short per-instance
@@ -2634,6 +2725,8 @@ async function handleRequest(request, env) {
     return await handleCongressIndex();
   } else if (path === '/api/tweets' && request.method === 'GET') {
     return await handleTweets(env);
+  } else if (path === '/api/img-proxy' && request.method === 'GET') {
+    return await handleImageProxy(request);
   } else if (path === '/api/bluesky' && request.method === 'GET') {
     return await handleBlueskyFeed(env);
   } else if (path === '/api/casualty-list' && request.method === 'GET') {
