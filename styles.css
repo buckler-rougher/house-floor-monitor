@@ -4441,9 +4441,16 @@ a.bill-card-rule-link {
     align-items: center;
     gap: var(--sp-8);
 }
+.amdt-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+}
 .amdt-sort-header {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: var(--sp-6);
     margin-bottom: var(--sp-10);
 }
 
@@ -4454,6 +4461,13 @@ a.bill-card-rule-link {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-muted);
+}
+.bill-amendments-count {
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    opacity: 0.6;
+    letter-spacing: 0.04em;
 }
 
 .bill-amendments-panel-body {
@@ -4543,6 +4557,7 @@ a.bill-card-rule-link {
     white-space: nowrap;
     position: sticky;
     top: 0;
+    z-index: 2;
     background: var(--bg-card);
     overflow: hidden;
 }
@@ -4550,7 +4565,7 @@ a.bill-card-rule-link {
 .amendments-table th:nth-child(1) { width: 30px; }
 .amendments-table th:nth-child(2) { width: 28%; }
 .amendments-table th:nth-child(3) { width: auto; }
-.amendments-table th:nth-child(4) { width: 90px; }
+.amendments-table th:nth-child(4) { width: 130px; }
 
 .amendments-table tbody tr {
     border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -4572,6 +4587,7 @@ a.bill-card-rule-link {
     font-size: var(--fs-md);
     width: 28px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .amdt-sponsors {
