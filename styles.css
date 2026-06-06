@@ -8164,6 +8164,44 @@ body.admin-oath-mode .floor-grid-panel {
 }
 
 /* ── Calendar mobile nav ─────────────────────────────────────────────────── */
+.calendar-desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+}
+.calendar-desktop-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 16px;
+    line-height: 1;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+}
+.calendar-desktop-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.calendar-desktop-today {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: var(--fs-2xs);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 0 6px;
+    height: 22px;
+    border-radius: var(--radius-3);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.calendar-desktop-today:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.calendar-today-hidden { display: none !important; }
+
 .calendar-mobile-nav {
     display: none; /* shown only on mobile via media query */
 }
@@ -8184,6 +8222,7 @@ body.admin-oath-mode .floor-grid-panel {
         align-items: flex-start;
         gap: var(--sp-4);
     }
+    .calendar-desktop-nav { display: none; }
     .calendar-mobile-nav {
         display: flex;
         align-items: center;
