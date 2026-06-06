@@ -4685,6 +4685,28 @@ a.bill-card-rule-link {
     letter-spacing: 0.5px;
 }
 
+/* Committee of the Whole indicator — appears below floor-status in congress-info */
+.cotw-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-6);
+    margin-top: var(--sp-6);
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--accent-green);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.cotw-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--accent-green);
+    flex-shrink: 0;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
 /* Airport Delays Panel */
 .airport-delays-panel {
     background: var(--bg-card);
@@ -5196,30 +5218,6 @@ body.debate-mode .debate-section {
 }
 .debate-section .bill-rule-tag:hover { opacity: 0.75; }
 
-/* Committee of the Whole badge — shown in debate mode when CoTW is in session */
-.debate-cotw-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-6);
-    background: rgba(63, 185, 80, 0.08);
-    color: var(--accent-green);
-    padding: 5px var(--sp-10);
-    border-radius: var(--radius-4);
-    font-size: var(--fs-md);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-family: var(--font-mono);
-    border: 1px solid rgba(63, 185, 80, 0.3);
-}
-.debate-cotw-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: var(--radius-full);
-    background: var(--accent-green);
-    flex-shrink: 0;
-    animation: pulse-dot 2s ease-in-out infinite;
-}
 
 .debate-length-tag {
     display: inline-flex;
