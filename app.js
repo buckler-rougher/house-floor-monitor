@@ -1705,6 +1705,14 @@ const elements = {
     footerUpdated: document.getElementById('footer-updated')
 };
 
+// Debate rule tag: clicking the PURSUANT TO button opens the H.Res. modal
+if (elements.debateRuleTag) {
+    elements.debateRuleTag.addEventListener('click', e => {
+        const btn = e.target.closest('[data-bill-id]');
+        if (btn) openBillModal(btn.dataset.billId);
+    });
+}
+
 // RSS Feed Configuration
 const RSS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/proceedings',
@@ -2803,12 +2811,11 @@ function openBillModal(billId) {
         const sc = modalRule.ruleStatus === 'passed' ? 'rule-tag-passed'
             : modalRule.ruleStatus === 'reported' ? 'rule-tag-reported'
             : 'rule-tag-unknown';
-        const href = modalRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${modalRule.hresNum}`;
-        return `<a class="bill-rule-tag ${sc} bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</a>`;
+        return `<button class="bill-rule-tag ${sc} bill-rule-tag-modal" type="button" data-bill-id="hres-${modalRule.hresNum}">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</button>`;
     })() : fallbackHres ? (() => {
         const hresNum = fallbackHres.match(/(\d+)$/)?.[1];
-        const href = hresNum ? `https://www.congress.gov/bill/119th-congress/house-resolution/${hresNum}` : '#';
-        return `<a class="bill-rule-tag rule-tag-unknown bill-rule-tag-modal" href="${href}" target="_blank" rel="noopener">${fallbackHres}</a>`;
+        if (!hresNum) return `<span class="bill-rule-tag rule-tag-unknown bill-rule-tag-modal">${fallbackHres}</span>`;
+        return `<button class="bill-rule-tag rule-tag-unknown bill-rule-tag-modal" type="button" data-bill-id="hres-${hresNum}">${fallbackHres}</button>`;
     })() : '';
 
     const rulesSlug = (bill.procedure === 'rule') ? billIdToRulesSlug(bill.id) : null;
@@ -2911,6 +2918,11 @@ function openBillModal(billId) {
             } catch {}
         });
     }
+
+    // Rule-tag buttons in the modal open the modal for that H.Res.
+    overlay.querySelectorAll('.bill-rule-tag-modal[data-bill-id]').forEach(btn => {
+        btn.addEventListener('click', () => openBillModal(btn.dataset.billId));
+    });
 
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');
@@ -3617,12 +3629,14 @@ function updateDebateSection(items) {
     const fallbackDebateHres = (!specialRule && foundBill?.governingHres) ? foundBill.governingHres : null;
     if (elements.debateRuleTag) {
         if (specialRule) {
-            const href = specialRule.pdfUrl || `https://www.congress.gov/bill/119th-congress/house-resolution/${specialRule.hresNum}`;
-            elements.debateRuleTag.innerHTML = `<a class="bill-rule-tag" href="${href}" target="_blank" rel="noopener">PURSUANT TO ${specialRule.hres}</a>`;
+            elements.debateRuleTag.innerHTML = `<button class="bill-rule-tag" type="button" data-bill-id="hres-${specialRule.hresNum}">PURSUANT TO ${specialRule.hres}</button>`;
         } else if (fallbackDebateHres) {
             const hresNum = fallbackDebateHres.match(/(\d+)$/)?.[1];
-            const href = hresNum ? `https://www.congress.gov/bill/119th-congress/house-resolution/${hresNum}` : '#';
-            elements.debateRuleTag.innerHTML = `<a class="bill-rule-tag" href="${href}" target="_blank" rel="noopener">PURSUANT TO ${fallbackDebateHres}</a>`;
+            if (hresNum) {
+                elements.debateRuleTag.innerHTML = `<button class="bill-rule-tag" type="button" data-bill-id="hres-${hresNum}">PURSUANT TO ${fallbackDebateHres}</button>`;
+            } else {
+                elements.debateRuleTag.innerHTML = `<span class="bill-rule-tag">PURSUANT TO ${fallbackDebateHres}</span>`;
+            }
         } else {
             elements.debateRuleTag.innerHTML = '';
         }

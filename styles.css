@@ -3923,6 +3923,8 @@ a.bill-card-rule-link {
     white-space: nowrap;
     transition: opacity 0.15s;
     line-height: 1.6;
+    cursor: pointer;
+    background: transparent;
 }
 .bill-rule-tag:hover { opacity: 0.75; }
 
