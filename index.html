@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606av">
+    <link rel="stylesheet" href="styles.css?v=20260606aw">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -996,9 +996,9 @@
                 <!-- Tactical SVG map — OSM geometry, bbox lon -77.016→-77.001, lat 38.884→38.895
                      Coordinate system: W=700 H=320, viewBox crops to y=-5..235 (D St→Independence Ave) -->
                 <div class="road-closures-map-wrap">
-                  <svg id="road-closures-map" viewBox="0 -5 700 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <svg id="road-closures-map" viewBox="0 31 700 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <!-- Background -->
-                    <rect x="0" y="-10" width="700" height="350" fill="#080c10"/>
+                    <rect x="0" y="0" width="700" height="350" fill="#080c10"/>
                     <!-- Capitol grounds (1st St NW x≈179 → 1st St NE x≈470, Constitution y≈85 → Independence y≈216) -->
                     <rect x="179" y="85" width="291" height="131" fill="#0c1117" stroke="#1c2128" stroke-width="0.5"/>
 
@@ -1091,6 +1091,15 @@
                     <path class="rc-road rc-road-major" data-road="NEW JERSEY AVE SOUTHEAST"
                       d="M 408.1,288.9 L 421.2,311.7 L 434.1,334.1 L 437.8,340.6"/>
 
+                    <!-- C ST SW -->
+                    <path class="rc-road" data-road="C ST SOUTHWEST"
+                      d="M -72.7,260.7 L -17.8,260.5 L 30.9,260.6 L 37.3,260.5 L 43.4,260.4 L 89.1,260.5 L 104.1,260.4 L 110.4,260.6"/>
+                    <!-- C ST SE -->
+                    <path class="rc-road" data-road="C ST SOUTHEAST"
+                      d="M 472.1,260.6 L 479.4,260.4 L 531.5,260.4 L 577.3,260.5 L 582.5,260.5 L 613.2,260.5 L 646.7,260.6 L 651.4,260.6 L 720.2,260.5"/>
+                    <!-- SOUTH CAPITOL ST -->
+                    <path class="rc-road" data-road="SOUTH CAPITOL STREET"
+                      d="M 323.6,215.6 L 323.8,241.0 L 324.0,271.0"/>
                     <!-- Capitol Building (simplified H-shape) -->
                     <!-- House wing (south) -->
                     <rect x="268" y="155" width="55" height="20" rx="1" fill="#161b22" stroke="#21262d" stroke-width="0.8"/>
@@ -1105,10 +1114,10 @@
                     <text x="296" y="186" text-anchor="middle" font-family="monospace" font-size="7.5" fill="#8b949e" letter-spacing="0.08em">U.S. CAPITOL</text>
 
                     <!-- Street labels -->
-                    <text x="50"  y="1"   font-family="monospace" font-size="6.5" fill="#404850">D ST NW</text>
-                    <text x="400" y="1"   font-family="monospace" font-size="6.5" fill="#404850">D ST NE</text>
                     <text x="50"  y="37"  font-family="monospace" font-size="6.5" fill="#404850">C ST NW</text>
                     <text x="500" y="37"  font-family="monospace" font-size="6.5" fill="#404850">C ST NE</text>
+                    <text x="12"  y="257" font-family="monospace" font-size="6.5" fill="#404850">C ST SW</text>
+                    <text x="490" y="257" font-family="monospace" font-size="6.5" fill="#404850">C ST SE</text>
                     <text x="12"  y="81"  font-family="monospace" font-size="6.5" fill="#404850">CONSTITUTION AVE NW</text>
                     <text x="390" y="81"  font-family="monospace" font-size="6.5" fill="#404850">CONSTITUTION AVE NE</text>
                     <text x="12"  y="221" font-family="monospace" font-size="6.5" fill="#404850">INDEPENDENCE AVE SW</text>
@@ -1125,13 +1134,13 @@
                     <text x="490" y="147" font-family="monospace" font-size="6.5" fill="#404850">E CAPITOL ST</text>
 
                     <!-- Legend -->
-                    <rect x="8"  y="226" width="10" height="3" rx="1" fill="#238636"/>
-                    <text x="22" y="230" font-family="monospace" font-size="7" fill="#8b949e">OPEN</text>
-                    <rect x="65" y="226" width="10" height="3" rx="1" fill="#f85149"/>
-                    <text x="79" y="230" font-family="monospace" font-size="7" fill="#8b949e">CLOSED</text>
-                    <rect x="134" y="226" width="10" height="3" rx="1" fill="#d29922"/>
-                    <text x="148" y="230" font-family="monospace" font-size="7" fill="#8b949e">DETOUR</text>
-                    <text x="695" y="230" text-anchor="end" font-family="monospace" font-size="7" fill="#404850" id="road-closures-map-timestamp"></text>
+                    <rect x="8"  y="263" width="10" height="3" rx="1" fill="#238636"/>
+                    <text x="22" y="267" font-family="monospace" font-size="7" fill="#8b949e">OPEN</text>
+                    <rect x="65" y="263" width="10" height="3" rx="1" fill="#f85149"/>
+                    <text x="79" y="267" font-family="monospace" font-size="7" fill="#8b949e">CLOSED</text>
+                    <rect x="134" y="263" width="10" height="3" rx="1" fill="#d29922"/>
+                    <text x="148" y="267" font-family="monospace" font-size="7" fill="#8b949e">DETOUR</text>
+                    <text x="695" y="267" text-anchor="end" font-family="monospace" font-size="7" fill="#404850" id="road-closures-map-timestamp"></text>
                   </svg>
                 </div>
                 <!-- Active closure list (hidden when none) -->
@@ -1423,7 +1432,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606av"></script>
+    <script src="app.js?v=20260606aw"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
