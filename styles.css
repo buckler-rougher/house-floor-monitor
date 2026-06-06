@@ -3413,7 +3413,8 @@ body {
 
 .voting-calendar-wrap {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 240px));
+    justify-content: center;
     gap: var(--sp-8);
     padding: var(--sp-10) var(--sp-14) var(--sp-14);
     width: 100%;
@@ -3475,6 +3476,7 @@ body {
 }
 .cal-day {
     aspect-ratio: 1 / 1;
+    max-height: 38px;
     border-radius: 4px;
     position: relative;
     cursor: default;
