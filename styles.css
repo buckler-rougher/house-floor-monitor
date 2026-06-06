@@ -3497,15 +3497,16 @@ body {
     font-family: var(--font-mono);
 }
 .cal-day-today .cal-num { color: #fff; font-weight: 800; }
-/* Labels stacked in center of cell */
+/* Labels stacked bottom-center of cell */
 .cal-lbls {
     position: absolute;
     inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 1px;
+    padding-bottom: 3px;
     pointer-events: none;
 }
 .cal-lbl {

@@ -179,16 +179,16 @@ async function fetchVotingDays() {
                     .trim()
                     .toLowerCase();
                 let type = null;
-                if (/^(voting day|vote day)$/.test(summary)) {
-                    type = 'vote-day';
-                } else if (/fly.?in/.test(summary)) {
+                if (/fly.?in/.test(summary)) {
                     type = 'fly-in';
                 } else if (/fly.?out/.test(summary)) {
                     type = 'fly-out';
-                } else if (/^(votes? added|added votes?|added votes? day|added-votes|additional votes?)$/.test(summary)) {
+                } else if (/added|additional/.test(summary) && /vote/.test(summary)) {
                     type = 'added';
-                } else if (/^(votes? cancelled|cancelled votes?|canceled votes?|canceled vote day|cancelled vote day)$/.test(summary)) {
+                } else if (/cancel/.test(summary) && /vote/.test(summary)) {
                     type = 'cancelled';
+                } else if (/vote|voting/.test(summary)) {
+                    type = 'vote-day';
                 }
                 return {
                     ...item,
