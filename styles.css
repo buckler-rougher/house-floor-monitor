@@ -8274,18 +8274,56 @@ body.admin-oath-mode .floor-grid-panel {
     }
 }
 
+/* ── Calendar mobile nav ─────────────────────────────────────────────────── */
+.calendar-mobile-nav {
+    display: none; /* shown only on mobile via media query */
+}
+
 /* ── Calendar: single column on mobile ──────────────────────────────────────*/
 @media (max-width: 768px) {
     .voting-calendar-wrap {
         grid-template-columns: 1fr;
     }
-    .voting-calendar-month:not(.voting-calendar-month-center) {
+    .voting-calendar-month {
         display: none;
+    }
+    .voting-calendar-month.cal-mobile-visible {
+        display: flex;
     }
     .this-week-strip {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--sp-4);
+    }
+    .calendar-mobile-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--sp-6) var(--sp-14);
+        border-bottom: 1px solid var(--border-color);
+    }
+    .calendar-mobile-btn {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        font-size: 22px;
+        line-height: 1;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-6);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.15s, color 0.15s;
+    }
+    .calendar-mobile-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .calendar-mobile-title {
+        font-size: var(--fs-sm);
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: 0.5px;
     }
 }
 
