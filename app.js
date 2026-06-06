@@ -2881,7 +2881,7 @@ function openBillModal(billId) {
                     <div class="bill-doc-links">
                         ${textUrl ? `<a href="${textUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View Bill Text →</a>` : ''}
                         ${bill.committeeReportUrl ? `<a href="${bill.committeeReportUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener" title="${bill.committeeReportCitation || 'Committee Report'}">View Committee Report →</a>` : ''}
-                        ${bill.sapUrl ? `<a href="${bill.sapUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View Admin. Policy (SAP) →</a>` : ''}
+                        ${bill.sapUrl ? `<a href="${bill.sapUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View White House Memo →</a>` : ''}
                         ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
                         <button class="bill-modal-link bill-copy-link" id="bill-copy-link" type="button" aria-label="Copy link to this bill"><svg class="bill-copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="bill-copy-text">Copy link</span></button>
                     </div>
@@ -2956,11 +2956,14 @@ function openBillModal(billId) {
     amendmentsPartyFilter = 'all';
     amendmentsMemberFilter = null;
     amendmentsSearchQuery = '';
-    // Sync sort + filter buttons to reset state
+    // Sync sort + filter buttons without CSS transitions (prevents flash/fade on open)
+    overlay.querySelectorAll('.amdt-filter-btn, .amdt-sort-btn').forEach(btn => { btn.style.transition = 'none'; });
     overlay.querySelectorAll('.amdt-sort-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
     overlay.querySelectorAll('.amdt-filter-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.filter === amendmentsPartyFilter));
+    requestAnimationFrame(() =>
+        overlay.querySelectorAll('.amdt-filter-btn, .amdt-sort-btn').forEach(btn => { btn.style.transition = ''; }));
 
     if (rulesSlug) {
         const mainPanel = document.getElementById('bill-main-panel');

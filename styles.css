@@ -4743,13 +4743,7 @@ a.bill-card-rule-link {
 .amdt-party.rep { background: var(--accent-red); }
 .amdt-party.dem { background: var(--accent-blue); }
 .amdt-party.ind { background: #a371f7; }
-.amdt-party.bipartisan {
-    /* Half red / half blue — slightly wider to make the split legible */
-    width: 12px;
-    height: 12px;
-    margin-top: 2px;
-    background: linear-gradient(90deg, var(--accent-red) 50%, var(--accent-blue) 50%);
-}
+.amdt-party.bipartisan { background: #a371f7; }
 
 .amdt-sponsor-link {
     color: var(--text-secondary);
