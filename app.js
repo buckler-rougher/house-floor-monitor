@@ -5437,8 +5437,10 @@ async function fetchTweets() {
             const bodyHtml = t.html || escapeHtml(t.title || '');
 
             const avatarLetter = (t.handle || '?').replace('@', '')[0].toUpperCase();
-            const avatarInner = t.photoUrl
-                ? `<img src="${t.photoUrl}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
+            const bareHandle = (t.handle || '').replace('@', '');
+            const avatarSrc = bareHandle ? `https://unavatar.io/x/${bareHandle}` : '';
+            const avatarInner = avatarSrc
+                ? `<img src="${avatarSrc}" alt="" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
                   + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${avatarLetter}</span>`
                 : avatarLetter;
             const profileUrl = t.handle ? `https://twitter.com/${t.handle.replace('@', '')}` : null;
