@@ -403,7 +403,7 @@ function parseTweetDescription(html, instance) {
   const tweetImages = [], cardImageArr = [];
   for (const [, src] of html.matchAll(/<img\s+src="([^"]+)"/g)) {
     const absolute = src.startsWith('http') ? src : `https://${instance}${src}`;
-    const proxied = `https://api.evanhollander.org/house-floor/api/img-proxy?url=${encodeURIComponent(absolute)}`;
+    const proxied = `https://api.evanhollander.org/house-floor/api/img-proxy?v=2&url=${encodeURIComponent(absolute)}`;
     if (src.includes('card_img')) { if (!cardImageArr.length) cardImageArr.push(proxied); }
     else if (src.includes('/pic/')) tweetImages.push(proxied);
   }
@@ -429,7 +429,7 @@ function parseTweetDescription(html, instance) {
 }
 
 async function handleTweets(env) {
-  return kvCache(env, 'tweets-feed', 120, async () => {
+  return kvCache(env, 'tweets-feed-v2', 120, async () => {
     let rawXml = null, usedInstance = null;
     for (const instance of NITTER_INSTANCES) {
       try {
