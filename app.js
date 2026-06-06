@@ -5977,8 +5977,11 @@ async function fetchNewsTicker() {
         // Force a reflow so Safari restarts the CSS animation after innerHTML change.
         // Without this, Safari freezes the ticker until a hover/blur triggers a repaint.
         elements.tickerContent.style.animation = 'none';
-        void elements.tickerContent.offsetWidth; // flush layout
+        void elements.tickerContent.offsetWidth; // flush layout — also lets us measure natural width
+        // Constant ~80px/s regardless of item count
+        const tickerDuration = Math.round(elements.tickerContent.scrollWidth / 80);
         elements.tickerContent.style.animation = '';
+        elements.tickerContent.style.animationDuration = `${tickerDuration}s`;
         
     } catch (error) {
         console.error('News ticker fetch error:', error);

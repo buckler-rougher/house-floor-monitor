@@ -2866,7 +2866,7 @@ body {
 .ticker-content {
     display: flex;
     white-space: nowrap;
-    animation: scroll-left 2000s linear infinite; /* Tactical slow crawl */
+    animation: scroll-left 600s linear infinite; /* Duration overridden by JS based on content width */
     width: fit-content;
     will-change: transform;
 }
