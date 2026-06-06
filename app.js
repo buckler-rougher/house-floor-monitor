@@ -2508,7 +2508,7 @@ function updateBillsDisplay() {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
 
-    document.querySelectorAll('.bills-sort-btn').forEach(btn => {
+    document.querySelectorAll('.bills-sort-btn:not(.amdt-sort-btn):not(.amdt-filter-btn)').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
     });
 
