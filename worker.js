@@ -428,35 +428,6 @@ function parseTweetDescription(html, instance) {
   return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml };
 }
 
-// Fetch and cache a nitter profile avatar URL per handle.
-// Returns a proxied img-proxy URL, or null on failure.
-async function fetchAvatarUrl(handle, instance, env) {
-  const bare = handle.replace('@', '');
-  const kvKey = `avatar-v1:${bare}`;
-  // Check KV cache (24h freshness)
-  try {
-    if (env && env.HLS_CACHE) {
-      const cached = await env.HLS_CACHE.get(kvKey);
-      if (cached) return cached;
-    }
-  } catch (_) {}
-
-  try {
-    const html = await fetch(`https://${instance}/${bare}`, { signal: AbortSignal.timeout(4000) }).then(r => r.text());
-    // nitter renders avatar as <a class="profile-card-avatar"><img src="/pic/..."></a>
-    const m = html.match(/class="profile-card-avatar"[^>]*>\s*<img[^>]+src="([^"]+)"/);
-    if (!m) return null;
-    const src = m[1];
-    const absolute = src.startsWith('http') ? src : `https://${instance}${src}`;
-    const proxied = `https://api.evanhollander.org/house-floor/api/img-proxy?v=2&url=${encodeURIComponent(absolute)}`;
-    try {
-      if (env && env.HLS_CACHE) {
-        await env.HLS_CACHE.put(kvKey, proxied, { expirationTtl: 86400 });
-      }
-    } catch (_) {}
-    return proxied;
-  } catch (_) { return null; }
-}
 
 async function handleTweets(env) {
   return kvCache(env, 'tweets-feed-v2', 120, async () => {
@@ -505,15 +476,7 @@ async function handleTweets(env) {
       return { handle, relativeTime, link, isRT, rtBy, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml };
     });
 
-    // Fetch avatars for unique handles in parallel (best-effort, 4s timeout each)
-    const uniqueHandles = [...new Set(tweets.map(t => t.handle).filter(Boolean))];
-    const avatarMap = {};
-    await Promise.all(uniqueHandles.map(async h => {
-      avatarMap[h] = await fetchAvatarUrl(h, usedInstance, env);
-    }));
-    const tweetsWithAvatars = tweets.map(t => ({ ...t, photoUrl: avatarMap[t.handle] || null }));
-
-    return new Response(JSON.stringify({ tweets: tweetsWithAvatars }), {
+    return new Response(JSON.stringify({ tweets }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
     });
   }, 300);
