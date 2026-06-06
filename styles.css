@@ -2079,6 +2079,7 @@ body {
 
 .proceedings-feed {
   padding: var(--sp-8) var(--sp-16);
+  min-height: 200px;
   max-height: 200px;
   overflow-y: auto;
   position: relative;
