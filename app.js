@@ -1282,12 +1282,14 @@ function updateFloorDisplay(status = null) {
     // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
     const sseIsLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-    if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive) {
-        window.setMode('vote');
-    } else if (statusLower.includes('debate')) {
-        window.setMode('debate');
-    } else if (statusLower.includes('adjourn') || statusLower.includes('recess')) {
-        window.setMode('recess');
+    if (!window._modeLocked) {
+        if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive) {
+            window.setMode('vote');
+        } else if (statusLower.includes('debate')) {
+            window.setMode('debate');
+        } else if (statusLower.includes('adjourn') || statusLower.includes('recess')) {
+            window.setMode('recess');
+        }
     }
 
     // Update floor status with house adjournment information
@@ -3155,6 +3157,7 @@ function onInfoPopupKey(e, trigger) {
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {
+    if (window._modeLocked) return;
     if (!items || items.length === 0) return;
 
     // Respect DomeWatch vote status only while SSE is actively sending tallies.
@@ -5416,6 +5419,22 @@ window.setMode = function(mode) {
     }
 
     updateModeClasses(mode);
+};
+
+// Console helpers for testing — freeze/unfreeze the auto-switch without
+// touching setMode itself (so manual setMode('prayer') etc. still work).
+//   lockMode()          → disable auto-switch, print current mode
+//   lockMode('prayer')  → disable auto-switch AND switch to that mode
+//   unlockMode()        → re-enable auto-switch
+window._modeLocked = false;
+window.lockMode = function(mode) {
+    window._modeLocked = true;
+    if (mode) window.setMode(mode);
+    console.info(`%c[mode] AUTO-SWITCH LOCKED${mode ? ' → ' + mode : ''} — call unlockMode() to restore`, 'color:#f59e0b;font-weight:bold');
+};
+window.unlockMode = function() {
+    window._modeLocked = false;
+    console.info('%c[mode] Auto-switch restored', 'color:#22c55e;font-weight:bold');
 };
 
 // Initialize mode (no toggle — mode is driven by DomeWatch)
