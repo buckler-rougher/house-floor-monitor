@@ -1242,10 +1242,12 @@ async function _fetchBills(request, env) {
     // Proceedings (House Clerk) is the authoritative source for the full vote
     // lifecycle — recorded vote requested/postponed → passed/failed — so the
     // partisan Bluesky/Dem Cloakroom feed is no longer used for bill status.
-    const [billsXmlText, proceedingsStatuses] = await Promise.all([
+    const [billsXmlText, proceedingsStatuses, sapMapRaw] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
       fetchProceedingsBillStatuses(),
+      fetchSapMap(env).catch(() => '{}'),
     ]);
+    const sapMap = (() => { try { return JSON.parse(sapMapRaw); } catch { return {}; } })();
 
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
@@ -1578,6 +1580,14 @@ async function _fetchBills(request, env) {
     // Write back any newly reached terminal statuses so they persist for the week.
     const { updated: newCache, changed } = ratchetStatuses(cachedStatuses, allBills);
     if (changed) await saveCachedBillStatuses(env, weekKey, newCache);
+
+    // Stamp SAP URL on each bill that has a matching Statement of Administration Policy.
+    // sapMap keys are normalized bill IDs (same normId convention as parseBillsFromSection).
+    for (const bill of allBills) {
+      const normId = bill.id.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
+      const sapUrl = sapMap[normId] || sapMap[bill.id];
+      if (sapUrl) bill.sapUrl = sapUrl;
+    }
 
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
@@ -2463,6 +2473,38 @@ async function handleRules(request, env) {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
       });
     }
+  });
+}
+
+// ── Statements of Administration Policy (SAPs) ───────────────────────────────
+// whitehouse.gov/omb publishes SAPs as PDF uploads. The listing page is
+// server-rendered with <a href="...pdf">BILL_ID – Title (Date)</a> entries,
+// so we can parse bill → PDF URL directly with no extra fetch per bill.
+// Returns a map keyed by normalized bill id: { "H.R. 8646": "https://...pdf" }
+async function fetchSapMap(env) {
+  return kvCache(env, 'sap-map-v1', 2 * 60 * 60, async () => {
+    const resp = await fetch(
+      'https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/',
+      { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' }, signal: AbortSignal.timeout(12000) }
+    );
+    if (!resp.ok) throw new Error(`SAP listing ${resp.status}`);
+    const html = await resp.text();
+    const map = {};
+    // Each SAP is an anchor whose text starts with the bill ID, e.g.:
+    //   <a href="…/H.R.-8646-SAP_Updated.pdf">H.R. 8646 — Agriculture … (June 4, 2026)</a>
+    const linkRe = /href="(https?:\/\/www\.whitehouse\.gov\/wp-content\/uploads\/[^"]+\.pdf)"[^>]*>([^<]{3,220})/gi;
+    let m;
+    while ((m = linkRe.exec(html)) !== null) {
+      const pdfUrl = m[1];
+      const text = m[2].replace(/&#?\w+;/g, ' ').trim();
+      // Extract the leading bill ID (handles H.R., H.Res., H.Con.Res., S., S.J.Res., etc.)
+      const billM = text.match(/^(H\.\s*R\.|H\.\s*Con\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Res\.|S\.\s*J\.\s*Res\.|S\.\s*Con\.\s*Res\.|S\.)\s*(\d+)/i);
+      if (!billM) continue;
+      // Normalize: collapse spaces inside type abbreviation ("H. Res." → "H.Res.")
+      const normId = billM[0].replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+(\d)/, ' $1').trim();
+      if (!map[normId]) map[normId] = pdfUrl; // keep first (most recent) SAP per bill
+    }
+    return JSON.stringify(map);
   });
 }
 
