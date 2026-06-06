@@ -780,9 +780,13 @@ async function fetchBillMeta(billId) {
       const s = (data.bill?.sponsors || [])[0];
       if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
 
-      // Committee report: derive a stable PDF URL from the citation
+      // Committee report: derive a stable PDF URL from the citation.
+      // Always set committeeReportUrl (even null) so the enrichment cache knows
+      // "no report" vs "not yet checked" and doesn't re-fetch on every warm load.
       // e.g. "H. Rept. 119-632" → https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf
       const crpt = (data.bill?.committeeReports || [])[0];
+      result.committeeReportUrl = null;
+      result.committeeReportCitation = null;
       if (crpt?.citation) {
         const m = crpt.citation.match(/^(H|S)\.\s*Rept\.\s*(\d+)-(\d+)$/i);
         if (m) {
@@ -1472,8 +1476,9 @@ async function _fetchBills(request, env) {
         // original detection may have been a false positive (e.g. motion text misread as passage).
         // Also retry when the cached entry predates committeeReport support.
         const needsSummary            = !enrichCached.summary;
-        // Re-fetch meta when missing, or when cached entry predates committeeReportUrl support.
-        const needsMeta               = !enrichCached.meta || !enrichCached.meta.committeeReportUrl && enrichCached.meta.sponsor;
+        // Re-fetch meta when missing, or when the cached entry predates committeeReportUrl
+        // support (key absent entirely — null means "checked, no report").
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
         const needsStatusRefresh      = needsCommitteeReport || needsStatusVerify;
