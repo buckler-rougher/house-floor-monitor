@@ -1927,6 +1927,82 @@ let votingDaysData = {
 
 let votingCalendarData = [];
 
+// ── Road Closures ────────────────────────────────────────────────────────────
+const ROAD_CLOSURES_CONFIG = {
+    workerUrl: 'https://api.evanhollander.org/house-floor/api/road-closures',
+    refreshInterval: 120000, // 2 minutes
+};
+
+async function fetchRoadClosures() {
+    const el = document.getElementById('road-closures-content');
+    if (!el) return;
+    try {
+        const resp = await fetch(ROAD_CLOSURES_CONFIG.workerUrl);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        renderRoadClosures(data, el);
+    } catch (e) {
+        // Keep whatever was showing on error; only update if empty
+        if (el.querySelector('.road-closures-loading')) {
+            el.innerHTML = '<div class="road-closures-empty"><span class="road-closures-empty-icon">⚠</span>Unable to load closures</div>';
+        }
+    }
+}
+
+function renderRoadClosures(data, el) {
+    const closures = data?.closures ?? [];
+    const fetchedAt = data?.fetchedAt ? new Date(data.fetchedAt) : null;
+
+    if (closures.length === 0) {
+        el.innerHTML = '<div class="road-closures-empty"><span class="road-closures-empty-icon">✓</span>No active closures near the Capitol</div>'
+            + (fetchedAt ? `<div class="road-closures-updated">Updated ${fetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>` : '');
+        return;
+    }
+
+    const badgeClass = layer => {
+        if (layer === 'Road Blocks')  return 'road-closure-badge-block';
+        if (layer === 'Road Closures') return 'road-closure-badge-close';
+        return 'road-closure-badge-detour';
+    };
+    const shortLabel = layer => {
+        if (layer === 'Road Blocks')   return 'BLOCK';
+        if (layer === 'Road Closures') return 'CLOSED';
+        return 'DETOUR';
+    };
+    const fmtTime = iso => {
+        if (!iso) return null;
+        try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+        catch { return null; }
+    };
+
+    let html = '';
+    for (const c of closures) {
+        const label = shortLabel(c.layer);
+        const cls   = badgeClass(c.layer);
+        const street = escapeHtml(c.street || 'Unknown street');
+        const desc   = c.description ? escapeHtml(c.description) : '';
+        const dir    = c.direction   ? ` (${escapeHtml(c.direction)})` : '';
+        const alt    = c.altRoute    ? `Alt route: ${escapeHtml(c.altRoute)}` : '';
+        const start  = fmtTime(c.startTime);
+        const end    = fmtTime(c.endTime);
+        const times  = start && end ? `${start} – ${end}` : (end ? `Until ${end}` : '');
+
+        html += `<div class="road-closure-item">
+  <span class="road-closure-badge ${cls}">${label}</span>
+  <div class="road-closure-body">
+    <div class="road-closure-street">${street}${dir}</div>
+    ${desc ? `<div class="road-closure-desc">${desc}</div>` : ''}
+    ${times ? `<div class="road-closure-meta">${escapeHtml(times)}</div>` : ''}
+    ${alt ? `<div class="road-closure-alt">${alt}</div>` : ''}
+  </div>
+</div>`;
+    }
+    if (fetchedAt) {
+        html += `<div class="road-closures-updated">Updated ${fetchedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${closures.length} closure${closures.length !== 1 ? 's' : ''} within ~3 blocks of Capitol</div>`;
+    }
+    setIfChanged(el, html);
+}
+
 // Bills This Week Configuration
 const BILLS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/bills',
@@ -5571,6 +5647,8 @@ function init() {
     setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 3 minutes
     setInterval(fetchTweets, 120000); // Refresh floor reporters every 2 minutes
     setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
+    fetchRoadClosures();
+    setInterval(fetchRoadClosures, ROAD_CLOSURES_CONFIG.refreshInterval); // Refresh road closures every 2 minutes
     // Initialize
     initWeatherPanel();
     
