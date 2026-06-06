@@ -3375,11 +3375,11 @@ body {
 
 .this-week-strip {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--sp-12);
     padding: var(--sp-10) var(--sp-24);
     border-bottom: 1px solid var(--border-color);
-    background: rgba(63, 185, 80, 0.04);
+    background: rgba(13, 17, 23, 0.28);
 }
 .this-week-label {
     font-size: var(--fs-2xs);
@@ -3390,7 +3390,7 @@ body {
     flex-shrink: 0;
 }
 .this-week-body {
-    font-size: var(--fs-sm);
+    font-size: var(--fs-base);
     color: var(--text-primary);
     line-height: 1.5;
 }
@@ -3485,7 +3485,7 @@ body {
 .cal-day-added:hover { background: rgba(210,153,34,0.26); }
 .cal-day-cancelled { background: rgba(139,148,158,0.10); }
 .cal-day-cancelled:hover { background: rgba(139,148,158,0.18); }
-.cal-day-today     { border-color: rgba(88, 166, 255, 0.7) !important; }
+.cal-day-today     { border-color: rgba(88, 166, 255, 0.35) !important; }
 .cal-num {
     position: absolute;
     top: 2px;
