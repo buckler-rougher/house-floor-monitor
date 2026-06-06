@@ -2781,6 +2781,30 @@ body {
 /* Bottom Ticker */
 /* ── Committee Live Feeds ─────────────────────────────────────────── */
 
+.twitter-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-14);
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.05) inset;
+    margin-bottom: var(--section-gap);
+}
+.twitter-panel .panel-header {
+    margin: 0;
+    border-radius: var(--radius-14) var(--radius-14) 0 0;
+    background: #0b1322;
+    border-bottom: 1px solid rgba(52, 72, 100, 0.8);
+    padding: var(--sp-16) var(--sp-24);
+}
+.twitter-embed-wrap {
+    height: 600px;
+    overflow: hidden;
+}
+.twitter-embed-wrap iframe {
+    width: 100% !important;
+    border: none !important;
+}
+
 .bottom-ticker {
     position: fixed;
     bottom: 0;
