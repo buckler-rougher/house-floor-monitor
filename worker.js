@@ -485,14 +485,24 @@ async function handleImageProxy(request) {
   const url = new URL(request.url);
   const imageUrl = url.searchParams.get('url');
   if (!imageUrl) return new Response('Missing url', { status: 400, headers: CORS_HEADERS });
-  let allowed = false;
-  try { const p = new URL(imageUrl); allowed = NITTER_INSTANCES.some(i => p.hostname === i); } catch (_) {}
-  if (!allowed) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+
+  // Nitter /pic/ URLs encode the Twitter CDN path directly.
+  // e.g. http://nitter.x/pic/media%2FXXX.jpg → https://pbs.twimg.com/media/XXX.jpg
+  // Fetch from pbs.twimg.com directly to bypass Cloudflare bot protection on nitter.
+  let fetchUrl;
+  const picMatch = imageUrl.match(/\/pic\/(.+)$/);
+  if (picMatch) {
+    fetchUrl = `https://pbs.twimg.com/${decodeURIComponent(picMatch[1])}`;
+  } else {
+    // Fallback: only allow known nitter hostnames
+    let allowed = false;
+    try { const p = new URL(imageUrl); allowed = NITTER_INSTANCES.some(i => p.hostname === i); } catch (_) {}
+    if (!allowed) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+    fetchUrl = imageUrl;
+  }
+
   try {
-    const resp = await fetch(imageUrl, {
-      signal: AbortSignal.timeout(8000),
-      headers: { 'Referer': `https://${new URL(imageUrl).hostname}/`, 'User-Agent': 'Mozilla/5.0' }
-    });
+    const resp = await fetch(fetchUrl, { signal: AbortSignal.timeout(8000) });
     return new Response(resp.body, {
       headers: { ...CORS_HEADERS, 'Content-Type': resp.headers.get('content-type') || 'image/jpeg', 'Cache-Control': 'public, max-age=86400' }
     });
