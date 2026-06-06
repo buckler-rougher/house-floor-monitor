@@ -4698,14 +4698,6 @@ a.bill-card-rule-link {
     letter-spacing: 0.4px;
     text-transform: uppercase;
 }
-.cotw-indicator-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: var(--radius-full);
-    background: var(--accent-green);
-    flex-shrink: 0;
-    animation: pulse-dot 2s ease-in-out infinite;
-}
 
 /* Airport Delays Panel */
 .airport-delays-panel {
