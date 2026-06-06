@@ -306,6 +306,7 @@ function renderVotingDaysCalendar() {
             calEl.querySelectorAll('.fc-view-harness').forEach(h => {
                 h.style.setProperty('border', '1px solid #30363d', 'important');
                 h.style.setProperty('border-radius', '8px', 'important');
+                h.style.setProperty('clip-path', 'inset(0 round 8px)', 'important');
             });
         });
     };
