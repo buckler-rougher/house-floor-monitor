@@ -1,5 +1,16 @@
 // Dome Watch - Single Vote Tracker
 
+// Allowlist-sanitize HTML from external sources (e.g. nitter tweet bodies).
+// Keeps <a href="https://..."> links; strips everything else.
+function sanitizeTweetHtml(html) {
+    if (!html) return '';
+    return html
+        .replace(/<a\s+[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
+            (_, href, inner) =>
+                `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(inner.replace(/<[^>]+>/g, ''))}</a>`)
+        .replace(/<[^>]+>/g, '');
+}
+
 // Guard against unnecessary DOM thrashing — skip innerHTML update if content unchanged
 const _htmlCache = new WeakMap();
 function setIfChanged(el, html) {
@@ -77,18 +88,9 @@ function updateTodayDate() {
 function updateSourceLinks() {
     const currentYear = new Date().getFullYear();
     const clerkUrl = `https://clerk.house.gov/evs/${currentYear}/index.asp`;
-    
-    // Update missing members source link
-    const absenteeSource = document.querySelector('.absentee-source a');
-    if (absenteeSource) {
-        absenteeSource.href = clerkUrl;
-    }
-    
-    // Update quorum source link
-    const quorumSource = document.querySelector('.quorum-source a');
-    if (quorumSource) {
-        quorumSource.href = clerkUrl;
-    }
+    document.querySelectorAll('a[href*="clerk.house.gov/evs/"]').forEach(a => {
+        a.href = clerkUrl;
+    });
 }
 
 // Fetch House Voting Days
@@ -397,46 +399,6 @@ function renderVotingDaysCalendar() {
 }
 
 // Parse ICS content
-function parseICS(icsText) {
-    const events = [];
-    const lines = icsText.split('\n');
-    let currentEvent = {};
-    
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        
-        if (trimmedLine === 'BEGIN:VEVENT') {
-            currentEvent = {};
-        } else if (trimmedLine === 'END:VEVENT') {
-            if (currentEvent.date && currentEvent.summary) {
-                events.push({
-                    date: currentEvent.date,
-                    summary: currentEvent.summary,
-                    description: currentEvent.description || ''
-                });
-            }
-            currentEvent = {};
-        } else if (trimmedLine.startsWith('DTSTART:')) {
-            const dateStr = trimmedLine.substring(8);
-            currentEvent.date = parseICSDate(dateStr);
-        } else if (trimmedLine.startsWith('SUMMARY:')) {
-            currentEvent.summary = trimmedLine.substring(8);
-        } else if (trimmedLine.startsWith('DESCRIPTION:')) {
-            currentEvent.description = trimmedLine.substring(12);
-        }
-    }
-    
-    return events;
-}
-
-// Parse ICS date format (YYYYMMDD)
-function parseICSDate(dateStr) {
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-indexed
-    const day = parseInt(dateStr.substring(6, 8));
-    return new Date(year, month, day);
-}
-
 // Check if today is a fly-in day (first voting day of the week)
 function checkIfFlyInDay(today, events) {
     const todayDay = today.getDay();
@@ -444,19 +406,21 @@ function checkIfFlyInDay(today, events) {
     weekStart.setDate(today.getDate() - todayDay); // Start of week (Sunday)
     weekStart.setHours(0, 0, 0, 0);
     
+    // Parse event date strings as local dates (YYYY-MM-DD) to avoid UTC offset issues
+    const parseLocal = ds => { const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); };
+
     // Find all voting days this week
     const weekEvents = events.filter(event => {
-        const eventDate = new Date(event.date);
-        eventDate.setHours(0, 0, 0, 0);
+        const eventDate = parseLocal(event.date);
         return eventDate >= weekStart && eventDate <= today;
     });
-    
+
     // Sort by date
-    weekEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
+    weekEvents.sort((a, b) => parseLocal(a.date) - parseLocal(b.date));
+
     // Check if today is the first voting day of the week
-    return weekEvents.length > 0 && 
-           new Date(weekEvents[0].date).getTime() === today.getTime();
+    return weekEvents.length > 0 &&
+           parseLocal(weekEvents[0].date).getTime() === today.getTime();
 }
 
 // Update Session Status Display
@@ -836,7 +800,7 @@ function syncVoteTimer(timerData) {
 
     voteTimer.openedAt = timerData.timestamp || null;
     if (!voteTimer.interval) {
-        voteTimer.interval = setInterval(tickVoteTimer, 50);
+        voteTimer.interval = setInterval(tickVoteTimer, 100);
     }
 }
 
@@ -1038,7 +1002,6 @@ function startSSEStreaming() {
 
         // connected: initial handshake — no data to process, just confirms stream is live
         eventSource.addEventListener('connected', (event) => {
-            console.log('SSE connected event:', event.data);
             // Start pinging the DO every 45s so it can detect and evict zombie connections.
             try {
                 const { clientId } = JSON.parse(event.data);
@@ -1237,7 +1200,11 @@ function updateFloorDisplay(status = null) {
         const title = floorData.rollCall.bill?.title || '';
         
         if (title) {
-            elements.voteTitle.innerHTML = `${question}<br><span style="font-weight: 300; opacity: 0.8;">${title}</span>`;
+            elements.voteTitle.textContent = '';
+            const sub = document.createElement('span');
+            sub.style.cssText = 'font-weight:300;opacity:0.8';
+            sub.textContent = title;
+            elements.voteTitle.append(question, document.createElement('br'), sub);
         } else {
             elements.voteTitle.textContent = question;
         }
@@ -1259,10 +1226,8 @@ function updateFloorDisplay(status = null) {
         const totalVotes = yeas + nays + present; // Exclude Not Voting from progress bar
         const totalVotesWithNotVoting = yeas + nays + present + notVoting; // For display purposes
 
-        // Update vote counts with better formatting
-        elements.yeasCount.textContent = yeas.toLocaleString();
-        elements.naysCount.textContent = nays.toLocaleString();
-        elements.presentCount.textContent = present.toLocaleString();
+        // Use flipToNumber to avoid clobbering the animated flip-digit DOM structure
+        updateVoteCountsDisplay(totals);
 
         // Update percentages with better formatting
         if (totalVotes > 0) {
@@ -1664,7 +1629,6 @@ const NEWS_CONFIG = {
 
 // DomeWatch API Configuration
 const DOMEWATCH_CONFIG = {
-    apiKey: 'dw_WukWf8avaMpRU7uk7UyHi94ny1pHFsE8',
     baseUrl: 'https://data.domewatch.us/v1',
     workerUrl: 'https://api.evanhollander.org/house-floor/api/domewatch-floor',
     refreshInterval: 10000 // 10 seconds for floor data
@@ -1742,7 +1706,6 @@ async function fetchAirportNames() {
             }
         }
         
-        console.log('Loaded airport names:', Object.keys(airportNames).length);
     } catch (error) {
         console.error('Failed to load airport names:', error);
         // Fallback to basic mapping
@@ -1938,17 +1901,20 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
         const airportName = airportNames[code] || code;
         const airportUrl = airportUrls[code];
         
+        const safeCode = escapeHtml(code);
+        const safeName = escapeHtml(airportName);
+        const safeDelay = escapeHtml(delayText);
         return `
-            ${airportUrl ? 
-                `<a href="${airportUrl}" target="_blank" rel="noopener" class="airport-delay-item-link">
+            ${airportUrl ?
+                `<a href="${escapeHtml(airportUrl)}" target="_blank" rel="noopener" class="airport-delay-item-link">
                     <div class="airport-delay-item">
-                        <span class="airport-info">${code} - ${airportName}</span>
-                        <span class="airport-status ${statusClass}">${delayText}</span>
+                        <span class="airport-info">${safeCode} - ${safeName}</span>
+                        <span class="airport-status ${statusClass}">${safeDelay}</span>
                     </div>
                 </a>` :
                 `<div class="airport-delay-item">
-                    <span class="airport-info">${code} - ${airportName}</span>
-                    <span class="airport-status ${statusClass}">${delayText}</span>
+                    <span class="airport-info">${safeCode} - ${safeName}</span>
+                    <span class="airport-status ${statusClass}">${safeDelay}</span>
                 </div>`
             }
         `;
@@ -2290,66 +2256,6 @@ async function fetchBillsThisWeek() {
         if (elements.suspensionBillsList) {
             setIfChanged(elements.suspensionBillsList, '<div class="no-bills">Unable to load bills</div>');
         }
-    }
-}
-
-// Update bill statuses using Congress.gov API
-async function updateBillStatuses() {
-    const allBills = [...billsData.ruleBills, ...billsData.suspensionBills];
-    
-    // Process bills in batches to avoid overwhelming the API
-    const batchSize = 5;
-    for (let i = 0; i < allBills.length; i += batchSize) {
-        const batch = allBills.slice(i, i + batchSize);
-        await Promise.all(batch.map(updateBillStatus));
-        
-        // Small delay between batches
-        if (i + batchSize < allBills.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-    }
-}
-
-// Update individual bill status
-async function updateBillStatus(bill) {
-    try {
-        // Parse bill ID (e.g., "H.R. 1234" -> "hr/1234")
-        const billMatch = bill.id.match(/H\.R\. (\d+)/);
-        if (!billMatch) return;
-        
-        const billNumber = billMatch[1];
-        const apiPath = `/bill/119/hr/${billNumber}/actions`;
-        const url = BILLS_CONFIG.congressWorker + apiPath;
-        
-        const response = await fetch(url, { method: 'GET', credentials: 'omit' });
-        
-        if (!response.ok) {
-            console.warn(`Failed to fetch status for ${bill.id}: ${response.status}`);
-            return;
-        }
-        
-        const data = await response.json();
-        
-        if (data && data.actions && data.actions.length > 0) {
-            const latestAction = data.actions[0]; // Most recent action first
-            
-            bill.latestAction = latestAction.actionText || '';
-            bill.latestActionDate = latestAction.actionDate || '';
-            
-            // Determine status based on latest action
-            const actionText = (latestAction.actionText || '').toLowerCase();
-            if (actionText.includes('pass') && actionText.includes('house')) {
-                bill.status = 'passed';
-            } else if (actionText.includes('fail') || actionText.includes('rejected')) {
-                bill.status = 'failed';
-            } else {
-                bill.status = 'pending';
-            }
-        }
-        
-    } catch (error) {
-        console.warn(`Error updating status for ${bill.id}:`, error);
-        // Keep as pending if API fails
     }
 }
 
@@ -3837,7 +3743,7 @@ function updateDebateSection(items) {
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
-                elements.debateBillDescription.innerHTML = foundBill.summary;
+                elements.debateBillDescription.textContent = foundBill.summary;
                 elements.debateSummarySection.style.display = '';
             } else {
                 elements.debateSummarySection.style.display = 'none';
@@ -5410,11 +5316,11 @@ async function fetchTweets() {
             const quoteHtml = t.quoteAuthor
                 ? `<div class="tweet-quote">
                     <span class="tweet-quote-author">${escapeHtml(t.quoteAuthor)}</span>
-                    <div class="tweet-quote-text">${t.quoteHtml || ''}</div>
+                    <div class="tweet-quote-text">${sanitizeTweetHtml(t.quoteHtml)}</div>
                   </div>`
                 : '';
 
-            const bodyHtml = t.html || escapeHtml(t.title || '');
+            const bodyHtml = sanitizeTweetHtml(t.html) || escapeHtml(t.title || '');
 
             const avatarLetter = (t.handle || '?').replace('@', '')[0].toUpperCase();
             const bareHandle = (t.handle || '').replace('@', '');
