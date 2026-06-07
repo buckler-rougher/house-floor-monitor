@@ -2077,6 +2077,7 @@ body {
   border-radius: var(--radius-10);
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  transform: translateZ(0); /* force GPU layer — prevents white corner flash on border-radius + overflow:hidden */
   z-index: 998;
   opacity: 0;
   pointer-events: none;
@@ -2718,6 +2719,31 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 .tweet-item:last-child { border-bottom: none; }
+
+/* Thread grouping */
+.tweet-thread {
+    border-bottom: 1px solid var(--border-color);
+}
+.tweet-thread-parent {
+    border-bottom: none;
+    padding-bottom: 0;
+    position: relative;
+}
+.tweet-thread-parent::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--sp-20) + 15px); /* center of 32px avatar */
+    bottom: 0;
+    width: 2px;
+    height: var(--sp-12);
+    background: var(--border-color);
+}
+.tweet-thread-reply {
+    border-bottom: none;
+    padding-top: var(--sp-8);
+}
+.tweet-thread:last-child { border-bottom: none; }
+
 .tweet-rt-bar {
     font-size: var(--fs-xs);
     font-family: var(--font-mono);
