@@ -2384,64 +2384,6 @@ async function handleDomeWatchStreamFallback(request, priorError = null) {
   });
 }
 
-// ── Road Closures ────────────────────────────────────────────────────────────
-// Fetches active road closures from DC HSEMA (Homeland Security & Emergency
-// Management Agency) near the Capitol. Covers security-related and emergency
-// closures. Layers: 0=Road Blocks, 1=Road Closures, 2=Road Detours.
-// Capitol bounding box: ~3-block radius centred on the building.
-const ROAD_CLOSURE_CACHE_KEY = 'road-closures-v1';
-const ROAD_CLOSURE_TTL_MS = 120_000; // 2 minutes in-memory
-
-async function handleRoadClosures(env) {
-  const cached = _mGet(ROAD_CLOSURE_CACHE_KEY);
-  if (cached) {
-    return new Response(cached, {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
-  }
-
-  // ~3-block radius around the Capitol (lat/lon, WGS84)
-  const BBOX = '-77.016,38.886,-77.002,38.894';
-  const SR   = '4326';
-  const FIELDS = 'street,description,direction,starttime,endtime,status,closuretype,altroute';
-  const BASE   = 'https://maps2.dcgis.dc.gov/dcgis/rest/services/DDOT/HSEMA_RoadClosures/MapServer';
-
-  const layerNames = ['Road Blocks', 'Road Closures', 'Road Detours'];
-  const results = [];
-
-  await Promise.all([0, 1, 2].map(async (layer) => {
-    try {
-      const url =
-        `${BASE}/${layer}/query` +
-        `?geometry=${BBOX}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects` +
-        `&inSR=${SR}&outFields=${FIELDS}&outSR=${SR}&f=json&resultRecordCount=50`;
-      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!resp.ok) return;
-      const data = await resp.json();
-      if (!Array.isArray(data.features)) return;
-      for (const feat of data.features) {
-        const a = feat.attributes || {};
-        results.push({
-          layer:       layerNames[layer],
-          street:      a.street      || null,
-          description: a.description || null,
-          direction:   a.direction   || null,
-          altRoute:    a.altroute    || null,
-          status:      a.status      || null,
-          closureType: a.closuretype || null,
-          startTime:   a.starttime   != null ? new Date(a.starttime).toISOString() : null,
-          endTime:     a.endtime     != null ? new Date(a.endtime).toISOString()   : null,
-        });
-      }
-    } catch { /* individual layer failure — continue */ }
-  }));
-
-  const payload = JSON.stringify({ closures: results, fetchedAt: new Date().toISOString() });
-  _mSet(ROAD_CLOSURE_CACHE_KEY, payload, ROAD_CLOSURE_TTL_MS);
-  return new Response(payload, {
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
-}
 
 async function handleLastSessionDate(request) {
   try {
@@ -2826,8 +2768,6 @@ async function handleRequest(request, env) {
     return await handleAmendments(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership(env);
-  } else if (path === '/api/road-closures' && request.method === 'GET') {
-    return await handleRoadClosures(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
