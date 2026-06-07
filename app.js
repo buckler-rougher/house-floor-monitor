@@ -5262,7 +5262,7 @@ async function fetchTweets() {
                   + `<span style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${avatarLetter}</span>`
                 : avatarLetter;
             const profileUrl = t.handle ? `https://twitter.com/${t.handle.replace('@', '')}` : null;
-            const displayName = REPORTER_NAMES[t.handle] || null;
+            const displayName = REPORTER_NAMES[t.handle] || bareHandle || null;
             const authorHtml = profileUrl
                 ? `<a class="tweet-author-block" href="${profileUrl}" target="_blank" rel="noopener">
                     ${displayName ? `<span class="tweet-display-name">${escapeHtml(displayName)}</span>` : ''}
