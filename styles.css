@@ -2176,6 +2176,7 @@ body {
   aspect-ratio: 16/9;
   overflow: hidden;
   background: #000;
+  line-height: 0; /* collapse inline baseline gap below video element */
   container-type: inline-size; /* width-based cq units for caption scaling (inline-size avoids the size-containment paint churn of container-type:size) */
 }
 
