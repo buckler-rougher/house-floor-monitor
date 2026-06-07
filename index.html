@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260606ax">
+    <link rel="stylesheet" href="styles.css?v=20260606ay">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -946,22 +946,22 @@
                     <span class="absentee-roll-info" id="absentee-roll-info">--</span>
                 </div>
                 <div class="absentee-content">
-                    <div class="absentee-metrics">
-                        <div class="absentee-metric">
-                            <span class="metric-label">REPUBLICANS</span>
-                            <span class="metric-value" id="absentee-rep">--</span>
+                    <div class="party-breakdown-metrics">
+                        <div class="party-metric rep-metric">
+                            <span class="party-label">REPUBLICANS</span>
+                            <span class="party-value" id="absentee-rep">--</span>
                         </div>
-                        <div class="absentee-metric">
-                            <span class="metric-label">DEMOCRATS</span>
-                            <span class="metric-value" id="absentee-dem">--</span>
+                        <div class="party-metric dem-metric">
+                            <span class="party-label">DEMOCRATS</span>
+                            <span class="party-value" id="absentee-dem">--</span>
                         </div>
-                        <div class="absentee-metric" id="absentee-ind-metric" style="display:none">
-                            <span class="metric-label">INDEPENDENTS</span>
-                            <span class="metric-value" id="absentee-ind">--</span>
+                        <div class="party-metric ind-metric" id="absentee-ind-metric" style="display:none">
+                            <span class="party-label">INDEPENDENT</span>
+                            <span class="party-value" id="absentee-ind">--</span>
                         </div>
-                        <div class="absentee-metric">
-                            <span class="metric-label">TOTAL</span>
-                            <span class="metric-value" id="absentee-total">--</span>
+                        <div class="party-metric total-metric">
+                            <span class="party-label">TOTAL</span>
+                            <span class="party-value" id="absentee-total">--</span>
                         </div>
                     </div>
                     <div class="absentee-list" id="absentee-list">
@@ -1010,7 +1010,7 @@
                             <span class="party-value" id="party-ind">--</span>
                         </div>
                         <div class="party-metric total-metric">
-                            <span class="party-label">WHOLE NUMBER</span>
+                            <span class="party-label">TOTAL</span>
                             <span class="party-value" id="party-total">--</span>
                         </div>
                     </div>
@@ -1270,7 +1270,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260606ax"></script>
+    <script src="app.js?v=20260606ay"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
