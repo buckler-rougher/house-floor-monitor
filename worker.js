@@ -457,9 +457,11 @@ async function handleTweets(env) {
       const pubDate = getTag('pubDate', itemXml);
 
       // RT detection
-      let isRT = false, rtBy = null;
+      let isRT = false, rtBy = null, isReply = false, replyTo = null;
       const rtM = title.match(/^RT by (@\w+):\s*/);
       if (rtM) { isRT = true; rtBy = rtM[1]; title = title.slice(rtM[0].length); }
+      const replyM = title.match(/^R to (@\w+):\s*/);
+      if (replyM) { isReply = true; replyTo = replyM[1]; title = title.slice(replyM[0].length); }
 
       // Handle from link or dc:creator
       const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
@@ -473,7 +475,7 @@ async function handleTweets(env) {
       } catch (_) {}
 
       const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml } = parseTweetDescription(description, usedInstance);
-      return { handle, relativeTime, link, isRT, rtBy, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml };
+      return { handle, relativeTime, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml };
     });
 
     return new Response(JSON.stringify({ tweets }), {

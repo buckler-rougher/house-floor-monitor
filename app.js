@@ -5229,6 +5229,8 @@ async function fetchTweets() {
         feed.innerHTML = data.tweets.map(t => {
             const rtBar = t.isRT
                 ? `<div class="tweet-rt-bar">↩ ${escapeHtml(t.rtBy || '')} retweeted</div>`
+                : t.isReply
+                ? `<div class="tweet-rt-bar">↩ replying to ${escapeHtml(t.replyTo || '')}</div>`
                 : '';
 
             const onImgError = `this.style.display='none';const w=this.closest('.tweet-images,.tweet-card');if(w&&!w.querySelector('img:not([style*="none"])')&&w!==null)w.style.display='none'`;
