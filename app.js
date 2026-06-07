@@ -5159,6 +5159,16 @@ function updatePartyBreakdownDisplay() {
 // Floor Reporters (via nitter proxy)
 const REPORTER_NAMES = {
     '@AdamZHerman':     'Adam Herman',
+    '@HouseInSession':  'Billy House',
+    '@NBCPolitics':     'NBC Politics',
+    '@ScottNover':      'Scott Nover',
+    '@adamwren':        'Adam Wren',
+    '@ddale8':          'Daniel Dale',
+    '@kwelkernbc':      'Kristen Welker',
+    '@kyledcheney':     'Kyle Cheney',
+    '@meredithllee':    'Meredith Lee',
+    '@metzgov':         'Bryan Metzger',
+    '@stephen_neukam':  'Stephen Neukam',
     '@AlecAHernandez':  'Alec Hernandez',
     '@AndrewDesiderio': 'Andrew Desiderio',
     '@AndrewSolender':  'Andrew Solender',
