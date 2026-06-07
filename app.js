@@ -5226,11 +5226,10 @@ async function fetchTweets() {
             feed.innerHTML = '<div class="tweets-empty">No posts available.</div>';
             return;
         }
-        feed.innerHTML = data.tweets.map(t => {
+        const renderTweet = (t, opts = {}) => {
+            const { isThreadParent = false, isThreadReply = false } = opts;
             const rtBar = t.isRT
                 ? `<div class="tweet-rt-bar">↩ ${escapeHtml(t.rtBy || '')} retweeted</div>`
-                : t.isReply
-                ? `<div class="tweet-rt-bar">↩ replying to ${escapeHtml(t.replyTo || '')}</div>`
                 : '';
 
             const onImgError = `this.style.display='none';const w=this.closest('.tweet-images,.tweet-card');if(w&&!w.querySelector('img:not([style*="none"])')&&w!==null)w.style.display='none'`;
@@ -5274,7 +5273,9 @@ async function fetchTweets() {
                     ${displayName ? `<span class="tweet-display-name">${escapeHtml(displayName)}</span>` : ''}
                     <span class="tweet-handle">${escapeHtml(t.handle || '')}</span>
                   </span>`;
-            return `<div class="tweet-item">
+
+            const cls = ['tweet-item', isThreadParent ? 'tweet-thread-parent' : '', isThreadReply ? 'tweet-thread-reply' : ''].filter(Boolean).join(' ');
+            return `<div class="${cls}">
                 ${rtBar}
                 <div class="tweet-header">
                     <div class="tweet-avatar">${avatarInner}</div>
@@ -5285,7 +5286,25 @@ async function fetchTweets() {
                 <div class="tweet-body">${bodyHtml}</div>
                 ${imagesHtml}${cardHtml}${quoteHtml}
             </div>`;
-        }).join('');
+        };
+
+        // Group consecutive reply threads
+        const items = [];
+        const tweets = data.tweets;
+        let i = 0;
+        while (i < tweets.length) {
+            const t = tweets[i];
+            const next = tweets[i + 1];
+            // If next tweet is a reply to this tweet's handle, group as thread
+            if (next && next.isReply && next.replyTo === t.handle) {
+                items.push(`<div class="tweet-thread">${renderTweet(t, { isThreadParent: true })}${renderTweet(next, { isThreadReply: true })}</div>`);
+                i += 2;
+            } else {
+                items.push(renderTweet(t));
+                i += 1;
+            }
+        }
+        feed.innerHTML = items.join('');
     } catch (e) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
