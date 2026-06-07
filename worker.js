@@ -430,7 +430,7 @@ function parseTweetDescription(html, instance) {
 
 
 async function handleTweets(env) {
-  return kvCache(env, 'tweets-feed-v2', 120, async () => {
+  return kvCache(env, 'tweets-feed-v3', 120, async () => {
     let rawXml = null, usedInstance = null;
     for (const instance of NITTER_INSTANCES) {
       try {
