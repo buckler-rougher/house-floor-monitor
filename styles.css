@@ -2415,7 +2415,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--sp-12);
-  padding: var(--sp-8) var(--sp-16);
+  padding: var(--sp-10) var(--sp-24);
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-16)) 0;
@@ -2425,16 +2425,17 @@ body {
 }
 .proceedings-next-label {
   font-family: var(--font-mono);
-  font-size: var(--fs-md);
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--accent-green);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 .proceedings-next-text {
   font-family: var(--font-mono);
-  font-size: var(--fs-md);
-  color: var(--text-secondary);
+  font-size: var(--fs-base);
+  color: var(--text-muted);
 }
 
 .proceedings-loading {
