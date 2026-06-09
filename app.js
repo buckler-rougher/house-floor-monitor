@@ -1412,6 +1412,24 @@ function reconcileVoteWithBills() {
             break;
         }
     }
+    // If not found in billsData, check if this is an H.Res. rule in specialRulesMap
+    // (the rule itself isn't a "bill" in the list, but its passage updates rule status tags)
+    if (!found && /^H\.Res\.\s*\d+$/i.test(billId)) {
+        const hresNum = billId.match(/(\d+)/)?.[1];
+        if (hresNum) {
+            const passed = yeas > nays;
+            const rollNum = floorData.rollCall.number ? ` (Roll Call ${floorData.rollCall.number})` : '';
+            let ruleUpdated = false;
+            for (const entry of specialRulesMap.values()) {
+                if (String(entry.hresNum) === String(hresNum)) {
+                    entry.ruleStatus = passed ? 'passed' : 'failed';
+                    entry.passageVote = `${yeas}-${nays}`;
+                    ruleUpdated = true;
+                }
+            }
+            if (ruleUpdated) updateBillsDisplay();
+        }
+    }
     if (found) updateBillsDisplay();
 }
 
@@ -2315,7 +2333,7 @@ function updateBillStatusFromProceedings(items) {
     const isPassed = desc =>
         /(agreed to|passed)\b/i.test(desc) &&
         !/not agreed to|failed/i.test(desc) &&
-        /voice vote|without objection|recorded vote|yeas and nays/i.test(desc);
+        /voice vote|without objection/i.test(desc);
 
     for (let i = 0; i < items.length; i++) {
         const desc = items[i].description || '';
@@ -2333,10 +2351,8 @@ function updateBillStatusFromProceedings(items) {
         for (const key of allArrays) {
             const bill = (billsData[key] || []).find(b => b.id.replace(/\s+/g, '') === normId);
             if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
-                const voteMethod = /recorded vote|yeas and nays/i.test(desc)
-                    ? 'recorded vote' : /voice vote/i.test(desc) ? 'voice vote' : 'without objection';
                 bill.status = 'passed';
-                bill.latestAction = `Passed (${voteMethod})`;
+                bill.latestAction = 'Passed (voice vote)';
                 bill.latestActionDate = items[i].pubDate || '';
                 bill.actionSource = 'proceedings';
                 bill.actionSourceUrl = items[i].link || '';
