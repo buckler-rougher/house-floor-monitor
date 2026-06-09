@@ -2411,6 +2411,29 @@ body {
   letter-spacing: 0.5px;
 }
 
+.proceedings-next-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+  margin: 0 calc(-1 * var(--sp-16));
+}
+.proceedings-next-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--accent-green);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.proceedings-next-text {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+}
+
 .proceedings-loading {
   text-align: center;
   padding: var(--sp-24);
