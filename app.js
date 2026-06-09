@@ -909,10 +909,14 @@ function updateVoteCountsDisplay(counts) {
     const needed = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
     const toPass = Math.max(needed - yeas, 0);
     const toFail = Math.max(needed - nays, 0);  // nays needed to block
+    const iY = Math.max(yeas - dY - rY, 0);
+    const iN = Math.max(nays - dN - rN, 0);
     if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
     if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
+    if (elements.yeasI) { elements.yeasI.textContent = `${iY}I`; elements.yeasI.style.display = iY > 0 ? '' : 'none'; }
     if (elements.naysD) elements.naysD.textContent = `${dN}D`;
     if (elements.naysR) elements.naysR.textContent = `${rN}R`;
+    if (elements.naysI) { elements.naysI.textContent = `${iN}I`; elements.naysI.style.display = iN > 0 ? '' : 'none'; }
     if (elements.yeaThreshold) {
         elements.yeaThreshold.textContent = yeas >= needed ? '✓ Passes' : `Need ${toPass} more`;
         elements.yeaThreshold.className = 'vote-threshold ' + (yeas >= needed ? 'threshold-pass' : 'threshold-need');
@@ -1521,6 +1525,7 @@ const elements = {
     yeasPercent: document.getElementById('yeas-percent'),
     yeasD: document.getElementById('yeas-d'),
     yeasR: document.getElementById('yeas-r'),
+    yeasI: document.getElementById('yeas-i'),
     yeaThreshold: document.getElementById('yea-threshold'),
     presentCount: document.getElementById('present-count'),
     presentPercent: document.getElementById('present-percent'),
@@ -1528,6 +1533,7 @@ const elements = {
     naysPercent: document.getElementById('nays-percent'),
     naysD: document.getElementById('nays-d'),
     naysR: document.getElementById('nays-r'),
+    naysI: document.getElementById('nays-i'),
     nayThreshold: document.getElementById('nay-threshold'),
     yeasBar: document.getElementById('yeas-bar'),
     presentBar: document.getElementById('present-bar'),

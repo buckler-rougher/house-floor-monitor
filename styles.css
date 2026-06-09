@@ -848,6 +848,7 @@ body {
 }
 .count-party-breakdown .cpb-d { color: #5b8fcf; }
 .count-party-breakdown .cpb-r { color: #c0504d; }
+.count-party-breakdown .cpb-i { color: #ffffff; }
 
 .vote-threshold {
     margin-top: 4px;
