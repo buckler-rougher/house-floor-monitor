@@ -6288,7 +6288,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
         const absenteeHtml = absentees.map((absentee, absenteeIndex) => {
             const parsedName = parseAbsenteeRollName(absentee.name);
             const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
-            const displayName = match ? match.fullName : parsedName.rawName;
+            const displayName = (match ? match.fullName : parsedName.rawName) || displayState || 'Unknown';
             const nd = match ? normalizeDistrict(match.district) : '';
             const displayState = match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state;
             const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
