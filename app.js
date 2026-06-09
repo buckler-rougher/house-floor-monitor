@@ -3431,9 +3431,10 @@ function updateDebateSection(items) {
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
-    // Items are reverse-chrono; only look at the most recent window to avoid
-    // picking up stale debate entries from earlier in the day.
-    const recentItems = items.slice(0, 15);
+    // Items are reverse-chrono. Only consider items from the last 90 minutes
+    // to avoid stale debate entries from earlier bills bleeding through.
+    const cutoff = Date.now() - 90 * 60 * 1000;
+    const recentItems = items.filter(i => new Date(i.pubDate).getTime() >= cutoff);
     const debateItem = recentItems.find(i => /^DEBATE\b/i.test(i.description));
     const fallbackItem = recentItems.find(i => {
         const d = i.description.toLowerCase();
