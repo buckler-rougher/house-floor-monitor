@@ -3330,11 +3330,9 @@ async function updateProceedingsFeed() {
         // Pinned timeline item from DomeWatch (e.g. "First votes: Wednesday at 12:30 PM")
         const timelineText = floorData.timeline?.first_votes?.text || '';
         const timelineHtml = timelineText ? `
-            <div class="proceedings-item proceedings-timeline-pin">
-                <div class="proceedings-text">
-                    <span class="proceedings-time">NEXT</span>
-                    ${escapeHtml(timelineText)}
-                </div>
+            <div class="proceedings-next-header">
+                <span class="proceedings-next-label">NEXT</span>
+                <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
             </div>` : '';
 
         const html = data.items.map(item => {
