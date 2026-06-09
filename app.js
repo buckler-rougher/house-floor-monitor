@@ -1081,12 +1081,16 @@ async function fetchFloorData(silent = false) {
             throw new Error(data.error);
         }
         
-        // Update floor data state
+        // Update floor data state.
+        // During an active vote, SSE delivers live counts every ~1s while the REST
+        // endpoint is cached up to 10s — using REST counts would snap the display
+        // backwards. Keep the SSE-sourced voteCounts when the stream is fresh (<15s).
+        const sseRecentlyTallied = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 15_000;
         floorData = {
             lastUpdated: new Date(),
             currentStatus: data.now,
             rollCall: data.roll_call,
-            voteCounts: data.votes?.counts,
+            voteCounts: sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts,
             timer: data.timer,
             timeline: data.timeline
         };
