@@ -2416,9 +2416,12 @@ body {
   align-items: center;
   gap: var(--sp-12);
   padding: var(--sp-8) var(--sp-16);
-  background: var(--bg-elevated);
+  background: rgba(13, 17, 23, 0.28);
   border-bottom: 1px solid var(--border-color);
-  margin: 0 calc(-1 * var(--sp-16));
+  margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-16)) 0;
+  position: sticky;
+  top: calc(-1 * var(--sp-8));
+  z-index: 1;
 }
 .proceedings-next-label {
   font-family: var(--font-mono);

@@ -500,6 +500,7 @@ async function loadRollLog() {
 let sseConnection = null;
 let isStreaming = false;
 let lastSseTallyAt = 0;    // ms timestamp of last vote.tally received (for stale detection)
+let lastSseReconnectAt = 0; // ms timestamp of last watchdog-forced reconnect (loop guard only)
 let sseReconnectCount = 0; // how many times we've reconnected to the SSE endpoint
 let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdown display)
 
@@ -899,9 +900,11 @@ function startSSEStreaming() {
 
         eventSource.addEventListener('vote.tally', (event) => {
             try {
-                lastSseTallyAt = Date.now(); // track liveness for stale watchdog
                 const data = JSON.parse(event.data);
                 const v = data.vote || {};
+                // Ignore DomeWatch test votes
+                if (/test vote/i.test(v.roll_call?.question || '')) return;
+                lastSseTallyAt = Date.now(); // track liveness for stale watchdog
                 floorData = {
                     ...floorData,
                     lastUpdated: new Date(),
@@ -1098,8 +1101,9 @@ function updateFloorDisplay(status = null) {
     // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
     const sseIsLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    const isTestVote = /test vote/i.test(floorData.rollCall?.question || '');
     if (!window._modeLocked) {
-        if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive) {
+        if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive && !isTestVote) {
             window.setMode('vote');
         } else if (statusLower.includes('debate')) {
             window.setMode('debate');
@@ -5609,7 +5613,7 @@ function init() {
             console.log('SSE vote.tally stale >45s during active vote — forcing reconnect');
             if (sseConnection) { sseConnection.close(); sseConnection = null; }
             isStreaming = false;
-            lastSseTallyAt = Date.now(); // reset to avoid a tight reconnect loop
+            lastSseReconnectAt = Date.now(); // reset to avoid a tight reconnect loop (NOT lastSseTallyAt — that would falsely extend sseIsLive)
             startSSEStreaming();
         }
     }, 15000);
