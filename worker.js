@@ -2871,17 +2871,20 @@ export class DomeWatchStreamCoordinator {
 
   startProceedingsBroadcast() {
     if (this.proceedingsInterval) return;
-    // Fetch proceedings once immediately, then every 5s.
-    // One DO fetch serves all connected clients — replaces per-client REST polling.
+    // Fetch proceedings directly from House.gov RSS — bypasses the Worker entirely,
+    // saving ~17k Worker requests/day (one self-call per 5s × 86400s/day).
     const fetch5s = async () => {
       if (this.clients.size === 0) return;
       try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/proceedings', {
-          headers: { 'Cache-Control': 'no-store' }
+        const resp = await fetch('https://clerk.house.gov/Home/Feed', {
+          headers: { 'Cache-Control': 'no-store' },
+          signal: AbortSignal.timeout(8000),
         });
         if (!resp.ok) return;
-        const data = await resp.json();
-        await this.broadcast(`event: proceedings\ndata: ${JSON.stringify(data)}\n\n`);
+        const xml = await resp.text();
+        const result = parseRSSFeed(xml, 'proceedings');
+        if (!result.items || result.items.length === 0) return;
+        await this.broadcast(`event: proceedings\ndata: ${JSON.stringify({ items: result.items })}\n\n`);
       } catch { /* non-critical */ }
     };
     fetch5s();
