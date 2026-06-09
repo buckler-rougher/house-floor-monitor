@@ -1023,7 +1023,7 @@ async function fetchFloorData(silent = false) {
         }
         
         // Use worker endpoint instead of direct API call
-        const response = await fetch(DOMEWATCH_CONFIG.workerUrl);
+        const response = await fetch(DOMEWATCH_CONFIG.workerUrl, { cache: 'no-store' });
 
         console.log('DomeWatch response:', {
             status: response.status,
@@ -3331,7 +3331,7 @@ async function updateProceedingsFeed() {
         const proceedingsUrl = proceedingsDateOverride
             ? `${RSS_CONFIG.workerUrl}?date=${encodeURIComponent(proceedingsDateOverride)}`
             : RSS_CONFIG.workerUrl;
-        const response = await fetch(proceedingsUrl);
+        const response = await fetch(proceedingsUrl, { cache: 'no-store' });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
