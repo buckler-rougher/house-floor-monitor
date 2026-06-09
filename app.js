@@ -895,20 +895,32 @@ function updateVoteCountsDisplay(counts) {
         elements.naysCount.style.fontWeight = nays > yeas ? 'bold' : 'normal';
     }
 
-    // Party breakdown under yeas/nays
-    const dY = Math.max(parseInt(blue.yeas) || 0, 0);
-    const rY = Math.max(parseInt(red.yeas)  || 0, 0);
-    const dN = Math.max(parseInt(blue.nays) || 0, 0);
-    const rN = Math.max(parseInt(red.nays)  || 0, 0);
-    if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
-    if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
-    if (elements.naysD) elements.naysD.textContent = `${dN}D`;
-    if (elements.naysR) elements.naysR.textContent = `${rN}R`;
-
     // Stage D/R absences — only committed to _lastVoteAbsences when the vote ends,
     // so mid-vote "not_voting" (people who haven't cast yet) never pollutes the display.
     const blue = counts.blue || {};
     const red  = counts.red  || {};
+
+    // Party breakdown under yeas/nays (with threshold analysis)
+    const dY = Math.max(parseInt(blue.yeas) || 0, 0);
+    const rY = Math.max(parseInt(red.yeas)  || 0, 0);
+    const dN = Math.max(parseInt(blue.nays) || 0, 0);
+    const rN = Math.max(parseInt(red.nays)  || 0, 0);
+    const isSuspension = /suspend/i.test(floorData.rollCall?.question || '');
+    const needed = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
+    const toPass = Math.max(needed - yeas, 0);
+    const toFail = Math.max(needed - nays, 0);  // nays needed to block
+    if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
+    if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
+    if (elements.naysD) elements.naysD.textContent = `${dN}D`;
+    if (elements.naysR) elements.naysR.textContent = `${rN}R`;
+    if (elements.yeaThreshold) {
+        elements.yeaThreshold.textContent = yeas >= needed ? '✓ Passes' : `Need ${toPass} more`;
+        elements.yeaThreshold.className = 'vote-threshold ' + (yeas >= needed ? 'threshold-pass' : 'threshold-need');
+    }
+    if (elements.nayThreshold) {
+        elements.nayThreshold.textContent = nays >= needed ? '✓ Fails' : `Need ${toFail} more`;
+        elements.nayThreshold.className = 'vote-threshold ' + (nays >= needed ? 'threshold-fail' : 'threshold-need');
+    }
     _stagedVoteAbsences = {
         d: Math.max(parseInt(blue.not_voting) || 0, 0),
         r: Math.max(parseInt(red.not_voting)  || 0, 0),
@@ -1509,12 +1521,14 @@ const elements = {
     yeasPercent: document.getElementById('yeas-percent'),
     yeasD: document.getElementById('yeas-d'),
     yeasR: document.getElementById('yeas-r'),
+    yeaThreshold: document.getElementById('yea-threshold'),
     presentCount: document.getElementById('present-count'),
     presentPercent: document.getElementById('present-percent'),
     naysCount: document.getElementById('nays-count'),
     naysPercent: document.getElementById('nays-percent'),
     naysD: document.getElementById('nays-d'),
     naysR: document.getElementById('nays-r'),
+    nayThreshold: document.getElementById('nay-threshold'),
     yeasBar: document.getElementById('yeas-bar'),
     presentBar: document.getElementById('present-bar'),
     naysBar: document.getElementById('nays-bar'),
