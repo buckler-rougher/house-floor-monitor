@@ -3550,11 +3550,10 @@ function updateDebateSection(items) {
         }
     }
 
-    // Wider fallback: only run if the DEBATE item didn't explicitly name a bill.
-    // If foundBillId was parsed (e.g. "H.Res. 1345") but isn't in billDataMap,
-    // don't scan further — the fallback would find the wrong bill (e.g. H.R. 8312
-    // mentioned inside the rule's description text).
-    if (!foundBill && !foundBillId) {
+    // Wider fallback: only run when there was no DEBATE/committee item at all.
+    // If an activeItem was found but named no bill (e.g. "motion to discharge"),
+    // scanning further would pull in stale bill references from old proceedings.
+    if (!foundBill && !foundBillId && !activeItem) {
         const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.)\s*(\d+)/gi;
         for (const item of recentItems) {
             const desc = item.description || '';
