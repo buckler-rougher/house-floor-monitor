@@ -3431,9 +3431,11 @@ function updateDebateSection(items) {
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
-    // Prefer items that start with "DEBATE" (e.g. "DEBATE - The House proceeded with…")
-    const debateItem = items.find(i => /^DEBATE\b/i.test(i.description));
-    const fallbackItem = items.find(i => {
+    // Items are reverse-chrono; only look at the most recent window to avoid
+    // picking up stale debate entries from earlier in the day.
+    const recentItems = items.slice(0, 15);
+    const debateItem = recentItems.find(i => /^DEBATE\b/i.test(i.description));
+    const fallbackItem = recentItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('committee of the whole') || d.includes('consideration of') || d.includes('proceeded to');
     });
@@ -3482,10 +3484,10 @@ function updateDebateSection(items) {
         }
     }
 
-    // Wider fallback: scan all debate-related items for any bill in the map
+    // Wider fallback: scan recent debate-related items for any bill in the map
     if (!foundBill) {
         const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.)\s*(\d+)/gi;
-        for (const item of items) {
+        for (const item of recentItems) {
             const desc = item.description || '';
             const descLower = desc.toLowerCase();
             if (!descLower.includes('committee of the whole') && !descLower.includes('consideration of') &&
