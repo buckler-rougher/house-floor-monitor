@@ -3215,12 +3215,13 @@ function autoSwitchModeFromProceedings(items) {
     if (window._modeLocked) return;
     if (!items || items.length === 0) return;
 
-    // If REST poll (floorData) says there's an active vote, always enter vote mode —
-    // don't let proceedings override it. SSE liveness check is only needed to keep
-    // vote mode *after* REST clears it (SSE may lag a few seconds behind REST).
+    // Only the REST poll (fetchFloorData) should exit vote mode.
+    // Proceedings fire every 5s and must never knock us out of an active vote.
     const liveStatus = floorData.currentStatus?.value;
     const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-    if (liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive) {
+    const inVoteMode = document.body.classList.contains('vote-mode') ||
+                       liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive;
+    if (inVoteMode) {
         window.setMode('vote');
         return;
     }
