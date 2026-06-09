@@ -3215,11 +3215,12 @@ function autoSwitchModeFromProceedings(items) {
     if (window._modeLocked) return;
     if (!items || items.length === 0) return;
 
-    // Respect DomeWatch vote status only while SSE is actively sending tallies.
-    // After 90s of SSE silence the vote is almost certainly over; let proceedings drive.
+    // If REST poll (floorData) says there's an active vote, always enter vote mode —
+    // don't let proceedings override it. SSE liveness check is only needed to keep
+    // vote mode *after* REST clears it (SSE may lag a few seconds behind REST).
     const liveStatus = floorData.currentStatus?.value;
     const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-    if ((liveStatus === 'vote' || liveStatus === 'voting') && sseIsLive) {
+    if (liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive) {
         window.setMode('vote');
         return;
     }
