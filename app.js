@@ -6302,11 +6302,12 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
             const casualtyStatus = getCasualtyStatus(match);
 
+            const placeholderSvg = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
             return `
             <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
                 <div class="absentee-photo-wrap">
-                    <img class="absentee-photo" alt="${displayName}" src="${photoUrl}" style="${photoStyle}" />
-                    <div class="absentee-photo-placeholder">--</div>
+                    <img class="absentee-photo" alt="${displayName}" src="${photoUrl}" style="${photoUrl ? 'display:block' : 'display:none'}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div class="absentee-photo-placeholder" style="${photoUrl ? 'display:none' : 'display:flex'}">${placeholderSvg}</div>
                 </div>
                 <div class="absentee-meta">
                     <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
