@@ -2111,17 +2111,27 @@ async function fetchSpecialRules() {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' });
         if (!resp.ok) return;
         const data = await resp.json();
+        // Snapshot in-memory ruleStatus overrides (set by reconcileVoteWithBills) before clearing.
+        // The API may return stale status; preserve any 'passed'/'failed' we already recorded.
+        const ruleStatusOverrides = new Map(); // hresNum → {ruleStatus, passageVote}
+        for (const entry of specialRulesMap.values()) {
+            if ((entry.ruleStatus === 'passed' || entry.ruleStatus === 'failed') &&
+                !ruleStatusOverrides.has(entry.hresNum)) {
+                ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote });
+            }
+        }
         specialRulesMap.clear();
         for (const rule of (data.rules || [])) {
+            const override = ruleStatusOverrides.get(rule.hresNum);
             for (const billKey of rule.bills) {
                 // billKey is already normalized (e.g. "HR1041")
                 specialRulesMap.set(billKey, {
                     hres: rule.hres,
                     hresNum: rule.hresNum,
                     title: rule.title || null,
-                    passageVote: rule.passageVote || null,
+                    passageVote: override?.passageVote ?? rule.passageVote ?? null,
                     pdfUrl: rule.pdfUrl,
-                    ruleStatus: rule.ruleStatus,
+                    ruleStatus: override?.ruleStatus ?? rule.ruleStatus,
                     bills: rule.bills,
                     sponsor: rule.sponsor || null,
                 });
