@@ -836,6 +836,19 @@ body {
     color: var(--text-secondary);
 }
 
+.count-party-breakdown {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+.count-party-breakdown .cpb-d { color: #5b8fcf; }
+.count-party-breakdown .cpb-r { color: #c0504d; }
+
 .vote-divider {
     display: flex;
     align-items: center;
