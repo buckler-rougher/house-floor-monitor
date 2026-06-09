@@ -273,8 +273,8 @@ function renderThisWeek() {
             : TYPE_CLASS['vote-day'];
         // Build combined label
         let lbl;
-        if (types.has('fly-in') && types.has('vote-day'))       lbl = 'Fly In + Votes';
-        else if (types.has('fly-out') && types.has('vote-day')) lbl = 'Fly Out + Votes';
+        if (types.has('fly-in') && types.has('vote-day'))       lbl = 'Votes + Fly In';
+        else if (types.has('fly-out') && types.has('vote-day')) lbl = 'Votes + Fly Out';
         else if (types.has('fly-in'))                           lbl = 'Fly In';
         else if (types.has('fly-out'))                          lbl = 'Fly Out';
         else if (types.has('added'))                            lbl = 'Votes+';
