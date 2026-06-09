@@ -5902,7 +5902,12 @@ function init() {
     // 30s when SSE is live (SSE handles real-time tallies; REST just catches transitions).
     setInterval(() => {
         const sseActive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-        const interval = sseActive ? 30000 : 10000;
+        const inVote = floorData?.currentStatus?.value === 'vote' || floorData?.currentStatus?.value === 'voting';
+        const sseTalliesLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 15_000;
+        // During a vote with no recent SSE tallies, poll every 5s so counts stay fresh.
+        // When SSE tallies are flowing, REST is just a backup — 30s is fine.
+        // Outside a vote, 10s when SSE is down, 30s when SSE is up.
+        const interval = (inVote && !sseTalliesLive) ? 5000 : sseActive ? 30000 : 10000;
         if (!fetchFloorData._lastPoll || Date.now() - fetchFloorData._lastPoll >= interval) {
             fetchFloorData._lastPoll = Date.now();
             fetchFloorData(true);
