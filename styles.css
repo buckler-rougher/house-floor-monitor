@@ -3478,7 +3478,7 @@ body {
     pointer-events: none;
 }
 .cal-lbl {
-    font-size: 5.5px;
+    font-size: 7px;
     font-weight: 800;
     font-family: var(--font-mono);
     letter-spacing: 0.4px;
