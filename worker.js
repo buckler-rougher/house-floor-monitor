@@ -2182,13 +2182,15 @@ async function handleHlsUrl(env) {
 // the client-side rollLogEntry() that was previously sent via POST).
 function buildRollLogEntry(data) {
   const iv = v => Math.max(parseInt(v) || 0, 0);
-  const t = data.voteCounts?.totals || {};
-  const d = data.voteCounts?.blue   || {};
-  const r = data.voteCounts?.red    || {};
+  const vc = data.votes?.counts || data.voteCounts || {};
+  const t = vc.totals || {};
+  const d = vc.blue   || {};
+  const r = vc.red    || {};
+  const rc = data.roll_call || data.rollCall || {};
   return {
-    roll:     data.rollCall?.number ?? null,
-    bill:     data.rollCall?.bill?.legisNum || data.rollCall?.bill?.title || null,
-    question: data.rollCall?.question || null,
+    roll:     rc.number ?? null,
+    bill:     rc.bill?.legisNum || rc.bill?.title || null,
+    question: rc.question || null,
     totals: { yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), notVoting: iv(t.not_voting) },
     dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present), notVoting: iv(d.not_voting) },
     rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present), notVoting: iv(r.not_voting) },
@@ -2202,7 +2204,7 @@ async function maybeWriteRollLog(data, env) {
   if (!env?.HLS_CACHE) return;
   const status = data.currentStatus?.value || data.now?.value;
   if (status !== 'vote' && status !== 'voting') return;
-  const roll = data.rollCall?.number;
+  const roll = (data.roll_call || data.rollCall)?.number;
   if (!roll) return;
   try {
     const key = rollLogKey();
