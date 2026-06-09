@@ -256,11 +256,30 @@ function renderThisWeek() {
         'cancelled': 'Cancelled',
     };
 
-    el.innerHTML = weekEvents.map(e => {
-        const [y, m, d] = e.date.split('-').map(Number);
+    // Group events by date so fly-in + vote-day on same day become one chip
+    const byDate = new Map();
+    weekEvents.forEach(e => {
+        if (!byDate.has(e.date)) byDate.set(e.date, new Set());
+        byDate.get(e.date).add(e.type);
+    });
+
+    el.innerHTML = [...byDate.entries()].map(([date, types]) => {
+        const [y, m, d] = date.split('-').map(Number);
         const dayName = DAY_SHORT[new Date(y, m - 1, d).getDay()];
-        const cls = TYPE_CLASS[e.type] || 'this-week-day-vote';
-        const lbl = TYPE_LABEL[e.type] || 'Votes';
+        // Determine class (fly takes priority over vote, added over everything)
+        const cls = types.has('added') ? TYPE_CLASS['added']
+            : (types.has('fly-in') || types.has('fly-out')) ? TYPE_CLASS['fly-in']
+            : types.has('cancelled') ? TYPE_CLASS['cancelled']
+            : TYPE_CLASS['vote-day'];
+        // Build combined label
+        let lbl;
+        if (types.has('fly-in') && types.has('vote-day'))       lbl = 'Fly In + Votes';
+        else if (types.has('fly-out') && types.has('vote-day')) lbl = 'Fly Out + Votes';
+        else if (types.has('fly-in'))                           lbl = 'Fly In';
+        else if (types.has('fly-out'))                          lbl = 'Fly Out';
+        else if (types.has('added'))                            lbl = 'Votes+';
+        else if (types.has('cancelled'))                        lbl = 'Cancelled';
+        else                                                    lbl = 'Votes';
         return `<span class="this-week-day ${cls}">${dayName} · ${lbl}</span>`;
     }).join('');
 }
