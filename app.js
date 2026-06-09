@@ -3551,11 +3551,16 @@ function updateDebateSection(items) {
         // H.Res. with no billDataMap entry: look up the underlying bill from proceedings.
         // "DEBATE - ...on H. Res. 1140" → proceedings say it's "providing for consideration
         // of H.R. 5408" → show H.R. 5408's details (sponsor, summary, etc.) instead of blank.
+        // IMPORTANT: only use proceedings items that mention THIS specific H.Res. number,
+        // to avoid picking up entries from a different H.Res. debated earlier today.
         if (!foundBill && /H\.?\s*Res\./i.test(foundBillId)) {
+            const hresNum = foundBillId.match(/(\d+)/)?.[1];
             const idPattern = /\b(H\.R\.|H\.\s*Res\.|S\.\s*(?:Res\.)?\s*|S\.)\s*(\d+)/gi;
             for (const item of recentItems) {
                 const desc = item.description || '';
                 if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
+                // Only use items that refer to THIS H.Res. (not another one from earlier)
+                if (hresNum && !new RegExp(`\\bRes\\.\\s*${hresNum}\\b`).test(desc)) continue;
                 for (const m of desc.matchAll(idPattern)) {
                     const normalized = m[1].replace(/\s+/g, '') + ' ' + m[2];
                     if (normalized === foundBillId) continue; // skip the H.Res. itself
@@ -3830,9 +3835,12 @@ function updateDebateSection(items) {
         // Build a descriptive title from proceedings for H.Res. rules
         let fallbackTitle = foundBillId ? '—' : '—';
         if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
+            const hresNum = foundBillId.match(/(\d+)/)?.[1];
             for (const item of recentItems) {
                 const desc = item.description || '';
                 if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
+                // Only use items that refer to THIS H.Res. (not another one from earlier)
+                if (hresNum && !new RegExp(`\\bRes\\.\\s*${hresNum}\\b`).test(desc)) continue;
                 const idPattern = /\b(H\.R\.|H\.\s*Res\.|S\.\s*(?:Res\.)?\s*|S\.)\s*(\d+)/gi;
                 const ids = [];
                 for (const m of desc.matchAll(idPattern)) {
