@@ -998,6 +998,30 @@ function startSSEStreaming() {
             } catch {}
         });
 
+        // Proceedings pushed from DO every 5s — replaces per-client REST polling
+        eventSource.addEventListener('proceedings', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (Array.isArray(data.items)) {
+                    proceedingsData = data.items;
+                    autoSwitchModeFromProceedings(data.items);
+                    updateBillStatusFromProceedings(data.items);
+                    updateDebateSection(data.items);
+                    updatePrayerSection(data.items);
+                    updateSilenceSection(data.items);
+                    updatePledgeSection(data.items);
+                    updateSpeakerSection(data.items);
+                    updateCommitteeChairSection(data.items);
+                    updateJournalSection(data.items);
+                    updateOathSection(data.items);
+                    updateMessageSection(data.items);
+                    updateCertElectionSection(data.items);
+                    updateCertElectoralSection(data.items);
+                    updateSineDieSection(data.items);
+                }
+            } catch {}
+        });
+
         // Fallback for any unnamed default messages
         eventSource.onmessage = (event) => {
             try {
@@ -5777,7 +5801,8 @@ function init() {
         }
     }, 5000); // check every 5s, but only fire based on adaptive interval
     setInterval(fetchWeather, 300000); // Refresh weather every 5 minutes
-    setInterval(updateProceedingsFeed, RSS_CONFIG.refreshInterval); // Refresh proceedings every 15s
+    // Proceedings are now pushed via SSE from the DO (one fetch/5s for all users).
+    // Keep one initial fetch here as a fallback in case SSE takes a moment to connect.
     setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
     setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
     setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 3 minutes
