@@ -2859,10 +2859,10 @@ function renderAmendmentsTable({ amendments }, body) {
         const chips = (a._enrichedSponsors || []).map(s => {
             const isActive = amendmentsMemberFilter === s.name;
             const safeAttr = s.name.replace(/"/g, '&quot;');
-            const imgHtml = `<img class="amdt-sponsor-photo" src="${s.photoUrl || ''}" alt="">`;
-            const wrapHtml = `<div class="amdt-sponsor-photo-wrap">${imgHtml}</div>`;
-            const photoHtml = s.photoUrl
-                ? (s.profileUrl ? `<a href="${s.profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>` : wrapHtml)
+            const imgHtml = s.photoUrl ? `<img class="amdt-sponsor-photo" src="${s.photoUrl}" alt="" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : '';
+            const wrapHtml = `<div class="amdt-sponsor-photo-wrap"><div class="amdt-sponsor-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${imgHtml}</div>`;
+            const photoHtml = s.profileUrl
+                ? `<a href="${s.profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>`
                 : wrapHtml;
             return `<div class="amdt-sponsor-chip">
                 ${photoHtml}
