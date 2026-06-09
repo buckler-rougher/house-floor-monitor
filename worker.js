@@ -2834,6 +2834,7 @@ export class DomeWatchStreamCoordinator {
     this.currentEventId = 0;
     this.encoder = new TextEncoder();
     this.heartbeatInterval = null;
+    this.proceedingsInterval = null;
     this.nextClientId = 1;
     this.health = {
       sourceOfTruth: true,
@@ -2860,10 +2861,31 @@ export class DomeWatchStreamCoordinator {
       if (this.clients.size === 0) {
         clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = null;
+        clearInterval(this.proceedingsInterval);
+        this.proceedingsInterval = null;
         return;
       }
       this.broadcast(`: heartbeat\n\n`);
     }, 55000);
+  }
+
+  startProceedingsBroadcast() {
+    if (this.proceedingsInterval) return;
+    // Fetch proceedings once immediately, then every 5s.
+    // One DO fetch serves all connected clients — replaces per-client REST polling.
+    const fetch5s = async () => {
+      if (this.clients.size === 0) return;
+      try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/proceedings', {
+          headers: { 'Cache-Control': 'no-store' }
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        await this.broadcast(`event: proceedings\ndata: ${JSON.stringify(data)}\n\n`);
+      } catch { /* non-critical */ }
+    };
+    fetch5s();
+    this.proceedingsInterval = setInterval(fetch5s, 5000);
   }
 
   async fetch(request) {
@@ -2909,6 +2931,7 @@ export class DomeWatchStreamCoordinator {
           `event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true, clientId })}\n\n`
         ));
         this.startHeartbeat();
+        this.startProceedingsBroadcast();
         this.ensureUpstream();
       },
       cancel: removeClient
