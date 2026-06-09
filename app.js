@@ -6306,8 +6306,8 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             return `
             <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
                 <div class="absentee-photo-wrap">
-                    <img class="absentee-photo" alt="${displayName}" src="${photoUrl}" style="${photoUrl ? 'display:block' : 'display:none'}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                    <div class="absentee-photo-placeholder" style="${photoUrl ? 'display:none' : 'display:flex'}">${placeholderSvg}</div>
+                    ${photoUrl ? `<img class="absentee-photo" alt="${displayName}" src="${photoUrl}" onerror="this.style.display='none';" />` : ''}
+                    <div class="absentee-photo-placeholder">${placeholderSvg}</div>
                 </div>
                 <div class="absentee-meta">
                     <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>

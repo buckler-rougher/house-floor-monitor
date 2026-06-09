@@ -2427,7 +2427,7 @@ body {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--accent-green);
+  color: var(--accent-blue);
   letter-spacing: 1px;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -2630,10 +2630,14 @@ body {
 }
 
 .absentee-photo {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: none;
+  display: block;
+  z-index: 1;
 }
 
 .absentee-photo-placeholder {
