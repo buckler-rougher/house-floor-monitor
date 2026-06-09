@@ -518,7 +518,10 @@ async function loadRollLog() {
             // Skip procedural low-participation votes (motions to commit/recommit,
             // previous question, etc.) where fewer than 150 members cast a yea/nay —
             // those inflate "not voting" counts and don't reflect real attendance.
+            const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
             const isSubstantive = e => {
+                // Skip the currently active roll call — it's still in progress
+                if (activeRoll && String(e.roll) === activeRoll) return false;
                 const total = (e.totals?.yeas || 0) + (e.totals?.nays || 0);
                 if (total < 150) return false;
                 const q = (e.question || '').toLowerCase();
@@ -5840,11 +5843,12 @@ function init() {
     setInterval(updateTodayDate, 60000); // Update date every minute
     
     
-    // Fire all critical fetches immediately in parallel
+    // Fire all critical fetches immediately in parallel.
+    // loadRollLog runs after fetchFloorData so it knows the active roll call number
+    // and can skip the currently-in-progress vote from "last vote" absences.
     loadCasualtyList();
-    loadRollLog();
     fetchVotingDays();
-    fetchFloorData();
+    fetchFloorData().then(() => loadRollLog());
     fetchWeather();
 
     // Airport delays need the name lookup — start both in parallel, delays waits on names
