@@ -3431,7 +3431,7 @@ body {
 }
 .cal-dow {
     text-align: center;
-    font-size: 7px;
+    font-size: 8px;
     font-weight: 700;
     color: var(--text-muted);
     font-family: var(--font-mono);
