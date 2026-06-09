@@ -6214,8 +6214,10 @@ async function updateAbsenteeTracking() {
                     const party = legislator?.getAttribute('party') || '';
                     const state = legislator?.getAttribute('state') || '';
                     
+                    const trimmedName = name.trim();
+                    if (!trimmedName) return; // vacant seat — skip
                     absentees.push({
-                        name: name.trim(),
+                        name: trimmedName,
                         party: party === 'R' ? 'rep' : party === 'D' ? 'dem' : 'ind',
                         state: state.trim(),
                         voteType: vote
