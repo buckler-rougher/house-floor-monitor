@@ -3748,22 +3748,30 @@ function updateDebateSection(items) {
             elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
         }
     } else {
-        // Bill not in billDataMap. For H.Res. rule resolutions, find the underlying
-        // scheduled bill they govern and show its title as context.
-        let fallbackTitle = foundBillId ? 'Bill details loading…' : '—';
+        // Bill not in billDataMap. For H.Res. rule resolutions, build the title
+        // from the bill IDs the rule provides for consideration of, e.g.:
+        // "Providing for consideration of H.R. 8312, H.R. 8464, H.Res. 1335, and S. 2"
+        let fallbackTitle = foundBillId ? '—' : '—';
         if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
             for (const item of recentItems) {
                 const desc = item.description || '';
                 if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
-                const m = desc.match(/\b(H\.R\.|S\.)\s*(\d+)/i);
-                if (m) {
-                    const uid = m[1].replace(/\s+/g, '') + ' ' + m[2];
-                    const underlying = billDataMap.get(uid);
-                    fallbackTitle = underlying?.title ? underlying.title : `Rule for ${uid}`;
+                // Extract all bill/resolution IDs from this proceedings entry
+                const idPattern = /\b(H\.R\.|H\.\s*Res\.|S\.\s*(?:Res\.)?\s*|S\.)\s*(\d+)/gi;
+                const ids = [];
+                for (const m of desc.matchAll(idPattern)) {
+                    const normalized = m[1].replace(/\s+/g, '') + ' ' + m[2];
+                    if (normalized === foundBillId) continue; // skip the H.Res. itself
+                    if (!ids.includes(normalized)) ids.push(normalized);
+                }
+                if (ids.length > 0) {
+                    const listed = ids.length === 1
+                        ? ids[0]
+                        : ids.slice(0, -1).join(', ') + ', and ' + ids[ids.length - 1];
+                    fallbackTitle = `Providing for consideration of ${listed}`;
                     break;
                 }
             }
-            if (fallbackTitle === 'Bill details loading…') fallbackTitle = 'Special Rule';
         }
         elements.debateBillTitle.textContent = fallbackTitle;
         elements.debateBillId.textContent = foundBillId || '—';
