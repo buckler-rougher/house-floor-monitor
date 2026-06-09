@@ -900,30 +900,30 @@ function updateVoteCountsDisplay(counts) {
     const blue = counts.blue || {};
     const red  = counts.red  || {};
 
-    // Party breakdown under yeas/nays (with threshold analysis)
-    const dY = Math.max(parseInt(blue.yeas) || 0, 0);
-    const rY = Math.max(parseInt(red.yeas)  || 0, 0);
-    const dN = Math.max(parseInt(blue.nays) || 0, 0);
-    const rN = Math.max(parseInt(red.nays)  || 0, 0);
-    const isSuspension = /suspend/i.test(floorData.rollCall?.question || '');
-    const needed = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
-    const toPass = Math.max(needed - yeas, 0);
-    const toFail = Math.max(needed - nays, 0);  // nays needed to block
-    const iY = Math.max(yeas - dY - rY, 0);
-    const iN = Math.max(nays - dN - rN, 0);
+    // Party breakdown under yeas/nays
+    const white = counts.white || {};
+    const dY = Math.max(parseInt(blue.yeas)  || 0, 0);
+    const rY = Math.max(parseInt(red.yeas)   || 0, 0);
+    const iY = Math.max(parseInt(white.yeas) || 0, 0);
+    const dN = Math.max(parseInt(blue.nays)  || 0, 0);
+    const rN = Math.max(parseInt(red.nays)   || 0, 0);
+    const iN = Math.max(parseInt(white.nays) || 0, 0);
     if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
     if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
     if (elements.yeasI) { elements.yeasI.textContent = `${iY}I`; elements.yeasI.style.display = iY > 0 ? '' : 'none'; }
     if (elements.naysD) elements.naysD.textContent = `${dN}D`;
     if (elements.naysR) elements.naysR.textContent = `${rN}R`;
     if (elements.naysI) { elements.naysI.textContent = `${iN}I`; elements.naysI.style.display = iN > 0 ? '' : 'none'; }
+    // Threshold: only show "Need X more" — hide once side is winning
+    const isSuspension = /suspend/i.test(floorData.rollCall?.question || '');
+    const needed = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
     if (elements.yeaThreshold) {
-        elements.yeaThreshold.textContent = yeas >= needed ? '✓ Passes' : `Need ${toPass} more`;
-        elements.yeaThreshold.className = 'vote-threshold ' + (yeas >= needed ? 'threshold-pass' : 'threshold-need');
+        const toPass = needed - yeas;
+        elements.yeaThreshold.textContent = toPass > 0 ? `Need ${toPass} more` : '';
     }
     if (elements.nayThreshold) {
-        elements.nayThreshold.textContent = nays >= needed ? '✓ Fails' : `Need ${toFail} more`;
-        elements.nayThreshold.className = 'vote-threshold ' + (nays >= needed ? 'threshold-fail' : 'threshold-need');
+        const toFail = needed - nays;
+        elements.nayThreshold.textContent = toFail > 0 ? `Need ${toFail} more` : '';
     }
     _stagedVoteAbsences = {
         d: Math.max(parseInt(blue.not_voting) || 0, 0),
