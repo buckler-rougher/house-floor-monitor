@@ -992,7 +992,7 @@ function startSSEStreaming() {
                     const pingUrl = `https://api.evanhollander.org/house-floor/api/stream/votes/current?ping=${encodeURIComponent(clientId)}`;
                     const sendPing = () => fetch(pingUrl, { method: 'POST' }).catch(() => {});
                     sendPing();
-                    const pingInterval = setInterval(sendPing, 45_000);
+                    const pingInterval = setInterval(sendPing, 90_000);
                     eventSource.addEventListener('error', () => clearInterval(pingInterval), { once: true });
                 }
             } catch {}
@@ -1620,7 +1620,7 @@ if (elements.debateRuleTag) {
 // RSS Feed Configuration
 const RSS_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/proceedings',
-    refreshInterval: 5000 // 5 seconds — proceedings drives mode switching
+    refreshInterval: 30000 // 30 seconds — proceedings change every few minutes at most
 };
 
 // Date override for testing proceedings from a specific date (set via console)
@@ -5766,14 +5766,16 @@ function init() {
         }
     }, 15000);
 
-    // Poll the REST floor endpoint every 30s alongside SSE.
-    // SSE gives us real-time vote tallies, but it only sends vote.tally events —
-    // it does NOT send an event when a vote ends. Without this poll, currentStatus
-    // stays stuck at 'vote' forever and reconcileVoteWithBills never fires.
-    // Poll REST floor endpoint every 10s as a reliable fallback.
-    // SSE is the fast path, but if the upstream goes silent (between votes, stale
-    // connection) the REST poll ensures counts stay current.
-    setInterval(() => fetchFloorData(true), 10000);
+    // Adaptive REST floor poll: 10s when SSE is down (need it for vote detection),
+    // 30s when SSE is live (SSE handles real-time tallies; REST just catches transitions).
+    setInterval(() => {
+        const sseActive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+        const interval = sseActive ? 30000 : 10000;
+        if (!fetchFloorData._lastPoll || Date.now() - fetchFloorData._lastPoll >= interval) {
+            fetchFloorData._lastPoll = Date.now();
+            fetchFloorData(true);
+        }
+    }, 5000); // check every 5s, but only fire based on adaptive interval
     setInterval(fetchWeather, 300000); // Refresh weather every 5 minutes
     setInterval(updateProceedingsFeed, RSS_CONFIG.refreshInterval); // Refresh proceedings every 15s
     setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
