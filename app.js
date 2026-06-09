@@ -1172,7 +1172,7 @@ function updateFloorDisplay(status = null) {
         const totalVotesWithNotVoting = yeas + nays + present + notVoting; // For display purposes
 
         // Use flipToNumber to avoid clobbering the animated flip-digit DOM structure
-        updateVoteCountsDisplay(totals);
+        updateVoteCountsDisplay(floorData.voteCounts);
 
         // Update percentages with better formatting
         if (totalVotes > 0) {
