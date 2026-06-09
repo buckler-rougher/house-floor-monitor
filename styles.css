@@ -1267,6 +1267,24 @@ body {
   font-weight: 700;
   line-height: 1;
 }
+.threshold-metric-value.democrat { color: #4a9eff; }
+.threshold-metric-value.republican { color: #ff6b6b; }
+.threshold-subsection-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 10px 0 6px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 10px;
+}
+.last-vote-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-align: center;
+}
 :root{
   --bg-card:#0f1720;
   --bg-elevated:#0b1220;

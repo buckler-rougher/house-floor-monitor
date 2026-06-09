@@ -2190,8 +2190,8 @@ function buildRollLogEntry(data) {
     bill:     data.rollCall?.bill?.legisNum || data.rollCall?.bill?.title || null,
     question: data.rollCall?.question || null,
     totals: { yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), notVoting: iv(t.not_voting) },
-    dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
-    rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
+    dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present), notVoting: iv(d.not_voting) },
+    rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present), notVoting: iv(r.not_voting) },
     updatedAt: new Date().toISOString(),
   };
 }

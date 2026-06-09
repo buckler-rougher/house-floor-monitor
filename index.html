@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260609o">
+    <link rel="stylesheet" href="styles.css?v=20260609p">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -854,6 +854,20 @@
                         <span class="threshold-metric-value" id="max-possible-yeas">--</span>
                     </div>
                 </div>
+                <div id="last-vote-absences" style="display:none;">
+                    <div class="threshold-subsection-label">LAST VOTE ABSENCES</div>
+                    <div class="threshold-grid">
+                        <div class="threshold-item">
+                            <span class="threshold-metric-label">D Absent</span>
+                            <span class="threshold-metric-value democrat" id="last-vote-d-absent">--</span>
+                        </div>
+                        <div class="threshold-item">
+                            <span class="threshold-metric-label">R Absent</span>
+                            <span class="threshold-metric-value republican" id="last-vote-r-absent">--</span>
+                        </div>
+                    </div>
+                    <div class="last-vote-label" id="last-vote-label"></div>
+                </div>
             </div>
 
             <!-- Quorum Status -->
@@ -1268,7 +1282,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260609af"></script>
+    <script src="app.js?v=20260609ag"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

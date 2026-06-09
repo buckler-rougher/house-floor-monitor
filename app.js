@@ -512,7 +512,20 @@ async function loadRollLog() {
     try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
         const data = await resp.json();
-        if (Array.isArray(data.entries)) rollLog = data.entries;
+        if (Array.isArray(data.entries)) {
+            rollLog = data.entries;
+            // Restore last vote absences from most recent roll-log entry
+            const last = rollLog[rollLog.length - 1];
+            if (last && !_lastVoteAbsences) {
+                _lastVoteAbsences = {
+                    d: last.dem?.notVoting ?? '--',
+                    r: last.rep?.notVoting ?? '--',
+                    roll: last.roll || null,
+                    question: last.question || null,
+                };
+                updateLastVoteAbsencesDisplay();
+            }
+        }
     } catch {}
 }
 
@@ -522,6 +535,7 @@ async function loadRollLog() {
 let sseConnection = null;
 let isStreaming = false;
 let lastSseTallyAt = 0;    // ms timestamp of last vote.tally received (for stale detection)
+let _lastVoteAbsences = null; // { d, r, roll, question } — frozen when vote ends
 let lastSseReconnectAt = 0; // ms timestamp of last watchdog-forced reconnect (loop guard only)
 let sseReconnectCount = 0; // how many times we've reconnected to the SSE endpoint
 let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdown display)
@@ -866,9 +880,21 @@ function updateVoteCountsDisplay(counts) {
         elements.naysCount.style.fontWeight = nays > yeas ? 'bold' : 'normal';
     }
 
-    // Update floor grid with party breakdown (fast DOM, no network)
+    // Capture D/R absences for the last-vote subsection (live during vote, frozen after)
     const blue = counts.blue || {};
     const red  = counts.red  || {};
+    const dAbsent = Math.max(parseInt(blue.not_voting) || 0, 0);
+    const rAbsent = Math.max(parseInt(red.not_voting)  || 0, 0);
+    if (dAbsent + rAbsent > 0 || _lastVoteAbsences === null) {
+        _lastVoteAbsences = {
+            d: dAbsent, r: rAbsent,
+            roll: floorData.rollCall?.number || null,
+            question: floorData.rollCall?.question || null,
+        };
+        updateLastVoteAbsencesDisplay();
+    }
+
+    // Update floor grid with party breakdown (fast DOM, no network)
     const ivf  = v => Math.max(parseInt(v) || 0, 0);
     state.data = {
         vote: {
@@ -879,6 +905,17 @@ function updateVoteCountsDisplay(counts) {
         }
     };
     updateFloorGrid();
+}
+
+function updateLastVoteAbsencesDisplay() {
+    if (!_lastVoteAbsences || !elements.lastVoteAbsences) return;
+    elements.lastVoteDAbsent.textContent = _lastVoteAbsences.d;
+    elements.lastVoteRAbsent.textContent = _lastVoteAbsences.r;
+    if (elements.lastVoteLabel) {
+        const roll = _lastVoteAbsences.roll ? `Roll Call ${_lastVoteAbsences.roll}` : '';
+        elements.lastVoteLabel.textContent = roll;
+    }
+    elements.lastVoteAbsences.style.display = '';
 }
 
 // SSE Streaming for real-time updates
@@ -1394,6 +1431,10 @@ const elements = {
     yeasNeeded: document.getElementById('yeas-needed'),
     naysToBlock: document.getElementById('nays-to-block'),
     maxPossibleYeas: document.getElementById('max-possible-yeas'),
+    lastVoteAbsences: document.getElementById('last-vote-absences'),
+    lastVoteDAbsent: document.getElementById('last-vote-d-absent'),
+    lastVoteRAbsent: document.getElementById('last-vote-r-absent'),
+    lastVoteLabel: document.getElementById('last-vote-label'),
     lastUpdate: document.getElementById('last-update'),
         weatherPanel: document.getElementById('weather-panel'),
     capcamVideo: document.getElementById('capcam-video'),
