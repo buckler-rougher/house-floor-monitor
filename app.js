@@ -11,6 +11,9 @@ function sanitizeTweetHtml(html) {
         .replace(/<[^>]+>/g, '');
 }
 
+// Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
+const MEMBER_PHOTO_PLACEHOLDER = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
+
 // Guard against unnecessary DOM thrashing — skip innerHTML update if content unchanged
 const _htmlCache = new WeakMap();
 function setIfChanged(el, html) {
@@ -2491,8 +2494,8 @@ function openBillModal(billId) {
                 <div class="bill-modal-section-label">SPONSOR</div>
                 <div class="absentee-member" style="padding:0;border:none;">
                     <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
-                        <img class="absentee-photo" src="${photo}" style="display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" alt="${name}" />
-                        <div class="absentee-photo-placeholder" style="display:none;">${pLetter}</div>
+                        <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
+                        <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
                     </div>
                     <div class="absentee-meta">
                         <span class="absentee-party-tag ${pClass}">${pLetter}</span>
@@ -3594,8 +3597,8 @@ function updateDebateSection(items) {
                 elements.debateSponsorInner.innerHTML = `
                     <div class="absentee-member" style="padding:0;border:none;">
                         <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
-                            <img class="absentee-photo" src="${photo}" style="display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" alt="${name}" />
-                            <div class="absentee-photo-placeholder" style="display:none;">${pLetter}</div>
+                            <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
+                            <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
                         </div>
                         <div class="absentee-meta">
                             <span class="absentee-party-tag ${pClass}">${pLetter}</span>
@@ -4077,14 +4080,11 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
         const photoUrl = buildBioguidePhotoUrl(bioguideId);
         const profileUrl = buildCongressProfileUrl(bioguideId);
         if (elements.journalImage) {
-            elements.journalImage.onerror = () => {
-                if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'flex';
-                elements.journalImage.style.display = 'none';
-            };
+            elements.journalImage.style.opacity = '0';
+            elements.journalImage.onload = () => { elements.journalImage.style.opacity = '1'; };
+            elements.journalImage.onerror = () => { elements.journalImage.style.opacity = '0'; };
             elements.journalImage.src = photoUrl;
             elements.journalImage.alt = `${firstName} ${lastName}`;
-            elements.journalImage.style.display = 'block';
-            if (elements.journalImagePlaceholder) elements.journalImagePlaceholder.style.display = 'none';
         }
         setMemberProfileLink(elements.journalChairWebsite, profileUrl);
     }
@@ -6302,12 +6302,11 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
             const casualtyStatus = getCasualtyStatus(match);
 
-            const placeholderSvg = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
             return `
             <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
                 <div class="absentee-photo-wrap">
-                    ${photoUrl ? `<img class="absentee-photo" alt="${displayName}" src="${photoUrl}" onerror="this.style.display='none';" />` : ''}
-                    <div class="absentee-photo-placeholder">${placeholderSvg}</div>
+                    <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
+                    ${photoUrl ? `<img class="absentee-photo" src="${photoUrl}" alt="${displayName}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />` : ''}
                 </div>
                 <div class="absentee-meta">
                     <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
