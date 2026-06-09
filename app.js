@@ -1133,6 +1133,13 @@ async function fetchFloorData(silent = false) {
             throw new Error(data.error);
         }
         
+        // Detect vote → non-vote transition BEFORE overwriting floorData,
+        // so reconcileVoteWithBills can still read the last roll call + counts.
+        const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
+        if (_wasInVote && !nowInVote) {
+            reconcileVoteWithBills();
+        }
+
         // Update floor data state.
         // During an active vote, SSE delivers live counts every ~1s while the REST
         // endpoint is cached up to 10s — using REST counts would snap the display
@@ -1146,9 +1153,6 @@ async function fetchFloorData(silent = false) {
             timer: data.timer,
             timeline: data.timeline
         };
-
-        // Detect vote → non-vote transition: commit staged absences as the final tally
-        const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
         if (_wasInVote && !nowInVote && _stagedVoteAbsences) {
             // Only commit if this was a substantive vote (≥150 yea/nay votes cast and
             // not a purely procedural motion nobody shows up for).
@@ -1391,8 +1395,6 @@ function updateFloorDisplay(status = null) {
         }
     }
 
-    // Sync completed roll call results back to bill cards
-    reconcileVoteWithBills();
 }
 
 // After a vote finishes, look up the bill in billsData by roll call question and update its status.
@@ -1406,11 +1408,11 @@ function reconcileVoteWithBills() {
     const nays = parseInt(totals.nays) || 0;
     if (yeas + nays === 0) return;
 
-    // Skip procedural motions — these are not passage votes
-    if (/motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i.test(question)) return;
-
     // Parse bill ID from question, e.g. "S 1003 - On Motion to Suspend..." or "H R 1041 - ..."
     const question = floorData.rollCall.question || '';
+
+    // Skip procedural motions — these are not passage votes
+    if (/motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i.test(question)) return;
     // Normalize abbreviation with optional spaces/dots to our canonical form
     const normalizeBillType = raw => {
         const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
