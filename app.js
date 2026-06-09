@@ -3431,16 +3431,24 @@ function updateDebateSection(items) {
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
-    // Items are reverse-chrono. Only consider items from the last 90 minutes
-    // to avoid stale debate entries from earlier bills bleeding through.
-    const cutoff = Date.now() - 90 * 60 * 1000;
-    const recentItems = items.filter(i => new Date(i.pubDate).getTime() >= cutoff);
-    const debateItem = recentItems.find(i => /^DEBATE\b/i.test(i.description));
-    const fallbackItem = recentItems.find(i => {
+    // Items are reverse-chrono (items[0] = most recent).
+    // A DEBATE entry is only valid if there is no subsequent vote result
+    // after it (i.e. items with smaller indices = more recent than the DEBATE).
+    const voteResultRe = /on motion|yeas and nays|roll call|agreed to|passed|failed|ordered to be engrossed/i;
+
+    const debateIdx = items.findIndex(i => /^DEBATE\b/i.test(i.description));
+    const debateItem = debateIdx >= 0 && !items.slice(0, debateIdx).some(i => voteResultRe.test(i.description))
+        ? items[debateIdx] : null;
+
+    const fallbackIdx = items.findIndex(i => {
         const d = i.description.toLowerCase();
         return d.includes('committee of the whole') || d.includes('consideration of') || d.includes('proceeded to');
     });
+    const fallbackItem = fallbackIdx >= 0 && !items.slice(0, fallbackIdx).some(i => voteResultRe.test(i.description))
+        ? items[fallbackIdx] : null;
+
     const activeItem = debateItem || fallbackItem;
+    const recentItems = items.slice(0, 20); // for the wider fallback search below
 
     // ── 2. Parse debate length and bill ID from "proceeded with X of debate on BILL" ─
     let debateLengthLabel = null;
