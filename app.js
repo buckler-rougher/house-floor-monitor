@@ -3480,14 +3480,28 @@ function autoSwitchModeFromProceedings(items) {
     });
     const candidateItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
 
+    // Find the most recent passage/vote outcome item — if it's newer than the debate item,
+    // the bill has already passed and we should not re-enter debate mode for it.
+    const outcomeItem = candidateItems.find(i => {
+        const d = i.description.toLowerCase();
+        return /\bon passage\b/.test(d) ||
+               /on agreeing to the (resolution|amendment)\b/.test(d) ||
+               /agreed to by (recorded vote|voice vote|without objection)/i.test(d) ||
+               /passed by (recorded vote|voice vote)/i.test(d);
+    });
+
     const cotwItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         if (d.includes('morning-hour debate') || d.includes('morning hour debate')) return false;
-        return d.includes('act as chairman of the committee') ||
+        const isDebate = d.includes('act as chairman of the committee') ||
                d.includes('committee of the whole') ||
                d.includes('resolved itself into the committee') ||
-               d.startsWith('debate -') ||   // "DEBATE - The House proceeded with..."
+               d.startsWith('debate -') ||
                (d.includes('proceeded with') && d.includes('debate'));
+        if (!isDebate) return false;
+        // If a passage outcome is more recent than this debate item, the debate is over
+        if (outcomeItem && itemTime(outcomeItem) >= itemTime(i)) return false;
+        return true;
     });
 
     const soItem = candidateItems.find(i => {
