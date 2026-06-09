@@ -514,8 +514,18 @@ async function loadRollLog() {
         const data = await resp.json();
         if (Array.isArray(data.entries)) {
             rollLog = data.entries;
-            // Restore last vote absences from most recent roll-log entry
-            const last = rollLog[rollLog.length - 1];
+            // Restore last vote absences from most recent SUBSTANTIVE roll-log entry.
+            // Skip procedural low-participation votes (motions to commit/recommit,
+            // previous question, etc.) where fewer than 150 members cast a yea/nay —
+            // those inflate "not voting" counts and don't reflect real attendance.
+            const isSubstantive = e => {
+                const total = (e.totals?.yeas || 0) + (e.totals?.nays || 0);
+                if (total < 150) return false;
+                const q = (e.question || '').toLowerCase();
+                if (/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(q)) return false;
+                return true;
+            };
+            const last = [...rollLog].reverse().find(isSubstantive) || rollLog[rollLog.length - 1];
             if (last && !_lastVoteAbsences) {
                 _lastVoteAbsences = {
                     d: last.dem?.notVoting ?? '--',
@@ -1122,8 +1132,18 @@ async function fetchFloorData(silent = false) {
         // Detect vote → non-vote transition: commit staged absences as the final tally
         const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
         if (_wasInVote && !nowInVote && _stagedVoteAbsences) {
-            _lastVoteAbsences = { ..._stagedVoteAbsences };
-            updateLastVoteAbsencesDisplay();
+            // Only commit if this was a substantive vote (≥150 yea/nay votes cast and
+            // not a purely procedural motion nobody shows up for).
+            const vc = floorData.voteCounts || {};
+            const t  = vc.totals || {};
+            const stagedTotal = (parseInt(t.yeas) || 0) + (parseInt(t.nays) || 0);
+            const stagedQ = (_stagedVoteAbsences.question || '').toLowerCase();
+            const stagedIsSubstantive = stagedTotal >= 150 &&
+                !/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(stagedQ);
+            if (stagedIsSubstantive) {
+                _lastVoteAbsences = { ..._stagedVoteAbsences };
+                updateLastVoteAbsencesDisplay();
+            }
         }
         _wasInVote = nowInVote;
 
