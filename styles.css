@@ -3372,7 +3372,7 @@ body {
     border-radius: var(--radius-3);
 }
 .this-week-day-vote   { background: rgba(63,185,80,0.15);  color: #4ade80; }
-.this-week-day-fly    { background: rgba(63,185,80,0.10);  color: #86efac; }
+.this-week-day-fly    { background: rgba(63,185,80,0.15);  color: #4ade80; }
 .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
 .this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); }
 
