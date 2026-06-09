@@ -936,8 +936,10 @@ function startSSEStreaming() {
                     timer: v.timer || floorData.timer,
                 };
                 syncVoteTimer(v.timer);
-                // Hot path: update count numbers immediately every tick
-                updateVoteCountsDisplay(v.counts);
+                // Hot path: update count numbers immediately every tick.
+                // Use floorData.voteCounts (already has v.counts || old fallback) so a
+                // tally event with empty/null counts never flashes 0-0-0.
+                updateVoteCountsDisplay(floorData.voteCounts);
                 // Slow path: full re-render throttled to 2s (floor grid etc.)
                 scheduleFullRender();
             } catch (error) {
