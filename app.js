@@ -1216,9 +1216,8 @@ async function fetchFloorData(silent = false) {
 // Update Floor Display with DomeWatch Data
 function updateFloorDisplay(status = null) {
     if (status === 'error') {
-        // Show error state in vote display
-        if (elements.voteTitle) elements.voteTitle.textContent = 'API ERROR';
-        if (elements.voteId) elements.voteId.textContent = 'Unable to fetch data';
+        // Don't overwrite live vote data with an error message — just silently skip.
+        // The SSE stream is still updating tallies; a transient REST error is not user-facing.
         return;
     }
 
