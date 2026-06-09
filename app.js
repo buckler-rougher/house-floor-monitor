@@ -4929,9 +4929,10 @@ async function decorateAbsenteePhotos(absentees) {
 function calculateNameSimilarity(name1, name2) {
     const n1 = name1.toLowerCase();
     const n2 = name2.toLowerCase();
-    
+
+    if (!n1 || !n2) return 0; // empty string matches nothing
     if (n1 === n2) return 1.0;
-    
+
     // Check if one contains the other
     if (n1.includes(n2) || n2.includes(n1)) return 0.8;
     
@@ -6293,7 +6294,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
         const absenteeHtml = absentees.map((absentee, absenteeIndex) => {
             const parsedName = parseAbsenteeRollName(absentee.name);
             const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
-            const displayName = (match ? match.fullName : parsedName.rawName) || displayState || 'Unknown';
+            const displayName = match ? match.fullName : (parsedName.rawName || 'Unknown');
             const nd = match ? normalizeDistrict(match.district) : '';
             const displayState = match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state;
             const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
