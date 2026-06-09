@@ -535,7 +535,9 @@ async function loadRollLog() {
 let sseConnection = null;
 let isStreaming = false;
 let lastSseTallyAt = 0;    // ms timestamp of last vote.tally received (for stale detection)
-let _lastVoteAbsences = null; // { d, r, roll, question } — frozen when vote ends
+let _lastVoteAbsences = null;  // { d, r, roll, question } — committed when vote ends
+let _stagedVoteAbsences = null; // staging: updated every tally, never shown directly
+let _wasInVote = false;         // tracks vote→non-vote transition
 let lastSseReconnectAt = 0; // ms timestamp of last watchdog-forced reconnect (loop guard only)
 let sseReconnectCount = 0; // how many times we've reconnected to the SSE endpoint
 let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdown display)
@@ -880,19 +882,16 @@ function updateVoteCountsDisplay(counts) {
         elements.naysCount.style.fontWeight = nays > yeas ? 'bold' : 'normal';
     }
 
-    // Capture D/R absences for the last-vote subsection (live during vote, frozen after)
+    // Stage D/R absences — only committed to _lastVoteAbsences when the vote ends,
+    // so mid-vote "not_voting" (people who haven't cast yet) never pollutes the display.
     const blue = counts.blue || {};
     const red  = counts.red  || {};
-    const dAbsent = Math.max(parseInt(blue.not_voting) || 0, 0);
-    const rAbsent = Math.max(parseInt(red.not_voting)  || 0, 0);
-    if (dAbsent + rAbsent > 0 || _lastVoteAbsences === null) {
-        _lastVoteAbsences = {
-            d: dAbsent, r: rAbsent,
-            roll: floorData.rollCall?.number || null,
-            question: floorData.rollCall?.question || null,
-        };
-        updateLastVoteAbsencesDisplay();
-    }
+    _stagedVoteAbsences = {
+        d: Math.max(parseInt(blue.not_voting) || 0, 0),
+        r: Math.max(parseInt(red.not_voting)  || 0, 0),
+        roll: floorData.rollCall?.number || null,
+        question: floorData.rollCall?.question || null,
+    };
 
     // Update floor grid with party breakdown (fast DOM, no network)
     const ivf  = v => Math.max(parseInt(v) || 0, 0);
@@ -1092,8 +1091,16 @@ async function fetchFloorData(silent = false) {
             timeline: data.timeline
         };
 
+        // Detect vote → non-vote transition: commit staged absences as the final tally
+        const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
+        if (_wasInVote && !nowInVote && _stagedVoteAbsences) {
+            _lastVoteAbsences = { ..._stagedVoteAbsences };
+            updateLastVoteAbsencesDisplay();
+        }
+        _wasInVote = nowInVote;
+
         // Clear the local vote countdown if we're no longer in a vote
-        if (data.now?.value !== 'vote' && data.now?.value !== 'voting') {
+        if (!nowInVote) {
             clearVoteTimer();
         }
 
