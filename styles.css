@@ -2637,6 +2637,8 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 0.15s ease;
   z-index: 1;
 }
 
@@ -7001,12 +7003,10 @@ body.journal-mode .floor-grid-panel {
 .journal-image {
     object-fit: cover;
     border-radius: var(--radius-12);
-    display: none;
-    border: 2px solid var(--border-color);
-}
-
-.journal-image[src]:not([src=""]) {
     display: block;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    border: 2px solid var(--border-color);
 }
 
 .journal-image-placeholder {
