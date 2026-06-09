@@ -1137,7 +1137,7 @@ async function fetchFloorData(silent = false) {
         // so reconcileVoteWithBills can still read the last roll call + counts.
         const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
         if (_wasInVote && !nowInVote) {
-            reconcileVoteWithBills();
+            reconcileVoteWithBills(true); // force=true: bypass the in-vote guard
         }
 
         // Update floor data state.
@@ -1398,10 +1398,10 @@ function updateFloorDisplay(status = null) {
 }
 
 // After a vote finishes, look up the bill in billsData by roll call question and update its status.
-function reconcileVoteWithBills() {
+function reconcileVoteWithBills(force = false) {
     if (!floorData.rollCall || !floorData.voteCounts) return;
-    // Don't update while a vote is actively in progress
-    if (floorData.currentStatus?.value === 'vote') return;
+    // Don't update while a vote is actively in progress (unless called at transition)
+    if (!force && floorData.currentStatus?.value === 'vote') return;
 
     const totals = floorData.voteCounts.totals || {};
     const yeas = parseInt(totals.yeas) || 0;
