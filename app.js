@@ -3491,6 +3491,11 @@ function updateDebateSection(items) {
                 if (normKey === normNeedle) { foundBill = val; break; }
             }
         }
+        // H.Res. rule resolutions are stored in billDataMap as "hres-XXXX" (not "H.Res. XXXX")
+        if (!foundBill && /H\.?\s*Res\./i.test(foundBillId)) {
+            const hresNum = foundBillId.match(/(\d+)/)?.[1];
+            if (hresNum) foundBill = billDataMap.get(`hres-${hresNum}`);
+        }
     }
 
     // Wider fallback: only run if the DEBATE item didn't explicitly name a bill.
