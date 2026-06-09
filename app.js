@@ -1407,6 +1407,9 @@ function reconcileVoteWithBills() {
     const nays = parseInt(totals.nays) || 0;
     if (yeas + nays === 0) return;
 
+    // Skip procedural motions — these are not passage votes
+    if (/motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i.test(question)) return;
+
     // Parse bill ID from question, e.g. "S 1003 - On Motion to Suspend..." or "H R 1041 - ..."
     const question = floorData.rollCall.question || '';
     // Normalize abbreviation with optional spaces/dots to our canonical form
