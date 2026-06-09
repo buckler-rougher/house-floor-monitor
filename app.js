@@ -2800,7 +2800,7 @@ function enrichAmendments(amendments, xmlDoc) {
                 name: match ? match.fullName : t.raw,
                 party,
                 letter: party === 'rep' ? 'R' : party === 'dem' ? 'D' : 'I',
-                photoUrl: match ? `https://bioguide.congress.gov/photo/${match.bioguideId}.jpg` : null,
+                photoUrl: match ? buildBioguidePhotoUrl(match.bioguideId) : null,
                 profileUrl: match ? buildCongressProfileUrl(match.bioguideId) : null,
                 distLabel: match ? `${match.state}${dist ? '-' + dist : ''}` : (t.state || ''),
             };
