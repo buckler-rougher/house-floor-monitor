@@ -940,12 +940,12 @@ body {
 .progress-fill.yeas {
     background: var(--accent-green);
     border-radius: var(--radius-6) 0 0 var(--radius-6);
-    box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+    box-shadow: 0 0 10px rgba(63, 185, 80, 0.3);
 }
 
 .progress-fill.yeas:hover {
     filter: brightness(1.3);
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
+    box-shadow: 0 0 15px rgba(63, 185, 80, 0.5);
 }
 
 .progress-fill.present {
