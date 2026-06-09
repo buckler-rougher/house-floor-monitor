@@ -3548,6 +3548,25 @@ function updateDebateSection(items) {
             const hresNum = foundBillId.match(/(\d+)/)?.[1];
             if (hresNum) foundBill = billDataMap.get(`hres-${hresNum}`);
         }
+        // H.Res. with no billDataMap entry: look up the underlying bill from proceedings.
+        // "DEBATE - ...on H. Res. 1140" → proceedings say it's "providing for consideration
+        // of H.R. 5408" → show H.R. 5408's details (sponsor, summary, etc.) instead of blank.
+        if (!foundBill && /H\.?\s*Res\./i.test(foundBillId)) {
+            const idPattern = /\b(H\.R\.|H\.\s*Res\.|S\.\s*(?:Res\.)?\s*|S\.)\s*(\d+)/gi;
+            for (const item of recentItems) {
+                const desc = item.description || '';
+                if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
+                for (const m of desc.matchAll(idPattern)) {
+                    const normalized = m[1].replace(/\s+/g, '') + ' ' + m[2];
+                    if (normalized === foundBillId) continue; // skip the H.Res. itself
+                    const candidate = billDataMap.get(normalized)
+                        || (/H\.?\s*Res\./i.test(normalized) && billDataMap.get(`hres-${normalized.match(/(\d+)/)?.[1]}`))
+                        || null;
+                    if (candidate) { foundBill = candidate; break; }
+                }
+                if (foundBill) break;
+            }
+        }
     }
 
     // Wider fallback: only run when there was no DEBATE/committee item at all.
@@ -3804,20 +3823,21 @@ function updateDebateSection(items) {
             elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
         }
     } else {
-        // Bill not in billDataMap. For H.Res. rule resolutions, build the title
-        // from the bill IDs the rule provides for consideration of, e.g.:
-        // "Providing for consideration of H.R. 8312, H.R. 8464, H.Res. 1335, and S. 2"
+        // Bill not in billDataMap.
+        // For H.Res. rule resolutions: extract the underlying bill IDs from the proceedings
+        // and try to look up the primary underlying bill in billDataMap so the full rich
+        // display (sponsor, summary, etc.) can show.  The H.Res. is just the procedural wrapper.
+        // Build a descriptive title from proceedings for H.Res. rules
         let fallbackTitle = foundBillId ? '—' : '—';
         if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
             for (const item of recentItems) {
                 const desc = item.description || '';
                 if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
-                // Extract all bill/resolution IDs from this proceedings entry
                 const idPattern = /\b(H\.R\.|H\.\s*Res\.|S\.\s*(?:Res\.)?\s*|S\.)\s*(\d+)/gi;
                 const ids = [];
                 for (const m of desc.matchAll(idPattern)) {
                     const normalized = m[1].replace(/\s+/g, '') + ' ' + m[2];
-                    if (normalized === foundBillId) continue; // skip the H.Res. itself
+                    if (normalized === foundBillId) continue;
                     if (!ids.includes(normalized)) ids.push(normalized);
                 }
                 if (ids.length > 0) {
