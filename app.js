@@ -3612,11 +3612,6 @@ function updateDebateSection(items) {
     }
 
     // ── 6. Render bill details ────────────────────────────────────────────
-    // Show the bill ID even if it's not in billDataMap (e.g. H.Res. 1345 rule debate)
-    if (!foundBill && foundBillId) {
-        elements.debateBillId.textContent = foundBillId;
-        elements.debateBillTitle.textContent = '—';
-    }
     if (foundBill) {
         elements.debateBillTitle.textContent = foundBill.title || '—';
         elements.debateBillId.textContent = foundBill.id || '';
@@ -3751,8 +3746,16 @@ function updateDebateSection(items) {
             elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
         }
     } else {
-        // Bill not in map yet — show ID and a clean pending state
-        elements.debateBillTitle.textContent = foundBillId ? 'Bill details loading…' : '—';
+        // Bill not in map — for rule resolutions (H.Res.) try to extract title from proceedings
+        let pendingTitle = 'Bill details loading…';
+        if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
+            // Look for "H.Res. XXXX — 'title text'" pattern in proceedings items
+            const resNum = foundBillId.match(/(\d+)/)?.[1];
+            const titleItem = recentItems.find(i => resNum && i.description.includes(resNum) && i.description.includes('—'));
+            const titleMatch = titleItem?.description.match(/—\s*["""]?(.+?)[""]?(?:\s*\(|$)/);
+            pendingTitle = titleMatch ? titleMatch[1].trim() : '—';
+        }
+        elements.debateBillTitle.textContent = foundBillId ? pendingTitle : '—';
         elements.debateBillId.textContent = foundBillId || '—';
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
