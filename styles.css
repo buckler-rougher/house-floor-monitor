@@ -2416,7 +2416,7 @@ body {
   align-items: center;
   gap: var(--sp-12);
   padding: var(--sp-8) var(--sp-16);
-  background: rgba(13, 17, 23, 0.28);
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-16)) 0;
   position: sticky;
