@@ -1422,8 +1422,11 @@ const elements = {
     debateCommitteesList: document.getElementById('debate-committees-list'),
     debateCommitteeDate: document.getElementById('debate-committee-date'),
     debateSummarySection: document.getElementById('debate-summary-section'),
-    debateCongressFoot: document.getElementById('debate-congress-foot'),
-    debateCongressLink: document.getElementById('debate-congress-link'),
+    debateLinksFoot: document.getElementById('debate-links-foot'),
+    debateLinkText: document.getElementById('debate-link-text'),
+    debateLinkReport: document.getElementById('debate-link-report'),
+    debateLinkSap: document.getElementById('debate-link-sap'),
+    debateLinkCongress: document.getElementById('debate-link-congress'),
     prayerSection: document.getElementById('prayer-section'),
     prayerImage: document.getElementById('prayer-image'),
     prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
@@ -3679,24 +3682,32 @@ function updateDebateSection(items) {
         // Summary
         if (elements.debateSummarySection && elements.debateBillDescription) {
             if (foundBill.summary) {
-                elements.debateBillDescription.textContent = foundBill.summary;
+                // Decode HTML entities (e.g. &nbsp;) before display as plain text
+                const tmp = document.createElement('div');
+                tmp.innerHTML = foundBill.summary;
+                elements.debateBillDescription.textContent = tmp.textContent;
                 elements.debateSummarySection.style.display = '';
             } else {
                 elements.debateSummarySection.style.display = 'none';
             }
         }
 
-        // Congress.gov link
+        // Links footer
         const congressUrl = billIdToCongressUrl(foundBill.id);
         const procedureClass = foundBill.procedure === 'suspension' ? 'suspension' : 'rule';
-        if (elements.debateCongressFoot && elements.debateCongressLink) {
-            if (congressUrl) {
-                elements.debateCongressLink.href = congressUrl;
-                elements.debateCongressLink.className = `bill-modal-link ${procedureClass}`;
-                elements.debateCongressFoot.style.display = '';
-            } else {
-                elements.debateCongressFoot.style.display = 'none';
-            }
+        const textUrl = foundBill.textUrl || null;
+        if (elements.debateLinksFoot) {
+            const setLink = (el, url, label) => {
+                if (!el) return;
+                if (url) { el.href = url; el.className = `bill-modal-link ${procedureClass}`; el.style.display = ''; }
+                else { el.style.display = 'none'; }
+            };
+            setLink(elements.debateLinkText,    textUrl,                  'View Bill Text →');
+            setLink(elements.debateLinkReport,  foundBill.committeeReportUrl, 'View Committee Report →');
+            setLink(elements.debateLinkSap,     foundBill.sapUrl,         'View White House Memo →');
+            setLink(elements.debateLinkCongress, congressUrl,             'View on Congress.gov →');
+            const anyLink = textUrl || foundBill.committeeReportUrl || foundBill.sapUrl || congressUrl;
+            elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
         }
     } else {
         // Bill not in map yet — show ID and a clean pending state
@@ -3706,7 +3717,7 @@ function updateDebateSection(items) {
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
         if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
         if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
-        if (elements.debateCongressFoot) elements.debateCongressFoot.style.display = 'none';
+        if (elements.debateLinksFoot) elements.debateLinksFoot.style.display = 'none';
     }
 }
 
