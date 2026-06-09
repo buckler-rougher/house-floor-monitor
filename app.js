@@ -538,8 +538,63 @@ async function loadRollLog() {
                 };
                 updateLastVoteAbsencesDisplay();
             }
+
+            // Retroactively apply completed roll results to bill cards.
+            // This catches votes that happened before page load or while Worker was rate-limited.
+            applyRollLogToBills(rollLog, activeRoll);
         }
     } catch {}
+}
+
+function applyRollLogToBills(entries, activeRoll) {
+    if (!Array.isArray(entries) || !billsData) return;
+    const PROCEDURAL = /motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i;
+    const normalizeBillType = raw => {
+        const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
+        return { 'HR':'H.R.','H.R.':'H.R.','HRES':'H.Res.','H.RES.':'H.Res.',
+                 'HJRES':'H.J.Res.','HCONRES':'H.Con.Res.',
+                 'S':'S.','S.':'S.','SRES':'S.Res.','S.RES.':'S.Res.',
+                 'SJRES':'S.J.Res.','SCONRES':'S.Con.Res.' }[t] || null;
+    };
+    let changed = false;
+    for (const entry of entries) {
+        if (activeRoll && String(entry.roll) === activeRoll) continue; // skip active vote
+        const q = entry.question || '';
+        if (PROCEDURAL.test(q)) continue;
+        const yeas = entry.totals?.yeas || 0;
+        const nays = entry.totals?.nays || 0;
+        if (yeas + nays === 0) continue;
+        const qm = q.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+        if (!qm) continue;
+        const type = normalizeBillType(qm[1]);
+        if (!type) continue;
+        const billId = `${type} ${qm[2]}`;
+        const isSuspension = /suspend/i.test(q);
+        const required = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
+        const passed = yeas >= required;
+        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+            const bill = (billsData[key] || []).find(b => b.id === billId);
+            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+                bill.status = passed ? 'passed' : 'failed';
+                bill.latestAction = passed ? `Passed (Roll Call ${entry.roll}): ${yeas}-${nays}` : `Failed (Roll Call ${entry.roll}): ${yeas}-${nays}`;
+                changed = true;
+            }
+        }
+        // Also handle H.Res. rule passage
+        if (/^H\.Res\.\s*\d+$/i.test(billId)) {
+            const hresNum = billId.match(/(\d+)/)?.[1];
+            if (hresNum) {
+                for (const e of specialRulesMap.values()) {
+                    if (String(e.hresNum) === String(hresNum) && e.ruleStatus !== 'passed' && e.ruleStatus !== 'failed') {
+                        e.ruleStatus = passed ? 'passed' : 'failed';
+                        e.passageVote = `${yeas}-${nays}`;
+                        changed = true;
+                    }
+                }
+            }
+        }
+    }
+    if (changed) updateBillsDisplay();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2354,7 +2409,12 @@ async function fetchBillsThisWeek() {
         if (proceedingsData.length) updateDebateSection(proceedingsData);
 
         // Fetch special rules + Dem Whip recs in parallel, then re-render cards
-        Promise.all([fetchSpecialRules(), fetchWhipRecs()]).then(() => updateBillsDisplay());
+        Promise.all([fetchSpecialRules(), fetchWhipRecs()]).then(() => {
+            // Apply any completed roll results from the roll log (catches missed transitions)
+            const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+            applyRollLogToBills(rollLog, activeRoll);
+            updateBillsDisplay();
+        });
 
     } catch (error) {
         console.error('Error fetching bills:', error);
