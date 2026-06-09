@@ -312,7 +312,7 @@ function renderVotingDaysCalendar() {
     });
 
     const MONTH_NAMES_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const DOW = ['S','M','T','W','T','F','S'];
+    const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     const COLORS = {
         'fly-in':    { cell: 'cal-day-vote', num: '#4ade80', lbl: '#86efac' },
