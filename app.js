@@ -2372,6 +2372,35 @@ function updateBillStatusFromProceedings(items) {
     }
 
     if (changed) updateBillsDisplay();
+
+    // Separately: scan for H.Res. rule outcomes from recorded votes and update specialRulesMap.
+    // "On agreeing to the resolution Agreed to by recorded vote: 213 - 211 (Roll no. 211)."
+    // isPassed() excludes these because they aren't voice votes, so handle them here.
+    let ruleChanged = false;
+    for (let i = 0; i < items.length; i++) {
+        const desc = items[i].description || '';
+        if (!/on agreeing to the resolution\b/i.test(desc)) continue;
+        if (!/(agreed to|passed)\b/i.test(desc) || /not agreed to|failed/i.test(desc)) continue;
+        // Look for H.Res. number in this item or nearby
+        let hresId = null;
+        const hresPattern = /H\.?\s*Res\.\s*(\d+)/i;
+        for (let j = 0; j <= 3 && !hresId; j++) {
+            if (i + j < items.length) { const m = (items[i + j].description || '').match(hresPattern); if (m) hresId = m[1]; }
+            if (!hresId && i - j >= 0) { const m = (items[i - j].description || '').match(hresPattern); if (m) hresId = m[1]; }
+        }
+        if (!hresId) continue;
+        // Extract vote counts if present: "recorded vote: 213 - 211"
+        const votesMatch = desc.match(/recorded vote:\s*(\d+)\s*[-–]\s*(\d+)/i);
+        const passageVote = votesMatch ? `${votesMatch[1]}-${votesMatch[2]}` : null;
+        for (const entry of specialRulesMap.values()) {
+            if (String(entry.hresNum) === String(hresId) && entry.ruleStatus !== 'passed' && entry.ruleStatus !== 'failed') {
+                entry.ruleStatus = 'passed';
+                if (passageVote) entry.passageVote = passageVote;
+                ruleChanged = true;
+            }
+        }
+    }
+    if (ruleChanged) updateBillsDisplay();
 }
 
 // Update bills display
