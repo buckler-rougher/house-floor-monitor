@@ -3477,6 +3477,22 @@ function updateDebateSection(items) {
         }
     }
 
+    // ── 2b. H.Res. rule → swap to the underlying bill it governs ─────────
+    // When the DEBATE entry names an H.Res. (a rule resolution, never in billDataMap),
+    // find the scheduled bill that rule "provides for consideration of" and debate THAT.
+    // e.g. "H.Res. 1345 — Providing for consideration of H.R. 8312, the [title]"
+    if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
+        for (const item of recentItems) {
+            const desc = item.description || '';
+            if (!/provid(?:ing|es) for consideration of/i.test(desc)) continue;
+            const m = desc.match(/\b(H\.R\.|S\.)\s*(\d+)/i);
+            if (m) {
+                foundBillId = m[1].replace(/\s+/g, '') + ' ' + m[2];
+                break;
+            }
+        }
+    }
+
     // ── 3. Look up bill in billDataMap (try normalized variations) ────────
     let foundBill = null;
     if (foundBillId) {
@@ -3746,16 +3762,7 @@ function updateDebateSection(items) {
             elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
         }
     } else {
-        // Bill not in map — for rule resolutions (H.Res.) try to extract title from proceedings
-        let pendingTitle = 'Bill details loading…';
-        if (foundBillId && /H\.?\s*Res\./i.test(foundBillId)) {
-            // Look for "H.Res. XXXX — 'title text'" pattern in proceedings items
-            const resNum = foundBillId.match(/(\d+)/)?.[1];
-            const titleItem = recentItems.find(i => resNum && i.description.includes(resNum) && i.description.includes('—'));
-            const titleMatch = titleItem?.description.match(/—\s*["""]?(.+?)[""]?(?:\s*\(|$)/);
-            pendingTitle = titleMatch ? titleMatch[1].trim() : '—';
-        }
-        elements.debateBillTitle.textContent = foundBillId ? pendingTitle : '—';
+        elements.debateBillTitle.textContent = foundBillId ? 'Bill details loading…' : '—';
         elements.debateBillId.textContent = foundBillId || '—';
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
