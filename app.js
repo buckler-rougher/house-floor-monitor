@@ -3431,24 +3431,22 @@ function updateDebateSection(items) {
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
-    // Items are reverse-chrono (items[0] = most recent).
-    // A DEBATE entry is only valid if there is no subsequent vote result
-    // after it (i.e. items with smaller indices = more recent than the DEBATE).
-    const voteResultRe = /on motion|yeas and nays|roll call|agreed to|passed|failed|ordered to be engrossed/i;
-
-    const debateIdx = items.findIndex(i => /^DEBATE\b/i.test(i.description));
-    const debateItem = debateIdx >= 0 && !items.slice(0, debateIdx).some(i => voteResultRe.test(i.description))
-        ? items[debateIdx] : null;
-
-    const fallbackIdx = items.findIndex(i => {
+    // Mirror autoSwitchModeFromProceedings: only look at post-recess items
+    // so stale debate entries from before a recess can never match.
+    const recessIdx = items.findIndex(i => {
         const d = i.description.toLowerCase();
+        return d.includes('do now recess') || d.includes('stands in recess') ||
+               d.includes('house do now recess') || d.includes('adjourn');
+    });
+    const recentItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
+
+    const debateItem = recentItems.find(i => /^DEBATE\b/i.test(i.description));
+    const fallbackItem = recentItems.find(i => {
+        const d = i.description.toLowerCase();
+        if (d.includes('morning-hour debate') || d.includes('morning hour debate')) return false;
         return d.includes('committee of the whole') || d.includes('consideration of') || d.includes('proceeded to');
     });
-    const fallbackItem = fallbackIdx >= 0 && !items.slice(0, fallbackIdx).some(i => voteResultRe.test(i.description))
-        ? items[fallbackIdx] : null;
-
     const activeItem = debateItem || fallbackItem;
-    const recentItems = items.slice(0, 20); // for the wider fallback search below
 
     // ── 2. Parse debate length and bill ID from "proceeded with X of debate on BILL" ─
     let debateLengthLabel = null;
