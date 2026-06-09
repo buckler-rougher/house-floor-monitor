@@ -5902,7 +5902,7 @@ function init() {
     // 30s when SSE is live (SSE handles real-time tallies; REST just catches transitions).
     setInterval(() => {
         const sseActive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-        const interval = sseActive ? 60000 : 10000;
+        const interval = sseActive ? 30000 : 10000;
         if (!fetchFloorData._lastPoll || Date.now() - fetchFloorData._lastPoll >= interval) {
             fetchFloorData._lastPoll = Date.now();
             fetchFloorData(true);
