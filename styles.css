@@ -849,6 +849,19 @@ body {
 .count-party-breakdown .cpb-d { color: #5b8fcf; }
 .count-party-breakdown .cpb-r { color: #c0504d; }
 
+.vote-threshold {
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    min-height: 14px;
+}
+.vote-threshold.threshold-pass { color: var(--accent-green); }
+.vote-threshold.threshold-fail { color: var(--accent-red); }
+.vote-threshold.threshold-need { color: var(--text-muted); }
+
 .vote-divider {
     display: flex;
     align-items: center;
