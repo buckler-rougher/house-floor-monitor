@@ -1418,9 +1418,9 @@ const elements = {
     debateRuleTag: document.getElementById('debate-rule-tag'),
     debateSourceLink: document.getElementById('debate-source-link'),
     debateCommitteesSection: document.getElementById('debate-committees-section'),
+    debateCommitteesLabel: document.getElementById('debate-committees-label'),
     debateCommitteesList: document.getElementById('debate-committees-list'),
-    debateCommitteeReportSection: document.getElementById('debate-committee-report-section'),
-    debateCommitteeReportText: document.getElementById('debate-committee-report-text'),
+    debateCommitteeDate: document.getElementById('debate-committee-date'),
     debateSummarySection: document.getElementById('debate-summary-section'),
     debateCongressFoot: document.getElementById('debate-congress-foot'),
     debateCongressLink: document.getElementById('debate-congress-link'),
@@ -3638,25 +3638,41 @@ function updateDebateSection(items) {
             }
         }
 
-        // Committees
+        // Committee (merged: chips + report tally + date — mirrors modal layout)
         if (elements.debateCommitteesSection && elements.debateCommitteesList) {
-            if (foundBill.committees?.length) {
-                elements.debateCommitteesList.innerHTML = foundBill.committees
-                    .map(c => `<span class="bill-modal-committee">${c}</span>`).join('');
+            const hasReport = !!foundBill.committeeReport;
+            const committeeNames = foundBill.committees?.length ? foundBill.committees : (hasReport ? ['Committee'] : []);
+            if (committeeNames.length || hasReport) {
+                // Build report tally/text inner HTML (same logic as modal)
+                let reportInner = '';
+                if (hasReport) {
+                    const tallyM = foundBill.committeeReport.match(/(\d+)[-–](\d+)/);
+                    if (tallyM) {
+                        reportInner = `<span class="committee-chip-tally"><b class="ct-aye">${tallyM[1]}</b><span class="ct-sep">–</span><b class="ct-nay">${tallyM[2]}</b></span>`;
+                    } else {
+                        const label = escapeHtml(foundBill.committeeReport.replace(/^reported( by committee)?\s*/i, '') || 'Reported');
+                        reportInner = `<span class="committee-chip-tally committee-chip-tally-text">${label}</span>`;
+                    }
+                }
+                elements.debateCommitteesList.innerHTML = committeeNames
+                    .map((c, i) => `<span class="bill-modal-committee"><span class="committee-chip-name">${escapeHtml(c)}</span>${i === 0 ? reportInner : ''}</span>`)
+                    .join('');
+                // Label: "REFERRED TO" if no report, "COMMITTEE" if reported
+                if (elements.debateCommitteesLabel) {
+                    elements.debateCommitteesLabel.textContent = hasReport ? 'COMMITTEE' : 'REFERRED TO';
+                }
+                // Date pinned right
+                if (elements.debateCommitteeDate) {
+                    if (foundBill.committeeReportDate) {
+                        elements.debateCommitteeDate.textContent = formatDate(foundBill.committeeReportDate);
+                        elements.debateCommitteeDate.style.display = '';
+                    } else {
+                        elements.debateCommitteeDate.style.display = 'none';
+                    }
+                }
                 elements.debateCommitteesSection.style.display = '';
             } else {
                 elements.debateCommitteesSection.style.display = 'none';
-            }
-        }
-
-        // Committee Action
-        if (elements.debateCommitteeReportSection && elements.debateCommitteeReportText) {
-            if (foundBill.committeeReport) {
-                const crDate = foundBill.committeeReportDate ? ` — ${formatDate(foundBill.committeeReportDate)}` : '';
-                elements.debateCommitteeReportText.innerHTML = `${escapeHtml(foundBill.committeeReport)}<span class="bill-modal-date">${crDate}</span>`;
-                elements.debateCommitteeReportSection.style.display = '';
-            } else {
-                elements.debateCommitteeReportSection.style.display = 'none';
             }
         }
 
@@ -3689,7 +3705,6 @@ function updateDebateSection(items) {
         if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
         if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
         if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
-        if (elements.debateCommitteeReportSection) elements.debateCommitteeReportSection.style.display = 'none';
         if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
         if (elements.debateCongressFoot) elements.debateCongressFoot.style.display = 'none';
     }
