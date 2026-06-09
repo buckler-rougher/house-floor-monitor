@@ -4817,6 +4817,9 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
         const memberLastName = lastNameElement.textContent.trim();
         const memberFirstName = firstNameElement.textContent.trim();
         const bioguideId = bioguideElement.textContent.trim();
+
+        // Skip vacant seats (empty name/bioguide in MemberData XML)
+        if (!memberLastName || !bioguideId) continue;
         const party = partyElement ? partyElement.textContent.trim() : '';
         const district = districtElement ? districtElement.textContent.trim() : '';
         const town = townElement ? townElement.textContent.trim() : '';
