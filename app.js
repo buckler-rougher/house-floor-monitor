@@ -895,6 +895,16 @@ function updateVoteCountsDisplay(counts) {
         elements.naysCount.style.fontWeight = nays > yeas ? 'bold' : 'normal';
     }
 
+    // Party breakdown under yeas/nays
+    const dY = Math.max(parseInt(blue.yeas) || 0, 0);
+    const rY = Math.max(parseInt(red.yeas)  || 0, 0);
+    const dN = Math.max(parseInt(blue.nays) || 0, 0);
+    const rN = Math.max(parseInt(red.nays)  || 0, 0);
+    if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
+    if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
+    if (elements.naysD) elements.naysD.textContent = `${dN}D`;
+    if (elements.naysR) elements.naysR.textContent = `${rN}R`;
+
     // Stage D/R absences — only committed to _lastVoteAbsences when the vote ends,
     // so mid-vote "not_voting" (people who haven't cast yet) never pollutes the display.
     const blue = counts.blue || {};
@@ -1497,10 +1507,14 @@ const elements = {
     voteId: document.getElementById('vote-id'),
     yeasCount: document.getElementById('yeas-count'),
     yeasPercent: document.getElementById('yeas-percent'),
+    yeasD: document.getElementById('yeas-d'),
+    yeasR: document.getElementById('yeas-r'),
     presentCount: document.getElementById('present-count'),
     presentPercent: document.getElementById('present-percent'),
     naysCount: document.getElementById('nays-count'),
     naysPercent: document.getElementById('nays-percent'),
+    naysD: document.getElementById('nays-d'),
+    naysR: document.getElementById('nays-r'),
     yeasBar: document.getElementById('yeas-bar'),
     presentBar: document.getElementById('present-bar'),
     naysBar: document.getElementById('nays-bar'),
