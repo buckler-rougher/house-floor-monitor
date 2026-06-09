@@ -3491,8 +3491,11 @@ function updateDebateSection(items) {
         }
     }
 
-    // Wider fallback: scan recent debate-related items for any bill in the map
-    if (!foundBill) {
+    // Wider fallback: only run if the DEBATE item didn't explicitly name a bill.
+    // If foundBillId was parsed (e.g. "H.Res. 1345") but isn't in billDataMap,
+    // don't scan further — the fallback would find the wrong bill (e.g. H.R. 8312
+    // mentioned inside the rule's description text).
+    if (!foundBill && !foundBillId) {
         const billPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.)\s*(\d+)/gi;
         for (const item of recentItems) {
             const desc = item.description || '';
@@ -3609,6 +3612,11 @@ function updateDebateSection(items) {
     }
 
     // ── 6. Render bill details ────────────────────────────────────────────
+    // Show the bill ID even if it's not in billDataMap (e.g. H.Res. 1345 rule debate)
+    if (!foundBill && foundBillId) {
+        elements.debateBillId.textContent = foundBillId;
+        elements.debateBillTitle.textContent = '—';
+    }
     if (foundBill) {
         elements.debateBillTitle.textContent = foundBill.title || '—';
         elements.debateBillId.textContent = foundBill.id || '';
