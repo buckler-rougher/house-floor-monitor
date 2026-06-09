@@ -332,7 +332,8 @@ function renderVotingDaysCalendar() {
             const lbls = [];
             if (types.has('fly-in'))    lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">FLY IN</span>`);
             if (types.has('fly-out'))   lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">FLY OUT</span>`);
-            if (types.has('vote-day'))  lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">VOTES</span>`);
+            if (types.has('vote-day') && !types.has('fly-in') && !types.has('fly-out'))
+                                        lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">VOTES</span>`);
             if (types.has('added'))     lbls.push(`<span class="cal-lbl" style="color:${c.lbl}">VOTES+</span>`);
             if (types.has('cancelled') && !types.has('vote-day') && !types.has('added'))
                                         lbls.push(`<span class="cal-lbl cal-lbl-strike" style="color:${c.lbl}">VOTES</span>`);
