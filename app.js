@@ -914,17 +914,6 @@ function updateVoteCountsDisplay(counts) {
     if (elements.naysD) elements.naysD.textContent = `${dN}D`;
     if (elements.naysR) elements.naysR.textContent = `${rN}R`;
     if (elements.naysI) { elements.naysI.textContent = `${iN}I`; elements.naysI.style.display = iN > 0 ? '' : 'none'; }
-    // Threshold: only show "Need X more" — hide once side is winning
-    const isSuspension = /suspend/i.test(floorData.rollCall?.question || '');
-    const needed = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
-    if (elements.yeaThreshold) {
-        const toPass = needed - yeas;
-        elements.yeaThreshold.textContent = toPass > 0 ? `Need ${toPass} more` : '';
-    }
-    if (elements.nayThreshold) {
-        const toFail = needed - nays;
-        elements.nayThreshold.textContent = toFail > 0 ? `Need ${toFail} more` : '';
-    }
     _stagedVoteAbsences = {
         d: Math.max(parseInt(blue.not_voting) || 0, 0),
         r: Math.max(parseInt(red.not_voting)  || 0, 0),
