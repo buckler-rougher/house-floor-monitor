@@ -1168,18 +1168,21 @@ function updateFloorDisplay(status = null) {
     const statusValue = floorData.currentStatus.value || 'unknown';
     
     // Auto-switch mode based on DomeWatch status.
-    // Only switch INTO vote mode when SSE tallies are actively coming in — this prevents
-    // stale DomeWatch REST data from locking the app in vote mode after a vote ends.
-    // Note: REST API returns value "voting"; SSE handler sets value "vote" — handle both.
+    // REST API returns value "voting"; SSE handler sets value "vote" — handle both.
+    // Switch INTO vote mode whenever REST says so (don't require SSE — SSE may be slow
+    // to connect on page load, leaving the app stuck in debate mode during a live vote).
+    // Switch OUT of vote mode only when REST says non-vote AND SSE has gone quiet (>90s),
+    // so stale cached REST data can't snap us out of vote mode while tallies still flow.
     const statusLower = (statusText + ' ' + statusValue).toLowerCase();
     const sseIsLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+    const restSaysVote = statusLower.includes('vote') || statusLower.includes('voting');
     const isTestVote = /test vote/i.test(floorData.rollCall?.question || '');
     if (!window._modeLocked) {
-        if ((statusLower.includes('vote') || statusLower.includes('voting')) && sseIsLive && !isTestVote) {
+        if (restSaysVote && !isTestVote) {
             window.setMode('vote');
-        } else if (statusLower.includes('debate')) {
+        } else if (!sseIsLive && statusLower.includes('debate')) {
             window.setMode('debate');
-        } else if (statusLower.includes('adjourn') || statusLower.includes('recess')) {
+        } else if (!sseIsLive && (statusLower.includes('adjourn') || statusLower.includes('recess'))) {
             window.setMode('recess');
         }
     }
