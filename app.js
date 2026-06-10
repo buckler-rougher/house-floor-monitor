@@ -1107,6 +1107,9 @@ function startSSEStreaming() {
         });
 
         // Data pushed from DO — eliminates per-user Worker polling for these endpoints
+        eventSource.addEventListener('bills', (event) => {
+            try { applyBillsData(JSON.parse(event.data)); } catch {}
+        });
         eventSource.addEventListener('tweets', (event) => {
             try { fetchTweets(JSON.parse(event.data)); } catch {}
         });
@@ -1270,8 +1273,9 @@ async function fetchFloorData(silent = false) {
         // Quorum check — runs here (30s REST poll) not on every SSE tick
         updateQuorumStatus();
 
-        // Update bills
-        fetchBillsThisWeek();
+        // Re-render bills with existing data (floor status may affect which bill is active).
+        // Do NOT re-fetch — bills are pushed via SSE from the DO on their own schedule.
+        updateBillsDisplay();
 
         // Update vote map
         updateFloorGrid();
@@ -2344,95 +2348,116 @@ const BLUESKY_CONFIG = {
 // Subsequent calls use ?quick=1 and preserve enrichment fields from the initial load.
 let billsFullyEnriched = false;
 
+// Merge incoming bill data with what we already have locally.
+// Rules:
+//  1. Never downgrade a higher-priority status (e.g. passed → scheduled).
+//  2. When enrichment is partial (quick-mode server response), carry over
+//     Congress.gov fields (summary, sponsor, committees) from the previous state.
+const STATUS_PRIORITY = { passed: 4, failed: 4, 'roll-call': 3, postponed: 2, scheduled: 1 };
+function mergeBills(newArr, existingArr, isQuick = false) {
+    const byId = Object.fromEntries((existingArr || []).map(b => [b.id, b]));
+    return (newArr || []).map((bill, i) => {
+        const prev = byId[bill.id];
+        if (!prev) return { ...bill, _origIdx: i };
+
+        const keepOldStatus = (STATUS_PRIORITY[prev.status] || 0) > (STATUS_PRIORITY[bill.status] || 0);
+        const statusFields = keepOldStatus
+            ? { status: prev.status, latestAction: prev.latestAction, considered: prev.considered,
+                actionSource: prev.actionSource, actionSourceUrl: prev.actionSourceUrl,
+                latestActionDate: prev.latestActionDate }
+            : {};
+
+        const enrichment = isQuick ? {
+            summary:             bill.summary             ?? prev.summary,
+            sponsor:             bill.sponsor             ?? prev.sponsor,
+            cosponsors:          bill.cosponsors          ?? prev.cosponsors,
+            committees:          bill.committees          ?? prev.committees,
+            committeeReport:     bill.committeeReport     ?? prev.committeeReport,
+            committeeReportDate: bill.committeeReportDate ?? prev.committeeReportDate,
+        } : {};
+
+        return { ...bill, ...enrichment, ...statusFields, _origIdx: i };
+    });
+}
+
+// Apply a combined bills+rules+whip payload (from either an initial fetch or an
+// SSE push from the DO). Handles all merge/override logic in one place.
+function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQuick = false) {
+    if (!data) return;
+
+    billsData = {
+        ruleBills:            mergeBills(data.ruleBills,            billsData.ruleBills,            isQuick),
+        suspensionBills:      mergeBills(data.suspensionBills,      billsData.suspensionBills,      isQuick),
+        mayBeConsideredBills: mergeBills(data.mayBeConsideredBills, billsData.mayBeConsideredBills, isQuick),
+        rawHeaders:  data.rawHeaders  || billsData.rawHeaders  || null,
+        lastUpdated: data.lastUpdated || new Date(),
+        weekDate:    data.weekDate    || billsData.weekDate    || 'No current week bills available'
+    };
+
+    if (!isQuick) billsFullyEnriched = true;
+
+    // Apply rules — preserve any in-memory ruleStatus overrides set by reconcileVoteWithBills
+    if (rulesData) {
+        const ruleStatusOverrides = new Map();
+        for (const entry of specialRulesMap.values()) {
+            if ((entry.ruleStatus === 'passed' || entry.ruleStatus === 'failed') &&
+                !ruleStatusOverrides.has(entry.hresNum)) {
+                ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote });
+            }
+        }
+        specialRulesMap.clear();
+        for (const rule of (rulesData.rules || [])) {
+            const override = ruleStatusOverrides.get(rule.hresNum);
+            for (const billKey of rule.bills) {
+                specialRulesMap.set(billKey, {
+                    hres: rule.hres, hresNum: rule.hresNum, title: rule.title || null,
+                    passageVote: override?.passageVote ?? rule.passageVote ?? null,
+                    pdfUrl: rule.pdfUrl, ruleStatus: override?.ruleStatus ?? rule.ruleStatus,
+                    bills: rule.bills, sponsor: rule.sponsor || null,
+                });
+            }
+        }
+    }
+
+    // Apply whip recs
+    if (whipData) {
+        whipRecMap.clear();
+        for (const [key, rec] of Object.entries(whipData.recs || {})) {
+            whipRecMap.set(key, rec);
+        }
+    }
+
+    // Apply any completed roll results from the roll log (catches missed transitions)
+    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    applyRollLogToBills(rollLog, activeRoll);
+
+    updateBillsDisplay();
+    if (proceedingsData.length) updateDebateSection(proceedingsData);
+}
+
 async function fetchBillsThisWeek() {
     console.log('=== BILLS FETCH START ===');
     try {
-        console.log('Rule bills list element:', elements.ruleBillsList);
-        console.log('Suspension bills list element:', elements.suspensionBillsList);
-
-        // Quick mode: skip Congress.gov enrichment (summaries, sponsors, committees).
-        // We already have that from the initial full fetch; only Bluesky + House XML
-        // status updates matter on recurring polls.
+        // Quick mode: skip Congress.gov enrichment on repeat fetches — DO SSE handles those.
         const isQuick = billsFullyEnriched;
         let billsUrl = proceedingsDateOverride
             ? `${BILLS_CONFIG.workerUrl}?date=${encodeURIComponent(proceedingsDateOverride)}`
             : BILLS_CONFIG.workerUrl;
         if (isQuick) billsUrl += (billsUrl.includes('?') ? '&' : '?') + 'quick=1';
 
-        const response = await fetch(billsUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+        const [billsResp, rulesResp, whipResp] = await Promise.all([
+            fetch(billsUrl),
+            fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' }),
+            fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' }),
+        ]);
 
-        const data = await response.json();
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        const data      = billsResp.ok  ? await billsResp.json()  : null;
+        const rulesData = rulesResp.ok  ? await rulesResp.json()  : null;
+        const whipData  = whipResp.ok   ? await whipResp.json()   : null;
 
-        console.log('Bills API response:', data);
+        if (!data || data.error) throw new Error(data?.error || `HTTP ${billsResp.status}`);
 
-        // Merge incoming bill data with what we already have locally.
-        // Rules:
-        //  1. Never downgrade a higher-priority status (e.g. passed → scheduled).
-        //  2. On quick refreshes, carry over Congress.gov enrichment fields
-        //     (summary, sponsor, cosponsors, committees) since the server skipped them.
-        const STATUS_PRIORITY = { passed: 4, failed: 4, 'roll-call': 3, postponed: 2, scheduled: 1 };
-        const mergeBills = (newArr, existingArr) => {
-            const byId = Object.fromEntries((existingArr || []).map(b => [b.id, b]));
-            return (newArr || []).map((bill, i) => {
-                const prev = byId[bill.id];
-                if (!prev) return { ...bill, _origIdx: i };
-
-                // Keep higher-priority status from previous state
-                const keepOldStatus = (STATUS_PRIORITY[prev.status] || 0) > (STATUS_PRIORITY[bill.status] || 0);
-                const statusFields = keepOldStatus
-                    ? { status: prev.status, latestAction: prev.latestAction, considered: prev.considered,
-                        actionSource: prev.actionSource, actionSourceUrl: prev.actionSourceUrl,
-                        latestActionDate: prev.latestActionDate }
-                    : {};
-
-                // On quick refresh carry over enrichment the server didn't re-fetch
-                const enrichment = isQuick ? {
-                    summary:            bill.summary            ?? prev.summary,
-                    sponsor:            bill.sponsor            ?? prev.sponsor,
-                    cosponsors:         bill.cosponsors         ?? prev.cosponsors,
-                    committees:         bill.committees         ?? prev.committees,
-                    committeeReport:    bill.committeeReport    ?? prev.committeeReport,
-                    committeeReportDate:bill.committeeReportDate ?? prev.committeeReportDate,
-                } : {};
-
-                return { ...bill, ...enrichment, ...statusFields, _origIdx: i };
-            });
-        };
-
-        billsData = {
-            ruleBills:           mergeBills(data.ruleBills,           billsData.ruleBills),
-            suspensionBills:     mergeBills(data.suspensionBills,     billsData.suspensionBills),
-            mayBeConsideredBills:mergeBills(data.mayBeConsideredBills,billsData.mayBeConsideredBills),
-            rawHeaders:   data.rawHeaders  || billsData.rawHeaders  || null,
-            lastUpdated:  data.lastUpdated || new Date(),
-            weekDate:     data.weekDate    || billsData.weekDate    || 'No current week bills available'
-        };
-
-        if (!isQuick) billsFullyEnriched = true; // mark enrichment complete after first full fetch
-
-        console.log(`Found ${billsData.ruleBills.length} rule bills, ${billsData.suspensionBills.length} suspension bills, ${billsData.mayBeConsideredBills.length} may-be-considered bills`);
-
-        updateBillsDisplay();
-
-        // Re-render debate/mode sections now that billDataMap is populated.
-        // This ensures the Bill ↔ Amendments toggle appears without waiting for
-        // the next floor data poll (which could be up to 10s later).
-        console.log('[bills→debate] proceedingsData.length=', proceedingsData.length, 'billDataMap.size=', billDataMap.size);
-        if (proceedingsData.length) updateDebateSection(proceedingsData);
-
-        // Fetch special rules + Dem Whip recs in parallel, then re-render cards
-        Promise.all([fetchSpecialRules(), fetchWhipRecs()]).then(() => {
-            // Apply any completed roll results from the roll log (catches missed transitions)
-            const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
-            applyRollLogToBills(rollLog, activeRoll);
-            updateBillsDisplay();
-        });
+        applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQuick);
 
     } catch (error) {
         console.error('Error fetching bills:', error);
@@ -6011,9 +6036,8 @@ function init() {
             fetchFloorData(true);
         }
     }, 5000); // check every 5s, but only fire based on adaptive interval
-    setInterval(fetchWeather, 1800000);      // Weather every 30 min (direct to NWS, no Worker cost)
-    setInterval(fetchBillsThisWeek, 600000); // Bills every 10 min (complex multi-fetch, keep browser-side)
-    // tweets, bluesky, airportdelays, housemakeup are now pushed via SSE from the DO —
+    setInterval(fetchWeather, 1800000); // Weather every 30 min (direct to NWS, zero Worker cost)
+    // bills, tweets, bluesky, airportdelays, housemakeup are all pushed via SSE from the DO —
     // no browser polling needed; the DO fetches once for all connected users.
     // Initialize
     initWeatherPanel();
