@@ -560,6 +560,30 @@ function applyRollLogToBills(entries, activeRoll) {
     for (const entry of entries) {
         if (activeRoll && String(entry.roll) === activeRoll) continue; // skip active vote
         const q = entry.question || '';
+
+        // Motion to commit/recommit: update the MTR indicator but skip bill passage logic
+        if (/motion to (?:re)?commit/i.test(q)) {
+            const yeas = entry.totals?.yeas || 0;
+            const nays = entry.totals?.nays || 0;
+            if (yeas + nays > 0) {
+                // Extract bill ID from question if present (e.g. "On Motion to Commit - S. 2")
+                const qm = q.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+                if (qm) {
+                    const type = normalizeBillType(qm[1]);
+                    if (type) {
+                        const bid = normalizeBillIdForRules(`${type} ${qm[2]}`);
+                        const existing = motionsToRecommit.get(bid);
+                        const status = yeas > nays ? 'passed' : 'failed';
+                        if (!existing || existing.status === 'pending') {
+                            motionsToRecommit.set(bid, { status, voteText: `${yeas}-${nays}` });
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+
         if (PROCEDURAL.test(q)) continue;
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
@@ -1091,6 +1115,7 @@ function startSSEStreaming() {
                     renderProceedingsFeedPanel(data.items); // update the visible panel
                     autoSwitchModeFromProceedings(data.items);
                     updateBillStatusFromProceedings(data.items);
+                    if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
                     updateDebateSection(data.items);
                     updatePrayerSection(data.items);
                     updateSilenceSection(data.items);
@@ -2538,6 +2563,59 @@ function updateBillStatusFromProceedings(items) {
     if (ruleChanged) updateBillsDisplay();
 }
 
+// ── Motion to Recommit / Commit ──────────────────────────────────────────────
+// Map: normalizedBillId → { status: 'pending'|'failed'|'passed', voteText: string|null }
+// Populated from proceedings items; shown as an indicator above the bill card.
+const motionsToRecommit = new Map();
+
+// Scan proceedings items for motion to commit/recommit events and update the map.
+// Returns true if anything changed (caller should redraw bills if so).
+function updateMotionsToRecommit(items) {
+    if (!items?.length) return false;
+    const billIdPat = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
+    const extractNormId = text => {
+        const m = text.match(billIdPat);
+        return m ? normalizeBillIdForRules(`${m[1].trim()} ${m[2]}`) : null;
+    };
+    let changed = false;
+    for (let i = 0; i < items.length; i++) {
+        const desc = items[i].description || '';
+        if (!/motion to (?:re)?commit/i.test(desc)) continue;
+
+        let status, voteText;
+        if (/^\s*on motion to (?:re)?commit/i.test(desc)) {
+            // Outcome row — "On motion to commit: Failed by recorded vote: 20-16"
+            const failed = /\b(failed|not agreed to)\b/i.test(desc);
+            const passed = !failed && /(agreed to|passed)\b/i.test(desc);
+            status = failed ? 'failed' : passed ? 'passed' : 'pending';
+            const vm = desc.match(/vote:\s*(\d+)\s*[-–]\s*(\d+)/i);
+            if (vm) voteText = `${vm[1]}-${vm[2]}`;
+        } else {
+            // Motion offered but not yet voted on
+            status = 'pending';
+        }
+
+        // Find the associated bill in nearby proceedings items (±5)
+        let billId = extractNormId(desc);
+        for (let j = 1; j <= 5 && !billId; j++) {
+            if (i + j < items.length) billId = extractNormId(items[i + j].description || '');
+            if (!billId && i - j >= 0) billId = extractNormId(items[i - j].description || '');
+        }
+        if (!billId) continue;
+
+        const existing = motionsToRecommit.get(billId);
+        // Never downgrade a definitive outcome back to pending
+        if (existing?.status === 'failed' || existing?.status === 'passed') {
+            if (status === 'pending') continue;
+        }
+        if (!existing || existing.status !== status || existing.voteText !== voteText) {
+            motionsToRecommit.set(billId, { status, voteText: voteText || null });
+            changed = true;
+        }
+    }
+    return changed;
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -2659,7 +2737,7 @@ function createBillCard(bill, procedure) {
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
-    return `
+    const cardHtml = `
         <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" type="button">
             <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
             <div class="bill-info">
@@ -2674,8 +2752,25 @@ function createBillCard(bill, procedure) {
                 </div>
             </div>
             <div class="bill-chevron" aria-hidden="true">›</div>
-        </button>
-    `;
+        </button>`;
+
+    const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id));
+    if (!mtr) return cardHtml;
+
+    const mtrLabel = mtr.status === 'failed' ? `MTR Failed${mtr.voteText ? ' ' + mtr.voteText : ''}`
+                   : mtr.status === 'passed' ? `MTR Passed${mtr.voteText ? ' ' + mtr.voteText : ''}`
+                   : 'Motion to Recommit';
+
+    return `<div class="bill-slot">
+        <div class="mtr-indicator mtr-${mtr.status}" title="Motion to Recommit${mtr.voteText ? ': ' + mtr.voteText : ''}">
+            <div class="mtr-node">
+                <span class="mtr-dot" aria-hidden="true"></span>
+                <span class="mtr-label">${mtrLabel}</span>
+            </div>
+            <div class="mtr-connector" aria-hidden="true"></div>
+        </div>
+        ${cardHtml}
+    </div>`;
 }
 
 function billIdToCongressUrl(billId) {
@@ -3684,6 +3779,9 @@ async function updateProceedingsFeed() {
 
         // Mark any voice-vote or agreed-to passages reflected in proceedings
         updateBillStatusFromProceedings(data.items);
+
+        // Update motion to recommit indicator on bill cards
+        if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
 
         // Update debate section with latest bill information
         updateDebateSection(data.items);
