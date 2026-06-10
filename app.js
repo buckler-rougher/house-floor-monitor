@@ -1087,6 +1087,7 @@ function startSSEStreaming() {
                 const data = JSON.parse(event.data);
                 if (Array.isArray(data.items)) {
                     proceedingsData = data.items;
+                    renderProceedingsFeedPanel(data.items); // update the visible panel
                     autoSwitchModeFromProceedings(data.items);
                     updateBillStatusFromProceedings(data.items);
                     updateDebateSection(data.items);
@@ -1103,6 +1104,20 @@ function startSSEStreaming() {
                     updateSineDieSection(data.items);
                 }
             } catch {}
+        });
+
+        // Data pushed from DO — eliminates per-user Worker polling for these endpoints
+        eventSource.addEventListener('tweets', (event) => {
+            try { fetchTweets(JSON.parse(event.data)); } catch {}
+        });
+        eventSource.addEventListener('bluesky', (event) => {
+            try { fetchBlueskyFeed(JSON.parse(event.data)); } catch {}
+        });
+        eventSource.addEventListener('airportdelays', (event) => {
+            try { fetchAirportDelays(JSON.parse(event.data)); } catch {}
+        });
+        eventSource.addEventListener('housemakeup', (event) => {
+            try { fetchHouseMakeup(JSON.parse(event.data)); } catch {}
         });
 
         // Fallback for any unnamed default messages
@@ -1900,7 +1915,7 @@ function isFaaFullAirportClosure(reason) {
 }
 
 // Fetch FAA airport status information
-async function fetchAirportDelays() {
+async function fetchAirportDelays(preData = null) {
     try {
         if (!elements.airportDelaysList) return;
 
@@ -1928,17 +1943,22 @@ async function fetchAirportDelays() {
 
         // Track connection status
         let connectionStatus = 'connected'; // 'connected', 'disconnected', 'error'
-        
-        // Fetch all airport delays from the main API endpoint
+
+        // Fetch all airport delays from the main API endpoint (or use pre-pushed SSE data)
         try {
-            const response = await fetch(FAA_CONFIG.workerUrl);
-            
-            if (response.ok) {
-                const jsonData = await response.json();
+            let jsonData;
+            if (preData) {
+                jsonData = preData;
+            } else {
+                const response = await fetch(FAA_CONFIG.workerUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                jsonData = await response.json();
+            }
+            {
                 if (jsonData.error) {
                     throw new Error(jsonData.error);
                 }
-                
+
                 const xmlText = jsonData.xmlData || '';
                 
                 // Parse XML to find all delay types
@@ -2010,8 +2030,6 @@ async function fetchAirportDelays() {
                 
                 // Mark as connected successfully
                 connectionStatus = 'connected';
-            } else {
-                throw new Error('API request failed');
             }
         } catch (error) {
             console.error('FAA API fetch error:', error);
@@ -3582,6 +3600,43 @@ function autoSwitchModeFromProceedings(items) {
     if (latestIsJournal) window.setMode('journal');
 }
 
+// Render the proceedings panel from an items array (no fetch — pure DOM update).
+// Called both by updateProceedingsFeed (after REST fetch) and the SSE proceedings handler.
+function renderProceedingsFeedPanel(items) {
+    if (!elements.proceedingsFeed) return;
+    if (!items || items.length === 0) {
+        setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+        return;
+    }
+    const proceedingsDate = proceedingsDateOverride
+        ? new Date(proceedingsDateOverride)
+        : new Date(items[0]?.pubDate || new Date());
+    const dateStr = fmtDate(proceedingsDate);
+    const timelineText = floorData.timeline?.first_votes?.text || '';
+    const timelineHtml = timelineText ? `
+        <div class="proceedings-next-header">
+            <span class="proceedings-next-label">NEXT</span>
+            <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
+        </div>` : '';
+    const html = items.map(item => {
+        const pubDate = new Date(item.pubDate);
+        const timeStr = pubDate.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+        return `
+        <div class="proceedings-item">
+            <div class="proceedings-text">
+                <span class="proceedings-time">${timeStr}</span>
+                ${decodeHtml(item.description)}
+            </div>
+        </div>`;
+    }).join('');
+    setIfChanged(elements.proceedingsFeed, timelineHtml + html);
+    if (elements.proceedingsLastUpdate) {
+        elements.proceedingsLastUpdate.textContent = dateStr;
+    }
+}
+
 // Update proceedings feed (autoscroll removed)
 async function updateProceedingsFeed() {
     if (!elements.proceedingsFeed) return;
@@ -3611,45 +3666,8 @@ async function updateProceedingsFeed() {
             return;
         }
 
-        // Show the proceedings date in the header span
-        const proceedingsDate = proceedingsDateOverride
-            ? new Date(proceedingsDateOverride)
-            : new Date(data.items[0]?.pubDate || new Date());
-        const dateStr = fmtDate(proceedingsDate);
-
-        // Pinned timeline item from DomeWatch (e.g. "First votes: Wednesday at 12:30 PM")
-        const timelineText = floorData.timeline?.first_votes?.text || '';
-        const timelineHtml = timelineText ? `
-            <div class="proceedings-next-header">
-                <span class="proceedings-next-label">NEXT</span>
-                <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
-            </div>` : '';
-
-        const html = data.items.map(item => {
-            const pubDate = new Date(item.pubDate);
-            const timeStr = pubDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                timeZoneName: 'short'
-            });
-
-            return `
-            <div class="proceedings-item">
-                <div class="proceedings-text">
-                    <span class="proceedings-time">${timeStr}</span>
-                    ${decodeHtml(item.description)}
-                </div>
-            </div>
-        `;
-        }).join('');
-
-        setIfChanged(elements.proceedingsFeed, timelineHtml + html);
-
-
-        if (elements.proceedingsLastUpdate) {
-            elements.proceedingsLastUpdate.textContent = dateStr;
-        }
+        // Render the panel (HTML + date header)
+        renderProceedingsFeedPanel(data.items);
 
         // Store items globally so debate/mode sections can re-render after bills load
         proceedingsData = data.items;
@@ -5344,14 +5362,16 @@ function escapeHtml(text) {
 }
 
 // House Makeup Functions
-async function fetchHouseMakeup() {
+async function fetchHouseMakeup(preData = null) {
     try {
-        const response = await fetch(MEMBER_DATA_CONFIG.workerUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let jsonData;
+        if (preData) {
+            jsonData = preData;
+        } else {
+            const response = await fetch(MEMBER_DATA_CONFIG.workerUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            jsonData = await response.json();
         }
-        
-        const jsonData = await response.json();
         if (jsonData.error) {
             throw new Error(jsonData.error);
         }
@@ -5599,12 +5619,11 @@ const REPORTER_NAMES = {
     '@tvheidihatch':    'Heidi Hatch',
 };
 
-async function fetchTweets() {
+async function fetchTweets(preData = null) {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
     try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/tweets');
-        const data = await resp.json();
+        const data = preData || await fetch('https://api.evanhollander.org/house-floor/api/tweets').then(r => r.json());
         if (!data.tweets || !data.tweets.length) {
             feed.innerHTML = '<div class="tweets-empty">No posts available.</div>';
             return;
@@ -5694,13 +5713,16 @@ async function fetchTweets() {
 }
 
 // Bluesky Functions
-async function fetchBlueskyFeed() {
+async function fetchBlueskyFeed(preData = null) {
     try {
-        const response = await fetch(BLUESKY_CONFIG.workerUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let jsonData;
+        if (preData) {
+            jsonData = preData;
+        } else {
+            const response = await fetch(BLUESKY_CONFIG.workerUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            jsonData = await response.json();
         }
-        const jsonData = await response.json();
         if (jsonData.error) {
             throw new Error(jsonData.error);
         }
@@ -5989,14 +6011,10 @@ function init() {
             fetchFloorData(true);
         }
     }, 5000); // check every 5s, but only fire based on adaptive interval
-    setInterval(fetchWeather, 300000); // Refresh weather every 5 minutes
-    // Proceedings are now pushed via SSE from the DO (one fetch/5s for all users).
-    // Keep one initial fetch here as a fallback in case SSE takes a moment to connect.
-    setInterval(fetchBillsThisWeek, BILLS_CONFIG.refreshInterval); // Refresh bills every 5 minutes
-    setInterval(fetchHouseMakeup, HOUSE_MAKEUP_CONFIG.refreshInterval); // Refresh House makeup every 5 minutes
-    setInterval(fetchBlueskyFeed, BLUESKY_CONFIG.refreshInterval); // Refresh Bluesky every 3 minutes
-    setInterval(fetchTweets, 120000); // Refresh floor reporters every 2 minutes
-    setInterval(fetchAirportDelays, FAA_CONFIG.refreshInterval); // Refresh airport delays every 5 minutes
+    setInterval(fetchWeather, 1800000);      // Weather every 30 min (direct to NWS, no Worker cost)
+    setInterval(fetchBillsThisWeek, 600000); // Bills every 10 min (complex multi-fetch, keep browser-side)
+    // tweets, bluesky, airportdelays, housemakeup are now pushed via SSE from the DO —
+    // no browser polling needed; the DO fetches once for all connected users.
     // Initialize
     initWeatherPanel();
     

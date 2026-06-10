@@ -2840,6 +2840,8 @@ export class DomeWatchStreamCoordinator {
     this.encoder = new TextEncoder();
     this.heartbeatInterval = null;
     this.proceedingsInterval = null;
+    this.dataIntervals = new Map(); // name → intervalId
+    this.dataCache = new Map();     // name → last JSON string (change detection)
     this.nextClientId = 1;
     this.health = {
       sourceOfTruth: true,
@@ -2868,6 +2870,8 @@ export class DomeWatchStreamCoordinator {
         this.heartbeatInterval = null;
         clearInterval(this.proceedingsInterval);
         this.proceedingsInterval = null;
+        for (const id of this.dataIntervals.values()) clearInterval(id);
+        this.dataIntervals.clear();
         return;
       }
       this.broadcast(`: heartbeat\n\n`);
@@ -2896,6 +2900,37 @@ export class DomeWatchStreamCoordinator {
     };
     fetch5s();
     this.proceedingsInterval = setInterval(fetch5s, 5000);
+  }
+
+  // Polls low-frequency data sources once per interval for ALL connected clients,
+  // then broadcasts via SSE. Eliminates per-user Worker requests for these endpoints.
+  startDataBroadcasts() {
+    const BASE = 'https://api.evanhollander.org/house-floor/api';
+    const sources = [
+      { name: 'tweets',        url: `${BASE}/tweets`,         ms: 10 * 60 * 1000 },
+      { name: 'bluesky',       url: `${BASE}/bluesky`,        ms: 10 * 60 * 1000 },
+      { name: 'airportdelays', url: `${BASE}/airport-delays`, ms: 30 * 60 * 1000 },
+      { name: 'housemakeup',   url: `${BASE}/member-data`,    ms: 30 * 60 * 1000 },
+    ];
+    for (const { name, url, ms } of sources) {
+      if (this.dataIntervals.has(name)) continue;
+      const poll = async () => {
+        if (this.clients.size === 0) return;
+        try {
+          const resp = await fetch(url, {
+            signal: AbortSignal.timeout(20000),
+            cf: { cacheTtl: 0, cacheEverything: false },
+          });
+          if (!resp.ok) return;
+          const json = await resp.text();
+          if (this.dataCache.get(name) === json) return; // unchanged, skip broadcast
+          this.dataCache.set(name, json);
+          await this.broadcast(`event: ${name}\ndata: ${json}\n\n`);
+        } catch { /* non-critical */ }
+      };
+      poll(); // run immediately on first client connect
+      this.dataIntervals.set(name, setInterval(poll, ms));
+    }
   }
 
   async fetch(request) {
@@ -2942,6 +2977,7 @@ export class DomeWatchStreamCoordinator {
         ));
         this.startHeartbeat();
         this.startProceedingsBroadcast();
+        this.startDataBroadcasts();
         this.ensureUpstream();
       },
       cancel: removeClient
