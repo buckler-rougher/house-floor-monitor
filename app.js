@@ -2769,7 +2769,7 @@ function createBillCard(bill, procedure) {
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
             <span class="mtr-label">${mtrLabel}</span>
         </div>
-        <div class="mtr-connector mtr-${mtr.status}" aria-hidden="true"></div>
+        <div class="mtr-connector" aria-hidden="true"></div>
         ${cardHtml}
     </div>`;
 }

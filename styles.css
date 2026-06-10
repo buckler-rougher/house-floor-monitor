@@ -4142,66 +4142,51 @@ a.bill-card-rule-link {
     flex-direction: column;
 }
 
-/* MTR mini-card — same shape as .bill-card but thinner and more subtle */
+/* MTR mini-card — same shape as .bill-card but thinner; card itself is neutral,
+   status color lives only in the circle */
 .mtr-card {
     display: flex;
     align-items: center;
     gap: 7px;
-    border: 1px solid;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-6);
     padding: 4px 10px;
+    background: transparent;
     font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.55;
     user-select: none;
 }
 
-/* Status circle — bordered ring with ✓ / ✕ / empty */
+/* Status circle — only element that carries the status color */
 .mtr-circle {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
-    border: 1.5px solid currentColor;
+    border: 1px solid currentColor;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: 7px;
     line-height: 1;
     flex-shrink: 0;
-    opacity: 0.85;
 }
 
 .mtr-connector {
-    width: 1.5px;
+    width: 1px;
     height: 8px;
-    margin-left: 16px; /* aligns under the circle */
+    margin-left: 15px;
+    background: var(--border-color);
+    opacity: 0.4;
 }
 
-/* Pending — amber, very muted */
-.mtr-card.mtr-pending {
-    color: rgba(210, 153, 34, 0.7);
-    border-color: rgba(210, 153, 34, 0.2);
-    background: rgba(210, 153, 34, 0.04);
-}
-.mtr-connector.mtr-pending { background: rgba(210, 153, 34, 0.2); }
-
-/* Failed — red */
-.mtr-card.mtr-failed {
-    color: rgba(248, 81, 73, 0.7);
-    border-color: rgba(248, 81, 73, 0.2);
-    background: rgba(248, 81, 73, 0.04);
-}
-.mtr-connector.mtr-failed { background: rgba(248, 81, 73, 0.25); }
-
-/* Passed — green */
-.mtr-card.mtr-passed {
-    color: rgba(63, 185, 80, 0.7);
-    border-color: rgba(63, 185, 80, 0.2);
-    background: rgba(63, 185, 80, 0.04);
-}
-.mtr-connector.mtr-passed { background: rgba(63, 185, 80, 0.25); }
+.mtr-card.mtr-pending .mtr-circle { color: rgba(210, 153, 34, 0.75); }
+.mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
+.mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
 
 .considered-indicator {
     color: var(--accent-amber);
