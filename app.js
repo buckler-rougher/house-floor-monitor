@@ -1300,34 +1300,64 @@ async function fetchFloorData(silent = false) {
 
 // Returns the billDataMap entry matching the current roll call vote, or null.
 // Used to show/hide the VIEW BILL button during votes.
+// DomeWatch question format: "H R 8464 - On Passage" or "H Res 100 - On Agreeing"
+// (space-separated, no dots) — same format reconcileVoteWithBills expects.
 function findBillForCurrentVote() {
     if (!floorData?.rollCall?.question || !billDataMap.size) return null;
     const q = floorData.rollCall.question;
     // Skip procedural votes that don't map to a bill card
-    if (/\b(amendment|motion to (?:re)?commit|quorum|previous question|motion to table|motion to refer|motion to adjourn)\b/i.test(q)) return null;
+    if (/motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer|quorum/i.test(q)) return null;
 
-    const billPat = /\b(H\.R\.|H\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Con\.\s*Res\.|S\.(?:\s*Res\.|\s*Con\.\s*Res\.|\s*J\.\s*Res\.)?)\s*(\d+)/i;
-    const m = q.match(billPat);
+    // Normalize "HR", "H R", "H.R.", "H. R." etc → canonical key via same map used elsewhere
+    const normType = raw => {
+        const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
+        return { 'HR':'H.R.','H.R.':'H.R.','H':'H.R.',
+                 'HRES':'H.Res.','H.RES.':'H.Res.',
+                 'HJRES':'H.J.Res.','H.J.RES.':'H.J.Res.',
+                 'HCONRES':'H.Con.Res.','H.CON.RES.':'H.Con.Res.',
+                 'S':'S.','S.':'S.',
+                 'SRES':'S.Res.','S.RES.':'S.Res.',
+                 'SJRES':'S.J.Res.','SCONRES':'S.Con.Res.' }[t] || null;
+    };
+
+    // Match both dotted ("H.R. 8464") and DomeWatch space-separated ("H R 8464", "H 8464") formats
+    const m = q.match(/(?:^|\s-\s|\s)(H\.?R\.?|H\.?\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?|H|S\.?(?:\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?)?|S)\s+(\d+)/i);
     if (!m) return null;
 
-    const rawId  = m[1].replace(/\s+/g, '') + ' ' + m[2];
-    const normId = rawId.replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.');
+    const type = normType(m[1]);
+    if (!type) return null;
+    const billId = `${type} ${m[2]}`;
 
-    let bill = billDataMap.get(rawId) || billDataMap.get(normId);
+    let bill = billDataMap.get(billId);
     if (bill) return bill;
 
-    // Try normalized key comparison
-    const needle = normId.replace(/\s+/g, ' ').trim();
-    for (const [key, val] of billDataMap) {
-        if (key.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim() === needle) return val;
+    // H.Res. may be stored as hres-XXXX
+    if (type === 'H.Res.') {
+        bill = billDataMap.get(`hres-${m[2]}`);
+        if (bill) return bill;
     }
 
-    // H.Res. may be stored as hres-XXXX
-    if (/H\.?\s*Res\./i.test(rawId)) {
-        const hresNum = rawId.match(/(\d+)/)?.[1];
-        if (hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    // Last-resort: normalized key scan
+    for (const [key, val] of billDataMap) {
+        if (/^hres-/.test(key)) continue;
+        if (key.replace(/\s+/g, ' ').trim() === billId) return val;
     }
-    return bill || null;
+    return null;
+}
+
+// Show/hide the VIEW BILL button based on whether there's a matching bill card.
+// Called from both updateFloorDisplay (floor state changes) and updateBillsDisplay
+// (bills load) so the button appears as soon as either piece of data is ready.
+function syncVoteBillBtn() {
+    if (!elements.voteBillBtn) return;
+    const bill = findBillForCurrentVote();
+    if (bill) {
+        elements.voteBillBtn.dataset.billId = bill.id;
+        elements.voteBillBtn.style.display = '';
+    } else {
+        elements.voteBillBtn.style.display = 'none';
+        delete elements.voteBillBtn.dataset.billId;
+    }
 }
 
 // Update Floor Display with DomeWatch Data
@@ -1393,16 +1423,7 @@ function updateFloorDisplay(status = null) {
     }
 
     // Show VIEW BILL button IFF the current vote maps to a bill card
-    if (elements.voteBillBtn) {
-        const matchedBill = findBillForCurrentVote();
-        if (matchedBill) {
-            elements.voteBillBtn.dataset.billId = matchedBill.id;
-            elements.voteBillBtn.style.display = '';
-        } else {
-            elements.voteBillBtn.style.display = 'none';
-            delete elements.voteBillBtn.dataset.billId;
-        }
-    }
+    syncVoteBillBtn();
 
     // Update vote counts if available
     if (floorData.voteCounts && elements.yeasCount && elements.naysCount && elements.presentCount) {
@@ -2781,6 +2802,9 @@ function updateBillsDisplay() {
 
     // Auto-open a ?bill=<slug> deep link once its bill has loaded.
     maybeOpenDeepLinkedBill();
+
+    // Re-evaluate VIEW BILL button — bills may have just loaded for the first time
+    syncVoteBillBtn();
 }
 
 function createBillCard(bill, procedure) {
