@@ -2842,7 +2842,7 @@ function createBillCard(bill, procedure) {
                    : '';
 
     return `<div class="bill-slot">
-        <div class="mtr-card mtr-${mtr.status}">
+        <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
             <span class="mtr-label">${mtrLabel}</span>
         </div>
