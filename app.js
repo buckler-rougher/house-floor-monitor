@@ -6078,6 +6078,7 @@ function init() {
     fetchVotingDays();
     fetchFloorData().then(() => loadRollLog());
     fetchWeather();
+    fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
 
     // Airport delays need the name lookup — start both in parallel, delays waits on names
     fetchAirportNames().then(() => fetchAirportDelays());
