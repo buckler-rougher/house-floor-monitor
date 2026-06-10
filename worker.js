@@ -2982,12 +2982,31 @@ export class DomeWatchStreamCoordinator {
             rules: rules ? JSON.parse(rules) : null,
             whip:  whip  ? JSON.parse(whip)  : null,
           });
+          this.dataCache.set('bills-payload', payload); // cached for immediate replay to new clients
           await this.broadcast(`event: bills\ndata: ${payload}\n\n`);
         } catch { /* non-critical */ }
       };
       pollBills();
       this.dataIntervals.set('bills', setInterval(pollBills, 10 * 60 * 1000));
     }
+  }
+
+  // Immediately replays any cached data to a newly connected client so they don't
+  // have to wait for the next polling interval (up to 10 min for bills).
+  sendCachedDataToClient(controller) {
+    const enc = this.encoder;
+    const send = (eventName, data) =>
+      controller.enqueue(enc.encode(`event: ${eventName}\ndata: ${data}\n\n`));
+    const floor   = this.dataCache.get('floor');
+    const bills   = this.dataCache.get('bills-payload');
+    const tweets  = this.dataCache.get('tweets');
+    const delays  = this.dataCache.get('airportdelays');
+    const makeup  = this.dataCache.get('housemakeup');
+    if (floor)  send('floor',         floor);
+    if (bills)  send('bills',         bills);
+    if (tweets) send('tweets',        tweets);
+    if (delays) send('airportdelays', delays);
+    if (makeup) send('housemakeup',   makeup);
   }
 
   async fetch(request) {
@@ -3032,6 +3051,7 @@ export class DomeWatchStreamCoordinator {
         controller.enqueue(this.encoder.encode(
           `event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true, clientId })}\n\n`
         ));
+        this.sendCachedDataToClient(controller); // replay any cached state immediately
         this.startHeartbeat();
         this.startProceedingsBroadcast();
         this.startFloorBroadcast();
