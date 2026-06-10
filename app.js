@@ -2757,18 +2757,19 @@ function createBillCard(bill, procedure) {
     const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id));
     if (!mtr) return cardHtml;
 
-    const mtrLabel = mtr.status === 'failed' ? `MTR Failed${mtr.voteText ? ' ' + mtr.voteText : ''}`
-                   : mtr.status === 'passed' ? `MTR Passed${mtr.voteText ? ' ' + mtr.voteText : ''}`
+    const mtrLabel = mtr.status === 'failed' ? `Motion to Recommit Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
+                   : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : 'Motion to Recommit';
+    const mtrIcon  = mtr.status === 'failed' ? '✕'
+                   : mtr.status === 'passed' ? '✓'
+                   : '';
 
     return `<div class="bill-slot">
-        <div class="mtr-indicator mtr-${mtr.status}" title="Motion to Recommit${mtr.voteText ? ': ' + mtr.voteText : ''}">
-            <div class="mtr-node">
-                <span class="mtr-dot" aria-hidden="true"></span>
-                <span class="mtr-label">${mtrLabel}</span>
-            </div>
-            <div class="mtr-connector" aria-hidden="true"></div>
+        <div class="mtr-card mtr-${mtr.status}">
+            <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
+            <span class="mtr-label">${mtrLabel}</span>
         </div>
+        <div class="mtr-connector mtr-${mtr.status}" aria-hidden="true"></div>
         ${cardHtml}
     </div>`;
 }
