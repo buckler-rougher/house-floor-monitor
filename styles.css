@@ -316,6 +316,49 @@ body {
 }
 
 /* Main Header */
+/* ── Beta Banner ─────────────────────────────────────────────────────── */
+.beta-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: #1a1200;
+    border-bottom: 1px solid #f0a500;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #d4a017;
+}
+.beta-banner.dismissed { display: none; }
+.beta-badge {
+    flex-shrink: 0;
+    background: #f0a500;
+    color: #000;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 1px 5px;
+    border-radius: 2px;
+}
+.beta-text { flex: 1; opacity: 0.85; }
+.beta-dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #d4a017;
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 2px;
+    line-height: 1;
+}
+.beta-dismiss:hover { opacity: 1; }
+/* Push header down when banner is visible */
+body:not(.beta-dismissed) .main-header { top: 29px; }
+
+/* ── Main Header ─────────────────────────────────────────────────────── */
 .main-header {
     position: fixed;
     top: 0;

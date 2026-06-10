@@ -2840,6 +2840,7 @@ export class DomeWatchStreamCoordinator {
     this.encoder = new TextEncoder();
     this.heartbeatInterval = null;
     this.proceedingsInterval = null;
+    this.floorInterval = null;
     this.dataIntervals = new Map(); // name → intervalId
     this.dataCache = new Map();     // name → last JSON string (change detection)
     this.nextClientId = 1;
@@ -2870,6 +2871,8 @@ export class DomeWatchStreamCoordinator {
         this.heartbeatInterval = null;
         clearInterval(this.proceedingsInterval);
         this.proceedingsInterval = null;
+        clearInterval(this.floorInterval);
+        this.floorInterval = null;
         for (const id of this.dataIntervals.values()) clearInterval(id);
         this.dataIntervals.clear();
         return;
@@ -2902,6 +2905,28 @@ export class DomeWatchStreamCoordinator {
     this.proceedingsInterval = setInterval(fetch5s, 5000);
   }
 
+  // Polls the DomeWatch floor REST endpoint every 5s and broadcasts as event: floor.
+  // One shared fetch for all connected clients — eliminates per-user REST polling.
+  startFloorBroadcast() {
+    if (this.floorInterval) return;
+    const poll = async () => {
+      if (this.clients.size === 0) return;
+      try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/domewatch-floor', {
+          signal: AbortSignal.timeout(10000),
+          cf: { cacheTtl: 0, cacheEverything: false },
+        });
+        if (!resp.ok) return;
+        const json = await resp.text();
+        if (this.dataCache.get('floor') === json) return; // unchanged, skip broadcast
+        this.dataCache.set('floor', json);
+        await this.broadcast(`event: floor\ndata: ${json}\n\n`);
+      } catch { /* non-critical */ }
+    };
+    poll();
+    this.floorInterval = setInterval(poll, 5000);
+  }
+
   // Polls low-frequency data sources once per interval for ALL connected clients,
   // then broadcasts via SSE. Eliminates per-user Worker requests for these endpoints.
   startDataBroadcasts() {
@@ -2910,10 +2935,9 @@ export class DomeWatchStreamCoordinator {
     // Simple single-URL sources
     const sources = [
       { name: 'tweets',        url: `${BASE}/tweets`,         ms: 10 * 60 * 1000 },
-      { name: 'bluesky',       url: `${BASE}/bluesky`,        ms: 10 * 60 * 1000 },
       { name: 'airportdelays', url: `${BASE}/airport-delays`, ms: 30 * 60 * 1000 },
       { name: 'housemakeup',   url: `${BASE}/member-data`,    ms: 30 * 60 * 1000 },
-    ];
+    ]; // bluesky removed — ticker is hidden (display:none)
     for (const { name, url, ms } of sources) {
       if (this.dataIntervals.has(name)) continue;
       const poll = async () => {
@@ -3010,6 +3034,7 @@ export class DomeWatchStreamCoordinator {
         ));
         this.startHeartbeat();
         this.startProceedingsBroadcast();
+        this.startFloorBroadcast();
         this.startDataBroadcasts();
         this.ensureUpstream();
       },

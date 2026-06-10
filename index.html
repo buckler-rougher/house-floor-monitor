@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260610b">
+    <link rel="stylesheet" href="styles.css?v=20260610c">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -29,6 +29,12 @@
 </head>
 <body class="recess-mode">
     <a class="skip-link" href="#congress-info">Skip to main content</a>
+    <!-- Beta Banner -->
+    <div class="beta-banner" id="beta-banner">
+        <span class="beta-badge">BETA</span>
+        <span class="beta-text">This site is in active development — data and features may change without notice.</span>
+        <button class="beta-dismiss" id="beta-dismiss" aria-label="Dismiss">✕</button>
+    </div>
     <!-- True Header -->
     <header class="main-header">
         <div class="header-logo-clip">
@@ -1293,7 +1299,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260610b"></script>
+    <script src="app.js?v=20260610c"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
