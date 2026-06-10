@@ -3761,8 +3761,8 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
-    // Oath and journal can appear anywhere in the day — search all items
-    const oathItem = items.find(i => /^OATH OF OFFICE\b/i.test(i.description.trim()));
+    // Oath: only trigger if it's a recent proceeding (top 5), not an old one from earlier today
+    const oathItem = items.slice(0, 5).find(i => /^OATH OF OFFICE\b/i.test(i.description.trim()));
     if (oathItem) {
         window.setMode('oath');
         return;
