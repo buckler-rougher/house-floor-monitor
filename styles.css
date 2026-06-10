@@ -4209,6 +4209,30 @@ a.bill-card-rule-link {
 .mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
 .mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
 
+/* Hover anywhere in the slot highlights MTR card + connector + bill card together.
+   Override the status-specific bill-card hover colours so both cards match. */
+.bill-slot:hover .mtr-card {
+    opacity: 0.85;
+    border-color: rgba(139, 148, 158, 0.35);
+    background: rgba(139, 148, 158, 0.06);
+    cursor: pointer;
+}
+.bill-slot:hover .mtr-connector {
+    opacity: 0.65;
+}
+.bill-slot:hover .bill-card,
+.bill-slot:hover .bill-card[data-status="passed"],
+.bill-slot:hover .bill-card[data-status="failed"],
+.bill-slot:hover .bill-card[data-status="roll-call"],
+.bill-slot:hover .bill-card[data-status="scheduled"],
+.bill-slot:hover .bill-card[data-status="pending"] {
+    background: rgba(139, 148, 158, 0.06);
+    box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
+}
+.bill-slot:hover .bill-card .bill-chevron {
+    color: var(--text-secondary);
+}
+
 .considered-indicator {
     color: var(--accent-amber);
     border: 1px solid rgba(210, 153, 34, 0.3);
