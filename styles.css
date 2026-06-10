@@ -4142,67 +4142,66 @@ a.bill-card-rule-link {
     flex-direction: column;
 }
 
-.mtr-indicator {
+/* MTR mini-card — same shape as .bill-card but thinner and more subtle */
+.mtr-card {
     display: flex;
-    flex-direction: column;
-    padding-left: 10px;
-}
-
-.mtr-node {
-    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    align-self: flex-start;
-    padding: 3px 8px 3px 5px;
-    border-radius: 6px;
+    gap: 7px;
     border: 1px solid;
+    border-radius: var(--radius-6);
+    padding: 4px 10px;
     font-family: var(--font-mono);
     font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     user-select: none;
 }
 
-.mtr-dot {
-    width: 7px;
-    height: 7px;
+/* Status circle — bordered ring with ✓ / ✕ / empty */
+.mtr-circle {
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    line-height: 1;
     flex-shrink: 0;
+    opacity: 0.85;
 }
 
 .mtr-connector {
     width: 1.5px;
-    height: 10px;
-    margin-left: 8px;
+    height: 8px;
+    margin-left: 16px; /* aligns under the circle */
 }
 
-/* Pending — amber */
-.mtr-indicator.mtr-pending .mtr-node {
-    color: rgba(210, 153, 34, 0.9);
-    border-color: rgba(210, 153, 34, 0.3);
-    background: rgba(210, 153, 34, 0.06);
+/* Pending — amber, very muted */
+.mtr-card.mtr-pending {
+    color: rgba(210, 153, 34, 0.7);
+    border-color: rgba(210, 153, 34, 0.2);
+    background: rgba(210, 153, 34, 0.04);
 }
-.mtr-indicator.mtr-pending .mtr-dot      { background: rgba(210, 153, 34, 0.75); }
-.mtr-indicator.mtr-pending .mtr-connector { background: rgba(210, 153, 34, 0.25); }
+.mtr-connector.mtr-pending { background: rgba(210, 153, 34, 0.2); }
 
 /* Failed — red */
-.mtr-indicator.mtr-failed .mtr-node {
-    color: rgba(248, 81, 73, 0.9);
-    border-color: rgba(248, 81, 73, 0.3);
-    background: rgba(248, 81, 73, 0.06);
+.mtr-card.mtr-failed {
+    color: rgba(248, 81, 73, 0.7);
+    border-color: rgba(248, 81, 73, 0.2);
+    background: rgba(248, 81, 73, 0.04);
 }
-.mtr-indicator.mtr-failed .mtr-dot      { background: rgba(248, 81, 73, 0.75); }
-.mtr-indicator.mtr-failed .mtr-connector { background: rgba(248, 81, 73, 0.3); }
+.mtr-connector.mtr-failed { background: rgba(248, 81, 73, 0.25); }
 
-/* Passed — green (rare but handle it) */
-.mtr-indicator.mtr-passed .mtr-node {
-    color: rgba(63, 185, 80, 0.9);
-    border-color: rgba(63, 185, 80, 0.3);
-    background: rgba(63, 185, 80, 0.06);
+/* Passed — green */
+.mtr-card.mtr-passed {
+    color: rgba(63, 185, 80, 0.7);
+    border-color: rgba(63, 185, 80, 0.2);
+    background: rgba(63, 185, 80, 0.04);
 }
-.mtr-indicator.mtr-passed .mtr-dot      { background: rgba(63, 185, 80, 0.75); }
-.mtr-indicator.mtr-passed .mtr-connector { background: rgba(63, 185, 80, 0.3); }
+.mtr-connector.mtr-passed { background: rgba(63, 185, 80, 0.25); }
 
 .considered-indicator {
     color: var(--accent-amber);
