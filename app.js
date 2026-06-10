@@ -602,7 +602,8 @@ function applyRollLogToBills(entries, activeRoll) {
 // SSE streaming state
 let sseConnection = null;
 let isStreaming = false;
-let lastSseTallyAt = 0;    // ms timestamp of last vote.tally received (for stale detection)
+let lastSseTallyAt  = 0;   // ms timestamp of last vote.tally received (for stale detection)
+let lastFloorSseAt  = 0;   // ms timestamp of last event: floor received from DO
 let _lastVoteAbsences = null;  // { d, r, roll, question } — committed when vote ends
 let _stagedVoteAbsences = null; // staging: updated every tally, never shown directly
 let _wasInVote = false;         // tracks vote→non-vote transition
@@ -1106,15 +1107,19 @@ function startSSEStreaming() {
             } catch {}
         });
 
-        // Data pushed from DO — eliminates per-user Worker polling for these endpoints
+        // All data pushed from DO — one shared fetch for all connected clients
+        eventSource.addEventListener('floor', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                lastFloorSseAt = Date.now();
+                applyFloorData(data);
+            } catch {}
+        });
         eventSource.addEventListener('bills', (event) => {
             try { applyBillsData(JSON.parse(event.data)); } catch {}
         });
         eventSource.addEventListener('tweets', (event) => {
             try { fetchTweets(JSON.parse(event.data)); } catch {}
-        });
-        eventSource.addEventListener('bluesky', (event) => {
-            try { fetchBlueskyFeed(JSON.parse(event.data)); } catch {}
         });
         eventSource.addEventListener('airportdelays', (event) => {
             try { fetchAirportDelays(JSON.parse(event.data)); } catch {}
@@ -1177,116 +1182,93 @@ function startSSEStreaming() {
 }
 
 // Fetch DomeWatch Floor Data (fallback)
-async function fetchFloorData(silent = false) {
+// Process a floor state payload — called by both the SSE event: floor handler
+// and the fallback fetchFloorData() REST fetch. All transition logic lives here.
+function applyFloorData(data) {
     lastFloorPollAt = Date.now();
+
+    if (!data || data.error) {
+        updateFloorDisplay('error');
+        return;
+    }
+
+    // Detect vote → non-vote transition BEFORE overwriting floorData,
+    // so reconcileVoteWithBills can still read the last roll call + counts.
+    const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
+    if (_wasInVote && !nowInVote) {
+        reconcileVoteWithBills(true); // force=true: bypass the in-vote guard
+    }
+
+    // During an active vote, the DomeWatch tally SSE delivers live counts every ~1s
+    // while the floor REST is cached up to 10s — using stale REST counts would snap
+    // the display backwards. Keep SSE-sourced voteCounts when the stream is fresh.
+    const sseRecentlyTallied = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 15_000;
+    floorData = {
+        lastUpdated: new Date(),
+        currentStatus: data.now,
+        rollCall: data.roll_call,
+        voteCounts: sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts,
+        timer: data.timer,
+        timeline: data.timeline
+    };
+
+    if (_wasInVote && !nowInVote && _stagedVoteAbsences) {
+        // Only commit absences if this was a substantive vote (≥150 yea/nay, non-procedural).
+        const vc = floorData.voteCounts || {};
+        const t  = vc.totals || {};
+        const stagedTotal = (parseInt(t.yeas) || 0) + (parseInt(t.nays) || 0);
+        const stagedQ = (_stagedVoteAbsences.question || '').toLowerCase();
+        const stagedIsSubstantive = stagedTotal >= 150 &&
+            !/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(stagedQ);
+        if (stagedIsSubstantive) {
+            _lastVoteAbsences = { ..._stagedVoteAbsences };
+            updateLastVoteAbsencesDisplay();
+        }
+    }
+    _wasInVote = nowInVote;
+
+    if (!nowInVote) clearVoteTimer();
+
+    // Update vote map state
+    if (floorData.voteCounts) {
+        const t = floorData.voteCounts.totals || {};
+        const d = floorData.voteCounts.blue  || {};
+        const r = floorData.voteCounts.red   || {};
+        const iv = v => Math.max(parseInt(v) || 0, 0);
+        state.data = {
+            vote: {
+                yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), not_voting: iv(t.not_voting),
+                dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
+                rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
+                title: floorData.rollCall?.question || 'Loading...',
+                id: floorData.rollCall?.number || '--',
+                date: floorData.rollCall?.bill?.considered_on || null,
+                votesNeeded: getVotesNeeded(/suspend/i.test(floorData.rollCall?.question || ''))
+            }
+        };
+    }
+
+    updateAbsenteeTracking();
+    updateQuorumStatus();
+    updateBillsDisplay();
+    updateFloorGrid();
+    updateFloorDisplay();
+}
+
+// Fetch floor data directly — used for initial page load and as SSE fallback.
+// Under normal operation the DO pushes event: floor every 5s; this only fires
+// when the SSE stream hasn't delivered a floor event recently.
+async function fetchFloorData(silent = false) {
     try {
-        // Show loading state only on explicit (non-background) fetches
         if (!silent && elements.voteTitle) {
             elements.voteTitle.textContent = 'FETCHING...';
         }
-        
-        // Use worker endpoint instead of direct API call
         const response = await fetch(DOMEWATCH_CONFIG.workerUrl, { cache: 'no-store' });
-
-        console.log('DomeWatch response:', {
-            status: response.status,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        console.log('DomeWatch payload:', data);
-        
-        if (data.error) {
-            console.error('DomeWatch error:', data.error);
-            throw new Error(data.error);
-        }
-        
-        // Detect vote → non-vote transition BEFORE overwriting floorData,
-        // so reconcileVoteWithBills can still read the last roll call + counts.
-        const nowInVote = data.now?.value === 'vote' || data.now?.value === 'voting';
-        if (_wasInVote && !nowInVote) {
-            reconcileVoteWithBills(true); // force=true: bypass the in-vote guard
-        }
-
-        // Update floor data state.
-        // During an active vote, SSE delivers live counts every ~1s while the REST
-        // endpoint is cached up to 10s — using REST counts would snap the display
-        // backwards. Keep the SSE-sourced voteCounts when the stream is fresh (<15s).
-        const sseRecentlyTallied = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 15_000;
-        floorData = {
-            lastUpdated: new Date(),
-            currentStatus: data.now,
-            rollCall: data.roll_call,
-            voteCounts: sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts,
-            timer: data.timer,
-            timeline: data.timeline
-        };
-        if (_wasInVote && !nowInVote && _stagedVoteAbsences) {
-            // Only commit if this was a substantive vote (≥150 yea/nay votes cast and
-            // not a purely procedural motion nobody shows up for).
-            const vc = floorData.voteCounts || {};
-            const t  = vc.totals || {};
-            const stagedTotal = (parseInt(t.yeas) || 0) + (parseInt(t.nays) || 0);
-            const stagedQ = (_stagedVoteAbsences.question || '').toLowerCase();
-            const stagedIsSubstantive = stagedTotal >= 150 &&
-                !/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(stagedQ);
-            if (stagedIsSubstantive) {
-                _lastVoteAbsences = { ..._stagedVoteAbsences };
-                updateLastVoteAbsencesDisplay();
-            }
-        }
-        _wasInVote = nowInVote;
-
-        // Clear the local vote countdown if we're no longer in a vote
-        if (!nowInVote) {
-            clearVoteTimer();
-        }
-
-        // Update state with floor data for vote map
-        if (floorData.voteCounts) {
-            const t = floorData.voteCounts.totals || {};
-            const d = floorData.voteCounts.blue  || {};
-            const r = floorData.voteCounts.red   || {};
-            const iv = v => Math.max(parseInt(v) || 0, 0);
-            state.data = {
-                vote: {
-                    yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), not_voting: iv(t.not_voting),
-                    dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present) },
-                    rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present) },
-                    title: floorData.rollCall?.question || 'Loading...',
-                    id: floorData.rollCall?.number || '--',
-                    date: floorData.rollCall?.bill?.considered_on || null,
-                    votesNeeded: getVotesNeeded(/suspend/i.test(floorData.rollCall?.question || ''))
-                }
-            };
-            console.log('Vote map state updated:', state.data);
-        }
-        
-        // Update missing members
-        updateAbsenteeTracking();
-
-        // Quorum check — runs here (30s REST poll) not on every SSE tick
-        updateQuorumStatus();
-
-        // Re-render bills with existing data (floor status may affect which bill is active).
-        // Do NOT re-fetch — bills are pushed via SSE from the DO on their own schedule.
-        updateBillsDisplay();
-
-        // Update vote map
-        updateFloorGrid();
-
-        // Update UI with new data
-        updateFloorDisplay();
-        
+        applyFloorData(data);
     } catch (error) {
         console.error('Fetch floor data failed:', error);
-        
-        // Update UI to show error state
         updateFloorDisplay('error');
     }
 }
@@ -6021,21 +6003,13 @@ function init() {
         }
     }, 15000);
 
-    // Adaptive REST floor poll: 10s when SSE is down (need it for vote detection),
-    // 30s when SSE is live (SSE handles real-time tallies; REST just catches transitions).
+    // Floor state is now pushed via event: floor from the DO every 5s.
+    // This fallback only fires when the SSE stream hasn't delivered a floor event
+    // in the last 15s (e.g. DO restarting, SSE reconnecting after a drop).
     setInterval(() => {
-        const sseActive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
-        const inVote = floorData?.currentStatus?.value === 'vote' || floorData?.currentStatus?.value === 'voting';
-        const sseTalliesLive = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 15_000;
-        // During a vote with no recent SSE tallies, poll every 5s so counts stay fresh.
-        // When SSE tallies are flowing, REST is just a backup — 30s is fine.
-        // Outside a vote, 10s when SSE is down, 30s when SSE is up.
-        const interval = (inVote && !sseTalliesLive) ? 5000 : sseActive ? 30000 : 10000;
-        if (!fetchFloorData._lastPoll || Date.now() - fetchFloorData._lastPoll >= interval) {
-            fetchFloorData._lastPoll = Date.now();
-            fetchFloorData(true);
-        }
-    }, 5000); // check every 5s, but only fire based on adaptive interval
+        const floorSseRecent = lastFloorSseAt > 0 && (Date.now() - lastFloorSseAt) < 15_000;
+        if (!floorSseRecent) fetchFloorData(true);
+    }, 10000);
     setInterval(fetchWeather, 1800000); // Weather every 30 min (direct to NWS, zero Worker cost)
     // bills, tweets, bluesky, airportdelays, housemakeup are all pushed via SSE from the DO —
     // no browser polling needed; the DO fetches once for all connected users.
@@ -7462,4 +7436,20 @@ function updateLastUpdate() {
 
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
+
+// Beta banner dismiss (persisted via sessionStorage so it stays gone on soft reload)
+document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('beta-banner');
+    const btn    = document.getElementById('beta-dismiss');
+    if (!banner || !btn) return;
+    if (sessionStorage.getItem('betaDismissed')) {
+        banner.classList.add('dismissed');
+        document.body.classList.add('beta-dismissed');
+    }
+    btn.addEventListener('click', () => {
+        banner.classList.add('dismissed');
+        document.body.classList.add('beta-dismissed');
+        sessionStorage.setItem('betaDismissed', '1');
+    });
+});
 
