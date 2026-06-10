@@ -3131,7 +3131,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .party-breakdown-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-8);
+    border-radius: var(--radius-12);
     overflow: hidden;
     margin-bottom: var(--sp-8);
 }
@@ -3338,8 +3338,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     background: var(--accent-red);
     height: 100%;
     transition: width 0.3s ease, filter 0.2s ease, box-shadow 0.2s ease;
-    border-top-left-radius: 6px;
-    border-bottom-left-radius: 6px;
+    border-top-left-radius: var(--radius-6);
+    border-bottom-left-radius: var(--radius-6);
 }
 
 .rep-fill:hover {
@@ -3376,8 +3376,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     background: rgba(255, 255, 255, 0.3);
     height: 100%;
     transition: width 0.3s ease, filter 0.2s ease, box-shadow 0.2s ease;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
+    border-top-right-radius: var(--radius-6);
+    border-bottom-right-radius: var(--radius-6);
 }
 
 .vac-fill:hover {
