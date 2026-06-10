@@ -777,6 +777,27 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     border-radius: var(--radius-4);
 }
 
+.vote-bill-btn {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-4);
+    padding: var(--sp-6) var(--sp-12);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.vote-bill-btn:hover {
+    background: rgba(139, 148, 158, 0.1);
+    border-color: rgba(139, 148, 158, 0.4);
+    color: var(--text-primary);
+}
+
 .refresh-btn {
     width: 36px;
     height: 36px;
