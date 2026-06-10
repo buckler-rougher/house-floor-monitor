@@ -131,11 +131,15 @@ async function getStreamCoordinator(env) {
 
 async function fetchRSSFeed(url, timeoutMs = 8000) {
   try {
-    const response = await fetch(url, {
+    // Append timestamp to bust CDN caches (clerk.house.gov ignores Cache-Control headers)
+    const bustUrl = url.includes('?') ? `${url}&_=${Date.now()}` : `${url}?_=${Date.now()}`;
+    const response = await fetch(bustUrl, {
       signal: AbortSignal.timeout(timeoutMs),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Cache-Control': 'no-cache, no-store',
+        'Pragma': 'no-cache',
       }
     });
 
@@ -2876,8 +2880,9 @@ export class DomeWatchStreamCoordinator {
     const fetch5s = async () => {
       if (this.clients.size === 0) return;
       try {
-        const resp = await fetch('https://clerk.house.gov/Home/Feed', {
-          headers: { 'Cache-Control': 'no-store' },
+        // Append timestamp to bust House.gov's CDN cache which ignores Cache-Control headers
+        const resp = await fetch(`https://clerk.house.gov/Home/Feed?_=${Date.now()}`, {
+          headers: { 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' },
           signal: AbortSignal.timeout(8000),
         });
         if (!resp.ok) return;
