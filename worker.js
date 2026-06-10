@@ -2906,6 +2906,8 @@ export class DomeWatchStreamCoordinator {
   // then broadcasts via SSE. Eliminates per-user Worker requests for these endpoints.
   startDataBroadcasts() {
     const BASE = 'https://api.evanhollander.org/house-floor/api';
+
+    // Simple single-URL sources
     const sources = [
       { name: 'tweets',        url: `${BASE}/tweets`,         ms: 10 * 60 * 1000 },
       { name: 'bluesky',       url: `${BASE}/bluesky`,        ms: 10 * 60 * 1000 },
@@ -2930,6 +2932,37 @@ export class DomeWatchStreamCoordinator {
       };
       poll(); // run immediately on first client connect
       this.dataIntervals.set(name, setInterval(poll, ms));
+    }
+
+    // Bills — combines three endpoints into one SSE event so the browser gets
+    // bills + rules + whip recs in a single push.
+    if (!this.dataIntervals.has('bills')) {
+      const pollBills = async () => {
+        if (this.clients.size === 0) return;
+        try {
+          const [billsResp, rulesResp, whipResp] = await Promise.all([
+            fetch(`${BASE}/bills`,        { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
+            fetch(`${BASE}/rules`,        { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
+            fetch(`${BASE}/whip-notices`, { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
+          ]);
+          if (!billsResp.ok) return; // bills are essential; skip if unavailable
+          const bills = await billsResp.text();
+          const rules = rulesResp.ok  ? await rulesResp.text()  : null;
+          const whip  = whipResp.ok   ? await whipResp.text()   : null;
+          // Change detection: skip broadcast if nothing changed
+          const cacheKey = bills + '|' + (rules || '') + '|' + (whip || '');
+          if (this.dataCache.get('bills') === cacheKey) return;
+          this.dataCache.set('bills', cacheKey);
+          const payload = JSON.stringify({
+            bills: JSON.parse(bills),
+            rules: rules ? JSON.parse(rules) : null,
+            whip:  whip  ? JSON.parse(whip)  : null,
+          });
+          await this.broadcast(`event: bills\ndata: ${payload}\n\n`);
+        } catch { /* non-critical */ }
+      };
+      pollBills();
+      this.dataIntervals.set('bills', setInterval(pollBills, 10 * 60 * 1000));
     }
   }
 
