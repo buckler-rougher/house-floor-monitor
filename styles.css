@@ -4181,6 +4181,7 @@ a.bill-card-rule-link {
     color: var(--text-muted);
     opacity: 0.55;
     user-select: none;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
 /* Status circle — only element that carries the status color */
@@ -4203,6 +4204,7 @@ a.bill-card-rule-link {
     margin-left: 16px; /* 1px border + 10px padding + 6.5px half-circle − 1px half-width */
     background: var(--border-color);
     opacity: 0.5;
+    transition: opacity 0.15s ease;
 }
 
 .mtr-card.mtr-pending .mtr-circle { color: rgba(210, 153, 34, 0.75); }

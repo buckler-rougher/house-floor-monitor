@@ -551,11 +551,15 @@ function applyRollLogToBills(entries, activeRoll) {
     const PROCEDURAL = /motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i;
     const normalizeBillType = raw => {
         const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
-        return { 'HR':'H.R.','H.R.':'H.R.','HRES':'H.Res.','H.RES.':'H.Res.',
+        return { 'H':'H.R.','H.':'H.R.',
+                 'HR':'H.R.','H.R.':'H.R.','HRES':'H.Res.','H.RES.':'H.Res.',
                  'HJRES':'H.J.Res.','HCONRES':'H.Con.Res.',
                  'S':'S.','S.':'S.','SRES':'S.Res.','S.RES.':'S.Res.',
                  'SJRES':'S.J.Res.','SCONRES':'S.Con.Res.' }[t] || null;
     };
+    const matchBillId = q =>
+        q.match(/(?:^|\s[-–]\s)(H\.?\s*R\.?|H\.?\s*Res\.?|H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H|S\.?(?:\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?)?)\s+(\d+)/i)
+        || q.match(/\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?)\s*(\d+)/i);
     let changed = false;
     for (const entry of entries) {
         if (activeRoll && String(entry.roll) === activeRoll) continue; // skip active vote
@@ -567,7 +571,7 @@ function applyRollLogToBills(entries, activeRoll) {
             const nays = entry.totals?.nays || 0;
             if (yeas + nays > 0) {
                 // Extract bill ID from question if present (e.g. "On Motion to Commit - S. 2")
-                const qm = q.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+                const qm = matchBillId(q);
                 if (qm) {
                     const type = normalizeBillType(qm[1]);
                     if (type) {
@@ -588,7 +592,7 @@ function applyRollLogToBills(entries, activeRoll) {
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
         if (yeas + nays === 0) continue;
-        const qm = q.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+        const qm = matchBillId(q);
         if (!qm) continue;
         const type = normalizeBillType(qm[1]);
         if (!type) continue;
@@ -1563,7 +1567,9 @@ function reconcileVoteWithBills(force = false) {
     const normalizeBillType = raw => {
         const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
         const map = {
-            'HR': 'H.R.', 'H.R.': 'H.R.', 'HRES': 'H.Res.', 'H.RES.': 'H.Res.',
+            'H': 'H.R.', 'H.': 'H.R.',  // plain "H" or "H." = H.R. (DomeWatch format)
+            'HR': 'H.R.', 'H.R.': 'H.R.',
+            'HRES': 'H.Res.', 'H.RES.': 'H.Res.',
             'HJRES': 'H.J.Res.', 'H.J.RES.': 'H.J.Res.',
             'HCONRES': 'H.Con.Res.', 'H.CON.RES.': 'H.Con.Res.',
             'S': 'S.', 'S.': 'S.', 'SRES': 'S.Res.', 'S.RES.': 'S.Res.',
@@ -1571,8 +1577,10 @@ function reconcileVoteWithBills(force = false) {
         };
         return map[t] || null;
     };
-    // Match "S 1003", "H R 1041", "H Res 100", etc. at the start or after a dash
-    const qm = question.match(/(?:^|\s-\s)(H(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?|S(?:\s*\.?\s*(?:J\s*\.?\s*)?(?:Con\s*\.?\s*)?Res\.?)?)\s+(\d+)/i);
+    // Try space-separated DomeWatch format: "H R 8464", "H 8464", "S 1003", "H Res 100"
+    // then fall back to standard dotted notation: "H.R. 8464", "H.Res. 100"
+    const qm = question.match(/(?:^|\s[-–]\s)(H\.?\s*R\.?|H\.?\s*Res\.?|H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H|S\.?(?:\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?)?)\s+(\d+)/i)
+            || question.match(/\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?)\s*(\d+)/i);
     if (!qm) return;
 
     const type = normalizeBillType(qm[1]);
