@@ -140,7 +140,8 @@ async function fetchRSSFeed(url, timeoutMs = 8000) {
         'Accept': 'application/rss+xml, application/xml, text/xml, */*',
         'Cache-Control': 'no-cache, no-store',
         'Pragma': 'no-cache',
-      }
+      },
+      cf: { cacheTtl: 0, cacheEverything: false },
     });
 
     if (!response.ok) {
@@ -2884,6 +2885,7 @@ export class DomeWatchStreamCoordinator {
         const resp = await fetch(`https://clerk.house.gov/Home/Feed?_=${Date.now()}`, {
           headers: { 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' },
           signal: AbortSignal.timeout(8000),
+          cf: { cacheTtl: 0, cacheEverything: false },
         });
         if (!resp.ok) return;
         const xml = await resp.text();
