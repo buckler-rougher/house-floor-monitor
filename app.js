@@ -1298,6 +1298,38 @@ async function fetchFloorData(silent = false) {
     }
 }
 
+// Returns the billDataMap entry matching the current roll call vote, or null.
+// Used to show/hide the VIEW BILL button during votes.
+function findBillForCurrentVote() {
+    if (!floorData?.rollCall?.question || !billDataMap.size) return null;
+    const q = floorData.rollCall.question;
+    // Skip procedural votes that don't map to a bill card
+    if (/\b(amendment|motion to (?:re)?commit|quorum|previous question|motion to table|motion to refer|motion to adjourn)\b/i.test(q)) return null;
+
+    const billPat = /\b(H\.R\.|H\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Con\.\s*Res\.|S\.(?:\s*Res\.|\s*Con\.\s*Res\.|\s*J\.\s*Res\.)?)\s*(\d+)/i;
+    const m = q.match(billPat);
+    if (!m) return null;
+
+    const rawId  = m[1].replace(/\s+/g, '') + ' ' + m[2];
+    const normId = rawId.replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.');
+
+    let bill = billDataMap.get(rawId) || billDataMap.get(normId);
+    if (bill) return bill;
+
+    // Try normalized key comparison
+    const needle = normId.replace(/\s+/g, ' ').trim();
+    for (const [key, val] of billDataMap) {
+        if (key.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim() === needle) return val;
+    }
+
+    // H.Res. may be stored as hres-XXXX
+    if (/H\.?\s*Res\./i.test(rawId)) {
+        const hresNum = rawId.match(/(\d+)/)?.[1];
+        if (hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    }
+    return bill || null;
+}
+
 // Update Floor Display with DomeWatch Data
 function updateFloorDisplay(status = null) {
     if (status === 'error') {
@@ -1358,6 +1390,18 @@ function updateFloorDisplay(status = null) {
     if (elements.voteId && floorData.rollCall) {
         const rollCallNumber = floorData.rollCall.number || 'Unknown';
         elements.voteId.textContent = `Roll Call ${rollCallNumber}`;
+    }
+
+    // Show VIEW BILL button IFF the current vote maps to a bill card
+    if (elements.voteBillBtn) {
+        const matchedBill = findBillForCurrentVote();
+        if (matchedBill) {
+            elements.voteBillBtn.dataset.billId = matchedBill.id;
+            elements.voteBillBtn.style.display = '';
+        } else {
+            elements.voteBillBtn.style.display = 'none';
+            delete elements.voteBillBtn.dataset.billId;
+        }
     }
 
     // Update vote counts if available
@@ -1595,6 +1639,7 @@ const elements = {
     utcTime: document.getElementById('utc-time'),
     voteTitle: document.getElementById('vote-title'),
     voteId: document.getElementById('vote-id'),
+    voteBillBtn: document.getElementById('vote-bill-btn'),
     yeasCount: document.getElementById('yeas-count'),
     yeasPercent: document.getElementById('yeas-percent'),
     yeasD: document.getElementById('yeas-d'),
@@ -1787,6 +1832,14 @@ if (elements.debateRuleTag) {
     elements.debateRuleTag.addEventListener('click', e => {
         const btn = e.target.closest('[data-bill-id]');
         if (btn) openBillModal(btn.dataset.billId);
+    });
+}
+
+// VIEW BILL button in vote header
+if (elements.voteBillBtn) {
+    elements.voteBillBtn.addEventListener('click', () => {
+        const billId = elements.voteBillBtn.dataset.billId;
+        if (billId) openBillModal(billId);
     });
 }
 
