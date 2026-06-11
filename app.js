@@ -2935,8 +2935,9 @@ function createBillCard(bill, procedure) {
         </button>`;
 
     // Live proceedings map wins; fall back to value stored on the bill object (survives daily rollover)
+    // Only show if there's an actual vote result — pending MTR on a passed/finished bill is noise
     const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
-    if (!mtr) return cardHtml;
+    if (!mtr || !mtr.voteText) return cardHtml;
 
     const mtrLabel = mtr.status === 'failed' ? `Motion to Recommit Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
