@@ -2756,7 +2756,7 @@ function updateMotionsToRecommit(items) {
             const failed = /\b(failed|not agreed to)\b/i.test(desc);
             const passed = !failed && /(agreed to|passed)\b/i.test(desc);
             status = failed ? 'failed' : passed ? 'passed' : 'pending';
-            const vm = desc.match(/vote:\s*(\d+)\s*[-–]\s*(\d+)/i);
+            const vm = desc.match(/(?:vote|nays):\s*(\d+)\s*[-–]\s*(\d+)/i);
             if (vm) voteText = `${vm[1]}-${vm[2]}`;
         } else {
             // Motion offered but not yet voted on
