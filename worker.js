@@ -2047,11 +2047,16 @@ function rollLogKey() {
 async function handleRollLogGet(env) {
   if (!env?.HLS_CACHE) return new Response(JSON.stringify({ entries: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   try {
-    // Fetch up to 7 days of roll-log keys so MTR outcomes survive the daily rollover
+    // In-memory cache — avoid KV reads for burst traffic within same isolate
+    const MEM_KEY = 'roll-log-assembled';
+    const cached = _mGet(MEM_KEY);
+    if (cached) return new Response(cached, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+
+    // Read today + yesterday — MTR votes don't span more than 1 legislative day
     const allEntries = [];
     const seen = new Set();
     const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    for (let d = 0; d < 2; d++) {  // today + yesterday only — MTR votes don't span more than 1 day
+    for (let d = 0; d < 2; d++) {
       const dt = new Date(nowET);
       dt.setDate(dt.getDate() - d);
       const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;
@@ -2063,9 +2068,9 @@ async function handleRollLogGet(env) {
       }
     }
     allEntries.sort((a, b) => (a.roll || 0) - (b.roll || 0));
-    return new Response(JSON.stringify({ entries: allEntries }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-    });
+    const body = JSON.stringify({ entries: allEntries });
+    _mSet(MEM_KEY, body, 30_000); // cache 30s — new votes update KV, isolate picks them up next miss
+    return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch {
     return new Response(JSON.stringify({ entries: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   }
@@ -2227,14 +2232,22 @@ async function maybeWriteRollLog(data, env) {
   const roll = (data.roll_call || data.rollCall)?.number;
   if (!roll) return;
   try {
+    const entry = buildRollLogEntry(data);
+    // Skip KV read+write if totals haven't changed since last write (dedup within this isolate)
+    const dedupKey = `roll-log-dedup:${roll}`;
+    const sig = `${entry.totals.yeas}-${entry.totals.nays}-${entry.totals.present}`;
+    if (_mGet(dedupKey) === sig) return;
+    _mSet(dedupKey, sig, 15_000); // 15s — slightly longer than the 10s poll interval
+
     const key = rollLogKey();
     const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
     const entries = existing.entries || [];
-    const entry = buildRollLogEntry(data);
     const idx = entries.findIndex(e => e.roll === roll);
     if (idx >= 0) entries[idx] = entry; else entries.push(entry);
     if (entries.length > 50) entries.splice(0, entries.length - 50);
     await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 7 * 24 * 3600 });
+    // Invalidate the assembled cache so next read picks up the new entry
+    _mSet('roll-log-assembled', '', 0);
   } catch { /* non-critical — don't let roll-log errors affect the floor response */ }
 }
 
