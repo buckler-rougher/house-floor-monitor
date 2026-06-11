@@ -5957,7 +5957,7 @@ async function fetchTweets(preData = null) {
                 : '';
 
             const cardHtml = t.cardImage && !t.images.length
-                ? `<div class="tweet-card"><img class="tweet-card-img" src="${t.cardImage}" loading="lazy" alt="" onerror="this.closest('.tweet-card').style.display='none'"></div>`
+                ? `<div class="tweet-card"><img class="tweet-card-img tweet-img" src="${t.cardImage}" loading="lazy" alt="" style="cursor:pointer" onerror="this.closest('.tweet-card').style.display='none'"></div>`
                 : '';
 
             const quoteHtml = t.quoteAuthor
