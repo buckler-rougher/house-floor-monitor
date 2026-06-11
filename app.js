@@ -5951,7 +5951,7 @@ async function fetchTweets(preData = null) {
             const imagesHtml = t.images && t.images.length
                 ? `<div class="tweet-images tweet-images-${Math.min(t.images.length, 4)}">${
                     t.images.slice(0, 4).map(src =>
-                        `<img class="tweet-img" src="${src}" loading="lazy" alt="" onclick="openTweetImageLightbox(this.src)" onerror="${onImgError}">`
+                        `<img class="tweet-img" src="${src}" loading="lazy" alt="" style="cursor:pointer" onerror="${onImgError}">`
                     ).join('')
                   }</div>`
                 : '';
@@ -6026,6 +6026,12 @@ async function fetchTweets(preData = null) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
 }
+
+// Document-level delegated listener — survives feed re-renders, no inline onclick needed
+document.addEventListener('click', e => {
+    const img = e.target.closest('.tweet-img');
+    if (img) openTweetImageLightbox(img.src);
+});
 
 function openTweetImageLightbox(src) {
     let overlay = document.getElementById('tweet-img-lightbox');
