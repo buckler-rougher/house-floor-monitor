@@ -2536,6 +2536,12 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
     applyStoredMtrToBills();
 
     updateBillsDisplay();
+
+    // Backfill MTR outcomes from past proceedings (runs once after first bills load)
+    if (!backfillMtrFromProceedings._done) {
+        backfillMtrFromProceedings._done = true;
+        backfillMtrFromProceedings();
+    }
     if (proceedingsData.length) updateDebateSection(proceedingsData);
 }
 
@@ -2664,6 +2670,30 @@ function updateBillStatusFromProceedings(items) {
 // Map: normalizedBillId → { status: 'pending'|'failed'|'passed', voteText: string|null }
 // Populated from proceedings items; shown as an indicator above the bill card.
 const motionsToRecommit = new Map();
+
+// Fetch proceedings for the past 7 days and backfill MTR outcomes.
+// Called once after bills load so bill objects exist to stamp.
+async function backfillMtrFromProceedings() {
+    const API = 'https://api.evanhollander.org/house-floor/api/proceedings';
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    let changed = false;
+    for (let d = 1; d <= 7; d++) {
+        const dt = new Date(nowET);
+        dt.setDate(dt.getDate() - d);
+        const mm = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const yyyy = dt.getFullYear();
+        try {
+            const resp = await fetch(`${API}?date=${mm}/${dd}/${yyyy}`, { signal: AbortSignal.timeout(8000) });
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            if (data?.items?.length) {
+                if (updateMotionsToRecommit(data.items)) changed = true;
+            }
+        } catch { /* non-critical */ }
+    }
+    if (changed) updateBillsDisplay();
+}
 
 const MTR_STORAGE_KEY = 'mtr-outcomes';
 const MTR_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
