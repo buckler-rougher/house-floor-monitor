@@ -10,12 +10,13 @@ function sanitizeTweetHtml(html) {
             (_, href, inner) =>
                 `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(inner.replace(/<[^>]+>/g, ''))}</a>`)
         .replace(/<[^>]+>/g, '');
-    // 2. Auto-link URLs (with or without protocol prefix)
+    // 2. Auto-link URLs — strip trailing punctuation that's likely not part of the URL
+    const trimUrl = u => u.replace(/[.,;:!?)]+$/, '');
     out = out.replace(/(?<![">=/\w])(https?:\/\/[^\s<>"]+)/g,
-        url => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
+        m => { const u = trimUrl(m); return `<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>`; });
     // Bare domains with a path (e.g. cbsn.ws/4okdGWi) — require slash to avoid false positives
-    out = out.replace(/(?<![">=/\w@.])([a-z0-9-]+\.[a-z]{2,6}\/[^\s<>"]+)/gi,
-        (match, url) => `<a href="https://${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
+    out = out.replace(/(?<![">=/\w@.])\b([a-z0-9][a-z0-9-]*\.[a-z]{2,6}\/[^\s<>".,;:!?)]+)/gi,
+        (_, url) => `<a href="https://${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
     // 3. Auto-link @handles
     out = out.replace(/(?<![/\w@])@([\w]+)/g,
         (_, handle) => `<a href="https://twitter.com/${handle}" target="_blank" rel="noopener noreferrer">@${handle}</a>`);
@@ -5950,7 +5951,7 @@ async function fetchTweets(preData = null) {
             const imagesHtml = t.images && t.images.length
                 ? `<div class="tweet-images tweet-images-${Math.min(t.images.length, 4)}">${
                     t.images.slice(0, 4).map(src =>
-                        `<img class="tweet-img" src="${src}" loading="lazy" alt="" onerror="${onImgError}">`
+                        `<img class="tweet-img" src="${src}" loading="lazy" alt="" onclick="openTweetImageLightbox(this.src)" onerror="${onImgError}">`
                     ).join('')
                   }</div>`
                 : '';
@@ -6021,16 +6022,6 @@ async function fetchTweets(preData = null) {
             }
         }
         feed.innerHTML = items.join('');
-
-        // Image lightbox — delegated so it works after every re-render
-        if (!feed._lightboxBound) {
-            feed._lightboxBound = true;
-            feed.addEventListener('click', e => {
-                const img = e.target.closest('.tweet-img');
-                if (!img) return;
-                openTweetImageLightbox(img.src);
-            });
-        }
     } catch (e) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
