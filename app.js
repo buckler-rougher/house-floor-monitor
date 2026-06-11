@@ -586,6 +586,7 @@ function applyRollLogToBills(entries, activeRoll) {
                                 const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === bid);
                                 if (bill) { bill.mtr = mtrData; break; }
                             }
+                            saveMtrToStorage();
                             changed = true;
                         }
                     }
@@ -2529,6 +2530,10 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
     const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
     applyRollLogToBills(rollLog, activeRoll);
 
+    // Restore MTR outcomes from localStorage (survives page reloads & daily proceedings rollover)
+    loadMtrFromStorage();
+    applyStoredMtrToBills();
+
     updateBillsDisplay();
     if (proceedingsData.length) updateDebateSection(proceedingsData);
 }
@@ -2659,6 +2664,47 @@ function updateBillStatusFromProceedings(items) {
 // Populated from proceedings items; shown as an indicator above the bill card.
 const motionsToRecommit = new Map();
 
+const MTR_STORAGE_KEY = 'mtr-outcomes';
+const MTR_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function saveMtrToStorage() {
+    try {
+        const entries = [];
+        for (const [id, data] of motionsToRecommit) {
+            if (data.status === 'passed' || data.status === 'failed') {
+                entries.push([id, { ...data, _saved: Date.now() }]);
+            }
+        }
+        localStorage.setItem(MTR_STORAGE_KEY, JSON.stringify(entries));
+    } catch {}
+}
+
+function loadMtrFromStorage() {
+    try {
+        const raw = localStorage.getItem(MTR_STORAGE_KEY);
+        if (!raw) return;
+        const now = Date.now();
+        const entries = JSON.parse(raw);
+        for (const [id, data] of entries) {
+            if (now - (data._saved || 0) > MTR_TTL_MS) continue; // expired
+            if (!motionsToRecommit.has(id)) {
+                motionsToRecommit.set(id, { status: data.status, voteText: data.voteText || null });
+            }
+        }
+    } catch {}
+}
+
+// Apply stored MTR outcomes onto bill objects in billsData (called after bills load)
+function applyStoredMtrToBills() {
+    for (const [billId, mtrData] of motionsToRecommit) {
+        if (mtrData.status !== 'passed' && mtrData.status !== 'failed') continue;
+        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+            const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billId);
+            if (bill && !bill.mtr) { bill.mtr = mtrData; break; }
+        }
+    }
+}
+
 // Scan proceedings items for motion to commit/recommit events and update the map.
 // Returns true if anything changed (caller should redraw bills if so).
 function updateMotionsToRecommit(items) {
@@ -2708,6 +2754,7 @@ function updateMotionsToRecommit(items) {
                     const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billId);
                     if (bill) { bill.mtr = mtrData; break; }
                 }
+                saveMtrToStorage();
             }
             changed = true;
         }
