@@ -2047,8 +2047,23 @@ function rollLogKey() {
 async function handleRollLogGet(env) {
   if (!env?.HLS_CACHE) return new Response(JSON.stringify({ entries: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   try {
-    const data = await env.HLS_CACHE.get(rollLogKey(), 'json');
-    return new Response(JSON.stringify(data || { entries: [] }), {
+    // Fetch up to 7 days of roll-log keys so MTR outcomes survive the daily rollover
+    const allEntries = [];
+    const seen = new Set();
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(nowET);
+      dt.setDate(dt.getDate() - d);
+      const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;
+      const data = await env.HLS_CACHE.get(key, 'json');
+      if (data?.entries) {
+        for (const e of data.entries) {
+          if (!seen.has(e.roll)) { seen.add(e.roll); allEntries.push(e); }
+        }
+      }
+    }
+    allEntries.sort((a, b) => (a.roll || 0) - (b.roll || 0));
+    return new Response(JSON.stringify({ entries: allEntries }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   } catch {
