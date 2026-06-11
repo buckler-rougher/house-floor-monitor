@@ -2965,6 +2965,29 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     object-fit: contain;
     display: block;
     background: #000;
+    cursor: zoom-in;
+    transition: opacity 0.1s ease;
+}
+.tweet-img:hover { opacity: 0.85; }
+
+/* Tweet image lightbox */
+#tweet-img-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0, 0, 0, 0.88);
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+#tweet-img-lightbox.open { display: flex; }
+#tweet-img-lightbox-img {
+    max-width: 92vw;
+    max-height: 92vh;
+    object-fit: contain;
+    border-radius: var(--radius-8);
+    box-shadow: 0 8px 48px rgba(0,0,0,0.6);
 }
 .tweet-card {
     border: 1px solid var(--border-color);
