@@ -579,7 +579,13 @@ function applyRollLogToBills(entries, activeRoll) {
                         const existing = motionsToRecommit.get(bid);
                         const status = yeas > nays ? 'passed' : 'failed';
                         if (!existing || existing.status === 'pending') {
-                            motionsToRecommit.set(bid, { status, voteText: `${yeas}-${nays}` });
+                            const mtrData = { status, voteText: `${yeas}-${nays}` };
+                            motionsToRecommit.set(bid, mtrData);
+                            // Persist onto bill object so it survives proceedings rollover
+                            for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                                const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === bid);
+                                if (bill) { bill.mtr = mtrData; break; }
+                            }
                             changed = true;
                         }
                     }
@@ -2465,7 +2471,10 @@ function mergeBills(newArr, existingArr, isQuick = false) {
             committeeReportDate: bill.committeeReportDate ?? prev.committeeReportDate,
         } : {};
 
-        return { ...bill, ...enrichment, ...statusFields, _origIdx: i };
+        // Always carry forward a stored MTR outcome — it won't come back from the API
+        const mtrField = bill.mtr ?? prev.mtr ? { mtr: bill.mtr ?? prev.mtr } : {};
+
+        return { ...bill, ...enrichment, ...statusFields, ...mtrField, _origIdx: i };
     });
 }
 
@@ -2691,7 +2700,15 @@ function updateMotionsToRecommit(items) {
             if (status === 'pending') continue;
         }
         if (!existing || existing.status !== status || existing.voteText !== voteText) {
-            motionsToRecommit.set(billId, { status, voteText: voteText || null });
+            const mtrData = { status, voteText: voteText || null };
+            motionsToRecommit.set(billId, mtrData);
+            // Persist onto bill object so it survives proceedings rollover
+            if (status === 'passed' || status === 'failed') {
+                for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                    const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billId);
+                    if (bill) { bill.mtr = mtrData; break; }
+                }
+            }
             changed = true;
         }
     }
@@ -2839,7 +2856,8 @@ function createBillCard(bill, procedure) {
             <div class="bill-chevron" aria-hidden="true">›</div>
         </button>`;
 
-    const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id));
+    // Live proceedings map wins; fall back to value stored on the bill object (survives daily rollover)
+    const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
     if (!mtr) return cardHtml;
 
     const mtrLabel = mtr.status === 'failed' ? `Motion to Recommit Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
