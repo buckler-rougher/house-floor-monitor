@@ -2051,7 +2051,7 @@ async function handleRollLogGet(env) {
     const allEntries = [];
     const seen = new Set();
     const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < 2; d++) {  // today + yesterday only — MTR votes don't span more than 1 day
       const dt = new Date(nowET);
       dt.setDate(dt.getDate() - d);
       const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;

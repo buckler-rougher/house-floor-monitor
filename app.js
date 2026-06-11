@@ -2689,7 +2689,7 @@ async function backfillMtrFromProceedings() {
     const API = 'https://api.evanhollander.org/house-floor/api/proceedings';
     const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
     let changed = false;
-    for (let d = 1; d <= 7; d++) {
+    for (let d = 1; d <= 2; d++) {  // yesterday + 2 days ago — MTRs on older bills are no longer relevant
         const dt = new Date(nowET);
         dt.setDate(dt.getDate() - d);
         const mm = String(dt.getMonth() + 1).padStart(2, '0');
