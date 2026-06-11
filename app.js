@@ -10,9 +10,12 @@ function sanitizeTweetHtml(html) {
             (_, href, inner) =>
                 `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(inner.replace(/<[^>]+>/g, ''))}</a>`)
         .replace(/<[^>]+>/g, '');
-    // 2. Auto-link bare URLs not already inside an anchor
-    out = out.replace(/(?<![">])(https?:\/\/[^\s<>"]+)/g,
+    // 2. Auto-link URLs (with or without protocol prefix)
+    out = out.replace(/(?<![">=/\w])(https?:\/\/[^\s<>"]+)/g,
         url => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
+    // Bare domains with a path (e.g. cbsn.ws/4okdGWi) — require slash to avoid false positives
+    out = out.replace(/(?<![">=/\w@.])([a-z0-9-]+\.[a-z]{2,6}\/[^\s<>"]+)/gi,
+        (match, url) => `<a href="https://${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
     // 3. Auto-link @handles
     out = out.replace(/(?<![/\w@])@([\w]+)/g,
         (_, handle) => `<a href="https://twitter.com/${handle}" target="_blank" rel="noopener noreferrer">@${handle}</a>`);
@@ -5985,10 +5988,13 @@ async function fetchTweets(preData = null) {
                   </span>`;
 
             const cls = ['tweet-item', isThreadParent ? 'tweet-thread-parent' : '', isThreadReply ? 'tweet-thread-reply' : ''].filter(Boolean).join(' ');
+            const avatarHtml = profileUrl
+                ? `<a class="tweet-avatar" href="${profileUrl}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">${avatarInner}</a>`
+                : `<div class="tweet-avatar">${avatarInner}</div>`;
             return `<div class="${cls}">
                 ${rtBar}
                 <div class="tweet-header">
-                    <div class="tweet-avatar">${avatarInner}</div>
+                    ${avatarHtml}
                     ${authorHtml}
                     <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}

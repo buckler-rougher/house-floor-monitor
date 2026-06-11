@@ -2965,7 +2965,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     object-fit: contain;
     display: block;
     background: #000;
-    cursor: zoom-in;
+    cursor: pointer;
     transition: opacity 0.1s ease;
 }
 .tweet-img:hover { opacity: 0.85; }
