@@ -4,11 +4,19 @@
 // Keeps <a href="https://..."> links; strips everything else.
 function sanitizeTweetHtml(html) {
     if (!html) return '';
-    return html
+    // 1. Keep existing <a href="https://..."> links, strip all other tags
+    let out = html
         .replace(/<a\s+[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,
             (_, href, inner) =>
                 `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(inner.replace(/<[^>]+>/g, ''))}</a>`)
         .replace(/<[^>]+>/g, '');
+    // 2. Auto-link bare URLs not already inside an anchor
+    out = out.replace(/(?<![">])(https?:\/\/[^\s<>"]+)/g,
+        url => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`);
+    // 3. Auto-link @handles
+    out = out.replace(/(?<![/\w@])@([\w]+)/g,
+        (_, handle) => `<a href="https://twitter.com/${handle}" target="_blank" rel="noopener noreferrer">@${handle}</a>`);
+    return out;
 }
 
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
@@ -5905,6 +5913,18 @@ const REPORTER_NAMES = {
     '@scottwongDC':     'Scott Wong',
     '@seungminkim':     'Seung Min Kim',
     '@tvheidihatch':    'Heidi Hatch',
+    // Additional handles seen in feed
+    '@AdamDalyNews':    'Adam Daly',
+    '@CBSNews':         'CBS News',
+    '@FoxReports':      'Fox News Reports',
+    '@HenryJGomez':     'Henry J. Gomez',
+    '@HowardMortman':   'Howard Mortman',
+    '@juliegraceb':     'Julie Grace Brufke',
+    '@marksatter':      'Mark Satter',
+    '@mmillerwtop':     'Mitchell Miller',
+    '@wildstein':       'David Wildstein',
+    '@KyleAlexStewart': 'Kyle Stewart',
+    '@akarl_smith':     'A.G. Karl Smith',
 };
 
 async function fetchTweets(preData = null) {
@@ -5995,9 +6015,35 @@ async function fetchTweets(preData = null) {
             }
         }
         feed.innerHTML = items.join('');
+
+        // Image lightbox — delegated so it works after every re-render
+        if (!feed._lightboxBound) {
+            feed._lightboxBound = true;
+            feed.addEventListener('click', e => {
+                const img = e.target.closest('.tweet-img');
+                if (!img) return;
+                openTweetImageLightbox(img.src);
+            });
+        }
     } catch (e) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
+}
+
+function openTweetImageLightbox(src) {
+    let overlay = document.getElementById('tweet-img-lightbox');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'tweet-img-lightbox';
+        overlay.innerHTML = '<img id="tweet-img-lightbox-img" alt="">';
+        overlay.addEventListener('click', () => { overlay.classList.remove('open'); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') overlay.classList.remove('open');
+        });
+        document.body.appendChild(overlay);
+    }
+    overlay.querySelector('#tweet-img-lightbox-img').src = src;
+    overlay.classList.add('open');
 }
 
 // Bluesky Functions
