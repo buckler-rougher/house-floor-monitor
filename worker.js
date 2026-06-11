@@ -2234,7 +2234,7 @@ async function maybeWriteRollLog(data, env) {
     const idx = entries.findIndex(e => e.roll === roll);
     if (idx >= 0) entries[idx] = entry; else entries.push(entry);
     if (entries.length > 50) entries.splice(0, entries.length - 50);
-    await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 24 * 3600 });
+    await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 7 * 24 * 3600 });
   } catch { /* non-critical — don't let roll-log errors affect the floor response */ }
 }
 

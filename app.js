@@ -570,25 +570,26 @@ function applyRollLogToBills(entries, activeRoll) {
             const yeas = entry.totals?.yeas || 0;
             const nays = entry.totals?.nays || 0;
             if (yeas + nays > 0) {
-                // Extract bill ID from question if present (e.g. "On Motion to Commit - S. 2")
-                const qm = matchBillId(q);
+                // Try question string first, then fall back to the dedicated bill field
+                let bid = null;
+                const qm = matchBillId(q) || (entry.bill ? matchBillId(entry.bill) : null);
                 if (qm) {
                     const type = normalizeBillType(qm[1]);
-                    if (type) {
-                        const bid = normalizeBillIdForRules(`${type} ${qm[2]}`);
-                        const existing = motionsToRecommit.get(bid);
-                        const status = yeas > nays ? 'passed' : 'failed';
-                        if (!existing || existing.status === 'pending') {
-                            const mtrData = { status, voteText: `${yeas}-${nays}` };
-                            motionsToRecommit.set(bid, mtrData);
-                            // Persist onto bill object so it survives proceedings rollover
-                            for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
-                                const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === bid);
-                                if (bill) { bill.mtr = mtrData; break; }
-                            }
-                            saveMtrToStorage();
-                            changed = true;
+                    if (type) bid = normalizeBillIdForRules(`${type} ${qm[2]}`);
+                }
+                if (bid) {
+                    const existing = motionsToRecommit.get(bid);
+                    const status = yeas > nays ? 'passed' : 'failed';
+                    if (!existing || existing.status === 'pending') {
+                        const mtrData = { status, voteText: `${yeas}-${nays}` };
+                        motionsToRecommit.set(bid, mtrData);
+                        // Persist onto bill object so it survives proceedings rollover
+                        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                            const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === bid);
+                            if (bill) { bill.mtr = mtrData; break; }
                         }
+                        saveMtrToStorage();
+                        changed = true;
                     }
                 }
             }
