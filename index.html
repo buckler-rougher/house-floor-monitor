@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260612a">
+    <link rel="stylesheet" href="styles.css?v=20260612b">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -165,6 +165,7 @@
                 <h1 class="vote-title" id="vote-title">Loading...</h1>
                 <div class="vote-meta">
                     <span class="vote-id" id="vote-id">--</span>
+                    <span id="vote-type-tag" class="vote-type-tag"></span>
                     <button class="vote-bill-btn" id="vote-bill-btn" style="display:none" type="button">VIEW BILL</button>
                 </div>
             </div>
@@ -800,8 +801,8 @@
                         <div class="count-number" id="yeas-count">--</div>
                         <div class="count-percentage" id="yeas-percent">--%</div>
                         <div class="count-party-breakdown">
-                            <span class="cpb-d" id="yeas-d">--D</span>
-                            <span class="cpb-r" id="yeas-r">--R</span>
+                            <span class="cpb-d" id="yeas-d">--<span class="cpb-suffix">D</span></span>
+                            <span class="cpb-r" id="yeas-r">--<span class="cpb-suffix">R</span></span>
                             <span class="cpb-i" id="yeas-i" style="display:none"></span>
                         </div>
                     </div>
@@ -817,8 +818,8 @@
                         <div class="count-number" id="nays-count">--</div>
                         <div class="count-percentage" id="nays-percent">--%</div>
                         <div class="count-party-breakdown">
-                            <span class="cpb-d" id="nays-d">--D</span>
-                            <span class="cpb-r" id="nays-r">--R</span>
+                            <span class="cpb-d" id="nays-d">--<span class="cpb-suffix">D</span></span>
+                            <span class="cpb-r" id="nays-r">--<span class="cpb-suffix">R</span></span>
                             <span class="cpb-i" id="nays-i" style="display:none"></span>
                         </div>
                     </div>
@@ -826,11 +827,16 @@
 
                 <!-- Integrated Timer Display -->
                 <div class="vote-timer" id="vote-timer">
-                    <span class="vote-timer-label">TIMER</span>
-                    <span class="vote-timer-body">
+                    <svg class="vote-timer-arc" viewBox="0 0 48 48" aria-hidden="true">
+                        <circle class="vta-track" cx="24" cy="24" r="20"/>
+                        <circle class="vta-fill" id="vta-fill" cx="24" cy="24" r="20"/>
+                    </svg>
+                    <div class="vote-timer-body">
+                        <span class="vote-timer-label">TIMER</span>
                         <span class="vote-timer-value" id="last-update">--:--</span>
                         <span class="vote-timer-start" id="vote-timer-start"></span>
-                    </span>
+                        <span class="vote-not-yet" id="vote-not-yet" hidden></span>
+                    </div>
                 </div>
             </div>
 
@@ -840,6 +846,7 @@
                     <div class="progress-fill yeas" id="yeas-bar"></div>
                     <div class="progress-fill present" id="present-bar"></div>
                     <div class="progress-fill nays" id="nays-bar"></div>
+                    <div id="vote-threshold-marker" class="progress-threshold-marker" style="display:none"></div>
                 </div>
                 <div class="progress-labels">
                     <span>YEAS</span>
@@ -1302,7 +1309,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260612a"></script>
+    <script src="app.js?v=20260612b"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
