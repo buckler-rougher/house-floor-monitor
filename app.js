@@ -766,6 +766,23 @@ let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdow
             }
         }
 
+        // Poll mode indicator
+        const pollModeEl = $('cd-poll-mode');
+        if (pollModeEl) {
+            const pm = window._pollModeState;
+            if (!pm) {
+                pollModeEl.textContent = '—';
+            } else {
+                const interval = pm.fast ? '10s / 5s' : '3m';
+                const reasonLabel = pm.reason === 'schedule'
+                    ? (pm.fast ? 'business hours' : 'after hours')
+                    : pm.reason.replace(/_/g, ' ');
+                pollModeEl.innerHTML = pm.fast
+                    ? badge('green', `FAST · ${interval}`) + ` <small style="opacity:.6">${reasonLabel}</small>`
+                    : badge('amber', `SLOW · ${interval}`) + ` <small style="opacity:.6">${reasonLabel}</small>`;
+            }
+        }
+
         // Countdown to next REST poll
         const countdownEl = $('cd-next-poll');
         if (countdownEl) {
@@ -1175,6 +1192,9 @@ function startSSEStreaming() {
         });
         eventSource.addEventListener('housemakeup', (event) => {
             try { fetchHouseMakeup(JSON.parse(event.data)); } catch {}
+        });
+        eventSource.addEventListener('poll-mode', (event) => {
+            try { window._pollModeState = JSON.parse(event.data); } catch {}
         });
 
         // Fallback for any unnamed default messages
