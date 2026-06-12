@@ -2870,6 +2870,7 @@ export class DomeWatchStreamCoordinator {
     this.proceedingsTimeout = null;
     this.floorTimeout = null;
     this._floorStatusValue = null; // last known now.value from DomeWatch floor endpoint
+    this._lastPollFast = null;     // last broadcast poll-mode state (null = not yet sent)
     this.dataIntervals = new Map(); // name → intervalId
     this.dataCache = new Map();     // name → last JSON string (change detection)
     this.nextClientId = 1;
@@ -2987,7 +2988,17 @@ export class DomeWatchStreamCoordinator {
         }
       } catch { /* non-critical */ }
       if (this.clients.size > 0) {
-        this.floorTimeout = setTimeout(poll, this._shouldPollFast() ? FAST_MS : SLOW_MS);
+        const fast = this._shouldPollFast();
+        const nextMs = fast ? FAST_MS : SLOW_MS;
+        this.floorTimeout = setTimeout(poll, nextMs);
+        // Broadcast poll-mode event when state changes so the dashboard can reflect it
+        if (this._lastPollFast !== fast) {
+          this._lastPollFast = fast;
+          const INACTIVE = new Set(['recess', 'house_not_in_session']);
+          const s = this._floorStatusValue;
+          const reason = s !== null ? s : 'schedule';
+          this.broadcast(`event: poll-mode\ndata: ${JSON.stringify({ fast, reason, intervalMs: nextMs })}\n\n`).catch(() => {});
+        }
       }
     };
     this.floorTimeout = setTimeout(poll, 0); // run immediately
