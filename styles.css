@@ -1221,6 +1221,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .conn-dash-badge.green { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
 .conn-dash-badge.amber { background: rgba(210,153,34,0.15); color: var(--accent-amber); }
 .conn-dash-badge.red   { background: rgba(248,81,73,0.15);  color: var(--accent-red); }
+.conn-dash-badge.blue  { background: rgba(88,166,255,0.12); color: var(--accent-blue); }
 
 .conn-dash-footer {
     padding: 9px var(--sp-14) 11px;
@@ -3006,12 +3007,21 @@ a.tweet-avatar:hover { opacity: 0.8; }
     display: block;
 }
 .tweet-quote {
+    display: block;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-8);
     padding: var(--sp-10) var(--sp-14);
     margin-bottom: var(--sp-10);
     margin-left: 46px;
     background: rgba(255,255,255,0.02);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+a.tweet-quote:hover {
+    border-color: var(--accent-blue);
+    background: rgba(88,166,255,0.05);
 }
 .tweet-quote-author {
     font-size: var(--fs-xs);
@@ -4152,6 +4162,12 @@ a.bill-card-rule-link {
 .bill-action {
     color: var(--accent-blue);
 }
+.bill-roll-link {
+    color: var(--accent-blue);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.bill-roll-link:hover { opacity: 0.75; }
 
 .bill-date {
     font-family: var(--font-mono);

@@ -384,7 +384,7 @@ async function handleProceedings(request, env) {
 }
 
 function parseTweetDescription(html, instance) {
-  if (!html) return { tweetHtml: '', tweetImages: [], cardImage: null, quoteAuthor: null, quoteHtml: null };
+  if (!html) return { tweetHtml: '', tweetImages: [], cardImage: null, quoteAuthor: null, quoteHtml: null, quoteUrl: null };
 
   const escaped = instance.replace(/\./g, '\\.');
   const rewriteUrl = url =>
@@ -414,7 +414,7 @@ function parseTweetDescription(html, instance) {
   }
 
   // Extract quote tweet from blockquote in quotePart
-  let quoteAuthor = null, quoteHtml = null;
+  let quoteAuthor = null, quoteHtml = null, quoteUrl = null;
   const bqMatch = quotePart.match(/<blockquote>([\s\S]*?)<\/blockquote>/i);
   if (bqMatch) {
     const bqInner = bqMatch[1];
@@ -428,9 +428,12 @@ function parseTweetDescription(html, instance) {
         .replace(/ title="[^"]*"/g, '')
         .replace(/<br\s*\/?>/gi, '<br>');
     }
+    // Extract the URL of the quoted tweet (any twitter.com/*/status/* href in the blockquote)
+    const quoteUrlM = bqInner.match(/href="([^"]*\/status\/[^"#]+)/i);
+    if (quoteUrlM) quoteUrl = rewriteUrl(quoteUrlM[1]);
   }
 
-  return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml };
+  return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml, quoteUrl };
 }
 
 
@@ -479,8 +482,8 @@ async function handleTweets(env) {
         relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff/60)}h` : `${Math.floor(diff/1440)}d`;
       } catch (_) {}
 
-      const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml } = parseTweetDescription(description, usedInstance);
-      return { handle, relativeTime, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml };
+      const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl } = parseTweetDescription(description, usedInstance);
+      return { handle, relativeTime, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
     });
 
     return new Response(JSON.stringify({ tweets }), {
