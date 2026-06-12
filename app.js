@@ -3945,6 +3945,14 @@ function autoSwitchModeFromProceedings(items) {
 
 // Render the proceedings panel from an items array (no fetch — pure DOM update).
 // Called both by updateProceedingsFeed (after REST fetch) and the SSE proceedings handler.
+function proceedingsAgo(ms) {
+    const diff = Math.floor((Date.now() - ms) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 360) return `${Math.floor(diff / 60)}h ago`;
+    return '';
+}
+
 function renderProceedingsFeedPanel(items) {
     if (!elements.proceedingsFeed) return;
     if (!items || items.length === 0) {
@@ -3961,15 +3969,18 @@ function renderProceedingsFeedPanel(items) {
             <span class="proceedings-next-label">NEXT</span>
             <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
         </div>` : '';
-    const html = items.map(item => {
+    const html = items.map((item, i) => {
         const pubDate = new Date(item.pubDate);
         const timeStr = pubDate.toLocaleTimeString('en-US', {
             hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
         });
+        const agoStr = proceedingsAgo(pubDate.getTime());
+        const agoHtml = agoStr ? `<span class="proceedings-ago">· ${agoStr}</span>` : '';
+        const latestClass = i === 0 ? ' proceedings-item--latest' : '';
         return `
-        <div class="proceedings-item">
+        <div class="proceedings-item${latestClass}">
             <div class="proceedings-text">
-                <span class="proceedings-time">${timeStr}</span>
+                <span class="proceedings-time">${timeStr}</span>${agoHtml}
                 ${decodeHtml(item.description)}
             </div>
         </div>`;
@@ -5991,6 +6002,11 @@ setInterval(() => {
         const ts = parseInt(el.dataset.ts, 10);
         if (ts) el.textContent = tweetRelativeTime(ts);
     });
+}, 30_000);
+
+// Refresh proceedings "X ago" suffixes every 30s (setIfChanged handles DOM no-ops)
+setInterval(() => {
+    if (proceedingsData.length) renderProceedingsFeedPanel(proceedingsData);
 }, 30_000);
 
 async function fetchTweets(preData = null) {
