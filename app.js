@@ -2938,11 +2938,7 @@ function createBillCard(bill, procedure) {
     billDataMap.set(bill.id, { ...bill, procedure });
     const statusClass = bill.status || 'scheduled';
     const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✕' : '';
-    const actionTextRaw = bill.statusText || bill.latestAction || 'Scheduled for consideration';
-    const actionText = actionTextRaw.replace(/Roll Call (\d+)/g, (_, n) => {
-        const url = `https://clerk.house.gov/evs/${new Date().getFullYear()}/roll${String(n).padStart(3, '0')}.xml`;
-        return `<a href="${url}" target="_blank" rel="noopener" class="bill-roll-link" onclick="event.stopPropagation()">Roll Call ${n}</a>`;
-    });
+    const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     const cardHtml = `
@@ -5981,8 +5977,8 @@ async function fetchTweets(preData = null) {
                    <div class="tweet-quote-text">${sanitizeTweetHtml(t.quoteHtml)}</div>`
                 : '';
             const quoteHtml = quoteInner
-                ? (t.quoteUrl || t.link
-                    ? `<a class="tweet-quote" href="${escapeHtml(t.quoteUrl || t.link)}" target="_blank" rel="noopener">${quoteInner}</a>`
+                ? (t.quoteUrl
+                    ? `<a class="tweet-quote" href="${escapeHtml(t.quoteUrl)}" target="_blank" rel="noopener">${quoteInner}</a>`
                     : `<div class="tweet-quote">${quoteInner}</div>`)
                 : '';
 
