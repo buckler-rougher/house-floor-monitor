@@ -2986,12 +2986,83 @@ a.tweet-avatar:hover { opacity: 0.8; }
 }
 #tweet-img-lightbox.open { display: flex; }
 #tweet-img-lightbox-img {
-    max-width: 92vw;
-    max-height: 92vh;
+    max-width: min(92vw, 900px);
+    max-height: 88vh;
     object-fit: contain;
     border-radius: var(--radius-8);
     box-shadow: 0 8px 48px rgba(0,0,0,0.6);
+    cursor: default;
 }
+/* Lightbox prev/next nav */
+.lb-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.6rem;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    z-index: 1;
+    flex-shrink: 0;
+}
+.lb-nav-btn:hover { background: rgba(0, 0, 0, 0.85); }
+#lb-prev { left: var(--sp-16); }
+#lb-next { right: var(--sp-16); }
+
+/* Reporter filter button (hover-reveal per tweet) */
+.tweet-filter-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-3);
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    padding: 1px 5px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-left: var(--sp-2);
+}
+.tweet-item:hover .tweet-filter-btn { display: flex; align-items: center; }
+.tweet-filter-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
+
+/* Active filter chip in panel header */
+.tweet-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.28);
+    border-radius: var(--radius-full);
+    padding: 2px var(--sp-8);
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-left: var(--sp-8);
+    white-space: nowrap;
+}
+.tweet-filter-chip:hover { background: rgba(88, 166, 255, 0.18); }
+.tweet-filter-chip-x { opacity: 0.65; }
+
+/* RT bar link */
+.tweet-rt-bar a {
+    color: inherit;
+    text-decoration: none;
+}
+.tweet-rt-bar a:hover { text-decoration: underline; }
 .tweet-card {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-8);

@@ -484,7 +484,7 @@ async function handleTweets(env) {
       } catch (_) {}
 
       const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl } = parseTweetDescription(description, usedInstance);
-      return { handle, relativeTime, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
+      return { handle, relativeTime, pubDate, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
     });
 
     return new Response(JSON.stringify({ tweets }), {
