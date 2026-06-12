@@ -2608,12 +2608,6 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-size: var(--fs-base);
 }
 
-.proceedings-item--latest {
-    margin-left: -2px;
-    border-left: 2px solid var(--accent-green);
-    background: rgba(63, 185, 80, 0.04);
-}
-
 .proceedings-ago {
     font-size: var(--fs-xs);
     font-family: var(--font-mono);
@@ -2876,6 +2870,54 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   opacity: 0.75;
   white-space: nowrap;
 }
+
+/* Absentee sort toggle */
+.absentee-sort-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-6) var(--sp-24);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+}
+.absentee-sort-btn {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: var(--sp-2) var(--sp-8);
+    border-radius: var(--radius-4);
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.absentee-sort-btn.active {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: rgba(139, 148, 158, 0.4);
+}
+.absentee-sort-btn:hover:not(.active) {
+    color: var(--text-secondary);
+}
+/* Party group header inside the 2-col absentee grid */
+.absentee-party-header {
+    grid-column: 1 / -1;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: var(--sp-6) 0 var(--sp-2) 0;
+    border-bottom: 1px solid rgba(139, 148, 158, 0.15);
+    margin-bottom: var(--sp-2);
+}
+.absentee-party-header:first-child { padding-top: 0; }
+.absentee-party-header.rep-header { color: #f78166; }
+.absentee-party-header.dem-header { color: #58a6ff; }
 
 .weather-attribution {
     font-size: var(--fs-xs);

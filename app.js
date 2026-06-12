@@ -1969,6 +1969,10 @@ const HOUSE_MAKEUP_CONFIG = {
 // State for RSS feed
 let proceedingsData = [];
 
+// Absentee sort state
+let absenteeSortMode = 'default';
+let _absenteesPayload = null; // { absentees, rollNumber, rollDate, rollTime }
+
 // State for House makeup
 let houseMakeup = null;
 let vacancies = [];
@@ -3969,16 +3973,15 @@ function renderProceedingsFeedPanel(items) {
             <span class="proceedings-next-label">NEXT</span>
             <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
         </div>` : '';
-    const html = items.map((item, i) => {
+    const html = items.map(item => {
         const pubDate = new Date(item.pubDate);
         const timeStr = pubDate.toLocaleTimeString('en-US', {
             hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
         });
         const agoStr = proceedingsAgo(pubDate.getTime());
         const agoHtml = agoStr ? `<span class="proceedings-ago">· ${agoStr}</span>` : '';
-        const latestClass = i === 0 ? ' proceedings-item--latest' : '';
         return `
-        <div class="proceedings-item${latestClass}">
+        <div class="proceedings-item">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>${agoHtml}
                 ${decodeHtml(item.description)}
@@ -6614,6 +6617,26 @@ function init() {
             }
         });
     }
+
+    // Absentee sort toggle
+    const absenteePanel = document.querySelector('.absentee-panel');
+    if (absenteePanel) {
+        absenteePanel.addEventListener('click', e => {
+            const btn = e.target.closest('.absentee-sort-btn');
+            if (!btn) return;
+            absenteeSortMode = btn.dataset.sort;
+            absenteePanel.querySelectorAll('.absentee-sort-btn').forEach(b =>
+                b.classList.toggle('active', b === btn));
+            if (_absenteesPayload) {
+                updateAbsenteeUI(
+                    _absenteesPayload.absentees,
+                    _absenteesPayload.rollNumber,
+                    _absenteesPayload.rollDate,
+                    _absenteesPayload.rollTime
+                );
+            }
+        });
+    }
 }
 
 // initHlsPlayer removed — video is now handled entirely by initYouTubePip (always-on PiP)
@@ -7164,6 +7187,9 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
         elements.absenteeRollInfo.textContent = `Roll ${rollNumber}${dateTimeStr ? ' • ' + dateTimeStr : ''}`;
     }
     
+    // Cache payload so the sort toggle can re-render without a refetch
+    _absenteesPayload = { absentees, rollNumber, rollDate, rollTime };
+
     // Update absentee list
     if (absentees.length > 0) {
         let xmlDoc = null;
@@ -7174,18 +7200,37 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             console.error('Failed to load member XML for absentees:', error);
         }
 
-        const absenteeHtml = absentees.map((absentee, absenteeIndex) => {
+        // Sort by party if requested
+        let displayAbsentees = absentees;
+        if (absenteeSortMode === 'party') {
+            const reps = absentees.filter(a => a.party === 'rep');
+            const dems = absentees.filter(a => a.party === 'dem');
+            const inds = absentees.filter(a => a.party !== 'rep' && a.party !== 'dem');
+            displayAbsentees = [...reps, ...dems, ...inds];
+        }
+
+        const htmlParts = [];
+        let lastParty = null;
+        displayAbsentees.forEach((absentee, absenteeIndex) => {
+            // Insert party group header when mode is 'party' and party changes
+            if (absenteeSortMode === 'party' && absentee.party !== lastParty) {
+                const count = displayAbsentees.filter(a => a.party === absentee.party).length;
+                const label = absentee.party === 'rep' ? 'REPUBLICANS' : absentee.party === 'dem' ? 'DEMOCRATS' : 'INDEPENDENTS';
+                const hClass = absentee.party === 'rep' ? 'rep-header' : absentee.party === 'dem' ? 'dem-header' : 'ind-header';
+                htmlParts.push(`<div class="absentee-party-header ${hClass}">${label} (${count})</div>`);
+                lastParty = absentee.party;
+            }
+
             const parsedName = parseAbsenteeRollName(absentee.name);
             const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
             const displayName = match ? match.fullName : (parsedName.rawName || 'Unknown');
             const nd = match ? normalizeDistrict(match.district) : '';
             const displayState = match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state;
             const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
-            const photoStyle = photoUrl ? 'display:block;' : '';
             const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
             const casualtyStatus = getCasualtyStatus(match);
 
-            return `
+            htmlParts.push(`
             <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
                 <div class="absentee-photo-wrap">
                     <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
@@ -7197,9 +7242,9 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
                     <span class="absentee-state">${displayState}</span>
                     ${casualtyStatus ? `<span class="absentee-casualty-status">${casualtyStatus}</span>` : ''}
                 </div>
-            </div>
-        `;}).join('');
-        setIfChanged(elements.absenteeList, absenteeHtml);
+            </div>`);
+        });
+        setIfChanged(elements.absenteeList, htmlParts.join(''));
     } else {
         setIfChanged(elements.absenteeList, '<div class="absentee-member">ALL MEMBERS VOTED</div>');
     }
