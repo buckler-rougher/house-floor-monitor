@@ -1483,10 +1483,7 @@ function updateFloorDisplay(status = null) {
     if (elements.voteId && floorData.rollCall) {
         const rollCallNumber = floorData.rollCall.number || '';
         if (rollCallNumber) {
-            const yr = new Date().getFullYear();
-            const rollPad = String(rollCallNumber).padStart(3, '0');
-            const clerkUrl = `https://clerk.house.gov/evs/${yr}/roll${rollPad}.asp`;
-            elements.voteId.innerHTML = `Roll Call <a href="${clerkUrl}" target="_blank" rel="noopener" class="vote-id-link">${escapeHtml(String(rollCallNumber))}</a>`;
+            elements.voteId.textContent = `Roll Call ${rollCallNumber}`;
         } else {
             elements.voteId.textContent = 'Roll Call --';
         }
