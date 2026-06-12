@@ -1003,7 +1003,7 @@ function updateVoteCountsDisplay(counts) {
     if (elements.yeasCount)    flipToNumber(elements.yeasCount,    yeas);
     if (elements.naysCount)    flipToNumber(elements.naysCount,    nays);
     if (elements.presentCount) flipToNumber(elements.presentCount, present);
-    if (elements.totalVotes)   elements.totalVotes.textContent   = `Total Votes: ${(yeas + nays + present + notVoting).toLocaleString()}`;
+    if (elements.totalVotes)   elements.totalVotes.textContent   = totalVotes > 0 ? `Total: ${(yeas + nays + present + notVoting).toLocaleString()}` : 'Total: --';
 
     if (totalVotes > 0) {
         const yPct = yeas    / totalVotes * 100;
@@ -1534,7 +1534,9 @@ function updateFloorDisplay(status = null) {
 
         // Update total votes with better formatting (includes Not Voting for display)
         if (elements.totalVotes) {
-            elements.totalVotes.textContent = `Total Votes: ${totalVotesWithNotVoting.toLocaleString()}`;
+            elements.totalVotes.textContent = totalVotes > 0
+                ? `Total: ${totalVotesWithNotVoting.toLocaleString()}`
+                : 'Total: --';
         }
 
         // Update progress bars with smooth animations
