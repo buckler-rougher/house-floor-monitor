@@ -3084,6 +3084,14 @@ export class DomeWatchStreamCoordinator {
     if (tweets) send('tweets',        tweets);
     if (delays) send('airportdelays', delays);
     if (makeup) send('housemakeup',   makeup);
+    // Send current poll-mode so new clients don't have to wait for the next mode change
+    if (this._lastPollFast !== null) {
+      const INACTIVE = new Set(['recess', 'house_not_in_session']);
+      const s = this._floorStatusValue;
+      const reason = s !== null ? s : 'schedule';
+      const intervalMs = this._lastPollFast ? 10_000 : 3 * 60_000;
+      send('poll-mode', JSON.stringify({ fast: this._lastPollFast, reason, intervalMs }));
+    }
   }
 
   async fetch(request) {
