@@ -5943,6 +5943,22 @@ const REPORTER_NAMES = {
     '@akarl_smith':     'A.G. Karl Smith',
 };
 
+function tweetRelativeTime(ms) {
+    const diff = Math.floor((Date.now() - ms) / 60000);
+    if (diff < 1) return 'now';
+    if (diff < 60) return `${diff}m`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+    return `${Math.floor(diff / 1440)}d`;
+}
+
+// Tick all visible tweet timestamps every 30s
+setInterval(() => {
+    document.querySelectorAll('.tweet-time[data-ts]').forEach(el => {
+        const ts = parseInt(el.dataset.ts, 10);
+        if (ts) el.textContent = tweetRelativeTime(ts);
+    });
+}, 30_000);
+
 async function fetchTweets(preData = null) {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
@@ -5954,8 +5970,12 @@ async function fetchTweets(preData = null) {
         }
         const renderTweet = (t, opts = {}) => {
             const { isThreadParent = false, isThreadReply = false } = opts;
+            const rtByHandle = t.rtBy || '';
+            const rtByLink = rtByHandle
+                ? `<a href="https://twitter.com/${rtByHandle.replace('@', '')}" target="_blank" rel="noopener">${escapeHtml(rtByHandle)}</a>`
+                : '';
             const rtBar = t.isRT
-                ? `<div class="tweet-rt-bar">↩ ${escapeHtml(t.rtBy || '')} retweeted</div>`
+                ? `<div class="tweet-rt-bar">↩ ${rtByLink} retweeted</div>`
                 : '';
 
             const onImgError = `this.style.display='none';const w=this.closest('.tweet-images,.tweet-card');if(w&&!w.querySelector('img:not([style*="none"])')&&w!==null)w.style.display='none'`;
@@ -6012,13 +6032,19 @@ async function fetchTweets(preData = null) {
             const avatarHtml = profileUrl
                 ? `<a class="tweet-avatar" href="${profileUrl}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">${avatarInner}</a>`
                 : `<div class="tweet-avatar">${avatarInner}</div>`;
-            return `<div class="${cls}">
+            const tweetTs = t.pubDate ? new Date(t.pubDate).getTime() : '';
+            const tweetTimeText = tweetTs ? tweetRelativeTime(tweetTs) : escapeHtml(t.relativeTime || '');
+            const filterBtn = t.handle
+                ? `<button class="tweet-filter-btn" data-handle="${escapeHtml(t.handle)}" title="Filter by ${escapeHtml(t.handle)}" aria-label="Filter by ${escapeHtml(t.handle)}">⊙</button>`
+                : '';
+            return `<div class="${cls}" data-handle="${escapeHtml(t.handle || '')}">
                 ${rtBar}
                 <div class="tweet-header">
                     ${avatarHtml}
                     ${authorHtml}
-                    <span class="tweet-time">${escapeHtml(t.relativeTime || '')}</span>
+                    <span class="tweet-time"${tweetTs ? ` data-ts="${tweetTs}"` : ''}>${tweetTimeText}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
+                    ${filterBtn}
                 </div>
                 <div class="tweet-body">${bodyHtml}</div>
                 ${imagesHtml}${cardHtml}${quoteHtml}
@@ -6042,6 +6068,7 @@ async function fetchTweets(preData = null) {
             }
         }
         feed.innerHTML = items.join('');
+        applyTweetFilter();
     } catch (e) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }
@@ -6049,24 +6076,103 @@ async function fetchTweets(preData = null) {
 
 // Document-level delegated listener — survives feed re-renders, no inline onclick needed
 document.addEventListener('click', e => {
+    // Image lightbox
     const img = e.target.closest('.tweet-img');
-    if (img) openTweetImageLightbox(img.src);
+    if (img) {
+        const container = img.closest('.tweet-images, .tweet-card');
+        const allSrcs = container ? [...container.querySelectorAll('.tweet-img')].map(i => i.src) : [img.src];
+        openTweetImageLightbox(img.src, allSrcs);
+    }
+    // Reporter filter button
+    const filterBtn = e.target.closest('.tweet-filter-btn');
+    if (filterBtn) {
+        e.preventDefault();
+        const handle = filterBtn.dataset.handle;
+        window._tweetFilter = (window._tweetFilter === handle) ? null : handle;
+        applyTweetFilter();
+    }
 });
 
-function openTweetImageLightbox(src) {
+function openTweetImageLightbox(clickedSrc, allSrcs) {
+    const srcs = (allSrcs && allSrcs.length) ? allSrcs : [clickedSrc];
+    let idx = srcs.indexOf(clickedSrc);
+    if (idx === -1) idx = 0;
+
     let overlay = document.getElementById('tweet-img-lightbox');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'tweet-img-lightbox';
-        overlay.innerHTML = '<img id="tweet-img-lightbox-img" alt="">';
-        overlay.addEventListener('click', () => { overlay.classList.remove('open'); });
+        overlay.innerHTML =
+            `<button id="lb-prev" class="lb-nav-btn" aria-label="Previous image">&#8249;</button>` +
+            `<img id="tweet-img-lightbox-img" alt="">` +
+            `<button id="lb-next" class="lb-nav-btn" aria-label="Next image">&#8250;</button>`;
+        overlay.addEventListener('click', e => {
+            if (!e.target.closest('.lb-nav-btn') && !e.target.closest('#tweet-img-lightbox-img'))
+                overlay.classList.remove('open');
+        });
+        overlay.querySelector('#lb-prev').addEventListener('click', e => { e.stopPropagation(); lbNavigate(-1); });
+        overlay.querySelector('#lb-next').addEventListener('click', e => { e.stopPropagation(); lbNavigate(1); });
         document.addEventListener('keydown', e => {
+            if (!overlay.classList.contains('open')) return;
             if (e.key === 'Escape') overlay.classList.remove('open');
+            if (e.key === 'ArrowLeft')  lbNavigate(-1);
+            if (e.key === 'ArrowRight') lbNavigate(1);
         });
         document.body.appendChild(overlay);
     }
-    overlay.querySelector('#tweet-img-lightbox-img').src = src;
+
+    overlay._lbSrcs = srcs;
+    overlay._lbIdx  = idx;
+    lbUpdateImage(overlay);
     overlay.classList.add('open');
+}
+
+function lbNavigate(dir) {
+    const overlay = document.getElementById('tweet-img-lightbox');
+    if (!overlay) return;
+    const srcs = overlay._lbSrcs || [];
+    overlay._lbIdx = (overlay._lbIdx + dir + srcs.length) % srcs.length;
+    lbUpdateImage(overlay);
+}
+
+function lbUpdateImage(overlay) {
+    const srcs = overlay._lbSrcs || [];
+    const idx  = overlay._lbIdx  || 0;
+    overlay.querySelector('#tweet-img-lightbox-img').src = srcs[idx] || '';
+    const single = srcs.length <= 1;
+    overlay.querySelector('#lb-prev').style.display = single ? 'none' : '';
+    overlay.querySelector('#lb-next').style.display = single ? 'none' : '';
+}
+
+// ── Reporter filter ──────────────────────────────────────────────────────────
+window._tweetFilter = null;
+
+function applyTweetFilter() {
+    const handle = window._tweetFilter;
+    const feed   = document.getElementById('tweets-feed');
+
+    // Update chip in panel header
+    let chip = document.getElementById('tweets-filter-chip');
+    if (chip) {
+        chip.innerHTML = handle
+            ? `<button class="tweet-filter-chip" id="tweets-filter-clear" title="Clear filter">
+                 ${escapeHtml(handle)} <span class="tweet-filter-chip-x" aria-hidden="true">✕</span>
+               </button>`
+            : '';
+        const clearBtn = document.getElementById('tweets-filter-clear');
+        if (clearBtn) clearBtn.addEventListener('click', () => { window._tweetFilter = null; applyTweetFilter(); });
+    }
+
+    if (!feed) return;
+    feed.querySelectorAll('.tweet-item, .tweet-thread').forEach(el => {
+        if (!handle) { el.style.display = ''; return; }
+        if (el.classList.contains('tweet-thread')) {
+            const handles = [...el.querySelectorAll('[data-handle]')].map(i => i.dataset.handle);
+            el.style.display = handles.some(h => h === handle) ? '' : 'none';
+        } else {
+            el.style.display = (el.dataset.handle === handle) ? '' : 'none';
+        }
+    });
 }
 
 // Bluesky Functions
