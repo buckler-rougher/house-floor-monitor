@@ -2609,8 +2609,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .proceedings-item--latest {
+    margin-left: -2px;
     border-left: 2px solid var(--accent-green);
-    padding-left: 2px;
     background: rgba(63, 185, 80, 0.04);
 }
 
