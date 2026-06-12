@@ -669,7 +669,7 @@ let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdow
     let tickInterval  = null;
     let hideTimer     = null;
     let workerStatus  = null; // cached from last /status fetch
-    const POLL_MS     = 10_000; // matches the floor REST poll interval
+    const POLL_MS     = () => window._pollModeState?.intervalMs || 10_000; // mirrors server adaptive interval
 
     function badge(cls, text) {
         return `<span class="conn-dash-badge ${cls}">${text}</span>`;
@@ -790,7 +790,7 @@ let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdow
                 countdownEl.textContent = '—';
             } else {
                 const elapsed = Date.now() - lastFloorPollAt;
-                const remaining = Math.max(0, Math.ceil((POLL_MS - elapsed) / 1000));
+                const remaining = Math.max(0, Math.ceil((POLL_MS() - elapsed) / 1000));
                 countdownEl.textContent = remaining === 0 ? 'now…' : `${remaining}s`;
             }
         }
