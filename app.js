@@ -909,6 +909,21 @@ function tickVoteTimer() {
         else                       el.classList.add('active');
         el.textContent = display;
     }
+
+    // Drive SVG timer arc — fills from 0→full as 15-min constitutional floor elapses
+    const arcFill = document.getElementById('vta-fill');
+    if (arcFill) {
+        const CIRC = 125.66; // 2π × r=20
+        const progress = overtime
+            ? 1
+            : Math.max(0, Math.min(1, 1 - totalMs / 900000));
+        arcFill.style.strokeDashoffset = String((CIRC * (1 - progress)).toFixed(2));
+        arcFill.style.stroke = overtime
+            ? 'var(--accent-red)'
+            : totalMs < 60000
+                ? 'var(--accent-amber)'
+                : 'var(--accent-green)';
+    }
     // Don't clear — keep running in overtime until the 30s REST poll confirms vote ended
 }
 
@@ -1021,12 +1036,24 @@ function updateVoteCountsDisplay(counts) {
     const dN = Math.max(parseInt(blue.nays)  || 0, 0);
     const rN = Math.max(parseInt(red.nays)   || 0, 0);
     const iN = Math.max(parseInt(white.nays) || 0, 0);
-    if (elements.yeasD) elements.yeasD.textContent = `${dY}D`;
-    if (elements.yeasR) elements.yeasR.textContent = `${rY}R`;
-    if (elements.yeasI) { elements.yeasI.textContent = `${iY}I`; elements.yeasI.style.display = iY > 0 ? '' : 'none'; }
-    if (elements.naysD) elements.naysD.textContent = `${dN}D`;
-    if (elements.naysR) elements.naysR.textContent = `${rN}R`;
-    if (elements.naysI) { elements.naysI.textContent = `${iN}I`; elements.naysI.style.display = iN > 0 ? '' : 'none'; }
+    if (elements.yeasD) elements.yeasD.innerHTML = `${dY}<span class="cpb-suffix">D</span>`;
+    if (elements.yeasR) elements.yeasR.innerHTML = `${rY}<span class="cpb-suffix">R</span>`;
+    if (elements.yeasI) { elements.yeasI.innerHTML = `${iY}<span class="cpb-suffix">I</span>`; elements.yeasI.style.display = iY > 0 ? '' : 'none'; }
+    if (elements.naysD) elements.naysD.innerHTML = `${dN}<span class="cpb-suffix">D</span>`;
+    if (elements.naysR) elements.naysR.innerHTML = `${rN}<span class="cpb-suffix">R</span>`;
+    if (elements.naysI) { elements.naysI.innerHTML = `${iN}<span class="cpb-suffix">I</span>`; elements.naysI.style.display = iN > 0 ? '' : 'none'; }
+
+    // "X not yet voted" contextual label
+    const notYetEl = document.getElementById('vote-not-yet');
+    if (notYetEl) {
+        if (notVoting > 0) {
+            notYetEl.textContent = `${notVoting} not yet voted`;
+            notYetEl.hidden = false;
+        } else {
+            notYetEl.hidden = true;
+        }
+    }
+
     _stagedVoteAbsences = {
         d: Math.max(parseInt(blue.not_voting) || 0, 0),
         r: Math.max(parseInt(red.not_voting)  || 0, 0),
@@ -1454,8 +1481,16 @@ function updateFloorDisplay(status = null) {
 
     // Update vote ID with roll call info if available
     if (elements.voteId && floorData.rollCall) {
-        const rollCallNumber = floorData.rollCall.number || 'Unknown';
-        elements.voteId.textContent = `Roll Call ${rollCallNumber}`;
+        const rollCallNumber = floorData.rollCall.number || '';
+        if (rollCallNumber) {
+            const yr = new Date().getFullYear();
+            const rollPad = String(rollCallNumber).padStart(3, '0');
+            const clerkUrl = `https://clerk.house.gov/evs/${yr}/roll${rollPad}.asp`;
+            elements.voteId.innerHTML = `Roll Call <a href="${clerkUrl}" target="_blank" rel="noopener" class="vote-id-link">${escapeHtml(String(rollCallNumber))}</a>`;
+        } else {
+            elements.voteId.textContent = 'Roll Call --';
+        }
+        updateVoteTypeTag(floorData.rollCall.question);
     }
 
     // Show VIEW BILL button IFF the current vote maps to a bill card
@@ -7193,6 +7228,25 @@ function updateUI() {
     }, 1000);
 }
 
+function updateVoteTypeTag(question) {
+    const tag = document.getElementById('vote-type-tag');
+    if (!tag) return;
+    if (!question) { tag.textContent = ''; tag.className = 'vote-type-tag'; return; }
+    let label, cls;
+    if      (/suspend/i.test(question))                               { label = 'SUSPENSION · 2/3'; cls = 'amber'; }
+    else if (/on passage/i.test(question))                            { label = 'PASSAGE';           cls = 'green'; }
+    else if (/motion to recommit/i.test(question))                    { label = 'RECOMMIT';          cls = 'red';   }
+    else if (/motion to table/i.test(question))                       { label = 'TABLE';             cls = 'muted'; }
+    else if (/previous question/i.test(question))                     { label = 'PREV QUESTION';     cls = 'muted'; }
+    else if (/conference report/i.test(question))                     { label = 'CONFERENCE';        cls = 'blue';  }
+    else if (/on (the |agreeing to the )?amendment/i.test(question))  { label = 'AMENDMENT';         cls = 'blue';  }
+    else if (/on agreeing/i.test(question))                           { label = 'RESOLUTION';        cls = 'blue';  }
+    else if (/quorum/i.test(question))                                { label = 'QUORUM CALL';       cls = 'muted'; }
+    else                                                               { label = '';                  cls = '';      }
+    tag.textContent = label;
+    tag.className = 'vote-type-tag' + (cls ? ` vtt-${cls}` : '');
+}
+
 function updateThresholdAnalysis() {
     if (!state.data || !state.data.vote) return;
 
@@ -7224,6 +7278,18 @@ function updateThresholdAnalysis() {
     elements.yeasNeeded.textContent = yeasNeeded;
     elements.naysToBlock.textContent = naysToBlock;
     elements.maxPossibleYeas.textContent = maxPossibleYeas;
+
+    // Position threshold marker hairline on the progress bar
+    const marker = document.getElementById('vote-threshold-marker');
+    if (marker) {
+        if (wholeNumber > 0) {
+            const pct = Math.min((vote.votesNeeded / wholeNumber) * 100, 99);
+            marker.style.left = `${pct.toFixed(2)}%`;
+            marker.style.display = '';
+        } else {
+            marker.style.display = 'none';
+        }
+    }
 }
 
 function updateFloorGrid() {
