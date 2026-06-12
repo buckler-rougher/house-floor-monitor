@@ -755,15 +755,7 @@ let lastFloorPollAt   = 0; // ms timestamp of last REST floor poll (for countdow
         if (floorStatusEl) {
             const val  = floorData?.currentStatus?.value || '';
             const text = floorData?.currentStatus?.text  || val || '—';
-            if (val === 'vote' || val === 'voting') {
-                floorStatusEl.innerHTML = badge('amber', 'VOTE IN PROGRESS');
-            } else if (val === 'recess') {
-                floorStatusEl.innerHTML = badge('red', 'recess');
-            } else if (val) {
-                floorStatusEl.innerHTML = badge('green', text);
-            } else {
-                floorStatusEl.textContent = '—';
-            }
+            floorStatusEl.innerHTML = val ? badge('blue', text) : '—';
         }
 
         // Poll mode indicator
@@ -2946,7 +2938,11 @@ function createBillCard(bill, procedure) {
     billDataMap.set(bill.id, { ...bill, procedure });
     const statusClass = bill.status || 'scheduled';
     const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✕' : '';
-    const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
+    const actionTextRaw = bill.statusText || bill.latestAction || 'Scheduled for consideration';
+    const actionText = actionTextRaw.replace(/Roll Call (\d+)/g, (_, n) => {
+        const url = `https://clerk.house.gov/evs/${new Date().getFullYear()}/roll${String(n).padStart(3, '0')}.xml`;
+        return `<a href="${url}" target="_blank" rel="noopener" class="bill-roll-link" onclick="event.stopPropagation()">Roll Call ${n}</a>`;
+    });
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     const cardHtml = `
@@ -5980,14 +5976,22 @@ async function fetchTweets(preData = null) {
                 ? `<div class="tweet-card"><img class="tweet-card-img tweet-img" src="${t.cardImage}" loading="lazy" alt="" style="cursor:pointer" onerror="this.closest('.tweet-card').style.display='none'"></div>`
                 : '';
 
-            const quoteHtml = t.quoteAuthor
-                ? `<div class="tweet-quote">
-                    <span class="tweet-quote-author">${escapeHtml(t.quoteAuthor)}</span>
-                    <div class="tweet-quote-text">${sanitizeTweetHtml(t.quoteHtml)}</div>
-                  </div>`
+            const quoteInner = t.quoteAuthor
+                ? `<span class="tweet-quote-author">${escapeHtml(t.quoteAuthor)}</span>
+                   <div class="tweet-quote-text">${sanitizeTweetHtml(t.quoteHtml)}</div>`
+                : '';
+            const quoteHtml = quoteInner
+                ? (t.quoteUrl || t.link
+                    ? `<a class="tweet-quote" href="${escapeHtml(t.quoteUrl || t.link)}" target="_blank" rel="noopener">${quoteInner}</a>`
+                    : `<div class="tweet-quote">${quoteInner}</div>`)
                 : '';
 
-            const bodyHtml = sanitizeTweetHtml(t.html) || escapeHtml(t.title || '');
+            // Sanitize body then fix truncated URLs (display text ending with …) to point at the tweet page
+            let bodyHtml = sanitizeTweetHtml(t.html) || escapeHtml(t.title || '');
+            if (t.link) {
+                bodyHtml = bodyHtml.replace(/<a([^>]*)href="[^"]*"([^>]*)>([^<]*…)<\/a>/g,
+                    (_, pre, post, text) => `<a${pre}href="${escapeHtml(t.link)}"${post} title="View tweet for full URL">${text}</a>`);
+            }
 
             const avatarLetter = (t.handle || '?').replace('@', '')[0].toUpperCase();
             const bareHandle = (t.handle || '').replace('@', '');
