@@ -428,9 +428,10 @@ function parseTweetDescription(html, instance) {
         .replace(/ title="[^"]*"/g, '')
         .replace(/<br\s*\/?>/gi, '<br>');
     }
-    // Extract the URL of the quoted tweet (any twitter.com/*/status/* href in the blockquote)
-    const quoteUrlM = bqInner.match(/href="([^"]*\/status\/[^"#]+)/i);
-    if (quoteUrlM) quoteUrl = rewriteUrl(quoteUrlM[1]);
+    // Extract the URL of the quoted tweet from the main tweet body —
+    // nitter appends a link to the quoted status at the end of mainPart before <hr/>
+    const allStatusLinks = [...mainPart.matchAll(/href="([^"]*\/status\/[^"#]+)"/gi)];
+    if (allStatusLinks.length) quoteUrl = rewriteUrl(allStatusLinks[allStatusLinks.length - 1][1]);
   }
 
   return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml, quoteUrl };
