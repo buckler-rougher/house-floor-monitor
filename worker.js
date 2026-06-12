@@ -2867,8 +2867,9 @@ export class DomeWatchStreamCoordinator {
     this.currentEventId = 0;
     this.encoder = new TextEncoder();
     this.heartbeatInterval = null;
-    this.proceedingsInterval = null;
-    this.floorInterval = null;
+    this.proceedingsTimeout = null;
+    this.floorTimeout = null;
+    this._floorStatusValue = null; // last known now.value from DomeWatch floor endpoint
     this.dataIntervals = new Map(); // name → intervalId
     this.dataCache = new Map();     // name → last JSON string (change detection)
     this.nextClientId = 1;
@@ -2897,10 +2898,10 @@ export class DomeWatchStreamCoordinator {
       if (this.clients.size === 0) {
         clearInterval(this.heartbeatInterval);
         this.heartbeatInterval = null;
-        clearInterval(this.proceedingsInterval);
-        this.proceedingsInterval = null;
-        clearInterval(this.floorInterval);
-        this.floorInterval = null;
+        clearTimeout(this.proceedingsTimeout);
+        this.proceedingsTimeout = null;
+        clearTimeout(this.floorTimeout);
+        this.floorTimeout = null;
         for (const id of this.dataIntervals.values()) clearInterval(id);
         this.dataIntervals.clear();
         return;
@@ -2909,50 +2910,87 @@ export class DomeWatchStreamCoordinator {
     }, 55000);
   }
 
+  // Returns true if current ET time is within assumed House business hours (M–F 8:55am–8pm).
+  // Used as a fallback when floor status is unknown — outside these hours we default to slow mode.
+  _inBusinessHours() {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    if (day === 0 || day === 6) return false;
+    const mins = now.getHours() * 60 + now.getMinutes();
+    return mins >= 535 && mins < 1200; // 8:55am=535, 8:00pm=1200
+  }
+
+  // Returns true if the House appears to be in session, based on last known floor status
+  // combined with a business-hours schedule as a safety net.
+  // Fast = floor actively doing something OR (inside hours AND status unknown/active).
+  // Slow = explicitly inactive (recess/not_in_session) OR outside hours with no active status.
+  _shouldPollFast() {
+    const INACTIVE = new Set(['recess', 'house_not_in_session']);
+    const s = this._floorStatusValue;
+    if (s !== null && !INACTIVE.has(s)) return true;  // known active status → fast
+    if (s !== null && INACTIVE.has(s)) return false;  // known inactive → slow
+    return this._inBusinessHours();                   // unknown → fall back to schedule
+  }
+
   startProceedingsBroadcast() {
-    if (this.proceedingsInterval) return;
+    if (this.proceedingsTimeout !== null) return;
     // Fetch proceedings directly from House.gov RSS — bypasses the Worker entirely,
     // saving ~17k Worker requests/day (one self-call per 5s × 86400s/day).
-    const fetch5s = async () => {
-      if (this.clients.size === 0) return;
+    const FAST_MS = 5_000;
+    const SLOW_MS = 3 * 60_000;
+    const poll = async () => {
+      this.proceedingsTimeout = null;
+      if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
       try {
-        // Append timestamp to bust House.gov's CDN cache which ignores Cache-Control headers
         const resp = await fetch(`https://clerk.house.gov/Home/Feed?_=${Date.now()}`, {
           headers: { 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' },
           signal: AbortSignal.timeout(8000),
           cf: { cacheTtl: 0, cacheEverything: false },
         });
-        if (!resp.ok) return;
-        const xml = await resp.text();
-        const result = parseRSSFeed(xml, 'proceedings');
-        if (!result.items || result.items.length === 0) return;
-        await this.broadcast(`event: proceedings\ndata: ${JSON.stringify({ items: result.items })}\n\n`);
+        if (resp.ok) {
+          const xml = await resp.text();
+          const result = parseRSSFeed(xml, 'proceedings');
+          if (result.items?.length) {
+            await this.broadcast(`event: proceedings\ndata: ${JSON.stringify({ items: result.items })}\n\n`);
+          }
+        }
       } catch { /* non-critical */ }
+      if (this.clients.size > 0) {
+        this.proceedingsTimeout = setTimeout(poll, this._shouldPollFast() ? FAST_MS : SLOW_MS);
+      }
     };
-    fetch5s();
-    this.proceedingsInterval = setInterval(fetch5s, 5000);
+    this.proceedingsTimeout = setTimeout(poll, 0); // run immediately
   }
 
-  // Polls the DomeWatch floor REST endpoint every 5s and broadcasts as event: floor.
-  // One shared fetch for all connected clients — eliminates per-user REST polling.
+  // Polls the DomeWatch floor REST endpoint and broadcasts as event: floor.
+  // Interval adapts: fast (10s) when House is in session, slow (3 min) when not.
   startFloorBroadcast() {
-    if (this.floorInterval) return;
+    if (this.floorTimeout !== null) return;
+    const FAST_MS = 10_000;
+    const SLOW_MS = 3 * 60_000;
     const poll = async () => {
-      if (this.clients.size === 0) return;
+      this.floorTimeout = null;
+      if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
       try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/domewatch-floor', {
           signal: AbortSignal.timeout(10000),
           cf: { cacheTtl: 0, cacheEverything: false },
         });
-        if (!resp.ok) return;
-        const json = await resp.text();
-        if (this.dataCache.get('floor') === json) return; // unchanged, skip broadcast
-        this.dataCache.set('floor', json);
-        await this.broadcast(`event: floor\ndata: ${json}\n\n`);
+        if (resp.ok) {
+          const json = await resp.text();
+          // Update cached floor status for adaptive polling decisions
+          try { this._floorStatusValue = JSON.parse(json)?.now?.value ?? null; } catch {}
+          if (this.dataCache.get('floor') !== json) {
+            this.dataCache.set('floor', json);
+            await this.broadcast(`event: floor\ndata: ${json}\n\n`);
+          }
+        }
       } catch { /* non-critical */ }
+      if (this.clients.size > 0) {
+        this.floorTimeout = setTimeout(poll, this._shouldPollFast() ? FAST_MS : SLOW_MS);
+      }
     };
-    poll();
-    this.floorInterval = setInterval(poll, 5000);
+    this.floorTimeout = setTimeout(poll, 0); // run immediately
   }
 
   // Polls low-frequency data sources once per interval for ALL connected clients,
