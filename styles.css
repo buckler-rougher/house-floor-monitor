@@ -3370,8 +3370,6 @@ a.tweet-avatar:hover { opacity: 0.8; }
 .tweet-filter-btn {
     display: flex;
     align-items: center;
-    max-width: 0;
-    overflow: hidden;
     opacity: 0;
     pointer-events: none;
     background: none;
@@ -3379,13 +3377,11 @@ a.tweet-avatar:hover { opacity: 0.8; }
     padding: 2px 4px;
     color: var(--text-muted);
     cursor: pointer;
-    transition: max-width 0.12s ease, opacity 0.12s ease;
+    transition: opacity 0.12s ease;
     flex-shrink: 0;
     line-height: 1;
 }
 .tweet-author-area:hover .tweet-filter-btn {
-    max-width: 24px;
-    overflow: visible;
     opacity: 1;
     pointer-events: auto;
 }
