@@ -2282,10 +2282,12 @@ function renderAirportRow(code, data) {
     const trendClass = data.trend === 'Increasing' ? 'up' : data.trend === 'Decreasing' ? 'down' : '';
     const trendSymbol = data.trend === 'Increasing' ? '↑' : data.trend === 'Decreasing' ? '↓' : '';
     const hasDetail = data.status !== 'normal' && data.status !== 'disconnected' && data.reason;
-
-    const subLine = hasDetail
+    const normalTimeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const subLine = data.status === 'normal'
+        ? `<div class="airport-item-sub"><span class="airport-reason">No delay reported as of ${normalTimeStr}</span></div>`
+        : hasDetail
         ? `<div class="airport-item-sub"><span class="airport-reason">${escapeHtml(data.reason)}</span>${trendSymbol ? `<span class="airport-trend ${trendClass}">${trendSymbol}</span>` : ''}</div>`
-        : '';
+        : `<div class="airport-item-sub"></div>`;
 
     const inner = `<div class="airport-delay-item">
         <div class="airport-item-main">
@@ -5894,7 +5896,7 @@ async function fetchHouseMakeup(preData = null) {
                     else causeText = 'Unknown';
                     
                     vacancies.push({
-                        member: `Rep. ${predOfficialName}`,
+                        member: predOfficialName,
                         reason: causeText,
                         date: predVacateDate,
                         district: formattedDistrict,
@@ -6009,6 +6011,15 @@ function updatePartyBreakdownDisplay() {
 }
 
 // Floor Reporters (via nitter proxy)
+const DEFAULT_REPORTER_CARDS = [
+    { handle: '@JakeSherman',    name: 'Jake Sherman' },
+    { handle: '@ChadPergram',    name: 'Chad Pergram' },
+    { handle: '@HouseInSession', name: 'Billy House' },
+    { handle: '@MacFarlaneNews', name: 'Scott MacFarlane' },
+    { handle: '@AndrewSolender', name: 'Andrew Solender' },
+    { handle: '@mkraju',         name: 'Manu Raju' },
+];
+
 const REPORTER_NAMES = {
     '@AdamZHerman':     'Adam Herman',
     '@HouseInSession':  'Billy House',
@@ -6291,20 +6302,13 @@ window._tweetFilter = null;
 
 function applyTweetFilter() {
     const handle = window._tweetFilter;
-    const feed   = document.getElementById('tweets-feed');
 
-    // Update chip in panel header
-    let chip = document.getElementById('tweets-filter-chip');
-    if (chip) {
-        chip.innerHTML = handle
-            ? `<button class="tweet-filter-chip" id="tweets-filter-clear" title="Clear filter">
-                 ${escapeHtml(handle)} <span class="tweet-filter-chip-x" aria-hidden="true">✕</span>
-               </button>`
-            : '';
-        const clearBtn = document.getElementById('tweets-filter-clear');
-        if (clearBtn) clearBtn.addEventListener('click', () => { window._tweetFilter = null; applyTweetFilter(); });
-    }
+    // Update reporter card active states
+    document.querySelectorAll('.reporter-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.handle === handle);
+    });
 
+    const feed = document.getElementById('tweets-feed');
     if (!feed) return;
     feed.querySelectorAll('.tweet-item, .tweet-thread').forEach(el => {
         if (!handle) { el.style.display = ''; return; }
@@ -6315,6 +6319,61 @@ function applyTweetFilter() {
             el.style.display = (el.dataset.handle === handle) ? '' : 'none';
         }
     });
+}
+
+function initReporterCards() {
+    const row = document.getElementById('reporter-cards-row');
+    if (!row) return;
+    row.innerHTML = DEFAULT_REPORTER_CARDS.map(r =>
+        `<button class="reporter-card" data-handle="${escapeHtml(r.handle)}">${escapeHtml(r.name)}</button>`
+    ).join('');
+
+    row.addEventListener('click', e => {
+        const card = e.target.closest('.reporter-card');
+        if (!card) return;
+        const handle = card.dataset.handle;
+        window._tweetFilter = (window._tweetFilter === handle) ? null : handle;
+        applyTweetFilter();
+    });
+
+    const searchBtn   = document.getElementById('reporter-search-btn');
+    const searchRow   = document.getElementById('reporter-search-row');
+    const searchInput = document.getElementById('reporter-search-input');
+    const searchClear = document.getElementById('reporter-search-clear');
+
+    if (searchBtn && searchRow && searchInput) {
+        searchBtn.addEventListener('click', () => {
+            const isOpen = searchRow.style.display !== 'none';
+            searchRow.style.display = isOpen ? 'none' : '';
+            if (!isOpen) searchInput.focus();
+        });
+
+        searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const val = searchInput.value.trim();
+                const handle = val ? (val.startsWith('@') ? val : `@${val}`) : null;
+                window._tweetFilter = handle;
+                applyTweetFilter();
+                searchRow.style.display = 'none';
+                searchInput.value = '';
+            }
+            if (e.key === 'Escape') {
+                searchRow.style.display = 'none';
+                searchInput.value = '';
+                window._tweetFilter = null;
+                applyTweetFilter();
+            }
+        });
+
+        if (searchClear) {
+            searchClear.addEventListener('click', () => {
+                searchInput.value = '';
+                window._tweetFilter = null;
+                applyTweetFilter();
+                searchRow.style.display = 'none';
+            });
+        }
+    }
 }
 
 // Bluesky Functions
@@ -6630,6 +6689,7 @@ function init() {
     fetchBlueskyFeed();
     fetchNewsTicker();
     fetchTweets();
+    initReporterCards();
 
     // Info popup click delegation
     document.addEventListener('click', e => {
