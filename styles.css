@@ -2795,16 +2795,18 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   line-height: 1.4;
 }
 
-.vote-tl-result {
+.vote-tl-result,
+.vote-tl-duration {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: var(--sp-6);
   font-family: var(--font-mono);
   font-size: var(--fs-md);
-  font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
+}
+.vote-tl-result {
+  gap: 6px;
+  font-weight: 700;
 }
 .vote-tl-result.pending {
   color: var(--text-muted);
