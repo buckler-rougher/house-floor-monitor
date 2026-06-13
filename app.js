@@ -5602,6 +5602,18 @@ function normalizeAbsenteeRollName(name) {
 
 function parseAbsenteeRollName(name) {
     const normalized = normalizeAbsenteeRollName(name);
+
+    // House Clerk roll call XML uses "LastName, FirstName" format.
+    // Split on comma first so we don't accidentally extract the first name.
+    const commaIdx = normalized.indexOf(',');
+    if (commaIdx > 0) {
+        return {
+            rawName: normalized,
+            lastName: normalized.slice(0, commaIdx).trim(),
+            state: ''
+        };
+    }
+
     const match = normalized.match(/^(.+?)\s*\(([A-Z]{2})\)$/i);
     if (match) {
         return {
