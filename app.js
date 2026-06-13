@@ -3221,6 +3221,8 @@ function openBillModal(billId) {
     const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
+    // Decode Congress.gov HTML entities (&nbsp; &mdash; etc.) and strip any tags before escaping
+    const summaryText = bill.summary ? (() => { const d = document.createElement('div'); d.innerHTML = bill.summary; return d.textContent.trim(); })() : '';
     let actionTimeStr = '';
     // Congress.gov only has date precision (actionDate = "YYYY-MM-DD", stored as midnight UTC).
     // Bluesky and proceedings timestamps have real time precision — show the time for those.
@@ -3392,10 +3394,10 @@ function openBillModal(billId) {
                 ${committeeHtml}
                 ${committeeReportHtml}
             </div>
-            ${bill.summary ? `
+            ${summaryText ? `
             <div class="bill-modal-body">
                 <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
-                <p class="bill-modal-summary">${escapeHtml(bill.summary)}</p>
+                <p class="bill-modal-summary">${escapeHtml(summaryText)}</p>
             </div>` : ''}
             <div class="bill-modal-foot">
                 ${actionText ? `
