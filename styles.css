@@ -3790,7 +3790,7 @@ a.tweet-quote:hover {
     height: 10px;
     background: var(--bg-elevated);
     border-radius: var(--radius-6);
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     gap: 0;
     position: relative;
@@ -3799,14 +3799,11 @@ a.tweet-quote:hover {
 .rep-fill {
     background: var(--accent-red);
     height: 100%;
-    transition: width 0.3s ease, filter 0.2s ease, box-shadow 0.2s ease;
-    border-top-left-radius: var(--radius-6);
-    border-bottom-left-radius: var(--radius-6);
+    transition: width 0.3s ease, filter 0.2s ease;
 }
 
 .rep-fill:hover {
     filter: brightness(1.3);
-    box-shadow: 0 0 15px rgba(248, 81, 73, 0.5);
     z-index: 10;
 }
 
@@ -3818,7 +3815,6 @@ a.tweet-quote:hover {
 
 .dem-fill:hover {
     filter: brightness(1.3);
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
     z-index: 10;
 }
 
@@ -3830,21 +3826,17 @@ a.tweet-quote:hover {
 
 .ind-fill:hover {
     filter: brightness(1.3);
-    box-shadow: 0 0 15px rgba(163, 113, 247, 0.5);
     z-index: 10;
 }
 
 .vac-fill {
     background: rgba(255, 255, 255, 0.3);
     height: 100%;
-    transition: width 0.3s ease, filter 0.2s ease, box-shadow 0.2s ease;
-    border-top-right-radius: var(--radius-6);
-    border-bottom-right-radius: var(--radius-6);
+    transition: width 0.3s ease, filter 0.2s ease;
 }
 
 .vac-fill:hover {
     filter: brightness(1.6);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
     z-index: 10;
 }
 
