@@ -5432,8 +5432,6 @@ a.bill-card-rule-link {
 .airport-status.ground-stop {
     background: rgba(248, 81, 73, 0.25);
     color: var(--accent-red);
-    font-weight: 800;
-    letter-spacing: 0.8px;
 }
 .airport-status.ground-delay {
     background: rgba(210, 153, 34, 0.2);
