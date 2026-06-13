@@ -2668,6 +2668,154 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 /* ── Whip Floor Updates Panel ───────────────────────────────────────────────── */
+/* ── Vote Series Timeline ─────────────────────────────────────────────────── */
+.vote-series-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+
+.vote-series-notice-time {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+.vote-series-body {
+  padding: var(--sp-16) var(--sp-24) var(--sp-24);
+}
+
+.vote-series-header-text {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--sp-16);
+}
+
+/* Timeline track */
+.vote-tl-items {
+  position: relative;
+  padding-left: 28px; /* space for track */
+}
+.vote-tl-items::before {
+  content: '';
+  position: absolute;
+  left: 9px; /* center of 20px circle */
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.vote-tl-item {
+  display: flex;
+  gap: var(--sp-16);
+  margin-bottom: var(--sp-20);
+  position: relative;
+  align-items: flex-start;
+}
+.vote-tl-item:last-child {
+  margin-bottom: 0;
+}
+
+/* The circle */
+.vote-tl-circle {
+  position: absolute;
+  left: -28px;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  z-index: 1;
+  transition: background 0.3s, border-color 0.3s;
+}
+.vote-tl-circle.pending {
+  border-color: var(--text-muted);
+  background: var(--bg-card);
+}
+.vote-tl-circle.active {
+  border-color: var(--accent-yellow);
+  background: var(--accent-yellow);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-yellow) 20%, transparent);
+  animation: vt-pulse 1.4s ease-in-out infinite;
+}
+.vote-tl-circle.passed {
+  border-color: var(--accent-green);
+  background: var(--accent-green);
+}
+.vote-tl-circle.failed {
+  border-color: var(--accent-red);
+  background: var(--accent-red);
+}
+
+@keyframes vt-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 30%, transparent); }
+  50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-yellow) 10%, transparent); }
+}
+
+/* Content next to circle */
+.vote-tl-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.vote-tl-bill {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.vote-tl-bill:hover {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
+.vote-tl-desc {
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.vote-tl-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--sp-6);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.vote-tl-result.pending {
+  color: var(--text-muted);
+  background: transparent;
+}
+.vote-tl-result.active {
+  color: var(--accent-yellow);
+  background: color-mix(in srgb, var(--accent-yellow) 12%, transparent);
+}
+.vote-tl-result.passed {
+  color: var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+}
+.vote-tl-result.failed {
+  color: var(--accent-red);
+  background: color-mix(in srgb, var(--accent-red) 12%, transparent);
+}
+
+/* ── Whip Notices panel ───────────────────────────────────────────────────── */
 .whip-updates-panel {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -2685,6 +2833,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 .whip-updates-feed {
   padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .whip-update-item {

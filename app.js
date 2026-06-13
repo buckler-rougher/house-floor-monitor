@@ -1093,6 +1093,8 @@ function updateVoteCountsDisplay(counts) {
         }
     };
     updateFloorGrid();
+    // Refresh vote-series timeline circles on every tally tick
+    updateVoteTimelineStatus();
 }
 
 function updateLastVoteAbsencesDisplay() {
@@ -2554,47 +2556,222 @@ async function fetchWhipRecs() {
 }
 
 // ── Whip Floor Updates (Firestore ActivityFeeds via worker proxy) ────────────
+// Shared cache of the last fetched items — lets updateVoteTimelineStatus()
+// refresh circle states on each SSE tick without re-fetching Firestore.
+let whipFloorItems = [];
 
 async function fetchAndRenderWhipFloorUpdates() {
     const feed = document.getElementById('whip-updates-feed');
-    const timeEl = document.getElementById('whip-updates-time');
     if (!feed) return;
     try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/whip-floor-updates', { cache: 'no-store' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        const items = data.items || [];
-        if (items.length === 0) {
-            feed.innerHTML = '<div class="whip-updates-loading">No floor updates today.</div>';
-            return;
-        }
-        // Show timestamp of the most recent item in the panel header
-        if (timeEl && items[0].publishedAt) {
-            const d = new Date(items[0].publishedAt);
-            timeEl.textContent = d.toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-            });
-        }
-        feed.innerHTML = items.map(item => {
-            const d = item.publishedAt ? new Date(item.publishedAt) : null;
-            const timeStr = d ? d.toLocaleTimeString('en-US', {
-                hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-            }) : '';
-            // The body is HTML from the Whip's office — render it directly.
-            // Strip inline color styles via CSS (already handled in .whip-update-body [style*="color"]).
-            return `
-                <div class="whip-update-item">
-                    <div class="whip-update-meta">
-                        ${timeStr ? `<span class="whip-update-time">${escapeHtml(timeStr)}</span>` : ''}
-                        <span class="whip-update-title">${escapeHtml(item.title)}</span>
-                    </div>
-                    <div class="whip-update-body">${item.body}</div>
-                </div>`;
-        }).join('');
+        whipFloorItems = data.items || [];
+        renderWhipNoticesFeed(whipFloorItems);
+        renderVoteTimeline(whipFloorItems);
     } catch (e) {
         feed.innerHTML = `<div class="whip-updates-error">Could not load floor updates.</div>`;
         console.error('fetchAndRenderWhipFloorUpdates error:', e);
     }
+}
+
+// ── Whip Notices feed (scrollable, all items) ─────────────────────────────
+function renderWhipNoticesFeed(items) {
+    const feed = document.getElementById('whip-updates-feed');
+    if (!feed) return;
+    if (items.length === 0) {
+        feed.innerHTML = '<div class="whip-updates-loading">No notices today.</div>';
+        return;
+    }
+    feed.innerHTML = items.map(item => {
+        const d = item.publishedAt ? new Date(item.publishedAt) : null;
+        const timeStr = d ? d.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+        }) : '';
+        return `
+            <div class="whip-update-item">
+                <div class="whip-update-meta">
+                    ${timeStr ? `<span class="whip-update-time">${escapeHtml(timeStr)}</span>` : ''}
+                    <span class="whip-update-title">${escapeHtml(item.title)}</span>
+                </div>
+                <div class="whip-update-body">${item.body}</div>
+            </div>`;
+    }).join('');
+}
+
+// ── Vote Series Timeline ───────────────────────────────────────────────────
+// Matches "Floor Update – N Votes – …" notice titles.
+const VOTE_SERIES_RE = /floor\s+update\s*[–\-]\s*\d+\s*votes?/i;
+
+// Parse <ol><li> items from notice body HTML.
+// Returns [{ text, billId }] where billId may be null.
+function parseVoteItemsFromHtml(htmlBody) {
+    const div = document.createElement('div');
+    div.innerHTML = htmlBody;
+    const ol = div.querySelector('ol');
+    if (!ol) return [];
+    return Array.from(ol.querySelectorAll('li')).map(li => {
+        const text = li.textContent.trim();
+        // Extract bill ID from text — handles H.R., H.Res., H.J.Res., H.Con.Res., S., etc.
+        const m = text.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
+        if (!m) return { text, billId: null };
+        const type = m[1].replace(/\s+/g, '');
+        return { text, billId: `${type} ${m[2]}` };
+    });
+}
+
+// Determine status of a vote-timeline item from live data.
+// Returns 'pending' | 'active' | 'passed' | 'failed'
+function getVoteTlStatus(billId) {
+    if (!billId) return 'pending';
+
+    // Normalize for H.Res. lookups
+    const hresMatch = billId.match(/^H\.Res\.\s*(\d+)/i);
+    const hresNum = hresMatch ? hresMatch[1] : null;
+
+    // Check if this bill is currently being voted on
+    const activeQ = floorData.rollCall?.question || '';
+    if (activeQ) {
+        const inQ = m => m && activeQ.match(new RegExp(
+            m[1].replace(/\./g, '\\.').replace(/\s+/g, '\\s*') + '\\s*' + m[2], 'i'
+        ));
+        const qm = activeQ.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        if (qm) {
+            const activeType = qm[1].replace(/\s+/g, '');
+            const activeBillId = `${activeType} ${qm[2]}`;
+            if (activeBillId === billId) return 'active';
+            // H.Res. procedural votes (Previous Question, etc.) reference the resolution
+            if (hresNum && activeBillId === `H.Res. ${hresNum}`) return 'active';
+        }
+    }
+
+    // Check billDataMap (updated by applyRollLogToBills via SSE)
+    let bill = billDataMap.get(billId);
+    if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    if (bill?.status === 'passed') return 'passed';
+    if (bill?.status === 'failed') return 'failed';
+
+    // Check rollLog directly for any completed entry matching this bill
+    for (const entry of rollLog) {
+        const eq = entry.question || '';
+        const em = eq.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        if (em) {
+            const eType = em[1].replace(/\s+/g, '');
+            const entryBillId = `${eType} ${em[2]}`;
+            if (entryBillId === billId || (hresNum && entryBillId === `H.Res. ${hresNum}`)) {
+                const yeas = entry.totals?.yeas || 0;
+                const nays = entry.totals?.nays || 0;
+                if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
+            }
+        }
+    }
+
+    return 'pending';
+}
+
+// Format a vote result badge string for a completed/active circle.
+function voteTlResultText(billId, status) {
+    if (status === 'pending') return '';
+    if (status === 'active') {
+        const vc = floorData.voteCounts;
+        if (vc) {
+            return `VOTING ${vc.yeas || 0}–${vc.nays || 0}`;
+        }
+        return 'VOTING';
+    }
+    // passed/failed — find the vote counts from rollLog or billDataMap
+    const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
+    for (const entry of rollLog) {
+        const eq = entry.question || '';
+        const em = eq.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        if (em) {
+            const eType = em[1].replace(/\s+/g, '');
+            const entryBillId = `${eType} ${em[2]}`;
+            if (entryBillId === billId || (hresNum && entryBillId === `H.Res. ${hresNum}`)) {
+                const y = entry.totals?.yeas || 0;
+                const n = entry.totals?.nays || 0;
+                if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
+            }
+        }
+    }
+    // Fallback to billDataMap latestAction vote counts
+    let bill = billId ? billDataMap.get(billId) : null;
+    if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    const m = (bill?.latestAction || '').match(/(\d+)-(\d+)/);
+    if (m) return `${status.toUpperCase()} ${m[1]}–${m[2]}`;
+    return status.toUpperCase();
+}
+
+// Re-render just the status circles/badges (called on every SSE vote.tally tick).
+function updateVoteTimelineStatus() {
+    const body = document.getElementById('vote-series-body');
+    if (!body) return;
+    const items = body.querySelectorAll('.vote-tl-item');
+    items.forEach(item => {
+        const billId = item.dataset.billId || null;
+        const status = getVoteTlStatus(billId);
+        const circle = item.querySelector('.vote-tl-circle');
+        const result = item.querySelector('.vote-tl-result');
+        if (circle) {
+            circle.className = `vote-tl-circle ${status}`;
+        }
+        if (result) {
+            const text = voteTlResultText(billId, status);
+            result.className = `vote-tl-result ${status}`;
+            result.textContent = text;
+        }
+    });
+}
+
+// Render the full vote-series timeline from the latest matching notice.
+function renderVoteTimeline(items) {
+    const body = document.getElementById('vote-series-body');
+    const timeEl = document.getElementById('vote-series-notice-time');
+    if (!body) return;
+
+    // Find the most recent notice whose title looks like a vote-series announcement
+    const seriesItem = items.find(item => VOTE_SERIES_RE.test(item.title));
+    if (!seriesItem) {
+        body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
+        return;
+    }
+
+    // Show when this notice was issued
+    if (timeEl && seriesItem.publishedAt) {
+        const d = new Date(seriesItem.publishedAt);
+        timeEl.textContent = d.toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+        });
+    }
+
+    const votes = parseVoteItemsFromHtml(seriesItem.body);
+    if (votes.length === 0) {
+        body.innerHTML = '<div class="whip-updates-loading">No votes listed in notice.</div>';
+        return;
+    }
+
+    const headerHtml = `<div class="vote-series-header-text">${escapeHtml(seriesItem.title)}</div>`;
+    const itemsHtml = votes.map(({ text, billId }) => {
+        const status = getVoteTlStatus(billId);
+        const resultText = voteTlResultText(billId, status);
+        // Split text into bill number + description for cleaner display
+        const billLabel = billId || text.split(/\s[–\-]\s/)[0].trim();
+        const descParts = text.split(/\s[–\-]\s/);
+        const desc = descParts.length > 1 ? descParts.slice(1).join(' – ') : '';
+        const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
+        return `
+            <div class="vote-tl-item"${billAttr}>
+                <div class="vote-tl-circle ${status}"></div>
+                <div class="vote-tl-content">
+                    <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
+                    ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
+                    ${resultText ? `<div class="vote-tl-result ${status}">${escapeHtml(resultText)}</div>` : ''}
+                </div>
+            </div>`;
+    }).join('');
+
+    body.innerHTML = headerHtml + `<div class="vote-tl-items">${itemsHtml}</div>`;
 }
 
 // Build the Dem Whip recommendation tag for a bill, or '' if none.
