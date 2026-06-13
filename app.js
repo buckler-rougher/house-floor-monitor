@@ -4863,7 +4863,7 @@ function updatePledgeSection(items) {
 
     if (designatedMatch) {
         let leaderName = designatedMatch[1].trim();
-        leaderName = leaderName.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '').trim();
+        leaderName = leaderName.replace(/^(?:the\s+honorable|honorable|Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '').trim();
         elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
         elements.pledgeLeaderName.textContent = leaderName;
         fetchMemberPhotoFromClerkData(leaderName);
@@ -5613,16 +5613,18 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             const lastNameElement = member.querySelector('lastname');
             const firstNameElement = member.querySelector('firstname');
+            const middleNameElement = member.querySelector('middlename');
             const bioguideElement = member.querySelector('bioguideID');
             const partyElement = member.querySelector('party');
             const districtElement = member.querySelector('district');
             const townElement = member.querySelector('townname');
             const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
-            
+
             if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
-            
+
             const memberLastName = lastNameElement.textContent.trim();
             const memberFirstName = firstNameElement.textContent.trim();
+            const memberMiddleName = middleNameElement ? middleNameElement.textContent.trim() : '';
             const bioguideId = bioguideElement.textContent.trim();
             const party = partyElement ? partyElement.textContent.trim() : '';
             const district = districtElement ? districtElement.textContent.trim() : '';
@@ -5639,7 +5641,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
                 bestMatch = {
                     lastName: memberLastName,
                     firstName: memberFirstName,
-                    fullName: `${memberFirstName} ${memberLastName}`,
+                    fullName: [memberFirstName, memberMiddleName, memberLastName].filter(Boolean).join(' '),
                     bioguideId: bioguideId,
                     party: party,
                     district: district,
