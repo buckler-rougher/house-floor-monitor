@@ -2001,7 +2001,7 @@ const CONGRESS_INDEX_CONFIG = {
 // the departure glyph by flipping PI TF 016 vertically (plane ascending instead of descending).
 const ARRIVALS_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z m -24.35201,18.53427 v 1.39888 h 41.04659 v -1.39888 z"/></g></svg>`;
 // Departures: PI TF 016 airplane body flipped vertically (ascending) + baseline rect at bottom
-const DEPARTURES_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(0,52.917) scale(1,-1) translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z"/></g><rect fill="currentColor" x="5.97" y="35.03" width="41.05" height="1.4"/></svg>`;
+const DEPARTURES_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="52.917" height="52.917" style="width:14px;height:14px;vertical-align:middle;margin-left:4px"><g transform="translate(-151.3157,-101.28343)"><path fill="currentColor" fill-rule="evenodd" d="m 171.55992,115.6357 -3.63802,1.4428 4.26537,6.96288 -6.83731,2.63447 -4.89272,-4.32842 -2.94814,1.31723 4.32841,7.27656 10.28723,-1.38028 20.26543,-6.75462 c 4.18881,-1.10754 6.25862,-2.8375 5.84874,-4.0442 -0.36669,-1.07956 -2.74488,-1.78489 -6.93653,-0.53537 l -11.58792,3.36827 z m -14.30145,23.02081 v 1.19166 h 41.02333 v -1.19166 z"/></g></svg>`;
 
 // FAA Airport Status Configuration
 const FAA_CONFIG = {
@@ -3088,7 +3088,7 @@ function createBillCard(bill, procedure) {
                    : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : 'Motion to Recommit';
     const mtrIcon  = mtr.status === 'failed'
-                   ? `<svg width="7" height="7" viewBox="0 0 7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1" y1="1" x2="6" y2="6"/><line x1="6" y1="1" x2="1" y2="6"/></svg>`
+                   ? `<svg width="8" height="8" viewBox="0 0 24 24" style="display:block"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`
                    : mtr.status === 'passed' ? '✓'
                    : '';
 
@@ -6019,7 +6019,7 @@ function updatePartyBreakdownDisplay() {
 const DEFAULT_REPORTER_CARDS = [
     { handle: '@JakeSherman',    name: 'Jake Sherman' },
     { handle: '@ChadPergram',    name: 'Chad Pergram' },
-    { handle: '@ringwiss',       name: 'Ring Wiss' },
+    { handle: '@ringwiss',       name: 'Ringwiss' },
     { handle: '@MacFarlaneNews', name: 'Scott MacFarlane' },
     { handle: '@AndrewSolender', name: 'Andrew Solender' },
     { handle: '@mkraju',         name: 'Manu Raju' },
@@ -6359,10 +6359,13 @@ function initReporterCards() {
             applyTweetFilter();
             fetchTweets();
         } else {
-            // Select → load that user's Nitter profile
+            // Select → load that user's profile; update card states only,
+            // do NOT filter the existing feed so it stays visible until new data arrives
             window._tweetFilter   = handle;
             window._tweetUserMode = true;
-            applyTweetFilter();
+            document.querySelectorAll('.reporter-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.handle === handle);
+            });
             fetchTweets(null, handle.replace('@', ''));
         }
     });
@@ -6413,7 +6416,9 @@ function initReporterCards() {
                 const handle = btn.dataset.handle;
                 window._tweetFilter   = handle;
                 window._tweetUserMode = true;
-                applyTweetFilter();
+                document.querySelectorAll('.reporter-card').forEach(c => {
+                    c.classList.toggle('active', c.dataset.handle === handle);
+                });
                 fetchTweets(null, handle.replace('@', ''));
                 searchResults.style.display = 'none';
                 searchInput.value = '';
