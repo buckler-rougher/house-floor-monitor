@@ -2950,6 +2950,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .tweets-feed {
     max-height: 700px;
+    min-height: 200px;
     overflow-y: auto;
 }
 
@@ -4299,7 +4300,7 @@ font-family: var(--font-mono);
     display: flex;
     align-items: flex-start;
     gap: var(--sp-8);
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     cursor: pointer;
     /* Reset <button> defaults */
     font: inherit;
@@ -4596,30 +4597,45 @@ a.bill-card-rule-link {
 .mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
 .mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
 
-/* Hover anywhere in the slot highlights MTR card + connector + bill card together.
-   Override the status-specific bill-card hover colours so both cards match. */
+/* Hover anywhere in the slot lights up all three elements in one colour.
+   Uses :has() so the bill's data-status drives both cards.
+   box-shadow:none resets any standalone card :hover rule so there is only
+   one border — no double-outline. Passed bills → green; everything else → grey. */
 .bill-slot:hover .mtr-card {
     opacity: 0.85;
-    border-color: rgba(139, 148, 158, 0.35);
-    background: rgba(139, 148, 158, 0.06);
     cursor: pointer;
 }
 .bill-slot:hover .mtr-connector {
     opacity: 0.65;
 }
-.bill-slot:hover .bill-card:not([data-status="passed"]) {
-    background: rgba(139, 148, 158, 0.06);
-    box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
-}
-.bill-slot:hover .bill-card:not([data-status="passed"]) .bill-chevron {
-    color: var(--text-secondary);
-}
-.bill-slot:hover .bill-card[data-status="passed"] {
+/* Passed-bill slot: MTR card + connector + bill card all go green */
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-card {
+    border-color: rgba(63, 185, 80, 0.4);
     background: rgba(63, 185, 80, 0.06);
-    box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.4);
 }
-.bill-slot:hover .bill-card[data-status="passed"] .bill-chevron {
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-connector {
+    background: rgba(63, 185, 80, 0.4);
+}
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .bill-card {
+    border-color: rgba(63, 185, 80, 0.4);
+    background: rgba(63, 185, 80, 0.06);
+    box-shadow: none;
+}
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .bill-card .bill-chevron {
     color: var(--accent-green);
+}
+/* Non-passed slot: both cards go neutral grey */
+.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .mtr-card {
+    border-color: rgba(139, 148, 158, 0.35);
+    background: rgba(139, 148, 158, 0.06);
+}
+.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .bill-card {
+    border-color: rgba(139, 148, 158, 0.35);
+    background: rgba(139, 148, 158, 0.06);
+    box-shadow: none;
+}
+.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .bill-card .bill-chevron {
+    color: var(--text-secondary);
 }
 
 .considered-indicator {
