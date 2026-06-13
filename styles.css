@@ -5301,6 +5301,17 @@ a.bill-card-rule-link {
     margin: 0;
 }
 
+.airport-delays-subheader {
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: var(--sp-6) var(--sp-24);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+}
+
 .airport-delays-content {
     padding: var(--sp-16) var(--sp-24);
 }
@@ -5334,15 +5345,53 @@ a.bill-card-rule-link {
     gap: var(--sp-8);
 }
 
+.airport-section-header {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: var(--sp-8) 0 var(--sp-4) 0;
+    border-bottom: 1px solid rgba(139, 148, 158, 0.15);
+    margin-bottom: var(--sp-4);
+}
+.airport-section-header:first-child { padding-top: 0; }
+.airport-section-header.national-header { margin-top: var(--sp-8); }
+
 .airport-delay-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--sp-2);
     padding: var(--sp-8) var(--sp-12);
     background: var(--bg-elevated);
     border-radius: var(--radius-6);
     border: 1px solid var(--border-color);
 }
+.airport-item-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.airport-item-sub {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+}
+.airport-reason {
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.airport-trend {
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    font-weight: 700;
+}
+.airport-trend.up { color: var(--accent-red); }
+.airport-trend.down { color: var(--accent-green); }
 
 .airport-delay-item-link {
     text-decoration: none;
@@ -5390,6 +5439,12 @@ a.bill-card-rule-link {
 .airport-status.disconnected {
     background: rgba(139, 148, 158, 0.2);
     color: var(--text-secondary);
+}
+.airport-status.ground-stop {
+    background: rgba(248, 81, 73, 0.25);
+    color: var(--accent-red);
+    font-weight: 800;
+    letter-spacing: 0.8px;
 }
 
 /* Vacancies Section */
