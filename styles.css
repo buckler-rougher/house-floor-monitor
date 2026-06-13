@@ -7355,8 +7355,8 @@ body.pledge-mode .pledge-section {
 }
 
 .pledge-flag {
-    font-size: var(--fs-9xl);
     flex-shrink: 0;
+    line-height: 0;
 }
 
 .pledge-text {
