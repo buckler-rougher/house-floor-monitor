@@ -6419,10 +6419,12 @@ function applyTweetFilter() {
         card.classList.toggle('active', card.dataset.handle === handle);
     });
 
-    // Active-filter chip — shows selected reporter with ✕ to clear
+    // Active-filter chip — only shown when filtered reporter has no card in the row
+    // (reporters in the card row already show their active state via .reporter-card.active)
     const chip = document.getElementById('reporter-active-chip');
     if (chip) {
-        if (handle) {
+        const hasCard = handle && !!document.querySelector(`#reporter-cards-row .reporter-card[data-handle="${handle}"]`);
+        if (handle && !hasCard) {
             const displayName = REPORTER_NAMES[handle] || handle.replace('@', '');
             const bare = handle.replace('@', '');
             chip.innerHTML =
