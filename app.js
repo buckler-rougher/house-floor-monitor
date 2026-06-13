@@ -2547,12 +2547,17 @@ function whipRecTagHtml(billId) {
 // Parses the bill's latestAction/statusText for a vote score.
 // Voice/unanimous → 1.0. Recorded vote "X-Y" → |X-Y|/(X+Y). No data → null.
 function computeRiceIndex(bill) {
-    // Use committeeAction only — never the floor vote result
-    const text = (bill.committeeAction || '').trim();
+    // Use bill.committeeReport — the formatted committee-vote string the worker extracts
+    // from Congress.gov action history. Possible values:
+    //   "Reported by Committee (voice vote)"
+    //   "Reported out of cmte by unanimous consent"
+    //   "Reported by Committee 28 – 16"
+    //   "Reported by Committee"  (no vote data → null)
+    const text = (bill.committeeReport || '').trim();
     if (!text) return null;
-    if (/voice vote|without objection|unanimous consent/i.test(text)) return 1.0;
-    // Require a colon before the digits to avoid matching bill numbers or dates
-    const m = text.match(/:\s*(\d+)\s*[-–]\s*(\d+)/);
+    if (/voice vote|without objection|unanimous/i.test(text)) return 1.0;
+    // No colon needed — the formatted text is just "... X – Y"
+    const m = text.match(/(\d+)\s*[-–]\s*(\d+)/);
     if (m) {
         const a = parseInt(m[1], 10);
         const b = parseInt(m[2], 10);
@@ -2997,11 +3002,11 @@ function updateBillsDisplay() {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
 
-    // Column count badges
-    const ruleCountEl = document.getElementById('rule-bills-count');
-    if (ruleCountEl) ruleCountEl.textContent = sortedRule.length ? `(${sortedRule.length})` : '';
-    const suspCountEl = document.getElementById('suspension-bills-count');
-    if (suspCountEl) suspCountEl.textContent = sortedSuspension.length ? `(${sortedSuspension.length})` : '';
+    // Column count — injected directly into title text
+    const ruleTitleEl = document.getElementById('rule-bills-title');
+    if (ruleTitleEl) ruleTitleEl.textContent = sortedRule.length ? `UNDER RULE (${sortedRule.length})` : 'UNDER RULE';
+    const suspTitleEl = document.getElementById('suspension-bills-title');
+    if (suspTitleEl) suspTitleEl.textContent = sortedSuspension.length ? `UNDER SUSPENSION (${sortedSuspension.length})` : 'UNDER SUSPENSION';
 
     document.querySelectorAll('.bills-sort-btn:not(.amdt-sort-btn):not(.amdt-filter-btn)').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
