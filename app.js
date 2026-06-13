@@ -2762,32 +2762,47 @@ function renderVoteTimeline(items) {
     const timeEl = document.getElementById('vote-series-notice-time');
     if (!body) return;
 
-    // Pick the notice listing the most votes — the Whip often follows up with
-    // condensed "1 vote" notices as earlier votes complete, which would make
-    // already-finished votes disappear from the timeline. Taking the notice
-    // with the highest N preserves the full series.
+    // Always use the MOST RECENT matching notice as the authoritative list
+    // (stale high-vote-count notices from earlier series must not win).
+    // Then look back up to 90 minutes to find bills that appeared in the
+    // previous notice but were dropped once they completed — that way a
+    // follow-up "1 vote" notice doesn't erase already-voted items.
     const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
-    const seriesItem = seriesItems.length
-        ? seriesItems.reduce((best, cur) => {
-            const n = parseInt(cur.title.match(/(\d+)\s*votes?/i)?.[1] || '0');
-            const bestN = parseInt(best.title.match(/(\d+)\s*votes?/i)?.[1] || '0');
-            return n > bestN ? cur : best;
-        })
-        : null;
-    if (!seriesItem) {
+    if (!seriesItems.length) {
         body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
         return;
     }
+    const currentItem = seriesItems[0]; // newest-first from Firestore
 
-    // Show when this notice was issued
-    if (timeEl && seriesItem.publishedAt) {
-        const d = new Date(seriesItem.publishedAt);
+    // Show when the current notice was issued
+    if (timeEl && currentItem.publishedAt) {
+        const d = new Date(currentItem.publishedAt);
         timeEl.textContent = d.toLocaleTimeString('en-US', {
             hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
         });
     }
 
-    const votes = parseVoteItemsFromHtml(seriesItem.body);
+    const currentVotes = parseVoteItemsFromHtml(currentItem.body);
+    const currentBillSet = new Set(currentVotes.map(v => v.billId).filter(Boolean));
+
+    // Scan older notices within 90 min for bills since completed & dropped
+    const LOOKBACK_MS = 90 * 60 * 1000;
+    const baseTime = currentItem.publishedAt ? new Date(currentItem.publishedAt).getTime() : Date.now();
+    const completedVotes = [];
+    for (let i = 1; i < seriesItems.length; i++) {
+        const prev = seriesItems[i];
+        if (!prev.publishedAt) continue;
+        if (baseTime - new Date(prev.publishedAt).getTime() > LOOKBACK_MS) break;
+        for (const vote of parseVoteItemsFromHtml(prev.body)) {
+            if (vote.billId && !currentBillSet.has(vote.billId)) {
+                completedVotes.push(vote);
+                currentBillSet.add(vote.billId);
+            }
+        }
+    }
+
+    // Completed (older) votes come first in the timeline; current/pending after
+    const votes = [...completedVotes, ...currentVotes];
     if (votes.length === 0) {
         body.innerHTML = '<div class="whip-updates-loading">No votes listed in notice.</div>';
         return;
