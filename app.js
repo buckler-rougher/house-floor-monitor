@@ -3103,7 +3103,7 @@ function createBillCard(bill, procedure) {
 
     const rice = computeRiceIndex(bill);
     const riceHtml = rice !== null
-        ? `<div class="bill-rice-row"><span class="bill-rice" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span></div>`
+        ? `<div class="bill-rice-row"><span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span></div>`
         : '';
 
     const cardHtml = `
