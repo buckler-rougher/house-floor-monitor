@@ -26,6 +26,27 @@ function sanitizeTweetHtml(html) {
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
 const MEMBER_PHOTO_PLACEHOLDER = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
 
+// Current Congress number — auto-advances on Jan 3 of each odd year.
+// 119th started Jan 3, 2025; 120th starts Jan 3, 2027; no code change needed.
+const CURRENT_CONGRESS = (function() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const isAfterJan3 = now.getMonth() > 0 || now.getDate() >= 3;
+    const effectiveYear = isAfterJan3 ? year : year - 1;
+    const startYear = effectiveYear % 2 === 0 ? effectiveYear - 1 : effectiveYear;
+    return 118 + (startYear - 2023) / 2;
+}());
+// Ordinal slug for congress.gov URLs, e.g. "119th-congress", "121st-congress"
+const CURRENT_CONGRESS_SLUG = (function(n) {
+    const s = n % 100;
+    if (s >= 11 && s <= 13) return `${n}th-congress`;
+    const r = n % 10;
+    if (r === 1) return `${n}st-congress`;
+    if (r === 2) return `${n}nd-congress`;
+    if (r === 3) return `${n}rd-congress`;
+    return `${n}th-congress`;
+}(CURRENT_CONGRESS));
+
 // Guard against unnecessary DOM thrashing — skip innerHTML update if content unchanged
 const _htmlCache = new WeakMap();
 function setIfChanged(el, html) {
@@ -3033,7 +3054,7 @@ function updateBillsDisplay() {
                     : rule.ruleStatus === 'reported' ? 'Reported by Rules Committee'
                     : 'Pending';
                 const ruleCardId = `hres-${rule.hresNum}`;
-                const congressUrl = `https://www.congress.gov/bill/119th-congress/house-resolution/${rule.hresNum}`;
+                const congressUrl = `https://www.congress.gov/bill/${CURRENT_CONGRESS_SLUG}/house-resolution/${rule.hresNum}`;
                 billDataMap.set(ruleCardId, {
                     id: rule.hres,
                     title: rule.title || 'Special rule governing floor consideration',
@@ -3160,7 +3181,7 @@ function billIdToCongressUrl(billId) {
         's.j.res.': 'senate-joint-resolution', 's.res.': 'senate-resolution',
     };
     const slug = typeMap[m[1].toLowerCase()];
-    return slug ? `https://www.congress.gov/bill/119th-congress/${slug}/${m[2]}` : null;
+    return slug ? `https://www.congress.gov/bill/${CURRENT_CONGRESS_SLUG}/${slug}/${m[2]}` : null;
 }
 
 function billIdToRulesSlug(billId) {
@@ -4727,11 +4748,17 @@ function updatePrayerSection(items) {
         elements.prayerImage.removeAttribute('src');
         elements.prayerImagePlaceholder.style.display = 'flex';
     } else {
-        // For House Chaplain, use the specific Margaret Kibben photo
+        // For House Chaplain, load photo with fade-in; fall back to placeholder on error
         elements.prayerImagePlaceholder.style.display = 'none';
-        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original';
-        elements.prayerImage.alt = 'Rev. Margaret Kibben, House Chaplain';
         elements.prayerImage.style.display = 'block';
+        elements.prayerImage.style.opacity = '0';
+        elements.prayerImage.onload = () => { elements.prayerImage.style.opacity = '1'; };
+        elements.prayerImage.onerror = () => {
+            elements.prayerImage.style.display = 'none';
+            elements.prayerImagePlaceholder.style.display = 'flex';
+        };
+        elements.prayerImage.alt = 'Rev. Margaret Kibben, House Chaplain';
+        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg';
     }
 }
 
@@ -6024,7 +6051,9 @@ function updatePartyBreakdownDisplay() {
     
     // Update visual bar
     if (elements.repFill && elements.demFill && elements.indFill && elements.vacFill) {
-        const totalSeats = 435; // Fixed total House seats
+        // Derive from live clerk data (members + vacancies) so the bar stays correct
+        // if the House ever expands; falls back to the constitutional constant.
+        const totalSeats = (houseMakeup.total + vacancies.length) || HOUSE_TOTAL_MEMBERS;
         const repPercent = (houseMakeup.republicans / totalSeats) * 100;
         const demPercent = (houseMakeup.democrats / totalSeats) * 100;
         const indPercent = (houseMakeup.independents / totalSeats) * 100;
