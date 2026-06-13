@@ -493,6 +493,57 @@ async function handleTweets(env) {
   }, 300);
 }
 
+// Fetch a single user's Nitter profile feed — same output format as handleTweets.
+async function handleUserTweets(handle) {
+  let rawXml = null, usedInstance = null;
+  for (const instance of NITTER_INSTANCES) {
+    try {
+      const url = `https://${instance}/${handle}/rss`;
+      const xml = await fetchRSSFeed(url, 6000);
+      if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) continue;
+      rawXml = xml; usedInstance = instance; break;
+    } catch (_) { continue; }
+  }
+  if (!rawXml || !usedInstance) {
+    return new Response(JSON.stringify({ tweets: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  }
+
+  const getTag = (tag, xml) => {
+    const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
+    return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+  };
+
+  const tweets = (rawXml.match(/<item[^>]*>[\s\S]*?<\/item>/g) || []).slice(0, 30).map(itemXml => {
+    const creator = getTag('dc:creator', itemXml);
+    let title = getTag('title', itemXml);
+    const description = getTag('description', itemXml);
+    let link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
+    const pubDate = getTag('pubDate', itemXml);
+
+    let isRT = false, rtBy = null, isReply = false, replyTo = null;
+    const rtM = title.match(/^RT by (@\w+):\s*/);
+    if (rtM) { isRT = true; rtBy = rtM[1]; title = title.slice(rtM[0].length); }
+    const replyM = title.match(/^R to (@\w+):\s*/);
+    if (replyM) { isReply = true; replyTo = replyM[1]; title = title.slice(replyM[0].length); }
+
+    const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
+    const tweetHandle = hM ? `@${hM[1]}` : (creator ? `@${handle}` : `@${handle}`);
+
+    let relativeTime = '';
+    try {
+      const diff = Math.floor((Date.now() - new Date(pubDate).getTime()) / 60000);
+      relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff/60)}h` : `${Math.floor(diff/1440)}d`;
+    } catch (_) {}
+
+    const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl } = parseTweetDescription(description, usedInstance);
+    return { handle: tweetHandle, relativeTime, pubDate, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
+  });
+
+  return new Response(JSON.stringify({ tweets }), {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
+  });
+}
+
 async function handleImageProxy(request) {
   const url = new URL(request.url);
   const imageUrl = url.searchParams.get('url');
@@ -2794,6 +2845,8 @@ async function handleRequest(request, env) {
   } else if (path === '/api/congress-index' && request.method === 'GET') {
     return await handleCongressIndex();
   } else if (path === '/api/tweets' && request.method === 'GET') {
+    const twitterUser = url.searchParams.get('user');
+    if (twitterUser) return await handleUserTweets(twitterUser.replace(/^@/, ''));
     return await handleTweets(env);
   } else if (path === '/api/img-proxy' && request.method === 'GET') {
     return await handleImageProxy(request);
