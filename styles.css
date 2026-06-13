@@ -2742,10 +2742,19 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   background: var(--bg-card);
 }
 .vote-tl-circle.active {
-  border-color: var(--accent-yellow);
-  background: var(--accent-yellow);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-yellow) 20%, transparent);
-  animation: vt-pulse 1.4s ease-in-out infinite;
+  border-color: color-mix(in srgb, var(--accent-yellow) 50%, transparent);
+  background: color-mix(in srgb, var(--accent-yellow) 25%, var(--bg-card));
+}
+/* Spinning arc ring around the active circle */
+.vote-tl-circle.active::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--accent-yellow);
+  border-right-color: var(--accent-yellow);
+  animation: vt-spin 0.85s linear infinite;
 }
 .vote-tl-circle.passed {
   border-color: var(--accent-green);
@@ -2756,9 +2765,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   background: var(--accent-red);
 }
 
-@keyframes vt-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 30%, transparent); }
-  50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent-yellow) 10%, transparent); }
+@keyframes vt-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Content next to circle */
@@ -2815,6 +2823,24 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   background: color-mix(in srgb, var(--accent-red) 12%, transparent);
 }
 
+.vote-tl-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  margin-top: var(--sp-6);
+  flex-wrap: wrap;
+}
+
+.vote-tl-duration {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 /* ── Whip Notices panel ───────────────────────────────────────────────────── */
 .whip-updates-panel {
   background: var(--bg-card);
@@ -2833,7 +2859,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 .whip-updates-feed {
   padding: 0;
-  max-height: 260px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -2845,11 +2871,23 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-bottom: none;
 }
 
+/* Sticky notice header — sticks to top of scroll container,
+   gets pushed up by the next notice header as you scroll down */
 .whip-update-meta {
   display: flex;
   align-items: baseline;
   gap: var(--sp-10);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-card);
+  /* Extend full-bleed across item's side padding so background covers edge-to-edge */
+  margin-left: calc(-1 * var(--sp-24));
+  margin-right: calc(-1 * var(--sp-24));
+  margin-top: calc(-1 * var(--sp-16));
+  padding: var(--sp-10) var(--sp-24);
   margin-bottom: var(--sp-10);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .whip-update-time {
