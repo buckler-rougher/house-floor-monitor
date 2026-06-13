@@ -3220,6 +3220,12 @@ a.tweet-avatar:hover { opacity: 0.8; }
     object-fit: cover;
     border-radius: 50%;
 }
+.tweet-author-area {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-10);
+    min-width: 0;
+}
 .tweet-author-block {
     display: flex;
     flex-direction: column;
@@ -3342,15 +3348,13 @@ a.tweet-avatar:hover { opacity: 0.8; }
     border: 1px solid var(--border-color);
     border-radius: var(--radius-3);
     color: var(--text-muted);
-    font-size: var(--fs-xs);
-    padding: 1px 5px;
+    padding: 3px 5px;
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s;
     flex-shrink: 0;
     line-height: 1;
-    margin-left: var(--sp-2);
 }
-.tweet-item:hover .tweet-filter-btn { display: flex; align-items: center; }
+.tweet-author-area:hover .tweet-filter-btn { display: flex; align-items: center; }
 .tweet-filter-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
 
 /* Active filter chip in panel header */

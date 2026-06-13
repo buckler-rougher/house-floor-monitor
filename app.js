@@ -6258,16 +6258,18 @@ async function fetchTweets(preData = null, userHandle = null) {
                 ? new Date(tweetTs).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
                 : '';
             const filterBtn = t.handle
-                ? `<button class="tweet-filter-btn" data-handle="${escapeHtml(t.handle)}" title="Filter by ${escapeHtml(t.handle)}" aria-label="Filter by ${escapeHtml(t.handle)}">⊙</button>`
+                ? `<button class="tweet-filter-btn" data-handle="${escapeHtml(t.handle)}" title="Filter by ${escapeHtml(t.handle)}" aria-label="Filter by ${escapeHtml(t.handle)}"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M0.5 1.5L9.5 1.5L6 5.5L6 8.5L4 8.5L4 5.5Z"/></svg></button>`
                 : '';
             return `<div class="${cls}" data-handle="${escapeHtml(t.handle || '')}">
                 ${rtBar}
                 <div class="tweet-header">
-                    ${avatarHtml}
-                    ${authorHtml}
+                    <div class="tweet-author-area">
+                        ${avatarHtml}
+                        ${authorHtml}
+                        ${filterBtn}
+                    </div>
                     <span class="tweet-time"${tweetTs ? ` data-ts="${tweetTs}"` : ''}${tweetFullTime ? ` title="${escapeHtml(tweetFullTime)}"` : ''}>${tweetTimeText}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
-                    ${filterBtn}
                 </div>
                 <div class="tweet-body">${bodyHtml}</div>
                 ${imagesHtml}${cardHtml}${quoteHtml}
