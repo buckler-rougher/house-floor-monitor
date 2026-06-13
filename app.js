@@ -2623,13 +2623,15 @@ function parseVoteItemsFromHtml(htmlBody) {
         const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
         if (seen.has(billId)) continue; // same bill in <p> and <li> — keep first
         seen.add(billId);
-        // Strip leading connector phrases so they don't pollute the description
-        const text = raw
-            .replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*|adoption of\s+)/i, '')
-            .trim();
+        // Strip leading connector phrases; capture vote-action prefix for label
+        const stripped = raw.replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*)/i, '').trim();
+        // Detect action prefix ("Adoption of", "Passage of", etc.) before the bill ID
+        const actionMatch = stripped.match(/^(adoption\s+of|passage\s+of|consideration\s+of)\s+/i);
+        const action = actionMatch ? actionMatch[1].replace(/\s+/g, ' ').trim() : null;
+        const text = action ? stripped.slice(actionMatch[0].length).trim() : stripped;
         const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
         const duration = durMatch ? `${durMatch[1]} min` : null;
-        results.push({ text, billId, duration });
+        results.push({ text, billId, duration, action });
     }
     return results;
 }
@@ -2767,15 +2769,17 @@ function updateVoteTimelineStatus() {
 // Motion types (Motion to Commit, Previous Question, etc.) are appended
 // when detectable from rollLog or the Whip text.
 // Returns { label, desc, canOpenModal }.
-function voteTlLabelAndDesc(billId, whipText) {
+function voteTlLabelAndDesc(billId, whipText, action) {
     const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
 
     // Resolve the billDataMap entry (regular bill or hres-XXXX rule card)
     let bill = billId ? billDataMap.get(billId) : null;
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
 
-    const canOpenModal = !!(bill);
-    const label = billId || whipText.split(/\s[–\-]\s/)[0].trim();
+    // Build label — prepend action prefix when the Whip specified one
+    // e.g. "Adoption of H.Res. 1335", "Passage of H.R. 9238"
+    const baseLabel = billId || whipText.split(/\s[–\-]\s/)[0].trim();
+    const label = action ? `${action} ${baseLabel}` : baseLabel;
 
     // Primary description: bill title from billDataMap
     let desc = bill?.title || '';
@@ -2836,7 +2840,7 @@ function voteTlLabelAndDesc(billId, whipText) {
         desc = motion;
     }
 
-    return { label, desc, canOpenModal };
+    return { label, desc };
 }
 
 // Render the full vote-series timeline from the latest matching notice.
@@ -2891,17 +2895,17 @@ function renderVoteTimeline(items) {
         return;
     }
 
-    const itemsHtml = votes.map(({ text, billId, duration }) => {
+    const itemsHtml = votes.map(({ text, billId, duration, action }) => {
         const status = getVoteTlStatus(billId);
         const resultText = voteTlResultText(billId, status);
-        const { label: billLabel, desc, canOpenModal } = voteTlLabelAndDesc(billId, text);
+        const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
         const hasBadges = duration || resultText;
         return `
             <div class="vote-tl-item"${billAttr}>
                 <div class="vote-tl-circle ${status}"></div>
                 <div class="vote-tl-content">
-                    <div class="vote-tl-bill"${canOpenModal ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
+                    <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
                     ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
                     ${hasBadges ? `<div class="vote-tl-badges">
                         ${duration ? `<span class="vote-tl-duration">${escapeHtml(duration)}</span>` : ''}
