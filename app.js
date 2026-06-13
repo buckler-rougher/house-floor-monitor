@@ -8239,8 +8239,15 @@ function updateLastUpdate() {
         if (pipOverlay) pipOverlay.style.pointerEvents = 'auto';
     }
 
-    // Mute/unmute control, available in both collapsed and expanded PiP.
-    const muteBtn = document.getElementById('pip-mute-btn');
+    // Mute/unmute + volume slider
+    const muteBtn  = document.getElementById('pip-mute-btn');
+    const volSlider = document.getElementById('pip-volume-slider');
+    let storedVolume = 0.75; // remembered non-zero level for toggle restore
+
+    function syncVolSlider() {
+        if (!volSlider) return;
+        volSlider.value = pipVideo.muted ? 0 : Math.round(pipVideo.volume * 100);
+    }
     function syncMuteBtn() {
         if (!muteBtn) return;
         const unmuted = !pipVideo.muted;
@@ -8248,16 +8255,32 @@ function updateLastUpdate() {
         muteBtn.setAttribute('aria-pressed', String(unmuted));
         muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
         muteBtn.title = unmuted ? 'Mute' : 'Unmute';
+        syncVolSlider();
     }
     if (muteBtn) {
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             pipVideo.muted = !pipVideo.muted;
-            if (!pipVideo.muted) pipVideo.play().catch(() => {}); // ensure audio resumes
+            if (!pipVideo.muted) {
+                if (pipVideo.volume === 0) pipVideo.volume = storedVolume;
+                pipVideo.play().catch(() => {});
+            }
             syncMuteBtn();
         });
         pipVideo.addEventListener('volumechange', syncMuteBtn);
         syncMuteBtn();
+    }
+    if (volSlider) {
+        volSlider.addEventListener('input', e => {
+            e.stopPropagation();
+            const vol = parseInt(e.target.value, 10) / 100;
+            if (vol > 0) storedVolume = vol;
+            pipVideo.volume = vol;
+            pipVideo.muted = (vol === 0);
+            if (!pipVideo.muted) pipVideo.play().catch(() => {});
+            syncMuteBtn();
+        });
+        volSlider.addEventListener('click', e => e.stopPropagation());
     }
 
     // CC toggle (closed captions on/off)
