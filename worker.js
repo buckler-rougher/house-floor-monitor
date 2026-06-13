@@ -93,7 +93,15 @@ const RSS_FEEDS = {
 const DOMEWATCH_CONFIG = {
   baseUrl: 'https://data.domewatch.us/v1'
 };
-const CURRENT_CONGRESS = 119;
+// Auto-advances on Jan 3 of each odd year. 119th started Jan 3, 2025; 120th starts Jan 3, 2027.
+const CURRENT_CONGRESS = (function() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const isAfterJan3 = now.getMonth() > 0 || now.getDate() >= 3;
+  const effectiveYear = isAfterJan3 ? year : year - 1;
+  const startYear = effectiveYear % 2 === 0 ? effectiveYear - 1 : effectiveYear;
+  return 118 + (startYear - 2023) / 2;
+}());
 // Physical KV storage lifetime for all cached entries.
 // Entries never auto-expire so we always have a previous value to compare against.
 // Freshness is controlled by the ttlSeconds parameter inside kvCache, not by this TTL.

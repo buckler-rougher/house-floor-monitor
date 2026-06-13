@@ -6888,6 +6888,8 @@ body.committee-chair-mode .committee-chair-section {
     object-fit: cover;
     border-radius: var(--radius-12);
     display: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
     border: 2px solid var(--border-color);
 }
 
