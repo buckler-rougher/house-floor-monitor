@@ -2481,6 +2481,55 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   gap: var(--sp-8);
   min-width: 0;
 }
+.pip-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pip-volume-slider-wrap {
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: width 0.15s ease, opacity 0.15s ease;
+}
+.pip-volume-control:hover .pip-volume-slider-wrap {
+  width: 64px;
+  opacity: 1;
+}
+.pip-volume-slider {
+  display: block;
+  width: 64px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 0 4px;
+}
+.pip-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.pip-volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+.pip-volume-slider::-moz-range-track {
+  background: rgba(255,255,255,0.25);
+  height: 3px;
+  border-radius: 2px;
+}
 .youtube-pip-label { white-space: nowrap; }
 
 /* Source footer at the bottom of the PiP, with a CC toggle on the right. */
