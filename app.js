@@ -3088,7 +3088,7 @@ function createBillCard(bill, procedure) {
                    : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : 'Motion to Recommit';
     const mtrIcon  = mtr.status === 'failed'
-                   ? `<svg width="8" height="8" viewBox="0 0 24 24" style="display:block"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`
+                   ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
                    : mtr.status === 'passed' ? '✓'
                    : '';
 
