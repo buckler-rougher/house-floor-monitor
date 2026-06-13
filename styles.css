@@ -2952,6 +2952,112 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     max-height: 700px;
     overflow-y: auto;
 }
+
+/* Reporter filter bar */
+.reporter-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-10) var(--sp-16);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(13, 17, 23, 0.28);
+    flex-shrink: 0;
+}
+
+.reporter-cards-row {
+    display: flex;
+    gap: var(--sp-6);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex: 1;
+    min-width: 0;
+}
+
+.reporter-card {
+    background: rgba(139, 148, 158, 0.08);
+    border: 1px solid rgba(139, 148, 158, 0.18);
+    border-radius: var(--radius-4);
+    padding: var(--sp-2) var(--sp-10);
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    font-family: var(--font-sans);
+}
+
+.reporter-card:hover {
+    background: rgba(139, 148, 158, 0.15);
+    color: var(--text-primary);
+}
+
+.reporter-card.active {
+    background: rgba(88, 166, 255, 0.1);
+    border-color: rgba(88, 166, 255, 0.38);
+    color: var(--accent-blue);
+}
+
+.reporter-search-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--sp-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-4);
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+}
+
+.reporter-search-btn:hover {
+    color: var(--text-secondary);
+}
+
+.reporter-search-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-8) var(--sp-16);
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(13, 17, 23, 0.15);
+}
+
+.reporter-search-input {
+    flex: 1;
+    background: rgba(139, 148, 158, 0.1);
+    border: 1px solid rgba(139, 148, 158, 0.22);
+    border-radius: var(--radius-4);
+    padding: var(--sp-4) var(--sp-10);
+    color: var(--text-primary);
+    font-size: var(--fs-sm);
+    font-family: var(--font-mono);
+    outline: none;
+}
+
+.reporter-search-input:focus {
+    border-color: rgba(88, 166, 255, 0.45);
+}
+
+.reporter-search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--sp-2) var(--sp-6);
+    font-size: var(--fs-md);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+}
+
+.reporter-search-clear:hover {
+    color: var(--text-secondary);
+}
+
 .tweets-empty {
     padding: var(--sp-24);
     color: var(--text-muted);
@@ -4421,7 +4527,7 @@ a.bill-card-rule-link {
 }
 
 .mtr-card.mtr-pending .mtr-circle { color: rgba(210, 153, 34, 0.75); }
-.mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
+.mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75); font-size: 9px; }
 .mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
 
 /* Hover anywhere in the slot highlights MTR card + connector + bill card together.
@@ -4435,17 +4541,19 @@ a.bill-card-rule-link {
 .bill-slot:hover .mtr-connector {
     opacity: 0.65;
 }
-.bill-slot:hover .bill-card,
-.bill-slot:hover .bill-card[data-status="passed"],
-.bill-slot:hover .bill-card[data-status="failed"],
-.bill-slot:hover .bill-card[data-status="roll-call"],
-.bill-slot:hover .bill-card[data-status="scheduled"],
-.bill-slot:hover .bill-card[data-status="pending"] {
+.bill-slot:hover .bill-card:not([data-status="passed"]) {
     background: rgba(139, 148, 158, 0.06);
     box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
 }
-.bill-slot:hover .bill-card .bill-chevron {
+.bill-slot:hover .bill-card:not([data-status="passed"]) .bill-chevron {
     color: var(--text-secondary);
+}
+.bill-slot:hover .bill-card[data-status="passed"] {
+    background: rgba(63, 185, 80, 0.06);
+    box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.4);
+}
+.bill-slot:hover .bill-card[data-status="passed"] .bill-chevron {
+    color: var(--accent-green);
 }
 
 .considered-indicator {
