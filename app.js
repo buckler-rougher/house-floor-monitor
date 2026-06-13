@@ -2543,6 +2543,31 @@ function whipRecTagHtml(billId) {
         `</span>`;
 }
 
+// ── Rice Index of Cohesion ──────────────────────────────────────────────────
+// Parses the bill's latestAction/statusText for a vote score.
+// Voice/unanimous → 1.0. Recorded vote "X-Y" → |X-Y|/(X+Y). No data → null.
+function computeRiceIndex(bill) {
+    // Use committeeAction only — never the floor vote result
+    const text = (bill.committeeAction || '').trim();
+    if (!text) return null;
+    if (/voice vote|without objection|unanimous consent/i.test(text)) return 1.0;
+    // Require a colon before the digits to avoid matching bill numbers or dates
+    const m = text.match(/:\s*(\d+)\s*[-–]\s*(\d+)/);
+    if (m) {
+        const a = parseInt(m[1], 10);
+        const b = parseInt(m[2], 10);
+        if (a + b >= 5) return Math.abs(a - b) / (a + b);
+    }
+    return null;
+}
+
+// HSL color for a Rice value: 0 = red (hue 0°), 1 = green (hue 120°)
+function riceIndexColor(rice) {
+    const hue = Math.round(rice * 120);
+    const lum = rice > 0.65 ? 44 : 55;
+    return `hsl(${hue},60%,${lum}%)`;
+}
+
 // Sort mode: 'status' (default) | 'listed'
 let billsSortMode = 'status';
 
@@ -2600,7 +2625,8 @@ function mergeBills(newArr, existingArr, isQuick = false) {
     const byId = Object.fromEntries((existingArr || []).map(b => [b.id, b]));
     return (newArr || []).map((bill, i) => {
         const prev = byId[bill.id];
-        if (!prev) return { ...bill, _origIdx: i };
+        // Stamp committeeAction on first arrival so floor-vote rewrites to latestAction never clobber it
+        if (!prev) return { ...bill, committeeAction: bill.latestAction || '', _origIdx: i };
 
         const keepOldStatus = (STATUS_PRIORITY[prev.status] || 0) > (STATUS_PRIORITY[bill.status] || 0);
         const statusFields = keepOldStatus
@@ -2621,7 +2647,9 @@ function mergeBills(newArr, existingArr, isQuick = false) {
         // Always carry forward a stored MTR outcome — it won't come back from the API
         const mtrField = bill.mtr ?? prev.mtr ? { mtr: bill.mtr ?? prev.mtr } : {};
 
-        return { ...bill, ...enrichment, ...statusFields, ...mtrField, _origIdx: i };
+        return { ...bill, ...enrichment, ...statusFields, ...mtrField,
+                 committeeAction: prev.committeeAction || bill.latestAction || '',
+                 _origIdx: i };
     });
 }
 
@@ -2969,6 +2997,12 @@ function updateBillsDisplay() {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
 
+    // Column count badges
+    const ruleCountEl = document.getElementById('rule-bills-count');
+    if (ruleCountEl) ruleCountEl.textContent = sortedRule.length ? `(${sortedRule.length})` : '';
+    const suspCountEl = document.getElementById('suspension-bills-count');
+    if (suspCountEl) suspCountEl.textContent = sortedSuspension.length ? `(${sortedSuspension.length})` : '';
+
     document.querySelectorAll('.bills-sort-btn:not(.amdt-sort-btn):not(.amdt-filter-btn)').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
     });
@@ -3062,6 +3096,11 @@ function createBillCard(bill, procedure) {
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
+    const rice = computeRiceIndex(bill);
+    const riceHtml = rice !== null
+        ? `<div class="bill-rice-row"><span class="bill-rice" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span></div>`
+        : '';
+
     const cardHtml = `
         <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" type="button">
             <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
@@ -3075,6 +3114,7 @@ function createBillCard(bill, procedure) {
                     <div class="bill-action">${actionText}</div>
                     <div class="bill-date">${actionDate}</div>
                 </div>
+                ${riceHtml}
             </div>
             <div class="bill-chevron" aria-hidden="true">›</div>
         </button>`;
