@@ -5301,17 +5301,6 @@ a.bill-card-rule-link {
     margin: 0;
 }
 
-.airport-delays-subheader {
-    font-size: var(--fs-xs);
-    font-family: var(--font-mono);
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    padding: var(--sp-6) var(--sp-24);
-    background: var(--bg-elevated);
-    border-bottom: 1px solid var(--border-color);
-}
-
 .airport-delays-content {
     padding: var(--sp-16) var(--sp-24);
 }
