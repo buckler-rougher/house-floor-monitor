@@ -3801,6 +3801,9 @@ Passage requires a two-thirds supermajority. Debate is capped at 40 minutes (20 
     }
 };
 
+// Preload images for info popups in the background so they're cached by the time the user opens (?)
+Object.values(INFO_CONTENT).forEach(c => { if (c.image?.url) { new Image().src = c.image.url; } });
+
 function openInfoPopup(key) {
     const content = INFO_CONTENT[key];
     if (!content) return;
@@ -3828,9 +3831,9 @@ function openInfoPopup(key) {
             <button class="info-popup-close" id="info-popup-close" aria-label="Close">&#x2715;</button>
             <div class="info-popup-title">${content.title}</div>
             ${tagsHtml}
-            ${imageHtml}
             <div class="info-popup-body">${bodyText.split('\n\n').map(p => `<p>${p}</p>`).join('')}</div>
             ${content.source ? `<div class="info-popup-source">${content.source}</div>` : ''}
+            ${imageHtml}
         </div>
     `;
     overlay.hidden = false;

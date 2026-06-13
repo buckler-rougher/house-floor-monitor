@@ -4243,7 +4243,7 @@ font-family: var(--font-mono);
     border-radius: var(--radius-10);
     max-width: 520px;
     width: 100%;
-    max-height: 80vh;
+    max-height: 92vh;
     overflow-y: auto;
     padding: var(--sp-28) var(--sp-28) var(--sp-24);
     position: relative;
@@ -4303,7 +4303,7 @@ font-family: var(--font-mono);
 }
 .info-popup-body p:last-child { margin-bottom: 0; }
 .info-popup-figure {
-    margin: 0 0 var(--sp-18);
+    margin: var(--sp-18) 0 0;
     border-radius: var(--radius-8);
     overflow: hidden;
 }
