@@ -3824,8 +3824,8 @@ function openInfoPopup(key) {
     const imageHtml = content.image ? `
         <figure class="info-popup-figure">
             <img src="${content.image.url}" alt="${content.image.alt}" class="info-popup-image" loading="lazy">
-            <figcaption class="info-popup-caption">${content.image.caption}</figcaption>
-        </figure>` : '';
+        </figure>
+        <p class="info-popup-caption">${content.image.caption}</p>` : '';
     overlay.innerHTML = `
         <div class="info-popup" role="dialog" aria-modal="true">
             <button class="info-popup-close" id="info-popup-close" aria-label="Close">&#x2715;</button>
