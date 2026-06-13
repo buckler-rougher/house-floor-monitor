@@ -1879,6 +1879,8 @@ const elements = {
     silenceDescription: document.getElementById('silence-description'),
     silenceTime: document.getElementById('silence-time'),
     oathSection: document.getElementById('oath-section'),
+    oathImagePlaceholder: document.getElementById('oath-image-placeholder'),
+    oathImage: document.getElementById('oath-image'),
     oathMemberTitle: document.getElementById('oath-member-title'),
     oathMemberName: document.getElementById('oath-member-name'),
     oathMemberDescription: document.getElementById('oath-member-description'),
@@ -3288,13 +3290,13 @@ function openBillModal(billId) {
             <div class="bill-modal-section">
                 <div class="bill-modal-section-label">SUPPORT — ${coLabel}</div>
                 <div class="bill-modal-support-bar">
-                    ${rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : ''}
                     ${dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : ''}
+                    ${rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : ''}
                     ${iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : ''}
                 </div>
                 <div class="bill-modal-support-labels">
-                    ${rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : ''}
                     ${dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : ''}
+                    ${rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : ''}
                     ${iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : ''}
                 </div>
             </div>`;
@@ -4463,13 +4465,13 @@ function updateDebateSection(items) {
                     : 'NO COSPONSORS';
                 if (elements.debateSupportLabel) elements.debateSupportLabel.textContent = `SUPPORT — ${coLabel}`;
                 elements.debateSupportBar.innerHTML = [
-                    rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : '',
                     dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : '',
+                    rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : '',
                     iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : '',
                 ].join('');
                 elements.debateSupportLabels.innerHTML = [
-                    rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : '',
                     dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : '',
+                    rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : '',
                     iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : '',
                 ].join('');
                 elements.debateSupportSection.style.display = '';
@@ -4989,14 +4991,12 @@ async function fetchSpeakerAsChair() {
         // Photo from BioGuide
         const photoUrl = buildBioguidePhotoUrl(bioguideId);
         if (elements.pledgeImage) {
-            elements.pledgeImage.onerror = () => {
-                if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'flex';
-                elements.pledgeImage.style.display = 'none';
-            };
+            elements.pledgeImage.style.display = 'block';
+            elements.pledgeImage.style.opacity = '0';
+            elements.pledgeImage.onload = () => { elements.pledgeImage.style.opacity = '1'; };
+            elements.pledgeImage.onerror = () => { elements.pledgeImage.style.display = 'none'; };
             elements.pledgeImage.src = photoUrl;
             elements.pledgeImage.alt = name || 'Speaker of the House';
-            elements.pledgeImage.style.display = 'block';
-            if (elements.pledgeImagePlaceholder) elements.pledgeImagePlaceholder.style.display = 'none';
         }
         const profileUrl = buildCongressProfileUrl(bioguideId);
         setMemberProfileLink(elements.pledgeLeaderWebsite, profileUrl);
@@ -5016,11 +5016,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
             .replace(/\s+(?:of|from)\s+[A-Z]{2}\b/i, '')
             .trim();
 
-        if (!nameOnly) {
-            if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'flex';
-            if (elements.speakerImage) elements.speakerImage.style.display = 'none';
-            return;
-        }
+        if (!nameOnly) return;
 
         const rawLastName = nameOnly.split(/\s+/).slice(-1)[0];
         const xmlText = await getMemberDataXml();
@@ -5083,20 +5079,16 @@ async function fetchSpeakerMemberInfo(leaderName) {
         const websiteUrl = buildCongressProfileUrl(match.bioguideId);
         setMemberProfileLink(elements.speakerMemberWebsite, websiteUrl);
 const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
-        if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'none';
         if (elements.speakerImage) {
-            elements.speakerImage.onerror = () => {
-                if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'flex';
-                elements.speakerImage.style.display = 'none';
-            };
+            elements.speakerImage.style.display = 'block';
+            elements.speakerImage.style.opacity = '0';
+            elements.speakerImage.onload = () => { elements.speakerImage.style.opacity = '1'; };
+            elements.speakerImage.onerror = () => { elements.speakerImage.style.display = 'none'; };
             elements.speakerImage.src = photoUrl;
             elements.speakerImage.alt = match.fullName || 'Speaker Pro Tempore';
-            elements.speakerImage.style.display = 'block';
         }
     } catch (error) {
         console.error('Failed to resolve speaker pro tempore member:', error);
-        if (elements.speakerImagePlaceholder) elements.speakerImagePlaceholder.style.display = 'flex';
-        if (elements.speakerImage) elements.speakerImage.style.display = 'none';
     }
 }
 
@@ -5232,12 +5224,11 @@ async function fetchCommitteeChairMemberInfo(leaderName) {
         elements.committeeChairMemberAdditional.textContent = bestMatch.town ? `from ${bestMatch.town}, ${bestMatch.state}` : '';
         setMemberProfileLink(elements.committeeChairMemberWebsite, buildCongressProfileUrl(bestMatch.bioguideId));
         const photoUrl = buildBioguidePhotoUrl(bestMatch.bioguideId);
-        if (elements.committeeChairImagePlaceholder) elements.committeeChairImagePlaceholder.style.display = 'none';
         if (elements.committeeChairImage) {
-            elements.committeeChairImage.onerror = () => {
-                elements.committeeChairImage.style.display = 'none';
-                if (elements.committeeChairImagePlaceholder) elements.committeeChairImagePlaceholder.style.display = 'flex';
-            };
+            elements.committeeChairImage.style.display = 'block';
+            elements.committeeChairImage.style.opacity = '0';
+            elements.committeeChairImage.onload = () => { elements.committeeChairImage.style.opacity = '1'; };
+            elements.committeeChairImage.onerror = () => { elements.committeeChairImage.style.display = 'none'; };
             elements.committeeChairImage.src = photoUrl;
             elements.committeeChairImage.alt = bestMatch.fullName || 'Committee Chair';
         }
@@ -5337,13 +5328,36 @@ function updateOathSection(items) {
     elements.oathMemberName.textContent = memberName || '--';
     elements.oathMemberDescription.textContent = districtFormatted || '';
 
-    if (elements.oathImagePlaceholder) {
-        elements.oathImagePlaceholder.style.display = 'flex';
+    if (elements.oathImage) {
+        elements.oathImage.style.display = 'block';
+        elements.oathImage.style.opacity = '0';
+        elements.oathImage.removeAttribute('src');
     }
-    const oathImg = document.getElementById('oath-image');
-    if (oathImg) {
-        oathImg.style.display = 'none';
-        oathImg.removeAttribute('src');
+    if (memberName) {
+        const _oathLastName = memberName.trim().split(/\s+/).pop();
+        (async () => {
+            try {
+                const xmlText = await getMemberDataXml();
+                const xmlDoc = parseMemberDataXml(xmlText);
+                let bestId = null, bestScore = 0;
+                for (const m of xmlDoc.querySelectorAll('member')) {
+                    const ln = m.querySelector('lastname')?.textContent.trim() || '';
+                    const bg = m.querySelector('bioguideID')?.textContent.trim() || '';
+                    if (!ln || !bg) continue;
+                    const s = calculateNameSimilarity(_oathLastName, ln);
+                    if (s > bestScore && s > 0.7) { bestScore = s; bestId = bg; }
+                }
+                if (bestId && elements.oathImage) {
+                    const photoUrl = buildBioguidePhotoUrl(bestId);
+                    elements.oathImage.style.display = 'block';
+                    elements.oathImage.style.opacity = '0';
+                    elements.oathImage.onload = () => { elements.oathImage.style.opacity = '1'; };
+                    elements.oathImage.onerror = () => { elements.oathImage.style.display = 'none'; };
+                    elements.oathImage.src = photoUrl;
+                    elements.oathImage.alt = memberName;
+                }
+            } catch (_e) { /* photo is optional */ }
+        })();
     }
 }
 
@@ -5592,14 +5606,14 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             console.log('Trying photo URL:', photoUrl);
             console.log('Bioguide ID:', bestMatch.bioguideId);
 
+            elements.pledgeImage.style.display = 'block';
+            elements.pledgeImage.style.opacity = '0';
+            elements.pledgeImage.onload = () => { elements.pledgeImage.style.opacity = '1'; };
             elements.pledgeImage.onerror = () => {
                 console.log('Photo failed to load, falling back to placeholder');
-                showPledgePlaceholder();
+                elements.pledgeImage.style.display = 'none';
             };
-
-            elements.pledgeImagePlaceholder.style.display = 'none';
             elements.pledgeImage.src = photoUrl;
-            elements.pledgeImage.style.display = 'block';
             return;
         } else {
             console.log('No best match found or no bioguide ID');
@@ -5825,9 +5839,9 @@ function calculateNameSimilarity(name1, name2) {
 }
 
 function showPledgePlaceholder() {
-    elements.pledgeImage.style.display = 'none';
+    elements.pledgeImage.style.display = 'block';
+    elements.pledgeImage.style.opacity = '0';
     elements.pledgeImage.removeAttribute('src');
-    elements.pledgeImagePlaceholder.style.display = 'flex';
     elements.pledgePartyTag.textContent = '';
     elements.pledgeTime.textContent = '';
     elements.pledgeLeaderDetails.textContent = '';
@@ -8239,15 +8253,8 @@ function updateLastUpdate() {
         if (pipOverlay) pipOverlay.style.pointerEvents = 'auto';
     }
 
-    // Mute/unmute + volume slider
-    const muteBtn  = document.getElementById('pip-mute-btn');
-    const volSlider = document.getElementById('pip-volume-slider');
-    let storedVolume = 0.75; // remembered non-zero level for toggle restore
-
-    function syncVolSlider() {
-        if (!volSlider) return;
-        volSlider.value = pipVideo.muted ? 0 : Math.round(pipVideo.volume * 100);
-    }
+    // Mute/unmute toggle
+    const muteBtn = document.getElementById('pip-mute-btn');
     function syncMuteBtn() {
         if (!muteBtn) return;
         const unmuted = !pipVideo.muted;
@@ -8255,32 +8262,16 @@ function updateLastUpdate() {
         muteBtn.setAttribute('aria-pressed', String(unmuted));
         muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
         muteBtn.title = unmuted ? 'Mute' : 'Unmute';
-        syncVolSlider();
     }
     if (muteBtn) {
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             pipVideo.muted = !pipVideo.muted;
-            if (!pipVideo.muted) {
-                if (pipVideo.volume === 0) pipVideo.volume = storedVolume;
-                pipVideo.play().catch(() => {});
-            }
+            if (!pipVideo.muted) pipVideo.play().catch(() => {});
             syncMuteBtn();
         });
         pipVideo.addEventListener('volumechange', syncMuteBtn);
         syncMuteBtn();
-    }
-    if (volSlider) {
-        volSlider.addEventListener('input', e => {
-            e.stopPropagation();
-            const vol = parseInt(e.target.value, 10) / 100;
-            if (vol > 0) storedVolume = vol;
-            pipVideo.volume = vol;
-            pipVideo.muted = (vol === 0);
-            if (!pipVideo.muted) pipVideo.play().catch(() => {});
-            syncMuteBtn();
-        });
-        volSlider.addEventListener('click', e => e.stopPropagation());
     }
 
     // CC toggle (closed captions on/off)
