@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614f">
+    <link rel="stylesheet" href="styles.css?v=20260613a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -961,13 +961,26 @@
                 </div>
             </div>
 
-            <!-- Whip Floor Updates -->
+            <!-- Vote Series Timeline -->
+            <div class="vote-series-panel" id="vote-series-panel">
+                <div class="panel-header">
+                    <span class="panel-label">VOTE SERIES</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip</a></span>
+                        <span class="vote-series-notice-time" id="vote-series-notice-time"></span>
+                    </div>
+                </div>
+                <div class="vote-series-body" id="vote-series-body">
+                    <div class="whip-updates-loading">Loading vote series…</div>
+                </div>
+            </div>
+
+            <!-- Whip Notices -->
             <div class="whip-updates-panel" id="whip-updates">
                 <div class="panel-header">
-                    <span class="panel-label">WHIP FLOOR UPDATES</span>
+                    <span class="panel-label">WHIP NOTICES</span>
                     <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip (DomeWatch)</a></span>
-                        <span class="whip-updates-time" id="whip-updates-time"></span>
+                        <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip</a></span>
                     </div>
                 </div>
                 <div class="whip-updates-feed" id="whip-updates-feed">
@@ -1331,7 +1344,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260614f"></script>
+    <script src="app.js?v=20260613a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
