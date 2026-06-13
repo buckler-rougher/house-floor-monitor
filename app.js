@@ -2604,28 +2604,34 @@ function renderWhipNoticesFeed(items) {
 // Matches "Floor Update – N Votes – …" notice titles.
 const VOTE_SERIES_RE = /floor\s+update\s*[–\-]\s*\d+\s*votes?/i;
 
-// Parse <ol><li> items from notice body HTML.
-// Collects ALL <ol> elements (the Whip often splits vote series into two
-// ordered lists separated by a "Following this vote..." paragraph).
-// Returns [{ text, billId, duration }] — connector/filler lines filtered out.
+// Parse vote items from a Whip notice body HTML.
+// The Whip's format is inconsistent: first vote often appears in a plain <p>,
+// subsequent votes in <ol><li>. Scan ALL <p> and <li> elements and keep only
+// those that contain a bill reference. Deduplicate by billId (same bill can
+// appear in both a "Following this vote..." paragraph AND an <ol><li>).
 function parseVoteItemsFromHtml(htmlBody) {
     const div = document.createElement('div');
     div.innerHTML = htmlBody;
-    const ols = Array.from(div.querySelectorAll('ol'));
-    if (!ols.length) return [];
-    const allLis = ols.flatMap(ol => Array.from(ol.querySelectorAll('li')));
-    return allLis.map(li => {
-        const text = li.textContent.trim();
-        // Drop connector lines between vote segments
-        if (/following this vote|house will\s+(?:then\s+)?take|immediately following/i.test(text)) return null;
-        // Extract bill ID — handles H.R., H. Res., H.J.Res., H.Con.Res., S., etc.
-        const m = text.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        const billId = m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
-        // Extract vote duration (e.g. "15 minutes", "5 min")
+    const seen = new Set();
+    const results = [];
+    for (const el of div.querySelectorAll('p, li')) {
+        const raw = el.textContent.trim();
+        if (!raw) continue;
+        // Must contain a recognisable bill reference to qualify as a vote item
+        const m = raw.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
+        if (!m) continue;
+        const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
+        if (seen.has(billId)) continue; // same bill in <p> and <li> — keep first
+        seen.add(billId);
+        // Strip leading connector phrases so they don't pollute the description
+        const text = raw
+            .replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*|adoption of\s+)/i, '')
+            .trim();
         const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
         const duration = durMatch ? `${durMatch[1]} min` : null;
-        return { text, billId, duration };
-    }).filter(Boolean);
+        results.push({ text, billId, duration });
+    }
+    return results;
 }
 
 // Determine status of a vote-timeline item from live data.
