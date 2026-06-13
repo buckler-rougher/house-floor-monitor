@@ -4694,7 +4694,7 @@ function updatePrayerSection(items) {
 
     // Extract chaplain name - handle both house chaplain and guest prayer formats
     let chaplainName = 'Unknown Chaplain';
-    const guestMatch = normalizedDescription.match(/(?:today'?s\s+prayer\s+was\s+)?offered\s+by\s+([^,\.]+)(?:,|\.|$)/i);
+    const guestMatch = normalizedDescription.match(/(?:today'?s\s+prayer\s+was\s+)?offered\s+by\s+([^,]+)(?:,|$)/i);
     if (guestMatch) {
         chaplainName = guestMatch[1].trim();
     }
@@ -4712,11 +4712,6 @@ function updatePrayerSection(items) {
 
     // Remove trailing period if present
     chaplainName = chaplainName.replace(/\.$/, '').trim();
-
-    // Restore full title for known chaplains
-    if (/margaret grun kibben/i.test(chaplainName)) {
-        chaplainName = 'The Reverend Doctor Margaret Grun Kibben';
-    }
 
     // Extract additional information - try to get meaningful description
     let additionalInfo = '';
@@ -4757,7 +4752,7 @@ function updatePrayerSection(items) {
             elements.prayerImage.style.display = 'none';
             elements.prayerImagePlaceholder.style.display = 'flex';
         };
-        elements.prayerImage.alt = 'Rev. Margaret Kibben, House Chaplain';
+        elements.prayerImage.alt = `${chaplainName}, House Chaplain`;
         elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg';
     }
 }
