@@ -2653,16 +2653,31 @@ function getVoteTlStatus(billId) {
         }
     }
 
+    // For H.Res. resolutions, check specialRulesMap — rule votes store their
+    // outcome in ruleStatus, not in billDataMap.status.
+    if (hresNum) {
+        for (const entry of specialRulesMap.values()) {
+            if (String(entry.hresNum) === hresNum) {
+                if (entry.ruleStatus === 'passed') return 'passed';
+                if (entry.ruleStatus === 'failed') return 'failed';
+            }
+        }
+    }
+
     // Check billDataMap (updated by applyRollLogToBills via SSE)
     let bill = billDataMap.get(billId);
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
     if (bill?.status === 'passed') return 'passed';
     if (bill?.status === 'failed') return 'failed';
 
-    // Check rollLog directly for any completed entry matching this bill
+    // Check rollLog directly — also check entry.bill (not just entry.question)
+    // since some procedural votes ("On Ordering the Previous Question") don't
+    // include the H.Res. number in the question text.
     for (const entry of rollLog) {
         const eq = entry.question || '';
-        const em = eq.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        const eb = entry.bill || '';
+        const combined = eq + (eb ? ' ' + eb : '');
+        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
         if (em) {
             const eType = em[1].replace(/\s+/g, '');
             const entryBillId = `${eType} ${em[2]}`;
@@ -2687,11 +2702,21 @@ function voteTlResultText(billId, status) {
         }
         return 'VOTING';
     }
-    // passed/failed — find the vote counts from rollLog or billDataMap
+    // passed/failed — find the vote counts from specialRulesMap, rollLog, or billDataMap
     const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
+    // For H.Res., specialRulesMap stores passageVote as "yeas-nays"
+    if (hresNum) {
+        for (const entry of specialRulesMap.values()) {
+            if (String(entry.hresNum) === hresNum && entry.passageVote) {
+                return `${status.toUpperCase()} ${entry.passageVote.replace('-', '–')}`;
+            }
+        }
+    }
     for (const entry of rollLog) {
         const eq = entry.question || '';
-        const em = eq.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        const eb = entry.bill || '';
+        const combined = eq + (eb ? ' ' + eb : '');
+        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
         if (em) {
             const eType = em[1].replace(/\s+/g, '');
             const entryBillId = `${eType} ${em[2]}`;
@@ -2737,8 +2762,18 @@ function renderVoteTimeline(items) {
     const timeEl = document.getElementById('vote-series-notice-time');
     if (!body) return;
 
-    // Find the most recent notice whose title looks like a vote-series announcement
-    const seriesItem = items.find(item => VOTE_SERIES_RE.test(item.title));
+    // Pick the notice listing the most votes — the Whip often follows up with
+    // condensed "1 vote" notices as earlier votes complete, which would make
+    // already-finished votes disappear from the timeline. Taking the notice
+    // with the highest N preserves the full series.
+    const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
+    const seriesItem = seriesItems.length
+        ? seriesItems.reduce((best, cur) => {
+            const n = parseInt(cur.title.match(/(\d+)\s*votes?/i)?.[1] || '0');
+            const bestN = parseInt(best.title.match(/(\d+)\s*votes?/i)?.[1] || '0');
+            return n > bestN ? cur : best;
+        })
+        : null;
     if (!seriesItem) {
         body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
         return;
