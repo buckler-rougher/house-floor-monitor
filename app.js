@@ -2605,20 +2605,27 @@ function renderWhipNoticesFeed(items) {
 const VOTE_SERIES_RE = /floor\s+update\s*[–\-]\s*\d+\s*votes?/i;
 
 // Parse <ol><li> items from notice body HTML.
-// Returns [{ text, billId }] where billId may be null.
+// Collects ALL <ol> elements (the Whip often splits vote series into two
+// ordered lists separated by a "Following this vote..." paragraph).
+// Returns [{ text, billId, duration }] — connector/filler lines filtered out.
 function parseVoteItemsFromHtml(htmlBody) {
     const div = document.createElement('div');
     div.innerHTML = htmlBody;
-    const ol = div.querySelector('ol');
-    if (!ol) return [];
-    return Array.from(ol.querySelectorAll('li')).map(li => {
+    const ols = Array.from(div.querySelectorAll('ol'));
+    if (!ols.length) return [];
+    const allLis = ols.flatMap(ol => Array.from(ol.querySelectorAll('li')));
+    return allLis.map(li => {
         const text = li.textContent.trim();
-        // Extract bill ID from text — handles H.R., H.Res., H.J.Res., H.Con.Res., S., etc.
+        // Drop connector lines between vote segments
+        if (/following this vote|house will\s+(?:then\s+)?take|immediately following/i.test(text)) return null;
+        // Extract bill ID — handles H.R., H. Res., H.J.Res., H.Con.Res., S., etc.
         const m = text.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        if (!m) return { text, billId: null };
-        const type = m[1].replace(/\s+/g, '');
-        return { text, billId: `${type} ${m[2]}` };
-    });
+        const billId = m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
+        // Extract vote duration (e.g. "15 minutes", "5 min")
+        const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
+        const duration = durMatch ? `${durMatch[1]} min` : null;
+        return { text, billId, duration };
+    }).filter(Boolean);
 }
 
 // Determine status of a vote-timeline item from live data.
@@ -2751,27 +2758,35 @@ function renderVoteTimeline(items) {
         return;
     }
 
-    const headerHtml = `<div class="vote-series-header-text">${escapeHtml(seriesItem.title)}</div>`;
-    const itemsHtml = votes.map(({ text, billId }) => {
+    const itemsHtml = votes.map(({ text, billId, duration }) => {
         const status = getVoteTlStatus(billId);
         const resultText = voteTlResultText(billId, status);
-        // Split text into bill number + description for cleaner display
-        const billLabel = billId || text.split(/\s[–\-]\s/)[0].trim();
-        const descParts = text.split(/\s[–\-]\s/);
-        const desc = descParts.length > 1 ? descParts.slice(1).join(' – ') : '';
+        // Build label and description — strip duration segment from desc
+        const parts = text.split(/\s[–\-]\s/);
+        const billLabel = billId || parts[0].trim();
+        const desc = parts.length > 1
+            ? parts.slice(1)
+                .filter(p => !/^\d+\s*min(?:utes?)?$/i.test(p.trim()))
+                .join(' – ')
+                .trim()
+            : '';
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
+        const hasBadges = duration || resultText;
         return `
             <div class="vote-tl-item"${billAttr}>
                 <div class="vote-tl-circle ${status}"></div>
                 <div class="vote-tl-content">
                     <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
                     ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
-                    ${resultText ? `<div class="vote-tl-result ${status}">${escapeHtml(resultText)}</div>` : ''}
+                    ${hasBadges ? `<div class="vote-tl-badges">
+                        ${duration ? `<span class="vote-tl-duration">${escapeHtml(duration)}</span>` : ''}
+                        ${resultText ? `<span class="vote-tl-result ${status}">${escapeHtml(resultText)}</span>` : ''}
+                    </div>` : ''}
                 </div>
             </div>`;
     }).join('');
 
-    body.innerHTML = headerHtml + `<div class="vote-tl-items">${itemsHtml}</div>`;
+    body.innerHTML = `<div class="vote-tl-items">${itemsHtml}</div>`;
 }
 
 // Build the Dem Whip recommendation tag for a bill, or '' if none.
