@@ -6034,6 +6034,15 @@ function updatePartyBreakdownDisplay() {
         elements.demFill.style.width = `${demPercent}%`;
         elements.indFill.style.width = `${indPercent}%`;
         elements.vacFill.style.width = `${vacPercent}%`;
+
+        // Majority party always on left — append in desired order (appendChild moves existing nodes)
+        const partyBar = elements.repFill.parentElement;
+        if (partyBar) {
+            const order = houseMakeup.democrats > houseMakeup.republicans
+                ? [elements.demFill, elements.repFill, elements.indFill, elements.vacFill]
+                : [elements.repFill, elements.demFill, elements.indFill, elements.vacFill];
+            order.forEach(el => partyBar.appendChild(el));
+        }
     }
     
     // Update last update time
