@@ -2084,24 +2084,23 @@ async function fetchAirportDelays(preData = null) {
 
         // Show loading state (only if empty to avoid flash on refresh)
         if (!elements.airportDelaysList.hasChildNodes()) {
-            elements.airportDelaysList.innerHTML = FAA_CONFIG.wasAirports.map(code => `
-                <div class="airport-delay-item">
-                    <span class="airport-code">${code}</span>
-                    <span class="airport-status loading">LOADING</span>
-                </div>
-            `).join('');
+            elements.airportDelaysList.innerHTML =
+                `<div class="airport-section-header">WAS AREA · ARRIVALS</div>` +
+                FAA_CONFIG.wasAirports.map(code => `
+                    <div class="airport-delay-item">
+                        <div class="airport-item-main">
+                            <span class="airport-info">${code}</span>
+                            <span class="airport-status loading">LOADING</span>
+                        </div>
+                    </div>
+                `).join('');
         }
 
         const delays = {};
 
         // Initialize WAS airports as normal (always show these)
         FAA_CONFIG.wasAirports.forEach(code => {
-            delays[code] = {
-                status: 'normal',
-                delay: 'No delays',
-                reason: 'No delays',
-                trend: 'Normal'
-            };
+            delays[code] = { status: 'normal', delay: 'No delays', reason: '', trend: '' };
         });
 
         // Track connection status
@@ -2173,20 +2172,45 @@ async function fetchAirportDelays(preData = null) {
                     if (typeName === 'General Arrival/Departure Delay Info') {
                         const delayList = delayType.querySelectorAll('Arrival_Departure_Delay_List Delay');
                         delayList.forEach(delay => {
-                            const airport = delay.querySelector('ARPT')?.textContent;
-                            const reason = delay.querySelector('Reason')?.textContent || 'Unknown';
-                            const minDelay = delay.querySelector('Min')?.textContent || '';
-                            const maxDelay = delay.querySelector('Max')?.textContent || '';
-                            const trend = delay.querySelector('Trend')?.textContent || '';
-                            
-                            if (airport) {
-                                delays[airport] = {
-                                    status: minDelay ? 'delay' : 'normal',
-                                    delay: minDelay && maxDelay ? `${minDelay}-${maxDelay} minutes` : 'No delays',
-                                    reason: reason,
-                                    trend: trend
-                                };
-                            }
+                            const airport = delay.querySelector('ARPT')?.textContent?.trim();
+                            const reason = delay.querySelector('Reason')?.textContent?.trim() || '';
+                            const minDelay = delay.querySelector('Min')?.textContent?.trim() || '';
+                            const maxDelay = delay.querySelector('Max')?.textContent?.trim() || '';
+                            const trend = delay.querySelector('Trend')?.textContent?.trim() || '';
+                            const arrDep = delay.querySelector('Arrival_Departure')?.textContent?.trim() || '';
+
+                            if (!airport) return;
+
+                            const isWas = FAA_CONFIG.wasAirports.includes(airport);
+                            // WAS airports: arrival delays only; others: departure delays only
+                            if (isWas && arrDep !== 'Arrival') return;
+                            if (!isWas && arrDep !== 'Departure') return;
+
+                            delays[airport] = {
+                                status: minDelay ? 'delay' : 'normal',
+                                delay: minDelay && maxDelay ? `${minDelay}-${maxDelay} min` : 'No delays',
+                                reason: reason,
+                                trend: trend
+                            };
+                        });
+                    }
+
+                    // Handle Ground Stops
+                    if (typeName === 'Ground Stop') {
+                        const programs = delayType.querySelectorAll('Ground_Stop_List Program');
+                        programs.forEach(program => {
+                            const airport = program.querySelector('ARPT')?.textContent?.trim();
+                            const reason = program.querySelector('Reason')?.textContent?.trim() || '';
+                            const endTime = program.querySelector('End_Time')?.textContent?.trim() || '';
+
+                            if (!airport) return;
+
+                            delays[airport] = {
+                                status: 'ground-stop',
+                                delay: 'GROUND STOP',
+                                reason: reason + (endTime ? ` · until ${endTime}` : ''),
+                                trend: ''
+                            };
                         });
                     }
                 });
@@ -2208,52 +2232,78 @@ async function fetchAirportDelays(preData = null) {
     } catch (error) {
         console.error('Airport delays fetch error:', error);
         if (elements.airportDelaysList) {
-            setIfChanged(elements.airportDelaysList, '<div class="airport-delay-item"><span class="airport-status delay">CONNECTION ERROR</span></div>');
+            setIfChanged(elements.airportDelaysList,
+                `<div class="airport-section-header">WAS AREA · ARRIVALS</div>` +
+                `<div class="airport-delay-item"><div class="airport-item-main"><span class="airport-info">CONNECTION ERROR</span><span class="airport-status delay">ERROR</span></div></div>`);
         }
     }
+}
+
+// Render a single airport row (used by updateAirportDelaysDisplay)
+function renderAirportRow(code, data) {
+    const statusClass = data.status === 'normal' ? 'normal'
+        : data.status === 'ground-stop' ? 'ground-stop'
+        : data.status === 'disconnected' ? 'disconnected'
+        : 'delay';
+    const delayText = data.status === 'normal' ? 'NO DELAYS'
+        : data.status === 'ground-stop' ? 'GROUND STOP'
+        : data.status === 'disconnected' ? 'NO DATA'
+        : (data.delay || 'DELAYS');
+    const airportName = airportNames[code] || '';
+    const airportUrl = airportUrls[code];
+
+    const trendClass = data.trend === 'Increasing' ? 'up' : data.trend === 'Decreasing' ? 'down' : '';
+    const trendSymbol = data.trend === 'Increasing' ? '↑' : data.trend === 'Decreasing' ? '↓' : '';
+    const hasDetail = data.status !== 'normal' && data.status !== 'disconnected' && data.reason;
+
+    const subLine = hasDetail
+        ? `<div class="airport-item-sub"><span class="airport-reason">${escapeHtml(data.reason)}</span>${trendSymbol ? `<span class="airport-trend ${trendClass}">${trendSymbol}</span>` : ''}</div>`
+        : '';
+
+    const inner = `<div class="airport-delay-item">
+        <div class="airport-item-main">
+            <span class="airport-info">${escapeHtml(code)}${airportName ? ` · ${escapeHtml(airportName)}` : ''}</span>
+            <span class="airport-status ${statusClass}">${escapeHtml(delayText)}</span>
+        </div>${subLine}
+    </div>`;
+
+    return airportUrl
+        ? `<a href="${escapeHtml(airportUrl)}" target="_blank" rel="noopener" class="airport-delay-item-link">${inner}</a>`
+        : inner;
 }
 
 // Update airport delays display
 function updateAirportDelaysDisplay(connectionStatus = 'connected') {
     if (!elements.airportDelaysList || !airportDelays) return;
 
-    // If disconnected, show connection error for all airports
+    const wasAirports = FAA_CONFIG.wasAirports;
+
+    // If disconnected, show NO DATA for WAS airports only
     if (connectionStatus === 'disconnected') {
-        setIfChanged(elements.airportDelaysList, FAA_CONFIG.wasAirports.map(code => `
-            <div class="airport-delay-item">
-                <span class="airport-info">${code}</span>
-                <span class="airport-status disconnected">NO DATA</span>
-            </div>
-        `).join(''));
+        setIfChanged(elements.airportDelaysList,
+            `<div class="airport-section-header">WAS AREA · ARRIVALS</div>` +
+            wasAirports.map(code => renderAirportRow(code, { status: 'disconnected', delay: 'NO DATA', reason: '', trend: '' })).join(''));
         return;
     }
 
-    const delaysHtml = Object.entries(airportDelays).map(([code, data]) => {
-        const statusClass = data.status === 'normal' ? 'normal' : 'delay';
-        const delayText = data.status === 'normal' ? 'NO DELAYS' : data.delay || 'DELAYS';
-        const airportName = airportNames[code] || code;
-        const airportUrl = airportUrls[code];
-        
-        const safeCode = escapeHtml(code);
-        const safeName = escapeHtml(airportName);
-        const safeDelay = escapeHtml(delayText);
-        return `
-            ${airportUrl ?
-                `<a href="${escapeHtml(airportUrl)}" target="_blank" rel="noopener" class="airport-delay-item-link">
-                    <div class="airport-delay-item">
-                        <span class="airport-info">${safeCode} - ${safeName}</span>
-                        <span class="airport-status ${statusClass}">${safeDelay}</span>
-                    </div>
-                </a>` :
-                `<div class="airport-delay-item">
-                    <span class="airport-info">${safeCode} - ${safeName}</span>
-                    <span class="airport-status ${statusClass}">${safeDelay}</span>
-                </div>`
-            }
-        `;
+    // WAS section — always show DCA/IAD/BWI
+    const wasHtml = wasAirports.map(code => {
+        const data = airportDelays[code] || { status: 'normal', delay: 'No delays', reason: '', trend: '' };
+        return renderAirportRow(code, data);
     }).join('');
 
-    setIfChanged(elements.airportDelaysList, delaysHtml);
+    // Nationwide section — non-WAS airports with any active delay or ground stop
+    const nationalEntries = Object.entries(airportDelays)
+        .filter(([code]) => !wasAirports.includes(code))
+        .filter(([, data]) => data.status !== 'normal');
+    const nationalHtml = nationalEntries.map(([code, data]) => renderAirportRow(code, data)).join('');
+
+    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS</div>${wasHtml}`;
+    if (nationalHtml) {
+        html += `<div class="airport-section-header national-header">NATIONWIDE · DEPARTURES</div>${nationalHtml}`;
+    }
+
+    setIfChanged(elements.airportDelaysList, html);
 }
 
 // Convert a string to Title Case, respecting common minor words
