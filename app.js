@@ -6639,8 +6639,9 @@ function init() {
             const target = btn || metric;
             if (!target) return;
             const newFilter = target.dataset.filter;
-            if (!newFilter || newFilter === absenteeFilterMode) return;
-            absenteeFilterMode = newFilter;
+            if (!newFilter) return;
+            // Clicking the already-active party filter clears back to all
+            absenteeFilterMode = (newFilter !== 'all' && newFilter === absenteeFilterMode) ? 'all' : newFilter;
             if (_absenteesPayload) {
                 updateAbsenteeUI(
                     _absenteesPayload.absentees,
