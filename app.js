@@ -6419,6 +6419,22 @@ function applyTweetFilter() {
         card.classList.toggle('active', card.dataset.handle === handle);
     });
 
+    // Active-filter chip — shows selected reporter with ✕ to clear
+    const chip = document.getElementById('reporter-active-chip');
+    if (chip) {
+        if (handle) {
+            const displayName = REPORTER_NAMES[handle] || handle.replace('@', '');
+            const bare = handle.replace('@', '');
+            chip.innerHTML =
+                `<img class="reporter-card-avatar" src="https://unavatar.io/x/${escapeHtml(bare)}" alt="" onerror="this.style.display='none'">` +
+                `<span class="reporter-chip-name">${escapeHtml(displayName)}</span>` +
+                `<span class="reporter-chip-clear" aria-hidden="true">✕</span>`;
+            chip.style.display = '';
+        } else {
+            chip.style.display = 'none';
+        }
+    }
+
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
     feed.querySelectorAll('.tweet-item, .tweet-thread').forEach(el => {
@@ -6442,6 +6458,17 @@ function initReporterCards() {
             `<img class="reporter-card-avatar" src="https://unavatar.io/x/${escapeHtml(bare)}" alt="" onerror="this.style.display='none'">` +
             `${escapeHtml(r.name)}</button>`;
     }).join('');
+
+    // Active-chip clear button
+    const activeChip = document.getElementById('reporter-active-chip');
+    if (activeChip) {
+        activeChip.addEventListener('click', () => {
+            window._tweetFilter   = null;
+            window._tweetUserMode = false;
+            applyTweetFilter();
+            fetchTweets();
+        });
+    }
 
     row.addEventListener('click', e => {
         const card = e.target.closest('.reporter-card');
