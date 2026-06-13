@@ -2000,6 +2000,7 @@ let _absenteesPayload = null; // { absentees, rollNumber, rollDate, rollTime }
 let houseMakeup = null;
 let vacancies = [];
 let lastUpdatedDate = null;
+let _chaplainPhotoCache = null; // { name, url } — avoids repeat Wikipedia lookups
 
 // Congress Information
 let currentCongress = null;
@@ -4743,17 +4744,49 @@ function updatePrayerSection(items) {
         elements.prayerImage.removeAttribute('src');
         elements.prayerImagePlaceholder.style.display = 'flex';
     } else {
-        // For House Chaplain, load photo with fade-in; fall back to placeholder on error
-        elements.prayerImagePlaceholder.style.display = 'none';
-        elements.prayerImage.style.display = 'block';
-        elements.prayerImage.style.opacity = '0';
-        elements.prayerImage.onload = () => { elements.prayerImage.style.opacity = '1'; };
-        elements.prayerImage.onerror = () => {
-            elements.prayerImage.style.display = 'none';
-            elements.prayerImagePlaceholder.style.display = 'flex';
-        };
+        // For House Chaplain, look up photo via Wikipedia using the name from proceedings.
+        // Placeholder shows while loading; fades to photo on success; stays on failure.
         elements.prayerImage.alt = `${chaplainName}, House Chaplain`;
-        elements.prayerImage.src = 'https://upload.wikimedia.org/wikipedia/commons/a/af/Margaret_G._Kibben_Portrait_for_the_118th_Congress_%282024%29.jpg';
+        elements.prayerImage.style.opacity = '0';
+
+        const applyChaplainPhoto = (url) => {
+            elements.prayerImagePlaceholder.style.display = 'none';
+            elements.prayerImage.style.display = 'block';
+            elements.prayerImage.onload = () => { elements.prayerImage.style.opacity = '1'; };
+            elements.prayerImage.onerror = () => {
+                elements.prayerImage.style.display = 'none';
+                elements.prayerImagePlaceholder.style.display = 'flex';
+            };
+            elements.prayerImage.src = url;
+        };
+
+        if (_chaplainPhotoCache?.name === chaplainName) {
+            applyChaplainPhoto(_chaplainPhotoCache.url);
+        } else {
+            elements.prayerImagePlaceholder.style.display = 'flex';
+            elements.prayerImage.style.display = 'none';
+            (async () => {
+                try {
+                    const q = encodeURIComponent(chaplainName + ' chaplain');
+                    const searchRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${q}&srlimit=1&format=json&origin=*`);
+                    if (!searchRes.ok) throw new Error('search failed');
+                    const searchData = await searchRes.json();
+                    const pageId = searchData?.query?.search?.[0]?.pageid;
+                    if (!pageId) throw new Error('no article');
+
+                    const imgRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&pageids=${pageId}&prop=pageimages&pithumbsize=400&format=json&origin=*`);
+                    if (!imgRes.ok) throw new Error('image fetch failed');
+                    const imgData = await imgRes.json();
+                    const thumbUrl = imgData?.query?.pages?.[pageId]?.thumbnail?.source;
+                    if (!thumbUrl) throw new Error('no image');
+
+                    _chaplainPhotoCache = { name: chaplainName, url: thumbUrl };
+                    if (elements.prayerImage) applyChaplainPhoto(thumbUrl);
+                } catch (_e) {
+                    // Photo is optional — placeholder already showing
+                }
+            })();
+        }
     }
 }
 
