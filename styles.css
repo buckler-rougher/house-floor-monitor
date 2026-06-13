@@ -2872,7 +2872,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 /* Absentee sort toggle */
-.absentee-sort-bar {
+.absentee-filter-bar {
     display: flex;
     align-items: center;
     gap: var(--sp-4);
@@ -2880,27 +2880,29 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-elevated);
 }
-.absentee-sort-btn {
-    font-family: var(--font-mono);
+.absentee-filter-btn {
     font-size: var(--fs-xs);
     font-weight: 600;
-    letter-spacing: 0.4px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    padding: var(--sp-2) var(--sp-8);
-    border-radius: var(--radius-4);
-    border: 1px solid var(--border-color);
-    background: transparent;
     color: var(--text-muted);
+    background: none;
+    border: none;
+    border-radius: var(--radius-3);
+    padding: 3px 9px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: color 0.15s ease, background 0.15s ease;
+    line-height: 1.2;
+    white-space: nowrap;
 }
-.absentee-sort-btn.active {
-    background: var(--bg-card);
+.absentee-filter-btn:hover:not(.active) {
     color: var(--text-secondary);
-    border-color: rgba(139, 148, 158, 0.4);
+    background: rgba(255, 255, 255, 0.04);
 }
-.absentee-sort-btn:hover:not(.active) {
-    color: var(--text-secondary);
+.absentee-filter-btn.active {
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.12);
 }
 /* Party group header inside the 2-col absentee grid */
 .absentee-party-header {
@@ -3510,6 +3512,11 @@ a.tweet-quote:hover {
     flex-direction: column;
     align-items: center;
     flex: 1;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+.party-metric.dim {
+    opacity: 0.28;
 }
 
 .party-label {
