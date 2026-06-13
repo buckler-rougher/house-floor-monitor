@@ -1969,8 +1969,8 @@ const HOUSE_MAKEUP_CONFIG = {
 // State for RSS feed
 let proceedingsData = [];
 
-// Absentee sort state
-let absenteeSortMode = 'default';
+// Absentee filter state
+let absenteeFilterMode = 'all'; // 'all' | 'rep' | 'dem'
 let _absenteesPayload = null; // { absentees, rollNumber, rollDate, rollTime }
 
 // State for House makeup
@@ -6630,15 +6630,17 @@ function init() {
         });
     }
 
-    // Absentee sort toggle
+    // Absentee filter toggle — handles both filter-bar buttons and metric box clicks
     const absenteePanel = document.querySelector('.absentee-panel');
     if (absenteePanel) {
         absenteePanel.addEventListener('click', e => {
-            const btn = e.target.closest('.absentee-sort-btn');
-            if (!btn) return;
-            absenteeSortMode = btn.dataset.sort;
-            absenteePanel.querySelectorAll('.absentee-sort-btn').forEach(b =>
-                b.classList.toggle('active', b === btn));
+            const btn = e.target.closest('.absentee-filter-btn');
+            const metric = e.target.closest('.party-metric[data-filter]');
+            const target = btn || metric;
+            if (!target) return;
+            const newFilter = target.dataset.filter;
+            if (!newFilter || newFilter === absenteeFilterMode) return;
+            absenteeFilterMode = newFilter;
             if (_absenteesPayload) {
                 updateAbsenteeUI(
                     _absenteesPayload.absentees,
@@ -7199,8 +7201,22 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
         elements.absenteeRollInfo.textContent = `Roll ${rollNumber}${dateTimeStr ? ' • ' + dateTimeStr : ''}`;
     }
     
-    // Cache payload so the sort toggle can re-render without a refetch
+    // Cache payload so the filter can re-render without a refetch
     _absenteesPayload = { absentees, rollNumber, rollDate, rollTime };
+
+    // Apply dim/active state to metric boxes and sync filter buttons
+    const absenteePanel = document.querySelector('.absentee-panel');
+    if (absenteePanel) {
+        absenteePanel.querySelectorAll('.party-metric[data-filter]').forEach(m => {
+            const mFilter = m.dataset.filter;
+            // Dim all metrics except the selected one (total dims too when a party is active)
+            const isActive = absenteeFilterMode === 'all' || mFilter === absenteeFilterMode;
+            m.classList.toggle('dim', !isActive);
+        });
+        absenteePanel.querySelectorAll('.absentee-filter-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.filter === absenteeFilterMode);
+        });
+    }
 
     // Update absentee list
     if (absentees.length > 0) {
@@ -7212,26 +7228,16 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             console.error('Failed to load member XML for absentees:', error);
         }
 
-        // Sort by party if requested
+        // Filter by party when not 'all'
         let displayAbsentees = absentees;
-        if (absenteeSortMode === 'party') {
-            const reps = absentees.filter(a => a.party === 'rep');
-            const dems = absentees.filter(a => a.party === 'dem');
-            const inds = absentees.filter(a => a.party !== 'rep' && a.party !== 'dem');
-            displayAbsentees = [...reps, ...dems, ...inds];
+        if (absenteeFilterMode === 'rep') {
+            displayAbsentees = absentees.filter(a => a.party === 'rep');
+        } else if (absenteeFilterMode === 'dem') {
+            displayAbsentees = absentees.filter(a => a.party === 'dem');
         }
 
         const htmlParts = [];
-        let lastParty = null;
         displayAbsentees.forEach((absentee, absenteeIndex) => {
-            // Insert party group header when mode is 'party' and party changes
-            if (absenteeSortMode === 'party' && absentee.party !== lastParty) {
-                const count = displayAbsentees.filter(a => a.party === absentee.party).length;
-                const label = absentee.party === 'rep' ? 'REPUBLICANS' : absentee.party === 'dem' ? 'DEMOCRATS' : 'INDEPENDENTS';
-                const hClass = absentee.party === 'rep' ? 'rep-header' : absentee.party === 'dem' ? 'dem-header' : 'ind-header';
-                htmlParts.push(`<div class="absentee-party-header ${hClass}">${label} (${count})</div>`);
-                lastParty = absentee.party;
-            }
 
             const parsedName = parseAbsenteeRollName(absentee.name);
             const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;

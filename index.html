@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260612e">
+    <link rel="stylesheet" href="styles.css?v=20260612f">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -983,25 +983,26 @@
                     <span class="absentee-explainer">Potential absences based on Members who missed the previous vote series</span>
                     <span class="absentee-roll-info" id="absentee-roll-info">--</span>
                 </div>
-                <div class="absentee-sort-bar">
-                    <button class="absentee-sort-btn active" data-sort="default">DEFAULT</button>
-                    <button class="absentee-sort-btn" data-sort="party">BY PARTY</button>
+                <div class="absentee-filter-bar">
+                    <button class="absentee-filter-btn active" data-filter="all">ALL</button>
+                    <button class="absentee-filter-btn" data-filter="dem">D</button>
+                    <button class="absentee-filter-btn" data-filter="rep">R</button>
                 </div>
                 <div class="absentee-content">
                     <div class="party-breakdown-metrics">
-                        <div class="party-metric rep-metric">
+                        <div class="party-metric rep-metric" data-filter="rep">
                             <span class="party-label">REPUBLICANS</span>
                             <span class="party-value" id="absentee-rep">--</span>
                         </div>
-                        <div class="party-metric dem-metric">
+                        <div class="party-metric dem-metric" data-filter="dem">
                             <span class="party-label">DEMOCRATS</span>
                             <span class="party-value" id="absentee-dem">--</span>
                         </div>
-                        <div class="party-metric ind-metric" id="absentee-ind-metric" style="display:none">
+                        <div class="party-metric ind-metric" id="absentee-ind-metric" style="display:none" data-filter="ind">
                             <span class="party-label">INDEPENDENT</span>
                             <span class="party-value" id="absentee-ind">--</span>
                         </div>
-                        <div class="party-metric total-metric">
+                        <div class="party-metric total-metric" data-filter="all">
                             <span class="party-label">TOTAL</span>
                             <span class="party-value" id="absentee-total">--</span>
                         </div>
@@ -1313,7 +1314,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260612e"></script>
+    <script src="app.js?v=20260612f"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
