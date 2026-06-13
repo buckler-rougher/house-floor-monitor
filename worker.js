@@ -2811,6 +2811,58 @@ async function handleWhipNotices(env) {
   }, 1800);
 }
 
+// ── Whip floor updates (Firestore ActivityFeeds, Office C001101) ─────────────
+// Reads the Democratic Whip's real-time intra-day floor update notices from
+// the public Firestore project that powers domewatch.us/whip/floor.
+// No auth required — Firestore security rules allow public reads.
+// Returns newest-first array of { id, title, body, publishedAt }.
+async function handleWhipFloorUpdates() {
+  const PROJECT = 'pacific-castle-135023';
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents:runQuery`;
+  const query = {
+    structuredQuery: {
+      from: [{ collectionId: 'ActivityFeeds' }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: 'Office.id' },
+          op: 'EQUAL',
+          value: { stringValue: 'C001101' },
+        },
+      },
+      orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
+      limit: 10,
+    },
+  };
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) throw new Error(`Firestore returned ${resp.status}`);
+    const rows = await resp.json();
+    const items = rows
+      .filter(r => r.document)
+      .map(r => {
+        const f = r.document.fields || {};
+        return {
+          id:          f.id?.stringValue || r.document.name.split('/').pop(),
+          title:       f.title?.stringValue || '',
+          body:        f.body?.stringValue || '',
+          publishedAt: f.publishedAt?.timestampValue || null,
+        };
+      });
+    return new Response(JSON.stringify({ items }), {
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ items: [], error: err.message }), {
+      status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+    });
+  }
+}
+
 // ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────
 // Returns the complete unfiltered DomeWatch response so we can see every field
 // on every notice item (including those with null recommendations).
@@ -2886,6 +2938,8 @@ async function handleRequest(request, env) {
     return await handleCasualtyList(env);
   } else if (path === '/api/rules' && request.method === 'GET') {
     return await handleRules(request, env);
+  } else if (path === '/api/whip-floor-updates' && request.method === 'GET') {
+    return await handleWhipFloorUpdates();
   } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
     return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {

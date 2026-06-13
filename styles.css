@@ -2667,6 +2667,108 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   text-decoration: underline;
 }
 
+/* ── Whip Floor Updates Panel ───────────────────────────────────────────────── */
+.whip-updates-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+
+.whip-updates-time {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--accent-green);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+.whip-updates-feed {
+  padding: 0;
+}
+
+.whip-update-item {
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--sp-16) var(--sp-24);
+}
+.whip-update-item:last-child {
+  border-bottom: none;
+}
+
+.whip-update-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-10);
+  margin-bottom: var(--sp-10);
+}
+
+.whip-update-time {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--accent-green);
+  flex-shrink: 0;
+}
+
+.whip-update-title {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.whip-update-body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-lg);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Sanitise the HTML from the Whip's notices */
+.whip-update-body p {
+  margin: 0 0 var(--sp-8);
+}
+.whip-update-body p:last-child {
+  margin-bottom: 0;
+}
+.whip-update-body ol,
+.whip-update-body ul {
+  margin: 0 0 var(--sp-8);
+  padding-left: var(--sp-24);
+}
+.whip-update-body li {
+  margin-bottom: var(--sp-4);
+}
+.whip-update-body strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.whip-update-body a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+.whip-update-body a:hover {
+  text-decoration: underline;
+}
+/* Strip inline color styles — we own the palette */
+.whip-update-body [style*="color"] {
+  color: inherit !important;
+}
+
+.whip-updates-loading,
+.whip-updates-error {
+  padding: var(--sp-24);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+}
+.whip-updates-error {
+  color: var(--accent-red);
+}
+
 /* Absentee Panel */
 .absentee-panel {
   background: var(--bg-card);
