@@ -1996,9 +1996,12 @@ const CONGRESS_INDEX_CONFIG = {
     refreshInterval: 300000 // 5 minutes
 };
 
-// ISO 7001 PI TF 015 (Arrivals) and PI TF 016 (Departures) — real ISO glyph paths
-const ARRIVALS_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="16" height="16" overflow="visible" style="vertical-align:middle;margin-left:4px"><g transform="translate(-151.3157,-101.28343)"><path fill="currentColor" d="m 171.55992,115.6357 -3.63802,1.4428 4.26537,6.96288 -6.83731,2.63447 -4.89272,-4.32842 -2.94814,1.31723 4.32841,7.27656 10.28723,-1.38028 20.26543,-6.75462 c 4.18881,-1.10754 6.25862,-2.8375 5.84874,-4.0442 -0.36669,-1.07956 -2.74488,-1.78489 -6.93653,-0.53537 l -11.58792,3.36827 z m -14.30145,23.02081 v 1.19166 h 41.02333 v -1.19166 z"/></g></svg>`;
-const DEPARTURES_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z m -24.35201,18.53427 v 1.39888 h 41.04659 v -1.39888 z"/></g></svg>`;
+// ISO 7001 PI TF 016 (Arrivals — landing plane) and a vertical-flip of the same for Departures.
+// PI TF 016 path renders reliably at small sizes; PI TF 015 (departures) does not, so we derive
+// the departure glyph by flipping PI TF 016 vertically (plane ascending instead of descending).
+const ARRIVALS_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z m -24.35201,18.53427 v 1.39888 h 41.04659 v -1.39888 z"/></g></svg>`;
+// Departures: PI TF 016 airplane body flipped vertically (ascending) + baseline rect at bottom
+const DEPARTURES_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(0,52.917) scale(1,-1) translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z"/></g><rect fill="currentColor" x="5.97" y="35.03" width="41.05" height="1.4"/></svg>`;
 
 // FAA Airport Status Configuration
 const FAA_CONFIG = {
@@ -2290,10 +2293,11 @@ function renderAirportRow(code, data) {
         : `<div class="airport-item-sub"></div>`;
 
     const inner = `<div class="airport-delay-item">
-        <div class="airport-item-main">
+        <div class="airport-info-col">
             <span class="airport-info">${escapeHtml(code)}${airportName ? ` · ${escapeHtml(airportName)}` : ''}</span>
-            <span class="airport-status ${statusClass}">${escapeHtml(delayText)}</span>
-        </div>${subLine}
+            ${subLine}
+        </div>
+        <span class="airport-status ${statusClass}">${escapeHtml(delayText)}</span>
     </div>`;
 
     return airportUrl
@@ -2327,7 +2331,7 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
         .filter(([, data]) => data.status !== 'normal');
     const nationalHtml = nationalEntries.map(([code, data]) => renderAirportRow(code, data)).join('');
 
-    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS</div>${wasHtml}`;
+    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS ${ARRIVALS_GLYPH}</div>${wasHtml}`;
     if (nationalHtml) {
         html += `<div class="airport-section-header national-header">NATIONWIDE · DEPARTURES ${DEPARTURES_GLYPH}</div>${nationalHtml}`;
     }
@@ -3083,7 +3087,8 @@ function createBillCard(bill, procedure) {
     const mtrLabel = mtr.status === 'failed' ? `Motion to Recommit Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                    : 'Motion to Recommit';
-    const mtrIcon  = mtr.status === 'failed' ? '✕'
+    const mtrIcon  = mtr.status === 'failed'
+                   ? `<svg width="7" height="7" viewBox="0 0 7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1" y1="1" x2="6" y2="6"/><line x1="6" y1="1" x2="1" y2="6"/></svg>`
                    : mtr.status === 'passed' ? '✓'
                    : '';
 
@@ -6014,7 +6019,7 @@ function updatePartyBreakdownDisplay() {
 const DEFAULT_REPORTER_CARDS = [
     { handle: '@JakeSherman',    name: 'Jake Sherman' },
     { handle: '@ChadPergram',    name: 'Chad Pergram' },
-    { handle: '@HouseInSession', name: 'Billy House' },
+    { handle: '@ringwiss',       name: 'Ring Wiss' },
     { handle: '@MacFarlaneNews', name: 'Scott MacFarlane' },
     { handle: '@AndrewSolender', name: 'Andrew Solender' },
     { handle: '@mkraju',         name: 'Manu Raju' },
@@ -6112,11 +6117,21 @@ setInterval(() => {
     if (proceedingsData.length) renderProceedingsFeedPanel(proceedingsData);
 }, 30_000);
 
-async function fetchTweets(preData = null) {
+async function fetchTweets(preData = null, userHandle = null) {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
+    // Don't override a user-profile view with SSE list pushes
+    if (preData && window._tweetUserMode) return;
     try {
-        const data = preData || await fetch('https://api.evanhollander.org/house-floor/api/tweets').then(r => r.json());
+        let data;
+        if (preData) {
+            data = preData;
+        } else {
+            const apiUrl = userHandle
+                ? `https://api.evanhollander.org/house-floor/api/tweets?user=${encodeURIComponent(userHandle)}`
+                : 'https://api.evanhollander.org/house-floor/api/tweets';
+            data = await fetch(apiUrl).then(r => r.json());
+        }
         if (!data.tweets || !data.tweets.length) {
             feed.innerHTML = '<div class="tweets-empty">No posts available.</div>';
             return;
@@ -6298,7 +6313,8 @@ function lbUpdateImage(overlay) {
 }
 
 // ── Reporter filter ──────────────────────────────────────────────────────────
-window._tweetFilter = null;
+window._tweetFilter   = null;  // '@Handle' of active filter, or null
+window._tweetUserMode = false; // true when showing a specific user's profile feed
 
 function applyTweetFilter() {
     const handle = window._tweetFilter;
@@ -6324,52 +6340,103 @@ function applyTweetFilter() {
 function initReporterCards() {
     const row = document.getElementById('reporter-cards-row');
     if (!row) return;
-    row.innerHTML = DEFAULT_REPORTER_CARDS.map(r =>
-        `<button class="reporter-card" data-handle="${escapeHtml(r.handle)}">${escapeHtml(r.name)}</button>`
-    ).join('');
+
+    row.innerHTML = DEFAULT_REPORTER_CARDS.map(r => {
+        const bare = r.handle.replace('@', '');
+        return `<button class="reporter-card" data-handle="${escapeHtml(r.handle)}">` +
+            `<img class="reporter-card-avatar" src="https://unavatar.io/x/${escapeHtml(bare)}" alt="" onerror="this.style.display='none'">` +
+            `${escapeHtml(r.name)}</button>`;
+    }).join('');
 
     row.addEventListener('click', e => {
         const card = e.target.closest('.reporter-card');
         if (!card) return;
         const handle = card.dataset.handle;
-        window._tweetFilter = (window._tweetFilter === handle) ? null : handle;
-        applyTweetFilter();
+        if (window._tweetFilter === handle) {
+            // Deselect → back to list feed
+            window._tweetFilter   = null;
+            window._tweetUserMode = false;
+            applyTweetFilter();
+            fetchTweets();
+        } else {
+            // Select → load that user's Nitter profile
+            window._tweetFilter   = handle;
+            window._tweetUserMode = true;
+            applyTweetFilter();
+            fetchTweets(null, handle.replace('@', ''));
+        }
     });
 
-    const searchBtn   = document.getElementById('reporter-search-btn');
-    const searchRow   = document.getElementById('reporter-search-row');
-    const searchInput = document.getElementById('reporter-search-input');
-    const searchClear = document.getElementById('reporter-search-clear');
+    const searchBtn     = document.getElementById('reporter-search-btn');
+    const searchRow     = document.getElementById('reporter-search-row');
+    const searchInput   = document.getElementById('reporter-search-input');
+    const searchResults = document.getElementById('reporter-search-results');
+    const searchClear   = document.getElementById('reporter-search-clear');
+
+    // Build search index from REPORTER_NAMES + any extra default-card handles not in the map
+    const searchIndex = Object.entries(REPORTER_NAMES).map(([handle, name]) => ({ handle, name }));
+    DEFAULT_REPORTER_CARDS.forEach(r => {
+        if (!REPORTER_NAMES[r.handle]) searchIndex.push({ handle: r.handle, name: r.name });
+    });
 
     if (searchBtn && searchRow && searchInput) {
         searchBtn.addEventListener('click', () => {
             const isOpen = searchRow.style.display !== 'none';
             searchRow.style.display = isOpen ? 'none' : '';
-            if (!isOpen) searchInput.focus();
+            if (!isOpen) {
+                searchInput.focus();
+                if (searchResults) searchResults.style.display = 'none';
+            }
         });
 
-        searchInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const val = searchInput.value.trim();
-                const handle = val ? (val.startsWith('@') ? val : `@${val}`) : null;
-                window._tweetFilter = handle;
+        if (searchResults) {
+            searchInput.addEventListener('input', () => {
+                const val = searchInput.value.trim().toLowerCase();
+                if (!val) { searchResults.style.display = 'none'; return; }
+                const matches = searchIndex.filter(({ handle, name }) =>
+                    handle.replace('@', '').toLowerCase().includes(val) ||
+                    name.toLowerCase().includes(val)
+                ).slice(0, 8);
+                if (!matches.length) { searchResults.style.display = 'none'; return; }
+                searchResults.innerHTML = matches.map(({ handle, name }) =>
+                    `<button class="reporter-search-result" data-handle="${escapeHtml(handle)}">` +
+                    `<span class="reporter-result-name">${escapeHtml(name)}</span>` +
+                    `<span class="reporter-result-handle">${escapeHtml(handle)}</span>` +
+                    `</button>`
+                ).join('');
+                searchResults.style.display = '';
+            });
+
+            searchResults.addEventListener('click', e => {
+                const btn = e.target.closest('.reporter-search-result');
+                if (!btn) return;
+                const handle = btn.dataset.handle;
+                window._tweetFilter   = handle;
+                window._tweetUserMode = true;
                 applyTweetFilter();
-                searchRow.style.display = 'none';
+                fetchTweets(null, handle.replace('@', ''));
+                searchResults.style.display = 'none';
                 searchInput.value = '';
-            }
+                searchRow.style.display = 'none';
+            });
+        }
+
+        searchInput.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
                 searchRow.style.display = 'none';
+                if (searchResults) searchResults.style.display = 'none';
                 searchInput.value = '';
-                window._tweetFilter = null;
-                applyTweetFilter();
             }
         });
 
         if (searchClear) {
             searchClear.addEventListener('click', () => {
                 searchInput.value = '';
-                window._tweetFilter = null;
+                if (searchResults) searchResults.style.display = 'none';
+                window._tweetFilter   = null;
+                window._tweetUserMode = false;
                 applyTweetFilter();
+                fetchTweets();
                 searchRow.style.display = 'none';
             });
         }
