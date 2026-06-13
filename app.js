@@ -2762,6 +2762,83 @@ function updateVoteTimelineStatus() {
     });
 }
 
+// Build the display label and description for a vote-timeline item.
+// Prefers billDataMap title over Whip raw text — cleaner and authoritative.
+// Motion types (Motion to Commit, Previous Question, etc.) are appended
+// when detectable from rollLog or the Whip text.
+// Returns { label, desc, canOpenModal }.
+function voteTlLabelAndDesc(billId, whipText) {
+    const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
+
+    // Resolve the billDataMap entry (regular bill or hres-XXXX rule card)
+    let bill = billId ? billDataMap.get(billId) : null;
+    if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+
+    const canOpenModal = !!(bill);
+    const label = billId || whipText.split(/\s[–\-]\s/)[0].trim();
+
+    // Primary description: bill title from billDataMap
+    let desc = bill?.title || '';
+
+    // For H.Res. with no billDataMap entry, check specialRulesMap for context
+    if (!desc && hresNum) {
+        for (const [key, entry] of specialRulesMap.entries()) {
+            if (String(entry.hresNum) === hresNum) {
+                desc = `Rule for ${key}`;
+                break;
+            }
+        }
+    }
+
+    // Fall back to cleaned Whip text (strip bill ID prefix, duration, connectors)
+    if (!desc) {
+        desc = whipText
+            .replace(/^(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*\d+\s*[–\-]?\s*/i, '')
+            .replace(/\s*[–\-]\s*\d+\s*min(?:utes?)?/gi, '')
+            .replace(/\s*following this vote.*$/is, '')
+            .trim();
+    }
+
+    // Detect motion type from rollLog question (for completed votes) or Whip text
+    const motionKeywords = [
+        [/motion to (?:re)?commit/i, 'Motion to Commit'],
+        [/previous question/i, 'Previous Question'],
+        [/motion to table/i, 'Motion to Table'],
+        [/motion to recommit/i, 'Motion to Recommit'],
+    ];
+    let motion = '';
+    // Check rollLog question for this bill
+    for (const entry of rollLog) {
+        const eq = entry.question || '';
+        const eb = entry.bill || '';
+        const combined = eq + ' ' + eb;
+        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        if (em) {
+            const eType = em[1].replace(/\s+/g, '');
+            const eBillId = `${eType} ${em[2]}`;
+            if (eBillId === billId || (hresNum && eBillId === `H.Res. ${hresNum}`)) {
+                for (const [re, label] of motionKeywords) {
+                    if (re.test(eq)) { motion = label; break; }
+                }
+                break;
+            }
+        }
+    }
+    // Also check Whip text for motion keywords if rollLog didn't resolve
+    if (!motion) {
+        for (const [re, label] of motionKeywords) {
+            if (re.test(whipText)) { motion = label; break; }
+        }
+    }
+    if (motion && desc && !desc.toLowerCase().includes(motion.toLowerCase())) {
+        desc = `${motion} — ${desc}`;
+    } else if (motion && !desc) {
+        desc = motion;
+    }
+
+    return { label, desc, canOpenModal };
+}
+
 // Render the full vote-series timeline from the latest matching notice.
 function renderVoteTimeline(items) {
     const body = document.getElementById('vote-series-body');
@@ -2817,22 +2894,14 @@ function renderVoteTimeline(items) {
     const itemsHtml = votes.map(({ text, billId, duration }) => {
         const status = getVoteTlStatus(billId);
         const resultText = voteTlResultText(billId, status);
-        // Build label and description — strip duration segment from desc
-        const parts = text.split(/\s[–\-]\s/);
-        const billLabel = billId || parts[0].trim();
-        const desc = parts.length > 1
-            ? parts.slice(1)
-                .filter(p => !/^\d+\s*min(?:utes?)?$/i.test(p.trim()))
-                .join(' – ')
-                .trim()
-            : '';
+        const { label: billLabel, desc, canOpenModal } = voteTlLabelAndDesc(billId, text);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
         const hasBadges = duration || resultText;
         return `
             <div class="vote-tl-item"${billAttr}>
                 <div class="vote-tl-circle ${status}"></div>
                 <div class="vote-tl-content">
-                    <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
+                    <div class="vote-tl-bill"${canOpenModal ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
                     ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
                     ${hasBadges ? `<div class="vote-tl-badges">
                         ${duration ? `<span class="vote-tl-duration">${escapeHtml(duration)}</span>` : ''}
