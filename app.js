@@ -3751,7 +3751,7 @@ const INFO_CONTENT = {
         title: 'Opening Prayer',
         tags: ['SINCE 1789', 'ELECTED OFFICER', 'GUEST CHAPLAINS WELCOME'],
         image: {
-            url: 'https://images.collections.yale.edu/iiif/2/yuag:241bd49f-0b2b-40d4-82de-f4c9e0031a1c/full/!800,800/0/default.jpg',
+            url: 'https://images.collections.yale.edu/iiif/2/yuag:241bd49f-0b2b-40d4-82de-f4c9e0031a1c/full/!1200,1200/0/default.jpg',
             alt: 'The First Prayer in Congress, September 1774 in Carpenters Hall Philadelphia',
             caption: 'Harvey S. Sadd, <em>The First Prayer in Congress, September 1774</em>, ca. 1848. Steel engraving. <a href="https://artgallery.yale.edu/collections/objects/16816" target="_blank" rel="noopener">Yale University Art Gallery</a>.'
         },
