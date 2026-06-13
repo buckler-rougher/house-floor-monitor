@@ -2085,7 +2085,7 @@ async function fetchAirportDelays(preData = null) {
         // Show loading state (only if empty to avoid flash on refresh)
         if (!elements.airportDelaysList.hasChildNodes()) {
             elements.airportDelaysList.innerHTML =
-                `<div class="airport-section-header">↓ WAS AREA · ARRIVALS</div>` +
+                `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
                 FAA_CONFIG.wasAirports.map(code => `
                     <div class="airport-delay-item">
                         <div class="airport-item-main">
@@ -2233,7 +2233,7 @@ async function fetchAirportDelays(preData = null) {
         console.error('Airport delays fetch error:', error);
         if (elements.airportDelaysList) {
             setIfChanged(elements.airportDelaysList,
-                `<div class="airport-section-header">↓ WAS AREA · ARRIVALS</div>` +
+                `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
                 `<div class="airport-delay-item"><div class="airport-item-main"><span class="airport-info">CONNECTION ERROR</span><span class="airport-status delay">ERROR</span></div></div>`);
         }
     }
@@ -2281,7 +2281,7 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
     // If disconnected, show NO DATA for WAS airports only
     if (connectionStatus === 'disconnected') {
         setIfChanged(elements.airportDelaysList,
-            `<div class="airport-section-header">↓ WAS AREA · ARRIVALS</div>` +
+            `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
             wasAirports.map(code => renderAirportRow(code, { status: 'disconnected', delay: 'NO DATA', reason: '', trend: '' })).join(''));
         return;
     }
@@ -2298,9 +2298,9 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
         .filter(([, data]) => data.status !== 'normal');
     const nationalHtml = nationalEntries.map(([code, data]) => renderAirportRow(code, data)).join('');
 
-    let html = `<div class="airport-section-header">↓ WAS AREA · ARRIVALS</div>${wasHtml}`;
+    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>${wasHtml}`;
     if (nationalHtml) {
-        html += `<div class="airport-section-header national-header">↑ NATIONWIDE · DEPARTURES</div>${nationalHtml}`;
+        html += `<div class="airport-section-header national-header">NATIONWIDE · DEPARTURES 🛫</div>${nationalHtml}`;
     }
 
     setIfChanged(elements.airportDelaysList, html);
