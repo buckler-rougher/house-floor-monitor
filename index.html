@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260613m">
+    <link rel="stylesheet" href="styles.css?v=20260613n">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -396,12 +396,9 @@
                 <div class="oath-content">
                     <div class="oath-image-container">
                         <div class="oath-image-placeholder" id="oath-image-placeholder">
-                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <span class="placeholder-text">Member</span>
+                            <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
                         </div>
+                        <img class="oath-image" id="oath-image" alt="Member" />
                     </div>
                     <div class="oath-info">
                         <h2 class="oath-member-title" id="oath-member-title">Loading...</h2>
@@ -435,14 +432,10 @@
                 </div>
                 <div class="speaker-content">
                     <div class="speaker-image-container">
-                        <img class="speaker-image" id="speaker-image" src="" alt="Speaker pro tempore" />
                         <div class="speaker-image-placeholder" id="speaker-image-placeholder">
-                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <span class="placeholder-text">Member</span>
+                            <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
                         </div>
+                        <img class="speaker-image" id="speaker-image" alt="Speaker pro tempore" />
                     </div>
                     <div class="speaker-info">
                         <h2 class="speaker-member-title" id="speaker-member-title">Loading...</h2>
@@ -473,14 +466,10 @@
                 </div>
                 <div class="committee-chair-content">
                     <div class="committee-chair-image-container">
-                        <img class="committee-chair-image" id="committee-chair-image" src="" alt="Committee Chairman" />
                         <div class="committee-chair-image-placeholder" id="committee-chair-image-placeholder">
-                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <span class="placeholder-text">Member</span>
+                            <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
                         </div>
+                        <img class="committee-chair-image" id="committee-chair-image" alt="Committee Chairman" />
                     </div>
                     <div class="committee-chair-info">
                         <h2 class="committee-chair-member-title" id="committee-chair-member-title">Chair of the Committee of the Whole House on the State of the Union</h2>
@@ -508,13 +497,10 @@
                 </div>
                 <div class="pledge-content">
                     <div class="pledge-image-container">
-                        <img class="pledge-image" id="pledge-image" src="" alt="Pledge Leader" />
                         <div class="pledge-image-placeholder" id="pledge-image-placeholder">
-                            <svg class="placeholder-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
+                            <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
                         </div>
+                        <img class="pledge-image" id="pledge-image" alt="Pledge Leader" />
                     </div>
                     <div class="pledge-info">
                         <h2 class="pledge-leader-title" id="pledge-leader-title">Loading...</h2>
@@ -753,10 +739,10 @@
                 </div>
                 <div class="journal-content">
                     <div class="journal-image-container">
-                        <img class="journal-image" id="journal-image" src="" alt="Chair" />
                         <div class="journal-image-placeholder" id="journal-image-placeholder">
                             <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
                         </div>
+                        <img class="journal-image" id="journal-image" alt="Chair" />
                     </div>
                     <div class="journal-info">
                         <h2 class="journal-chair-title" id="journal-chair-title">The Chair</h2>
@@ -992,13 +978,13 @@
                 </div>
                 <div class="absentee-content">
                     <div class="party-breakdown-metrics">
-                        <div class="party-metric rep-metric" data-filter="rep">
-                            <span class="party-label">REPUBLICANS</span>
-                            <span class="party-value" id="absentee-rep">--</span>
-                        </div>
                         <div class="party-metric dem-metric" data-filter="dem">
                             <span class="party-label">DEMOCRATS</span>
                             <span class="party-value" id="absentee-dem">--</span>
+                        </div>
+                        <div class="party-metric rep-metric" data-filter="rep">
+                            <span class="party-label">REPUBLICANS</span>
+                            <span class="party-value" id="absentee-rep">--</span>
                         </div>
                         <div class="party-metric ind-metric" id="absentee-ind-metric" style="display:none" data-filter="ind">
                             <span class="party-label">INDEPENDENT</span>
@@ -1042,13 +1028,13 @@
                 </div>
                 <div class="party-breakdown-content">
                     <div class="party-breakdown-metrics">
-                        <div class="party-metric rep-metric">
-                            <span class="party-label">REPUBLICANS</span>
-                            <span class="party-value" id="party-rep">--</span>
-                        </div>
                         <div class="party-metric dem-metric">
                             <span class="party-label">DEMOCRATS</span>
                             <span class="party-value" id="party-dem">--</span>
+                        </div>
+                        <div class="party-metric rep-metric">
+                            <span class="party-label">REPUBLICANS</span>
+                            <span class="party-value" id="party-rep">--</span>
                         </div>
                         <div class="party-metric ind-metric">
                             <span class="party-label">INDEPENDENT</span>
@@ -1061,8 +1047,8 @@
                     </div>
                     <div class="party-breakdown-visual">
                         <div class="party-bar">
-                            <div class="rep-fill" id="rep-fill" title="Republicans"></div>
                             <div class="dem-fill" id="dem-fill" title="Democrats"></div>
+                            <div class="rep-fill" id="rep-fill" title="Republicans"></div>
                             <div class="ind-fill" id="ind-fill" title="Independents"></div>
                             <div class="vac-fill" id="vac-fill" title="Vacancies"></div>
                         </div>
@@ -1214,15 +1200,10 @@
                     <span class="youtube-pip-label">LIVE FLOOR FEED</span>
                 </div>
                 <div class="youtube-pip-header-right">
-                    <div class="pip-volume-control">
-                        <div class="pip-volume-slider-wrap">
-                            <input class="pip-volume-slider" id="pip-volume-slider" type="range" min="0" max="100" value="0" aria-label="Volume" title="Volume">
-                        </div>
-                        <button class="pip-mute-btn" id="pip-mute-btn" aria-label="Unmute" aria-pressed="false" title="Unmute">
-                            <svg class="pip-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z" opacity="0"/><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2"/></svg>
-                            <svg class="pip-icon-sound" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
-                        </button>
-                    </div>
+                    <button class="pip-mute-btn" id="pip-mute-btn" aria-label="Unmute" aria-pressed="false" title="Unmute">
+                        <svg class="pip-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z" opacity="0"/><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2"/></svg>
+                        <svg class="pip-icon-sound" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
+                    </button>
                     <button class="pip-close-btn" id="pip-close-btn" aria-label="Close">✕</button>
                 </div>
             </div>
@@ -1334,7 +1315,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260613m"></script>
+    <script src="app.js?v=20260613n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
