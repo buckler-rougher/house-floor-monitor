@@ -2553,6 +2553,50 @@ async function fetchWhipRecs() {
     }
 }
 
+// ── Whip Floor Updates (Firestore ActivityFeeds via worker proxy) ────────────
+
+async function fetchAndRenderWhipFloorUpdates() {
+    const feed = document.getElementById('whip-updates-feed');
+    const timeEl = document.getElementById('whip-updates-time');
+    if (!feed) return;
+    try {
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/whip-floor-updates', { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const items = data.items || [];
+        if (items.length === 0) {
+            feed.innerHTML = '<div class="whip-updates-loading">No floor updates today.</div>';
+            return;
+        }
+        // Show timestamp of the most recent item in the panel header
+        if (timeEl && items[0].publishedAt) {
+            const d = new Date(items[0].publishedAt);
+            timeEl.textContent = d.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        feed.innerHTML = items.map(item => {
+            const d = item.publishedAt ? new Date(item.publishedAt) : null;
+            const timeStr = d ? d.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+            }) : '';
+            // The body is HTML from the Whip's office — render it directly.
+            // Strip inline color styles via CSS (already handled in .whip-update-body [style*="color"]).
+            return `
+                <div class="whip-update-item">
+                    <div class="whip-update-meta">
+                        ${timeStr ? `<span class="whip-update-time">${escapeHtml(timeStr)}</span>` : ''}
+                        <span class="whip-update-title">${escapeHtml(item.title)}</span>
+                    </div>
+                    <div class="whip-update-body">${item.body}</div>
+                </div>`;
+        }).join('');
+    } catch (e) {
+        feed.innerHTML = `<div class="whip-updates-error">Could not load floor updates.</div>`;
+        console.error('fetchAndRenderWhipFloorUpdates error:', e);
+    }
+}
+
 // Build the Dem Whip recommendation tag for a bill, or '' if none.
 function whipRecTagHtml(billId) {
     const rec = whipRecMap.get(normalizeBillIdForRules(billId));
@@ -6964,6 +7008,8 @@ function init() {
     fetchFloorData().then(() => loadRollLog());
     fetchWeather();
     fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
+    fetchAndRenderWhipFloorUpdates();
+    setInterval(fetchAndRenderWhipFloorUpdates, 3 * 60 * 1000); // refresh every 3 min
 
     // Airport delays need the name lookup — start both in parallel, delays waits on names
     fetchAirportNames().then(() => fetchAirportDelays());

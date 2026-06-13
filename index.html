@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614e">
+    <link rel="stylesheet" href="styles.css?v=20260614f">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -961,6 +961,20 @@
                 </div>
             </div>
 
+            <!-- Whip Floor Updates -->
+            <div class="whip-updates-panel" id="whip-updates">
+                <div class="panel-header">
+                    <span class="panel-label">WHIP FLOOR UPDATES</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip (DomeWatch)</a></span>
+                        <span class="whip-updates-time" id="whip-updates-time"></span>
+                    </div>
+                </div>
+                <div class="whip-updates-feed" id="whip-updates-feed">
+                    <div class="whip-updates-loading">Loading floor updates…</div>
+                </div>
+            </div>
+
             <!-- Absentee Tracking -->
             <div class="absentee-panel">
                 <div class="panel-header">
@@ -1317,7 +1331,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260614e"></script>
+    <script src="app.js?v=20260614f"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
