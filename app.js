@@ -6164,6 +6164,11 @@ setInterval(() => {
     if (proceedingsData.length) renderProceedingsFeedPanel(proceedingsData);
 }, 30_000);
 
+// New-tweet banner state
+let _feedLoaded    = false; // true after first successful list-feed render
+let _feedNewestTs  = 0;     // pubDate timestamp of newest tweet seen in list feed
+let _feedNewPending = 0;    // count of new tweets not yet scrolled-to by user
+
 async function fetchTweets(preData = null, userHandle = null) {
     const feed = document.getElementById('tweets-feed');
     if (!feed) return;
@@ -6249,6 +6254,9 @@ async function fetchTweets(preData = null, userHandle = null) {
                 : `<div class="tweet-avatar">${avatarInner}</div>`;
             const tweetTs = t.pubDate ? new Date(t.pubDate).getTime() : '';
             const tweetTimeText = tweetTs ? tweetRelativeTime(tweetTs) : escapeHtml(t.relativeTime || '');
+            const tweetFullTime = tweetTs
+                ? new Date(tweetTs).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+                : '';
             const filterBtn = t.handle
                 ? `<button class="tweet-filter-btn" data-handle="${escapeHtml(t.handle)}" title="Filter by ${escapeHtml(t.handle)}" aria-label="Filter by ${escapeHtml(t.handle)}">⊙</button>`
                 : '';
@@ -6257,7 +6265,7 @@ async function fetchTweets(preData = null, userHandle = null) {
                 <div class="tweet-header">
                     ${avatarHtml}
                     ${authorHtml}
-                    <span class="tweet-time"${tweetTs ? ` data-ts="${tweetTs}"` : ''}>${tweetTimeText}</span>
+                    <span class="tweet-time"${tweetTs ? ` data-ts="${tweetTs}"` : ''}${tweetFullTime ? ` title="${escapeHtml(tweetFullTime)}"` : ''}>${tweetTimeText}</span>
                     ${t.link ? `<a class="tweet-ext-link" href="${t.link}" target="_blank" rel="noopener">↗</a>` : ''}
                     ${filterBtn}
                 </div>
@@ -6265,6 +6273,24 @@ async function fetchTweets(preData = null, userHandle = null) {
                 ${imagesHtml}${cardHtml}${quoteHtml}
             </div>`;
         };
+
+        // Snapshot scroll position before innerHTML wipes it (setting innerHTML resets scrollTop)
+        const wasScrolledDown = feed.scrollTop > 60;
+
+        // Count tweets newer than the last list-feed render (list mode only)
+        let newCount = 0;
+        if (_feedLoaded && !userHandle) {
+            newCount = data.tweets.filter(t => {
+                const ts = t.pubDate ? new Date(t.pubDate).getTime() : 0;
+                return ts > _feedNewestTs;
+            }).length;
+        }
+        // Keep newest-ts current for list feeds
+        if (!userHandle) {
+            const latestTs = data.tweets.reduce((max, t) =>
+                Math.max(max, t.pubDate ? new Date(t.pubDate).getTime() : 0), 0);
+            if (latestTs > _feedNewestTs) _feedNewestTs = latestTs;
+        }
 
         // Group consecutive reply threads
         const items = [];
@@ -6284,6 +6310,26 @@ async function fetchTweets(preData = null, userHandle = null) {
         }
         feed.innerHTML = items.join('');
         applyTweetFilter();
+
+        // "↑ N new tweets" banner — shown when new posts arrived while user was scrolled down
+        if (_feedLoaded && newCount > 0 && !userHandle) {
+            if (wasScrolledDown) {
+                _feedNewPending += newCount;
+                const n = _feedNewPending;
+                const banner = document.createElement('button');
+                banner.className = 'tweets-new-banner';
+                banner.textContent = `↑ ${n} new tweet${n === 1 ? '' : 's'}`;
+                banner.addEventListener('click', () => {
+                    feed.scrollTo({ top: 0, behavior: 'smooth' });
+                    banner.remove();
+                    _feedNewPending = 0;
+                });
+                feed.insertBefore(banner, feed.firstChild);
+            } else {
+                _feedNewPending = 0; // user is already at top — tweets visible on render
+            }
+        }
+        if (!userHandle) _feedLoaded = true;
     } catch (e) {
         feed.innerHTML = '<div class="tweets-empty">Failed to load posts.</div>';
     }

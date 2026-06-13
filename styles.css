@@ -2953,6 +2953,28 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     min-height: 200px;
     overflow-y: auto;
 }
+.tweets-new-banner {
+    display: block;
+    width: 100%;
+    padding: 6px 0;
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-align: center;
+    border: none;
+    border-radius: var(--radius-4);
+    cursor: pointer;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-bottom: 4px;
+    opacity: 0.93;
+    transition: opacity 0.1s ease;
+}
+.tweets-new-banner:hover { opacity: 1; }
 
 /* Reporter filter bar */
 .reporter-filter-bar {
@@ -3221,6 +3243,7 @@ a.tweet-avatar:hover { opacity: 0.8; }
     font-family: var(--font-mono);
     color: var(--text-muted);
     margin-left: auto;
+    cursor: default;
 }
 .tweet-ext-link {
     font-size: var(--fs-xs);
