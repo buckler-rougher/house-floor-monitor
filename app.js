@@ -4129,6 +4129,18 @@ function proceedingsAgo(ms) {
     return '';
 }
 
+// Wrap bill number mentions in proceedings text with buttons that open the bill modal.
+// Longer patterns must come first so H.J.Res. isn't partially matched as H. etc.
+function linkifyBillNumbers(text) {
+    return text.replace(
+        /(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/g,
+        (match, type, num) => {
+            const billId = `${type} ${num}`;
+            return `<button class="proc-bill-link" data-bill-id="${escapeHtml(billId)}">${escapeHtml(match)}</button>`;
+        }
+    );
+}
+
 function renderProceedingsFeedPanel(items) {
     if (!elements.proceedingsFeed) return;
     if (!items || items.length === 0) {
@@ -4156,7 +4168,7 @@ function renderProceedingsFeedPanel(items) {
         <div class="proceedings-item">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>${agoHtml}
-                ${decodeHtml(item.description)}
+                ${linkifyBillNumbers(decodeHtml(item.description))}
             </div>
         </div>`;
     }).join('');
@@ -6439,6 +6451,14 @@ async function fetchTweets(preData = null, userHandle = null) {
 
 // Document-level delegated listener — survives feed re-renders, no inline onclick needed
 document.addEventListener('click', e => {
+    // Proceedings bill number links → open bill modal
+    const billLink = e.target.closest('.proc-bill-link');
+    if (billLink) {
+        e.preventDefault();
+        const billId = billLink.dataset.billId;
+        if (billId) openBillModal(billId);
+        return;
+    }
     // Image lightbox
     const img = e.target.closest('.tweet-img');
     if (img) {
