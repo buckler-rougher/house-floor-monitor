@@ -2811,6 +2811,28 @@ async function handleWhipNotices(env) {
   }, 1800);
 }
 
+// ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────
+// Returns the complete unfiltered DomeWatch response so we can see every field
+// on every notice item (including those with null recommendations).
+// Short TTL (5 min) — this is for development inspection, not production use.
+async function handleWhipNoticesRaw(env) {
+  try {
+    const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) throw new Error(`whip-notices returned ${resp.status}`);
+    const data = await resp.json();
+    return new Response(JSON.stringify(data, null, 2), {
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+    });
+  }
+}
+
 function handleOptions() {
   return new Response(null, {
     status: 200,
@@ -2864,6 +2886,8 @@ async function handleRequest(request, env) {
     return await handleCasualtyList(env);
   } else if (path === '/api/rules' && request.method === 'GET') {
     return await handleRules(request, env);
+  } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
+    return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {
     return await handleWhipNotices(env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
