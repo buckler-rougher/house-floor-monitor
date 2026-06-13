@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260612f">
+    <link rel="stylesheet" href="styles.css?v=20260612g">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -977,16 +977,18 @@
             <div class="absentee-panel">
                 <div class="panel-header">
                     <span class="panel-label">MISSING MEMBERS</span>
-                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    <div class="panel-header-right">
+                        <div class="absentee-filter-switcher">
+                            <button class="absentee-filter-btn active" data-filter="all">ALL</button>
+                            <button class="absentee-filter-btn" data-filter="dem">D</button>
+                            <button class="absentee-filter-btn" data-filter="rep">R</button>
+                        </div>
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
                 </div>
                 <div class="absentee-info">
                     <span class="absentee-explainer">Potential absences based on Members who missed the previous vote series</span>
                     <span class="absentee-roll-info" id="absentee-roll-info">--</span>
-                </div>
-                <div class="absentee-filter-bar">
-                    <button class="absentee-filter-btn active" data-filter="all">ALL</button>
-                    <button class="absentee-filter-btn" data-filter="dem">D</button>
-                    <button class="absentee-filter-btn" data-filter="rep">R</button>
                 </div>
                 <div class="absentee-content">
                     <div class="party-breakdown-metrics">
@@ -1314,7 +1316,7 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260612f"></script>
+    <script src="app.js?v=20260612g"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

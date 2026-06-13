@@ -2872,13 +2872,13 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 /* Absentee sort toggle */
-.absentee-filter-bar {
+.absentee-filter-switcher {
     display: flex;
-    align-items: center;
-    gap: var(--sp-4);
-    padding: var(--sp-6) var(--sp-24);
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-elevated);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: var(--sp-2);
+    gap: 1px;
 }
 .absentee-filter-btn {
     font-size: var(--fs-xs);
