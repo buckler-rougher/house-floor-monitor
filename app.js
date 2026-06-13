@@ -3237,7 +3237,12 @@ function maybeOpenDeepLinkedBill() {
 }
 
 function openBillModal(billId) {
-    const bill = billDataMap.get(billId);
+    let bill = billDataMap.get(billId);
+    // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
+    if (!bill && /H\.?\s*Res\./i.test(billId)) {
+        const n = billId.match(/(\d+)/)?.[1];
+        if (n) bill = billDataMap.get(`hres-${n}`);
+    }
     if (!bill) return;
 
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
@@ -4132,10 +4137,13 @@ function proceedingsAgo(ms) {
 // Wrap bill number mentions in proceedings text with buttons that open the bill modal.
 // Longer patterns must come first so H.J.Res. isn't partially matched as H. etc.
 function linkifyBillNumbers(text) {
+    // Clerk proceedings use "H. Res." (space after H.) — allow optional spaces throughout
     return text.replace(
-        /(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/g,
+        /(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/g,
         (match, type, num) => {
-            const billId = `${type} ${num}`;
+            // Normalize type to canonical form (strip internal spaces) so the id is stable
+            const canonicalType = type.replace(/\s+/g, '');
+            const billId = `${canonicalType} ${num}`;
             return `<button class="proc-bill-link" data-bill-id="${escapeHtml(billId)}">${escapeHtml(match)}</button>`;
         }
     );
