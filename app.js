@@ -1996,6 +1996,10 @@ const CONGRESS_INDEX_CONFIG = {
     refreshInterval: 300000 // 5 minutes
 };
 
+// ISO 7001 PI TF 015 (Arrivals) and PI TF 016 (Departures) — real ISO glyph paths
+const ARRIVALS_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(-151.3157,-101.28343)"><path fill="currentColor" d="m 171.55992,115.6357 -3.63802,1.4428 4.26537,6.96288 -6.83731,2.63447 -4.89272,-4.32842 -2.94814,1.31723 4.32841,7.27656 10.28723,-1.38028 20.26543,-6.75462 c 4.18881,-1.10754 6.25862,-2.8375 5.84874,-4.0442 -0.36669,-1.07956 -2.74488,-1.78489 -6.93653,-0.53537 l -11.58792,3.36827 z m -14.30145,23.02081 v 1.19166 h 41.02333 v -1.19166 z"/></g></svg>`;
+const DEPARTURES_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52.917 52.917" width="14" height="14" style="vertical-align:middle;margin-left:4px"><g transform="translate(-188.57376,-109.44473)"><path fill="currentColor" d="m 218.8853,125.93666 -5.64152,8.46357 -12.31398,0.95963 c -4.46542,0.31793 -6.48546,1.82059 -6.44456,2.96003 0.0398,1.11042 2.02836,1.92405 5.46064,1.81642 a 0.92036289,0.92036289 0 0 0 -0.38188,0.74518 0.92036289,0.92036289 0 0 0 0.92035,0.92036 0.92036289,0.92036289 0 0 0 0.92036,-0.92036 0.92036289,0.92036289 0 0 0 -0.4656,-0.79995 c 0.20035,-0.0154 0.40337,-0.033 0.61184,-0.0543 l 12.80388,-0.50953 a 0.92036289,0.92036289 0 0 0 -0.60824,0.86506 0.92036289,0.92036289 0 0 0 0.92037,0.92036 0.92036289,0.92036289 0 0 0 0.92035,-0.92036 0.92036289,0.92036289 0 0 0 -0.67593,-0.88728 l 1.9637,-0.078 a 0.92036289,0.92036289 0 0 0 -0.57826,0.85422 0.92036289,0.92036289 0 0 0 0.92036,0.92035 0.92036289,0.92036289 0 0 0 0.92036,-0.92035 0.92036289,0.92036289 0 0 0 -0.64699,-0.87902 l 5.90868,-0.23513 10.34717,-2.35696 1.50172,-8.33851 -3.30005,-0.18655 -3.11196,5.78208 -7.50032,-0.0388 1.55547,-8.02277 z m -24.35201,18.53427 v 1.39888 h 41.04659 v -1.39888 z"/></g></svg>`;
+
 // FAA Airport Status Configuration
 const FAA_CONFIG = {
     workerUrl: 'https://api.evanhollander.org/house-floor/api/airport-delays',
@@ -2085,7 +2089,7 @@ async function fetchAirportDelays(preData = null) {
         // Show loading state (only if empty to avoid flash on refresh)
         if (!elements.airportDelaysList.hasChildNodes()) {
             elements.airportDelaysList.innerHTML =
-                `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
+                `<div class="airport-section-header">WAS AREA · ARRIVALS ${ARRIVALS_GLYPH}</div>` +
                 FAA_CONFIG.wasAirports.map(code => `
                     <div class="airport-delay-item">
                         <div class="airport-item-main">
@@ -2233,7 +2237,7 @@ async function fetchAirportDelays(preData = null) {
         console.error('Airport delays fetch error:', error);
         if (elements.airportDelaysList) {
             setIfChanged(elements.airportDelaysList,
-                `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
+                `<div class="airport-section-header">WAS AREA · ARRIVALS ${ARRIVALS_GLYPH}</div>` +
                 `<div class="airport-delay-item"><div class="airport-item-main"><span class="airport-info">CONNECTION ERROR</span><span class="airport-status delay">ERROR</span></div></div>`);
         }
     }
@@ -2281,7 +2285,7 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
     // If disconnected, show NO DATA for WAS airports only
     if (connectionStatus === 'disconnected') {
         setIfChanged(elements.airportDelaysList,
-            `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>` +
+            `<div class="airport-section-header">WAS AREA · ARRIVALS ${ARRIVALS_GLYPH}</div>` +
             wasAirports.map(code => renderAirportRow(code, { status: 'disconnected', delay: 'NO DATA', reason: '', trend: '' })).join(''));
         return;
     }
@@ -2298,9 +2302,9 @@ function updateAirportDelaysDisplay(connectionStatus = 'connected') {
         .filter(([, data]) => data.status !== 'normal');
     const nationalHtml = nationalEntries.map(([code, data]) => renderAirportRow(code, data)).join('');
 
-    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS 🛬</div>${wasHtml}`;
+    let html = `<div class="airport-section-header">WAS AREA · ARRIVALS</div>${wasHtml}`;
     if (nationalHtml) {
-        html += `<div class="airport-section-header national-header">NATIONWIDE · DEPARTURES 🛫</div>${nationalHtml}`;
+        html += `<div class="airport-section-header national-header">NATIONWIDE · DEPARTURES ${DEPARTURES_GLYPH}</div>${nationalHtml}`;
     }
 
     setIfChanged(elements.airportDelaysList, html);
