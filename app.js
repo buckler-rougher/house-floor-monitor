@@ -2484,12 +2484,14 @@ function normalizeBillIdForRules(billId) {
 }
 
 // Extract a normalized bill ID from arbitrary text (question, legisNum, etc.).
-// Flexible: allows optional dots and spaces inside the bill type prefix, e.g.
-// "H. R. 3633", "H.R.3633", "H.Res. 45", "S. 1234" all return the same norm.
+// Flexible: allows optional dots and spaces inside the bill type prefix AND
+// between the prefix and number, e.g. "H. R. 3633", "H.R.3633", "H.R. 3633",
+// "H.Res. 45", "S. 1234", "S.1234" all return the same normalized form.
+// Uses \s* (not \s+) because DomeWatch legisNum can be "H.R.3633" (no space).
 // Returns the normalized string (e.g. "HR3633") or null if no match.
 function extractBillNormFromText(text) {
     if (!text) return null;
-    const m = text.match(/\b(H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H\.?\s*Res\.?|H\.?\s*R\.?|S\.?\s*J\.?\s*Res\.?|S\.?\s*Con\.?\s*Res\.?|S\.?\s*Res\.?|S\.?)\s+(\d+)/i);
+    const m = text.match(/\b(H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H\.?\s*Res\.?|H\.?\s*R\.?|S\.?\s*J\.?\s*Res\.?|S\.?\s*Con\.?\s*Res\.?|S\.?\s*Res\.?|S\.?)\s*(\d+)/i);
     if (!m) return null;
     return normalizeBillIdForRules(m[1] + m[2]);
 }
@@ -2935,13 +2937,16 @@ function getVoteTlAbsences(billId, status) {
     for (const entry of rollLog) {
         // Search question first, then fall back to bill legisNum — same as applyRollLogToBills.
         // extractBillNormFromText allows spaces inside bill-type prefixes ("H. R." etc.)
+        // and no-space formats ("H.R.3633") that DomeWatch sometimes returns.
         const qNorm = extractBillNormFromText(entry.question);
         const bNorm = extractBillNormFromText(entry.bill);
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
         const d = entry.dem?.notVoting ?? null;
         const r = entry.rep?.notVoting ?? null;
+        console.log('[absences] matched roll', entry.roll, 'for', billId, '→ d:', d, 'r:', r);
         if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0 };
     }
+    console.log('[absences] no roll log match for', billId, '| rollLog len:', rollLog.length, '| norms:', rollLog.map(e => extractBillNormFromText(e.question) || extractBillNormFromText(e.bill)));
     return null;
 }
 
@@ -3263,10 +3268,10 @@ function getPartyPrefs(party) {
             : { followWhip: 'follow', pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
     }
     if (party === 'R') {
-        // No Whip rec feed for R — position-based only (null = ignore Dem Whip)
+        // Oppose Dem Whip by default (Republicans vote against Dem Whip position)
         return isMajority
-            ? { followWhip: null, pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
-            : { followWhip: null, pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
+            ? { followWhip: 'oppose', pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
+            : { followWhip: 'oppose', pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
     }
     return { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
 }

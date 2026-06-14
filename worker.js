@@ -1428,7 +1428,7 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  const cacheKey = quick ? 'bills-weekly-quick-v6' : 'bills-weekly-v6';
+  const cacheKey = quick ? 'bills-weekly-quick-v7' : 'bills-weekly-v7';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -1580,11 +1580,13 @@ async function _fetchBills(request, env) {
     const suspensionHeaderMatch = content.match(/Items that may be considered under suspension of the rules/i);
     const mayBeConsideredHeaderMatch = content.match(/Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i);
 
-    // All sections stop at the next h-tag so ordering doesn't matter
-    const nextHeader = /<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/i;
-    const ruleSection = extractSection(content, /Items that may be considered pursuant to a rule/i, nextHeader);
-    const suspensionSection = extractSection(content, /Items that may be considered under suspension of the rules/i, nextHeader);
-    const mayBeConsideredSection = extractSection(content, /Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i, nextHeader);
+    // Sections delimit at the next sibling "Items that may be considered..." header.
+    // Using the section phrase itself (not an h-tag) avoids early termination when the
+    // House schedule includes sub-headers (e.g. <h3>H. Res. 630</h3>) inside a section.
+    const nextSectionStart = /Items that may be considered/i;
+    const ruleSection = extractSection(content, /Items that may be considered pursuant to a rule/i, nextSectionStart);
+    const suspensionSection = extractSection(content, /Items that may be considered under suspension of the rules/i, nextSectionStart);
+    const mayBeConsideredSection = extractSection(content, /Items that may be considered(?!\s+pursuant|\s+under\s+suspension)/i, nextSectionStart);
 
     // Extract the governing H.Res number from the rule section header, e.g.
     // "…pursuant to a rule (H. Res. 630, Agreed to 232-195)…"
