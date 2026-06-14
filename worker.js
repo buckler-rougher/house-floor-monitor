@@ -2191,12 +2191,11 @@ function extractHlsFromBroadcastEvents(data) {
 
 // Format today's date as YYYYMMDD in Eastern Time (House operates on ET)
 function getTodayDateET() {
-  const now = new Date();
-  // UTC offset for Eastern: EST = -5, EDT = -4. Approximate with -5 (worst case off by 1hr during DST transition).
-  const et = new Date(now.getTime() - 5 * 60 * 60 * 1000);
-  const y = et.getUTCFullYear();
-  const m = String(et.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(et.getUTCDate()).padStart(2, '0');
+  // Use the actual America/New_York timezone so EDT/EST transitions are handled correctly.
+  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const y = et.getFullYear();
+  const m = String(et.getMonth() + 1).padStart(2, '0');
+  const d = String(et.getDate()).padStart(2, '0');
   return `${y}${m}${d}`;
 }
 
@@ -2314,7 +2313,7 @@ async function maybeWriteRollLog(data, env) {
     await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 7 * 24 * 3600 });
     // Invalidate the assembled cache so next read picks up the new entry
     _mSet('roll-log-assembled', '', 0);
-  } catch { /* non-critical — don't let roll-log errors affect the floor response */ }
+  } catch(e) { console.error('[roll-log] write failed:', e?.message || e); }
 }
 
 async function handleDomeWatchFloor(env) {
@@ -3217,7 +3216,11 @@ export class DomeWatchStreamCoordinator {
         if (resp.ok) {
           const json = await resp.text();
           // Update cached floor status for adaptive polling decisions
-          try { this._floorStatusValue = JSON.parse(json)?.now?.value ?? null; } catch {}
+          let parsed = null;
+          try { parsed = JSON.parse(json); this._floorStatusValue = parsed?.now?.value ?? null; } catch {}
+          // Write roll-log directly from DO — bypasses the worker in-memory cache
+          // that was preventing maybeWriteRollLog from being called on each poll.
+          if (parsed) maybeWriteRollLog(parsed, this.env).catch(() => {});
           if (this.dataCache.get('floor') !== json) {
             this.dataCache.set('floor', json);
             await this.broadcast(`event: floor\ndata: ${json}\n\n`);
