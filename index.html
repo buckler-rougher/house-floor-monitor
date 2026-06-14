@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614k">
+    <link rel="stylesheet" href="styles.css?v=20260614l">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -869,7 +869,7 @@
                 </div>
                 <div id="last-vote-absences" style="display:none;">
                     <div class="threshold-subsection-label">LAST VOTE ABSENCES</div>
-                    <div class="threshold-grid">
+                    <div class="threshold-grid threshold-grid-3">
                         <div class="threshold-item">
                             <span class="threshold-metric-label">D Absent</span>
                             <span class="threshold-metric-value democrat" id="last-vote-d-absent">--</span>
@@ -878,9 +878,12 @@
                             <span class="threshold-metric-label">R Absent</span>
                             <span class="threshold-metric-value republican" id="last-vote-r-absent">--</span>
                         </div>
+                        <div class="threshold-item">
+                            <span class="threshold-metric-label">I Absent</span>
+                            <span class="threshold-metric-value independent" id="last-vote-i-absent">--</span>
+                        </div>
                     </div>
                     <div class="last-vote-label" id="last-vote-label"></div>
-                    <div class="last-vote-beta">Beta feature — may be inaccurate</div>
                 </div>
             </div>
 
@@ -1376,7 +1379,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614k"></script>
+    <script src="app.js?v=20260614l"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

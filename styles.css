@@ -1399,28 +1399,22 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .threshold-metric-value.democrat { color: #4a9eff; }
 .threshold-metric-value.republican { color: #ff6b6b; }
+.threshold-metric-value.independent { color: #a371f7; }
+.threshold-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .threshold-subsection-label {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--text-muted);
   text-transform: uppercase;
-  padding: 10px 0 6px;
+  padding: 10px var(--sp-20) 6px;
   border-top: 1px solid var(--border-color);
   margin-top: 10px;
-}
-.last-vote-beta {
-  font-size: 8px;
-  color: var(--text-muted);
-  opacity: 0.6;
-  margin-top: 5px;
-  text-align: center;
-  font-style: italic;
 }
 .last-vote-label {
   font-size: 9px;
   color: var(--text-muted);
-  margin-top: 4px;
+  padding: 4px var(--sp-20) 10px;
   text-align: center;
 }
 :root{
