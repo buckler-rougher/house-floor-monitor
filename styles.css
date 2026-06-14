@@ -2964,6 +2964,15 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   white-space: nowrap;
 }
 
+.vrec-autofill-note {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--accent-amber);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 /* Collapsible prefs panel */
 .vrec-prefs-details {
   flex-shrink: 0;

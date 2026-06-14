@@ -3144,11 +3144,13 @@ function computeCurrentPreset() {
     return 'custom';
 }
 
-// Reflect voteRecsPreset in the switcher buttons.
+// Reflect voteRecsPreset in the switcher buttons and show/hide the verify note.
 function syncPresetButtons() {
     document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.preset === voteRecsPreset);
     });
+    const note = document.getElementById('vrec-autofill-note');
+    if (note) note.hidden = (voteRecsPreset === 'nothing');
 }
 
 function voteRecKey(billId, action, text) {
