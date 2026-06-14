@@ -1812,8 +1812,6 @@ const elements = {
     yeasNeeded: document.getElementById('yeas-needed'),
     naysToBlock: document.getElementById('nays-to-block'),
     maxPossibleYeas: document.getElementById('max-possible-yeas'),
-    flipsToPasRow: document.getElementById('flips-to-pass-row'),
-    flipsToPass: document.getElementById('flips-to-pass'),
     lastVoteAbsences: document.getElementById('last-vote-absences'),
     lastVoteDAbsent: document.getElementById('last-vote-d-absent'),
     lastVoteRAbsent: document.getElementById('last-vote-r-absent'),
@@ -8899,15 +8897,6 @@ function updateThresholdAnalysis() {
     elements.yeasNeeded.textContent = yeasNeeded;
     elements.naysToBlock.textContent = naysToBlock;
     elements.maxPossibleYeas.textContent = maxPossibleYeas;
-
-    // Flips to Pass: how many current NAY voters must switch to YEA.
-    // Only nonzero when remaining votes alone can't cover the gap —
-    // i.e. the vote is in stalemate territory.
-    const flipsToPass = Math.max(0, yeasNeeded - votesRemaining);
-    if (elements.flipsToPass) elements.flipsToPass.textContent = flipsToPass;
-    if (elements.flipsToPasRow) {
-        elements.flipsToPasRow.style.display = (yeasNeeded > 0 && flipsToPass > 0) ? 'flex' : 'none';
-    }
 
     // Position threshold marker hairline on the progress bar
     const marker = document.getElementById('vote-threshold-marker');
