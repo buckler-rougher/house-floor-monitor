@@ -2966,6 +2966,32 @@ function voteTlResultText(billId, status) {
     return status.toUpperCase();
 }
 
+// Returns { d, r } absences for a vote-timeline item, or null if unavailable.
+// Active vote: live not_voting from current tally. Completed: from roll log.
+function getVoteTlAbsences(billId, status) {
+    if (status === 'pending') return null;
+    if (status === 'active') {
+        const vc = floorData?.voteCounts;
+        if (!vc) return null;
+        const d = Math.max(parseInt(vc.blue?.not_voting) || 0, 0);
+        const r = Math.max(parseInt(vc.red?.not_voting)  || 0, 0);
+        return { d, r };
+    }
+    // passed / failed — match against roll log
+    if (!billId) return null;
+    const billNorm = normalizeBillIdForRules(billId);
+    for (const entry of rollLog) {
+        const combined = (entry.question || '') + (entry.bill ? ' ' + entry.bill : '');
+        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
+        if (em && normalizeBillIdForRules(`${em[1]} ${em[2]}`) === billNorm) {
+            const d = entry.dem?.notVoting ?? null;
+            const r = entry.rep?.notVoting ?? null;
+            if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0 };
+        }
+    }
+    return null;
+}
+
 // Re-render just the status circles/badges (called on every SSE vote.tally tick).
 function updateVoteTimelineStatus() {
     const body = document.getElementById('vote-series-body');
@@ -2998,6 +3024,25 @@ function updateVoteTimelineStatus() {
             const span = document.createElement('span');
             span.className = `vote-tl-result ${status}`;
             span.textContent = text;
+            badges.appendChild(span);
+        }
+        // Update absences badge
+        const absences = getVoteTlAbsences(billId, status);
+        const absText = absences !== null ? `D ${absences.d} · R ${absences.r} · ${absences.d + absences.r} absent` : '';
+        const absEl = item.querySelector('.vote-tl-absences');
+        if (absEl) {
+            absEl.textContent = absText;
+            absEl.style.display = absText ? '' : 'none';
+        } else if (absText) {
+            let badges = item.querySelector('.vote-tl-badges');
+            if (!badges) {
+                badges = document.createElement('div');
+                badges.className = 'vote-tl-badges';
+                item.querySelector('.vote-tl-content').appendChild(badges);
+            }
+            const span = document.createElement('span');
+            span.className = 'vote-tl-absences';
+            span.textContent = absText;
             badges.appendChild(span);
         }
     });
@@ -3177,11 +3222,13 @@ function renderVoteTimeline(items) {
         // Dotted connector when this item or the next is pending
         const connectorDotted = nextStatus !== undefined && (status === 'pending' || nextStatus === 'pending');
         const resultText = voteTlResultText(billId, status);
+        const absences = getVoteTlAbsences(billId, status);
+        const absText = absences !== null ? `D ${absences.d} · R ${absences.r} · ${absences.d + absences.r} absent` : '';
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
         const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : '';
         const extraClass = connectorDotted ? ' connector-dotted' : '';
-        const hasBadges = duration || resultText;
+        const hasBadges = duration || resultText || absText;
         return `
             <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
                 <div class="vote-tl-circle ${status}"><span class="vote-tl-num">${i + 1}</span></div>
@@ -3191,6 +3238,7 @@ function renderVoteTimeline(items) {
                     ${hasBadges ? `<div class="vote-tl-badges">
                         ${duration ? `<span class="vote-tl-duration">${escapeHtml(duration)}</span>` : ''}
                         ${resultText ? `<span class="vote-tl-result ${status}">${escapeHtml(resultText)}</span>` : ''}
+                        ${absText ? `<span class="vote-tl-absences">${escapeHtml(absText)}</span>` : ''}
                     </div>` : ''}
                 </div>
             </div>`;

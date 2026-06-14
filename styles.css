@@ -2874,6 +2874,18 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-radius: 4px;
 }
 
+.vote-tl-absences {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 8%, transparent);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
 .vrec-open-btn {
   font-family: var(--font-mono);
