@@ -3937,7 +3937,9 @@ function updateBillsDisplay() {
     const suspTitleEl = document.getElementById('suspension-bills-title');
     if (suspTitleEl) suspTitleEl.textContent = sortedSuspension.length ? `UNDER SUSPENSION (${sortedSuspension.length})` : 'UNDER SUSPENSION';
 
-    document.querySelectorAll('.bills-sort-btn:not(.amdt-sort-btn):not(.amdt-filter-btn)').forEach(btn => {
+    // [data-sort] scope: only target bills-panel sort buttons, not vote-recs modal buttons
+    // which also use .bills-sort-btn but carry data-preset/data-pref-val instead of data-sort.
+    document.querySelectorAll('.bills-sort-btn[data-sort]:not(.amdt-sort-btn):not(.amdt-filter-btn)').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.sort === billsSortMode);
     });
 
