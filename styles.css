@@ -3341,27 +3341,37 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 /* Schedule table */
+/* Schedule stat cards — horizontal row, one card per time field */
 .whip-notice-schedule {
-  border-collapse: collapse;
+  display: flex;
   margin: var(--sp-8) 0 var(--sp-12);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-4);
+  overflow: hidden;
 }
-.whip-notice-schedule th {
+.whip-sched-stat {
+  flex: 1;
+  padding: var(--sp-8) var(--sp-12);
+  border-right: 1px solid var(--border-color);
+}
+.whip-sched-stat:last-child {
+  border-right: none;
+}
+.whip-sched-label {
   font-family: var(--font-mono);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: var(--text-muted);
-  text-align: left;
-  white-space: nowrap;
-  padding: 2px 16px 2px 0;
-  vertical-align: top;
+  margin-bottom: 3px;
 }
-.whip-notice-schedule td {
-  font-family: var(--font-sans);
-  font-size: var(--fs-base);
-  color: var(--text-secondary);
-  padding: 2px 0;
+.whip-sched-val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
 }
 
 /* Prevent CSS display:flex from overriding the hidden attribute */
