@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614u">
+    <link rel="stylesheet" href="styles.css?v=20260614v">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1111,67 +1111,6 @@
                 </div>
             </div>
 
-            <!-- Airport Delays Display -->
-            <div class="airport-delays-panel" id="airport-delays">
-                <div class="panel-header">
-                    <span class="panel-label">AIRPORT DELAYS</span>
-                    <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
-                </div>
-                <div class="airport-delays-content">
-                    <div class="airport-delays-list" id="airport-delays-list">
-                        <!-- Airport delay information will be displayed here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Party Breakdown Panel -->
-            <div class="party-breakdown-panel" id="party-breakdown">
-                <div class="panel-header">
-                    <span class="panel-label">BALANCE OF POWER</span>
-                    <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
-                    <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">House Clerk</a></span>
-                        <span class="party-breakdown-time" id="party-breakdown-last-update">--:--</span>
-                    </div>
-                </div>
-                <div class="party-breakdown-content">
-                    <div class="party-breakdown-metrics">
-                        <div class="party-metric dem-metric">
-                            <span class="party-label">DEMOCRATS</span>
-                            <span class="party-value" id="party-dem">--</span>
-                        </div>
-                        <div class="party-metric rep-metric">
-                            <span class="party-label">REPUBLICANS</span>
-                            <span class="party-value" id="party-rep">--</span>
-                        </div>
-                        <div class="party-metric ind-metric">
-                            <span class="party-label">INDEPENDENT</span>
-                            <span class="party-value" id="party-ind">--</span>
-                        </div>
-                        <div class="party-metric total-metric">
-                            <span class="party-label">WHOLE NUMBER</span>
-                            <span class="party-value" id="party-total">--</span>
-                        </div>
-                    </div>
-                    <div class="party-breakdown-visual">
-                        <div class="party-bar">
-                            <div class="rep-fill" id="rep-fill" title="Republicans"></div>
-                            <div class="dem-fill" id="dem-fill" title="Democrats"></div>
-                            <div class="ind-fill" id="ind-fill" title="Independents"></div>
-                            <div class="vac-fill" id="vac-fill" title="Vacancies"></div>
-                        </div>
-                    </div>
-                    <div class="vacancies-section" id="vacancies-section">
-                        <div class="vacancies-header">
-                            <span class="vacancies-label">VACANCIES</span>
-                            <span class="vacancies-count" id="vacancies-count">--</span>
-                        </div>
-                        <div class="vacancies-list" id="vacancies-list">
-                            <!-- Vacancies will be listed here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
 
         <!-- Floor Reporters -->
         <div class="twitter-panel" id="twitter">
@@ -1235,6 +1174,68 @@
                 <div class="voting-calendar-month" id="voting-calendar-next"></div>
             </div>
         </div>
+
+        <!-- Airport Delays Display -->
+        <div class="airport-delays-panel" id="airport-delays">
+                <div class="panel-header">
+                    <span class="panel-label">AIRPORT DELAYS</span>
+                    <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
+                </div>
+                <div class="airport-delays-content">
+                    <div class="airport-delays-list" id="airport-delays-list">
+                        <!-- Airport delay information will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+        <!-- Party Breakdown Panel -->
+        <div class="party-breakdown-panel" id="party-breakdown">
+                <div class="panel-header">
+                    <span class="panel-label">BALANCE OF POWER</span>
+                    <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">House Clerk</a></span>
+                        <span class="party-breakdown-time" id="party-breakdown-last-update">--:--</span>
+                    </div>
+                </div>
+                <div class="party-breakdown-content">
+                    <div class="party-breakdown-metrics">
+                        <div class="party-metric dem-metric">
+                            <span class="party-label">DEMOCRATS</span>
+                            <span class="party-value" id="party-dem">--</span>
+                        </div>
+                        <div class="party-metric rep-metric">
+                            <span class="party-label">REPUBLICANS</span>
+                            <span class="party-value" id="party-rep">--</span>
+                        </div>
+                        <div class="party-metric ind-metric">
+                            <span class="party-label">INDEPENDENT</span>
+                            <span class="party-value" id="party-ind">--</span>
+                        </div>
+                        <div class="party-metric total-metric">
+                            <span class="party-label">WHOLE NUMBER</span>
+                            <span class="party-value" id="party-total">--</span>
+                        </div>
+                    </div>
+                    <div class="party-breakdown-visual">
+                        <div class="party-bar">
+                            <div class="rep-fill" id="rep-fill" title="Republicans"></div>
+                            <div class="dem-fill" id="dem-fill" title="Democrats"></div>
+                            <div class="ind-fill" id="ind-fill" title="Independents"></div>
+                            <div class="vac-fill" id="vac-fill" title="Vacancies"></div>
+                        </div>
+                    </div>
+                    <div class="vacancies-section" id="vacancies-section">
+                        <div class="vacancies-header">
+                            <span class="vacancies-label">VACANCIES</span>
+                            <span class="vacancies-count" id="vacancies-count">--</span>
+                        </div>
+                        <div class="vacancies-list" id="vacancies-list">
+                            <!-- Vacancies will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 <!-- place scripts at end of body -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js" integrity="sha384-5E8B0pTlZZJMabWpC0fyYf6OUpe15jJij34BqBAh4NXoHAlLNOjCPRrwtOXOQFAn" crossorigin="anonymous"></script>
@@ -1392,7 +1393,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614u"></script>
+    <script src="app.js?v=20260614v"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
