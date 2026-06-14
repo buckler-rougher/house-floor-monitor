@@ -3210,11 +3210,17 @@ function renderVoteRecsPrefs() {
         </div>`;
     }
 
+    // followWhip toggle: [D]=follow Dem Whip, [R]=don't
+    const fwD = p.followWhip  ? ' active' : '';
+    const fwR = !p.followWhip ? ' active' : '';
+
     body.innerHTML = `
         <div class="vrec-follow-whip-row">
-            <input type="checkbox" id="vrec-follow-whip" ${p.followWhip ? 'checked' : ''}
-                onchange="setVrecPref('followWhip', this.checked)">
-            <label for="vrec-follow-whip">Follow Dem Whip where available</label>
+            <span class="vrec-pref-label">Follow Dem Whip</span>
+            <div class="bills-sort-switcher">
+                <button class="bills-sort-btn${fwD}" onclick="setVrecPref('followWhip', true)">D</button>
+                <button class="bills-sort-btn${fwR}" onclick="setVrecPref('followWhip', false)">R</button>
+            </div>
         </div>
         ${prefToggle('pq',           'Previous Question')}
         ${prefToggle('rule',         'Rule adoption')}
@@ -3250,9 +3256,15 @@ function renderVoteRecsRows() {
         const whipChip = whipRec
             ? `<span class="vrec-whip-chip vrec-whip-${whipRec.toLowerCase()}">DEM WHIP: ${whipRec}</span>`
             : '';
-        const yesClass   = entry.vote === 'YES' ? ' sel-yes'   : '';
-        const noClass    = entry.vote === 'NO'  ? ' sel-no'    : '';
-        const blankClass = !entry.vote          ? ' sel-blank' : '';
+        // sel-* classes: one per vote value, keyed by data-vote attribute
+        function voteBtnClass(btnVal) {
+            const match = (entry.vote || '') === btnVal;
+            if (!match) return '';
+            if (btnVal === 'YES')     return ' sel-yes';
+            if (btnVal === 'NO')      return ' sel-no';
+            if (btnVal === 'PRESENT') return ' sel-present';
+            return ' sel-blank'; // empty string = no rec (—)
+        }
         const safeKey = escapeHtml(key);
         // Label is clickable if there's a bill to look up
         const labelEl = billId
@@ -3265,9 +3277,10 @@ function renderVoteRecsRows() {
                 ${whipChip}
             </div>
             <div class="vrec-vote-btns">
-                <button class="vrec-vote-btn${yesClass}"   onclick="setVoteRec('${safeKey}','YES')">YES</button>
-                <button class="vrec-vote-btn${noClass}"    onclick="setVoteRec('${safeKey}','NO')">NO</button>
-                <button class="vrec-vote-btn${blankClass}" onclick="setVoteRec('${safeKey}',null)">—</button>
+                <button class="vrec-vote-btn${voteBtnClass('YES')}"     data-vote="YES"     onclick="setVoteRec('${safeKey}','YES')">YES</button>
+                <button class="vrec-vote-btn${voteBtnClass('NO')}"      data-vote="NO"      onclick="setVoteRec('${safeKey}','NO')">NO</button>
+                <button class="vrec-vote-btn${voteBtnClass('PRESENT')}" data-vote="PRESENT" onclick="setVoteRec('${safeKey}','PRESENT')">PRESENT</button>
+                <button class="vrec-vote-btn${voteBtnClass('')}"        data-vote=""        onclick="setVoteRec('${safeKey}',null)">—</button>
             </div>
             <input class="vrec-note-input" type="text" placeholder="Note (optional)"
                 value="${escapeHtml(entry.note || '')}"
@@ -3280,17 +3293,20 @@ function setVoteRec(key, vote) {
     const entry = voteRecsMap.get(key) || { vote: null, note: '' };
     entry.vote = vote;
     voteRecsMap.set(key, entry);
-    // Surgical button update — avoid full re-render to preserve note field focus
+    // Surgical button update via data-vote — no index assumptions, preserves note focus
     const row = document.querySelector(`.vrec-row[data-vrec-key="${CSS.escape(key)}"]`);
     if (row) {
-        const [yBtn, nBtn, bBtn] = row.querySelectorAll('.vrec-vote-btn');
-        yBtn?.classList.toggle('sel-yes',   vote === 'YES');
-        nBtn?.classList.toggle('sel-no',    vote === 'NO');
-        bBtn?.classList.toggle('sel-blank', !vote);
-        // Clear the non-selected states
-        if (vote === 'YES') { nBtn?.classList.remove('sel-no');    bBtn?.classList.remove('sel-blank'); }
-        if (vote === 'NO')  { yBtn?.classList.remove('sel-yes');   bBtn?.classList.remove('sel-blank'); }
-        if (!vote)          { yBtn?.classList.remove('sel-yes');   nBtn?.classList.remove('sel-no');    }
+        const selectedVal = vote || ''; // null → '' to match data-vote=""
+        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
+            const isSel = btn.dataset.vote === selectedVal;
+            btn.classList.remove('sel-yes', 'sel-no', 'sel-present', 'sel-blank');
+            if (isSel) {
+                if (vote === 'YES')     btn.classList.add('sel-yes');
+                else if (vote === 'NO') btn.classList.add('sel-no');
+                else if (vote === 'PRESENT') btn.classList.add('sel-present');
+                else                    btn.classList.add('sel-blank');
+            }
+        });
     }
 }
 
