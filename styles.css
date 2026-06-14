@@ -810,13 +810,26 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     overflow: hidden;
 }
 
-/* Panel header inside vote-display: break out of card padding */
+/* Panel header inside vote-display: break out of card padding,
+   match the flex-start + gap pattern used by all other Happening Now panels */
 .vote-display > .panel-header {
     align-self: stretch;
     margin: calc(-1 * var(--sp-32));
     margin-bottom: calc(-1 * var(--sp-16));
     border-radius: 0;
     flex-shrink: 0;
+    justify-content: flex-start;
+    gap: var(--sp-12);
+}
+
+/* Push the source block to the far right */
+.vote-display > .panel-header .panel-header-right {
+    margin-left: auto;
+}
+
+/* Vote title row inside panel body: stretch full width */
+.vote-display > .vote-header {
+    align-self: stretch;
 }
 
 /* Progress bar inside vote-display: stretch to full width */
