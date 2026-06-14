@@ -2635,19 +2635,44 @@ function renderWhipNoticesFeed(items) {
         return;
     }
     feed.innerHTML = items.map(item => {
-        const d = item.publishedAt ? new Date(item.publishedAt) : null;
-        const timeStr = d ? d.toLocaleTimeString('en-US', {
-            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-        }) : '';
-        const typeKey  = (item.noticeType || 'floor').toLowerCase();
+        const typeKey   = (item.noticeType || 'floor').toLowerCase();
         const typeLabel = WHIP_NOTICE_TYPE_LABEL[typeKey] || typeKey.toUpperCase();
+        const isFloor   = typeKey === 'floor';
+
+        // Floor: real-time timestamp → local date + time.
+        // Daily/nightly/weekly: postedAt TZ offset is unreliable (DomeWatch stores
+        // ET as UTC); use publishDate (YYYY-MM-DD) for a correct date-only display.
+        let whenStr = '';
+        if (isFloor && item.publishedAt) {
+            const d = new Date(item.publishedAt);
+            whenStr = d.toLocaleString('en-US', {
+                month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+            });
+        } else if (item.publishDate) {
+            const [y, m, d] = item.publishDate.split('-').map(Number);
+            whenStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                weekday: 'short', month: 'long', day: 'numeric', year: 'numeric'
+            });
+        }
+
+        // Schedule block for daily / nightly / weekly notices
+        const schedHtml = (!isFloor && (item.houseMeetsAt || item.firstVotes || item.lastVotes))
+            ? `<div class="whip-notice-schedule">${[
+                item.houseMeetsAt ? `<div class="whip-sched-row"><span class="whip-sched-label">HOUSE MEETS</span><span class="whip-sched-val">${escapeHtml(item.houseMeetsAt)}</span></div>` : '',
+                item.firstVotes   ? `<div class="whip-sched-row"><span class="whip-sched-label">FIRST VOTES</span><span class="whip-sched-val">${escapeHtml(item.firstVotes)}</span></div>`   : '',
+                item.lastVotes    ? `<div class="whip-sched-row"><span class="whip-sched-label">LAST VOTES</span> <span class="whip-sched-val">${escapeHtml(item.lastVotes)}</span></div>`    : '',
+              ].join('')}</div>`
+            : '';
+
         return `
             <div class="whip-update-item">
                 <div class="whip-update-meta">
                     <span class="whip-type-badge whip-type-${typeKey}">${typeLabel}</span>
-                    ${timeStr ? `<span class="whip-update-time">${escapeHtml(timeStr)}</span>` : ''}
+                    ${whenStr ? `<span class="whip-update-time">${escapeHtml(whenStr)}</span>` : ''}
                     <span class="whip-update-title">${escapeHtml(item.title)}</span>
                 </div>
+                ${schedHtml}
                 <div class="whip-update-body">${item.body}</div>
             </div>`;
     }).join('');

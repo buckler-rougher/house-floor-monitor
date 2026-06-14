@@ -2907,11 +2907,15 @@ async function handleWhipNoticesFeed() {
           : '';
         const label = KIND_LABEL[n.kind] || (n.kind.charAt(0).toUpperCase() + n.kind.slice(1) + ' Whip Notice');
         return {
-          id:          n.id || '',
-          title:       dateStr ? `${label} — ${dateStr}` : label,
-          body:        n.sourceText || '',
-          publishedAt: n.postedAt || null,
-          noticeType:  n.kind,
+          id:           n.id || '',
+          title:        dateStr ? `${label} — ${dateStr}` : label,
+          body:         n.sourceText || '',
+          publishedAt:  n.postedAt || null,
+          publishDate:  n.publishDate || null,   // YYYY-MM-DD, reliable; postedAt TZ is unreliable
+          noticeType:   n.kind,
+          houseMeetsAt: n.houseMeetsAt || null,
+          firstVotes:   n.firstVotes   || null,
+          lastVotes:    n.lastVotes    || null,
         };
       });
 
