@@ -3608,6 +3608,13 @@ function openBillModal(billId) {
         const n = billId.match(/(\d+)/)?.[1];
         if (n) bill = billDataMap.get(`hres-${n}`);
     }
+    // Last-resort: normalized scan to handle spacing differences ("H. Res." vs "H.Res.")
+    if (!bill) {
+        const norm = normalizeBillIdForRules(billId);
+        for (const [key, val] of billDataMap) {
+            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+        }
+    }
     if (!bill) return;
 
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
