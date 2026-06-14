@@ -929,7 +929,12 @@ function syncVoteTimer(timerData) {
         voteTimer.syncedAt = Date.now();
     }
 
-    voteTimer.openedAt = timerData.timestamp || null;
+    // Only update openedAt during countdown — in overtime, DomeWatch repurposes
+    // timestamp to mean "moment the clock hit 0", not "when the vote opened".
+    // Preserving the last countdown value keeps the OPENED label correct.
+    if (newSeconds > 0) {
+        voteTimer.openedAt = timerData.timestamp || null;
+    }
     if (!voteTimer.interval) {
         voteTimer.interval = setInterval(tickVoteTimer, 100);
     }
@@ -1652,7 +1657,9 @@ function updateFloorDisplay(status = null) {
     // Here we only update the "STARTED HH:MM" label from the timer's open timestamp.
     const timerStartElement = document.getElementById('vote-timer-start');
     if (timerStartElement) {
-        const openedAt = floorData.timer?.timestamp || voteTimer.openedAt;
+        // Use voteTimer.openedAt only — floorData.timer.timestamp changes meaning
+        // in overtime (becomes clock-hit-0 time) so we never read it for display.
+        const openedAt = voteTimer.openedAt;
         if (openedAt) {
             const startStr = new Date(openedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             timerStartElement.textContent = `OPENED ${startStr}`;
