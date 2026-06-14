@@ -2559,6 +2559,7 @@ async function fetchWhipRecs() {
 // Shared cache of the last fetched items — lets updateVoteTimelineStatus()
 // refresh circle states on each SSE tick without re-fetching Firestore.
 let whipFloorItems = [];
+let whipNoticeFilter = null; // null = all; 'floor'|'daily'|'nightly'|'weekly' = filtered
 
 // ── Vote recs state ──────────────────────────────────────────────────────────
 // currentVotesList: [{billId, text, duration, action}] from latest series render
@@ -2630,18 +2631,25 @@ const WHIP_NOTICE_TYPE_LABEL = {
 function renderWhipNoticesFeed(items) {
     const feed = document.getElementById('whip-updates-feed');
     if (!feed) return;
-    if (items.length === 0) {
-        feed.innerHTML = '<div class="whip-updates-loading">No notices today.</div>';
+
+    // Apply active filter
+    const filtered = whipNoticeFilter
+        ? items.filter(it => (it.noticeType || 'floor').toLowerCase() === whipNoticeFilter)
+        : items;
+
+    if (filtered.length === 0) {
+        feed.innerHTML = `<div class="whip-updates-loading">${whipNoticeFilter ? 'No ' + whipNoticeFilter + ' notices.' : 'No notices today.'}</div>`;
         return;
     }
-    feed.innerHTML = items.map(item => {
+
+    feed.innerHTML = filtered.map(item => {
         const typeKey   = (item.noticeType || 'floor').toLowerCase();
         const typeLabel = WHIP_NOTICE_TYPE_LABEL[typeKey] || typeKey.toUpperCase();
         const isFloor   = typeKey === 'floor';
 
-        // Floor: real-time timestamp → local date + time.
-        // Daily/nightly/weekly: postedAt TZ offset is unreliable (DomeWatch stores
-        // ET as UTC); use publishDate (YYYY-MM-DD) for a correct date-only display.
+        // Floor: real-time Firestore timestamp → local date + time (accurate).
+        // Daily/nightly/weekly: DomeWatch stores ET as UTC in postedAt, so display
+        // UTC hours directly (they read correctly as ET). Show date from publishDate.
         let whenStr = '';
         if (isFloor && item.publishedAt) {
             const d = new Date(item.publishedAt);
@@ -2649,26 +2657,39 @@ function renderWhipNoticesFeed(items) {
                 month: 'short', day: 'numeric',
                 hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
             });
+        } else if (item.publishDate && item.publishedAt) {
+            const [y, m, d] = item.publishDate.split('-').map(Number);
+            const dateStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                weekday: 'short', month: 'long', day: 'numeric'
+            });
+            // Use UTC hours — DomeWatch stores ET time with +00:00 label
+            const t = new Date(item.publishedAt);
+            const timeStr = t.toLocaleTimeString('en-US', {
+                hour: 'numeric', minute: '2-digit', timeZone: 'UTC'
+            });
+            whenStr = `${dateStr} · ${timeStr} ET`;
         } else if (item.publishDate) {
             const [y, m, d] = item.publishDate.split('-').map(Number);
             whenStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
-                weekday: 'short', month: 'long', day: 'numeric', year: 'numeric'
+                weekday: 'short', month: 'long', day: 'numeric'
             });
         }
 
-        // Schedule block for daily / nightly / weekly notices
-        const schedHtml = (!isFloor && (item.houseMeetsAt || item.firstVotes || item.lastVotes))
-            ? `<div class="whip-notice-schedule">${[
-                item.houseMeetsAt ? `<div class="whip-sched-row"><span class="whip-sched-label">HOUSE MEETS</span><span class="whip-sched-val">${escapeHtml(item.houseMeetsAt)}</span></div>` : '',
-                item.firstVotes   ? `<div class="whip-sched-row"><span class="whip-sched-label">FIRST VOTES</span><span class="whip-sched-val">${escapeHtml(item.firstVotes)}</span></div>`   : '',
-                item.lastVotes    ? `<div class="whip-sched-row"><span class="whip-sched-label">LAST VOTES</span> <span class="whip-sched-val">${escapeHtml(item.lastVotes)}</span></div>`    : '',
-              ].join('')}</div>`
+        // Compact schedule line for daily/nightly/weekly
+        const schedParts = [];
+        if (!isFloor) {
+            if (item.houseMeetsAt) schedParts.push('House meets ' + item.houseMeetsAt.replace(/\n/g, ' / '));
+            if (item.firstVotes)   schedParts.push('First votes ' + item.firstVotes);
+            if (item.lastVotes)    schedParts.push('Last votes '  + item.lastVotes);
+        }
+        const schedHtml = schedParts.length
+            ? `<div class="whip-notice-schedule">${escapeHtml(schedParts.join(' · '))}</div>`
             : '';
 
         return `
             <div class="whip-update-item">
                 <div class="whip-update-meta">
-                    <span class="whip-type-badge whip-type-${typeKey}">${typeLabel}</span>
+                    <span class="whip-type-badge whip-type-${typeKey}" data-filter-type="${typeKey}">${typeLabel}</span>
                     ${whenStr ? `<span class="whip-update-time">${escapeHtml(whenStr)}</span>` : ''}
                     <span class="whip-update-title">${escapeHtml(item.title)}</span>
                 </div>
@@ -2676,6 +2697,38 @@ function renderWhipNoticesFeed(items) {
                 <div class="whip-update-body">${item.body}</div>
             </div>`;
     }).join('');
+}
+
+function renderWhipFilterDropdown() {
+    const dropdown = document.getElementById('whip-filter-dropdown');
+    const btn      = document.getElementById('whip-filter-btn');
+    if (!dropdown) return;
+
+    // Determine which types are actually present in the loaded items
+    const presentTypes = [...new Set(whipFloorItems.map(it => (it.noticeType || 'floor').toLowerCase()))];
+    const allTypes = ['floor', 'daily', 'nightly', 'weekly'].filter(t => presentTypes.includes(t));
+
+    const chips = [
+        `<button class="whip-filter-chip whip-type-all${whipNoticeFilter === null ? ' active' : ''}" data-filter-type="all">ALL</button>`,
+        ...allTypes.map(t => {
+            const label = WHIP_NOTICE_TYPE_LABEL[t] || t.toUpperCase();
+            const active = whipNoticeFilter === t ? ' active' : '';
+            return `<button class="whip-filter-chip whip-type-${t}${active}" data-filter-type="${t}">${label}</button>`;
+        }),
+    ];
+    dropdown.innerHTML = chips.join('');
+    dropdown.hidden = false;
+    if (btn) btn.classList.add('active');
+}
+
+function setWhipFilter(type) {
+    // null / 'all' = clear filter; else set
+    whipNoticeFilter = (type === 'all' || type === whipNoticeFilter) ? null : type;
+    const dropdown = document.getElementById('whip-filter-dropdown');
+    const btn      = document.getElementById('whip-filter-btn');
+    if (dropdown) dropdown.hidden = true;
+    if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
+    renderWhipNoticesFeed(whipFloorItems);
 }
 
 // ── Vote Series Timeline ───────────────────────────────────────────────────
@@ -7941,6 +7994,37 @@ function init() {
     fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
     fetchAndRenderWhipFloorUpdates();
     setInterval(fetchAndRenderWhipFloorUpdates, 3 * 60 * 1000); // refresh every 3 min
+
+    // Whip notices filter button
+    const whipFilterBtn = document.getElementById('whip-filter-btn');
+    if (whipFilterBtn) {
+        whipFilterBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('whip-filter-dropdown');
+            if (dropdown && !dropdown.hidden) {
+                dropdown.hidden = true;
+                whipFilterBtn.classList.remove('active');
+            } else {
+                renderWhipFilterDropdown();
+            }
+        });
+    }
+    // Filter chip clicks (in dropdown) + inline badge clicks
+    document.addEventListener('click', e => {
+        const chip = e.target.closest('[data-filter-type]');
+        if (chip) {
+            e.stopPropagation();
+            setWhipFilter(chip.dataset.filterType);
+            return;
+        }
+        // Close dropdown on outside click
+        const dropdown = document.getElementById('whip-filter-dropdown');
+        if (dropdown && !dropdown.hidden && !dropdown.contains(e.target)) {
+            dropdown.hidden = true;
+            const btn = document.getElementById('whip-filter-btn');
+            if (btn && whipNoticeFilter === null) btn.classList.remove('active');
+        }
+    });
 
     // Airport delays need the name lookup — start both in parallel, delays waits on names
     fetchAirportNames().then(() => fetchAirportDelays());
