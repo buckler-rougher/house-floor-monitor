@@ -2572,7 +2572,13 @@ const HOUSE_MAJORITY_PARTY = 'R';
 let voteRecsPrefs = (() => {
     try {
         const s = localStorage.getItem('voteRecsPrefs');
-        if (s) return JSON.parse(s);
+        if (s) {
+            const parsed = JSON.parse(s);
+            // Migrate old boolean followWhip → string ('follow'/'oppose'/null)
+            if (parsed.followWhip === true)  parsed.followWhip = 'follow';
+            if (parsed.followWhip === false) parsed.followWhip = null;
+            return parsed;
+        }
     } catch (e) {}
     return { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
 })();
@@ -3161,27 +3167,32 @@ function getWhipRecFor(billId) {
 function getPartyPrefs(party) {
     const isMajority = party === HOUSE_MAJORITY_PARTY;
     if (party === 'D') {
-        // Dem Whip recs are followed when available; other positions by role
+        // Follow Dem Whip recs where available; other positions by role
         return isMajority
-            ? { followWhip: true,  pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
-            : { followWhip: true,  pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
+            ? { followWhip: 'follow', pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
+            : { followWhip: 'follow', pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
     }
     if (party === 'R') {
-        // No Whip rec feed for R — position-based only
+        // No Whip rec feed for R — position-based only (null = ignore Dem Whip)
         return isMajority
-            ? { followWhip: false, pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
-            : { followWhip: false, pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
+            ? { followWhip: null, pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
+            : { followWhip: null, pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
     }
-    return { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+    return { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
 }
 
 // Derive the auto-fill vote for one item from current prefs.
 function applyPrefsToVote(billId, action) {
     const p = voteRecsPrefs;
-    // Dem Whip rec takes priority when followWhip is on
-    if (p.followWhip && billId) {
+    // Dem Whip rec takes priority when followWhip is 'follow'
+    if (p.followWhip === 'follow' && billId) {
         const whipRec = getWhipRecFor(billId);
         if (whipRec) return whipRec;
+    }
+    // Flip Dem Whip rec when followWhip is 'oppose'
+    if (p.followWhip === 'oppose' && billId) {
+        const whipRec = getWhipRecFor(billId);
+        if (whipRec) return whipRec === 'YES' ? 'NO' : 'YES';
     }
     // Map vote action to pref bucket
     switch (action) {
@@ -3213,41 +3224,58 @@ function applyVoteRecsAutoFill() {
 
 // ── Prefs panel ──────────────────────────────────────────────────────────────
 
+// Canonical string representation of a pref value for data-pref-val matching.
+function prefValToStr(val) {
+    if (val === null || val === undefined) return 'null';
+    return String(val); // 'YES', 'NO', 'PRESENT', 'follow', 'oppose'
+}
+
+// Surgically toggle active classes on pref toggle buttons without re-rendering DOM.
+// Called by setVrecPref() so pref clicks never teardown/rebuild any HTML.
+function updatePrefToggles() {
+    const body = document.getElementById('vrec-prefs-body');
+    if (!body) return;
+    body.querySelectorAll('[data-pref-key]').forEach(container => {
+        const prefKey = container.dataset.prefKey;
+        const valStr = prefValToStr(voteRecsPrefs[prefKey]);
+        container.querySelectorAll('.bills-sort-btn[data-pref-val]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.prefVal === valStr);
+        });
+    });
+}
+
+// Full re-render of the prefs panel (called on modal open and preset changes only).
 function renderVoteRecsPrefs() {
     const body = document.getElementById('vrec-prefs-body');
     if (!body) return;
     const p = voteRecsPrefs;
 
     function prefToggle(prefKey, label) {
-        const val = p[prefKey];
-        const cls = v => v === val ? ' active' : '';
+        const valStr = prefValToStr(p[prefKey]);
+        const cls = dv => dv === valStr ? ' active' : '';
         const k = escapeHtml(prefKey);
         return `<div class="vrec-pref-row">
             <span class="vrec-pref-label">${label}</span>
-            <div class="bills-sort-switcher">
-                <button class="bills-sort-btn${cls(null)}"      onclick="setVrecPref('${k}',null)"     >—</button>
-                <button class="bills-sort-btn${cls('YES')}"     onclick="setVrecPref('${k}','YES')"    >Yes</button>
-                <button class="bills-sort-btn${cls('NO')}"      onclick="setVrecPref('${k}','NO')"     >No</button>
-                <button class="bills-sort-btn${cls('PRESENT')}" onclick="setVrecPref('${k}','PRESENT')">Pres</button>
+            <div class="bills-sort-switcher" data-pref-key="${k}">
+                <button class="bills-sort-btn${cls('null')}"    data-pref-val="null"    onclick="setVrecPref('${k}',null)"     >—</button>
+                <button class="bills-sort-btn${cls('YES')}"     data-pref-val="YES"     onclick="setVrecPref('${k}','YES')"    >Yes</button>
+                <button class="bills-sort-btn${cls('NO')}"      data-pref-val="NO"      onclick="setVrecPref('${k}','NO')"     >No</button>
+                <button class="bills-sort-btn${cls('PRESENT')}" data-pref-val="PRESENT" onclick="setVrecPref('${k}','PRESENT')">Pres</button>
             </div>
         </div>`;
     }
 
-    // followWhip: null=—, true=Yes, false=No
-    const fwCls = v => {
-        if (v === null)  return (p.followWhip === null  || p.followWhip === undefined) ? ' active' : '';
-        if (v === true)  return p.followWhip === true  ? ' active' : '';
-        if (v === false) return p.followWhip === false ? ' active' : '';
-        return '';
-    };
+    // followWhip: null=—, 'follow'=Follow, 'oppose'=Oppose
+    const fwStr = prefValToStr(p.followWhip);
+    const fwCls = dv => dv === fwStr ? ' active' : '';
 
     body.innerHTML = `
         <div class="vrec-follow-whip-row">
-            <span class="vrec-pref-label">Follow Dem Whip</span>
-            <div class="bills-sort-switcher">
-                <button class="bills-sort-btn${fwCls(null)}"  onclick="setVrecPref('followWhip',null)" >—</button>
-                <button class="bills-sort-btn${fwCls(true)}"  onclick="setVrecPref('followWhip',true)" >Yes</button>
-                <button class="bills-sort-btn${fwCls(false)}" onclick="setVrecPref('followWhip',false)">No</button>
+            <span class="vrec-pref-label">Dem Whip</span>
+            <div class="bills-sort-switcher" data-pref-key="followWhip">
+                <button class="bills-sort-btn${fwCls('null')}"   data-pref-val="null"   onclick="setVrecPref('followWhip',null)"     >—</button>
+                <button class="bills-sort-btn${fwCls('follow')}" data-pref-val="follow" onclick="setVrecPref('followWhip','follow')" >Follow</button>
+                <button class="bills-sort-btn${fwCls('oppose')}" data-pref-val="oppose" onclick="setVrecPref('followWhip','oppose')" >Oppose</button>
             </div>
         </div>
         ${prefToggle('pq',           'Previous Question')}
@@ -3259,6 +3287,7 @@ function renderVoteRecsPrefs() {
 
 // Called by pref toggle buttons. Saves the setting but does NOT re-apply auto-fill —
 // manual vote selections are preserved. Auto-fill only runs when a preset is clicked.
+// Uses surgical updatePrefToggles() — no DOM teardown, so indicators never "clear".
 function setVrecPref(prefKey, val) {
     if (val === 'null') val = null; // safety: HTML attribute string → real null
     voteRecsPrefs[prefKey] = val;
@@ -3267,7 +3296,7 @@ function setVrecPref(prefKey, val) {
     voteRecsPreset = computeCurrentPreset();
     localStorage.setItem('voteRecsPreset', voteRecsPreset);
     syncPresetButtons();
-    renderVoteRecsPrefs();
+    updatePrefToggles(); // surgical: toggle active classes only, no innerHTML re-render
 }
 
 // Surgically update every row's vote-button classes from voteRecsMap (no re-render).
