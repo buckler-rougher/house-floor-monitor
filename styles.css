@@ -3005,26 +3005,14 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   gap: var(--sp-8);
 }
 
+/* Dem Whip follow row — same layout as other pref rows, with separator below */
 .vrec-follow-whip-row {
   display: flex;
   align-items: center;
-  gap: var(--sp-8);
+  gap: var(--sp-10);
   padding-bottom: var(--sp-8);
   margin-bottom: var(--sp-4);
   border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
-}
-.vrec-follow-whip-row input[type="checkbox"] {
-  accent-color: var(--accent-blue);
-  width: 13px;
-  height: 13px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.vrec-follow-whip-row label {
-  font-family: var(--font-mono);
-  font-size: var(--fs-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
 }
 
 .vrec-pref-row {
@@ -3133,7 +3121,11 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   transition: all 0.15s;
   letter-spacing: 0.5px;
 }
-.vrec-vote-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+/* Hover only when not already selected — prevents hover from washing out the selection */
+.vrec-vote-btn:hover:not(.sel-yes):not(.sel-no):not(.sel-present):not(.sel-blank) {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
 .vrec-vote-btn.sel-yes {
   background: color-mix(in srgb, var(--accent-green) 15%, transparent);
   border-color: var(--accent-green);
@@ -3143,6 +3135,11 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   background: color-mix(in srgb, var(--accent-red) 15%, transparent);
   border-color: var(--accent-red);
   color: var(--accent-red);
+}
+.vrec-vote-btn.sel-present {
+  background: color-mix(in srgb, var(--accent-amber) 15%, transparent);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
 }
 .vrec-vote-btn.sel-blank {
   background: color-mix(in srgb, var(--text-muted) 10%, transparent);
