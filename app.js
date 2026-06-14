@@ -3123,6 +3123,28 @@ function whipRecTagHtml(billId) {
 
 // ── Vote Recs Modal ──────────────────────────────────────────────────────────
 
+// Compare two pref objects key-by-key.
+function prefsMatch(a, b) {
+    return ['followWhip', 'pq', 'rule', 'ruleMeasures', 'suspensions', 'mtr']
+        .every(k => a[k] === b[k]);
+}
+
+// Return which preset ('nothing'|'D'|'R'|'custom') the current prefs match.
+function computeCurrentPreset() {
+    const nothing = { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+    if (prefsMatch(voteRecsPrefs, nothing))        return 'nothing';
+    if (prefsMatch(voteRecsPrefs, getPartyPrefs('D'))) return 'D';
+    if (prefsMatch(voteRecsPrefs, getPartyPrefs('R'))) return 'R';
+    return 'custom';
+}
+
+// Reflect voteRecsPreset in the switcher buttons.
+function syncPresetButtons() {
+    document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === voteRecsPreset);
+    });
+}
+
 function voteRecKey(billId, action, text) {
     return (billId || text || '') + '|' + (action || '');
 }
@@ -3241,7 +3263,11 @@ function setVrecPref(prefKey, val) {
     if (val === 'null') val = null; // safety: HTML attribute string → real null
     voteRecsPrefs[prefKey] = val;
     localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
-    renderVoteRecsPrefs(); // reflect active state in pref toggles only
+    // Auto-derive which preset (Nothing/D/R/Custom) the new prefs match
+    voteRecsPreset = computeCurrentPreset();
+    localStorage.setItem('voteRecsPreset', voteRecsPreset);
+    syncPresetButtons();
+    renderVoteRecsPrefs();
 }
 
 // Surgically update every row's vote-button classes from voteRecsMap (no re-render).
@@ -3345,6 +3371,8 @@ function setVoteRecNote(key, note) {
 // ── Preset buttons (Nothing / D / R) ─────────────────────────────────────────
 
 function setVoteRecsPreset(preset) {
+    if (preset === 'custom') return; // auto-derived; clicking it is a no-op
+
     voteRecsPreset = preset;
     localStorage.setItem('voteRecsPreset', preset);
 
@@ -3358,10 +3386,7 @@ function setVoteRecsPreset(preset) {
     }
     localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
 
-    // Sync preset button active states
-    document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.preset === preset);
-    });
+    syncPresetButtons();
     renderVoteRecsPrefs();
     updateAllRowButtons(); // surgical — keeps note fields intact
 }
@@ -3380,22 +3405,28 @@ function openVoteRecsModal() {
         }
     }
 
-    // Reflect saved preset in buttons
-    document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.preset === voteRecsPreset);
-    });
-
+    syncPresetButtons();
     renderVoteRecsPrefs();
     renderVoteRecsRows();
     overlay.removeAttribute('hidden');
     overlay.onclick = e => { if (e.target === overlay) closeVoteRecsModal(); };
     document.addEventListener('keydown', _vrecEscHandler);
+
+    // Push hash so the modal survives reload and can be shared
+    if (location.hash !== '#build-vote-recs') {
+        history.pushState(null, '', '#build-vote-recs');
+    }
 }
 
 function closeVoteRecsModal() {
     const overlay = document.getElementById('vrec-overlay');
-    if (overlay) overlay.setAttribute('hidden', '');
+    if (!overlay || overlay.hasAttribute('hidden')) return;
+    overlay.setAttribute('hidden', '');
     document.removeEventListener('keydown', _vrecEscHandler);
+    // Remove hash when modal is closed
+    if (location.hash === '#build-vote-recs') {
+        history.pushState(null, '', location.pathname + location.search);
+    }
 }
 
 function _vrecEscHandler(e) {
@@ -9372,6 +9403,20 @@ function updateLastUpdate() {
     pip.classList.add('pip-active');
     fetchAndLoad();
 })();
+
+// ── Hash routing for Build Vote Recs modal ───────────────────────────────────
+// Open modal if URL already has the hash on load; handle back/forward navigation.
+window.addEventListener('popstate', () => {
+    if (location.hash === '#build-vote-recs') {
+        openVoteRecsModal();
+    } else {
+        closeVoteRecsModal();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (location.hash === '#build-vote-recs') openVoteRecsModal();
+});
 
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
