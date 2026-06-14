@@ -3045,6 +3045,91 @@ async function handleRequest(request, env) {
       results.push({ key, entries: data?.entries?.length ?? 0, sample: data?.entries?.[0] ?? null });
     }
     return new Response(JSON.stringify(results, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  } else if (path === '/api/roll-log-seed' && request.method === 'GET') {
+    // Admin: backfill roll-log KV from Clerk XMLs so the vote-series can show absences.
+    // Usage: /api/roll-log-seed           → auto-discovers latest 20 rolls via congress index
+    //        /api/roll-log-seed?rolls=218,219,220,221,222  → seed specific rolls
+    if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });
+    const rollsParam = url.searchParams.get('rolls');
+    let rollsToFetch = [];
+    if (rollsParam) {
+      rollsToFetch = rollsParam.split(',').map(n => parseInt(n.trim(), 10)).filter(n => n > 0 && n < 10000);
+    } else {
+      try {
+        const idxHtml = await fetchRSSFeed(RSS_FEEDS.congressIndex);
+        const m = idxHtml.match(/rollnumber=(\d+)/);
+        const latest = m ? parseInt(m[1], 10) : 0;
+        if (latest > 0) {
+          for (let n = Math.max(1, latest - 19); n <= latest; n++) rollsToFetch.push(n);
+        }
+      } catch(e) {
+        return new Response(JSON.stringify({ error: 'congress-index fetch failed', detail: String(e) }), { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      }
+    }
+    if (!rollsToFetch.length) return new Response(JSON.stringify({ error: 'no rolls to seed' }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    const seedYear = new Date().getFullYear();
+    const SEED_MONTHS = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
+    const xmlTagVal = (xml, name) => { const m = xml.match(new RegExp(`<${name}[^>]*>([^<]*)<\\/${name}>`)); return m ? m[1].trim() : null; };
+    const batch = rollsToFetch.slice(0, 30);
+    const fetched = await Promise.allSettled(batch.map(async n => {
+      try {
+        const xml = await fetchRSSFeed(`https://clerk.house.gov/evs/${seedYear}/roll${n}.xml`);
+        return { n, xml };
+      } catch { return null; }
+    }));
+    const byKey = {};
+    const results = [];
+    for (const res of fetched) {
+      if (res.status !== 'fulfilled' || !res.value) continue;
+      const { n, xml } = res.value;
+      const bill     = xmlTagVal(xml, 'legis-num');
+      const question = xmlTagVal(xml, 'vote-question');
+      const actionDate = xmlTagVal(xml, 'action-date'); // e.g. "Jun 12, 2026"
+      const dp = actionDate?.match(/(\w{3})\s+(\d+),\s+(\d{4})/);
+      if (!dp) continue;
+      const mon = SEED_MONTHS[dp[1]];
+      if (mon === undefined) continue;
+      const dy = parseInt(dp[2], 10), yr = parseInt(dp[3], 10);
+      const dateKey = `roll-log-${yr}${String(mon+1).padStart(2,'0')}${String(dy).padStart(2,'0')}`;
+      const c = {
+        D: {yeas:0,nays:0,present:0,notVoting:0},
+        R: {yeas:0,nays:0,present:0,notVoting:0},
+        T: {yeas:0,nays:0,present:0,notVoting:0},
+      };
+      const rvRe = /<recorded-vote>([\s\S]*?)<\/recorded-vote>/g;
+      let rv;
+      while ((rv = rvRe.exec(xml)) !== null) {
+        const pm = rv[1].match(/party="([^"]+)"/);
+        const vm = rv[1].match(/<vote>([^<]+)<\/vote>/);
+        if (!pm || !vm) continue;
+        const p = pm[1];
+        const v = vm[1].trim();
+        const cat = v === 'Yea' ? 'yeas' : v === 'Nay' ? 'nays' : v === 'Present' ? 'present' : v === 'Not Voting' ? 'notVoting' : null;
+        if (!cat) continue;
+        c.T[cat]++;
+        if (p === 'D') c.D[cat]++; else if (p === 'R') c.R[cat]++;
+      }
+      const entry = { roll: n, bill, question, totals: c.T, dem: c.D, rep: c.R, updatedAt: new Date().toISOString() };
+      if (!byKey[dateKey]) byKey[dateKey] = [];
+      byKey[dateKey].push(entry);
+      results.push({ roll: n, dateKey, bill, question, demNV: c.D.notVoting, repNV: c.R.notVoting });
+    }
+    for (const [key, entries] of Object.entries(byKey)) {
+      const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
+      const allEntries = existing.entries || [];
+      for (const e of entries) {
+        const idx = allEntries.findIndex(x => x.roll === e.roll);
+        if (idx >= 0) allEntries[idx] = e; else allEntries.push(e);
+      }
+      if (allEntries.length > 50) allEntries.splice(0, allEntries.length - 50);
+      await env.HLS_CACHE.put(key, JSON.stringify({ entries: allEntries }), { expirationTtl: 7 * 24 * 3600 });
+    }
+    _mSet('roll-log-assembled', '', 0);
+    return new Response(JSON.stringify({
+      seeded: results.length,
+      keys: Object.fromEntries(Object.entries(byKey).map(([k, v]) => [k, v.length])),
+      results,
+    }, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
