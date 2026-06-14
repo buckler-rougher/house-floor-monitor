@@ -3097,7 +3097,7 @@ function renderVoteTimeline(items) {
         const hasBadges = duration || resultText;
         return `
             <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
-                <div class="vote-tl-circle ${status}"></div>
+                <div class="vote-tl-circle ${status}"><span class="vote-tl-num">${i + 1}</span></div>
                 <div class="vote-tl-content">
                     <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
                     ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
