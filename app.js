@@ -2560,6 +2560,15 @@ async function fetchWhipRecs() {
 // refresh circle states on each SSE tick without re-fetching Firestore.
 let whipFloorItems = [];
 
+// ── Vote recs state ──────────────────────────────────────────────────────────
+// currentVotesList: [{billId, text, duration, action}] from latest series render
+let currentVotesList = [];
+// mode persists across opens (localStorage-backed)
+let voteRecsMode = localStorage.getItem('voteRecsMode') || 'nothing';
+// per-vote rec: key → {vote: null|'YES'|'NO', note: ''}
+// key = (billId || text) + '|' + (action || '')
+const voteRecsMap = new Map();
+
 async function fetchAndRenderWhipFloorUpdates() {
     const feed = document.getElementById('whip-updates-feed');
     if (!feed) return;
@@ -2853,11 +2862,13 @@ function voteTlResultText(billId, status) {
 function updateVoteTimelineStatus() {
     const body = document.getElementById('vote-series-body');
     if (!body) return;
-    const items = body.querySelectorAll('.vote-tl-item');
-    items.forEach(item => {
+    const items = Array.from(body.querySelectorAll('.vote-tl-item'));
+    const liveStatuses = [];
+    items.forEach((item, idx) => {
         const billId = item.dataset.billId || null;
         const action = item.dataset.action || null;
         const status = getVoteTlStatus(billId, action);
+        liveStatuses.push(status);
         const circle = item.querySelector('.vote-tl-circle');
         const result = item.querySelector('.vote-tl-result');
         if (circle) {
@@ -2881,6 +2892,12 @@ function updateVoteTimelineStatus() {
             span.textContent = text;
             badges.appendChild(span);
         }
+    });
+    // Refresh connector-dotted classes based on updated statuses
+    items.forEach((item, i) => {
+        const nextStatus = liveStatuses[i + 1];
+        const dotted = nextStatus !== undefined && (liveStatuses[i] === 'pending' || nextStatus === 'pending');
+        item.classList.toggle('connector-dotted', dotted);
     });
 }
 
@@ -3040,15 +3057,25 @@ function renderVoteTimeline(items) {
         return;
     }
 
-    const itemsHtml = votes.map(({ text, billId, duration, action }) => {
-        const status = getVoteTlStatus(billId, action);
+    // Store for vote-recs modal access
+    currentVotesList = votes;
+
+    // Compute statuses upfront so we can derive connector-dotted classes
+    const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
+
+    const itemsHtml = votes.map(({ text, billId, duration, action }, i) => {
+        const status = statuses[i];
+        const nextStatus = statuses[i + 1];
+        // Dotted connector when this item or the next is pending
+        const connectorDotted = nextStatus !== undefined && (status === 'pending' || nextStatus === 'pending');
         const resultText = voteTlResultText(billId, status);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
         const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : '';
+        const extraClass = connectorDotted ? ' connector-dotted' : '';
         const hasBadges = duration || resultText;
         return `
-            <div class="vote-tl-item"${billAttr}${actionAttr}>
+            <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
                 <div class="vote-tl-circle ${status}"></div>
                 <div class="vote-tl-content">
                     <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
@@ -3077,6 +3104,172 @@ function whipRecTagHtml(billId) {
         `<span class="whip-tag-label">DEM WHIP</span>` +
         `<span class="whip-tag-rec whip-${dir}">${rec.recommendation}</span>` +
         `</span>`;
+}
+
+// ── Vote Recs Modal ──────────────────────────────────────────────────────────
+
+function voteRecKey(billId, action, text) {
+    return (billId || text || '') + '|' + (action || '');
+}
+
+function getWhipRecFor(billId) {
+    if (!billId) return null;
+    const rec = whipRecMap.get(normalizeBillIdForRules(billId));
+    if (!rec || (rec.recommendation !== 'YES' && rec.recommendation !== 'NO')) return null;
+    return rec.recommendation; // 'YES' or 'NO'
+}
+
+function applyVoteRecsMode(mode) {
+    for (const { billId, text, action } of currentVotesList) {
+        const key = voteRecKey(billId, action, text);
+        const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+        const whipRec = getWhipRecFor(billId);
+        if (mode === 'follow_whip') {
+            entry.vote = whipRec || null;
+        } else if (mode === 'oppose_whip') {
+            entry.vote = whipRec ? (whipRec === 'YES' ? 'NO' : 'YES') : null;
+        } else {
+            entry.vote = null;
+        }
+        voteRecsMap.set(key, entry);
+    }
+}
+
+function renderVoteRecsRows() {
+    const body = document.getElementById('vrec-body');
+    if (!body) return;
+    if (!currentVotesList.length) {
+        body.innerHTML = '<div style="padding:20px 24px;color:var(--text-muted);font-family:var(--font-mono);font-size:var(--fs-base);">No votes in current series.</div>';
+        return;
+    }
+    body.innerHTML = currentVotesList.map(({ billId, text, action }, i) => {
+        const key = voteRecKey(billId, action, text);
+        const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+        const { label } = voteTlLabelAndDesc(billId, text, action);
+        const whipRec = getWhipRecFor(billId);
+        const whipChip = whipRec
+            ? `<span class="vrec-whip-chip vrec-whip-${whipRec.toLowerCase()}">Whip: ${whipRec}</span>`
+            : '';
+        const yesClass = entry.vote === 'YES' ? ' sel-yes' : '';
+        const noClass  = entry.vote === 'NO'  ? ' sel-no'  : '';
+        const blankClass = !entry.vote        ? ' sel-blank' : '';
+        const safeKey = escapeHtml(key);
+        return `<div class="vrec-row" data-vrec-key="${safeKey}">
+            <div class="vrec-row-top">
+                <span class="vrec-row-num">${i + 1}.</span>
+                <span class="vrec-row-label">${escapeHtml(label)}</span>
+                ${whipChip}
+            </div>
+            <div class="vrec-vote-btns">
+                <button class="vrec-vote-btn${yesClass}" onclick="setVoteRec('${safeKey}','YES')">YES</button>
+                <button class="vrec-vote-btn${noClass}"  onclick="setVoteRec('${safeKey}','NO')">NO</button>
+                <button class="vrec-vote-btn${blankClass}" onclick="setVoteRec('${safeKey}',null)">—</button>
+            </div>
+            <input class="vrec-note-input" type="text" placeholder="Note (optional)"
+                value="${escapeHtml(entry.note || '')}"
+                oninput="setVoteRecNote('${safeKey}', this.value)">
+        </div>`;
+    }).join('');
+}
+
+function setVoteRec(key, vote) {
+    const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+    entry.vote = vote;
+    voteRecsMap.set(key, entry);
+    // Update just this row's buttons
+    const row = document.querySelector(`.vrec-row[data-vrec-key="${CSS.escape(key)}"]`);
+    if (row) {
+        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
+            btn.classList.remove('sel-yes', 'sel-no', 'sel-blank');
+        });
+        const [yBtn, nBtn, bBtn] = row.querySelectorAll('.vrec-vote-btn');
+        if (vote === 'YES' && yBtn) yBtn.classList.add('sel-yes');
+        else if (vote === 'NO' && nBtn) nBtn.classList.add('sel-no');
+        else if (!vote && bBtn) bBtn.classList.add('sel-blank');
+    }
+}
+
+function setVoteRecNote(key, note) {
+    const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+    entry.note = note;
+    voteRecsMap.set(key, entry);
+}
+
+function setVoteRecsMode(mode) {
+    voteRecsMode = mode;
+    localStorage.setItem('voteRecsMode', mode);
+    applyVoteRecsMode(mode);
+    // Update mode button active states
+    document.querySelectorAll('.vrec-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    renderVoteRecsRows();
+}
+
+function openVoteRecsModal() {
+    const overlay = document.getElementById('vrec-overlay');
+    if (!overlay) return;
+    // Ensure each current vote has an entry (preserve existing notes/votes)
+    for (const { billId, text, action } of currentVotesList) {
+        const key = voteRecKey(billId, action, text);
+        if (!voteRecsMap.has(key)) {
+            const whipRec = getWhipRecFor(billId);
+            let vote = null;
+            if (voteRecsMode === 'follow_whip') vote = whipRec || null;
+            else if (voteRecsMode === 'oppose_whip') vote = whipRec ? (whipRec === 'YES' ? 'NO' : 'YES') : null;
+            voteRecsMap.set(key, { vote, note: '' });
+        }
+    }
+    // Reflect saved mode in buttons
+    document.querySelectorAll('.vrec-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === voteRecsMode);
+    });
+    renderVoteRecsRows();
+    overlay.removeAttribute('hidden');
+    // Close on overlay click (outside modal)
+    overlay.onclick = e => { if (e.target === overlay) closeVoteRecsModal(); };
+    document.addEventListener('keydown', _vrecEscHandler);
+}
+
+function closeVoteRecsModal() {
+    const overlay = document.getElementById('vrec-overlay');
+    if (overlay) overlay.setAttribute('hidden', '');
+    document.removeEventListener('keydown', _vrecEscHandler);
+}
+
+function _vrecEscHandler(e) {
+    if (e.key === 'Escape') closeVoteRecsModal();
+}
+
+function exportVoteRecs() {
+    const lines = ['VOTE RECS', ''];
+    currentVotesList.forEach(({ billId, text, action }, i) => {
+        const key = voteRecKey(billId, action, text);
+        const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+        const { label } = voteTlLabelAndDesc(billId, text, action);
+        const voteStr = entry.vote || '—';
+        const notePart = entry.note ? ` (note: ${entry.note})` : '';
+        lines.push(`${i + 1}. ${label}: ${voteStr}${notePart}`);
+    });
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('vrec-export-btn');
+        if (!btn) return;
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+    }).catch(() => {
+        // Fallback: select text from a temporary textarea
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    });
 }
 
 // ── Rice Index of Cohesion ──────────────────────────────────────────────────
