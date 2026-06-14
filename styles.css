@@ -3327,6 +3327,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-weight: 600;
   color: var(--accent-green);
   flex-shrink: 0;
+  margin-left: auto; /* push to right edge of meta row */
 }
 
 .whip-update-title {
@@ -3338,16 +3339,14 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   letter-spacing: 0.5px;
 }
 
-/* Schedule block — clean labeled rows */
+/* Schedule — 2-column grid, label left / value right */
 .whip-notice-schedule {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 16px;
   margin: var(--sp-8) 0 var(--sp-12);
 }
-.whip-sched-row {
-  display: flex;
-  gap: var(--sp-8);
-  align-items: baseline;
-  margin-bottom: 3px;
-}
+.whip-sched-row { display: contents; }
 .whip-sched-row dt {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
@@ -3355,8 +3354,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   color: var(--text-muted);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  flex-shrink: 0;
-  min-width: 6.5rem;
+  white-space: nowrap;
 }
 .whip-sched-row dd {
   font-family: var(--font-mono);
