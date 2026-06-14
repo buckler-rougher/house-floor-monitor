@@ -543,8 +543,9 @@ let rollLogCurrentRoll = null; // roll number we're currently tracking
 
 // Called by both the initial REST load and the SSE event: roll-log handler.
 function applyRollLogData(entries) {
+    console.log('[roll-log-dbg] called, entries type:', typeof entries, Array.isArray(entries) ? entries.length + ' items' : String(entries).slice(0,80));
     if (!Array.isArray(entries)) return;
-    console.log('[roll-log-dbg] received entries:', entries.length, entries.map(e => 'roll:' + e.roll + ' bill:' + e.bill + ' q:' + (e.question||'').slice(0,40)));
+    console.log('[roll-log-dbg] entries:', entries.map(e => 'roll:' + e.roll + ' bill:' + e.bill + ' q:' + (e.question||'').slice(0,40)));
     rollLog = entries;
     const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
     const isSubstantive = e => {
@@ -1237,10 +1238,12 @@ function startSSEStreaming() {
             try { window._pollModeState = JSON.parse(event.data); } catch {}
         });
         eventSource.addEventListener('whip-feed', (event) => {
-            try { applyWhipFeedData(JSON.parse(event.data)); } catch {}
+            console.log('[sse-dbg] whip-feed received, data len:', event.data?.length);
+            try { applyWhipFeedData(JSON.parse(event.data)); } catch(e) { console.log('[sse-dbg] whip-feed parse error:', e); }
         });
         eventSource.addEventListener('roll-log', (event) => {
-            try { applyRollLogData(JSON.parse(event.data).entries); } catch {}
+            console.log('[sse-dbg] roll-log received, data len:', event.data?.length, 'preview:', event.data?.slice(0,100));
+            try { applyRollLogData(JSON.parse(event.data).entries); } catch(e) { console.log('[sse-dbg] roll-log parse error:', e); }
         });
         eventSource.addEventListener('casualty-list', (event) => {
             try { applyCasualtyData(JSON.parse(event.data)); } catch {}
