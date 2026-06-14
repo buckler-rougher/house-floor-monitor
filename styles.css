@@ -3300,10 +3300,13 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   padding: 1px 5px;
   border-radius: var(--radius-4);
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
   /* default (floor) */
   color: var(--accent-blue);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
+.whip-type-badge:hover { opacity: 0.75; }
 .whip-type-badge.whip-type-daily {
   color: var(--accent-green);
   background: color-mix(in srgb, var(--accent-green) 12%, transparent);
@@ -3334,37 +3337,108 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   letter-spacing: 0.5px;
 }
 
-/* Schedule block (House Meets / First Votes / Last Votes) */
+/* Compact schedule line (House Meets · First Votes · Last Votes) */
 .whip-notice-schedule {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: var(--sp-8) 0 var(--sp-12);
-  padding: var(--sp-8) var(--sp-12);
-  border-left: 2px solid var(--border-color);
-  background: color-mix(in srgb, var(--bg-card) 60%, var(--bg-dark));
-  border-radius: 0 var(--radius-4) var(--radius-4) 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--sp-10);
+  line-height: 1.5;
 }
-.whip-sched-row {
-  display: flex;
-  gap: var(--sp-10);
-  align-items: baseline;
-}
-.whip-sched-label {
+
+/* Filter button + dropdown */
+.whip-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-4);
+  color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.4px;
-  flex-shrink: 0;
-  min-width: 7.5rem;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
 }
-.whip-sched-val {
+.whip-filter-btn:hover,
+.whip-filter-btn.active {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+.whip-filter-dropdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+  padding: var(--sp-10) var(--sp-24);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+}
+.whip-filter-chip {
   font-family: var(--font-mono);
-  font-size: var(--fs-md);
-  color: var(--text-secondary);
-  white-space: pre-line;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-4);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.15s;
+  opacity: 0.55;
 }
+.whip-filter-chip:hover { opacity: 0.85; }
+.whip-filter-chip.active { opacity: 1; border-color: currentColor; }
+/* Mirror type badge colors */
+.whip-filter-chip.whip-type-all    { color: var(--text-secondary); background: color-mix(in srgb, var(--text-muted) 10%, transparent); }
+.whip-filter-chip.whip-type-floor   { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
+.whip-filter-chip.whip-type-daily   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
+.whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
+.whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
+
+/* (?) hover tooltip */
+.whip-info-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  cursor: default;
+  vertical-align: middle;
+  position: relative;
+  margin-left: 4px;
+  line-height: 1;
+}
+.whip-info-tip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 260px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-8);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: normal;
+  padding: var(--sp-10) var(--sp-12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 200;
+  line-height: 1.5;
+}
+.whip-info-tip:hover::after { opacity: 1; }
 
 .whip-update-body {
   font-family: var(--font-sans);
