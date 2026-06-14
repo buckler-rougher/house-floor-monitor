@@ -3368,7 +3368,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .whip-sched-val {
   font-family: var(--font-mono);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
