@@ -2883,7 +2883,7 @@ async function handleWhipFloorUpdates(env) {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
       });
     }
-  }, 5 * 60); // kvFreshTtl=5 min — cold isolates re-use KV for up to 5 min before re-querying Firestore
+  }, 30 * 60); // kvFreshTtl=30 min — cold isolates re-use KV for up to 30 min before re-querying Firestore
 }
 
 // Daily / nightly / weekly notices — from the same DomeWatch data API as vote
@@ -2937,7 +2937,7 @@ async function handleWhipNoticesFeed(env) {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
       });
     }
-  }, 10 * 60); // kvFreshTtl=10 min — cold isolates re-use KV for up to 10 min before re-fetching
+  }, 60 * 60); // kvFreshTtl=60 min — cold isolates re-use KV for up to 1 hour before re-fetching
 }
 
 // ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────
