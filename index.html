@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614n">
+    <link rel="stylesheet" href="styles.css?v=20260614o">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -160,16 +160,6 @@
 
         <!-- Main Display -->
         <div class="main-display" id="vote">
-            <!-- Vote Title -->
-            <div class="vote-header">
-                <h1 class="vote-title" id="vote-title">Loading...</h1>
-                <div class="vote-meta">
-                    <span class="vote-id" id="vote-id">--</span>
-                    <span id="vote-type-tag" class="vote-type-tag"></span>
-                    <button class="vote-bill-btn" id="vote-bill-btn" style="display:none" type="button">VIEW BILL</button>
-                </div>
-            </div>
-
             <!-- Debate Section -->
             <div class="debate-section" id="debate-section">
                 <div class="debate-tags-row">
@@ -785,9 +775,15 @@
             <div class="vote-display">
                 <div class="panel-header">
                     <span class="panel-label">Happening Now</span>
+                    <span id="vote-type-tag" class="vote-type-tag"></span>
+                    <span class="vote-id" id="vote-id">--</span>
                     <div class="panel-header-right">
-                        <span class="panel-source">Source: DomeWatch</span>
+                        <span class="panel-source">Source: <a href="https://domewatch.us" target="_blank" rel="noopener">DomeWatch</a></span>
                     </div>
+                </div>
+                <div class="vote-header">
+                    <h1 class="vote-title" id="vote-title">Loading...</h1>
+                    <button class="vote-bill-btn" id="vote-bill-btn" style="display:none" type="button">VIEW BILL</button>
                 </div>
                 <div class="vote-counts-row" aria-live="polite" aria-atomic="true" aria-label="Current vote tallies">
                     <div class="vote-count-section yeas">
@@ -855,7 +851,7 @@
                     <span class="panel-label">THRESHOLD ANALYSIS</span>
                     <div class="panel-header-right">
                         <span class="threshold-state" id="threshold-state">CALCULATING</span>
-                        <span class="panel-source">Source: DomeWatch</span>
+                        <span class="panel-source">Source: <a href="https://domewatch.us" target="_blank" rel="noopener">DomeWatch</a></span>
                     </div>
                 </div>
                 <div class="threshold-grid">
@@ -906,7 +902,7 @@
                         <span class="indicator-dot"></span>
                         <span class="indicator-text">CALCULATING</span>
                     </span>
-                    <span class="panel-source">Source: DomeWatch</span>
+                    <span class="panel-source">Source: <a href="https://domewatch.us" target="_blank" rel="noopener">DomeWatch</a></span>
                 </div>
                 <div class="quorum-content">
                     <div class="quorum-metrics">
@@ -1390,7 +1386,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614n"></script>
+    <script src="app.js?v=20260614o"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
