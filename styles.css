@@ -1486,7 +1486,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   height: 44px;
   box-sizing: border-box;
   padding: 0 var(--sp-24);
-  background: var(--bg-elevated);
+  background: rgba(13, 17, 23, 0.28);
   border-bottom: 1px solid var(--border-color);
 }
 .lva-title {
@@ -1992,7 +1992,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   box-sizing: border-box;
   padding: 0 var(--sp-24);
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-elevated);
+  background: rgba(13, 17, 23, 0.28);
   color: var(--text-muted);
   font-size: var(--fs-base);
   line-height: 1.4;
@@ -2774,7 +2774,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   box-sizing: border-box;
   padding: 0 var(--sp-24);
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-elevated);
+  background: rgba(13, 17, 23, 0.28);
   gap: var(--sp-16);
   flex-wrap: nowrap;
 }
@@ -3398,12 +3398,12 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .whip-update-meta {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: baseline;
+  align-items: center;
   gap: var(--sp-10);
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--bg-elevated);
+  background: rgba(13, 17, 23, 0.28);
   /* Extend full-bleed across item's side padding so background covers edge-to-edge */
   margin-left: calc(-1 * var(--sp-24));
   margin-right: calc(-1 * var(--sp-24));
@@ -3661,14 +3661,16 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .absentee-info {
-    padding: var(--sp-10) var(--sp-24);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-24);
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.28);
     color: var(--text-muted);
     font-size: var(--fs-base);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .absentee-explainer {
@@ -3977,7 +3979,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     box-sizing: border-box;
     padding: 0 var(--sp-24);
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-elevated);
+    background: rgba(13, 17, 23, 0.28);
     flex-shrink: 0;
 }
 
@@ -4886,7 +4888,7 @@ a.tweet-quote:hover {
     box-sizing: border-box;
     padding: 0 var(--sp-24);
     border-bottom: 1px solid var(--border-color);
-    background: var(--bg-elevated);
+    background: rgba(13, 17, 23, 0.28);
 }
 .this-week-label {
     font-size: var(--fs-2xs);
@@ -9885,8 +9887,10 @@ body.admin-oath-mode .floor-grid-panel {
         justify-self: end;
     }
 
-    /* absentee-info bar: long explainer text + roll-call number */
+    /* absentee-info bar: long explainer text wraps on mobile */
     .absentee-info {
+        height: auto;
+        padding: var(--sp-10) var(--sp-24);
         flex-wrap: wrap;
         gap: var(--sp-4);
     }
