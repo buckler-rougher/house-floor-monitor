@@ -2706,7 +2706,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .vote-tl-item::after {
   content: '';
   position: absolute;
-  left: 10px;   /* circle is 24px wide, center at 12px; 4px line → left: 10px */
+  right: 10px;  /* circle is 24px wide, center at 12px; 4px line → right: 10px */
   top: 24px;    /* bottom of circle */
   width: 4px;
   bottom: -20px; /* bridges margin-bottom: 20px to top of next circle */
@@ -2728,6 +2728,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 .vote-tl-item {
   display: flex;
+  flex-direction: row-reverse; /* circle on right, content on left */
   gap: var(--sp-16);
   margin-bottom: var(--sp-20);
   position: relative;
@@ -3291,13 +3292,13 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
-/* Notice-type badge (FLOOR / DAILY / NIGHTLY / WEEKLY) */
+/* Notice-type badge (FLOOR UPDATE / DAILY / NIGHTLY / WEEKLY) */
 .whip-type-badge {
   font-family: var(--font-mono);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-base); /* match whip-update-title */
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: var(--radius-4);
   flex-shrink: 0;
   cursor: pointer;
@@ -3337,14 +3338,35 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   letter-spacing: 0.5px;
 }
 
-/* Compact schedule line (House Meets · First Votes · Last Votes) */
+/* Schedule block — clean labeled rows */
 .whip-notice-schedule {
+  margin: var(--sp-8) 0 var(--sp-12);
+}
+.whip-sched-row {
+  display: flex;
+  gap: var(--sp-8);
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+.whip-sched-row dt {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
+  font-weight: 700;
   color: var(--text-muted);
-  margin-bottom: var(--sp-10);
-  line-height: 1.5;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 6.5rem;
 }
+.whip-sched-row dd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Prevent CSS display:flex from overriding the hidden attribute */
+.whip-filter-dropdown[hidden] { display: none; }
 
 /* Filter button + dropdown */
 .whip-filter-btn {

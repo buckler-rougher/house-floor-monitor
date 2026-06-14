@@ -2622,10 +2622,11 @@ async function fetchAndRenderWhipFloorUpdates() {
 
 // ── Whip Notices feed (scrollable, all items) ─────────────────────────────
 const WHIP_NOTICE_TYPE_LABEL = {
-    floor:   'FLOOR',
-    daily:   'DAILY',
-    nightly: 'NIGHTLY',
-    weekly:  'WEEKLY',
+    floor:          'FLOOR UPDATE',
+    'floor update': 'FLOOR UPDATE',
+    daily:          'DAILY',
+    nightly:        'NIGHTLY',
+    weekly:         'WEEKLY',
 };
 
 function renderWhipNoticesFeed(items) {
@@ -2647,44 +2648,43 @@ function renderWhipNoticesFeed(items) {
         const typeLabel = WHIP_NOTICE_TYPE_LABEL[typeKey] || typeKey.toUpperCase();
         const isFloor   = typeKey === 'floor';
 
-        // Floor: real-time Firestore timestamp → local date + time (accurate).
-        // Daily/nightly/weekly: DomeWatch stores ET as UTC in postedAt, so display
-        // UTC hours directly (they read correctly as ET). Show date from publishDate.
+        // Always show a timestamp. Floor items have accurate Firestore timestamps
+        // (local TZ). Daily/nightly/weekly: DomeWatch stores ET as +00:00 UTC,
+        // so render in UTC to recover the correct ET time.
         let whenStr = '';
-        if (isFloor && item.publishedAt) {
+        if (item.publishedAt) {
             const d = new Date(item.publishedAt);
-            whenStr = d.toLocaleString('en-US', {
-                month: 'short', day: 'numeric',
-                hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
-            });
-        } else if (item.publishDate && item.publishedAt) {
-            const [y, m, d] = item.publishDate.split('-').map(Number);
-            const dateStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
-                weekday: 'short', month: 'long', day: 'numeric'
-            });
-            // Use UTC hours — DomeWatch stores ET time with +00:00 label
-            const t = new Date(item.publishedAt);
-            const timeStr = t.toLocaleTimeString('en-US', {
-                hour: 'numeric', minute: '2-digit', timeZone: 'UTC'
-            });
-            whenStr = `${dateStr} · ${timeStr} ET`;
-        } else if (item.publishDate) {
-            const [y, m, d] = item.publishDate.split('-').map(Number);
-            whenStr = new Date(y, m - 1, d).toLocaleDateString('en-US', {
-                weekday: 'short', month: 'long', day: 'numeric'
-            });
+            if (isFloor) {
+                // Real-time accurate timestamp — show full local date + time
+                whenStr = d.toLocaleString('en-US', {
+                    month: 'short', day: 'numeric',
+                    hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+                });
+            } else {
+                // Use publishDate for correct day; postedAt UTC hours = ET hours
+                const dateStr = item.publishDate
+                    ? (() => { const [y, m, dy] = item.publishDate.split('-').map(Number);
+                               return new Date(y, m - 1, dy).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }); })()
+                    : d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', timeZone: 'UTC' });
+                const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+                whenStr = `${dateStr} · ${timeStr} ET`;
+            }
         }
 
-        // Compact schedule line for daily/nightly/weekly
-        const schedParts = [];
-        if (!isFloor) {
-            if (item.houseMeetsAt) schedParts.push('House meets ' + item.houseMeetsAt.replace(/\n/g, ' / '));
-            if (item.firstVotes)   schedParts.push('First votes ' + item.firstVotes);
-            if (item.lastVotes)    schedParts.push('Last votes '  + item.lastVotes);
+        // Schedule block for daily/nightly/weekly — readable labeled lines
+        let schedHtml = '';
+        if (!isFloor && (item.houseMeetsAt || item.firstVotes || item.lastVotes)) {
+            const rows = [
+                item.houseMeetsAt ? ['House Meets',  item.houseMeetsAt] : null,
+                item.firstVotes   ? ['First Votes',  item.firstVotes]   : null,
+                item.lastVotes    ? ['Last Votes',   item.lastVotes]    : null,
+            ].filter(Boolean);
+            schedHtml = `<dl class="whip-notice-schedule">${
+                rows.map(([label, val]) =>
+                    `<div class="whip-sched-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(val.replace(/\n/g, ' · '))}</dd></div>`
+                ).join('')
+            }</dl>`;
         }
-        const schedHtml = schedParts.length
-            ? `<div class="whip-notice-schedule">${escapeHtml(schedParts.join(' · '))}</div>`
-            : '';
 
         return `
             <div class="whip-update-item">
@@ -2701,10 +2701,8 @@ function renderWhipNoticesFeed(items) {
 
 function renderWhipFilterDropdown() {
     const dropdown = document.getElementById('whip-filter-dropdown');
-    const btn      = document.getElementById('whip-filter-btn');
     if (!dropdown) return;
 
-    // Determine which types are actually present in the loaded items
     const presentTypes = [...new Set(whipFloorItems.map(it => (it.noticeType || 'floor').toLowerCase()))];
     const allTypes = ['floor', 'daily', 'nightly', 'weekly'].filter(t => presentTypes.includes(t));
 
@@ -2712,21 +2710,20 @@ function renderWhipFilterDropdown() {
         `<button class="whip-filter-chip whip-type-all${whipNoticeFilter === null ? ' active' : ''}" data-filter-type="all">ALL</button>`,
         ...allTypes.map(t => {
             const label = WHIP_NOTICE_TYPE_LABEL[t] || t.toUpperCase();
-            const active = whipNoticeFilter === t ? ' active' : '';
-            return `<button class="whip-filter-chip whip-type-${t}${active}" data-filter-type="${t}">${label}</button>`;
+            const isActive = whipNoticeFilter === t;
+            return `<button class="whip-filter-chip whip-type-${t}${isActive ? ' active' : ''}" data-filter-type="${t}">${label}</button>`;
         }),
     ];
     dropdown.innerHTML = chips.join('');
     dropdown.hidden = false;
-    if (btn) btn.classList.add('active');
 }
 
 function setWhipFilter(type) {
-    // null / 'all' = clear filter; else set
     whipNoticeFilter = (type === 'all' || type === whipNoticeFilter) ? null : type;
     const dropdown = document.getElementById('whip-filter-dropdown');
     const btn      = document.getElementById('whip-filter-btn');
     if (dropdown) dropdown.hidden = true;
+    // Button stays highlighted when a filter is active
     if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
     renderWhipNoticesFeed(whipFloorItems);
 }
@@ -7995,21 +7992,25 @@ function init() {
     fetchAndRenderWhipFloorUpdates();
     setInterval(fetchAndRenderWhipFloorUpdates, 3 * 60 * 1000); // refresh every 3 min
 
-    // Whip notices filter button
+    // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');
     if (whipFilterBtn) {
         whipFilterBtn.addEventListener('click', e => {
             e.stopPropagation();
             const dropdown = document.getElementById('whip-filter-dropdown');
-            if (dropdown && !dropdown.hidden) {
+            if (!dropdown) return;
+            if (!dropdown.hidden) {
+                // Close — keep button active only if a filter is still selected
                 dropdown.hidden = true;
-                whipFilterBtn.classList.remove('active');
+                whipFilterBtn.classList.toggle('active', whipNoticeFilter !== null);
             } else {
                 renderWhipFilterDropdown();
+                // Button is active while dropdown is open (or filter selected)
+                whipFilterBtn.classList.add('active');
             }
         });
     }
-    // Filter chip clicks (in dropdown) + inline badge clicks
+    // Delegate: filter chips in dropdown + inline type badges on items
     document.addEventListener('click', e => {
         const chip = e.target.closest('[data-filter-type]');
         if (chip) {
@@ -8019,10 +8020,10 @@ function init() {
         }
         // Close dropdown on outside click
         const dropdown = document.getElementById('whip-filter-dropdown');
-        if (dropdown && !dropdown.hidden && !dropdown.contains(e.target)) {
+        if (dropdown && !dropdown.hidden) {
             dropdown.hidden = true;
             const btn = document.getElementById('whip-filter-btn');
-            if (btn && whipNoticeFilter === null) btn.classList.remove('active');
+            if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
         }
     });
 

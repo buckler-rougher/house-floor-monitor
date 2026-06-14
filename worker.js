@@ -2868,7 +2868,10 @@ async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit
 
 async function handleWhipFloorUpdates() {
   try {
-    const items = await queryWhipFeed({ limit: 10 });
+    // Force noticeType: 'floor' — Firestore docs have type: 'floor_update' which
+    // we don't want to surface; floor is always floor from our perspective.
+    const raw = await queryWhipFeed({ limit: 10 });
+    const items = raw.map(it => ({ ...it, noticeType: 'floor' }));
     return new Response(JSON.stringify({ items }), {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
     });
