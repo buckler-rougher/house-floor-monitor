@@ -2595,20 +2595,16 @@ async function fetchAndRenderWhipFloorUpdates() {
     if (!feed) return;
     const BASE = 'https://api.evanhollander.org/house-floor/api';
     try {
-        // Fetch all four notice types in parallel; non-floor types may be empty.
-        const [floorData, dailyData, nightlyData, weeklyData] = await Promise.all([
-            fetch(`${BASE}/whip-floor-updates`,   { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
-            fetch(`${BASE}/whip-daily-updates`,   { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
-            fetch(`${BASE}/whip-nightly-updates`, { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
-            fetch(`${BASE}/whip-weekly-updates`,  { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
+        // Floor updates come from Firestore (real-time intra-day).
+        // Daily/nightly/weekly notices come from the DomeWatch data API (kind field).
+        const [floorData, noticesFeedData] = await Promise.all([
+            fetch(`${BASE}/whip-floor-updates`,  { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
+            fetch(`${BASE}/whip-notices-feed`,   { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
         ]);
-        // Tag each item with its display type and merge, newest-first.
         const tag = (items, type) => (items || []).map(it => ({ ...it, noticeType: it.noticeType || type }));
         const all = [
-            ...tag(floorData.items,   'floor'),
-            ...tag(dailyData.items,   'daily'),
-            ...tag(nightlyData.items, 'nightly'),
-            ...tag(weeklyData.items,  'weekly'),
+            ...tag(floorData.items,        'floor'),
+            ...tag(noticesFeedData.items,  null),   // noticeType already set by worker (kind field)
         ].sort((a, b) => {
             const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
             const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
