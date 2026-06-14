@@ -2483,6 +2483,17 @@ function normalizeBillIdForRules(billId) {
     return billId.toUpperCase().replace(/[.\s]/g, '');
 }
 
+// Extract a normalized bill ID from arbitrary text (question, legisNum, etc.).
+// Flexible: allows optional dots and spaces inside the bill type prefix, e.g.
+// "H. R. 3633", "H.R.3633", "H.Res. 45", "S. 1234" all return the same norm.
+// Returns the normalized string (e.g. "HR3633") or null if no match.
+function extractBillNormFromText(text) {
+    if (!text) return null;
+    const m = text.match(/\b(H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H\.?\s*Res\.?|H\.?\s*R\.?|S\.?\s*J\.?\s*Res\.?|S\.?\s*Con\.?\s*Res\.?|S\.?\s*Res\.?|S\.?)\s+(\d+)/i);
+    if (!m) return null;
+    return normalizeBillIdForRules(m[1] + m[2]);
+}
+
 // Called by SSE event: casualty-list. Populates casualtyMap.
 function applyCasualtyData(data) {
     if (data && typeof data === 'object' && !data.error) casualtyMap = data;
@@ -2847,21 +2858,15 @@ function getVoteTlStatus(billId, action = null) {
     // Check rollLog directly — also check entry.bill (not just entry.question)
     // since some procedural votes ("On Ordering the Previous Question") don't
     // include the H.Res. number in the question text.
-    // Regex allows optional spaces inside bill type ("H. Res." or "H.Res.").
+    // extractBillNormFromText handles flexible spacing ("H. R." vs "H.R.").
     const billNorm = normalizeBillIdForRules(billId);
     for (const entry of rollLog) {
-        const eq = entry.question || '';
-        const eb = entry.bill || '';
-        const combined = eq + (eb ? ' ' + eb : '');
-        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        if (em) {
-            const entryNorm = normalizeBillIdForRules(`${em[1]} ${em[2]}`);
-            if (entryNorm === billNorm) {
-                const yeas = entry.totals?.yeas || 0;
-                const nays = entry.totals?.nays || 0;
-                if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
-            }
-        }
+        const qNorm = extractBillNormFromText(entry.question);
+        const bNorm = extractBillNormFromText(entry.bill);
+        if (qNorm !== billNorm && bNorm !== billNorm) continue;
+        const yeas = entry.totals?.yeas || 0;
+        const nays = entry.totals?.nays || 0;
+        if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
     }
 
     return 'pending';
@@ -2928,13 +2933,14 @@ function getVoteTlAbsences(billId, status) {
     if (!billId) return null;
     const billNorm = normalizeBillIdForRules(billId);
     for (const entry of rollLog) {
-        const combined = (entry.question || '') + (entry.bill ? ' ' + entry.bill : '');
-        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        if (em && normalizeBillIdForRules(`${em[1]} ${em[2]}`) === billNorm) {
-            const d = entry.dem?.notVoting ?? null;
-            const r = entry.rep?.notVoting ?? null;
-            if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0 };
-        }
+        // Search question first, then fall back to bill legisNum — same as applyRollLogToBills.
+        // extractBillNormFromText allows spaces inside bill-type prefixes ("H. R." etc.)
+        const qNorm = extractBillNormFromText(entry.question);
+        const bNorm = extractBillNormFromText(entry.bill);
+        if (qNorm !== billNorm && bNorm !== billNorm) continue;
+        const d = entry.dem?.notVoting ?? null;
+        const r = entry.rep?.notVoting ?? null;
+        if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0 };
     }
     return null;
 }
