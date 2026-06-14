@@ -2277,6 +2277,8 @@ function buildRollLogEntry(data) {
   const d = vc.blue   || {};
   const r = vc.red    || {};
   const rc = data.roll_call || data.rollCall || {};
+  // Independent counts derived from totals minus Dem minus Rep (DomeWatch has no separate ind field)
+  const indNV = Math.max(iv(t.not_voting) - iv(d.not_voting) - iv(r.not_voting), 0);
   return {
     roll:     rc.number ?? null,
     bill:     rc.bill?.legisNum || rc.bill?.title || null,
@@ -2284,6 +2286,7 @@ function buildRollLogEntry(data) {
     totals: { yeas: iv(t.yeas), nays: iv(t.nays), present: iv(t.present), notVoting: iv(t.not_voting) },
     dem: { yeas: iv(d.yeas), nays: iv(d.nays), present: iv(d.present), notVoting: iv(d.not_voting) },
     rep: { yeas: iv(r.yeas), nays: iv(r.nays), present: iv(r.present), notVoting: iv(r.not_voting) },
+    ind: { yeas: 0, nays: 0, present: 0, notVoting: indNV },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -3105,6 +3108,7 @@ async function handleRequest(request, env) {
       const c = {
         D: {yeas:0,nays:0,present:0,notVoting:0},
         R: {yeas:0,nays:0,present:0,notVoting:0},
+        I: {yeas:0,nays:0,present:0,notVoting:0},
         T: {yeas:0,nays:0,present:0,notVoting:0},
       };
       const rvRe = /<recorded-vote>([\s\S]*?)<\/recorded-vote>/g;
@@ -3118,9 +3122,9 @@ async function handleRequest(request, env) {
         const cat = v === 'Yea' ? 'yeas' : v === 'Nay' ? 'nays' : v === 'Present' ? 'present' : v === 'Not Voting' ? 'notVoting' : null;
         if (!cat) continue;
         c.T[cat]++;
-        if (p === 'D') c.D[cat]++; else if (p === 'R') c.R[cat]++;
+        if (p === 'D') c.D[cat]++; else if (p === 'R') c.R[cat]++; else if (p === 'I') c.I[cat]++;
       }
-      const entry = { roll: n, bill, question, totals: c.T, dem: c.D, rep: c.R, updatedAt: new Date().toISOString() };
+      const entry = { roll: n, bill, question, totals: c.T, dem: c.D, rep: c.R, ind: c.I, updatedAt: new Date().toISOString() };
       if (!byKey[dateKey]) byKey[dateKey] = [];
       byKey[dateKey].push(entry);
       results.push({ roll: n, dateKey, bill, question, demNV: c.D.notVoting, repNV: c.R.notVoting });

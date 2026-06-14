@@ -2877,6 +2877,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .vote-tl-absences {
   display: inline-flex;
   align-items: center;
+  gap: 0;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
   font-weight: 600;
@@ -2885,6 +2886,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   padding: 2px 8px;
   border-radius: 4px;
 }
+.vote-tl-absences .absent-d { color: var(--accent-blue); }
+.vote-tl-absences .absent-r { color: var(--accent-red); }
+.vote-tl-absences .absent-i { color: var(--text-muted); }
 
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
 .vrec-open-btn {
