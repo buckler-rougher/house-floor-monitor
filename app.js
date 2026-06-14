@@ -2628,9 +2628,9 @@ async function fetchAndRenderWhipFloorUpdates() {
 const WHIP_NOTICE_TYPE_LABEL = {
     floor:          'FLOOR UPDATE',
     'floor update': 'FLOOR UPDATE',
-    daily:          'DAILY',
-    nightly:        'NIGHTLY',
-    weekly:         'WEEKLY',
+    daily:          'DAILY PREVIEW',
+    nightly:        'NIGHTLY PREVIEW',
+    weekly:         'WEEKLY PREVIEW',
 };
 
 function renderWhipNoticesFeed(items) {
