@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614v">
+    <link rel="stylesheet" href="styles.css?v=20260614w">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -844,7 +844,7 @@
             </div>
 
             <!-- Threshold Status -->
-            <div class="threshold-panel">
+            <div class="threshold-panel" id="threshold">
                 <div class="panel-header">
                     <span class="panel-label">THRESHOLD ANALYSIS</span>
                     <span class="threshold-state" id="threshold-state">CALCULATING</span>
@@ -885,7 +885,7 @@
             </div>
 
             <!-- Quorum Status -->
-            <div class="quorum-panel">
+            <div class="quorum-panel" id="quorum">
                 <div class="panel-header">
                     <span class="panel-label">QUORUM CALL</span>
                     <span class="quorum-indicator" id="quorum-indicator">
@@ -923,7 +923,7 @@
             </div>
 
             <!-- Chamber Vote Map -->
-            <div class="floor-grid-panel">
+            <div class="floor-grid-panel" id="floor-grid">
                 <div class="panel-header">
                     <span class="panel-label">CHAMBER VOTE MAP</span>
                     <div class="grid-legend">
@@ -992,7 +992,7 @@
             </div>
 
             <!-- Absentee Tracking -->
-            <div class="absentee-panel">
+            <div class="absentee-panel" id="absentee">
                 <div class="panel-header">
                     <span class="panel-label">MISSING MEMBERS</span>
                     <div class="panel-header-right">
@@ -1035,7 +1035,7 @@
 
 
             <!-- Airport Delays Display -->
-            <div class="airport-delays-panel">
+            <div class="airport-delays-panel" id="airport-delays">
                 <div class="panel-header">
                     <span class="panel-label">AIRPORT DELAYS</span>
                     <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
@@ -1049,7 +1049,7 @@
 
 
             <!-- Party Breakdown Panel -->
-            <div class="party-breakdown-panel">
+            <div class="party-breakdown-panel" id="party-breakdown">
                 <div class="panel-header">
                     <span class="panel-label">BALANCE OF POWER</span>
                     <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
@@ -1158,7 +1158,7 @@
             </div>
 
         <!-- Floor Reporters -->
-        <div class="twitter-panel">
+        <div class="twitter-panel" id="twitter">
             <div class="panel-header">
                 <span class="panel-label">REPORTERS</span>
                 <div class="panel-header-right">
@@ -1192,7 +1192,7 @@
         </div>
 
         <!-- Voting Days Calendar -->
-        <div class="voting-calendar-panel">
+        <div class="voting-calendar-panel" id="voting-calendar">
             <div class="panel-header">
                 <span class="panel-label">HOUSE CALENDAR</span>
                 <div class="panel-header-right">
@@ -1376,7 +1376,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614v"></script>
+    <script src="app.js?v=20260614w"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
