@@ -2762,7 +2762,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   align-items: center;
   padding: var(--sp-12) var(--sp-24);
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-elevated);
+  background: var(--bg-card);
   gap: var(--sp-16);
   flex-wrap: wrap;
 }
@@ -2773,7 +2773,6 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   letter-spacing: 0.02em;
 }
 .vote-series-sub-timing {
-  font-family: var(--font-mono);
   font-size: var(--fs-base);
   color: var(--text-muted);
   white-space: nowrap;
