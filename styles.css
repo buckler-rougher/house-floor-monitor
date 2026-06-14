@@ -147,8 +147,11 @@ body {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    display: block;
-    padding: var(--sp-12) var(--sp-24);
+    display: flex;
+    align-items: center;
+    height: 52px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-32);
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-color);
 }
@@ -1480,7 +1483,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--sp-12) var(--sp-24);
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--sp-24);
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-color);
 }
@@ -1981,7 +1986,11 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .grid-note {
-  padding: var(--sp-12) var(--sp-24);
+  display: flex;
+  align-items: center;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--sp-24);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-elevated);
   color: var(--text-muted);
@@ -2761,11 +2770,13 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--sp-12) var(--sp-24);
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--sp-24);
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-elevated);
   gap: var(--sp-16);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .vote-series-sub-status {
   font-size: var(--fs-base);
@@ -3397,7 +3408,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   margin-left: calc(-1 * var(--sp-24));
   margin-right: calc(-1 * var(--sp-24));
   margin-top: calc(-1 * var(--sp-16));
-  padding: var(--sp-12) var(--sp-24);
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--sp-24);
   margin-bottom: var(--sp-10);
   border-bottom: 1px solid var(--border-color);
 }
@@ -3960,7 +3973,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     display: flex;
     align-items: center;
     gap: var(--sp-8);
-    padding: var(--sp-12) var(--sp-24);
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-24);
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-elevated);
     flex-shrink: 0;
@@ -4867,7 +4882,9 @@ a.tweet-quote:hover {
     display: flex;
     align-items: center;
     gap: var(--sp-12);
-    padding: var(--sp-12) var(--sp-24);
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 var(--sp-24);
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-elevated);
 }
