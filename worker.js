@@ -2115,11 +2115,12 @@ async function handleRollLogGet(env) {
     const cached = _mGet(MEM_KEY);
     if (cached) return new Response(cached, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 
-    // Read today + yesterday — MTR votes don't span more than 1 legislative day
+    // Read today + up to 6 prior days — covers a full work week so vote series
+    // absences remain visible over the weekend for Thursday/Friday votes.
     const allEntries = [];
     const seen = new Set();
     const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    for (let d = 0; d < 2; d++) {
+    for (let d = 0; d < 7; d++) {
       const dt = new Date(nowET);
       dt.setDate(dt.getDate() - d);
       const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;
