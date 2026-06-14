@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614m">
+    <link rel="stylesheet" href="styles.css?v=20260614n">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -781,8 +781,14 @@
                 </div>
             </div>
 
-            <!-- Vote Count Display -->
+            <!-- Vote Panel -->
             <div class="vote-display">
+                <div class="panel-header">
+                    <span class="panel-label">Happening Now</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: DomeWatch</span>
+                    </div>
+                </div>
                 <div class="vote-counts-row" aria-live="polite" aria-atomic="true" aria-label="Current vote tallies">
                     <div class="vote-count-section yeas">
                         <div class="count-label">YEA</div>
@@ -826,20 +832,20 @@
                         <span class="vote-not-yet" id="vote-not-yet" hidden></span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Progress Bar -->
-            <div class="progress-section">
-                <div class="progress-bar" id="vote-progress-bar" role="progressbar" aria-label="Vote progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                    <div class="progress-fill yeas" id="yeas-bar"></div>
-                    <div class="progress-fill present" id="present-bar"></div>
-                    <div class="progress-fill nays" id="nays-bar"></div>
-                    <div id="vote-threshold-marker" class="progress-threshold-marker" style="display:none"></div>
-                </div>
-                <div class="progress-labels">
-                    <span>YEAS</span>
-                    <span id="total-votes">Total: --</span>
-                    <span>NAYS</span>
+                <!-- Progress Bar -->
+                <div class="progress-section">
+                    <div class="progress-bar" id="vote-progress-bar" role="progressbar" aria-label="Vote progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div class="progress-fill yeas" id="yeas-bar"></div>
+                        <div class="progress-fill present" id="present-bar"></div>
+                        <div class="progress-fill nays" id="nays-bar"></div>
+                        <div id="vote-threshold-marker" class="progress-threshold-marker" style="display:none"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>YEAS</span>
+                        <span id="total-votes">Total: --</span>
+                        <span>NAYS</span>
+                    </div>
                 </div>
             </div>
 
@@ -847,7 +853,10 @@
             <div class="threshold-panel" id="threshold">
                 <div class="panel-header">
                     <span class="panel-label">THRESHOLD ANALYSIS</span>
-                    <span class="threshold-state" id="threshold-state">CALCULATING</span>
+                    <div class="panel-header-right">
+                        <span class="threshold-state" id="threshold-state">CALCULATING</span>
+                        <span class="panel-source">Source: DomeWatch</span>
+                    </div>
                 </div>
                 <div class="threshold-grid">
                     <div class="threshold-item">
@@ -897,7 +906,7 @@
                         <span class="indicator-dot"></span>
                         <span class="indicator-text">CALCULATING</span>
                     </span>
-                    <span class="panel-source">Source: <a href="https://clerk.house.gov/evs/2026/index.asp" target="_blank" rel="noopener">House Clerk</a></span>
+                    <span class="panel-source">Source: DomeWatch</span>
                 </div>
                 <div class="quorum-content">
                     <div class="quorum-metrics">
@@ -1381,7 +1390,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614m"></script>
+    <script src="app.js?v=20260614n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
