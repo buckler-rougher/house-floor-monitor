@@ -2866,20 +2866,24 @@ async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit
     });
 }
 
-async function handleWhipFloorUpdates() {
-  try {
-    // Force noticeType: 'floor' — Firestore docs have type: 'floor_update' which
-    // we don't want to surface; floor is always floor from our perspective.
-    const raw = await queryWhipFeed({ limit: 10 });
-    const items = raw.map(it => ({ ...it, noticeType: 'floor' }));
-    return new Response(JSON.stringify({ items }), {
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ items: [], error: err.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
-    });
-  }
+async function handleWhipFloorUpdates(env) {
+  // In-memory 60s (fast path); KV freshness 5 min — floor updates can arrive during
+  // active session but rarely faster than once a minute.
+  return kvCache(env, 'whip-floor-updates-v1', 60, async () => {
+    try {
+      // Force noticeType: 'floor' — Firestore docs have type: 'floor_update' which
+      // we don't want to surface; floor is always floor from our perspective.
+      const raw = await queryWhipFeed({ limit: 10 });
+      const items = raw.map(it => ({ ...it, noticeType: 'floor' }));
+      return new Response(JSON.stringify({ items }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ items: [], error: err.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+      });
+    }
+  }, 5 * 60); // kvFreshTtl=5 min — cold isolates re-use KV for up to 5 min before re-querying Firestore
 }
 
 // Daily / nightly / weekly notices — from the same DomeWatch data API as vote
@@ -2889,47 +2893,51 @@ async function handleWhipFloorUpdates() {
 //   postedAt    → publishedAt
 //   sourceText  → body        (HTML)
 //   publishDate used to construct a display title
-async function handleWhipNoticesFeed() {
-  try {
-    const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!resp.ok) throw new Error(`whip-notices returned ${resp.status}`);
-    const data = await resp.json();
-    const notices = data.data || [];
-
-    const KIND_LABEL = { daily: 'Daily Whip Notice', nightly: 'Nightly Whip Notice', weekly: 'Week Ahead Notice' };
-
-    const items = notices
-      .filter(n => n.kind && n.sourceText)   // skip items with no displayable content
-      .map(n => {
-        // Construct a human-readable title from kind + publishDate
-        const dateStr = n.publishDate
-          ? new Date(n.publishDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-          : '';
-        const label = KIND_LABEL[n.kind] || (n.kind.charAt(0).toUpperCase() + n.kind.slice(1) + ' Whip Notice');
-        return {
-          id:           n.id || '',
-          title:        dateStr ? `${label} — ${dateStr}` : label,
-          body:         n.sourceText || '',
-          publishedAt:  n.postedAt || null,
-          publishDate:  n.publishDate || null,   // YYYY-MM-DD, reliable; postedAt TZ is unreliable
-          noticeType:   n.kind,
-          houseMeetsAt: n.houseMeetsAt || null,
-          firstVotes:   n.firstVotes   || null,
-          lastVotes:    n.lastVotes    || null,
-        };
+async function handleWhipNoticesFeed(env) {
+  // In-memory 60s (fast path); KV freshness 10 min — notices post a few times daily;
+  // cold isolates can safely re-use KV for up to 10 min before re-fetching DomeWatch.
+  return kvCache(env, 'whip-notices-feed-v1', 60, async () => {
+    try {
+      const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(8000),
       });
+      if (!resp.ok) throw new Error(`whip-notices returned ${resp.status}`);
+      const data = await resp.json();
+      const notices = data.data || [];
 
-    return new Response(JSON.stringify({ items }), {
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=300' }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ items: [], error: err.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
-    });
-  }
+      const KIND_LABEL = { daily: 'Daily Whip Notice', nightly: 'Nightly Whip Notice', weekly: 'Week Ahead Notice' };
+
+      const items = notices
+        .filter(n => n.kind && n.sourceText)   // skip items with no displayable content
+        .map(n => {
+          // Construct a human-readable title from kind + publishDate
+          const dateStr = n.publishDate
+            ? new Date(n.publishDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+            : '';
+          const label = KIND_LABEL[n.kind] || (n.kind.charAt(0).toUpperCase() + n.kind.slice(1) + ' Whip Notice');
+          return {
+            id:           n.id || '',
+            title:        dateStr ? `${label} — ${dateStr}` : label,
+            body:         n.sourceText || '',
+            publishedAt:  n.postedAt || null,
+            publishDate:  n.publishDate || null,   // YYYY-MM-DD, reliable; postedAt TZ is unreliable
+            noticeType:   n.kind,
+            houseMeetsAt: n.houseMeetsAt || null,
+            firstVotes:   n.firstVotes   || null,
+            lastVotes:    n.lastVotes    || null,
+          };
+        });
+
+      return new Response(JSON.stringify({ items }), {
+        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ items: [], error: err.message }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+      });
+    }
+  }, 10 * 60); // kvFreshTtl=10 min — cold isolates re-use KV for up to 10 min before re-fetching
 }
 
 // ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────
@@ -3008,9 +3016,9 @@ async function handleRequest(request, env) {
   } else if (path === '/api/rules' && request.method === 'GET') {
     return await handleRules(request, env);
   } else if (path === '/api/whip-floor-updates' && request.method === 'GET') {
-    return await handleWhipFloorUpdates();
+    return await handleWhipFloorUpdates(env);
   } else if (path === '/api/whip-notices-feed' && request.method === 'GET') {
-    return await handleWhipNoticesFeed();
+    return await handleWhipNoticesFeed(env);
   } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
     return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {
