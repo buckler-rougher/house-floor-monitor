@@ -2574,7 +2574,7 @@ let voteRecsPrefs = (() => {
         const s = localStorage.getItem('voteRecsPrefs');
         if (s) return JSON.parse(s);
     } catch (e) {}
-    return { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+    return { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
 })();
 
 // Last-clicked preset button ('nothing' | 'D' | 'R'), for button highlighting
@@ -3203,23 +3203,29 @@ function renderVoteRecsPrefs() {
         return `<div class="vrec-pref-row">
             <span class="vrec-pref-label">${label}</span>
             <div class="bills-sort-switcher">
-                <button class="bills-sort-btn${cls(null)}"  onclick="setVrecPref('${k}',null)" >—</button>
-                <button class="bills-sort-btn${cls('YES')}" onclick="setVrecPref('${k}','YES')">YES</button>
-                <button class="bills-sort-btn${cls('NO')}"  onclick="setVrecPref('${k}','NO')" >NO</button>
+                <button class="bills-sort-btn${cls(null)}"      onclick="setVrecPref('${k}',null)"     >—</button>
+                <button class="bills-sort-btn${cls('YES')}"     onclick="setVrecPref('${k}','YES')"    >Yes</button>
+                <button class="bills-sort-btn${cls('NO')}"      onclick="setVrecPref('${k}','NO')"     >No</button>
+                <button class="bills-sort-btn${cls('PRESENT')}" onclick="setVrecPref('${k}','PRESENT')">Pres</button>
             </div>
         </div>`;
     }
 
-    // followWhip toggle: [D]=follow Dem Whip, [R]=don't
-    const fwD = p.followWhip  ? ' active' : '';
-    const fwR = !p.followWhip ? ' active' : '';
+    // followWhip: null=—, true=Yes, false=No
+    const fwCls = v => {
+        if (v === null)  return (p.followWhip === null  || p.followWhip === undefined) ? ' active' : '';
+        if (v === true)  return p.followWhip === true  ? ' active' : '';
+        if (v === false) return p.followWhip === false ? ' active' : '';
+        return '';
+    };
 
     body.innerHTML = `
         <div class="vrec-follow-whip-row">
             <span class="vrec-pref-label">Follow Dem Whip</span>
             <div class="bills-sort-switcher">
-                <button class="bills-sort-btn${fwD}" onclick="setVrecPref('followWhip', true)">D</button>
-                <button class="bills-sort-btn${fwR}" onclick="setVrecPref('followWhip', false)">R</button>
+                <button class="bills-sort-btn${fwCls(null)}"  onclick="setVrecPref('followWhip',null)" >—</button>
+                <button class="bills-sort-btn${fwCls(true)}"  onclick="setVrecPref('followWhip',true)" >Yes</button>
+                <button class="bills-sort-btn${fwCls(false)}" onclick="setVrecPref('followWhip',false)">No</button>
             </div>
         </div>
         ${prefToggle('pq',           'Previous Question')}
@@ -3229,14 +3235,34 @@ function renderVoteRecsPrefs() {
         ${prefToggle('mtr',          'Recommit / Commit')}`;
 }
 
-// Called by pref toggle buttons and the follow-whip checkbox.
+// Called by pref toggle buttons. Saves the setting but does NOT re-apply auto-fill —
+// manual vote selections are preserved. Auto-fill only runs when a preset is clicked.
 function setVrecPref(prefKey, val) {
-    if (val === 'null') val = null; // HTML attribute can't hold real null
+    if (val === 'null') val = null; // safety: HTML attribute string → real null
     voteRecsPrefs[prefKey] = val;
     localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
-    applyVoteRecsAutoFill();
-    renderVoteRecsPrefs();
-    renderVoteRecsRows();
+    renderVoteRecsPrefs(); // reflect active state in pref toggles only
+}
+
+// Surgically update every row's vote-button classes from voteRecsMap (no re-render).
+function updateAllRowButtons() {
+    const body = document.getElementById('vrec-body');
+    if (!body) return;
+    body.querySelectorAll('.vrec-row').forEach(row => {
+        const key = row.dataset.vrecKey; // dataset converts data-vrec-key → vrecKey
+        const entry = voteRecsMap.get(key) || { vote: null, note: '' };
+        const selectedVal = entry.vote || '';
+        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
+            const isSel = btn.dataset.vote === selectedVal;
+            btn.classList.remove('sel-yes', 'sel-no', 'sel-present', 'sel-blank');
+            if (isSel) {
+                if      (entry.vote === 'YES')     btn.classList.add('sel-yes');
+                else if (entry.vote === 'NO')      btn.classList.add('sel-no');
+                else if (entry.vote === 'PRESENT') btn.classList.add('sel-present');
+                else                               btn.classList.add('sel-blank');
+            }
+        });
+    });
 }
 
 // ── Rows ─────────────────────────────────────────────────────────────────────
@@ -3323,9 +3349,9 @@ function setVoteRecsPreset(preset) {
     localStorage.setItem('voteRecsPreset', preset);
 
     if (preset === 'nothing') {
-        // Clear all prefs and all votes
-        voteRecsPrefs = { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
-        for (const [key, entry] of voteRecsMap) { entry.vote = null; }
+        // Clear all prefs and blank all votes (preserve notes)
+        voteRecsPrefs = { followWhip: null, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+        for (const [, entry] of voteRecsMap) { entry.vote = null; }
     } else {
         voteRecsPrefs = getPartyPrefs(preset);
         applyVoteRecsAutoFill();
@@ -3337,7 +3363,7 @@ function setVoteRecsPreset(preset) {
         btn.classList.toggle('active', btn.dataset.preset === preset);
     });
     renderVoteRecsPrefs();
-    renderVoteRecsRows();
+    updateAllRowButtons(); // surgical — keeps note fields intact
 }
 
 // ── Open / close ─────────────────────────────────────────────────────────────
