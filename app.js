@@ -2623,12 +2623,22 @@ function parseVoteItemsFromHtml(htmlBody) {
         const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
         if (seen.has(billId)) continue; // same bill in <p> and <li> — keep first
         seen.add(billId);
-        // Strip leading connector phrases; capture vote-action prefix for label
-        const stripped = raw.replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*)/i, '').trim();
-        // Detect action prefix ("Adoption of", "Passage of", etc.) before the bill ID
-        const actionMatch = stripped.match(/^(adoption\s+of|passage\s+of|consideration\s+of)\s+/i);
-        const action = actionMatch ? actionMatch[1].replace(/\s+/g, ' ').trim() : null;
-        const text = action ? stripped.slice(actionMatch[0].length).trim() : stripped;
+
+        // Detect suspension context — "under suspension of the Rules" anywhere in element
+        const isSuspension = /under\s+suspension\s+of\s+the\s+rules/i.test(raw);
+
+        // Strip leading connector phrases
+        const stripped = raw
+            .replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*)/i, '')
+            .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\s*(?=[–\-]|$)/gi, '') // strip VOTE YES/VOTE NO badges
+            .trim();
+
+        // Detect action prefix before the bill ID
+        const actionMatch = stripped.match(/^(final\s+passage\s+of|adoption\s+of|passage\s+of|consideration\s+of)\s+/i);
+        const action = actionMatch
+            ? actionMatch[1].replace(/\s+/g, ' ').trim().toLowerCase()
+            : isSuspension ? 'suspension' : null;
+        const text = actionMatch ? stripped.slice(actionMatch[0].length).trim() : stripped;
         const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
         const duration = durMatch ? `${durMatch[1]} min` : null;
         results.push({ text, billId, duration, action });
@@ -2807,10 +2817,20 @@ function voteTlLabelAndDesc(billId, whipText, action) {
         }
     }
 
-    // Build label — prepend action prefix when the Whip specified one
-    // e.g. "Adoption of H.Res. 1335", "Passage of H.R. 9238"
+    // Build label — bill ID first, qualifier in parens
+    // e.g. "H.Res. 1335 (Adoption)", "H.R. 9238 (Suspend the Rules and Pass)"
     const baseLabel = billId || whipText.split(/\s[–\-]\s/)[0].trim();
-    const label = action ? `${action} ${baseLabel}` : baseLabel;
+    const actionQualifier = (() => {
+        if (!action) return null;
+        const a = action.toLowerCase();
+        if (a === 'suspension') return 'Suspend the Rules and Pass';
+        if (/^final\s+passage/.test(a)) return 'Final Passage';
+        if (/^adoption/.test(a)) return 'Adoption';
+        if (/^passage/.test(a)) return 'Passage';
+        if (/^consideration/.test(a)) return 'Consideration';
+        return null;
+    })();
+    const label = actionQualifier ? `${baseLabel} (${actionQualifier})` : baseLabel;
 
     // Primary description: bill title from billDataMap
     let desc = bill?.title || '';
