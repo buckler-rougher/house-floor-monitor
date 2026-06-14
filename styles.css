@@ -2756,6 +2756,29 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   letter-spacing: 0.5px;
 }
 
+.vote-series-sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-12) var(--sp-24);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  gap: var(--sp-16);
+  flex-wrap: wrap;
+}
+.vote-series-sub-status {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.vote-series-sub-timing {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .vote-series-body {
   padding: var(--sp-16) var(--sp-24) var(--sp-24);
 }
