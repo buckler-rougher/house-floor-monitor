@@ -3276,7 +3276,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 /* Sticky notice header — sticks to top of scroll container,
    gets pushed up by the next notice header as you scroll down */
 .whip-update-meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: baseline;
   gap: var(--sp-10);
   position: sticky;
@@ -3337,6 +3338,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 /* Schedule — 2-column grid, label left / value right */

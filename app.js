@@ -2652,29 +2652,20 @@ function renderWhipNoticesFeed(items) {
         const typeLabel = WHIP_NOTICE_TYPE_LABEL[typeKey] || typeKey.toUpperCase();
         const isFloor   = typeKey === 'floor';
 
-        // Always show a timestamp from publishedAt.
-        // Floor: accurate Firestore timestamps, show in user's local TZ.
-        // Daily/nightly/weekly: DomeWatch stores ET as +00:00 UTC — use UTC
-        // for both date AND time so we get the actual send date/time in ET.
-        // (publishDate = "which day the notice covers", NOT "when it was sent".)
+        // Always show a timestamp. Format: "10 Jun at 3:41 PM EDT" for all types.
+        // Floor: accurate Firestore UTC timestamps → convert to user's local TZ.
+        // Daily/nightly/weekly: DomeWatch stores ET as +00:00 UTC — render in UTC
+        // to recover the correct ET send time. No weekday, day-before-month.
         let whenStr = '';
         if (item.publishedAt) {
             const d = new Date(item.publishedAt);
-            if (isFloor) {
-                whenStr = d.toLocaleString('en-US', {
-                    month: 'short', day: 'numeric',
-                    hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
-                });
-            } else {
-                // UTC date = actual send date (e.g. nightly sent Jun 10 evening = Jun 10, not Jun 11)
-                const dateStr = d.toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'long', day: 'numeric', timeZone: 'UTC'
-                });
-                const timeStr = d.toLocaleTimeString('en-US', {
-                    hour: 'numeric', minute: '2-digit', timeZone: 'UTC'
-                });
-                whenStr = `${dateStr} · ${timeStr} ET`;
-            }
+            const tz = isFloor ? undefined : 'UTC'; // UTC recovers ET for DomeWatch
+            const day   = d.toLocaleDateString('en-US', { day: '2-digit',   timeZone: tz });
+            const month = d.toLocaleDateString('en-US', { month: 'short',   timeZone: tz });
+            const time  = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit',
+                                                           timeZone: tz, timeZoneName: isFloor ? 'short' : undefined });
+            const tzLabel = isFloor ? '' : ' ET';
+            whenStr = `${day} ${month} at ${time}${tzLabel}`;
         }
 
         // Schedule block for daily/nightly/weekly — readable labeled lines
