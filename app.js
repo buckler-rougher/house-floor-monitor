@@ -3744,14 +3744,22 @@ async function fetchBillsThisWeek() {
             : BILLS_CONFIG.workerUrl;
         if (isQuick) billsUrl += (billsUrl.includes('?') ? '&' : '?') + 'quick=1';
 
-        // Rules and whip-notices are delivered via SSE event: bills (DO bundles all three).
-        // Only fetch bills here — handles initial load and date overrides.
-        const billsResp = await fetch(billsUrl);
-        const data = billsResp.ok ? await billsResp.json() : null;
+        // On first load (isQuick=false) fetch rules + whip in parallel for fast initial render.
+        // On subsequent quick loads skip them — SSE event: bills already keeps them current.
+        const fetches = [fetch(billsUrl)];
+        if (!isQuick) {
+            fetches.push(fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' }));
+            fetches.push(fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' }));
+        }
+        const [billsResp, rulesResp, whipResp] = await Promise.all(fetches);
+
+        const data      = billsResp.ok             ? await billsResp.json()  : null;
+        const rulesData = rulesResp?.ok             ? await rulesResp.json()  : null;
+        const whipData  = whipResp?.ok              ? await whipResp.json()   : null;
 
         if (!data || data.error) throw new Error(data?.error || `HTTP ${billsResp.status}`);
 
-        applyBillsData({ bills: data, rules: null, whip: null }, isQuick);
+        applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQuick);
 
     } catch (error) {
         console.error('Error fetching bills:', error);
@@ -3995,7 +4003,7 @@ function updateBillsDisplay() {
     if (sortedRule.length > 0) {
         setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
-        setIfChanged(elements.ruleBillsList, '<div class="no-bills">No bills under rule</div>');
+        setIfChanged(elements.ruleBillsList, '<div class="no-bills">No bills subject to a rule</div>');
     }
 
     if (sortedSuspension.length > 0) {
@@ -4010,7 +4018,7 @@ function updateBillsDisplay() {
 
     // Column count — injected directly into title text
     const ruleTitleEl = document.getElementById('rule-bills-title');
-    if (ruleTitleEl) ruleTitleEl.textContent = sortedRule.length ? `UNDER RULE (${sortedRule.length})` : 'UNDER RULE';
+    if (ruleTitleEl) ruleTitleEl.textContent = sortedRule.length ? `SUBJECT TO A RULE (${sortedRule.length})` : 'SUBJECT TO A RULE';
     const suspTitleEl = document.getElementById('suspension-bills-title');
     if (suspTitleEl) suspTitleEl.textContent = sortedSuspension.length ? `UNDER SUSPENSION (${sortedSuspension.length})` : 'UNDER SUSPENSION';
 
@@ -4236,7 +4244,7 @@ function openBillModal(billId) {
     if (!bill) return;
 
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
-    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'UNDER RULE';
+    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'SUBJECT TO A RULE';
     const statusClass = bill.status || 'scheduled';
     const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
@@ -7960,12 +7968,12 @@ function init() {
     setInterval(updateTodayDate, 60000); // Update date every minute
     
     
-    // Fire all critical fetches immediately in parallel.
-    // roll-log, casualty-list, whip-feed delivered via SSE — no REST fetches needed here.
+    // Fire all critical fetches immediately in parallel for fast initial render.
+    // SSE from the DO handles all subsequent pushes — these fire once on page load only.
     fetchVotingDays();
-    fetchFloorData();
+    fetchFloorData().then(() => loadRollLog()); // roll-log needs active roll number from floor data
     fetchWeather();
-    fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
+    fetchBillsThisWeek(); // SSE from DO handles all subsequent pushes
 
     // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');
