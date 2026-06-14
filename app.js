@@ -543,9 +543,7 @@ let rollLogCurrentRoll = null; // roll number we're currently tracking
 
 // Called by both the initial REST load and the SSE event: roll-log handler.
 function applyRollLogData(entries) {
-    console.log('[roll-log-dbg] called, entries type:', typeof entries, Array.isArray(entries) ? entries.length + ' items' : String(entries).slice(0,80));
     if (!Array.isArray(entries)) return;
-    console.log('[roll-log-dbg] entries:', entries.map(e => 'roll:' + e.roll + ' bill:' + e.bill + ' q:' + (e.question||'').slice(0,40)));
     rollLog = entries;
     const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
     const isSubstantive = e => {
@@ -575,6 +573,19 @@ async function loadRollLog() {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
         const data = await resp.json();
         applyRollLogData(data.entries);
+    } catch {}
+}
+
+async function loadWhipFeed() {
+    try {
+        const BASE = 'https://api.evanhollander.org/house-floor/api';
+        const [floorResp, noticesResp] = await Promise.all([
+            fetch(`${BASE}/whip-floor-updates`),
+            fetch(`${BASE}/whip-notices-feed`),
+        ]);
+        const floor   = floorResp.ok   ? (await floorResp.json()).items   || [] : [];
+        const notices = noticesResp.ok ? (await noticesResp.json()).items || [] : [];
+        applyWhipFeedData({ floor, notices });
     } catch {}
 }
 
@@ -1131,6 +1142,10 @@ function startSSEStreaming() {
                 liveIndicator.classList.add('live');
                 liveIndicator.classList.remove('connecting');
             }
+            // REST fallback: load roll-log and whip-feed directly so vote-series
+            // absences and timeline are available even if DO polling is delayed.
+            loadRollLog();
+            loadWhipFeed();
         };
 
         // DomeWatch sends named events — onmessage only fires for unnamed events,
@@ -1238,12 +1253,10 @@ function startSSEStreaming() {
             try { window._pollModeState = JSON.parse(event.data); } catch {}
         });
         eventSource.addEventListener('whip-feed', (event) => {
-            console.log('[sse-dbg] whip-feed received, data len:', event.data?.length);
-            try { applyWhipFeedData(JSON.parse(event.data)); } catch(e) { console.log('[sse-dbg] whip-feed parse error:', e); }
+            try { applyWhipFeedData(JSON.parse(event.data)); } catch {}
         });
         eventSource.addEventListener('roll-log', (event) => {
-            console.log('[sse-dbg] roll-log received, data len:', event.data?.length, 'preview:', event.data?.slice(0,100));
-            try { applyRollLogData(JSON.parse(event.data).entries); } catch(e) { console.log('[sse-dbg] roll-log parse error:', e); }
+            try { applyRollLogData(JSON.parse(event.data).entries); } catch {}
         });
         eventSource.addEventListener('casualty-list', (event) => {
             try { applyCasualtyData(JSON.parse(event.data)); } catch {}
@@ -2927,7 +2940,6 @@ function voteTlResultText(billId, status) {
 // Returns { d, r } absences for a vote-timeline item, or null if unavailable.
 // Active vote: live not_voting from current tally. Completed: from roll log.
 function getVoteTlAbsences(billId, status) {
-    console.log('[absences-dbg] called:', billId, status, '| rollLog.length:', rollLog.length);
     if (status === 'pending') return null;
     if (status === 'active') {
         const vc = floorData?.voteCounts;
@@ -2948,10 +2960,8 @@ function getVoteTlAbsences(billId, status) {
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
         const d = entry.dem?.notVoting ?? null;
         const r = entry.rep?.notVoting ?? null;
-        console.log('[absences] matched roll', entry.roll, 'for', billId, '→ d:', d, 'r:', r);
         if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0 };
     }
-    console.log('[absences] no roll log match for', billId, '| rollLog len:', rollLog.length, '| norms:', rollLog.map(e => extractBillNormFromText(e.question) || extractBillNormFromText(e.bill)));
     return null;
 }
 
@@ -3178,7 +3188,6 @@ function renderVoteTimeline(items) {
 
     // Compute statuses upfront so we can derive connector-dotted classes
     const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
-    console.log('[vote-series-dbg] votes:', votes.map((v,i) => v.billId + '=' + statuses[i]), '| rollLog.length:', rollLog.length);
 
     const itemsHtml = votes.map(({ text, billId, duration, action }, i) => {
         const status = statuses[i];
