@@ -541,41 +541,38 @@ let rollLogCurrentRoll = null; // roll number we're currently tracking
 
 
 
+// Called by both the initial REST load and the SSE event: roll-log handler.
+function applyRollLogData(entries) {
+    if (!Array.isArray(entries)) return;
+    rollLog = entries;
+    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    const isSubstantive = e => {
+        if (activeRoll && String(e.roll) === activeRoll) return false;
+        const total = (e.totals?.yeas || 0) + (e.totals?.nays || 0);
+        if (total < 150) return false;
+        const q = (e.question || '').toLowerCase();
+        if (/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(q)) return false;
+        return true;
+    };
+    const last = [...rollLog].reverse().find(isSubstantive) || rollLog[rollLog.length - 1];
+    if (last && !_lastVoteAbsences) {
+        _lastVoteAbsences = {
+            d: last.dem?.notVoting ?? '--',
+            r: last.rep?.notVoting ?? '--',
+            roll: last.roll || null,
+            question: last.question || null,
+        };
+        updateLastVoteAbsencesDisplay();
+    }
+    applyRollLogToBills(rollLog, activeRoll);
+    updateVoteTimelineStatus(); // refresh absence badges with newly loaded data
+}
+
 async function loadRollLog() {
     try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
         const data = await resp.json();
-        if (Array.isArray(data.entries)) {
-            rollLog = data.entries;
-            // Restore last vote absences from most recent SUBSTANTIVE roll-log entry.
-            // Skip procedural low-participation votes (motions to commit/recommit,
-            // previous question, etc.) where fewer than 150 members cast a yea/nay —
-            // those inflate "not voting" counts and don't reflect real attendance.
-            const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
-            const isSubstantive = e => {
-                // Skip the currently active roll call — it's still in progress
-                if (activeRoll && String(e.roll) === activeRoll) return false;
-                const total = (e.totals?.yeas || 0) + (e.totals?.nays || 0);
-                if (total < 150) return false;
-                const q = (e.question || '').toLowerCase();
-                if (/motion to (commit|recommit|table)|previous question|ordering the previous/i.test(q)) return false;
-                return true;
-            };
-            const last = [...rollLog].reverse().find(isSubstantive) || rollLog[rollLog.length - 1];
-            if (last && !_lastVoteAbsences) {
-                _lastVoteAbsences = {
-                    d: last.dem?.notVoting ?? '--',
-                    r: last.rep?.notVoting ?? '--',
-                    roll: last.roll || null,
-                    question: last.question || null,
-                };
-                updateLastVoteAbsencesDisplay();
-            }
-
-            // Retroactively apply completed roll results to bill cards.
-            // This catches votes that happened before page load or while Worker was rate-limited.
-            applyRollLogToBills(rollLog, activeRoll);
-        }
+        applyRollLogData(data.entries);
     } catch {}
 }
 
@@ -1240,6 +1237,9 @@ function startSSEStreaming() {
         });
         eventSource.addEventListener('whip-feed', (event) => {
             try { applyWhipFeedData(JSON.parse(event.data)); } catch {}
+        });
+        eventSource.addEventListener('roll-log', (event) => {
+            try { applyRollLogData(JSON.parse(event.data).entries); } catch {}
         });
 
         // Fallback for any unnamed default messages
