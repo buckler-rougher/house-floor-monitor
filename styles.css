@@ -2875,9 +2875,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .vote-tl-absences {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
+  display: inline-block;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
   font-weight: 600;

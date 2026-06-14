@@ -2973,7 +2973,8 @@ function getVoteTlAbsences(billId, status) {
 // Build colored HTML for the absences badge. Safe — content is numbers only.
 function buildAbsenceHtml(absences) {
     if (!absences) return '';
-    const { d, r, i = 0 } = absences;
+    const { d, r, i: rawI = 0 } = absences;
+    const i = rawI || 1; // DEMO: force I=1 for layout preview; revert to rawI after approval
     const total = (typeof d === 'number' && typeof r === 'number') ? d + r + i : null;
     let html = `<span class="absent-d">D ${d}</span> · <span class="absent-r">R ${r}</span>`;
     if (i > 0) html += ` · <span class="absent-i">I ${i}</span>`;
