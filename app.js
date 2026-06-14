@@ -1241,6 +1241,9 @@ function startSSEStreaming() {
         eventSource.addEventListener('roll-log', (event) => {
             try { applyRollLogData(JSON.parse(event.data).entries); } catch {}
         });
+        eventSource.addEventListener('casualty-list', (event) => {
+            try { applyCasualtyData(JSON.parse(event.data)); } catch {}
+        });
 
         // Fallback for any unnamed default messages
         eventSource.onmessage = (event) => {
@@ -2480,15 +2483,9 @@ function normalizeBillIdForRules(billId) {
     return billId.toUpperCase().replace(/[.\s]/g, '');
 }
 
-// Load casualty list (members not returning) from worker endpoint.
-// Populates casualtyMap with "FIRSTNAME LASTNAME" and "LASTNAME" keys → status string.
-async function loadCasualtyList() {
-    try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/casualty-list');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        if (data && typeof data === 'object' && !data.error) casualtyMap = data;
-    } catch {}
+// Called by SSE event: casualty-list. Populates casualtyMap.
+function applyCasualtyData(data) {
+    if (data && typeof data === 'object' && !data.error) casualtyMap = data;
 }
 
 // Look up a member's casualty status using their match object from the Clerk XML.
@@ -2505,58 +2502,8 @@ function getCasualtyStatus(match) {
     return null;
 }
 
-async function fetchSpecialRules() {
-    try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        // Snapshot in-memory ruleStatus overrides (set by reconcileVoteWithBills) before clearing.
-        // The API may return stale status; preserve any 'passed'/'failed' we already recorded.
-        const ruleStatusOverrides = new Map(); // hresNum → {ruleStatus, passageVote}
-        for (const entry of specialRulesMap.values()) {
-            if ((entry.ruleStatus === 'passed' || entry.ruleStatus === 'failed') &&
-                !ruleStatusOverrides.has(entry.hresNum)) {
-                ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote });
-            }
-        }
-        specialRulesMap.clear();
-        for (const rule of (data.rules || [])) {
-            const override = ruleStatusOverrides.get(rule.hresNum);
-            for (const billKey of rule.bills) {
-                // billKey is already normalized (e.g. "HR1041")
-                specialRulesMap.set(billKey, {
-                    hres: rule.hres,
-                    hresNum: rule.hresNum,
-                    title: rule.title || null,
-                    passageVote: override?.passageVote ?? rule.passageVote ?? null,
-                    pdfUrl: rule.pdfUrl,
-                    ruleStatus: override?.ruleStatus ?? rule.ruleStatus,
-                    bills: rule.bills,
-                    sponsor: rule.sponsor || null,
-                });
-            }
-        }
-    } catch (e) {
-        console.error('fetchSpecialRules error:', e);
-    }
-}
-
-// Fetch the House Democratic Whip's recommendations (from DomeWatch whip-notices)
-// and index them by normalized bill id for matching against this week's bills.
-async function fetchWhipRecs() {
-    try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        whipRecMap.clear();
-        for (const [key, rec] of Object.entries(data.recs || {})) {
-            // key is already normalized worker-side (e.g. "HR8646")
-            whipRecMap.set(key, rec);
-        }
-    } catch (e) {
-        console.error('fetchWhipRecs error:', e);
-    }
-}
+// fetchSpecialRules() and fetchWhipRecs() removed — both are delivered via
+// the SSE event: bills payload (rules + whip bundled by the Durable Object).
 
 // ── Whip Floor Updates (Firestore ActivityFeeds via worker proxy) ────────────
 // Shared cache of the last fetched items — lets updateVoteTimelineStatus()
@@ -3797,19 +3744,14 @@ async function fetchBillsThisWeek() {
             : BILLS_CONFIG.workerUrl;
         if (isQuick) billsUrl += (billsUrl.includes('?') ? '&' : '?') + 'quick=1';
 
-        const [billsResp, rulesResp, whipResp] = await Promise.all([
-            fetch(billsUrl),
-            fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' }),
-            fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' }),
-        ]);
-
-        const data      = billsResp.ok  ? await billsResp.json()  : null;
-        const rulesData = rulesResp.ok  ? await rulesResp.json()  : null;
-        const whipData  = whipResp.ok   ? await whipResp.json()   : null;
+        // Rules and whip-notices are delivered via SSE event: bills (DO bundles all three).
+        // Only fetch bills here — handles initial load and date overrides.
+        const billsResp = await fetch(billsUrl);
+        const data = billsResp.ok ? await billsResp.json() : null;
 
         if (!data || data.error) throw new Error(data?.error || `HTTP ${billsResp.status}`);
 
-        applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQuick);
+        applyBillsData({ bills: data, rules: null, whip: null }, isQuick);
 
     } catch (error) {
         console.error('Error fetching bills:', error);
@@ -8019,14 +7961,11 @@ function init() {
     
     
     // Fire all critical fetches immediately in parallel.
-    // loadRollLog runs after fetchFloorData so it knows the active roll call number
-    // and can skip the currently-in-progress vote from "last vote" absences.
-    loadCasualtyList();
+    // roll-log, casualty-list, whip-feed delivered via SSE — no REST fetches needed here.
     fetchVotingDays();
-    fetchFloorData().then(() => loadRollLog());
+    fetchFloorData();
     fetchWeather();
     fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
-    // whip-feed is pushed via SSE by the Durable Object — no REST poll needed
 
     // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');

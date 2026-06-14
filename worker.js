@@ -3332,6 +3332,27 @@ export class DomeWatchStreamCoordinator {
       pollRollLog();
       this.dataIntervals.set('roll-log', setInterval(pollRollLog, 30 * 1000));
     }
+
+    // Casualty list — members not returning next term. Changes at most a few times per Congress.
+    // Long interval (6h); change detection ensures no unnecessary broadcasts.
+    if (!this.dataIntervals.has('casualty-list')) {
+      const pollCasualty = async () => {
+        if (this.clients.size === 0) return;
+        try {
+          const resp = await fetch(`${BASE}/casualty-list`, {
+            signal: AbortSignal.timeout(10000),
+            cf: { cacheTtl: 0, cacheEverything: false },
+          });
+          if (!resp.ok) return;
+          const json = await resp.text();
+          if (this.dataCache.get('casualty-list') === json) return;
+          this.dataCache.set('casualty-list', json);
+          await this.broadcast(`event: casualty-list\ndata: ${json}\n\n`);
+        } catch { /* non-critical */ }
+      };
+      pollCasualty();
+      this.dataIntervals.set('casualty-list', setInterval(pollCasualty, 6 * 60 * 60 * 1000));
+    }
   }
 
   // Immediately replays any cached data to a newly connected client so they don't
@@ -3352,8 +3373,10 @@ export class DomeWatchStreamCoordinator {
     if (delays)   send('airportdelays', delays);
     if (makeup)   send('housemakeup',   makeup);
     if (whipFeed) send('whip-feed',     whipFeed);
-    const rollLogData = this.dataCache.get('roll-log');
-    if (rollLogData) send('roll-log', rollLogData);
+    const rollLogData  = this.dataCache.get('roll-log');
+    const casualtyData = this.dataCache.get('casualty-list');
+    if (rollLogData)  send('roll-log',      rollLogData);
+    if (casualtyData) send('casualty-list', casualtyData);
     // Send current poll-mode so new clients don't have to wait for the next mode change
     if (this._lastPollFast !== null) {
       const INACTIVE = new Set(['recess', 'house_not_in_session']);
