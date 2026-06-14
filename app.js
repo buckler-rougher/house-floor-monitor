@@ -544,6 +544,7 @@ let rollLogCurrentRoll = null; // roll number we're currently tracking
 // Called by both the initial REST load and the SSE event: roll-log handler.
 function applyRollLogData(entries) {
     if (!Array.isArray(entries)) return;
+    console.log('[roll-log-dbg] received entries:', entries.length, entries.map(e => 'roll:' + e.roll + ' bill:' + e.bill + ' q:' + (e.question||'').slice(0,40)));
     rollLog = entries;
     const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
     const isSubstantive = e => {
@@ -2923,6 +2924,7 @@ function voteTlResultText(billId, status) {
 // Returns { d, r } absences for a vote-timeline item, or null if unavailable.
 // Active vote: live not_voting from current tally. Completed: from roll log.
 function getVoteTlAbsences(billId, status) {
+    console.log('[absences-dbg] called:', billId, status, '| rollLog.length:', rollLog.length);
     if (status === 'pending') return null;
     if (status === 'active') {
         const vc = floorData?.voteCounts;
@@ -3173,6 +3175,7 @@ function renderVoteTimeline(items) {
 
     // Compute statuses upfront so we can derive connector-dotted classes
     const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
+    console.log('[vote-series-dbg] votes:', votes.map((v,i) => v.billId + '=' + statuses[i]), '| rollLog.length:', rollLog.length);
 
     const itemsHtml = votes.map(({ text, billId, duration, action }, i) => {
         const status = statuses[i];
