@@ -2563,8 +2563,23 @@ let whipFloorItems = [];
 // ── Vote recs state ──────────────────────────────────────────────────────────
 // currentVotesList: [{billId, text, duration, action}] from latest series render
 let currentVotesList = [];
-// mode persists across opens (localStorage-backed)
-let voteRecsMode = localStorage.getItem('voteRecsMode') || 'nothing';
+
+// Who controls the House right now. Flip this when control changes.
+// 'R' = Republicans majority, Democrats minority; 'D' = vice versa.
+const HOUSE_MAJORITY_PARTY = 'R';
+
+// Granular auto-fill preferences (persisted to localStorage)
+let voteRecsPrefs = (() => {
+    try {
+        const s = localStorage.getItem('voteRecsPrefs');
+        if (s) return JSON.parse(s);
+    } catch (e) {}
+    return { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+})();
+
+// Last-clicked preset button ('nothing' | 'D' | 'R'), for button highlighting
+let voteRecsPreset = localStorage.getItem('voteRecsPreset') || 'nothing';
+
 // per-vote rec: key → {vote: null|'YES'|'NO', note: ''}
 // key = (billId || text) + '|' + (action || '')
 const voteRecsMap = new Map();
@@ -3119,21 +3134,106 @@ function getWhipRecFor(billId) {
     return rec.recommendation; // 'YES' or 'NO'
 }
 
-function applyVoteRecsMode(mode) {
+// Return the party preset preference object for 'D' or 'R',
+// accounting for current majority/minority roles.
+function getPartyPrefs(party) {
+    const isMajority = party === HOUSE_MAJORITY_PARTY;
+    if (party === 'D') {
+        // Dem Whip recs are followed when available; other positions by role
+        return isMajority
+            ? { followWhip: true,  pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
+            : { followWhip: true,  pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
+    }
+    if (party === 'R') {
+        // No Whip rec feed for R — position-based only
+        return isMajority
+            ? { followWhip: false, pq: 'YES', rule: 'YES', ruleMeasures: 'YES', suspensions: 'YES', mtr: 'NO'  }
+            : { followWhip: false, pq: 'NO',  rule: 'NO',  ruleMeasures: 'NO',  suspensions: 'YES', mtr: 'YES' };
+    }
+    return { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+}
+
+// Derive the auto-fill vote for one item from current prefs.
+function applyPrefsToVote(billId, action) {
+    const p = voteRecsPrefs;
+    // Dem Whip rec takes priority when followWhip is on
+    if (p.followWhip && billId) {
+        const whipRec = getWhipRecFor(billId);
+        if (whipRec) return whipRec;
+    }
+    // Map vote action to pref bucket
+    switch (action) {
+        case 'previous question':  return p.pq;
+        case 'adoption':           return p.rule;        // Rule H.Res. adoption
+        case 'consideration':      return p.rule;        // Considering the rule
+        case 'amendment to rule':  return p.rule;
+        case 'passage':
+        case 'final passage':
+        case 'senate amendment':   return p.ruleMeasures;
+        case 'suspension':         return p.suspensions;
+        case 'motion to recommit':
+        case 'motion to commit':   return p.mtr;
+        default:
+            // null action + billId → assume rule measure
+            return billId ? p.ruleMeasures : null;
+    }
+}
+
+// Re-apply current prefs to all entries in voteRecsMap (overwrites vote, keeps note).
+function applyVoteRecsAutoFill() {
     for (const { billId, text, action } of currentVotesList) {
         const key = voteRecKey(billId, action, text);
         const entry = voteRecsMap.get(key) || { vote: null, note: '' };
-        const whipRec = getWhipRecFor(billId);
-        if (mode === 'follow_whip') {
-            entry.vote = whipRec || null;
-        } else if (mode === 'oppose_whip') {
-            entry.vote = whipRec ? (whipRec === 'YES' ? 'NO' : 'YES') : null;
-        } else {
-            entry.vote = null;
-        }
+        entry.vote = applyPrefsToVote(billId, action);
         voteRecsMap.set(key, entry);
     }
 }
+
+// ── Prefs panel ──────────────────────────────────────────────────────────────
+
+function renderVoteRecsPrefs() {
+    const body = document.getElementById('vrec-prefs-body');
+    if (!body) return;
+    const p = voteRecsPrefs;
+
+    function prefToggle(prefKey, label) {
+        const val = p[prefKey];
+        const cls = v => v === val ? ' active' : '';
+        const k = escapeHtml(prefKey);
+        return `<div class="vrec-pref-row">
+            <span class="vrec-pref-label">${label}</span>
+            <div class="bills-sort-switcher">
+                <button class="bills-sort-btn${cls(null)}"  onclick="setVrecPref('${k}',null)" >—</button>
+                <button class="bills-sort-btn${cls('YES')}" onclick="setVrecPref('${k}','YES')">YES</button>
+                <button class="bills-sort-btn${cls('NO')}"  onclick="setVrecPref('${k}','NO')" >NO</button>
+            </div>
+        </div>`;
+    }
+
+    body.innerHTML = `
+        <div class="vrec-follow-whip-row">
+            <input type="checkbox" id="vrec-follow-whip" ${p.followWhip ? 'checked' : ''}
+                onchange="setVrecPref('followWhip', this.checked)">
+            <label for="vrec-follow-whip">Follow Dem Whip where available</label>
+        </div>
+        ${prefToggle('pq',           'Previous Question')}
+        ${prefToggle('rule',         'Rule adoption')}
+        ${prefToggle('ruleMeasures', 'Rule measures')}
+        ${prefToggle('suspensions',  'Suspensions')}
+        ${prefToggle('mtr',          'Recommit / Commit')}`;
+}
+
+// Called by pref toggle buttons and the follow-whip checkbox.
+function setVrecPref(prefKey, val) {
+    if (val === 'null') val = null; // HTML attribute can't hold real null
+    voteRecsPrefs[prefKey] = val;
+    localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
+    applyVoteRecsAutoFill();
+    renderVoteRecsPrefs();
+    renderVoteRecsRows();
+}
+
+// ── Rows ─────────────────────────────────────────────────────────────────────
 
 function renderVoteRecsRows() {
     const body = document.getElementById('vrec-body');
@@ -3148,21 +3248,25 @@ function renderVoteRecsRows() {
         const { label } = voteTlLabelAndDesc(billId, text, action);
         const whipRec = getWhipRecFor(billId);
         const whipChip = whipRec
-            ? `<span class="vrec-whip-chip vrec-whip-${whipRec.toLowerCase()}">Whip: ${whipRec}</span>`
+            ? `<span class="vrec-whip-chip vrec-whip-${whipRec.toLowerCase()}">DEM WHIP: ${whipRec}</span>`
             : '';
-        const yesClass = entry.vote === 'YES' ? ' sel-yes' : '';
-        const noClass  = entry.vote === 'NO'  ? ' sel-no'  : '';
-        const blankClass = !entry.vote        ? ' sel-blank' : '';
+        const yesClass   = entry.vote === 'YES' ? ' sel-yes'   : '';
+        const noClass    = entry.vote === 'NO'  ? ' sel-no'    : '';
+        const blankClass = !entry.vote          ? ' sel-blank' : '';
         const safeKey = escapeHtml(key);
+        // Label is clickable if there's a bill to look up
+        const labelEl = billId
+            ? `<button class="vrec-row-label clickable" onclick="openBillModal('${escapeHtml(billId)}')">${escapeHtml(label)}</button>`
+            : `<span class="vrec-row-label">${escapeHtml(label)}</span>`;
         return `<div class="vrec-row" data-vrec-key="${safeKey}">
             <div class="vrec-row-top">
                 <span class="vrec-row-num">${i + 1}.</span>
-                <span class="vrec-row-label">${escapeHtml(label)}</span>
+                ${labelEl}
                 ${whipChip}
             </div>
             <div class="vrec-vote-btns">
-                <button class="vrec-vote-btn${yesClass}" onclick="setVoteRec('${safeKey}','YES')">YES</button>
-                <button class="vrec-vote-btn${noClass}"  onclick="setVoteRec('${safeKey}','NO')">NO</button>
+                <button class="vrec-vote-btn${yesClass}"   onclick="setVoteRec('${safeKey}','YES')">YES</button>
+                <button class="vrec-vote-btn${noClass}"    onclick="setVoteRec('${safeKey}','NO')">NO</button>
                 <button class="vrec-vote-btn${blankClass}" onclick="setVoteRec('${safeKey}',null)">—</button>
             </div>
             <input class="vrec-note-input" type="text" placeholder="Note (optional)"
@@ -3176,16 +3280,17 @@ function setVoteRec(key, vote) {
     const entry = voteRecsMap.get(key) || { vote: null, note: '' };
     entry.vote = vote;
     voteRecsMap.set(key, entry);
-    // Update just this row's buttons
+    // Surgical button update — avoid full re-render to preserve note field focus
     const row = document.querySelector(`.vrec-row[data-vrec-key="${CSS.escape(key)}"]`);
     if (row) {
-        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
-            btn.classList.remove('sel-yes', 'sel-no', 'sel-blank');
-        });
         const [yBtn, nBtn, bBtn] = row.querySelectorAll('.vrec-vote-btn');
-        if (vote === 'YES' && yBtn) yBtn.classList.add('sel-yes');
-        else if (vote === 'NO' && nBtn) nBtn.classList.add('sel-no');
-        else if (!vote && bBtn) bBtn.classList.add('sel-blank');
+        yBtn?.classList.toggle('sel-yes',   vote === 'YES');
+        nBtn?.classList.toggle('sel-no',    vote === 'NO');
+        bBtn?.classList.toggle('sel-blank', !vote);
+        // Clear the non-selected states
+        if (vote === 'YES') { nBtn?.classList.remove('sel-no');    bBtn?.classList.remove('sel-blank'); }
+        if (vote === 'NO')  { yBtn?.classList.remove('sel-yes');   bBtn?.classList.remove('sel-blank'); }
+        if (!vote)          { yBtn?.classList.remove('sel-yes');   nBtn?.classList.remove('sel-no');    }
     }
 }
 
@@ -3195,38 +3300,52 @@ function setVoteRecNote(key, note) {
     voteRecsMap.set(key, entry);
 }
 
-function setVoteRecsMode(mode) {
-    voteRecsMode = mode;
-    localStorage.setItem('voteRecsMode', mode);
-    applyVoteRecsMode(mode);
-    // Update mode button active states
-    document.querySelectorAll('.vrec-mode-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === mode);
+// ── Preset buttons (Nothing / D / R) ─────────────────────────────────────────
+
+function setVoteRecsPreset(preset) {
+    voteRecsPreset = preset;
+    localStorage.setItem('voteRecsPreset', preset);
+
+    if (preset === 'nothing') {
+        // Clear all prefs and all votes
+        voteRecsPrefs = { followWhip: false, pq: null, rule: null, ruleMeasures: null, suspensions: null, mtr: null };
+        for (const [key, entry] of voteRecsMap) { entry.vote = null; }
+    } else {
+        voteRecsPrefs = getPartyPrefs(preset);
+        applyVoteRecsAutoFill();
+    }
+    localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
+
+    // Sync preset button active states
+    document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
     });
+    renderVoteRecsPrefs();
     renderVoteRecsRows();
 }
+
+// ── Open / close ─────────────────────────────────────────────────────────────
 
 function openVoteRecsModal() {
     const overlay = document.getElementById('vrec-overlay');
     if (!overlay) return;
-    // Ensure each current vote has an entry (preserve existing notes/votes)
+
+    // Initialize entries for any new votes (preserve existing notes/votes)
     for (const { billId, text, action } of currentVotesList) {
         const key = voteRecKey(billId, action, text);
         if (!voteRecsMap.has(key)) {
-            const whipRec = getWhipRecFor(billId);
-            let vote = null;
-            if (voteRecsMode === 'follow_whip') vote = whipRec || null;
-            else if (voteRecsMode === 'oppose_whip') vote = whipRec ? (whipRec === 'YES' ? 'NO' : 'YES') : null;
-            voteRecsMap.set(key, { vote, note: '' });
+            voteRecsMap.set(key, { vote: applyPrefsToVote(billId, action), note: '' });
         }
     }
-    // Reflect saved mode in buttons
-    document.querySelectorAll('.vrec-mode-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === voteRecsMode);
+
+    // Reflect saved preset in buttons
+    document.querySelectorAll('#vrec-preset-switcher .bills-sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === voteRecsPreset);
     });
+
+    renderVoteRecsPrefs();
     renderVoteRecsRows();
     overlay.removeAttribute('hidden');
-    // Close on overlay click (outside modal)
     overlay.onclick = e => { if (e.target === overlay) closeVoteRecsModal(); };
     document.addEventListener('keydown', _vrecEscHandler);
 }
