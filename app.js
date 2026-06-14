@@ -3301,24 +3301,17 @@ function setVrecPref(prefKey, val) {
     updatePrefToggles(); // surgical: toggle active classes only, no innerHTML re-render
 }
 
-// Surgically update every row's vote-button classes from voteRecsMap (no re-render).
+// Surgically update every row's selection indicator from voteRecsMap.
+// Sets data-sel on the .vrec-vote-btns container; CSS does the styling.
+// No class manipulation — can't be silently cleared by any re-render side effect.
 function updateAllRowButtons() {
     const body = document.getElementById('vrec-body');
     if (!body) return;
     body.querySelectorAll('.vrec-row').forEach(row => {
-        const key = row.dataset.vrecKey; // dataset converts data-vrec-key → vrecKey
+        const key = row.dataset.vrecKey;
         const entry = voteRecsMap.get(key) || { vote: null, note: '' };
-        const selectedVal = entry.vote || '';
-        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
-            const isSel = btn.dataset.vote === selectedVal;
-            btn.classList.remove('sel-yes', 'sel-no', 'sel-present', 'sel-blank');
-            if (isSel) {
-                if      (entry.vote === 'YES')     btn.classList.add('sel-yes');
-                else if (entry.vote === 'NO')      btn.classList.add('sel-no');
-                else if (entry.vote === 'PRESENT') btn.classList.add('sel-present');
-                else                               btn.classList.add('sel-blank');
-            }
-        });
+        const btns = row.querySelector('.vrec-vote-btns');
+        if (btns) btns.dataset.sel = entry.vote || '';
     });
 }
 
@@ -3339,31 +3332,23 @@ function renderVoteRecsRows() {
         const whipChip = whipRec
             ? `<span class="vrec-whip-chip vrec-whip-${whipRec.toLowerCase()}">DEM WHIP: ${whipRec}</span>`
             : '';
-        // sel-* classes: one per vote value, keyed by data-vote attribute
-        function voteBtnClass(btnVal) {
-            const match = (entry.vote || '') === btnVal;
-            if (!match) return '';
-            if (btnVal === 'YES')     return ' sel-yes';
-            if (btnVal === 'NO')      return ' sel-no';
-            if (btnVal === 'PRESENT') return ' sel-present';
-            return ' sel-blank'; // empty string = no rec (—)
-        }
         const safeKey = escapeHtml(key);
         // Label is clickable if there's a bill to look up
         const labelEl = billId
             ? `<button class="vrec-row-label clickable" onclick="openBillModal('${escapeHtml(billId)}')">${escapeHtml(label)}</button>`
             : `<span class="vrec-row-label">${escapeHtml(label)}</span>`;
+        // data-sel on the container drives the CSS highlight — no sel-* classes needed
         return `<div class="vrec-row" data-vrec-key="${safeKey}">
             <div class="vrec-row-top">
                 <span class="vrec-row-num">${i + 1}.</span>
                 ${labelEl}
                 ${whipChip}
             </div>
-            <div class="vrec-vote-btns">
-                <button class="vrec-vote-btn${voteBtnClass('YES')}"     data-vote="YES"     onclick="setVoteRec('${safeKey}','YES')">YES</button>
-                <button class="vrec-vote-btn${voteBtnClass('NO')}"      data-vote="NO"      onclick="setVoteRec('${safeKey}','NO')">NO</button>
-                <button class="vrec-vote-btn${voteBtnClass('PRESENT')}" data-vote="PRESENT" onclick="setVoteRec('${safeKey}','PRESENT')">PRESENT</button>
-                <button class="vrec-vote-btn${voteBtnClass('')}"        data-vote=""        onclick="setVoteRec('${safeKey}',null)">—</button>
+            <div class="vrec-vote-btns" data-sel="${escapeHtml(entry.vote || '')}">
+                <button class="vrec-vote-btn" data-vote="YES"     onclick="setVoteRec('${safeKey}','YES')">YES</button>
+                <button class="vrec-vote-btn" data-vote="NO"      onclick="setVoteRec('${safeKey}','NO')">NO</button>
+                <button class="vrec-vote-btn" data-vote="PRESENT" onclick="setVoteRec('${safeKey}','PRESENT')">PRESENT</button>
+                <button class="vrec-vote-btn" data-vote=""        onclick="setVoteRec('${safeKey}',null)">—</button>
             </div>
             <input class="vrec-note-input" type="text" placeholder="Note (optional)"
                 value="${escapeHtml(entry.note || '')}"
@@ -3376,20 +3361,12 @@ function setVoteRec(key, vote) {
     const entry = voteRecsMap.get(key) || { vote: null, note: '' };
     entry.vote = vote;
     voteRecsMap.set(key, entry);
-    // Surgical button update via data-vote — no index assumptions, preserves note focus
+    // Set data-sel on the button group container — CSS does the rest.
+    // Using data attribute means no class list to accidentally clear.
     const row = document.querySelector(`.vrec-row[data-vrec-key="${CSS.escape(key)}"]`);
     if (row) {
-        const selectedVal = vote || ''; // null → '' to match data-vote=""
-        row.querySelectorAll('.vrec-vote-btn').forEach(btn => {
-            const isSel = btn.dataset.vote === selectedVal;
-            btn.classList.remove('sel-yes', 'sel-no', 'sel-present', 'sel-blank');
-            if (isSel) {
-                if (vote === 'YES')     btn.classList.add('sel-yes');
-                else if (vote === 'NO') btn.classList.add('sel-no');
-                else if (vote === 'PRESENT') btn.classList.add('sel-present');
-                else                    btn.classList.add('sel-blank');
-            }
-        });
+        const btns = row.querySelector('.vrec-vote-btns');
+        if (btns) btns.dataset.sel = vote || '';
     }
 }
 

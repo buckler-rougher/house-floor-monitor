@@ -3130,27 +3130,32 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   transition: all 0.15s;
   letter-spacing: 0.5px;
 }
-/* Hover only when not already selected — prevents hover from washing out the selection */
-.vrec-vote-btn:hover:not(.sel-yes):not(.sel-no):not(.sel-present):not(.sel-blank) {
+/* Hover for unselected buttons */
+.vrec-vote-btn:hover {
   border-color: var(--text-secondary);
   color: var(--text-primary);
 }
-.vrec-vote-btn.sel-yes {
+/*
+  Selection is driven by data-sel on the parent .vrec-vote-btns container.
+  Specificity of these rules (0,4,0) beats hover (0,2,0), so no :not() hacks needed.
+  CSS classes on individual buttons cannot clear this — only data-sel changes can.
+*/
+.vrec-vote-btns[data-sel="YES"] .vrec-vote-btn[data-vote="YES"] {
   background: color-mix(in srgb, var(--accent-green) 15%, transparent);
   border-color: var(--accent-green);
   color: var(--accent-green);
 }
-.vrec-vote-btn.sel-no {
+.vrec-vote-btns[data-sel="NO"] .vrec-vote-btn[data-vote="NO"] {
   background: color-mix(in srgb, var(--accent-red) 15%, transparent);
   border-color: var(--accent-red);
   color: var(--accent-red);
 }
-.vrec-vote-btn.sel-present {
+.vrec-vote-btns[data-sel="PRESENT"] .vrec-vote-btn[data-vote="PRESENT"] {
   background: color-mix(in srgb, var(--accent-amber) 15%, transparent);
   border-color: var(--accent-amber);
   color: var(--accent-amber);
 }
-.vrec-vote-btn.sel-blank {
+.vrec-vote-btns[data-sel=""] .vrec-vote-btn[data-vote=""] {
   background: color-mix(in srgb, var(--text-muted) 10%, transparent);
   border-color: var(--text-muted);
   color: var(--text-muted);
