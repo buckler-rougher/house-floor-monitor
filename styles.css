@@ -2706,7 +2706,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .vote-tl-item::after {
   content: '';
   position: absolute;
-  right: 10px;  /* circle is 24px wide, center at 12px; 4px line → right: 10px */
+  left: 10px;   /* circle is 24px wide, center at 12px; 4px line → left: 10px */
   top: 24px;    /* bottom of circle */
   width: 4px;
   bottom: -20px; /* bridges margin-bottom: 20px to top of next circle */
@@ -2728,7 +2728,6 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 .vote-tl-item {
   display: flex;
-  flex-direction: row-reverse; /* circle on right, content on left */
   gap: var(--sp-16);
   margin-bottom: var(--sp-20);
   position: relative;
