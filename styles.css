@@ -2706,8 +2706,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .vote-tl-item::after {
   content: '';
   position: absolute;
-  left: 9px;    /* circle is 20px wide, center at 10px; 2px line → left: 9px */
-  top: 20px;    /* bottom of circle */
+  left: 11px;   /* circle is 24px wide, center at 12px; 2px line → left: 11px */
+  top: 24px;    /* bottom of circle */
   width: 2px;
   bottom: -20px; /* bridges margin-bottom: 20px to top of next circle */
   background: var(--border-color);
@@ -2739,8 +2739,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 /* The circle — in-flow flex child so alignment works naturally */
 .vote-tl-circle {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 2px solid var(--border-color);
   background: var(--bg-card);
@@ -2756,7 +2756,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 /* Number inside the circle */
 .vote-tl-num {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--fs-md); /* 11px — readable in 24px circle */
   font-weight: 700;
   line-height: 1;
   color: var(--text-muted);
@@ -2811,7 +2811,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-family: var(--font-mono);
   font-size: var(--fs-base);
   font-weight: 700;
-  line-height: 20px; /* match circle height — vertically centers first line with circle */
+  line-height: 24px; /* match circle height — vertically centers first line with circle */
   color: var(--text-primary);
   cursor: pointer;
 }
