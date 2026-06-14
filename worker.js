@@ -3311,6 +3311,27 @@ export class DomeWatchStreamCoordinator {
       pollWhip(); // run immediately on first client connect
       this.dataIntervals.set('whip-feed', setInterval(pollWhip, 2 * 60 * 1000));
     }
+
+    // Roll log — push to all clients so new vote entries are reflected without a page reload.
+    // Poll every 30s (same cadence as the floor cache); change detection skips no-op broadcasts.
+    if (!this.dataIntervals.has('roll-log')) {
+      const pollRollLog = async () => {
+        if (this.clients.size === 0) return;
+        try {
+          const resp = await fetch(`${BASE}/roll-log`, {
+            signal: AbortSignal.timeout(10000),
+            cf: { cacheTtl: 0, cacheEverything: false },
+          });
+          if (!resp.ok) return;
+          const json = await resp.text();
+          if (this.dataCache.get('roll-log') === json) return;
+          this.dataCache.set('roll-log', json);
+          await this.broadcast(`event: roll-log\ndata: ${json}\n\n`);
+        } catch { /* non-critical */ }
+      };
+      pollRollLog();
+      this.dataIntervals.set('roll-log', setInterval(pollRollLog, 30 * 1000));
+    }
   }
 
   // Immediately replays any cached data to a newly connected client so they don't
@@ -3331,6 +3352,8 @@ export class DomeWatchStreamCoordinator {
     if (delays)   send('airportdelays', delays);
     if (makeup)   send('housemakeup',   makeup);
     if (whipFeed) send('whip-feed',     whipFeed);
+    const rollLogData = this.dataCache.get('roll-log');
+    if (rollLogData) send('roll-log', rollLogData);
     // Send current poll-mode so new clients don't have to wait for the next mode change
     if (this._lastPollFast !== null) {
       const INACTIVE = new Set(['recess', 'house_not_in_session']);
