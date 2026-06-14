@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260613u">
+    <link rel="stylesheet" href="styles.css?v=20260613v">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1356,8 +1356,9 @@
                 <span class="vrec-preset-label">Auto-fill:</span>
                 <div class="bills-sort-switcher" id="vrec-preset-switcher">
                     <button class="bills-sort-btn" data-preset="nothing" onclick="setVoteRecsPreset('nothing')">Nothing</button>
-                    <button class="bills-sort-btn" data-preset="D" onclick="setVoteRecsPreset('D')">D</button>
-                    <button class="bills-sort-btn" data-preset="R" onclick="setVoteRecsPreset('R')">R</button>
+                    <button class="bills-sort-btn" data-preset="D"       onclick="setVoteRecsPreset('D')">D</button>
+                    <button class="bills-sort-btn" data-preset="R"       onclick="setVoteRecsPreset('R')">R</button>
+                    <button class="bills-sort-btn" data-preset="custom"  onclick="setVoteRecsPreset('custom')">Custom</button>
                 </div>
             </div>
             <details class="vrec-prefs-details" id="vrec-prefs-details">
@@ -1371,7 +1372,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260613u"></script>
+    <script src="app.js?v=20260613v"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
