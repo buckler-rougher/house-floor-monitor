@@ -1417,6 +1417,36 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   padding: 4px var(--sp-20) 10px;
   text-align: center;
 }
+/* Last Vote Absences — grid-based layout so column lines connect to the row divider */
+.lva-section {
+  border-top: 1px solid var(--border-color);
+}
+.lva-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border-color);
+}
+.lva-header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px var(--sp-20);
+  background: var(--bg-elevated);
+}
+.lva-title {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.lva-roll {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
 :root{
   --bg-card:#0f1720;
   --bg-elevated:#0b1220;
