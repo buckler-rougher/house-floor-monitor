@@ -2764,7 +2764,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vote-tl-circle.passed .vote-tl-num,
 .vote-tl-circle.failed .vote-tl-num {
-  color: #fff;
+  color: var(--bg-dark); /* ~8:1 on green, ~6:1 on red — passes WCAG AA */
 }
 .vote-tl-circle.active .vote-tl-num {
   color: var(--accent-yellow);
