@@ -2767,10 +2767,23 @@ function updateVoteTimelineStatus() {
         if (circle) {
             circle.className = `vote-tl-circle ${status}`;
         }
+        const text = voteTlResultText(billId, status);
         if (result) {
-            const text = voteTlResultText(billId, status);
             result.className = `vote-tl-result ${status}`;
             result.textContent = text;
+            result.style.display = text ? '' : 'none';
+        } else if (text) {
+            // Item was rendered as pending (no result span) — inject one now
+            let badges = item.querySelector('.vote-tl-badges');
+            if (!badges) {
+                badges = document.createElement('div');
+                badges.className = 'vote-tl-badges';
+                item.querySelector('.vote-tl-content').appendChild(badges);
+            }
+            const span = document.createElement('span');
+            span.className = `vote-tl-result ${status}`;
+            span.textContent = text;
+            badges.appendChild(span);
         }
     });
 }
