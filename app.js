@@ -3744,22 +3744,14 @@ async function fetchBillsThisWeek() {
             : BILLS_CONFIG.workerUrl;
         if (isQuick) billsUrl += (billsUrl.includes('?') ? '&' : '?') + 'quick=1';
 
-        // On first load (isQuick=false) fetch rules + whip in parallel for fast initial render.
-        // On subsequent quick loads skip them — SSE event: bills already keeps them current.
-        const fetches = [fetch(billsUrl)];
-        if (!isQuick) {
-            fetches.push(fetch('https://api.evanhollander.org/house-floor/api/rules', { cache: 'no-store' }));
-            fetches.push(fetch('https://api.evanhollander.org/house-floor/api/whip-notices', { cache: 'no-store' }));
-        }
-        const [billsResp, rulesResp, whipResp] = await Promise.all(fetches);
-
-        const data      = billsResp.ok             ? await billsResp.json()  : null;
-        const rulesData = rulesResp?.ok             ? await rulesResp.json()  : null;
-        const whipData  = whipResp?.ok              ? await whipResp.json()   : null;
+        // rules + whip-notices delivered via SSE event: bills — fetch bills only here.
+        // This path is only reached for date overrides (setDate/clearDate).
+        const billsResp = await fetch(billsUrl);
+        const data = billsResp.ok ? await billsResp.json() : null;
 
         if (!data || data.error) throw new Error(data?.error || `HTTP ${billsResp.status}`);
 
-        applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQuick);
+        applyBillsData({ bills: data, rules: null, whip: null }, isQuick);
 
     } catch (error) {
         console.error('Error fetching bills:', error);
@@ -7968,12 +7960,11 @@ function init() {
     setInterval(updateTodayDate, 60000); // Update date every minute
     
     
-    // Fire all critical fetches immediately in parallel for fast initial render.
-    // SSE from the DO handles all subsequent pushes — these fire once on page load only.
+    // bills, rules, whip, roll-log, casualty-list all delivered via SSE from the DO.
+    // fetchBillsThisWeek() only called here for date overrides (setDate/clearDate).
     fetchVotingDays();
-    fetchFloorData().then(() => loadRollLog()); // roll-log needs active roll number from floor data
+    fetchFloorData();
     fetchWeather();
-    fetchBillsThisWeek(); // SSE from DO handles all subsequent pushes
 
     // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');
