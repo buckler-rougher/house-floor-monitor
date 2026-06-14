@@ -2811,50 +2811,82 @@ async function handleWhipNotices(env) {
   }, 1800);
 }
 
-// ── Whip floor updates (Firestore ActivityFeeds, Office C001101) ─────────────
-// Reads the Democratic Whip's real-time intra-day floor update notices from
-// the public Firestore project that powers domewatch.us/whip/floor.
+// ── Whip feed helpers (Firestore, DomeWatch project pacific-castle-135023) ───
+// All four feed types (floor / daily / nightly / weekly) live in the same
+// public Firestore project that powers domewatch.us/whip/*.
 // No auth required — Firestore security rules allow public reads.
-// Returns newest-first array of { id, title, body, publishedAt }.
-async function handleWhipFloorUpdates() {
-  const PROJECT = 'pacific-castle-135023';
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents:runQuery`;
+// Returns newest-first array of { id, title, body, publishedAt, noticeType }.
+
+const FIRESTORE_PROJECT = 'pacific-castle-135023';
+const FIRESTORE_RUN_QUERY = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`;
+
+// Generic Firestore query for a single-field-filtered ActivityFeeds collection.
+async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
+  // Floor feed uses only the office filter; typed feeds add a 'type' field filter.
+  const where = noticeType
+    ? {
+        compositeFilter: {
+          op: 'AND',
+          filters: [
+            { fieldFilter: { field: { fieldPath: 'Office.id' }, op: 'EQUAL', value: { stringValue: 'C001101' } } },
+            { fieldFilter: { field: { fieldPath: 'type'      }, op: 'EQUAL', value: { stringValue: noticeType } } },
+          ],
+        },
+      }
+    : { fieldFilter: { field: { fieldPath: 'Office.id' }, op: 'EQUAL', value: { stringValue: 'C001101' } } };
+
   const query = {
     structuredQuery: {
-      from: [{ collectionId: 'ActivityFeeds' }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: 'Office.id' },
-          op: 'EQUAL',
-          value: { stringValue: 'C001101' },
-        },
-      },
+      from: [{ collectionId }],
+      where,
       orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
-      limit: 10,
+      limit,
     },
   };
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query),
-      signal: AbortSignal.timeout(8000),
+
+  const resp = await fetch(FIRESTORE_RUN_QUERY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(query),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!resp.ok) throw new Error(`Firestore returned ${resp.status}`);
+  const rows = await resp.json();
+  return rows
+    .filter(r => r.document)
+    .map(r => {
+      const f = r.document.fields || {};
+      return {
+        id:          f.id?.stringValue || r.document.name.split('/').pop(),
+        title:       f.title?.stringValue || '',
+        body:        f.body?.stringValue || '',
+        publishedAt: f.publishedAt?.timestampValue || null,
+        noticeType:  noticeType || f.type?.stringValue || 'floor',
+      };
     });
-    if (!resp.ok) throw new Error(`Firestore returned ${resp.status}`);
-    const rows = await resp.json();
-    const items = rows
-      .filter(r => r.document)
-      .map(r => {
-        const f = r.document.fields || {};
-        return {
-          id:          f.id?.stringValue || r.document.name.split('/').pop(),
-          title:       f.title?.stringValue || '',
-          body:        f.body?.stringValue || '',
-          publishedAt: f.publishedAt?.timestampValue || null,
-        };
-      });
+}
+
+async function handleWhipFloorUpdates() {
+  try {
+    const items = await queryWhipFeed({ limit: 10 });
     return new Response(JSON.stringify({ items }), {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=60' }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ items: [], error: err.message }), {
+      status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
+    });
+  }
+}
+
+// Daily / nightly / weekly notice feeds — same Firestore project, same
+// ActivityFeeds collection, filtered by 'type' field value.
+// Cache longer than floor (floor updates every few minutes; others post ~once each).
+async function handleWhipTypedFeed(noticeType) {
+  try {
+    const items = await queryWhipFeed({ noticeType, limit: 5 });
+    return new Response(JSON.stringify({ items }), {
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=300' }
     });
   } catch (err) {
     return new Response(JSON.stringify({ items: [], error: err.message }), {
@@ -2940,6 +2972,12 @@ async function handleRequest(request, env) {
     return await handleRules(request, env);
   } else if (path === '/api/whip-floor-updates' && request.method === 'GET') {
     return await handleWhipFloorUpdates();
+  } else if (path === '/api/whip-daily-updates' && request.method === 'GET') {
+    return await handleWhipTypedFeed('daily');
+  } else if (path === '/api/whip-nightly-updates' && request.method === 'GET') {
+    return await handleWhipTypedFeed('nightly');
+  } else if (path === '/api/whip-weekly-updates' && request.method === 'GET') {
+    return await handleWhipTypedFeed('weekly');
   } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
     return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {
