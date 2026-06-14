@@ -3047,48 +3047,58 @@ async function handleRequest(request, env) {
     return new Response(JSON.stringify(results, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } else if (path === '/api/roll-log-seed' && request.method === 'GET') {
     // Admin: backfill roll-log KV from Clerk XMLs so the vote-series can show absences.
-    // Usage: /api/roll-log-seed           → auto-discovers latest 20 rolls via congress index
-    //        /api/roll-log-seed?rolls=218,219,220,221,222  → seed specific rolls
+    // Usage: /api/roll-log-seed                    → auto-discovers latest 20 rolls via congress index
+    //        /api/roll-log-seed?rolls=218,219,220  → seed specific rolls
     if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });
     const rollsParam = url.searchParams.get('rolls');
     let rollsToFetch = [];
+    let latestFound = null;
+    let idxFirstLine = null;
     if (rollsParam) {
       rollsToFetch = rollsParam.split(',').map(n => parseInt(n.trim(), 10)).filter(n => n > 0 && n < 10000);
     } else {
       try {
         const idxHtml = await fetchRSSFeed(RSS_FEEDS.congressIndex);
-        const m = idxHtml.match(/rollnumber=(\d+)/);
-        const latest = m ? parseInt(m[1], 10) : 0;
-        if (latest > 0) {
-          for (let n = Math.max(1, latest - 19); n <= latest; n++) rollsToFetch.push(n);
+        idxFirstLine = idxHtml.slice(0, 300); // for diagnostics
+        // Use same pattern as handleCongressIndex
+        const rollCallPattern = /rollnumber=(\d+)">(\d+)<\/A>/g;
+        const firstMatch = rollCallPattern.exec(idxHtml);
+        latestFound = firstMatch ? parseInt(firstMatch[1], 10) : null;
+        if (latestFound) {
+          for (let n = Math.max(1, latestFound - 19); n <= latestFound; n++) rollsToFetch.push(n);
         }
       } catch(e) {
         return new Response(JSON.stringify({ error: 'congress-index fetch failed', detail: String(e) }), { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
       }
     }
-    if (!rollsToFetch.length) return new Response(JSON.stringify({ error: 'no rolls to seed' }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    if (!rollsToFetch.length) return new Response(JSON.stringify({ error: 'no rolls to seed', latestFound, idxFirstLine }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
     const seedYear = new Date().getFullYear();
     const SEED_MONTHS = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
     const xmlTagVal = (xml, name) => { const m = xml.match(new RegExp(`<${name}[^>]*>([^<]*)<\\/${name}>`)); return m ? m[1].trim() : null; };
     const batch = rollsToFetch.slice(0, 30);
+    // Fetch all in parallel — surface errors instead of swallowing them
     const fetched = await Promise.allSettled(batch.map(async n => {
       try {
         const xml = await fetchRSSFeed(`https://clerk.house.gov/evs/${seedYear}/roll${n}.xml`);
-        return { n, xml };
-      } catch { return null; }
+        return { n, xml, ok: true };
+      } catch(e) { return { n, ok: false, error: String(e) }; }
     }));
     const byKey = {};
     const results = [];
+    const errors = [];
+    const skipped = [];
     for (const res of fetched) {
-      if (res.status !== 'fulfilled' || !res.value) continue;
-      const { n, xml } = res.value;
-      const bill     = xmlTagVal(xml, 'legis-num');
-      const question = xmlTagVal(xml, 'vote-question');
+      const val = res.value;
+      if (!val) continue;
+      if (!val.ok) { errors.push({ roll: val.n, error: val.error }); continue; }
+      const { n, xml } = val;
+      const bill       = xmlTagVal(xml, 'legis-num');
+      const question   = xmlTagVal(xml, 'vote-question');
       const actionDate = xmlTagVal(xml, 'action-date'); // e.g. "Jun 12, 2026"
       const dp = actionDate?.match(/(\w{3})\s+(\d+),\s+(\d{4})/);
-      if (!dp) continue;
+      if (!dp) { skipped.push({ roll: n, actionDate, reason: 'no-date' }); continue; }
       const mon = SEED_MONTHS[dp[1]];
-      if (mon === undefined) continue;
+      if (mon === undefined) { skipped.push({ roll: n, actionDate, reason: 'unknown-month' }); continue; }
       const dy = parseInt(dp[2], 10), yr = parseInt(dp[3], 10);
       const dateKey = `roll-log-${yr}${String(mon+1).padStart(2,'0')}${String(dy).padStart(2,'0')}`;
       const c = {
@@ -3127,8 +3137,12 @@ async function handleRequest(request, env) {
     _mSet('roll-log-assembled', '', 0);
     return new Response(JSON.stringify({
       seeded: results.length,
+      latestFound,
+      tried: rollsToFetch,
       keys: Object.fromEntries(Object.entries(byKey).map(([k, v]) => [k, v.length])),
       results,
+      errors,
+      skipped,
     }, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
