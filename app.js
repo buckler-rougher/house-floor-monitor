@@ -2648,25 +2648,27 @@ function renderWhipNoticesFeed(items) {
         const typeLabel = WHIP_NOTICE_TYPE_LABEL[typeKey] || typeKey.toUpperCase();
         const isFloor   = typeKey === 'floor';
 
-        // Always show a timestamp. Floor items have accurate Firestore timestamps
-        // (local TZ). Daily/nightly/weekly: DomeWatch stores ET as +00:00 UTC,
-        // so render in UTC to recover the correct ET time.
+        // Always show a timestamp from publishedAt.
+        // Floor: accurate Firestore timestamps, show in user's local TZ.
+        // Daily/nightly/weekly: DomeWatch stores ET as +00:00 UTC — use UTC
+        // for both date AND time so we get the actual send date/time in ET.
+        // (publishDate = "which day the notice covers", NOT "when it was sent".)
         let whenStr = '';
         if (item.publishedAt) {
             const d = new Date(item.publishedAt);
             if (isFloor) {
-                // Real-time accurate timestamp — show full local date + time
                 whenStr = d.toLocaleString('en-US', {
                     month: 'short', day: 'numeric',
                     hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
                 });
             } else {
-                // Use publishDate for correct day; postedAt UTC hours = ET hours
-                const dateStr = item.publishDate
-                    ? (() => { const [y, m, dy] = item.publishDate.split('-').map(Number);
-                               return new Date(y, m - 1, dy).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }); })()
-                    : d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', timeZone: 'UTC' });
-                const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
+                // UTC date = actual send date (e.g. nightly sent Jun 10 evening = Jun 10, not Jun 11)
+                const dateStr = d.toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'long', day: 'numeric', timeZone: 'UTC'
+                });
+                const timeStr = d.toLocaleTimeString('en-US', {
+                    hour: 'numeric', minute: '2-digit', timeZone: 'UTC'
+                });
                 whenStr = `${dateStr} · ${timeStr} ET`;
             }
         }
@@ -2690,8 +2692,8 @@ function renderWhipNoticesFeed(items) {
             <div class="whip-update-item">
                 <div class="whip-update-meta">
                     <span class="whip-type-badge whip-type-${typeKey}" data-filter-type="${typeKey}">${typeLabel}</span>
-                    ${whenStr ? `<span class="whip-update-time">${escapeHtml(whenStr)}</span>` : ''}
                     <span class="whip-update-title">${escapeHtml(item.title)}</span>
+                    ${whenStr ? `<span class="whip-update-time">${escapeHtml(whenStr)}</span>` : ''}
                 </div>
                 ${schedHtml}
                 <div class="whip-update-body">${item.body}</div>
@@ -8011,20 +8013,11 @@ function init() {
         });
     }
     // Delegate: filter chips in dropdown + inline type badges on items
+    // Dropdown only opens/closes via the filter button — no outside-click close.
     document.addEventListener('click', e => {
         const chip = e.target.closest('[data-filter-type]');
-        if (chip) {
-            e.stopPropagation();
-            setWhipFilter(chip.dataset.filterType);
-            return;
-        }
-        // Close dropdown on outside click
-        const dropdown = document.getElementById('whip-filter-dropdown');
-        if (dropdown && !dropdown.hidden) {
-            dropdown.hidden = true;
-            const btn = document.getElementById('whip-filter-btn');
-            if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
-        }
+        if (!chip) return;
+        setWhipFilter(chip.dataset.filterType);
     });
 
     // Airport delays need the name lookup — start both in parallel, delays waits on names
