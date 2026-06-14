@@ -2660,7 +2660,23 @@ function parseVoteItemsFromHtml(htmlBody) {
         if (NON_VOTE_RE.test(raw)) continue; // scheduling/reminder text — not a vote item
 
         const m = raw.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        if (!m) continue;
+
+        // Items with no bill reference: include <li> elements that aren't connector
+        // phrases — covers things like "Quorum Call" and "Manual Roll Call Vote on the
+        // Election of the Speaker" that appear in FDOC notices without a bill ID.
+        if (!m) {
+            if (el.tagName.toLowerCase() !== 'li') continue;
+            if (/^(?:following|after)\b/i.test(raw)) continue; // connector phrase
+            const labelText = raw
+                .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\b/gi, '')
+                .replace(/\s*[–\-]\s*\d+\s*min(?:utes?)?/gi, '')
+                .trim();
+            if (!labelText) continue;
+            const durMatch = raw.match(/\b(\d+)\s*min(?:utes?)?/i);
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null });
+            continue;
+        }
+
         const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
         if (seen.has(billId)) continue;
         seen.add(billId);
