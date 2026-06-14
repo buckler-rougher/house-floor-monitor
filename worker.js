@@ -3095,11 +3095,12 @@ async function handleRequest(request, env) {
       const bill       = xmlTagVal(xml, 'legis-num');
       const question   = xmlTagVal(xml, 'vote-question');
       const actionDate = xmlTagVal(xml, 'action-date'); // e.g. "Jun 12, 2026"
-      const dp = actionDate?.match(/(\w{3})\s+(\d+),\s+(\d{4})/);
+      // Clerk XML action-date format: "4-Jun-2026" (DD-Mon-YYYY)
+      const dp = actionDate?.match(/(\d{1,2})-(\w{3})-(\d{4})/);
       if (!dp) { skipped.push({ roll: n, actionDate, reason: 'no-date' }); continue; }
-      const mon = SEED_MONTHS[dp[1]];
+      const mon = SEED_MONTHS[dp[2]];
       if (mon === undefined) { skipped.push({ roll: n, actionDate, reason: 'unknown-month' }); continue; }
-      const dy = parseInt(dp[2], 10), yr = parseInt(dp[3], 10);
+      const dy = parseInt(dp[1], 10), yr = parseInt(dp[3], 10);
       const dateKey = `roll-log-${yr}${String(mon+1).padStart(2,'0')}${String(dy).padStart(2,'0')}`;
       const c = {
         D: {yeas:0,nays:0,present:0,notVoting:0},
