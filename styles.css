@@ -2887,7 +2887,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vote-tl-absences .absent-d { color: var(--accent-blue); }
 .vote-tl-absences .absent-r { color: var(--accent-red); }
-.vote-tl-absences .absent-i { color: var(--text-muted); }
+.vote-tl-absences .absent-i { color: #a371f7; }
 
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
 .vrec-open-btn {
