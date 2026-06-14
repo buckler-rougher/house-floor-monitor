@@ -2675,21 +2675,29 @@ function getVoteTlStatus(billId) {
     // Check billDataMap (updated by applyRollLogToBills via SSE)
     let bill = billDataMap.get(billId);
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    // Normalized scan — handles "H. Res. 1335" (XML) vs "H.Res. 1335" (Whip) spacing mismatch
+    if (!bill) {
+        const norm = normalizeBillIdForRules(billId);
+        for (const [key, val] of billDataMap) {
+            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+        }
+    }
     if (bill?.status === 'passed') return 'passed';
     if (bill?.status === 'failed') return 'failed';
 
     // Check rollLog directly — also check entry.bill (not just entry.question)
     // since some procedural votes ("On Ordering the Previous Question") don't
     // include the H.Res. number in the question text.
+    // Regex allows optional spaces inside bill type ("H. Res." or "H.Res.").
+    const billNorm = normalizeBillIdForRules(billId);
     for (const entry of rollLog) {
         const eq = entry.question || '';
         const eb = entry.bill || '';
         const combined = eq + (eb ? ' ' + eb : '');
-        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
+        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
         if (em) {
-            const eType = em[1].replace(/\s+/g, '');
-            const entryBillId = `${eType} ${em[2]}`;
-            if (entryBillId === billId || (hresNum && entryBillId === `H.Res. ${hresNum}`)) {
+            const entryNorm = normalizeBillIdForRules(`${em[1]} ${em[2]}`);
+            if (entryNorm === billNorm) {
                 const yeas = entry.totals?.yeas || 0;
                 const nays = entry.totals?.nays || 0;
                 if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
@@ -2720,24 +2728,27 @@ function voteTlResultText(billId, status) {
             }
         }
     }
+    const rlNorm = normalizeBillIdForRules(billId || '');
     for (const entry of rollLog) {
         const eq = entry.question || '';
         const eb = entry.bill || '';
         const combined = eq + (eb ? ' ' + eb : '');
-        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
-        if (em) {
-            const eType = em[1].replace(/\s+/g, '');
-            const entryBillId = `${eType} ${em[2]}`;
-            if (entryBillId === billId || (hresNum && entryBillId === `H.Res. ${hresNum}`)) {
-                const y = entry.totals?.yeas || 0;
-                const n = entry.totals?.nays || 0;
-                if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
-            }
+        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
+        if (em && normalizeBillIdForRules(`${em[1]} ${em[2]}`) === rlNorm) {
+            const y = entry.totals?.yeas || 0;
+            const n = entry.totals?.nays || 0;
+            if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
         }
     }
     // Fallback to billDataMap latestAction vote counts
     let bill = billId ? billDataMap.get(billId) : null;
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    if (!bill && billId) {
+        const norm = normalizeBillIdForRules(billId);
+        for (const [key, val] of billDataMap) {
+            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+        }
+    }
     const m = (bill?.latestAction || '').match(/(\d+)-(\d+)/);
     if (m) return `${status.toUpperCase()} ${m[1]}–${m[2]}`;
     return status.toUpperCase();
@@ -2772,9 +2783,16 @@ function updateVoteTimelineStatus() {
 function voteTlLabelAndDesc(billId, whipText, action) {
     const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
 
-    // Resolve the billDataMap entry (regular bill or hres-XXXX rule card)
+    // Resolve the billDataMap entry — try direct, hres-XXXX, then normalized scan
+    // to handle spacing differences between Whip text and schedule XML legisNum.
     let bill = billId ? billDataMap.get(billId) : null;
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
+    if (!bill && billId) {
+        const norm = normalizeBillIdForRules(billId);
+        for (const [key, val] of billDataMap) {
+            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+        }
+    }
 
     // Build label — prepend action prefix when the Whip specified one
     // e.g. "Adoption of H.Res. 1335", "Passage of H.R. 9238"
