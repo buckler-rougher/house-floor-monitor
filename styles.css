@@ -1449,6 +1449,21 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .threshold-metric-value.republican { color: #ff6b6b; }
 .threshold-metric-value.independent { color: #a371f7; }
 .threshold-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* Full-width "Flips to Pass" row — spans all 4 columns, only shown when
+   remaining votes alone can't cover the yeas gap (stalemate territory) */
+.threshold-flips-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.threshold-flips-row .threshold-metric-label {
+    margin-bottom: 0;
+}
+.threshold-flips-row .threshold-metric-value {
+    color: var(--accent-amber);
+}
 .threshold-subsection-label {
   font-size: 9px;
   font-weight: 600;
