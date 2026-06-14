@@ -2706,9 +2706,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .vote-tl-item::after {
   content: '';
   position: absolute;
-  left: 11px;   /* circle is 24px wide, center at 12px; 2px line → left: 11px */
+  left: 10px;   /* circle is 24px wide, center at 12px; 4px line → left: 10px */
   top: 24px;    /* bottom of circle */
-  width: 2px;
+  width: 4px;
   bottom: -20px; /* bridges margin-bottom: 20px to top of next circle */
   background: var(--border-color);
   transition: background 0.3s;
@@ -2790,7 +2790,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vote-tl-circle.passed,
 .vote-tl-circle.failed {
-  border-color: var(--accent-blue);
+  border-color: transparent;
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
 
