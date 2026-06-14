@@ -2790,7 +2790,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vote-tl-circle.passed,
 .vote-tl-circle.failed {
-  border-color: transparent;
+  border-width: 1px;
+  border-color: var(--accent-blue);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
 
