@@ -2668,19 +2668,21 @@ function renderWhipNoticesFeed(items) {
             whenStr = `${day} ${month} at ${time}${tzLabel}`;
         }
 
-        // Schedule block for daily/nightly/weekly
+        // Schedule block for daily/nightly/weekly — horizontal stat cards
         let schedHtml = '';
         if (!isFloor && (item.houseMeetsAt || item.firstVotes || item.lastVotes)) {
-            const rows = [
-                item.houseMeetsAt ? ['House meets',  item.houseMeetsAt] : null,
-                item.firstVotes   ? ['First votes',  item.firstVotes]   : null,
-                item.lastVotes    ? ['Last votes',   item.lastVotes]    : null,
+            // Clean up values: "Approximately X" → "~X", newlines → " · "
+            const fmt = v => escapeHtml(v.replace(/\bApproximately\b\s*/gi, '~').replace(/\n/g, ' · '));
+            const stats = [
+                item.houseMeetsAt ? ['MEETS',       fmt(item.houseMeetsAt)] : null,
+                item.firstVotes   ? ['FIRST VOTES', fmt(item.firstVotes)]   : null,
+                item.lastVotes    ? ['LAST VOTES',  fmt(item.lastVotes)]    : null,
             ].filter(Boolean);
-            schedHtml = `<table class="whip-notice-schedule"><tbody>${
-                rows.map(([label, val]) =>
-                    `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(val.replace(/\n/g, ' · '))}</td></tr>`
+            schedHtml = `<div class="whip-notice-schedule">${
+                stats.map(([label, val]) =>
+                    `<div class="whip-sched-stat"><div class="whip-sched-label">${label}</div><div class="whip-sched-val">${val}</div></div>`
                 ).join('')
-            }</tbody></table>`;
+            }</div>`;
         }
 
         return `
