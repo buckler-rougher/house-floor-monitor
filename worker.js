@@ -3034,6 +3034,18 @@ async function handleRequest(request, env) {
     return await handleLastSessionDate(request);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
     return await handleRollLogGet(env);
+  } else if (path === '/api/roll-log-debug' && request.method === 'GET') {
+    // Temporary: peek at KV keys for past 7 days to diagnose missing roll-log data
+    if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });
+    const results = [];
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(nowET); dt.setDate(nowET.getDate() - d);
+      const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;
+      const data = await env.HLS_CACHE.get(key, 'json');
+      results.push({ key, entries: data?.entries?.length ?? 0, sample: data?.entries?.[0] ?? null });
+    }
+    return new Response(JSON.stringify(results, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
