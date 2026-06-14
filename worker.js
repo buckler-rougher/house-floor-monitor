@@ -1834,7 +1834,7 @@ async function _fetchBills(request, env) {
   }
 }
 
-async function handleVotingDays() {
+async function handleVotingDays(env) {
   try {
     const icsText = await fetchRSSFeed(RSS_FEEDS.votingDays);
     console.log('ICS text length:', icsText.length);
@@ -1871,9 +1871,32 @@ async function handleVotingDays() {
     }
     
     console.log('Parsed voting days:', events);
-    
-    return new Response(JSON.stringify({ 
-      votingDays: events.sort((a, b) => new Date(b.date) - new Date(a.date)).reverse() // Sort by date, newest first
+
+    // Find the last date that had actual roll calls in KV — used by the client
+    // to detect fly-in days even when scheduled vote days were cancelled.
+    let lastActualVoteDate = null;
+    if (env?.HLS_CACHE) {
+      const etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      for (let i = 1; i <= 14; i++) {
+        const d = new Date(etNow);
+        d.setDate(d.getDate() - i);
+        const key = `roll-log-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        const raw = await env.HLS_CACHE.get(key);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.entries?.length > 0) {
+              lastActualVoteDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              break;
+            }
+          } catch {}
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({
+      votingDays: events.sort((a, b) => new Date(b.date) - new Date(a.date)).reverse(), // Sort by date, newest first
+      lastActualVoteDate, // YYYY-MM-DD of last day with actual roll calls, or null
     }), {
       headers: {
         ...CORS_HEADERS,
@@ -3001,7 +3024,7 @@ async function handleRequest(request, env) {
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
-    return await handleVotingDays();
+    return await handleVotingDays(env);
   } else if (path === '/api/airport-delays' && request.method === 'GET') {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {

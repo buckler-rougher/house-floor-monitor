@@ -169,25 +169,33 @@ async function fetchVotingDays() {
         
         // Prioritize fly-in events if multiple exist for today
         if (todayEvents.length > 0) {
-            const flyInEvent = todayEvents.find(event => 
+            const flyInEvent = todayEvents.find(event =>
                 event.summary.toLowerCase().includes('fly-in')
             );
             todayEvent = flyInEvent || todayEvents[0];
         }
-        
+
         console.log('Today:', today.toDateString());
         console.log('Today event found:', todayEvent);
         console.log('All events:', events);
-        
+
+        const lastActualVoteDate = data.lastActualVoteDate || null;
+
         if (todayEvent) {
             // Determine if it's a fly-in day
-            const isFlyIn = checkIfFlyInDay(today, events);
+            const isFlyIn = checkIfFlyInDay(today, events, lastActualVoteDate);
             
             console.log('Is fly-in day:', isFlyIn);
             console.log('Event summary:', todayEvent.summary);
             
             if (isFlyIn) {
                 todayStatus = 'fly-in';
+                // Promote airport delays panel on fly-in days
+                const absenteePanel = document.getElementById('absentee');
+                const airportPanel = document.getElementById('airport-delays');
+                if (absenteePanel && airportPanel && absenteePanel.nextElementSibling !== airportPanel) {
+                    absenteePanel.insertAdjacentElement('afterend', airportPanel);
+                }
             } else if (todayEvent.summary.toLowerCase().includes('fly-in')) {
                 todayStatus = 'fly-in';
             } else if (/pro[- ]forma/i.test(todayEvent.summary)) {
@@ -454,28 +462,30 @@ function renderVotingDaysCalendar() {
 }
 
 // Parse ICS content
-// Check if today is a fly-in day (first voting day of the week)
-function checkIfFlyInDay(today, events) {
-    const todayDay = today.getDay();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - todayDay); // Start of week (Sunday)
-    weekStart.setHours(0, 0, 0, 0);
-    
-    // Parse event date strings as local dates (YYYY-MM-DD) to avoid UTC offset issues
+// Check if today is a fly-in day: first calendar vote day after a gap,
+// with cancelled-day awareness via lastActualVoteDate from the roll-log KV.
+function checkIfFlyInDay(today, events, lastActualVoteDate) {
+    const pad = n => String(n).padStart(2, '0');
+    const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     const parseLocal = ds => { const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); };
 
-    // Find all voting days this week
-    const weekEvents = events.filter(event => {
-        const eventDate = parseLocal(event.date);
-        return eventDate >= weekStart && eventDate <= today;
-    });
+    const todayStr = toStr(today);
 
-    // Sort by date
-    weekEvents.sort((a, b) => parseLocal(a.date) - parseLocal(b.date));
+    // Today must be on the calendar as a vote day
+    if (!events.some(e => e.date === todayStr)) return false;
 
-    // Check if today is the first voting day of the week
-    return weekEvents.length > 0 &&
-           parseLocal(weekEvents[0].date).getTime() === today.getTime();
+    // Primary signal: actual vote data from KV (handles cancelled-vote days correctly).
+    // If the last roll call was more than 1 calendar day ago, there was a real gap.
+    if (lastActualVoteDate) {
+        const lastVote = parseLocal(lastActualVoteDate);
+        const daysSince = Math.round((today - lastVote) / 86400000);
+        return daysSince > 1;
+    }
+
+    // Fallback: calendar gap — was yesterday a scheduled vote day?
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    return !events.some(e => e.date === toStr(yesterday));
 }
 
 // Update Session Status Display
