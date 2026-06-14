@@ -2764,7 +2764,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vote-tl-circle.passed .vote-tl-num,
 .vote-tl-circle.failed .vote-tl-num {
-  color: var(--bg-dark); /* ~8:1 on green, ~6:1 on red — passes WCAG AA */
+  color: var(--accent-blue);
 }
 .vote-tl-circle.active .vote-tl-num {
   color: var(--accent-yellow);
@@ -2788,13 +2788,10 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-right-color: var(--accent-yellow);
   animation: vt-spin 0.85s linear infinite;
 }
-.vote-tl-circle.passed {
-  border-color: var(--accent-green);
-  background: var(--accent-green);
-}
+.vote-tl-circle.passed,
 .vote-tl-circle.failed {
-  border-color: var(--accent-red);
-  background: var(--accent-red);
+  border-color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
 
 @keyframes vt-spin {
