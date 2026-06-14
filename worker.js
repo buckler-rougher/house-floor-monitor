@@ -3288,6 +3288,28 @@ export class DomeWatchStreamCoordinator {
       pollBills();
       this.dataIntervals.set('bills', setInterval(pollBills, 10 * 60 * 1000));
     }
+
+    // Whip notices — combines floor updates (Firestore) and daily/nightly/weekly notices
+    // (Democratic Whip). Single DO poll for all connected clients replaces per-client REST calls.
+    if (!this.dataIntervals.has('whip-feed')) {
+      const pollWhip = async () => {
+        if (this.clients.size === 0) return;
+        try {
+          const [floorResp, noticesResp] = await Promise.all([
+            fetch(`${BASE}/whip-floor-updates`,  { signal: AbortSignal.timeout(15000), cf: { cacheTtl: 0, cacheEverything: false } }),
+            fetch(`${BASE}/whip-notices-feed`,   { signal: AbortSignal.timeout(15000), cf: { cacheTtl: 0, cacheEverything: false } }),
+          ]);
+          const floor   = floorResp.ok   ? await floorResp.json()   : { items: [] };
+          const notices = noticesResp.ok ? await noticesResp.json() : { items: [] };
+          const payload = JSON.stringify({ floor: floor.items || [], notices: notices.items || [] });
+          if (this.dataCache.get('whip-feed') === payload) return; // unchanged, skip broadcast
+          this.dataCache.set('whip-feed', payload);
+          await this.broadcast(`event: whip-feed\ndata: ${payload}\n\n`);
+        } catch { /* non-critical */ }
+      };
+      pollWhip(); // run immediately on first client connect
+      this.dataIntervals.set('whip-feed', setInterval(pollWhip, 2 * 60 * 1000));
+    }
   }
 
   // Immediately replays any cached data to a newly connected client so they don't
@@ -3296,16 +3318,18 @@ export class DomeWatchStreamCoordinator {
     const enc = this.encoder;
     const send = (eventName, data) =>
       controller.enqueue(enc.encode(`event: ${eventName}\ndata: ${data}\n\n`));
-    const floor   = this.dataCache.get('floor');
-    const bills   = this.dataCache.get('bills-payload');
-    const tweets  = this.dataCache.get('tweets');
-    const delays  = this.dataCache.get('airportdelays');
-    const makeup  = this.dataCache.get('housemakeup');
-    if (floor)  send('floor',         floor);
-    if (bills)  send('bills',         bills);
-    if (tweets) send('tweets',        tweets);
-    if (delays) send('airportdelays', delays);
-    if (makeup) send('housemakeup',   makeup);
+    const floor    = this.dataCache.get('floor');
+    const bills    = this.dataCache.get('bills-payload');
+    const tweets   = this.dataCache.get('tweets');
+    const delays   = this.dataCache.get('airportdelays');
+    const makeup   = this.dataCache.get('housemakeup');
+    const whipFeed = this.dataCache.get('whip-feed');
+    if (floor)    send('floor',         floor);
+    if (bills)    send('bills',         bills);
+    if (tweets)   send('tweets',        tweets);
+    if (delays)   send('airportdelays', delays);
+    if (makeup)   send('housemakeup',   makeup);
+    if (whipFeed) send('whip-feed',     whipFeed);
     // Send current poll-mode so new clients don't have to wait for the next mode change
     if (this._lastPollFast !== null) {
       const INACTIVE = new Set(['recess', 'house_not_in_session']);

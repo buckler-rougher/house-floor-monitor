@@ -1238,6 +1238,9 @@ function startSSEStreaming() {
         eventSource.addEventListener('poll-mode', (event) => {
             try { window._pollModeState = JSON.parse(event.data); } catch {}
         });
+        eventSource.addEventListener('whip-feed', (event) => {
+            try { applyWhipFeedData(JSON.parse(event.data)); } catch {}
+        });
 
         // Fallback for any unnamed default messages
         eventSource.onmessage = (event) => {
@@ -2591,37 +2594,25 @@ let voteRecsPreset = localStorage.getItem('voteRecsPreset') || 'nothing';
 // key = (billId || text) + '|' + (action || '')
 const voteRecsMap = new Map();
 
-async function fetchAndRenderWhipFloorUpdates() {
-    const feed = document.getElementById('whip-updates-feed');
-    if (!feed) return;
-    const BASE = 'https://api.evanhollander.org/house-floor/api';
-    try {
-        // Floor updates come from Firestore (real-time intra-day).
-        // Daily/nightly/weekly notices come from the DomeWatch data API (kind field).
-        const [floorData, noticesFeedData] = await Promise.all([
-            fetch(`${BASE}/whip-floor-updates`,  { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
-            fetch(`${BASE}/whip-notices-feed`,   { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
-        ]);
-        const tag = (items, type) => (items || []).map(it => ({ ...it, noticeType: it.noticeType || type }));
-        // DomeWatch stores ET times with a +00:00 UTC label (e.g. 6:41 PM ET → "18:41+00:00").
-        // Firestore floor timestamps are real UTC. Add the EDT offset (4h) to DomeWatch
-        // timestamps so the two series sort chronologically against each other.
-        const EDT_OFFSET_MS = 4 * 60 * 60 * 1000;
-        const sortKey = (item) => {
-            const t = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
-            return (item.noticeType || 'floor') === 'floor' ? t : t + EDT_OFFSET_MS;
-        };
-        const all = [
-            ...tag(floorData.items,       'floor'),
-            ...tag(noticesFeedData.items, null),
-        ].sort((a, b) => sortKey(b) - sortKey(a));
-        whipFloorItems = all;
-        renderWhipNoticesFeed(whipFloorItems);
-        renderVoteTimeline(whipFloorItems);
-    } catch (e) {
-        feed.innerHTML = `<div class="whip-updates-error">Could not load whip notices.</div>`;
-        console.error('fetchAndRenderWhipFloorUpdates error:', e);
-    }
+// Called by the SSE event: whip-feed handler with payload { floor: [...], notices: [...] }
+// pushed by the Durable Object every 2 min (single poll for all connected clients).
+function applyWhipFeedData({ floor = [], notices = [] }) {
+    const tag = (items, type) => (items || []).map(it => ({ ...it, noticeType: it.noticeType || type }));
+    // DomeWatch stores ET times with a +00:00 UTC label (e.g. 6:41 PM ET → "18:41+00:00").
+    // Firestore floor timestamps are real UTC. Add the EDT offset (4h) to DomeWatch
+    // timestamps so the two series sort chronologically against each other.
+    const EDT_OFFSET_MS = 4 * 60 * 60 * 1000;
+    const sortKey = (item) => {
+        const t = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
+        return (item.noticeType || 'floor') === 'floor' ? t : t + EDT_OFFSET_MS;
+    };
+    const all = [
+        ...tag(floor,   'floor'),
+        ...tag(notices, null),
+    ].sort((a, b) => sortKey(b) - sortKey(a));
+    whipFloorItems = all;
+    renderWhipNoticesFeed(whipFloorItems);
+    renderVoteTimeline(whipFloorItems);
 }
 
 // ── Whip Notices feed (scrollable, all items) ─────────────────────────────
@@ -7987,8 +7978,7 @@ function init() {
     fetchFloorData().then(() => loadRollLog());
     fetchWeather();
     fetchBillsThisWeek(); // initial page-load fetch; SSE from DO handles all subsequent pushes
-    fetchAndRenderWhipFloorUpdates();
-    setInterval(fetchAndRenderWhipFloorUpdates, 3 * 60 * 1000); // refresh every 3 min
+    // whip-feed is pushed via SSE by the Durable Object — no REST poll needed
 
     // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');
