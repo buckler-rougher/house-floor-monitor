@@ -2879,12 +2879,42 @@ async function handleWhipFloorUpdates() {
   }
 }
 
-// Daily / nightly / weekly notice feeds — same Firestore project, same
-// ActivityFeeds collection, filtered by 'type' field value.
-// Cache longer than floor (floor updates every few minutes; others post ~once each).
-async function handleWhipTypedFeed(noticeType) {
+// Daily / nightly / weekly notices — from the same DomeWatch data API as vote
+// recs, but returning notice-level content (sourceText HTML, kind, postedAt).
+// Field map from DomeWatch API → our schema:
+//   kind        → noticeType  ("daily" | "nightly" | "weekly")
+//   postedAt    → publishedAt
+//   sourceText  → body        (HTML)
+//   publishDate used to construct a display title
+async function handleWhipNoticesFeed() {
   try {
-    const items = await queryWhipFeed({ noticeType, limit: 5 });
+    const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!resp.ok) throw new Error(`whip-notices returned ${resp.status}`);
+    const data = await resp.json();
+    const notices = data.data || [];
+
+    const KIND_LABEL = { daily: 'Daily Whip Notice', nightly: 'Nightly Whip Notice', weekly: 'Week Ahead Notice' };
+
+    const items = notices
+      .filter(n => n.kind && n.sourceText)   // skip items with no displayable content
+      .map(n => {
+        // Construct a human-readable title from kind + publishDate
+        const dateStr = n.publishDate
+          ? new Date(n.publishDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+          : '';
+        const label = KIND_LABEL[n.kind] || (n.kind.charAt(0).toUpperCase() + n.kind.slice(1) + ' Whip Notice');
+        return {
+          id:          n.id || '',
+          title:       dateStr ? `${label} — ${dateStr}` : label,
+          body:        n.sourceText || '',
+          publishedAt: n.postedAt || null,
+          noticeType:  n.kind,
+        };
+      });
+
     return new Response(JSON.stringify({ items }), {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=300' }
     });
@@ -2972,12 +3002,8 @@ async function handleRequest(request, env) {
     return await handleRules(request, env);
   } else if (path === '/api/whip-floor-updates' && request.method === 'GET') {
     return await handleWhipFloorUpdates();
-  } else if (path === '/api/whip-daily-updates' && request.method === 'GET') {
-    return await handleWhipTypedFeed('daily');
-  } else if (path === '/api/whip-nightly-updates' && request.method === 'GET') {
-    return await handleWhipTypedFeed('nightly');
-  } else if (path === '/api/whip-weekly-updates' && request.method === 'GET') {
-    return await handleWhipTypedFeed('weekly');
+  } else if (path === '/api/whip-notices-feed' && request.method === 'GET') {
+    return await handleWhipNoticesFeed();
   } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
     return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {
