@@ -746,11 +746,15 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 
 .vote-id {
     font-family: var(--font-mono);
-    font-size: var(--fs-base);
-    color: var(--text-muted);
-    padding: var(--sp-6) var(--sp-12);
-    background: var(--bg-elevated);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent-blue);
+    padding: 3px var(--sp-8);
+    background: rgba(88, 166, 255, 0.12);
     border-radius: var(--radius-4);
+    white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .vote-bill-btn {
