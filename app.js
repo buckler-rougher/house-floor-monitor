@@ -2615,34 +2615,68 @@ function parseVoteItemsFromHtml(htmlBody) {
     const seen = new Set();
     const results = [];
     const SUSPENSION_RE = /under\s+suspension\s+of\s+the\s+rules/i;
-    let suspensionContext = false; // carries forward when leading <p> says "under suspension" but has no bill
+
+    // Elements that contain a bill reference but are NOT actual vote items —
+    // scheduling context, reminders, postponements, cancellations.
+    const NON_VOTE_RE = new RegExp([
+        /^[\*\s]*members\s+are\s+(?:advised|reminded|further\s+advised)\b/,
+        /^any\s+recorded\s+votes?\s+requested\s+on\b/,
+        /\bwill\s+be\s+postponed\b/,
+        /\bhave\s+been\s+postponed\b/,
+        /^next\/last\s+votes?\s+predicted:/,
+        /^(?:after|following)\s+(?:last\s+votes?|(?:general\s+)?debate|the\s+(?:first|second|third|fourth)\s+vote\s+series|this\s+vote\s+series)\b/,
+        /\bsign\s+the\s+\S+\s+discharge\s+petition\b/i,
+        /house\s+republicans\s+have\s+pulled\s+the\s+vote/,
+    ].map(r => r.source).join('|'), 'i');
+
+    // Full action-prefix regex — order matters (longer/more-specific first)
+    const ACTION_RE = /^(?:\(IF\s+(?:REQUESTED|OFFERED)\)\s*)?(?:(?:democratic|republican)\s+)?(concurring\s+in\s+the\s+senate\s+amendments?\s+to|final\s+passage\s+of|adoption\s+of|passage\s+of|consideration\s+of|amendment\s+to|motion\s+on\s+ordering\s+the\s+previous\s+question\s*(?:\([^)]*\))?|motion\s+to\s+recommit\s+on|motion\s+to\s+(?:re)?commit\s+on|motion\s+to\s+discharge\s+(?:on\s+)?|motion\s+to\s+table\s+(?:on\s+)?|motion\s+to\s+refer\s+(?:on\s+)?)\s*/i;
+
+    // Normalize raw action string → canonical token
+    function canonicalAction(raw) {
+        const a = raw.toLowerCase();
+        if (/senate\s+amendment/.test(a))      return 'senate amendment';
+        if (/final\s+passage/.test(a))          return 'final passage';
+        if (/adoption/.test(a))                 return 'adoption';
+        if (/passage/.test(a))                  return 'passage';
+        if (/consideration/.test(a))            return 'consideration';
+        if (/amendment\s+to/.test(a))           return 'amendment to rule';
+        if (/previous\s+question/.test(a))      return 'previous question';
+        if (/motion\s+to\s+recommit/.test(a))   return 'motion to recommit';
+        if (/motion\s+to\s+(?:re)?commit/.test(a)) return 'motion to commit';
+        if (/motion\s+to\s+discharge/.test(a))  return 'motion to discharge';
+        if (/motion\s+to\s+table/.test(a))      return 'motion to table';
+        if (/motion\s+to\s+refer/.test(a))      return 'motion to refer';
+        return null;
+    }
+
+    let suspensionContext = false;
 
     for (const el of div.querySelectorAll('p, li')) {
         const raw = el.textContent.trim();
         if (!raw) continue;
 
-        // If this element mentions suspension, set context regardless of whether it has a bill
         if (SUSPENSION_RE.test(raw)) suspensionContext = true;
+        if (NON_VOTE_RE.test(raw)) continue; // scheduling/reminder text — not a vote item
 
-        // Must contain a recognisable bill reference to qualify as a vote item
         const m = raw.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
         if (!m) continue;
         const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
-        if (seen.has(billId)) continue; // same bill in <p> and <li> — keep first
+        if (seen.has(billId)) continue;
         seen.add(billId);
 
-        // Strip leading connector phrases and VOTE YES/NO badges
+        // Strip inline connector phrases and VOTE YES/NO badges
         const stripped = raw
             .replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*)/i, '')
             .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\b/gi, '')
             .trim();
 
-        // Detect explicit action prefix before the bill ID
-        const actionMatch = stripped.match(/^(final\s+passage\s+of|adoption\s+of|passage\s+of|consideration\s+of)\s+/i);
+        const actionMatch = ACTION_RE.exec(stripped);
         let action;
         if (actionMatch) {
-            action = actionMatch[1].replace(/\s+/g, ' ').trim().toLowerCase();
-            suspensionContext = false; // explicit prefix means this bill is not under suspension
+            // actionMatch[1] is the captured group (the part after any party/IF-prefix)
+            action = canonicalAction(actionMatch[1] || actionMatch[0]);
+            suspensionContext = false;
         } else {
             action = suspensionContext ? 'suspension' : null;
         }
@@ -2829,16 +2863,22 @@ function voteTlLabelAndDesc(billId, whipText, action) {
     // Build label — bill ID first, qualifier in parens
     // e.g. "H.Res. 1335 (Adoption)", "H.R. 9238 (Suspend the Rules and Pass)"
     const baseLabel = billId || whipText.split(/\s[–\-]\s/)[0].trim();
-    const actionQualifier = (() => {
-        if (!action) return null;
-        const a = action.toLowerCase();
-        if (a === 'suspension') return 'Suspend the Rules and Pass';
-        if (/^final\s+passage/.test(a)) return 'Final Passage';
-        if (/^adoption/.test(a)) return 'Adoption';
-        if (/^passage/.test(a)) return 'Passage';
-        if (/^consideration/.test(a)) return 'Consideration';
-        return null;
-    })();
+    const ACTION_QUALIFIER_MAP = {
+        'suspension':           'Suspend the Rules and Pass',
+        'senate amendment':     'Senate Amendment',
+        'final passage':        'Final Passage',
+        'adoption':             'Adoption',
+        'passage':              'Passage',
+        'consideration':        'Consideration',
+        'amendment to rule':    'Amendment to Rule',
+        'previous question':    'Previous Question',
+        'motion to recommit':   'Motion to Recommit',
+        'motion to commit':     'Motion to Commit',
+        'motion to discharge':  'Motion to Discharge',
+        'motion to table':      'Motion to Table',
+        'motion to refer':      'Motion to Refer',
+    };
+    const actionQualifier = action ? (ACTION_QUALIFIER_MAP[action.toLowerCase()] || null) : null;
     const label = actionQualifier ? `${baseLabel} (${actionQualifier})` : baseLabel;
 
     // Primary description: bill title from billDataMap
@@ -2863,41 +2903,43 @@ function voteTlLabelAndDesc(billId, whipText, action) {
             .trim();
     }
 
-    // Detect motion type from rollLog question (for completed votes) or Whip text
-    const motionKeywords = [
-        [/motion to (?:re)?commit/i, 'Motion to Commit'],
-        [/previous question/i, 'Previous Question'],
-        [/motion to table/i, 'Motion to Table'],
-        [/motion to recommit/i, 'Motion to Recommit'],
-    ];
-    let motion = '';
-    // Check rollLog question for this bill
-    for (const entry of rollLog) {
-        const eq = entry.question || '';
-        const eb = entry.bill || '';
-        const combined = eq + ' ' + eb;
-        const em = combined.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
-        if (em) {
-            const eType = em[1].replace(/\s+/g, '');
-            const eBillId = `${eType} ${em[2]}`;
-            if (eBillId === billId || (hresNum && eBillId === `H.Res. ${hresNum}`)) {
-                for (const [re, label] of motionKeywords) {
-                    if (re.test(eq)) { motion = label; break; }
+    // If the action qualifier already covers the motion type (e.g. "Motion to Recommit"),
+    // skip the motionKeywords scan — avoids duplicating it in both label and desc.
+    // Still run the scan if action is a procedural qualifier (passage/adoption/suspension)
+    // so that any motion embedded in the rollLog question still surfaces in desc.
+    const actionIsMotion = actionQualifier && /motion|previous question/i.test(actionQualifier);
+    if (!actionIsMotion) {
+        const motionKeywords = [
+            [/motion\s+to\s+recommit/i,          'Motion to Recommit'],
+            [/motion\s+to\s+(?:re)?commit/i,      'Motion to Commit'],
+            [/previous\s+question/i,              'Previous Question'],
+            [/motion\s+to\s+table/i,              'Motion to Table'],
+            [/motion\s+to\s+discharge/i,          'Motion to Discharge'],
+            [/motion\s+to\s+refer/i,              'Motion to Refer'],
+        ];
+        let motion = '';
+        const billNormMK = normalizeBillIdForRules(billId || '');
+        for (const entry of rollLog) {
+            const eq = entry.question || '';
+            const eb = entry.bill || '';
+            const em = (eq + ' ' + eb).match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
+            if (em && normalizeBillIdForRules(`${em[1]} ${em[2]}`) === billNormMK) {
+                for (const [re, lbl] of motionKeywords) {
+                    if (re.test(eq)) { motion = lbl; break; }
                 }
                 break;
             }
         }
-    }
-    // Also check Whip text for motion keywords if rollLog didn't resolve
-    if (!motion) {
-        for (const [re, label] of motionKeywords) {
-            if (re.test(whipText)) { motion = label; break; }
+        if (!motion) {
+            for (const [re, lbl] of motionKeywords) {
+                if (re.test(whipText)) { motion = lbl; break; }
+            }
         }
-    }
-    if (motion && desc && !desc.toLowerCase().includes(motion.toLowerCase())) {
-        desc = `${motion} — ${desc}`;
-    } else if (motion && !desc) {
-        desc = motion;
+        if (motion && desc && !desc.toLowerCase().includes(motion.toLowerCase())) {
+            desc = `${motion} — ${desc}`;
+        } else if (motion && !desc) {
+            desc = motion;
+        }
     }
 
     return { label, desc };
