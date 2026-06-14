@@ -3282,7 +3282,7 @@ function renderVoteTimeline(items) {
             const word = votes.length === 1 ? 'vote' : 'votes';
             subStatus.textContent = `The House is now taking the following ${word}`;
         } else if (approxStart) {
-            subStatus.textContent = `Est. start · ${etFmt(approxStart, { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
+            subStatus.textContent = `Est. start: ${etFmt(approxStart, { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
         } else {
             subStatus.textContent = '';
         }
