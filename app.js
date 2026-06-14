@@ -2668,19 +2668,19 @@ function renderWhipNoticesFeed(items) {
             whenStr = `${day} ${month} at ${time}${tzLabel}`;
         }
 
-        // Schedule block for daily/nightly/weekly — readable labeled lines
+        // Schedule block for daily/nightly/weekly
         let schedHtml = '';
         if (!isFloor && (item.houseMeetsAt || item.firstVotes || item.lastVotes)) {
             const rows = [
-                item.houseMeetsAt ? ['House Meets',  item.houseMeetsAt] : null,
-                item.firstVotes   ? ['First Votes',  item.firstVotes]   : null,
-                item.lastVotes    ? ['Last Votes',   item.lastVotes]    : null,
+                item.houseMeetsAt ? ['House meets',  item.houseMeetsAt] : null,
+                item.firstVotes   ? ['First votes',  item.firstVotes]   : null,
+                item.lastVotes    ? ['Last votes',   item.lastVotes]    : null,
             ].filter(Boolean);
-            schedHtml = `<dl class="whip-notice-schedule">${
+            schedHtml = `<table class="whip-notice-schedule"><tbody>${
                 rows.map(([label, val]) =>
-                    `<div class="whip-sched-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(val.replace(/\n/g, ' · '))}</dd></div>`
+                    `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(val.replace(/\n/g, ' · '))}</td></tr>`
                 ).join('')
-            }</dl>`;
+            }</tbody></table>`;
         }
 
         return `

@@ -3340,28 +3340,28 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   text-align: center;
 }
 
-/* Schedule — 2-column grid, label left / value right */
+/* Schedule table */
 .whip-notice-schedule {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 3px 16px;
+  border-collapse: collapse;
   margin: var(--sp-8) 0 var(--sp-12);
 }
-.whip-sched-row { display: contents; }
-.whip-sched-row dt {
+.whip-notice-schedule th {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.4px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-align: left;
   white-space: nowrap;
+  padding: 2px 16px 2px 0;
+  vertical-align: top;
 }
-.whip-sched-row dd {
-  font-family: var(--font-mono);
+.whip-notice-schedule td {
+  font-family: var(--font-sans);
   font-size: var(--fs-base);
   color: var(--text-secondary);
-  margin: 0;
+  padding: 2px 0;
 }
 
 /* Prevent CSS display:flex from overriding the hidden attribute */
