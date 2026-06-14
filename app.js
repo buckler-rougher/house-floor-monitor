@@ -559,6 +559,7 @@ function applyRollLogData(entries) {
         _lastVoteAbsences = {
             d: last.dem?.notVoting ?? '--',
             r: last.rep?.notVoting ?? '--',
+            i: last.ind?.notVoting ?? 0,
             roll: last.roll || null,
             question: last.question || null,
         };
@@ -1088,9 +1089,12 @@ function updateVoteCountsDisplay(counts) {
         }
     }
 
+    const dNV = Math.max(parseInt(blue.not_voting) || 0, 0);
+    const rNV = Math.max(parseInt(red.not_voting)  || 0, 0);
     _stagedVoteAbsences = {
-        d: Math.max(parseInt(blue.not_voting) || 0, 0),
-        r: Math.max(parseInt(red.not_voting)  || 0, 0),
+        d: dNV,
+        r: rNV,
+        i: Math.max(notVoting - dNV - rNV, 0),
         roll: floorData.rollCall?.number || null,
         question: floorData.rollCall?.question || null,
     };
@@ -1114,6 +1118,7 @@ function updateLastVoteAbsencesDisplay() {
     if (!_lastVoteAbsences || !elements.lastVoteAbsences) return;
     elements.lastVoteDAbsent.textContent = _lastVoteAbsences.d;
     elements.lastVoteRAbsent.textContent = _lastVoteAbsences.r;
+    if (elements.lastVoteIAbsent) elements.lastVoteIAbsent.textContent = _lastVoteAbsences.i ?? 0;
     if (elements.lastVoteLabel) {
         const roll = _lastVoteAbsences.roll ? `Roll Call ${_lastVoteAbsences.roll}` : '';
         elements.lastVoteLabel.textContent = roll;
@@ -1810,6 +1815,7 @@ const elements = {
     lastVoteAbsences: document.getElementById('last-vote-absences'),
     lastVoteDAbsent: document.getElementById('last-vote-d-absent'),
     lastVoteRAbsent: document.getElementById('last-vote-r-absent'),
+    lastVoteIAbsent: document.getElementById('last-vote-i-absent'),
     lastVoteLabel: document.getElementById('last-vote-label'),
     lastUpdate: document.getElementById('last-update'),
         weatherPanel: document.getElementById('weather-panel'),
