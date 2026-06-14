@@ -2698,20 +2698,20 @@ function getVoteTlStatus(billId) {
     const hresMatch = billId.match(/^H\.Res\.\s*(\d+)/i);
     const hresNum = hresMatch ? hresMatch[1] : null;
 
-    // Check if this bill is currently being voted on
-    const activeQ = floorData.rollCall?.question || '';
-    if (activeQ) {
-        const inQ = m => m && activeQ.match(new RegExp(
-            m[1].replace(/\./g, '\\.').replace(/\s+/g, '\\s*') + '\\s*' + m[2], 'i'
-        ));
-        const qm = activeQ.match(/(H\.J\.Res\.|H\.Con\.Res\.|H\.Res\.|H\.R\.|S\.J\.Res\.|S\.Con\.Res\.|S\.Res\.|S\.)\s*(\d+)/i);
-        if (qm) {
-            const activeType = qm[1].replace(/\s+/g, '');
-            const activeBillId = `${activeType} ${qm[2]}`;
-            if (activeBillId === billId) return 'active';
-            // H.Res. procedural votes (Previous Question, etc.) reference the resolution
-            if (hresNum && activeBillId === `H.Res. ${hresNum}`) return 'active';
-        }
+    // Check if this bill is currently being voted on.
+    // Strategy: check the question text first (most votes include the bill# there),
+    // then fall back to rollCall.bill.legisNum — procedural votes like PQ and Motion
+    // to Table put the bill# only in the bill sub-object, not in the question string.
+    const activeRC = floorData.rollCall;
+    if (activeRC) {
+        const BILL_ID_RE = /(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i;
+        const billNormActive = normalizeBillIdForRules(billId);
+        // Check question string
+        const qm = (activeRC.question || '').match(BILL_ID_RE);
+        if (qm && normalizeBillIdForRules(`${qm[1]} ${qm[2]}`) === billNormActive) return 'active';
+        // Check bill.legisNum (PQ, Motion to Table, Concurrence, etc.)
+        const lm = (activeRC.bill?.legisNum || '').match(BILL_ID_RE);
+        if (lm && normalizeBillIdForRules(`${lm[1]} ${lm[2]}`) === billNormActive) return 'active';
     }
 
     // For H.Res. resolutions, check specialRulesMap — rule votes store their
