@@ -3171,11 +3171,65 @@ function voteTlLabelAndDesc(billId, whipText, action) {
     return { label, desc };
 }
 
+// Convert an hour+minute in America/New_York to a UTC Date,
+// anchored to the same ET calendar day as refDate.
+function etHMtoDate(h24, min, refDate) {
+    // Get a Date object whose getHours()/getMinutes() return ET wall time
+    const etRef = new Date(refDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    // Compute the UTC↔ET offset at refDate
+    const offsetMs = refDate.getTime() - etRef.getTime();
+    // Build target ET time on the same day
+    const target = new Date(etRef);
+    target.setHours(h24, min, 0, 0);
+    return new Date(target.getTime() + offsetMs);
+}
+
+// Parse vote-series notice metadata: start time, live flag, total est. duration, end time.
+function parseVoteSeriesMeta(currentItem, allVotes) {
+    const div = document.createElement('div');
+    div.innerHTML = currentItem.body || '';
+    const text = div.textContent;
+    const ref = currentItem.publishedAt ? new Date(currentItem.publishedAt) : new Date();
+
+    // Detect "the House is now taking the following vote(s)"
+    const isLive = /the\s+house\s+is\s+now\s+taking\b/i.test(text);
+
+    // Parse "At approximately H:MM [– H:MM] a.m./p.m."
+    let approxStart = null;
+    const mTime = text.match(
+        /at\s+approximately\s+(\d{1,2}):(\d{2})\s*(?:[-–—]\s*\d{1,2}:\d{2})?\s*(a\.m\.|p\.m\.)/i
+    );
+    if (mTime) {
+        let h = parseInt(mTime[1], 10);
+        const mn = parseInt(mTime[2], 10);
+        if (/p\.m\./i.test(mTime[3]) && h < 12) h += 12;
+        if (/a\.m\./i.test(mTime[3]) && h === 12) h = 0;
+        approxStart = etHMtoDate(h, mn, ref);
+    }
+
+    // Total estimate: first vote doubled (travel time), rest as listed
+    let totalMin = 0;
+    allVotes.forEach((v, i) => {
+        const d = v.duration ? parseInt(v.duration, 10) : 0;
+        totalMin += (i === 0) ? d * 2 : d;
+    });
+
+    // End time anchored to: approxStart (pre-vote) or publishedAt (live/unknown)
+    const baseDate = approxStart || ref;
+    const endTime = totalMin > 0 ? new Date(baseDate.getTime() + totalMin * 60000) : null;
+
+    return { isLive, approxStart, totalMin, endTime };
+}
+
 // Render the full vote-series timeline from the latest matching notice.
 function renderVoteTimeline(items) {
     const body = document.getElementById('vote-series-body');
-    const timeEl = document.getElementById('vote-series-notice-time');
+    const subHeader = document.getElementById('vote-series-sub-header');
+    const subStatus = document.getElementById('vote-series-sub-status');
+    const subTiming = document.getElementById('vote-series-sub-timing');
     if (!body) return;
+
+    const hideSubHeader = () => { if (subHeader) subHeader.hidden = true; };
 
     // Always use the MOST RECENT matching notice as the authoritative list
     // (stale high-vote-count notices from earlier series must not win).
@@ -3186,17 +3240,10 @@ function renderVoteTimeline(items) {
     console.log('[diag] renderVoteTimeline: items:', items.length, 'seriesItems:', seriesItems.length, seriesItems.map(s => s.title?.slice(0,60)));
     if (!seriesItems.length) {
         body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
+        hideSubHeader();
         return;
     }
     const currentItem = seriesItems[0]; // newest-first from Firestore
-
-    // Show when the current notice was issued
-    if (timeEl && currentItem.publishedAt) {
-        const d = new Date(currentItem.publishedAt);
-        timeEl.textContent = d.toLocaleTimeString('en-US', {
-            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
-        });
-    }
 
     const currentVotes = parseVoteItemsFromHtml(currentItem.body);
     const currentBillSet = new Set(currentVotes.map(v => v.billId).filter(Boolean));
@@ -3221,8 +3268,42 @@ function renderVoteTimeline(items) {
     const votes = [...completedVotes, ...currentVotes];
     if (votes.length === 0) {
         body.innerHTML = '<div class="whip-updates-loading">No votes listed in notice.</div>';
+        hideSubHeader();
         return;
     }
+
+    // ── Secondary header ─────────────────────────────────────────────────────
+    if (subHeader && subStatus && subTiming) {
+        const { isLive, approxStart, totalMin, endTime } = parseVoteSeriesMeta(currentItem, votes);
+        const etFmt = (d, opts) => d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', ...opts });
+
+        // Left: status message
+        if (isLive) {
+            const word = votes.length === 1 ? 'vote' : 'votes';
+            subStatus.textContent = `The House is now taking the following ${word}`;
+        } else if (approxStart) {
+            subStatus.textContent = `Est. start · ${etFmt(approxStart, { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
+        } else {
+            subStatus.textContent = '';
+        }
+
+        // Right: update time (precise) + est. total + est. end
+        const timingParts = [];
+        if (currentItem.publishedAt) {
+            const upd = etFmt(new Date(currentItem.publishedAt), {
+                hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short'
+            });
+            timingParts.push(`Updated ${upd}`);
+        }
+        if (totalMin > 0) timingParts.push(`~${totalMin} min`);
+        if (endTime) {
+            timingParts.push(`Est. end ~${etFmt(endTime, { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`);
+        }
+        subTiming.textContent = timingParts.join(' · ');
+
+        subHeader.hidden = !(subStatus.textContent || subTiming.textContent);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Store for vote-recs modal access
     currentVotesList = votes;
