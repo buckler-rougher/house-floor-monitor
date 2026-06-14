@@ -807,6 +807,21 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
+    overflow: hidden;
+}
+
+/* Panel header inside vote-display: break out of card padding */
+.vote-display > .panel-header {
+    align-self: stretch;
+    margin: calc(-1 * var(--sp-32));
+    margin-bottom: calc(-1 * var(--sp-16));
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+/* Progress bar inside vote-display: stretch to full width */
+.vote-display > .progress-section {
+    align-self: stretch;
 }
 
 .vote-count-section {
@@ -997,7 +1012,6 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     justify-content: center;
     align-items: center;
     gap: var(--sp-40);
-    margin-bottom: var(--sp-20);
 }
 
 .vote-count-section {
