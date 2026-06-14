@@ -2603,14 +2603,18 @@ async function fetchAndRenderWhipFloorUpdates() {
             fetch(`${BASE}/whip-notices-feed`,   { cache: 'no-store' }).then(r => r.ok ? r.json() : { items: [] }).catch(() => ({ items: [] })),
         ]);
         const tag = (items, type) => (items || []).map(it => ({ ...it, noticeType: it.noticeType || type }));
+        // DomeWatch stores ET times with a +00:00 UTC label (e.g. 6:41 PM ET → "18:41+00:00").
+        // Firestore floor timestamps are real UTC. Add the EDT offset (4h) to DomeWatch
+        // timestamps so the two series sort chronologically against each other.
+        const EDT_OFFSET_MS = 4 * 60 * 60 * 1000;
+        const sortKey = (item) => {
+            const t = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
+            return (item.noticeType || 'floor') === 'floor' ? t : t + EDT_OFFSET_MS;
+        };
         const all = [
-            ...tag(floorData.items,        'floor'),
-            ...tag(noticesFeedData.items,  null),   // noticeType already set by worker (kind field)
-        ].sort((a, b) => {
-            const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-            const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-            return tb - ta; // newest first
-        });
+            ...tag(floorData.items,       'floor'),
+            ...tag(noticesFeedData.items, null),
+        ].sort((a, b) => sortKey(b) - sortKey(a));
         whipFloorItems = all;
         renderWhipNoticesFeed(whipFloorItems);
         renderVoteTimeline(whipFloorItems);
@@ -2722,11 +2726,10 @@ function renderWhipFilterDropdown() {
 
 function setWhipFilter(type) {
     whipNoticeFilter = (type === 'all' || type === whipNoticeFilter) ? null : type;
-    const dropdown = document.getElementById('whip-filter-dropdown');
-    const btn      = document.getElementById('whip-filter-btn');
-    if (dropdown) dropdown.hidden = true;
-    // Button stays highlighted when a filter is active
+    const btn = document.getElementById('whip-filter-btn');
     if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
+    // Re-render chips in-place so active state updates without closing drawer
+    renderWhipFilterDropdown();
     renderWhipNoticesFeed(whipFloorItems);
 }
 

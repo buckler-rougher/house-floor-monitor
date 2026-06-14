@@ -3302,12 +3302,12 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-radius: var(--radius-4);
   flex-shrink: 0;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: filter 0.12s;
   /* default (floor) */
   color: var(--accent-blue);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
-.whip-type-badge:hover { opacity: 0.75; }
+.whip-type-badge:hover { filter: brightness(1.2); }
 .whip-type-badge.whip-type-daily {
   color: var(--accent-green);
   background: color-mix(in srgb, var(--accent-green) 12%, transparent);
@@ -3404,11 +3404,10 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-radius: var(--radius-4);
   cursor: pointer;
   border: 1px solid transparent;
-  transition: opacity 0.15s;
-  opacity: 0.55;
+  transition: filter 0.12s;
 }
-.whip-filter-chip:hover { opacity: 0.85; }
-.whip-filter-chip.active { opacity: 1; border-color: currentColor; }
+.whip-filter-chip:hover { filter: brightness(1.2); }
+.whip-filter-chip.active { border-color: currentColor; }
 /* Mirror type badge colors */
 .whip-filter-chip.whip-type-all    { color: var(--text-secondary); background: color-mix(in srgb, var(--text-muted) 10%, transparent); }
 .whip-filter-chip.whip-type-floor   { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
