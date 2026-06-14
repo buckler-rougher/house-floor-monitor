@@ -2700,17 +2700,16 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 /* Timeline track */
 .vote-tl-items {
   position: relative;
-  padding-left: 28px; /* space for track */
 }
 
 /* Per-item connector segment (solid by default, dotted when pending) */
 .vote-tl-item::after {
   content: '';
   position: absolute;
-  left: -19px;   /* aligns with circle center: item-left − 28px + 10px = −18px; −19 centers a 2px line */
-  top: 22px;     /* bottom of circle (top:2px + height:20px) */
+  left: 9px;    /* circle is 20px wide, center at 10px; 2px line → left: 9px */
+  top: 20px;    /* bottom of circle */
   width: 2px;
-  bottom: -22px; /* bridges margin-bottom:20px + next circle's top:2px */
+  bottom: -20px; /* bridges margin-bottom: 20px to top of next circle */
   background: var(--border-color);
   transition: background 0.3s;
 }
@@ -2738,19 +2737,37 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   margin-bottom: 0;
 }
 
-/* The circle */
+/* The circle — in-flow flex child so alignment works naturally */
 .vote-tl-circle {
-  position: absolute;
-  left: -28px;
-  top: 2px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: 2px solid var(--border-color);
   background: var(--bg-card);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* stacking context for ::before ring */
   z-index: 1;
   transition: background 0.3s, border-color 0.3s;
+}
+
+/* Number inside the circle */
+.vote-tl-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+  user-select: none;
+}
+.vote-tl-circle.passed .vote-tl-num,
+.vote-tl-circle.failed .vote-tl-num {
+  color: #fff;
+}
+.vote-tl-circle.active .vote-tl-num {
+  color: var(--accent-yellow);
 }
 .vote-tl-circle.pending {
   border-color: var(--text-muted);
@@ -2794,6 +2811,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-family: var(--font-mono);
   font-size: var(--fs-base);
   font-weight: 700;
+  line-height: 20px; /* match circle height — vertically centers first line with circle */
   color: var(--text-primary);
   cursor: pointer;
 }
