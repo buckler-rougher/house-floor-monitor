@@ -2691,7 +2691,33 @@ function parseVoteItemsFromHtml(htmlBody) {
 
 // Determine status of a vote-timeline item from live data.
 // Returns 'pending' | 'active' | 'passed' | 'failed'
-function getVoteTlStatus(billId) {
+// Map action token → patterns that the live rollCall.question should match.
+// Used to disambiguate two items with the same billId (e.g. PQ and Rule adoption
+// both reference H.Res. 722 — we only mark the one whose question type matches).
+const ACTION_QUESTION_PATTERNS = {
+    'previous question':   [/previous\s+question/i],
+    'motion to recommit':  [/recommit/i],
+    'motion to commit':    [/commit/i],
+    'motion to table':     [/motion\s+to\s+table/i],
+    'motion to discharge': [/discharge/i],
+    'motion to refer':     [/motion\s+to\s+refer/i],
+    'senate amendment':    [/concur|senate\s+amendment/i],
+    'adoption':            [/agreeing|adoption/i],
+    'passage':             [/passage/i],
+    'final passage':       [/passage/i],
+    'suspension':          [/suspend/i],
+    'consideration':       [/consideration/i],
+    'amendment to rule':   [/amendment/i],
+};
+
+function questionMatchesAction(question, action) {
+    if (!action) return true; // no action context — allow any match
+    const patterns = ACTION_QUESTION_PATTERNS[action.toLowerCase()];
+    if (!patterns) return true; // unknown action — don't filter
+    return patterns.some(re => re.test(question));
+}
+
+function getVoteTlStatus(billId, action = null) {
     if (!billId) return 'pending';
 
     // Normalize for H.Res. lookups
@@ -2699,19 +2725,19 @@ function getVoteTlStatus(billId) {
     const hresNum = hresMatch ? hresMatch[1] : null;
 
     // Check if this bill is currently being voted on.
-    // Strategy: check the question text first (most votes include the bill# there),
-    // then fall back to rollCall.bill.legisNum — procedural votes like PQ and Motion
-    // to Table put the bill# only in the bill sub-object, not in the question string.
+    // Strategy: match bill# in question or bill.legisNum, then verify the question
+    // type matches the expected action so PQ and Rule adoption on the same H.Res.
+    // don't both show as active simultaneously.
     const activeRC = floorData.rollCall;
     if (activeRC) {
         const BILL_ID_RE = /(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i;
         const billNormActive = normalizeBillIdForRules(billId);
-        // Check question string
-        const qm = (activeRC.question || '').match(BILL_ID_RE);
-        if (qm && normalizeBillIdForRules(`${qm[1]} ${qm[2]}`) === billNormActive) return 'active';
-        // Check bill.legisNum (PQ, Motion to Table, Concurrence, etc.)
+        const activeQ = activeRC.question || '';
+        const qm = activeQ.match(BILL_ID_RE);
         const lm = (activeRC.bill?.legisNum || '').match(BILL_ID_RE);
-        if (lm && normalizeBillIdForRules(`${lm[1]} ${lm[2]}`) === billNormActive) return 'active';
+        const billMatches = (qm && normalizeBillIdForRules(`${qm[1]} ${qm[2]}`) === billNormActive) ||
+                            (lm && normalizeBillIdForRules(`${lm[1]} ${lm[2]}`) === billNormActive);
+        if (billMatches && questionMatchesAction(activeQ, action)) return 'active';
     }
 
     // For H.Res. resolutions, check specialRulesMap — rule votes store their
@@ -2814,7 +2840,8 @@ function updateVoteTimelineStatus() {
     const items = body.querySelectorAll('.vote-tl-item');
     items.forEach(item => {
         const billId = item.dataset.billId || null;
-        const status = getVoteTlStatus(billId);
+        const action = item.dataset.action || null;
+        const status = getVoteTlStatus(billId, action);
         const circle = item.querySelector('.vote-tl-circle');
         const result = item.querySelector('.vote-tl-result');
         if (circle) {
@@ -2998,13 +3025,14 @@ function renderVoteTimeline(items) {
     }
 
     const itemsHtml = votes.map(({ text, billId, duration, action }) => {
-        const status = getVoteTlStatus(billId);
+        const status = getVoteTlStatus(billId, action);
         const resultText = voteTlResultText(billId, status);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
+        const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : '';
         const hasBadges = duration || resultText;
         return `
-            <div class="vote-tl-item"${billAttr}>
+            <div class="vote-tl-item"${billAttr}${actionAttr}>
                 <div class="vote-tl-circle ${status}"></div>
                 <div class="vote-tl-content">
                     <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
