@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260613p">
+    <link rel="stylesheet" href="styles.css?v=20260613q">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -966,6 +966,7 @@
                 <div class="panel-header">
                     <span class="panel-label">VOTE SERIES</span>
                     <div class="panel-header-right">
+                        <button class="vrec-open-btn" onclick="openVoteRecsModal()">VOTE RECS</button>
                         <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip</a></span>
                         <span class="vote-series-notice-time" id="vote-series-notice-time"></span>
                     </div>
@@ -1344,7 +1345,28 @@
         </div>
     </footer>
 
-    <script src="app.js?v=20260613p"></script>
+    <!-- Vote Recs Modal -->
+    <div class="vrec-overlay" id="vrec-overlay" hidden>
+        <div class="vrec-modal" role="dialog" aria-label="Vote Recommendations" aria-modal="true">
+            <button class="vrec-close-x" onclick="closeVoteRecsModal()" aria-label="Close">×</button>
+            <div class="vrec-modal-header">
+                <span class="vrec-modal-title">Vote Recs</span>
+            </div>
+            <div class="vrec-mode-bar">
+                <span class="vrec-mode-label">Auto-fill:</span>
+                <button class="vrec-mode-btn" data-mode="nothing"     onclick="setVoteRecsMode('nothing')">Nothing</button>
+                <button class="vrec-mode-btn" data-mode="follow_whip" onclick="setVoteRecsMode('follow_whip')">Follow Whip</button>
+                <button class="vrec-mode-btn" data-mode="oppose_whip" onclick="setVoteRecsMode('oppose_whip')">Oppose Whip</button>
+            </div>
+            <div class="vrec-body" id="vrec-body"></div>
+            <div class="vrec-footer">
+                <button class="vrec-export-btn" id="vrec-export-btn" onclick="exportVoteRecs()">Copy to Clipboard</button>
+                <button class="vrec-done-btn" onclick="closeVoteRecsModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20260613q"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
