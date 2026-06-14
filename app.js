@@ -572,8 +572,9 @@ async function loadRollLog() {
     try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
         const data = await resp.json();
+        console.log('[diag] roll-log entries:', data.entries?.length, data.entries?.map(e => 'roll:' + e.roll + ' bill:' + (e.bill||'?') + ' dNV:' + e.dem?.notVoting));
         applyRollLogData(data.entries);
-    } catch {}
+    } catch(e) { console.log('[diag] loadRollLog error:', e); }
 }
 
 async function loadWhipFeed() {
@@ -585,8 +586,10 @@ async function loadWhipFeed() {
         ]);
         const floor   = floorResp.ok   ? (await floorResp.json()).items   || [] : [];
         const notices = noticesResp.ok ? (await noticesResp.json()).items || [] : [];
+        console.log('[diag] whip floor items:', floor.length, floor.map(f => f.title?.slice(0,50)));
+        console.log('[diag] whip notice items:', notices.length, notices.map(n => n.title?.slice(0,50)));
         applyWhipFeedData({ floor, notices });
-    } catch {}
+    } catch(e) { console.log('[diag] loadWhipFeed error:', e); }
 }
 
 function applyRollLogToBills(entries, activeRoll) {
@@ -3143,6 +3146,7 @@ function renderVoteTimeline(items) {
     // previous notice but were dropped once they completed — that way a
     // follow-up "1 vote" notice doesn't erase already-voted items.
     const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
+    console.log('[diag] renderVoteTimeline: items:', items.length, 'seriesItems:', seriesItems.length, seriesItems.map(s => s.title?.slice(0,60)));
     if (!seriesItems.length) {
         body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
         return;
