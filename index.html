@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614p">
+    <link rel="stylesheet" href="styles.css?v=20260614q">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -771,6 +771,10 @@
                 </div>
             </div>
 
+            <!-- Vote column: Happening Now → Threshold → Quorum → Chamber Map,
+                 connected by a centered vertical line via .vote-column -->
+            <div class="vote-column">
+
             <!-- Vote Panel -->
             <div class="vote-display">
                 <div class="panel-header">
@@ -956,6 +960,8 @@
                     </div>
                 </div>
             </div>
+
+            </div><!-- /.vote-column -->
 
             <!-- Floor Proceedings -->
             <div class="proceedings-panel" id="proceedings">
@@ -1386,7 +1392,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614p"></script>
+    <script src="app.js?v=20260614q"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

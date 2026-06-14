@@ -629,6 +629,23 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
     margin-bottom: 0 !important;
 }
 
+/* Vote column — wraps Happening Now → Threshold → Quorum → Chamber Map.
+   A 1px vertical line is drawn at the horizontal midpoint via background-image.
+   Each panel's own background (var(--bg-card)) covers the line inside the cards;
+   the line is visible only in the gaps between panels, creating a connector. */
+.vote-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+    background-image: linear-gradient(var(--border-color), var(--border-color));
+    background-size: 1px 100%;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+.vote-column > * {
+    margin-bottom: 0 !important;
+}
+
 /* ── Live-mode panels ─────────────────────────────────────────────────────
    Each live floor-business mode (speeches, prayer, oath, ceremonies, …) is
    styled as a standard card panel like FLOOR PROCEEDINGS etc.: a header bar
@@ -1963,9 +1980,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .grid-note {
-  padding: var(--sp-8) var(--sp-24);
+  padding: var(--sp-12) var(--sp-24);
   border-bottom: 1px solid var(--border-color);
-  background: rgba(13, 17, 23, 0.28);
+  background: var(--bg-elevated);
   color: var(--text-muted);
   font-size: var(--fs-base);
   line-height: 1.4;
