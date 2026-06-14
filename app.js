@@ -2614,9 +2614,16 @@ function parseVoteItemsFromHtml(htmlBody) {
     div.innerHTML = htmlBody;
     const seen = new Set();
     const results = [];
+    const SUSPENSION_RE = /under\s+suspension\s+of\s+the\s+rules/i;
+    let suspensionContext = false; // carries forward when leading <p> says "under suspension" but has no bill
+
     for (const el of div.querySelectorAll('p, li')) {
         const raw = el.textContent.trim();
         if (!raw) continue;
+
+        // If this element mentions suspension, set context regardless of whether it has a bill
+        if (SUSPENSION_RE.test(raw)) suspensionContext = true;
+
         // Must contain a recognisable bill reference to qualify as a vote item
         const m = raw.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
         if (!m) continue;
@@ -2624,20 +2631,22 @@ function parseVoteItemsFromHtml(htmlBody) {
         if (seen.has(billId)) continue; // same bill in <p> and <li> — keep first
         seen.add(billId);
 
-        // Detect suspension context — "under suspension of the Rules" anywhere in element
-        const isSuspension = /under\s+suspension\s+of\s+the\s+rules/i.test(raw);
-
-        // Strip leading connector phrases
+        // Strip leading connector phrases and VOTE YES/NO badges
         const stripped = raw
             .replace(/^(?:following this vote[^:]*:?\s*|the house will then take[^:]*:?\s*)/i, '')
-            .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\s*(?=[–\-]|$)/gi, '') // strip VOTE YES/VOTE NO badges
+            .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\b/gi, '')
             .trim();
 
-        // Detect action prefix before the bill ID
+        // Detect explicit action prefix before the bill ID
         const actionMatch = stripped.match(/^(final\s+passage\s+of|adoption\s+of|passage\s+of|consideration\s+of)\s+/i);
-        const action = actionMatch
-            ? actionMatch[1].replace(/\s+/g, ' ').trim().toLowerCase()
-            : isSuspension ? 'suspension' : null;
+        let action;
+        if (actionMatch) {
+            action = actionMatch[1].replace(/\s+/g, ' ').trim().toLowerCase();
+            suspensionContext = false; // explicit prefix means this bill is not under suspension
+        } else {
+            action = suspensionContext ? 'suspension' : null;
+        }
+
         const text = actionMatch ? stripped.slice(actionMatch[0].length).trim() : stripped;
         const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
         const duration = durMatch ? `${durMatch[1]} min` : null;
