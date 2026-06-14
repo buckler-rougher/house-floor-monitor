@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260614l">
+    <link rel="stylesheet" href="styles.css?v=20260614m">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -867,23 +867,25 @@
                         <span class="threshold-metric-value" id="max-possible-yeas">--</span>
                     </div>
                 </div>
-                <div id="last-vote-absences" style="display:none;">
-                    <div class="threshold-subsection-label">LAST VOTE ABSENCES</div>
-                    <div class="threshold-grid threshold-grid-3">
+                <div id="last-vote-absences" class="lva-section" style="display:none;">
+                    <div class="lva-grid">
+                        <div class="lva-header">
+                            <span class="lva-title">LAST VOTE ABSENCES</span>
+                            <span class="lva-roll" id="last-vote-label"></span>
+                        </div>
                         <div class="threshold-item">
-                            <span class="threshold-metric-label">D Absent</span>
+                            <span class="threshold-metric-label">Democrats</span>
                             <span class="threshold-metric-value democrat" id="last-vote-d-absent">--</span>
                         </div>
                         <div class="threshold-item">
-                            <span class="threshold-metric-label">R Absent</span>
+                            <span class="threshold-metric-label">Republicans</span>
                             <span class="threshold-metric-value republican" id="last-vote-r-absent">--</span>
                         </div>
                         <div class="threshold-item">
-                            <span class="threshold-metric-label">I Absent</span>
+                            <span class="threshold-metric-label">Independents</span>
                             <span class="threshold-metric-value independent" id="last-vote-i-absent">--</span>
                         </div>
                     </div>
-                    <div class="last-vote-label" id="last-vote-label"></div>
                 </div>
             </div>
 
@@ -1379,7 +1381,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260614l"></script>
+    <script src="app.js?v=20260614m"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
