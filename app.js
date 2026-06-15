@@ -637,7 +637,7 @@ function applyRollLogToBills(entries, activeRoll) {
                 if (bid) {
                     const existing = motionsToRecommit.get(bid);
                     const status = yeas > nays ? 'passed' : 'failed';
-                    if (!existing || existing.status === 'pending') {
+                    if (!existing || existing.status === 'pending' || !existing.type) {
                         const mtrType = /recommit/i.test(q) ? 'recommit' : 'commit';
                         const mtrData = { type: mtrType, status, voteText: `${yeas}-${nays}` };
                         motionsToRecommit.set(bid, mtrData);
