@@ -3423,7 +3423,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-size: var(--fs-base); /* match whip-update-title */
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 1px 6px;
+  padding: 2px 6px 0px;
   border-radius: var(--radius-4);
   flex-shrink: 0;
   cursor: pointer;
