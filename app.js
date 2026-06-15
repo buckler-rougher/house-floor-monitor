@@ -4052,7 +4052,7 @@ function loadMtrFromStorage() {
         for (const [id, data] of entries) {
             if (now - (data._saved || 0) > MTR_TTL_MS) continue; // expired
             if (!motionsToRecommit.has(id)) {
-                motionsToRecommit.set(id, { type: data.type || 'recommit', status: data.status, voteText: data.voteText || null });
+                motionsToRecommit.set(id, { type: data.type || null, status: data.status, voteText: data.voteText || null });
             }
         }
     } catch {}
