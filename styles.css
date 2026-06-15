@@ -2940,7 +2940,6 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-size: var(--fs-md);
   padding: 2px 8px;
   border-radius: 4px;
-  line-height: 1;
 }
 .vote-tl-result {
   gap: 6px;
@@ -2982,9 +2981,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .vote-tl-absences {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1;
+  display: inline-block;
   white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
@@ -3575,6 +3572,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   cursor: default;
   line-height: 1;
   flex-shrink: 0;
+  position: relative; /* required — ::after tooltip is position:absolute */
 }
 .whip-info-tip::after {
   content: attr(data-tooltip);
@@ -4667,6 +4665,12 @@ a.tweet-quote:hover {
     gap: var(--sp-12);
 }
 
+/* Baseline-align source link and date in the proceedings header so
+   different font sizes sit on the same visual line */
+.proceedings-panel .panel-header-right {
+    align-items: baseline;
+}
+
 .panel-label {
     font-size: var(--fs-base);
     font-weight: 600;
@@ -4890,7 +4894,7 @@ a.tweet-quote:hover {
 
 .this-week-strip {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
@@ -4899,6 +4903,8 @@ a.tweet-quote:hover {
     background: rgba(13, 17, 23, 0.28);
 }
 .this-week-label {
+    display: flex;
+    align-items: center;
     font-size: var(--fs-2xs);
     font-family: var(--font-mono);
     font-weight: 700;
