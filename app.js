@@ -183,7 +183,7 @@ async function fetchVotingDays() {
 
         if (todayEvent) {
             // Determine if it's a fly-in day
-            const isFlyIn = checkIfFlyInDay(today, events, lastActualVoteDate);
+            const isFlyIn = checkIfFlyInDay(today, events);
 
             console.log('Is fly-in day:', isFlyIn);
             console.log('Event summary:', todayEvent.summary);
@@ -467,33 +467,14 @@ function renderVotingDaysCalendar() {
     }
 }
 
-// Parse ICS content
-// Check if today is a fly-in day: first calendar vote day after a gap,
-// with cancelled-day awareness via lastActualVoteDate from the roll-log KV.
-function checkIfFlyInDay(today, events, lastActualVoteDate) {
+// Fly-in day = today is on the ICS calendar but yesterday is not.
+// Simple calendar check — no KV heuristics.
+function checkIfFlyInDay(today, events) {
     const pad = n => String(n).padStart(2, '0');
     const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    const parseLocal = ds => { const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); };
 
-    // Weekends never count as fly-in days from the gap heuristic —
-    // the House doesn't hold floor votes on Saturday/Sunday.
-    const dow = today.getDay(); // 0 = Sun, 6 = Sat
-    if (dow === 0 || dow === 6) return false;
+    if (!events.some(e => e.date === toStr(today))) return false;
 
-    const todayStr = toStr(today);
-
-    // Today must be on the calendar as a vote day
-    if (!events.some(e => e.date === todayStr)) return false;
-
-    // Primary signal: actual vote data from KV (handles cancelled-vote days correctly).
-    // If the last roll call was more than 1 calendar day ago, there was a real gap.
-    if (lastActualVoteDate) {
-        const lastVote = parseLocal(lastActualVoteDate);
-        const daysSince = Math.round((today - lastVote) / 86400000);
-        return daysSince > 1;
-    }
-
-    // Fallback: calendar gap — was yesterday a scheduled vote day?
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     return !events.some(e => e.date === toStr(yesterday));
