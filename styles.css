@@ -5534,7 +5534,6 @@ a.bill-card-rule-link {
     border-radius: var(--radius-4);
     background: rgba(88, 166, 255, 0.06);
     font-family: var(--font-mono);
-    line-height: 1;
     white-space: nowrap;
 }
 .whip-tag-label {
@@ -5585,7 +5584,6 @@ a.bill-card-rule-link {
     border-radius: var(--radius-4);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    line-height: 1;
 }
 
 .bill-rule-tag.rule-tag-passed {
