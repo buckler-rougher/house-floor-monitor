@@ -4260,8 +4260,8 @@ function createBillCard(bill, procedure) {
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     const rice = computeRiceIndex(bill);
-    const riceHtml = rice !== null
-        ? `<div class="bill-rice-row"><span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span></div>`
+    const riceSpan = rice !== null
+        ? `<span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span>`
         : '';
 
     const cardHtml = `
@@ -4276,8 +4276,8 @@ function createBillCard(bill, procedure) {
                 <div class="bill-meta">
                     <div class="bill-action">${actionText}</div>
                     <div class="bill-date">${actionDate}</div>
+                    ${riceSpan}
                 </div>
-                ${riceHtml}
             </div>
             <div class="bill-chevron" aria-hidden="true">›</div>
         </button>`;

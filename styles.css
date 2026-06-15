@@ -4882,7 +4882,7 @@ a.tweet-quote:hover {
 
 .this-week-strip {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
@@ -5602,7 +5602,7 @@ a.bill-card-rule-link {
 
 .bill-meta {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--sp-6);
     font-size: var(--fs-xs);
     color: var(--text-muted);
@@ -5620,6 +5620,8 @@ a.bill-card-rule-link {
     letter-spacing: 0.05em;
     position: relative;
     cursor: default;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 .bill-rice::after {
     content: attr(data-tooltip);
