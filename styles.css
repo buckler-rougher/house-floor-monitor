@@ -5901,6 +5901,10 @@ a.bill-card-rule-link {
     margin-bottom: var(--sp-12);
     padding-right: 36px;
 }
+.bill-modal-header .bill-rule-tag,
+.bill-modal-header .whip-tag {
+    margin-top: -3px;
+}
 
 .bill-modal-id {
     font-family: var(--font-mono);
