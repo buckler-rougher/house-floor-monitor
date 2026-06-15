@@ -188,6 +188,7 @@ async function fetchVotingDays() {
             console.log('Is fly-in day:', isFlyIn);
             console.log('Event summary:', todayEvent.summary);
             
+            const isWeekend = today.getDay() === 0 || today.getDay() === 6;
             if (isFlyIn) {
                 todayStatus = 'fly-in';
                 // Promote airport delays panel on fly-in days
@@ -196,12 +197,17 @@ async function fetchVotingDays() {
                 if (absenteePanel && airportPanel && absenteePanel.nextElementSibling !== airportPanel) {
                     absenteePanel.insertAdjacentElement('afterend', airportPanel);
                 }
-            } else if (todayEvent.summary.toLowerCase().includes('fly-in')) {
+            } else if (!isWeekend && todayEvent.summary.toLowerCase().includes('fly-in')) {
+                // ICS explicitly calls this a fly-in day — trust it on weekdays only.
+                // Weekends are blocked: even if the ICS marks Sunday as fly-in, the
+                // House holds no floor votes and the label is confusing to users.
                 todayStatus = 'fly-in';
             } else if (/pro[- ]forma/i.test(todayEvent.summary)) {
                 todayStatus = 'pro-forma';
             } else if (todayEvent.summary.toLowerCase().includes('added')) {
                 todayStatus = 'added-votes';
+            } else if (isWeekend) {
+                todayStatus = 'no-session';
             } else {
                 todayStatus = 'in-session';
             }
