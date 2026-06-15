@@ -3572,7 +3572,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-radius: 50%;
   cursor: default;
   line-height: 1;
-  padding-top: 1px; /* optical: ? glyph sits slightly high in em square */
+  padding-top: 1px;   /* optical: ? glyph sits slightly high in em square */
+  padding-left: 1px;  /* optical: ? glyph sits slightly left of center */
   flex-shrink: 0;
   position: relative; /* required — ::after tooltip is position:absolute */
   transition: color 0.15s, border-color 0.15s;
@@ -5221,7 +5222,8 @@ font-family: var(--font-mono);
     width: 15px;
     height: 15px;
     padding: 0;
-    padding-top: 1px; /* optical: ? glyph sits slightly high in em square */
+    padding-top: 1px;    /* optical: ? glyph sits slightly high in em square */
+    padding-left: 1px;   /* optical: ? glyph sits slightly left of center */
     font-size: var(--fs-xs);
     font-weight: 700;
     font-family: var(--font-mono);
