@@ -2939,7 +2939,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   align-items: center;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
-  padding: 2px 8px;
+  padding: 3px 8px 1px;
   border-radius: 4px;
 }
 .vote-tl-result {
@@ -2989,7 +2989,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-weight: 600;
   color: var(--text-muted);
   background: color-mix(in srgb, var(--text-muted) 8%, transparent);
-  padding: 2px 8px;
+  padding: 3px 8px 1px;
   border-radius: 4px;
 }
 .vote-tl-absences .absent-d { color: var(--accent-blue); }
