@@ -6496,6 +6496,11 @@ a.bill-card-rule-link {
 .amdt-sponsor-party-tag.dem { background: rgba(88,166,255,0.1); color: #58a6ff; }
 .amdt-sponsor-party-tag.ind { background: rgba(163,113,247,0.1); color: #a371f7; }
 
+.amdt-sponsor-name-text {
+    display: inline;
+    min-width: 0;
+}
+
 .amdt-sponsor-dist {
     color: var(--text-muted);
     font-size: var(--fs-sm);
