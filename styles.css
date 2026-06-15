@@ -3572,8 +3572,14 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-radius: 50%;
   cursor: default;
   line-height: 1;
+  padding-top: 1px; /* optical: ? glyph sits slightly high in em square */
   flex-shrink: 0;
   position: relative; /* required — ::after tooltip is position:absolute */
+  transition: color 0.15s, border-color 0.15s;
+}
+.whip-info-tip:hover {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 .whip-info-tip::after {
   content: attr(data-tooltip);
@@ -5224,6 +5230,7 @@ font-family: var(--font-mono);
     cursor: pointer;
     /* Expand tap target to ~35px without affecting layout */
     padding: var(--sp-10);
+    padding-top: calc(var(--sp-10) + 1px); /* optical: ? glyph sits slightly high */
     margin: calc(-1 * var(--sp-10)) calc(-1 * var(--sp-10)) calc(-1 * var(--sp-10)) 0;
     margin-left: calc(-1 * var(--sp-4));
     line-height: 1;
@@ -5232,7 +5239,6 @@ font-family: var(--font-mono);
     flex-shrink: 0;
 }
 .info-btn:hover {
-    opacity: 1;
     color: var(--accent-blue);
     border-color: var(--accent-blue);
 }
