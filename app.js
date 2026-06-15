@@ -5318,12 +5318,11 @@ function renderProceedingsFeedPanel(items) {
             hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
         });
         const agoStr = proceedingsAgo(pubDate.getTime());
-        const agoHtml = agoStr ? `<span class="proceedings-ago">· ${agoStr}</span>` : '';
         return `
         <div class="proceedings-item">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>
-                ${linkifyBillNumbers(decodeHtml(item.description))}${agoHtml}
+                ${linkifyBillNumbers(decodeHtml(item.description))}
             </div>
         </div>`;
     }).join('');
@@ -7426,11 +7425,6 @@ setInterval(() => {
         const ts = parseInt(el.dataset.ts, 10);
         if (ts) el.textContent = tweetRelativeTime(ts);
     });
-}, 30_000);
-
-// Refresh proceedings "X ago" suffixes every 30s (setIfChanged handles DOM no-ops)
-setInterval(() => {
-    if (proceedingsData.length) renderProceedingsFeedPanel(proceedingsData);
 }, 30_000);
 
 // New-tweet banner state
