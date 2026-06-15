@@ -4895,11 +4895,11 @@ a.tweet-quote:hover {
 
 .this-week-strip {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
-    padding: 0 var(--sp-24);
+    padding: 14px var(--sp-24) 0;
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.28);
 }
@@ -4993,7 +4993,7 @@ a.tweet-quote:hover {
     font-weight: 700;
     color: var(--text-muted);
     font-family: var(--font-mono);
-    padding: 4px 0 0;
+    padding: 3px 0 1px;
     background: rgba(255,255,255,0.03);
 }
 .cal-day {
