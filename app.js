@@ -7622,9 +7622,10 @@ async function fetchTweets(preData = null, userHandle = null) {
 
 // Document-level delegated listener — survives feed re-renders, no inline onclick needed
 document.addEventListener('click', e => {
-    // Proceedings bill number links → open bill modal
+    // Proceedings bill number links → open bill modal (or congress.gov for external)
     const billLink = e.target.closest('.proc-bill-link');
     if (billLink) {
+        if (billLink.classList.contains('proc-bill-external')) return; // let <a> navigate naturally
         e.preventDefault();
         const billId = billLink.dataset.billId;
         if (billId) openBillModal(billId);
