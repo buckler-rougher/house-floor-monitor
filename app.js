@@ -4794,7 +4794,8 @@ function renderAmendmentsTable({ amendments }, body) {
                 ${photoHtml}
                 <span class="amdt-sponsor-name">
                     <span class="amdt-sponsor-party-tag ${s.party}">${s.letter}</span>
-                    <span class="amdt-sponsor-name-text"><button class="amdt-member-btn${isActive ? ' active' : ''}" type="button" data-member-name="${safeAttr}" title="Filter to ${s.name}'s amendments">${s.name}</button>${s.distLabel ? `<span class="amdt-sponsor-dist"> ${s.distLabel}</span>` : ''}</span>
+                    <button class="amdt-member-btn${isActive ? ' active' : ''}" type="button" data-member-name="${safeAttr}" title="Filter to ${s.name}'s amendments">${s.name}</button>
+                    ${s.distLabel ? `<span class="amdt-sponsor-dist"> ${s.distLabel}</span>` : ''}
                 </span>
             </div>`;
         });
