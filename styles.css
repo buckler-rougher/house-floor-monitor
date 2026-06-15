@@ -6478,19 +6478,18 @@ a.bill-card-rule-link {
 .amdt-sponsor-name {
     font-size: var(--fs-md);
     line-height: 1.3;
-    display: flex;
-    align-items: center;
-    gap: var(--sp-4);
-    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .amdt-sponsor-party-tag {
+    display: inline;
     font-size: var(--fs-xs);
     font-weight: 700;
     font-family: var(--font-mono);
     padding: 1px var(--sp-4);
     border-radius: var(--radius-3);
-    flex-shrink: 0;
+    margin-right: var(--sp-4);
+    vertical-align: middle;
 }
 .amdt-sponsor-party-tag.rep { background: rgba(249,25,28,0.1); color: #f9251c; }
 .amdt-sponsor-party-tag.dem { background: rgba(88,166,255,0.1); color: #58a6ff; }
@@ -6508,13 +6507,13 @@ a.bill-card-rule-link {
 }
 
 .amdt-member-btn {
+    display: inline;
     background: none;
     border: none;
     padding: 0;
     font: inherit;
     color: inherit;
     cursor: pointer;
-    text-align: left;
     transition: color 0.12s;
 }
 .amdt-member-btn:hover { color: var(--text-primary); text-decoration: underline; }
