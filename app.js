@@ -5322,8 +5322,8 @@ function renderProceedingsFeedPanel(items) {
         return `
         <div class="proceedings-item">
             <div class="proceedings-text">
-                <span class="proceedings-time">${timeStr}</span>${agoHtml}
-                ${linkifyBillNumbers(decodeHtml(item.description))}
+                <span class="proceedings-time">${timeStr}</span>
+                ${linkifyBillNumbers(decodeHtml(item.description))}${agoHtml}
             </div>
         </div>`;
     }).join('');
