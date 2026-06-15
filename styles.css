@@ -4895,7 +4895,7 @@ a.tweet-quote:hover {
 
 .this-week-strip {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
@@ -4904,8 +4904,6 @@ a.tweet-quote:hover {
     background: rgba(13, 17, 23, 0.28);
 }
 .this-week-label {
-    display: flex;
-    align-items: center;
     font-size: var(--fs-2xs);
     font-family: var(--font-mono);
     font-weight: 700;
@@ -4995,7 +4993,7 @@ a.tweet-quote:hover {
     font-weight: 700;
     color: var(--text-muted);
     font-family: var(--font-mono);
-    padding: 2px 0;
+    padding: 4px 0 0;
     background: rgba(255,255,255,0.03);
 }
 .cal-day {
@@ -5580,10 +5578,11 @@ a.bill-card-rule-link {
 .bill-rule-tag-modal {
     font-size: var(--fs-xs);
     font-weight: 700;
-    padding: 3px 7px 1px;
+    padding: 5px 7px 3px;
     border-radius: var(--radius-4);
     text-transform: uppercase;
     letter-spacing: 0.6px;
+    line-height: 1;
 }
 
 .bill-rule-tag.rule-tag-passed {
