@@ -638,7 +638,8 @@ function applyRollLogToBills(entries, activeRoll) {
                     const existing = motionsToRecommit.get(bid);
                     const status = yeas > nays ? 'passed' : 'failed';
                     if (!existing || existing.status === 'pending') {
-                        const mtrData = { status, voteText: `${yeas}-${nays}` };
+                        const mtrType = /recommit/i.test(q) ? 'recommit' : 'commit';
+                        const mtrData = { type: mtrType, status, voteText: `${yeas}-${nays}` };
                         motionsToRecommit.set(bid, mtrData);
                         // Persist onto bill object so it survives proceedings rollover
                         for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
@@ -4051,7 +4052,7 @@ function loadMtrFromStorage() {
         for (const [id, data] of entries) {
             if (now - (data._saved || 0) > MTR_TTL_MS) continue; // expired
             if (!motionsToRecommit.has(id)) {
-                motionsToRecommit.set(id, { status: data.status, voteText: data.voteText || null });
+                motionsToRecommit.set(id, { type: data.type || 'recommit', status: data.status, voteText: data.voteText || null });
             }
         }
     } catch {}
@@ -4109,7 +4110,8 @@ function updateMotionsToRecommit(items) {
             if (status === 'pending') continue;
         }
         if (!existing || existing.status !== status || existing.voteText !== voteText) {
-            const mtrData = { status, voteText: voteText || null };
+            const mtrType = /recommit/i.test(desc) ? 'recommit' : 'commit';
+            const mtrData = { type: mtrType, status, voteText: voteText || null };
             motionsToRecommit.set(billId, mtrData);
             // Persist onto bill object so it survives proceedings rollover
             if (status === 'passed' || status === 'failed') {
@@ -4285,9 +4287,10 @@ function createBillCard(bill, procedure) {
     const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
     if (!mtr || !mtr.voteText) return cardHtml;
 
-    const mtrLabel = mtr.status === 'failed' ? `Motion to Recommit Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
-                   : mtr.status === 'passed' ? `Motion to Recommit Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
-                   : 'Motion to Recommit';
+    const mtrTypeName = mtr.type === 'commit' ? 'Motion to Commit' : 'Motion to Recommit';
+    const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
+                   : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
+                   : mtrTypeName;
     const mtrIcon  = mtr.status === 'failed'
                    ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
                    : mtr.status === 'passed' ? '✓'
