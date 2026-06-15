@@ -3565,6 +3565,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   cursor: default;
   vertical-align: middle;
   position: relative;
+  top: -2px;
   margin-left: 4px;
   line-height: 1;
 }
