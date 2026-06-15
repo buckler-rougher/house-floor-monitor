@@ -2664,6 +2664,14 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .proc-bill-link:hover {
   text-decoration-color: var(--accent-blue);
 }
+.proc-bill-external {
+  color: var(--text-muted);
+  text-decoration-color: rgba(139, 148, 158, 0.35);
+}
+.proc-bill-external:hover {
+  color: var(--accent-blue);
+  text-decoration-color: var(--accent-blue);
+}
 
 .proceedings-next-header {
   display: flex;

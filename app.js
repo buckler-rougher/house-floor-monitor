@@ -4376,7 +4376,12 @@ function openBillModal(billId) {
             if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
         }
     }
-    if (!bill) return;
+    if (!bill) {
+        // Bill not on the floor this week — link out to Congress.gov
+        const url = billIdToCongressUrl(billId);
+        if (url) window.open(url, '_blank', 'noopener');
+        return;
+    }
 
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
     const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'SUBJECT TO A RULE';
@@ -5291,7 +5296,22 @@ function linkifyBillNumbers(text) {
             // Normalize type to canonical form (strip internal spaces) so the id is stable
             const canonicalType = type.replace(/\s+/g, '');
             const billId = `${canonicalType} ${num}`;
-            return `<button class="proc-bill-link" data-bill-id="${escapeHtml(billId)}">${escapeHtml(match)}</button>`;
+            // If this bill is on the floor, open the modal; otherwise link to Congress.gov
+            const hasModal = billDataMap.has(billId) || (() => {
+                const norm = normalizeBillIdForRules(billId);
+                for (const k of billDataMap.keys()) {
+                    if (normalizeBillIdForRules(k) === norm) return true;
+                }
+                return false;
+            })();
+            if (hasModal) {
+                return `<button class="proc-bill-link" data-bill-id="${escapeHtml(billId)}">${escapeHtml(match)}</button>`;
+            }
+            const url = billIdToCongressUrl(billId);
+            if (url) {
+                return `<a class="proc-bill-link proc-bill-external" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(match)}</a>`;
+            }
+            return escapeHtml(match);
         }
     );
 }
