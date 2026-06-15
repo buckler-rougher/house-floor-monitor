@@ -5914,10 +5914,11 @@ a.bill-card-rule-link {
     font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: 0.6px;
-    padding: var(--sp-2) 7px;
+    padding: 3px 7px 1px;
     border-radius: var(--radius-4);
     font-family: var(--font-mono);
     text-transform: uppercase;
+    margin-top: -3px;
 }
 
 .bill-modal-badge.scheduled,
