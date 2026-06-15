@@ -5519,6 +5519,7 @@ a.bill-card-rule-link {
     margin-bottom: var(--sp-2);
 }
 .bill-id-row .bill-id { margin-bottom: 0; }
+.bill-id-row .whip-tag { margin-top: 2px; }
 
 /* ── Dem Whip recommendation tag ──────────────────────────────────────────
    Clearly attributed to the House Democratic Whip (the only whip source we
