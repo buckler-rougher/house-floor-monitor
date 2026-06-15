@@ -3240,7 +3240,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 3px 6px 1px;
   border-radius: var(--radius-3);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -5528,12 +5528,12 @@ a.bill-card-rule-link {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: var(--sp-2) 7px;
+    padding: 3px 7px 1px;
     border: 1px solid rgba(88, 166, 255, 0.35);
     border-radius: var(--radius-4);
     background: rgba(88, 166, 255, 0.06);
     font-family: var(--font-mono);
-    line-height: 1.4;
+    line-height: 1;
     white-space: nowrap;
 }
 .whip-tag-label {
@@ -5580,11 +5580,11 @@ a.bill-card-rule-link {
 .bill-rule-tag-modal {
     font-size: var(--fs-xs);
     font-weight: 700;
-    padding: var(--sp-2) 7px;
+    padding: 3px 7px 1px;
     border-radius: var(--radius-4);
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    line-height: 1.5;
+    line-height: 1;
 }
 
 .bill-rule-tag.rule-tag-passed {
