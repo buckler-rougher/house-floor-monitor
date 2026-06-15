@@ -5220,6 +5220,8 @@ font-family: var(--font-mono);
     justify-content: center;
     width: 15px;
     height: 15px;
+    padding: 0;
+    padding-top: 1px; /* optical: ? glyph sits slightly high in em square */
     font-size: var(--fs-xs);
     font-weight: 700;
     font-family: var(--font-mono);
@@ -5228,11 +5230,6 @@ font-family: var(--font-mono);
     border: 1px solid var(--border-color);
     border-radius: 50%;
     cursor: pointer;
-    /* Expand tap target to ~35px without affecting layout */
-    padding: var(--sp-10);
-    padding-top: calc(var(--sp-10) + 1px); /* optical: ? glyph sits slightly high */
-    margin: calc(-1 * var(--sp-10)) calc(-1 * var(--sp-10)) calc(-1 * var(--sp-10)) 0;
-    margin-left: calc(-1 * var(--sp-4));
     line-height: 1;
     transition: color 0.15s, border-color 0.15s;
     vertical-align: middle;
