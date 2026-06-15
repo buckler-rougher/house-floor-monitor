@@ -4109,7 +4109,7 @@ function updateMotionsToRecommit(items) {
         if (existing?.status === 'failed' || existing?.status === 'passed') {
             if (status === 'pending') continue;
         }
-        if (!existing || existing.status !== status || existing.voteText !== voteText) {
+        if (!existing || existing.status !== status || existing.voteText !== voteText || !existing.type) {
             const mtrType = /recommit/i.test(desc) ? 'recommit' : 'commit';
             const mtrData = { type: mtrType, status, voteText: voteText || null };
             motionsToRecommit.set(billId, mtrData);
