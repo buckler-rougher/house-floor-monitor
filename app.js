@@ -469,6 +469,11 @@ function checkIfFlyInDay(today, events, lastActualVoteDate) {
     const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     const parseLocal = ds => { const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); };
 
+    // Weekends never count as fly-in days from the gap heuristic —
+    // the House doesn't hold floor votes on Saturday/Sunday.
+    const dow = today.getDay(); // 0 = Sun, 6 = Sat
+    if (dow === 0 || dow === 6) return false;
+
     const todayStr = toStr(today);
 
     // Today must be on the calendar as a vote day
