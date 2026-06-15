@@ -3280,7 +3280,7 @@ function renderVoteTimeline(items) {
         // Left: status message
         if (isLive) {
             const word = votes.length === 1 ? 'vote' : 'votes';
-            subStatus.textContent = `The House is now taking the following ${word}`;
+            subStatus.textContent = `The House is now taking the following ${word}:`;
         } else if (approxStart) {
             subStatus.textContent = `Est. start: ${etFmt(approxStart, { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
         } else {
