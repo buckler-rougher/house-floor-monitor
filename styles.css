@@ -4899,7 +4899,7 @@ a.tweet-quote:hover {
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
-    padding: 17px var(--sp-24) 0;
+    padding: 16px var(--sp-24) 0;
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.28);
 }
