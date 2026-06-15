@@ -2940,6 +2940,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-size: var(--fs-md);
   padding: 2px 8px;
   border-radius: 4px;
+  line-height: 1;
 }
 .vote-tl-result {
   gap: 6px;
@@ -2981,7 +2982,9 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .vote-tl-absences {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--fs-md);
@@ -3383,6 +3386,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   padding: 0;
   max-height: 400px;
   overflow-y: auto;
+  isolation: isolate;
 }
 
 .whip-update-item {
@@ -3403,7 +3407,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg-card);
+  background: color-mix(in srgb, rgb(13, 17, 23) 28%, var(--bg-card));
   /* Extend full-bleed across item's side padding so background covers edge-to-edge */
   margin-left: calc(-1 * var(--sp-24));
   margin-right: calc(-1 * var(--sp-24));
@@ -3550,24 +3554,27 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
 
 /* (?) hover tooltip */
+.whip-label-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+}
+
 .whip-info-tip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  font-size: 9px;
+  width: 15px;
+  height: 15px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   font-family: var(--font-mono);
   color: var(--text-muted);
   border: 1px solid var(--border-color);
   border-radius: 50%;
   cursor: default;
-  vertical-align: middle;
-  position: relative;
-  top: -2px;
-  margin-left: 4px;
   line-height: 1;
+  flex-shrink: 0;
 }
 .whip-info-tip::after {
   content: attr(data-tooltip);
@@ -3813,7 +3820,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .absentee-meta {
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--sp-8);
   flex: 1;
   flex-wrap: wrap;
@@ -4563,7 +4570,7 @@ a.tweet-quote:hover {
 .proceedings-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: var(--sp-12);
 }
 
@@ -4883,7 +4890,7 @@ a.tweet-quote:hover {
 
 .this-week-strip {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
@@ -4898,6 +4905,7 @@ a.tweet-quote:hover {
     letter-spacing: 1px;
     color: var(--accent-green);
     flex-shrink: 0;
+    line-height: 1;
 }
 .this-week-body {
     display: flex;
@@ -4919,7 +4927,7 @@ a.tweet-quote:hover {
 .this-week-day-vote   { background: rgba(63,185,80,0.15);  color: #4ade80; }
 .this-week-day-fly    { background: rgba(63,185,80,0.15);  color: #4ade80; }
 .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
-.this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); }
+.this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); line-height: 1; }
 
 .voting-calendar-wrap {
     display: grid;
@@ -5849,7 +5857,7 @@ a.bill-card-rule-link {
     background: var(--bg-card);
     padding-top: var(--sp-12);
     padding-bottom: var(--sp-6);
-    z-index: 1;
+    z-index: 10;
 }
 
 .bill-modal-foot {
