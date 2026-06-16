@@ -3009,21 +3009,21 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
   border-radius: var(--radius-6);
-  padding: 5px 12px 4px;
+  padding: 6px 14px 5px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: filter 0.15s, box-shadow 0.15s;
   white-space: nowrap;
+  box-shadow: 0 1px 6px rgba(37, 99, 235, 0.5);
 }
 .vrec-open-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #fff;
+  filter: brightness(1.15);
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.65);
 }
 
 /* ── Vote Recs modal ─────────────────────────────────────────────────────── */
@@ -3065,12 +3065,15 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 
 .vrec-modal-title {
-  font-family: var(--font-mono);
-  font-size: var(--fs-base);
+  font-size: var(--fs-lg);
   font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
   color: var(--text-primary);
+}
+
+/* Fix: display: flex in author CSS overrides UA [hidden]{display:none},
+   so assert the hide explicitly when the attribute is present. */
+.vrec-autofill-note[hidden] {
+  display: none;
 }
 
 .vrec-close-x {
