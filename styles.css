@@ -3584,8 +3584,13 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-color: rgba(255, 255, 255, 0.18);
   color: var(--text-secondary);
 }
+/* When dropdown is open but no filter chosen: just brighten neutrally */
+.whip-filter-btn.active {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text-secondary);
+}
 /* Active state colors match the selected filter type */
-.whip-filter-btn.active,
 .whip-filter-btn[data-active-filter="floor"] {
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent-blue) 35%, transparent);
