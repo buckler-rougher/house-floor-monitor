@@ -5316,6 +5316,12 @@ font-family: var(--font-mono);
     align-items: center;
     gap: 7px;
 }
+/* Mono bold tag text sits 1px high relative to the lighter time span due to
+   font metrics; nudge it down to visually realign. */
+[class*="-tag-text"] {
+    position: relative;
+    top: 1px;
+}
 
 /* Info button & popup */
 .info-btn {
