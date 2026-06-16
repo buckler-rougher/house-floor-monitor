@@ -644,24 +644,21 @@ body.sine-die-mode .sine-die-column { display: flex; }
 body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 
-/* Floating quote card — no header, just quote text + citation. The outer card
-   background covers the center line inside the card; the line shows only in
-   the gap above, connecting this card to the section card. */
+/* Floating quote card — no header, just quote text + citation. The card border
+   and overflow:hidden clip the inner containers' bg-elevated background to the
+   card shape; the line shows only in the gap above connecting to the section. */
 .quote-card {
-    background: var(--bg-card);
+    background: transparent;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
     overflow: hidden;
-    padding: var(--sp-24);
     display: flex;
     flex-direction: column;
-    gap: var(--sp-12);
 }
-/* Strip the nested card look from inner containers that move into a quote-card. */
+/* Inner containers keep their bg-elevated fill and padding; strip only
+   border-radius (clipped by the outer card) and margin-top. */
 .quote-card > * {
-    background: transparent !important;
     border-radius: 0 !important;
-    padding: 0 !important;
     margin: 0 !important;
 }
 
