@@ -7947,11 +7947,16 @@ window.setMode = function(mode) {
 // touching setMode itself (so manual setMode('prayer') etc. still work).
 //   lockMode()          → disable auto-switch, print current mode
 //   lockMode('prayer')  → disable auto-switch AND switch to that mode
+//   lockMode('all')     → show every panel at once (debug layout review)
 //   unlockMode()        → re-enable auto-switch
 window._modeLocked = false;
 window.lockMode = function(mode) {
     window._modeLocked = true;
-    if (mode) window.setMode(mode);
+    if (mode === 'all') {
+        updateModeClasses('all');
+    } else if (mode) {
+        window.setMode(mode);
+    }
     console.info(`%c[mode] AUTO-SWITCH LOCKED${mode ? ' → ' + mode : ''} — call unlockMode() to restore`, 'color:#f59e0b;font-weight:bold');
 };
 window.unlockMode = function() {
@@ -7967,6 +7972,13 @@ function initModeToggle() {
 function updateModeClasses(mode) {
     // Remove all mode classes
     document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
+
+    // Special: show every panel simultaneously (lockMode('all') debug helper).
+    // Note: recess-mode intentionally excluded so vote panels stay visible.
+    if (mode === 'all') {
+        document.body.classList.add('debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
+        return;
+    }
 
     // Add appropriate class based on mode
     if (mode === 'recess') {
