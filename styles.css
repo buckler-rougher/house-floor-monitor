@@ -8457,10 +8457,8 @@ body.committee-chair-mode .committee-chair-section {
 }
 
 .oath-source-inline {
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
     color: var(--text-muted);
-    font-family: var(--font-mono);
-    margin-top: var(--sp-8);
 }
 
 .oath-source-inline a {
@@ -9018,9 +9016,6 @@ body.journal-mode .floor-grid-panel {
 
 /* Approval badge + text block */
 .journal-approval-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-8);
     padding: var(--sp-20) var(--sp-24);
     margin-bottom: var(--sp-16);
 }
@@ -9276,9 +9271,6 @@ body.cert-election-mode .floor-grid-panel {
 }
 
 .cert-election-approval-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-8);
     padding: var(--sp-20) var(--sp-24);
     margin-bottom: var(--sp-16);
 }
@@ -9403,9 +9395,6 @@ body.cert-electoral-mode .floor-grid-panel {
 }
 
 .cert-electoral-approval-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-8);
     padding: var(--sp-20) var(--sp-24);
     margin-bottom: var(--sp-16);
 }
@@ -9797,8 +9786,6 @@ body.admin-oath-mode .floor-grid-panel {
     flex-direction: column;
     gap: var(--sp-12);
     padding: var(--sp-16);
-    background: var(--bg-elevated);
-    border-radius: var(--radius-8);
 }
 
 .admin-oath-text-inner {
