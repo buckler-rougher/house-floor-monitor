@@ -5,17 +5,20 @@ const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
   'https://monitor-a6i.pages.dev',
 ]);
-// Default CORS headers (used by Durable Object which runs in its own isolate).
-// handleRequest() builds per-request headers via corsForRequest() to avoid
-// the race condition caused by mutating a shared module-level variable.
-const CORS_HEADERS_DEFAULT = {
+// Module-level CORS headers — used by all route handler functions.
+// Never mutated (was a race condition when it was `let` + assigned per-request).
+// handleRequest() shadows this with a per-request copy built by corsForRequest()
+// so the correct origin is echoed back for allowed origins.
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin': 'https://house-floor.evanhollander.org',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+// Alias kept for DO code that references CORS_HEADERS_DEFAULT explicitly.
+const CORS_HEADERS_DEFAULT = CORS_HEADERS;
 
-// Returns correct CORS headers for a given request object (used by the Durable Object,
-// which runs in its own isolate and never goes through handleRequest()).
+// Returns per-request CORS headers that echo back the caller's origin when
+// it's an allowed origin (e.g. monitor-a6i.pages.dev preview domain).
 function corsForRequest(request) {
   const origin = request?.headers?.get('Origin') || '';
   return {
@@ -3002,13 +3005,6 @@ function handleOptions() {
 async function handleRequest(request, env) {
   _congressApiKey  = env?.CONGRESS_API_KEY  || '';
   _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
-
-  const origin = request.headers.get('Origin') || '';
-  const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://house-floor.evanhollander.org',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
 
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/house-floor/, '');
