@@ -10125,6 +10125,106 @@ h1.brand-text {
 }
 
 
+/* ── Mobile-only fixes (≤ 640px) — no desktop changes ───────────────────────
+   All rules here are scoped to max-width: 640px so desktop is unaffected.
+────────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+
+    /* ── Prevent horizontal scroll from overflow elements ──────────────────── */
+    body { overflow-x: hidden; }
+
+    /* ── Touch targets: ? circles ──────────────────────────────────────────── */
+    /* Grow circles to ~32px on mobile — small enough to look right,
+       large enough to reliably tap. */
+    .info-btn,
+    .whip-info-tip {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* ── Touch targets: small filter/sort/action buttons ───────────────────── */
+    .whip-filter-btn,
+    .vrec-open-btn,
+    .bills-sort-btn,
+    .absentee-filter-btn {
+        min-height: 36px;
+        padding-top: var(--sp-8);
+        padding-bottom: var(--sp-8);
+    }
+
+    /* ── Vote counts row: tighten gap so three columns fit at 390px ─────────  */
+    .vote-counts-row {
+        gap: var(--sp-16);
+    }
+    /* Count number is already 48px at ≤768px; drop further on small phones */
+    .count-number {
+        font-size: var(--fs-7xl); /* 28px — readable and fits 3-col at 390px */
+    }
+
+    /* ── Amendments table: scroll horizontally rather than crushing ──────────  */
+    /* The table renders directly in .amdt-panel-body */
+    .amdt-panel-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Collapse the wide STATUS column on mobile to save space */
+    .amendments-table th:nth-child(4),
+    .amendments-table td:nth-child(4) {
+        width: 80px;
+        min-width: 80px;
+    }
+
+    /* ── Connection dashboard: cap height so it doesn't go off-screen ────────  */
+    .conn-dashboard {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    /* ── Proceedings feed: contain scroll so iOS doesn't trap page scroll ────  */
+    .proceedings-feed {
+        overscroll-behavior: contain;
+    }
+
+    /* ── Whip info tooltip: show on focus (tap) as well as hover ─────────────  */
+    .whip-info-tip:focus::after { opacity: 1; }
+
+    /* Keep tooltip from overflowing viewport edge on mobile */
+    .whip-info-tip::after {
+        width: min(260px, calc(100vw - 32px));
+        left: auto;
+        right: 0;
+    }
+
+    /* ── Beta banner: account for 29px header push when banner is visible ────  */
+    body:not(.beta-dismissed) .container {
+        padding-top: 137px; /* 108px base + 29px banner push */
+    }
+
+    /* ── Weather panel: suppress hover-expand entirely on touch ──────────────  */
+    /* Already collapsed to chip at 640px; ensure no accidental focus-expand */
+    .weather-panel:focus-within {
+        width: 52px;
+        height: 32px;
+        transform: none;
+        background: transparent;
+        border-color: var(--border-color);
+        z-index: auto;
+        box-shadow: none;
+    }
+    .weather-panel:focus-within .weather-info { opacity: 1; }
+    .weather-panel:focus-within video { opacity: 0; }
+    .weather-panel:focus-within .capcam-live-dot { visibility: hidden; }
+}
+
+/* ── Global (all viewports) ─────────────────────────────────────────────────
+   These apply everywhere but only affect mobile behaviour in practice.
+────────────────────────────────────────────────────────────────────────────── */
+
+/* Proceedings feed scroll containment — prevents iOS scroll trap */
+.proceedings-feed {
+    overscroll-behavior: contain;
+}
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
