@@ -3568,22 +3568,35 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 .whip-filter-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: none;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-4);
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
   font-size: var(--fs-xs);
-  font-weight: 700;
-  padding: 2px 7px;
+  font-weight: 500;
+  padding: 3px 10px 3px 8px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.whip-filter-btn:hover,
+.whip-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text-secondary);
+}
 .whip-filter-btn.active {
+  background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, transparent);
   color: var(--accent-blue);
-  border-color: var(--accent-blue);
+}
+.whip-filter-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+.whip-filter-chevron {
+  font-size: 9px;
+  opacity: 0.6;
+  line-height: 1;
 }
 .whip-filter-dropdown {
   display: flex;
