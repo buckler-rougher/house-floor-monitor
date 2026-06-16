@@ -8278,6 +8278,20 @@ body.pledge-mode .pledge-section {
     text-decoration: underline;
 }
 
+.pledge-constitution-source {
+    font-size: var(--fs-md);
+    color: var(--text-muted);
+}
+
+.pledge-constitution-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.pledge-constitution-source a:hover {
+    text-decoration: underline;
+}
+
 .oath-section-header {
     display: flex;
     justify-content: space-between;
