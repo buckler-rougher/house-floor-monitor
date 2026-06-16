@@ -614,6 +614,57 @@ body {
     margin-bottom: 0 !important;
 }
 
+/* Mode columns — each live-mode section whose quote block floats below it is
+   wrapped in a .mode-column + .X-column div. Same connector pattern as
+   .vote-column: 1px vertical center line via background-image, visible only in
+   the gap between cards. The column is hidden by default and shown by the
+   body mode class, so the section + quote card hide/show as a unit. */
+.mode-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+    background-image: linear-gradient(var(--border-color), var(--border-color));
+    background-size: 1px 100%;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+.mode-column > * {
+    margin-bottom: 0 !important;
+}
+
+.oath-column, .pledge-column, .cert-election-column, .cert-electoral-column,
+.sine-die-column, .new-session-column, .journal-column {
+    display: none;
+}
+body.oath-mode .oath-column { display: flex; }
+body.pledge-mode .pledge-column { display: flex; }
+body.cert-election-mode .cert-election-column { display: flex; }
+body.cert-electoral-mode .cert-electoral-column { display: flex; }
+body.sine-die-mode .sine-die-column { display: flex; }
+body.new-session-mode .new-session-column { display: flex; }
+body.journal-mode .journal-column { display: flex; }
+
+/* Floating quote card — no header, just quote text + citation. The outer card
+   background covers the center line inside the card; the line shows only in
+   the gap above, connecting this card to the section card. */
+.quote-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+    padding: var(--sp-24);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-12);
+}
+/* Strip the nested card look from inner containers that move into a quote-card. */
+.quote-card > * {
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
 /* ── Live-mode panels ─────────────────────────────────────────────────────
    Each live floor-business mode (speeches, prayer, oath, ceremonies, …) is
    styled as a standard card panel like FLOOR PROCEEDINGS etc.: a header bar
@@ -7683,13 +7734,7 @@ body.silence-mode .silence-section {
 }
 
 .oath-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.oath-mode .oath-section {
-    display: block;
+    /* visibility controlled by .oath-column wrapper */
 }
 
 .speaker-section {
@@ -8090,13 +8135,7 @@ body.committee-chair-mode .committee-chair-section {
 
 /* Pledge Section */
 .pledge-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.pledge-mode .pledge-section {
-    display: block;
+    /* visibility controlled by .pledge-column wrapper */
 }
 
 .pledge-tag {
@@ -8820,13 +8859,7 @@ body.joint-meeting-mode .floor-grid-panel {
 
 /* ── Journal Mode ────────────────────────────── */
 .journal-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.journal-mode .journal-section {
-    display: block;
+    /* visibility controlled by .journal-column wrapper */
 }
 
 body.journal-mode .vote-display,
@@ -9190,13 +9223,7 @@ body.joint-session-mode .floor-grid-panel {
 
 /* ── Certification of Election Mode ────────────────────────────── */
 .cert-election-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.cert-election-mode .cert-election-section {
-    display: block;
+    /* visibility controlled by .cert-election-column wrapper */
 }
 
 body.cert-election-mode .vote-display,
@@ -9323,13 +9350,7 @@ body.cert-election-mode .floor-grid-panel {
 
 /* ── Certification of Electoral Votes Mode ────────────────────────────── */
 .cert-electoral-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.cert-electoral-mode .cert-electoral-section {
-    display: block;
+    /* visibility controlled by .cert-electoral-column wrapper */
 }
 
 body.cert-electoral-mode .vote-display,
@@ -9456,13 +9477,7 @@ body.cert-electoral-mode .floor-grid-panel {
 
 /* ── Sine Die Mode ────────────────────────────── */
 .sine-die-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.sine-die-mode .sine-die-section {
-    display: block;
+    /* visibility controlled by .sine-die-column wrapper */
 }
 
 body.sine-die-mode .vote-display,
@@ -9566,13 +9581,7 @@ body.sine-die-mode .floor-grid-panel {
 
 /* ── New Session Mode ────────────────────────────── */
 .new-session-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-
-body.new-session-mode .new-session-section {
-    display: block;
+    /* visibility controlled by .new-session-column wrapper */
 }
 
 body.new-session-mode .vote-display,
