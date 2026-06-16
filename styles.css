@@ -3584,10 +3584,27 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border-color: rgba(255, 255, 255, 0.18);
   color: var(--text-secondary);
 }
-.whip-filter-btn.active {
+/* Active state colors match the selected filter type */
+.whip-filter-btn.active,
+.whip-filter-btn[data-active-filter="floor"] {
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent-blue) 35%, transparent);
   color: var(--accent-blue);
+}
+.whip-filter-btn[data-active-filter="daily"] {
+  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-green) 35%, transparent);
+  color: var(--accent-green);
+}
+.whip-filter-btn[data-active-filter="nightly"] {
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-purple) 35%, transparent);
+  color: var(--accent-purple);
+}
+.whip-filter-btn[data-active-filter="weekly"] {
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-amber) 35%, transparent);
+  color: var(--accent-amber);
 }
 .whip-filter-icon {
   flex-shrink: 0;

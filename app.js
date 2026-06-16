@@ -2707,7 +2707,10 @@ function renderWhipFilterDropdown() {
 function setWhipFilter(type) {
     whipNoticeFilter = (type === 'all' || type === whipNoticeFilter) ? null : type;
     const btn = document.getElementById('whip-filter-btn');
-    if (btn) btn.classList.toggle('active', whipNoticeFilter !== null);
+    if (btn) {
+        btn.classList.toggle('active', whipNoticeFilter !== null);
+        btn.dataset.activeFilter = whipNoticeFilter || '';
+    }
     // Re-render chips in-place so active state updates without closing drawer
     renderWhipFilterDropdown();
     renderWhipNoticesFeed(whipFloorItems);
