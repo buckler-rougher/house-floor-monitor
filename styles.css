@@ -645,21 +645,20 @@ body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 
 /* Floating quote card — no header, just quote text + citation. The card border
-   and overflow:hidden clip the inner containers' bg-elevated background to the
-   card shape; the line shows only in the gap above connecting to the section. */
+   card itself carries the opaque fill so the mode-column center line is
+   always covered; inner containers are stripped to transparent. */
 .quote-card {
-    background: transparent;
+    background: var(--bg-elevated);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
-/* Inner containers keep their bg-elevated fill and padding; strip only
-   border-radius (clipped by the outer card) and margin-top. */
 .quote-card > * {
     border-radius: 0 !important;
     margin: 0 !important;
+    background: transparent !important;
 }
 
 /* ── Live-mode panels ─────────────────────────────────────────────────────
