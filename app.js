@@ -168,18 +168,11 @@ async function fetchVotingDays() {
             todayEvent = flyInEvent || todayEvents[0];
         }
 
-        console.log('Today:', today.toDateString());
-        console.log('Today event found:', todayEvent);
-        console.log('All events:', events);
-
         const lastActualVoteDate = data.lastActualVoteDate || null;
 
         if (todayEvent) {
             // Determine if it's a fly-in day
             const isFlyIn = checkIfFlyInDay(today, events);
-
-            console.log('Is fly-in day:', isFlyIn);
-            console.log('Event summary:', todayEvent.summary);
 
             const isWeekend = today.getDay() === 0 || today.getDay() === 6;
             const summaryLower = todayEvent.summary.toLowerCase();
@@ -207,8 +200,6 @@ async function fetchVotingDays() {
         } else {
             todayStatus = 'no-session';
         }
-        
-        console.log('Final todayStatus:', todayStatus);
         
         votingDaysData = {
             days: events,
@@ -479,9 +470,6 @@ function updateSessionStatus(status = null) {
     
     const sessionStatus = status || votingDaysData.currentSessionStatus;
     
-    console.log('Updating session status to:', sessionStatus);
-    console.log('Session text element:', elements.sessionText);
-    
     // Update session status based on voting days calendar
     switch (sessionStatus) {
         case 'fly-in':
@@ -507,7 +495,6 @@ function updateSessionStatus(status = null) {
             break;
     }
     
-    console.log('Session status updated to:', elements.sessionText.textContent);
 }
 
 // API Configuration
@@ -568,9 +555,8 @@ async function loadRollLog() {
     try {
         const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
         const data = await resp.json();
-        console.log('[diag] roll-log entries:', data.entries?.length, data.entries?.map(e => 'roll:' + e.roll + ' bill:' + (e.bill||'?') + ' dNV:' + e.dem?.notVoting));
         applyRollLogData(data.entries);
-    } catch(e) { console.log('[diag] loadRollLog error:', e); }
+    } catch(e) { console.error('[loadRollLog]', e); }
 }
 
 async function loadWhipFeed() {
@@ -582,10 +568,8 @@ async function loadWhipFeed() {
         ]);
         const floor   = floorResp.ok   ? (await floorResp.json()).items   || [] : [];
         const notices = noticesResp.ok ? (await noticesResp.json()).items || [] : [];
-        console.log('[diag] whip floor items:', floor.length, floor.map(f => f.title?.slice(0,50)));
-        console.log('[diag] whip notice items:', notices.length, notices.map(n => n.title?.slice(0,50)));
         applyWhipFeedData({ floor, notices });
-    } catch(e) { console.log('[diag] loadWhipFeed error:', e); }
+    } catch(e) { console.error('[loadWhipFeed]', e); }
 }
 
 function applyRollLogToBills(entries, activeRoll) {
@@ -1145,7 +1129,6 @@ function startSSEStreaming() {
         }
         
         eventSource.onopen = () => {
-            console.log('SSE connection opened');
             const liveIndicator = document.querySelector('.live-indicator');
             if (liveIndicator) {
                 liveIndicator.classList.add('live');
@@ -1275,7 +1258,6 @@ function startSSEStreaming() {
         eventSource.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                console.log('SSE message (unnamed):', data);
                 // Map REST-style shape if present
                 floorData = {
                     ...floorData,
@@ -1308,7 +1290,6 @@ function startSSEStreaming() {
             // Retry SSE after 5s rather than permanently falling back to polling
             setTimeout(() => {
                 if (!isStreaming) {
-                    console.log('SSE disconnected, retrying...');
                     startSSEStreaming();
                 }
             }, 5000);
@@ -3150,7 +3131,6 @@ function renderVoteTimeline(items) {
     // previous notice but were dropped once they completed — that way a
     // follow-up "1 vote" notice doesn't erase already-voted items.
     const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
-    console.log('[diag] renderVoteTimeline: items:', items.length, 'seriesItems:', seriesItems.length, seriesItems.map(s => s.title?.slice(0,60)));
     if (!seriesItems.length) {
         body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
         hideSubHeader();
@@ -3796,7 +3776,6 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
 }
 
 async function fetchBillsThisWeek() {
-    console.log('=== BILLS FETCH START ===');
     try {
         // Quick mode: skip Congress.gov enrichment on repeat fetches — DO SSE handles those.
         const isQuick = billsFullyEnriched;
@@ -5351,7 +5330,6 @@ let _debateLastBillId = null; // tracks which bill is shown so tab isn't reset o
 
 // Update debate section with bill information
 function updateDebateSection(items) {
-    console.log('[debate] updateDebateSection called: items.length=', items?.length, 'hasTitleEl=', !!elements.debateBillTitle);
     if (!elements.debateBillTitle || !items || items.length === 0) return;
 
     // ── 1. Find the best proceedings item ───────────────────────────────
@@ -5511,7 +5489,6 @@ function updateDebateSection(items) {
     // ── 6. Panel nav (Bill Details ↔ Amendments toggle) ──────────────────
     const rulesSlug = foundBill ? billIdToRulesSlug(foundBill.id) : null;
     const hasAmendments = rulesSlug && (foundBill?.procedure === 'rule' || foundBill?.isRule === true);
-    console.log('[debate-nav] foundBillId:', foundBillId, '| foundBill:', foundBill?.id, '| procedure:', foundBill?.procedure, '| isRule:', foundBill?.isRule, '| rulesSlug:', rulesSlug, '| hasAmendments:', hasAmendments, '| billDataMap size:', billDataMap.size);
     // Header source follows the active panel: Bill Details → House Clerk;
     // Amendments → House Rules Committee (where amendments are filed).
     const setDebateSource = (panel) => {
@@ -6678,25 +6655,21 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             : leaderName.split(/\s+/).pop();
         const state = withStateMatch ? withStateMatch[2] : null;
 
-        console.log(`Searching for member: ${lastName}${state ? ' from ' + state : ''}`);
-
         let clerkDataText;
         try {
             clerkDataText = await getMemberXml();
         } catch (workerError) {
-            console.log('Member XML fetch failed:', workerError);
+            console.error('Member XML fetch failed:', workerError);
             showPledgePlaceholder();
             return;
         }
-        
+
         // Parse the XML data
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(clerkDataText, 'text/xml');
-        
+
         // Get all member elements
         const members = xmlDoc.querySelectorAll('member');
-        console.log(`Found ${members.length} total members in XML`);
-        
         let bestMatch = null;
         let bestScore = 0;
 
@@ -6731,9 +6704,6 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             // Score based on last name similarity
             const score = calculateNameSimilarity(lastName, memberLastName);
-            
-            console.log(`Comparing "${lastName}" with "${memberLastName}": score ${score}, bioguide: ${bioguideId}`);
-            
             if (score > bestScore && score > 0.3) {
                 bestScore = score;
                 bestMatch = {
@@ -6750,11 +6720,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             }
         }
 
-        console.log('Best match:', bestMatch, 'Score:', bestScore);
-        console.log('Has bioguide ID:', bestMatch && bestMatch.bioguideId);
-
         if (bestMatch && bestMatch.bioguideId) {
-            console.log('Updating display with member info');
             // Update the display with member information
             elements.pledgeLeaderName.textContent = bestMatch.fullName;
             elements.pledgeLeaderDetails.textContent = `${bestMatch.state}-${normalizeDistrict(bestMatch.district)}`;
@@ -6781,29 +6747,15 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
                 setMemberProfileLink(elements.pledgeLeaderWebsite, websiteUrl);
             }
             
-            console.log('Updated name:', elements.pledgeLeaderName.textContent);
-            console.log('Updated details:', elements.pledgeLeaderDetails.textContent);
-            console.log('Party tag:', elements.pledgePartyTag.textContent);
-            console.log('Additional info:', elements.pledgeLeaderAdditional.textContent);
-            
             // Use the official Biographical Directory image path.
             // The photo endpoint is organized by the first letter of the BioGuide ID.
             const photoUrl = `https://bioguide.congress.gov/bioguide/photo/${bestMatch.bioguideId.charAt(0)}/${bestMatch.bioguideId}.jpg`;
-
-            console.log('Trying photo URL:', photoUrl);
-            console.log('Bioguide ID:', bestMatch.bioguideId);
-
             elements.pledgeImage.style.display = 'block';
             elements.pledgeImage.style.opacity = '0';
             elements.pledgeImage.onload = () => { elements.pledgeImage.style.opacity = '1'; };
-            elements.pledgeImage.onerror = () => {
-                console.log('Photo failed to load, falling back to placeholder');
-                elements.pledgeImage.style.display = 'none';
-            };
+            elements.pledgeImage.onerror = () => { elements.pledgeImage.style.display = 'none'; };
             elements.pledgeImage.src = photoUrl;
             return;
-        } else {
-            console.log('No best match found or no bioguide ID');
         }
 
         // Fallback to placeholder if no match found or photo doesn't exist
@@ -7905,9 +7857,6 @@ async function fetchWeather() {
         // Update DOM
         elements.weatherTemp.textContent = `${Math.round(current.temperature)}°${current.temperatureUnit}`;
         elements.weatherCondition.textContent = current.shortForecast;
-        
-        console.log('Weather updated:', current.shortForecast, current.temperature);
-        
     } catch (error) {
         console.error('Weather fetch error:', error);
         elements.weatherTemp.textContent = '--°';
@@ -8128,7 +8077,6 @@ function init() {
         const inVote = floorData?.currentStatus?.value === 'vote' ||
                        floorData?.currentStatus?.value === 'voting';
         if (inVote && lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) > 45000) {
-            console.log('SSE vote.tally stale >45s during active vote — forcing reconnect');
             if (sseConnection) { sseConnection.close(); sseConnection = null; }
             isStreaming = false;
             lastSseReconnectAt = Date.now(); // reset to avoid a tight reconnect loop (NOT lastSseTallyAt — that would falsely extend sseIsLive)
@@ -8729,8 +8677,6 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
     } else {
         setIfChanged(elements.absenteeList, '<div class="absentee-member">ALL MEMBERS VOTED</div>');
     }
-    
-    console.log(`Roll ${rollNumber} (${rollDate}): ${totalAbsentees} absentees`);
 }
 
 // Update API Status Indicator
