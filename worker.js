@@ -5,8 +5,10 @@ const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
   'https://monitor-a6i.pages.dev',
 ]);
-// Populated at the top of handleRequest() for each incoming request
-let CORS_HEADERS = {
+// Default CORS headers (used by Durable Object which runs in its own isolate).
+// handleRequest() builds per-request headers via corsForRequest() to avoid
+// the race condition caused by mutating a shared module-level variable.
+const CORS_HEADERS_DEFAULT = {
   'Access-Control-Allow-Origin': 'https://house-floor.evanhollander.org',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -122,7 +124,7 @@ function decodeHtmlEntities(str) {
 function sseResponseInit() {
   return {
     headers: {
-      ...CORS_HEADERS,
+      ...CORS_HEADERS_DEFAULT,
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
@@ -3002,7 +3004,7 @@ async function handleRequest(request, env) {
   _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
 
   const origin = request.headers.get('Origin') || '';
-  CORS_HEADERS = {
+  const CORS_HEADERS = {
     'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : 'https://house-floor.evanhollander.org',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
