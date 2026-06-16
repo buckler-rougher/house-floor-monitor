@@ -3007,11 +3007,8 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
 .vrec-open-btn {
   position: relative;
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
   background: radial-gradient(
     ellipse at bottom,
@@ -3044,7 +3041,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
 }
 .vrec-open-btn:hover {
   color: #fff;
-  transform: scale(1.06) translateY(-2px);
+  transform: scale(1.06);
 }
 .vrec-open-btn:hover::before {
   opacity: 1;
