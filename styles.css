@@ -3110,17 +3110,16 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   white-space: nowrap;
 }
 
-/* Auto-fill verification banner — appears below the preset switcher row
-   when any preset other than "nothing" is selected. */
+/* Auto-fill verification banner — sits as a sibling block directly below
+   .vrec-preset-bar, full width, when a non-"nothing" preset is selected. */
 .vrec-autofill-note {
   display: flex;
   align-items: center;
   gap: var(--sp-8);
-  /* Bleed edge-to-edge across the preset bar's side padding */
-  margin: var(--sp-10) calc(-1 * var(--sp-24)) calc(-1 * var(--sp-10));
   padding: var(--sp-8) var(--sp-24);
   background: color-mix(in srgb, var(--accent-amber) 8%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--accent-amber) 25%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-amber) 25%, transparent);
 }
 
 .vrec-autofill-note-icon {
