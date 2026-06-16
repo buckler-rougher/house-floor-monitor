@@ -5322,6 +5322,12 @@ font-family: var(--font-mono);
     position: relative;
     top: 1px;
 }
+/* Same font-metrics issue in section info pills — shift text down 1px by
+   adding 1px to top padding and removing from bottom (same total height). */
+[class$="-pill"] {
+    padding-top: calc(var(--sp-4) + 1px);
+    padding-bottom: calc(var(--sp-4) - 1px);
+}
 
 /* Info button & popup */
 .info-btn {
