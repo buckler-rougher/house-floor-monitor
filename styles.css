@@ -10200,6 +10200,59 @@ h1.brand-text {
         padding-top: 137px; /* 108px base + 29px banner push */
     }
 
+    /* ── Vote series sub-header: allow text to wrap on narrow screens ────────  */
+    /* Fixed 44px height + flex-wrap: nowrap clips the long status text */
+    .vote-series-sub-header {
+        height: auto;
+        min-height: 44px;
+        flex-wrap: wrap;
+        padding-top: var(--sp-10);
+        padding-bottom: var(--sp-10);
+    }
+    .vote-series-sub-status {
+        font-size: var(--fs-sm);
+    }
+    .vote-series-sub-timing {
+        font-size: var(--fs-sm);
+        width: 100%; /* push to its own second row */
+    }
+
+    /* ── DEM WHIP NOTICES sticky meta row: two-row layout on mobile ──────────  */
+    /* Desktop: grid auto | 1fr | auto (badge | title | timestamp).
+       Mobile: badge+timestamp on row 1, full-width title on row 2. */
+    .whip-update-meta {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        height: auto;
+        min-height: 44px;
+        padding-top: var(--sp-8);
+        padding-bottom: var(--sp-8);
+        align-items: center;
+    }
+    .whip-update-time {
+        grid-column: 2;
+        grid-row: 1;
+        margin-left: auto;
+        text-align: right;
+    }
+    .whip-update-title {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        text-align: left;
+        margin-top: var(--sp-4);
+    }
+
+    /* ── Amendments panel header: wrap controls below title on narrow screens ─ */
+    .bill-amendments-panel-header {
+        flex-wrap: wrap;
+    }
+    .amdt-controls {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px; /* room for scrollbar on some browsers */
+    }
+
     /* ── Weather panel: suppress hover-expand entirely on touch ──────────────  */
     /* Already collapsed to chip at 640px; ensure no accidental focus-expand */
     .weather-panel:focus-within {
