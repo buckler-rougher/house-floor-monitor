@@ -3018,7 +3018,7 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   border: 0;
   border-radius: var(--radius-6);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  padding: 5px 16px 6px;
+  padding: 6px 16px 5px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.4s cubic-bezier(0.15, 0.83, 0.66, 1);
