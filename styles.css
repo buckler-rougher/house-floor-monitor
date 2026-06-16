@@ -3110,13 +3110,41 @@ body:not(.beta-dismissed) .main-header { top: 29px; }
   white-space: nowrap;
 }
 
+/* Auto-fill verification banner — appears below the preset switcher row
+   when any preset other than "nothing" is selected. */
 .vrec-autofill-note {
-  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  /* Bleed edge-to-edge across the preset bar's side padding */
+  margin: var(--sp-10) calc(-1 * var(--sp-24)) calc(-1 * var(--sp-10));
+  padding: var(--sp-8) var(--sp-24);
+  background: color-mix(in srgb, var(--accent-amber) 8%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--accent-amber) 25%, transparent);
+}
+
+.vrec-autofill-note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-amber);
+  color: var(--accent-amber);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.vrec-autofill-note-text {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--accent-amber);
-  opacity: 0.75;
-  white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 /* Collapsible prefs panel */
@@ -10154,16 +10182,8 @@ h1.brand-text {
         padding-bottom: var(--sp-8);
     }
 
-    /* ── Vote recs AUTO-FILL bar: wrap note to its own row ───────────────────  */
-    /* On narrow screens the switcher leaves no room for the ⚠ verify note */
-    .vrec-preset-bar {
-        flex-wrap: wrap;
-    }
-    .vrec-autofill-note {
-        width: 100%;
-        margin-left: 0;
-        white-space: normal;
-    }
+    /* ── Vote recs auto-fill note banner: no extra mobile overrides needed —
+       the bleed margin/padding already matches the parent's sp-24 padding. */
 
     /* ── Vote counts row: tighten gap so three columns fit at 390px ─────────  */
     .vote-counts-row {
