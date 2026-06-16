@@ -10142,14 +10142,27 @@ h1.brand-text {
         height: 32px;
     }
 
-    /* ── Touch targets: small filter/sort/action buttons ───────────────────── */
+    /* ── Touch targets: standalone filter/action buttons ───────────────────── */
+    /* .bills-sort-btn is intentionally excluded: those live inside compact
+       .bills-sort-switcher groups and must stay visually small; inflating them
+       to 36px makes the whole widget unreasonably tall on mobile. */
     .whip-filter-btn,
     .vrec-open-btn,
-    .bills-sort-btn,
     .absentee-filter-btn {
         min-height: 36px;
         padding-top: var(--sp-8);
         padding-bottom: var(--sp-8);
+    }
+
+    /* ── Vote recs AUTO-FILL bar: wrap note to its own row ───────────────────  */
+    /* On narrow screens the switcher leaves no room for the ⚠ verify note */
+    .vrec-preset-bar {
+        flex-wrap: wrap;
+    }
+    .vrec-autofill-note {
+        width: 100%;
+        margin-left: 0;
+        white-space: normal;
     }
 
     /* ── Vote counts row: tighten gap so three columns fit at 390px ─────────  */
