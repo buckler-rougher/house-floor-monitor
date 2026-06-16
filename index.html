@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260615aj">
+    <link rel="stylesheet" href="styles.css?v=20260616a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -368,6 +368,7 @@
             </div>
 
             <!-- Oath of Office Section -->
+            <div class="mode-column oath-column">
             <div class="oath-section" id="oath-section">
                 <div class="oath-section-header">
                     <div class="oath-tag">
@@ -391,15 +392,18 @@
                         <p class="oath-member-description" id="oath-member-description">Loading oath information...</p>
                     </div>
                 </div>
-                    <div class="oath-text-container">
-                        <div class="oath-text-inner">
-                            <div class="oath-text">
-                                “I, AB, do solemnly swear (or affirm) that I will support and defend the Constitution of the United States against all enemies, foreign and domestic; that I will bear true faith and allegiance to the same; that I take this obligation freely, without any mental reservation or purpose of evasion; and that I will well and faithfully discharge the duties of the office on which I am about to enter. So help me God.”
-                            </div>
+            </div>
+            <div class=”quote-card”>
+                <div class=”oath-text-container”>
+                    <div class=”oath-text-inner”>
+                        <div class=”oath-text”>
+                            “I, AB, do solemnly swear (or affirm) that I will support and defend the Constitution of the United States against all enemies, foreign and domestic; that I will bear true faith and allegiance to the same; that I take this obligation freely, without any mental reservation or purpose of evasion; and that I will well and faithfully discharge the duties of the office on which I am about to enter. So help me God.”
                         </div>
-                        <div class="oath-source-inline">Source: <a href="https://uscode.house.gov/view.xhtml?req=%28title:5%20section:3331%20edition:prelim%29%20OR%20%28granuleid:USC-prelim-title5-section3331%29&f=treesort&edition=prelim&num=0&jumpTo=true" target="_blank" rel="noopener">5 U.S. Code § 3331</a></div>
                     </div>
+                    <div class=”oath-source-inline”>Source: <a href=”https://uscode.house.gov/view.xhtml?req=%28title:5%20section:3331%20edition:prelim%29%20OR%20%28granuleid:USC-prelim-title5-section3331%29&f=treesort&edition=prelim&num=0&jumpTo=true” target=”_blank” rel=”noopener”>5 U.S. Code § 3331</a></div>
                 </div>
+            </div>
+            </div>
 
             <!-- Speaker Pro Tempore Section -->
             <div class="speaker-section" id="speaker-section">
@@ -470,6 +474,7 @@
             </div>
 
             <!-- Pledge Section -->
+            <div class="mode-column pledge-column">
             <div class="pledge-section" id="pledge-section">
                 <div class="pledge-section-header">
                     <div class="pledge-tag">
@@ -498,6 +503,8 @@
                         <a class="pledge-leader-website" id="pledge-leader-website" href="#" target="_blank" rel="noopener">--</a>
                     </div>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="pledge-text-container">
                     <div class="pledge-text-inner">
                         <div class="pledge-flag">
@@ -511,6 +518,7 @@
                         Source: <a href="https://uscode.house.gov/view.xhtml?path=/prelim@title4/chapter1&edition=prelim" target="_blank" rel="noopener">4 U.S. Code § 4</a>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- Message Section -->
@@ -568,6 +576,7 @@
             </div>
 
             <!-- Certification of Election Section -->
+            <div class="mode-column cert-election-column">
             <div class="cert-election-section" id="cert-election-section">
                 <div class="cert-election-section-header">
                     <div class="cert-election-tag">
@@ -588,6 +597,8 @@
                     </div>
                     <p class="cert-election-approval-text" id="cert-election-text"></p>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="cert-election-quote-container">
                     <div class="cert-election-quote-inner">
                         <div class="cert-election-quote-text">
@@ -599,8 +610,10 @@
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- Certification of Electoral Votes Section -->
+            <div class="mode-column cert-electoral-column">
             <div class="cert-electoral-section" id="cert-electoral-section">
                 <div class="cert-electoral-section-header">
                     <div class="cert-electoral-tag">
@@ -621,6 +634,8 @@
                     </div>
                     <p class="cert-electoral-approval-text" id="cert-electoral-text"></p>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="cert-electoral-quote-container">
                     <div class="cert-electoral-quote-inner">
                         <div class="cert-electoral-quote-text">
@@ -632,8 +647,10 @@
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- Adjournment Sine Die Section -->
+            <div class="mode-column sine-die-column">
             <div class="sine-die-section" id="sine-die-section">
                 <div class="sine-die-section-header">
                     <div class="sine-die-tag">
@@ -649,6 +666,8 @@
                         The House stands adjourned sine die.
                     </div>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="sine-die-quote-container">
                     <div class="sine-die-quote-inner">
                         <div class="sine-die-quote-text">
@@ -660,8 +679,10 @@
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- New Session Section -->
+            <div class="mode-column new-session-column">
             <div class="new-session-section" id="new-session-section">
                 <div class="new-session-section-header">
                     <div class="new-session-tag">
@@ -677,6 +698,8 @@
                         The House has convened pursuant to the 20th Amendment to the Constitution.
                     </div>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="new-session-quote-container">
                     <div class="new-session-quote-inner">
                         <div class="new-session-quote-text">
@@ -687,6 +710,7 @@
                         Source: <a href="https://constitution.congress.gov/constitution/amendment-20/#amendment-20-section-2" target="_blank" rel="noopener">U.S. Constitution, Amendment XX, Section 2</a>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- Administration of Oath of Office Section -->
@@ -711,6 +735,7 @@
             </div>
 
             <!-- Journal Approval Section -->
+            <div class="mode-column journal-column">
             <div class="journal-section" id="journal-section">
                 <div class="journal-section-header">
                     <div class="section-tag-wrap">
@@ -754,6 +779,8 @@
                         The Chair has examined the Journal of the proceedings of <span id="journal-last-session-date">--</span>, and announces to the House the approval thereof. Pursuant to clause 1 of rule I, the Journal stands approved.
                     </p>
                 </div>
+            </div>
+            <div class="quote-card">
                 <div class="journal-text-container">
                     <div class="journal-text-inner">
                         <div class="journal-text">
@@ -764,6 +791,7 @@
                         Source: <a href="https://constitution.congress.gov/constitution/article-1/#article-1-section-5-clause-3" target="_blank" rel="noopener">U.S. Constitution, Article I, Section 5, Clause 3</a>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- Vote column: Happening Now → Threshold → Quorum → Chamber Map,
@@ -1397,7 +1425,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260615aj"></script>
+    <script src="app.js?v=20260616a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
