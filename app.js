@@ -7873,38 +7873,31 @@ function initWeatherPanel() {
     const panel = elements.weatherPanel;
     const video = elements.capcamVideo;
 
-    // Load capcam immediately so it's buffered and ready on first hover
     video.muted = true;
     const isLocalFile = window.location.protocol === 'file:';
 
-    if (window.Hls && Hls.isSupported()) {
-        capcamHls = new Hls({ maxBufferLength: 30, enableWorker: !isLocalFile, autoStartLoad: true });
-        capcamHls.loadSource(CAPCAM_URL);
-        capcamHls.attachMedia(video);
-        capcamHls.on(Hls.Events.MANIFEST_PARSED, () => {
-            videoLoaded = true;
-            // Don't play yet — wait for first hover
-        });
-        capcamHls.on(Hls.Events.ERROR, (event, data) => {
-            if (data.fatal) { capcamHls.destroy(); capcamHls = null; videoLoaded = false; }
-        });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = CAPCAM_URL;
-        const onReady = () => { videoLoaded = true; };
-        video.addEventListener('loadedmetadata', onReady, { once: true });
-        video.addEventListener('canplay', onReady, { once: true });
-        video.addEventListener('error', () => { videoLoaded = false; });
-        video.load();
+    function startCapcam() {
+        if (videoLoaded || capcamHls) return;
+        if (window.Hls && Hls.isSupported()) {
+            capcamHls = new Hls({ maxBufferLength: 4, maxMaxBufferLength: 8, enableWorker: !isLocalFile });
+            capcamHls.loadSource(CAPCAM_URL);
+            capcamHls.attachMedia(video);
+            capcamHls.on(Hls.Events.MANIFEST_PARSED, () => { videoLoaded = true; video.play().catch(() => {}); });
+            capcamHls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) { capcamHls.destroy(); capcamHls = null; videoLoaded = false; }
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = CAPCAM_URL;
+            video.addEventListener('canplay', () => { videoLoaded = true; video.play().catch(() => {}); }, { once: true });
+            video.addEventListener('error', () => { videoLoaded = false; });
+            video.load();
+        }
     }
 
-    // Hover shows/plays, leave pauses
+    // Load on first hover only — avoids buffering live video nobody is watching
     panel.addEventListener('mouseenter', () => {
-        if (videoLoaded) {
-            video.play().catch(() => {});
-        } else if (capcamHls) {
-            // Still loading — play as soon as manifest is ready
-            capcamHls.once(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-        }
+        startCapcam();
+        if (videoLoaded) video.play().catch(() => {});
     });
 
     panel.addEventListener('mouseleave', () => {
@@ -9424,19 +9417,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
 
-// Beta banner dismiss (persisted via sessionStorage so it stays gone on soft reload)
-document.addEventListener('DOMContentLoaded', () => {
-    const banner = document.getElementById('beta-banner');
-    const btn    = document.getElementById('beta-dismiss');
-    if (!banner || !btn) return;
-    if (sessionStorage.getItem('betaDismissed')) {
-        banner.classList.add('dismissed');
-        document.body.classList.add('beta-dismissed');
-    }
-    btn.addEventListener('click', () => {
-        banner.classList.add('dismissed');
-        document.body.classList.add('beta-dismissed');
-        sessionStorage.setItem('betaDismissed', '1');
-    });
-});
 
