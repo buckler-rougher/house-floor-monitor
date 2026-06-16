@@ -97,17 +97,10 @@ console.log = (...args) => {
 // Update Footer Timestamp
 function updateFooterTimestamp() {
     if (!elements.footerUpdated) return;
-    
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    });
-    if (elements.footerUpdated) {
-        elements.footerUpdated.textContent = `Last updated: ${timeString}`;
-    }
+    elements.footerUpdated.textContent = `Last updated: ${now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    })}`;
 }
 
 // Update Today's Date
@@ -1565,64 +1558,8 @@ function updateFloorDisplay(status = null) {
         const totalVotes = yeas + nays + present; // Exclude Not Voting from progress bar
         const totalVotesWithNotVoting = yeas + nays + present + notVoting; // For display purposes
 
-        // Use flipToNumber to avoid clobbering the animated flip-digit DOM structure
+        // updateVoteCountsDisplay handles all count/percent/bar DOM writes
         updateVoteCountsDisplay(floorData.voteCounts);
-
-        // Update percentages with better formatting
-        if (totalVotes > 0) {
-            const yeasPct    = (yeas    / totalVotes) * 100;
-            const naysPct    = (nays    / totalVotes) * 100;
-            const presentPct = (present / totalVotes) * 100;
-
-            elements.yeasPercent.textContent = `${yeasPct.toFixed(1)}%`;
-            elements.naysPercent.textContent = `${naysPct.toFixed(1)}%`;
-            elements.presentPercent.textContent = `${presentPct.toFixed(1)}%`;
-            
-            // Add visual indicators for leading side
-            if (yeas > nays) {
-                elements.yeasCount.style.fontWeight = 'bold';
-                elements.naysCount.style.fontWeight = 'normal';
-            } else if (nays > yeas) {
-                elements.naysCount.style.fontWeight = 'bold';
-                elements.yeasCount.style.fontWeight = 'normal';
-            } else {
-                elements.yeasCount.style.fontWeight = 'normal';
-                elements.naysCount.style.fontWeight = 'normal';
-            }
-        }
-
-        // Update total votes with better formatting (includes Not Voting for display)
-        if (elements.totalVotes) {
-            elements.totalVotes.textContent = totalVotes > 0
-                ? `Total: ${totalVotesWithNotVoting.toLocaleString()}`
-                : 'Total: --';
-        }
-
-        // Update progress bars with smooth animations
-        if (elements.yeasBar && elements.naysBar && elements.presentBar) {
-            const yeasWidth = totalVotes > 0 ? (yeas / totalVotes) * 100 : 0;
-            const naysWidth = totalVotes > 0 ? (nays / totalVotes) * 100 : 0;
-            const presentWidth = totalVotes > 0 ? (present / totalVotes) * 100 : 0;
-            
-            elements.yeasBar.style.width = `${yeasWidth}%`;
-            elements.naysBar.style.width = `${naysWidth}%`;
-            elements.presentBar.style.width = `${presentWidth}%`;
-            const voteProgressBar = document.getElementById('vote-progress-bar');
-            if (voteProgressBar) voteProgressBar.setAttribute('aria-valuenow', Math.round(yeasWidth));
-            
-            // Add color coding based on vote status
-            if (totalVotes === 0) {
-                // No votes yet - neutral colors
-                elements.yeasBar.style.backgroundColor = '#666';
-                elements.naysBar.style.backgroundColor = '#666';
-                elements.presentBar.style.backgroundColor = '#666';
-            } else {
-                // Active vote - party colors
-                elements.yeasBar.style.backgroundColor = '#2ecc71'; // Green
-                elements.naysBar.style.backgroundColor = '#e74c3c'; // Red  
-                elements.presentBar.style.backgroundColor = '#f39c12'; // Orange
-            }
-        }
 
         // Update state for floor grid — include per-party breakdown if available
         const iv = v => Math.max(parseInt(v) || 0, 0);
@@ -1758,26 +1695,6 @@ function reconcileVoteWithBills(force = false) {
     }
     if (found) updateBillsDisplay();
 }
-
-// Mock Data (single vote)
-const MOCK_DATA = {
-    vote: {
-        id: 'H.R. 8405',
-        title: 'To provide for the establishment of the Advanced Research Projects Agency for Health',
-        rollCall: '124',
-        date: '2024-05-10',
-        yeas: 20,
-        nays: 10,
-        present: 100,
-        total: 416,
-        votesNeeded: 209
-    },
-    projection: {
-        result: 'PASS',
-        confidence: 94,
-        margin: 20
-    }
-};
 
 // State Management
 let state = {
@@ -2680,7 +2597,7 @@ function renderWhipNoticesFeed(items) {
                     ${whenStr ? `<span class="whip-update-time">${escapeHtml(whenStr)}</span>` : ''}
                 </div>
                 ${schedHtml}
-                <div class="whip-update-body">${item.body}</div>
+                <div class="whip-update-body">${sanitizeHtml(item.body)}</div>
             </div>`;
     }).join('');
 }
@@ -5000,16 +4917,20 @@ function openInfoPopup(key) {
     const _infoTrigger = document.activeElement;
     const infoClose = document.getElementById('info-popup-close');
     infoClose.addEventListener('click', () => closeInfoPopup(_infoTrigger));
-    document.addEventListener('keydown', e => onInfoPopupKey(e, _infoTrigger));
-    trapFocus(overlay);
+    // Store the bound handler so we can remove the exact same reference on close
+    _infoKeyHandler = e => onInfoPopupKey(e, _infoTrigger);
+    document.addEventListener('keydown', _infoKeyHandler);
+    _infoPopupTrapCleanup = trapFocus(overlay);
     infoClose.focus();
 }
 
 let _infoPopupTrapCleanup = null;
+let _infoKeyHandler = null;
 function closeInfoPopup(trigger) {
     const overlay = document.getElementById('info-popup-overlay');
     if (overlay) overlay.hidden = true;
-    document.removeEventListener('keydown', onInfoPopupKey);
+    if (_infoKeyHandler) { document.removeEventListener('keydown', _infoKeyHandler); _infoKeyHandler = null; }
+    if (_infoPopupTrapCleanup) { _infoPopupTrapCleanup(); _infoPopupTrapCleanup = null; }
     if (trigger) trigger.focus();
 }
 
@@ -7077,31 +6998,37 @@ async function decorateAbsenteePhotos(absentees) {
     }
 }
 
-// Calculate similarity between two names
+// Calculate similarity between two names using Sørensen–Dice coefficient on bigrams.
+// This correctly penalises mismatched characters, unlike the prior character-presence
+// approach which scored "Doe" highly against "Rodriguez" (d, o, e all appear).
 function calculateNameSimilarity(name1, name2) {
-    const n1 = name1.toLowerCase();
-    const n2 = name2.toLowerCase();
+    const n1 = name1.toLowerCase().trim();
+    const n2 = name2.toLowerCase().trim();
 
-    if (!n1 || !n2) return 0; // empty string matches nothing
+    if (!n1 || !n2) return 0;
     if (n1 === n2) return 1.0;
+    if (n1.includes(n2) || n2.includes(n1)) return 0.85;
 
-    // Check if one contains the other
-    if (n1.includes(n2) || n2.includes(n1)) return 0.8;
-    
-    // Simple Levenshtein-like distance for partial matches
-    const longer = n1.length > n2.length ? n1 : n2;
-    const shorter = n1.length > n2.length ? n2 : n1;
-    
-    if (longer.length === 0) return 0;
-    
-    let matches = 0;
-    for (let i = 0; i < shorter.length; i++) {
-        if (longer.includes(shorter[i])) {
-            matches++;
+    // Build bigram frequency maps
+    const bigrams = s => {
+        const map = new Map();
+        for (let i = 0; i < s.length - 1; i++) {
+            const bg = s.slice(i, i + 2);
+            map.set(bg, (map.get(bg) || 0) + 1);
         }
+        return map;
+    };
+
+    const b1 = bigrams(n1);
+    const b2 = bigrams(n2);
+
+    let intersection = 0;
+    for (const [bg, count] of b1) {
+        intersection += Math.min(count, b2.get(bg) || 0);
     }
-    
-    return matches / longer.length;
+
+    const total = (n1.length - 1) + (n2.length - 1);
+    return total <= 0 ? 0 : (2 * intersection) / total;
 }
 
 function showPledgePlaceholder() {
@@ -7112,17 +7039,6 @@ function showPledgePlaceholder() {
     elements.pledgeTime.textContent = '';
     elements.pledgeLeaderDetails.textContent = '';
     elements.pledgeLeaderAdditional.textContent = '';
-}
-
-// Utility function to calculate time ago
-async function getTimeAgo(date) {
-    const now = new Date();
-    const diff = Math.floor((now - date) / 1000); // seconds
-    
-    if (diff < 60) return 'JUST NOW';
-    if (diff < 3600) return `${Math.floor(diff / 60)} MIN AGO`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} HOURS AGO`;
-    return `${Math.floor(diff / 86400)} DAYS AGO`;
 }
 
 function decodeHtml(text) {
@@ -7142,6 +7058,51 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Sanitize HTML from external sources (Firestore whip notices, etc.)
+// Allows a safe allow-list of tags/attributes; strips everything else.
+function sanitizeHtml(dirty) {
+    if (!dirty) return '';
+    const ALLOWED_TAGS = new Set(['P','BR','STRONG','EM','B','I','UL','OL','LI',
+        'A','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','CODE','PRE','SPAN','DIV']);
+    const ALLOWED_ATTRS = { A: ['href'] };
+
+    const doc = new DOMParser().parseFromString(dirty, 'text/html');
+
+    function cleanNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) return node.cloneNode();
+        if (node.nodeType !== Node.ELEMENT_NODE) return null;
+        if (!ALLOWED_TAGS.has(node.tagName)) {
+            // Strip the tag but keep its children
+            const frag = document.createDocumentFragment();
+            node.childNodes.forEach(c => { const n = cleanNode(c); if (n) frag.appendChild(n); });
+            return frag;
+        }
+        const el = document.createElement(node.tagName.toLowerCase());
+        (ALLOWED_ATTRS[node.tagName] || []).forEach(attr => {
+            if (!node.hasAttribute(attr)) return;
+            const val = node.getAttribute(attr);
+            if (attr === 'href' && /^\s*javascript:/i.test(val)) return; // block JS URLs
+            el.setAttribute(attr, val);
+        });
+        if (node.tagName === 'A') {
+            el.setAttribute('rel', 'noopener noreferrer');
+            el.setAttribute('target', '_blank');
+        }
+        node.childNodes.forEach(c => { const n = cleanNode(c); if (n) el.appendChild(n); });
+        return el;
+    }
+
+    const tmp = document.createElement('div');
+    doc.body.childNodes.forEach(c => { const n = cleanNode(c); if (n) tmp.appendChild(n); });
+    return tmp.innerHTML;
+}
+
+// Return a safe URL string, or '' if it could be a javascript: injection.
+function safeUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    return /^\s*javascript:/i.test(url) ? '' : url;
 }
 
 // House Makeup Functions
@@ -8305,30 +8266,6 @@ function init() {
     }
 }
 
-// initHlsPlayer removed — video is now handled entirely by initYouTubePip (always-on PiP)
-
-async function initHlsPlayer_UNUSED() {
-    const video = document.getElementById('player');
-    if (!video) return;
-    let currentHls = null;
-    let pollTimer = null;
-    let frozen = false;
-
-    function hideOverlay() {
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-    }
-    function showUnavailable() {
-        hideOverlay();
-        video.style.display = 'none';
-        if (fallback) fallback.style.display = 'flex';
-    }
-    function startPolling() {
-        if (pollTimer) return;
-        pollTimer = setInterval(async () => {
-            try {
-                const d = await (await fetch('https://api.evanhollander.org/house-floor/api/hls-url')).json();
-                if (d.url) { clearInterval(pollTimer); pollTimer = null; loadStream(d.url, d.isLive); }
-            } catch {}
         }, 10_000);
     }
 
@@ -8449,13 +8386,14 @@ async function fetchNewsTicker() {
         // Quintuple the items to ensure the ticker is full from the start on all screen sizes
         const displayItems = [...shuffledItems, ...shuffledItems, ...shuffledItems, ...shuffledItems, ...shuffledItems];
         
-        const continuousContent = displayItems.map(item => `
-            <a href="${item.link}" target="_blank" rel="noopener" class="ticker-item">
-                <span class="ticker-source">${item.source}</span>
-                <span class="ticker-text">${item.title}</span>
-                <span class="ticker-time">${item.relativeTime}</span>
-            </a>
-        `).join('');
+        const continuousContent = displayItems.map(item => {
+            const href = safeUrl(item.link);
+            return `<a ${href ? `href="${escapeHtml(href)}"` : ''} target="_blank" rel="noopener noreferrer" class="ticker-item">
+                <span class="ticker-source">${escapeHtml(item.source || '')}</span>
+                <span class="ticker-text">${escapeHtml(item.title || '')}</span>
+                <span class="ticker-time">${escapeHtml(item.relativeTime || '')}</span>
+            </a>`;
+        }).join('');
         
         // Update ticker display
         setIfChanged(elements.tickerContent, continuousContent);
@@ -8476,23 +8414,7 @@ async function fetchNewsTicker() {
 }
 
 // Helper function to get source name from URL
-function getSourceFromUrl(url) {
-    if (url.includes('nitter.net')) return 'Nitter';
-    if (url.includes('thehill.com')) return 'The Hill';
-    if (url.includes('rollcall.com')) return 'Roll Call';
-    if (url.includes('politico.com')) return 'Politico';
-    return 'News';
-}
 
-// Helper function to format time
-function formatTime(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-    });
-}
 
 // Update Timestamp
 function updateTimestamp() {
@@ -8582,38 +8504,7 @@ function updateAnalogClock(clockElement, time) {
     clockElement.querySelector('.second-hand')?.setAttribute('transform', `rotate(${secondDeg.toFixed(2)},50,50)`);
 }
 
-// Fetch Data from API
-async function fetchData() {
-    // Currently using mock data
-    state.data = MOCK_DATA;
-    state.isConnected = true;
-    state.lastUpdate = new Date();
-    updateUI();
-}
 
-// Process API Data (transform to our format)
-function processApiData(apiData) {
-    // Transform API response to match our data structure
-    // Customize this based on actual API response format
-    return {
-        vote: {
-            id: apiData.vote?.id || MOCK_DATA.vote.id,
-            title: apiData.vote?.title || MOCK_DATA.vote.title,
-            rollCall: apiData.vote?.rollCall || MOCK_DATA.vote.rollCall,
-            date: apiData.vote?.date || MOCK_DATA.vote.date,
-            yeas: apiData.vote?.yeas || MOCK_DATA.vote.yeas,
-            nays: apiData.vote?.nays || MOCK_DATA.vote.nays,
-            present: apiData.vote?.present || MOCK_DATA.vote.present,
-            total: apiData.vote?.total || MOCK_DATA.vote.total,
-            votesNeeded: apiData.vote?.votesNeeded || MOCK_DATA.vote.votesNeeded
-        },
-        projection: {
-            result: apiData.projection?.result || MOCK_DATA.projection.result,
-            confidence: apiData.projection?.confidence || MOCK_DATA.projection.confidence,
-            margin: apiData.projection?.margin || MOCK_DATA.projection.margin
-        }
-    };
-}
 
 // Floor Grid Configuration
 const HOUSE_TOTAL_MEMBERS = 435;
@@ -8757,22 +8648,34 @@ function createUsChamberLayout(container, config) {
     return seats.slice(0, HOUSE_TOTAL_MEMBERS);
 }
 
+let _absenteeInFlight = false;
+let _absenteeDebounceTimer = null;
 async function updateAbsenteeTracking() {
-    console.log('=== ABSENTEE TRACKING UPDATE START ===');
-    try {
-        if (!elements.absenteeList) {
-            console.log('Absentee list element not found');
-            return;
+    // Debounce: this fires on every vote.tally SSE event (~5s intervals).
+    // Collapse rapid calls into one fetch per 10s window; skip if already in-flight.
+    clearTimeout(_absenteeDebounceTimer);
+    _absenteeDebounceTimer = setTimeout(async () => {
+        if (_absenteeInFlight) return;
+        _absenteeInFlight = true;
+        try {
+            await _doAbsenteeTracking();
+        } finally {
+            _absenteeInFlight = false;
         }
+    }, 10_000);
+}
+
+async function _doAbsenteeTracking() {
+    try {
+        if (!elements.absenteeList) return;
 
         try {
             const indexResponse = await fetch(CONGRESS_INDEX_CONFIG.workerUrl);
             if (!indexResponse.ok) throw new Error(`HTTP ${indexResponse.status}`);
             const jsonData = await indexResponse.json();
-            
+
             const rollNumber = jsonData.latestRollNumber;
-            console.log('Found latest roll number:', rollNumber);
-            
+
             const rollResponse = await fetch(`${CONGRESS_INDEX_CONFIG.workerUrl}/roll/${rollNumber}`);
             const rollXml = await rollResponse.text();
             
@@ -8804,12 +8707,11 @@ async function updateAbsenteeTracking() {
             const rollDate = xmlDoc.querySelector('action-date')?.textContent?.trim() || '';
             const rollTime = xmlDoc.querySelector('action-time')?.textContent?.trim() || '';
             await updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime);
-            console.log('Real data displayed:', absentees.length, 'absentees');
-            
+
         } catch (error) {
-            console.error('Real data fetch failed:', error);
+            console.error('Absentee tracking fetch failed:', error);
         }
-        
+
     } catch (error) {
         console.error('Absentee tracking error:', error);
         setIfChanged(elements.absenteeList, '<div class="absentee-member">ERROR</div>');
@@ -8930,24 +8832,12 @@ function updateApiStatus() {
 // Update UI
 function updateUI() {
     updateApiStatus();
-    
-    // Use DomeWatch data if available, otherwise fall back to mock data
-    if (floorData.currentStatus) {
-        updateFloorDisplay();
-        updatePartyBreakdown();
-        updateThresholdAnalysis();
-        updateQuorumStatus();
-        updateAbsenteeTracking();
-        updateFloorGrid();
-    } else {
-        updateVoteDisplay();
-        updatePartyBreakdown();
-        updateThresholdAnalysis();
-        updateQuorumStatus();
-        updateAbsenteeTracking();
-        updateFloorGrid();
-    }
-    
+    updateFloorDisplay();
+    updatePartyBreakdown();
+    updateThresholdAnalysis();
+    updateQuorumStatus();
+    updateAbsenteeTracking();
+    updateFloorGrid();
     updateLastUpdate();
     fetchBillsThisWeek();
     updateTodayDate();
@@ -9245,45 +9135,7 @@ async function updateQuorumStatus() {
 }
 
 // Update Vote Display
-function updateVoteDisplay() {
-    if (!state.data || !state.data.vote) return;
-    
-    const v = state.data.vote;
-    
-    elements.voteTitle.textContent = v.title;
-    elements.voteId.textContent = v.id;
-    elements.yeasCount.textContent = v.yeas;
-    elements.presentCount.textContent = v.present;
-    elements.naysCount.textContent = v.nays;
-    
-    const total = v.yeas + v.nays + v.present;
-    const yeasPercent = total > 0 ? ((v.yeas / total) * 100).toFixed(1) : 0;
-    const presentPercent = total > 0 ? ((v.present / total) * 100).toFixed(1) : 0;
-    const naysPercent = total > 0 ? ((v.nays / total) * 100).toFixed(1) : 0;
-    
-    elements.yeasPercent.textContent = `${yeasPercent}%`;
-    elements.presentPercent.textContent = `${presentPercent}%`;
-    elements.naysPercent.textContent = `${naysPercent}%`;
-    elements.totalVotes.textContent = `Total: ${total}`;
-}
 
-// Update Progress Bar
-function updateProgress() {
-    if (!state.data || !state.data.vote) return;
-    
-    const v = state.data.vote;
-    const total = v.yeas + v.nays + v.present;
-    
-    if (total > 0) {
-        const yeasPercent = (v.yeas / total) * 100;
-        const presentPercent = (v.present / total) * 100;
-        const naysPercent = (v.nays / total) * 100;
-        
-        elements.yeasBar.style.width = `${yeasPercent}%`;
-        elements.presentBar.style.width = `${presentPercent}%`;
-        elements.naysBar.style.width = `${naysPercent}%`;
-    }
-}
 
 // Update Last Update Time
 function updateLastUpdate() {
