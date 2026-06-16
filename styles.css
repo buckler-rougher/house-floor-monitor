@@ -10372,6 +10372,17 @@ h1.brand-text {
     overscroll-behavior: contain;
 }
 
+/* ── lockMode('all') debug override ────────────────────────────────────────
+   Must come after all mode-specific rules so it wins the !important battle. */
+body.all-mode .vote-display,
+body.all-mode .progress-section,
+body.all-mode .vote-header,
+body.all-mode .threshold-panel,
+body.all-mode .quorum-panel,
+body.all-mode .floor-grid-panel {
+    display: block !important;
+}
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
