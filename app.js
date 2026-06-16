@@ -3410,18 +3410,18 @@ function renderVoteRecsPrefs() {
         ${prefToggle('mtr',          'Recommit / Commit')}`;
 }
 
-// Called by pref toggle buttons. Saves the setting but does NOT re-apply auto-fill —
-// manual vote selections are preserved. Auto-fill only runs when a preset is clicked.
-// Uses surgical updatePrefToggles() — no DOM teardown, so indicators never "clear".
+// Called by pref toggle buttons. Saves the pref, re-applies auto-fill to all rows,
+// and surgically updates both the row buttons and pref toggles.
 function setVrecPref(prefKey, val) {
     if (val === 'null') val = null; // safety: HTML attribute string → real null
     voteRecsPrefs[prefKey] = val;
     localStorage.setItem('voteRecsPrefs', JSON.stringify(voteRecsPrefs));
-    // Auto-derive which preset (Nothing/D/R/Custom) the new prefs match
     voteRecsPreset = computeCurrentPreset();
     localStorage.setItem('voteRecsPreset', voteRecsPreset);
+    applyVoteRecsAutoFill();
     syncPresetButtons();
-    updatePrefToggles(); // surgical: toggle active classes only, no innerHTML re-render
+    updatePrefToggles();
+    updateAllRowButtons();
 }
 
 // Surgically update every row's selection indicator from voteRecsMap.
