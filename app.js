@@ -5326,6 +5326,10 @@ async function updateProceedingsFeed() {
         updateJournalSection(data.items);
         updateOathSection(data.items);
         updateMessageSection(data.items);
+        updateTellersSection(data.items);
+        if (document.body.classList.contains('tellers-mode') && !findTellersProceeding(data.items)) {
+            showTellersEmptyState('No appointment of tellers appears in these proceedings.');
+        }
 
         // Update new mode sections
         updateCertElectionSection(data.items);
@@ -6671,7 +6675,7 @@ function updateJointMeetingSection(items) {
 
 // Update tellers section
 function updateTellersSection(items) {
-    const item = items.find(i => /^APPOINTMENT OF TELLERS\b/i.test(i.description.trim()));
+    const item = findTellersProceeding(items);
     if (!item || !elements.tellersDescription || !elements.tellersList) return;
 
     const stripped = decodeHtml(item.description.replace(/^APPOINTMENT OF TELLERS\s*[-–]\s*/i, '').trim());
@@ -6702,14 +6706,20 @@ function updateTellersSection(items) {
     });
 }
 
+function findTellersProceeding(items) {
+    if (!items || !items.length) return null;
+    return items.find(i => /^APPOINTMENT OF TELLERS\b/i.test(i.description.trim())) || null;
+}
+
 function extractTellerNames(text) {
     const cleaned = (text || '').replace(/\.\s*$/, '').trim();
     const afterColon = cleaned.includes(':') ? cleaned.slice(cleaned.lastIndexOf(':') + 1).trim() : cleaned;
     const suffix = afterColon.replace(/^(?:the\s+Chair announced the Speaker's appointment as tellers on the part of the House to count the electoral votes:\s*)/i, '').trim();
-    return suffix
-        .split(/\s+and\s+/i)
-        .map(part => part.replace(/,\s*$/, '').trim())
-        .filter(Boolean);
+    const candidates = suffix.split(/\s+and\s+/i).map(part => part.replace(/,\s*$/, '').trim()).filter(Boolean);
+    return candidates.map(part => {
+        const idx = part.lastIndexOf(',');
+        return idx > -1 ? part.slice(0, idx).trim() : part;
+    }).filter(Boolean);
 }
 
 function parseTellerName(nameStr) {
@@ -6761,6 +6771,12 @@ async function fetchTellerInfo(nameStr, cardEl) {
     } catch (e) {
         console.error('fetchTellerInfo error:', e);
     }
+}
+
+function showTellersEmptyState(message) {
+    if (!elements.tellersDescription || !elements.tellersList) return;
+    elements.tellersDescription.textContent = message;
+    setIfChanged(elements.tellersList, '<div class="teller-card"><div class="teller-meta"><div class="teller-name">No tellers listed</div><div class="teller-meta-line">This proceedings set does not include an appointment of tellers entry.</div></div></div>');
 }
 
 // Fetch member data from House Clerk and get photo
@@ -8053,6 +8069,9 @@ window.setMode = function(mode) {
     }
 
     updateModeClasses(mode);
+    if (mode === 'tellers' && proceedingsData.length) {
+        updateTellersSection(proceedingsData);
+    }
 };
 
 // Console helpers for testing — freeze/unfreeze the auto-switch without
