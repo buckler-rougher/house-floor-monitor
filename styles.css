@@ -7760,9 +7760,6 @@ body.silence-mode .silence-section {
 body.speaker-mode .speaker-section {
     display: block;
 }
-body.tellers-mode .speaker-section {
-    display: block;
-}
 
 /* ── Committee Chair Mode ─────────────────────────── */
 .committee-chair-section {
@@ -8930,7 +8927,13 @@ body.journal-mode .floor-grid-panel {
 }
 
 .tellers-section {
-    /* visibility controlled by .tellers-column wrapper */
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+    padding: 0 !important;
+    margin-bottom: var(--sp-24);
 }
 
 body.tellers-mode .vote-display,
@@ -8942,11 +8945,19 @@ body.tellers-mode .floor-grid-panel {
     display: none !important;
 }
 
+body.tellers-mode .tellers-section {
+    display: block;
+}
+
 .tellers-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--sp-8);
+    gap: var(--sp-12);
+    padding: var(--sp-12) var(--sp-24);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+    margin: 0 !important;
 }
 
 .tellers-header-right {
@@ -8954,20 +8965,25 @@ body.tellers-mode .floor-grid-panel {
     justify-content: flex-end;
 }
 
-.speaker-party-tag.teller-party-tag {
-    min-width: 1.6rem;
-}
-
 .tellers-source {
     font-size: var(--fs-sm);
     color: var(--text-muted);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
+}
+
+.tellers-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.tellers-source a:hover {
+    text-decoration: underline;
 }
 
 .tellers-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: var(--sp-16);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--sp-20) var(--sp-32);
     margin-top: var(--sp-16);
 }
 
@@ -8976,10 +8992,10 @@ body.tellers-mode .floor-grid-panel {
     grid-template-columns: 104px minmax(0, 1fr);
     gap: var(--sp-14);
     align-items: center;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-12);
-    padding: var(--sp-14);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
 }
 
 .teller-photo-wrap {
