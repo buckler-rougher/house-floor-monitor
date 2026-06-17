@@ -8955,6 +8955,12 @@ body.tellers-mode .floor-grid-panel {
     min-width: 1.6rem;
 }
 
+.tellers-source {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
 .tellers-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
