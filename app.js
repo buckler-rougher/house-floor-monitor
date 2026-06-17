@@ -4945,7 +4945,8 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // Joint Session (highest priority — rare, significant)
-    const jsItem = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()));
+    // Use find() (newest first); if newest match is DISSOLVED, session is over
+    const jsItem = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()) && !/DISSOLVED/i.test(i.description));
     if (jsItem) {
         window.setMode('joint-session');
         updateJointSessionSection(items);
