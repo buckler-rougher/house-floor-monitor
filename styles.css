@@ -5322,11 +5322,16 @@ font-family: var(--font-mono);
     position: relative;
     top: 1px;
 }
-/* Same font-metrics issue in section info pills — shift text down 1px by
-   adding 1px to top padding and removing from bottom (same total height). */
+/* Same font-metrics issue in section info pills — shift text down 2px by
+   adding 2px to top padding and removing from bottom (same total height). */
 [class$="-pill"] {
-    padding-top: calc(var(--sp-4) + 1px);
-    padding-bottom: calc(var(--sp-4) - 1px);
+    padding-top: calc(var(--sp-4) + 2px);
+    padding-bottom: calc(var(--sp-4) - 2px);
+}
+/* Approval badge label spans have same mono font metric offset — nudge 1px down. */
+[class$="-approval-label"] {
+    position: relative;
+    top: 1px;
 }
 
 /* Info button & popup */
