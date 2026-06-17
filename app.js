@@ -1820,6 +1820,14 @@ const elements = {
     jointMeetingTime: document.getElementById('joint-meeting-time'),
     jointMeetingDescriptionLine: document.getElementById('joint-meeting-description-line'),
     tellersTime: document.getElementById('tellers-time'),
+    tellersImagePlaceholder: document.getElementById('tellers-image-placeholder'),
+    tellersImage: document.getElementById('tellers-image'),
+    tellersMemberTitle: document.getElementById('tellers-member-title'),
+    tellersMemberName: document.getElementById('tellers-member-name'),
+    tellersPartyTag: document.getElementById('tellers-party-tag'),
+    tellersMemberDetails: document.getElementById('tellers-member-details'),
+    tellersMemberAdditional: document.getElementById('tellers-member-additional'),
+    tellersMemberWebsite: document.getElementById('tellers-member-website'),
     tellersDescription: document.getElementById('tellers-description'),
     tellersList: document.getElementById('tellers-list'),
     messageTime: document.getElementById('message-time'),
@@ -6694,7 +6702,7 @@ function updateTellersSection(items) {
             <div class="teller-meta">
                 <div class="teller-name">${escapeHtml(name)}</div>
                 <div class="teller-details">
-                    <span class="teller-party-tag">--</span>
+                    <span class="speaker-party-tag teller-party-tag">--</span>
                     <span class="teller-state">--</span>
                 </div>
                 <div class="teller-meta-line">Matching teller record…</div>
@@ -6751,23 +6759,45 @@ async function fetchTellerInfo(nameStr, cardEl) {
         const profileUrl = bestMatch.bioguideId ? buildCongressProfileUrl(bestMatch.bioguideId) : '#';
         const town = bestMatch.town ? `from ${bestMatch.town}, ${bestMatch.state}` : '';
 
-        cardEl.querySelector('.teller-name').textContent = bestMatch.fullName;
-        cardEl.querySelector('.teller-party-tag').textContent = bestMatch.party || '?';
-        cardEl.querySelector('.teller-party-tag').className = `teller-party-tag ${partyClass}`;
-        cardEl.querySelector('.teller-state').textContent = `${bestMatch.state}${district ? '-' + district : ''}`;
-        cardEl.querySelector('.teller-meta-line').textContent = town || 'House teller';
-        setMemberProfileLink(cardEl.querySelector('.teller-link'), profileUrl);
+        if (cardEl) {
+            cardEl.querySelector('.teller-name').textContent = bestMatch.fullName;
+            const partyTag = cardEl.querySelector('.teller-party-tag');
+            partyTag.textContent = bestMatch.party || '?';
+            partyTag.className = `speaker-party-tag teller-party-tag ${partyClass}`;
+            cardEl.querySelector('.teller-state').textContent = `${bestMatch.state}${district ? '-' + district : ''}`;
+            cardEl.querySelector('.teller-meta-line').textContent = town || 'House teller';
+            setMemberProfileLink(cardEl.querySelector('.teller-link'), profileUrl);
 
-        const img = cardEl.querySelector('.teller-photo');
-        if (img && photoUrl) {
-            img.style.opacity = '0';
-            img.onload = () => { img.style.opacity = '1'; };
-            img.onerror = () => { img.style.display = 'none'; };
-            img.src = photoUrl;
-            img.alt = bestMatch.fullName;
+            const img = cardEl.querySelector('.teller-photo');
+            if (img && photoUrl) {
+                img.style.opacity = '0';
+                img.onload = () => { img.style.opacity = '1'; };
+                img.onerror = () => { img.style.display = 'none'; };
+                img.src = photoUrl;
+                img.alt = bestMatch.fullName;
+            }
+            const placeholder = cardEl.querySelector('.teller-photo-placeholder');
+            if (placeholder && photoUrl) placeholder.style.display = 'none';
         }
-        const placeholder = cardEl.querySelector('.teller-photo-placeholder');
-        if (placeholder && photoUrl) placeholder.style.display = 'none';
+
+        if (elements.tellersMemberTitle) elements.tellersMemberTitle.textContent = 'Appointment of Tellers';
+        if (elements.tellersMemberName) elements.tellersMemberName.textContent = bestMatch.fullName;
+        if (elements.tellersPartyTag) {
+            elements.tellersPartyTag.textContent = bestMatch.party || '';
+            elements.tellersPartyTag.className = `speaker-party-tag ${partyClass}`;
+        }
+        if (elements.tellersMemberDetails) elements.tellersMemberDetails.textContent = `${bestMatch.state}${district ? '-' + district : ''}`;
+        if (elements.tellersMemberAdditional) elements.tellersMemberAdditional.textContent = town || '';
+        setMemberProfileLink(elements.tellersMemberWebsite, profileUrl);
+        if (elements.tellersImage) {
+            elements.tellersImage.style.display = 'block';
+            elements.tellersImage.style.opacity = '0';
+            elements.tellersImage.onload = () => { elements.tellersImage.style.opacity = '1'; };
+            elements.tellersImage.onerror = () => { elements.tellersImage.style.display = 'none'; };
+            if (photoUrl) elements.tellersImage.src = photoUrl;
+            elements.tellersImage.alt = bestMatch.fullName;
+        }
+        if (elements.tellersImagePlaceholder && photoUrl) elements.tellersImagePlaceholder.style.display = 'none';
     } catch (e) {
         console.error('fetchTellerInfo error:', e);
     }
