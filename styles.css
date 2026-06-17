@@ -633,7 +633,7 @@ body {
 }
 
 .oath-column, .pledge-column, .cert-election-column, .cert-electoral-column,
-.sine-die-column, .new-session-column, .journal-column {
+.sine-die-column, .new-session-column, .journal-column, .tellers-column {
     display: none;
 }
 body.oath-mode .oath-column { display: flex; }
@@ -643,6 +643,7 @@ body.cert-electoral-mode .cert-electoral-column { display: flex; }
 body.sine-die-mode .sine-die-column { display: flex; }
 body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
+body.tellers-mode .tellers-column { display: flex; }
 
 /* Floating quote card — no header, just quote text + citation. The card border
    card itself carries the opaque fill so the mode-column center line is
@@ -745,7 +746,7 @@ body.journal-mode .journal-column { display: flex; }
 .committee-chair-content, .pledge-content, .message-content,
 .joint-meeting-content, .journal-content, .joint-session-content,
 .cert-election-content, .cert-electoral-content, .sine-die-content,
-.new-session-content, .admin-oath-content {
+.new-session-content, .admin-oath-content, .tellers-content {
     padding: var(--sp-16) var(--sp-24) !important;
     background: transparent !important;
     border: none !important;
@@ -8923,6 +8924,183 @@ body.journal-mode .floor-grid-panel {
 .journal-source a {
     color: var(--accent-blue);
     text-decoration: none;
+}
+
+.tellers-section {
+    /* visibility controlled by .tellers-column wrapper */
+}
+
+body.tellers-mode .vote-display,
+body.tellers-mode .progress-section,
+body.tellers-mode .vote-header,
+body.tellers-mode .threshold-panel,
+body.tellers-mode .quorum-panel,
+body.tellers-mode .floor-grid-panel {
+    display: none !important;
+}
+
+.tellers-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-16);
+    margin-bottom: var(--sp-16);
+}
+
+.tellers-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #2c5f7a;
+    color: white;
+    padding: var(--sp-6) var(--sp-12);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+}
+
+.tellers-tag-time {
+    font-size: var(--fs-sm);
+    margin-left: var(--sp-8);
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+.tellers-header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tellers-source {
+    font-size: var(--fs-md);
+    color: var(--text-muted);
+}
+
+.tellers-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.tellers-source a:hover {
+    text-decoration: underline;
+}
+
+.tellers-content {
+    display: grid;
+    gap: var(--sp-20);
+}
+
+.tellers-description {
+    font-size: var(--fs-2xl);
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.tellers-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--sp-16);
+}
+
+.teller-card {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: var(--sp-14);
+    align-items: center;
+    background: linear-gradient(180deg, rgba(33, 38, 45, 0.88), rgba(15, 23, 32, 0.96));
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-12);
+    padding: var(--sp-14);
+}
+
+.teller-photo-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-10);
+    overflow: hidden;
+    background: #0f1720;
+}
+
+.teller-photo-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.teller-photo {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.teller-meta {
+    min-width: 0;
+    display: grid;
+    gap: var(--sp-8);
+}
+
+.teller-name {
+    font-size: var(--fs-4xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.15;
+}
+
+.teller-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    align-items: center;
+}
+
+.teller-party-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8rem;
+    padding: 0 var(--sp-6);
+    border-radius: var(--radius-full);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: #fff;
+    background: #6b7280;
+}
+
+.teller-party-tag.democrat { background: var(--accent-blue); }
+.teller-party-tag.republican { background: var(--accent-red); }
+.teller-party-tag.independent { background: var(--accent-amber); }
+
+.teller-state {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+}
+
+.teller-meta-line {
+    color: var(--text-muted);
+    font-size: var(--fs-base);
+    line-height: 1.45;
+}
+
+.teller-link {
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: var(--fs-base);
+    font-family: var(--font-mono);
+}
+
+.teller-link:hover {
+    text-decoration: underline;
 }
 
 .journal-content {
