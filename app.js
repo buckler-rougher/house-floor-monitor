@@ -1819,6 +1819,9 @@ const elements = {
     specialOrderDescriptionLine: document.getElementById('special-order-description-line'),
     jointMeetingTime: document.getElementById('joint-meeting-time'),
     jointMeetingDescriptionLine: document.getElementById('joint-meeting-description-line'),
+    tellersTime: document.getElementById('tellers-time'),
+    tellersDescription: document.getElementById('tellers-description'),
+    tellersList: document.getElementById('tellers-list'),
     messageTime: document.getElementById('message-time'),
     messageFromLine: document.getElementById('message-from-line'),
     messageBody: document.getElementById('message-body'),
@@ -4944,6 +4947,18 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // Appointment of Tellers — fires when it's the most-recent proceeding
+    if (latest.startsWith('appointment of tellers')) {
+        window.setMode('tellers');
+        updateTellersSection(items);
+        if (items[0].pubDate && elements.tellersTime) {
+            elements.tellersTime.textContent = new Date(items[0].pubDate).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+            });
+        }
+        return;
+    }
+
     // Joint Session (highest priority — rare, significant)
     // Use find() (newest first); if newest match is DISSOLVED, session is over
     const jsItem = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()) && !/DISSOLVED/i.test(i.description));
@@ -6654,6 +6669,86 @@ function updateJointMeetingSection(items) {
     }
 }
 
+// Update tellers section
+function updateTellersSection(items) {
+    const item = items.find(i => /^APPOINTMENT OF TELLERS\b/i.test(i.description.trim()));
+    if (!item || !elements.tellersDescription || !elements.tellersList) return;
+
+    const stripped = decodeHtml(item.description.replace(/^APPOINTMENT OF TELLERS\s*[-–]\s*/i, '').trim());
+    elements.tellersDescription.textContent = stripped;
+
+    // Names come after the last colon in the description
+    const colonIdx = stripped.lastIndexOf(':');
+    if (colonIdx === -1) return;
+    const namesStr = stripped.slice(colonIdx + 1).replace(/\.\s*$/, '').trim();
+    // Split on ", and ", " and ", ", "
+    const names = namesStr.split(/,\s+and\s+|,\s+|\s+and\s+/).map(n => n.trim()).filter(Boolean);
+
+    elements.tellersList.innerHTML = '';
+    names.forEach(name => {
+        const row = document.createElement('div');
+        row.className = 'teller-row';
+        row.innerHTML = `<span class="teller-name-raw">${name}</span>`;
+        elements.tellersList.appendChild(row);
+        fetchTellerInfo(name, row);
+    });
+}
+
+async function fetchTellerInfo(nameStr, rowEl) {
+    try {
+        const stateMatch = nameStr.match(/\bof\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s*$/);
+        const stateName = stateMatch ? stateMatch[1] : '';
+        const stateAbbr = stateName ? (STATE_NAME_TO_ABBR[stateName] || '') : '';
+
+        const nameOnly = nameStr
+            .replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '')
+            .replace(/\s+of\s+[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s*$/i, '')
+            .trim();
+        const rawLastName = nameOnly.split(/\s+/).pop();
+
+        const xmlText = await getMemberDataXml();
+        const xmlDoc = parseMemberDataXml(xmlText);
+        const members = xmlDoc.querySelectorAll('member');
+        let bestMatch = null, bestScore = 0;
+
+        for (const member of members) {
+            const stateEl = member.querySelector('state');
+            const memberState = stateEl ? stateEl.getAttribute('postal-code') : '';
+            if (stateAbbr && memberState.toUpperCase() !== stateAbbr.toUpperCase()) continue;
+
+            const lastNameEl = member.querySelector('lastname');
+            const firstNameEl = member.querySelector('firstname');
+            const bioguideEl = member.querySelector('bioguideID');
+            const partyEl = member.querySelector('party');
+            const districtEl = member.querySelector('district');
+            if (!lastNameEl || !firstNameEl || !bioguideEl) continue;
+
+            const score = calculateNameSimilarity(rawLastName, lastNameEl.textContent.trim());
+            if (score > bestScore && score > 0.3) {
+                bestScore = score;
+                bestMatch = {
+                    fullName: `${firstNameEl.textContent.trim()} ${lastNameEl.textContent.trim()}`,
+                    party: partyEl ? partyEl.textContent.trim() : '',
+                    state: memberState,
+                    district: districtEl ? districtEl.textContent.trim() : ''
+                };
+            }
+        }
+
+        if (!bestMatch) return;
+
+        const partyClass = bestMatch.party === 'R' ? 'republican' : bestMatch.party === 'D' ? 'democrat' : 'independent';
+        const district = normalizeDistrict(bestMatch.district);
+        rowEl.innerHTML = `
+            <span class="teller-party-badge ${partyClass}">${bestMatch.party || '?'}</span>
+            <span class="teller-full-name">${bestMatch.fullName}</span>
+            <span class="teller-district">${bestMatch.state}${district ? '-' + district : ''}</span>
+        `;
+    } catch (e) {
+        console.error('fetchTellerInfo error:', e);
+    }
+}
+
 // Fetch member data from House Clerk and get photo
 async function fetchMemberPhotoFromClerkData(leaderName) {
     try {
@@ -7937,7 +8032,7 @@ window.clearDate = function() {
 
 // Global mode switch function for console access
 window.setMode = function(mode) {
-    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair'];
+    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'tellers', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair'];
     if (!validModes.includes(mode)) {
         console.error(`Invalid mode: ${mode}. Valid modes are: ${validModes.join(', ')}`);
         return;
@@ -7974,13 +8069,13 @@ function initModeToggle() {
 
 function updateModeClasses(mode) {
     // Remove all mode classes (including all-mode debug class)
-    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'all-mode');
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'all-mode');
 
     // Special: show every panel simultaneously (lockMode('all') debug helper).
     // all-mode CSS (last in stylesheet) overrides the !important vote-display
     // hiding that each individual mode class applies.
     if (mode === 'all') {
-        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
+        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
         return;
     }
 
@@ -8009,6 +8104,8 @@ function updateModeClasses(mode) {
         document.body.classList.add('special-order-mode');
     } else if (mode === 'joint-meeting') {
         document.body.classList.add('joint-meeting-mode');
+    } else if (mode === 'tellers') {
+        document.body.classList.add('tellers-mode');
     } else if (mode === 'message') {
         document.body.classList.add('message-mode');
     } else if (mode === 'cert-election') {
@@ -8524,18 +8621,14 @@ function createUsChamberLayout(container, config) {
 let _absenteeInFlight = false;
 let _absenteeDebounceTimer = null;
 async function updateAbsenteeTracking() {
-    // Debounce: this fires on every vote.tally SSE event (~5s intervals).
-    // Collapse rapid calls into one fetch per 10s window; skip if already in-flight.
-    clearTimeout(_absenteeDebounceTimer);
-    _absenteeDebounceTimer = setTimeout(async () => {
-        if (_absenteeInFlight) return;
-        _absenteeInFlight = true;
-        try {
-            await _doAbsenteeTracking();
-        } finally {
-            _absenteeInFlight = false;
-        }
-    }, 10_000);
+    // Fetch immediately so the section paints as soon as the page loads.
+    if (_absenteeInFlight) return;
+    _absenteeInFlight = true;
+    try {
+        await _doAbsenteeTracking();
+    } finally {
+        _absenteeInFlight = false;
+    }
 }
 
 async function _doAbsenteeTracking() {
@@ -9426,5 +9519,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Start the application
 document.addEventListener('DOMContentLoaded', init);
-
 
