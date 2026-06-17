@@ -7760,6 +7760,9 @@ body.silence-mode .silence-section {
 body.speaker-mode .speaker-section {
     display: block;
 }
+body.tellers-mode .speaker-section {
+    display: block;
+}
 
 /* ── Committee Chair Mode ─────────────────────────── */
 .committee-chair-section {
