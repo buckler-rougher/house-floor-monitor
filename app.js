@@ -5019,16 +5019,15 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
-    const jmItem = items.findLast(i => /^JOINT MEETING\b/i.test(i.description.trim()));
-    if (jmItem) {
+    // Joint Meeting — find newest joint-meeting-related item; if it's dissolved, mode is off
+    const jmLatest = items.find(i => /^JOINT MEETING\b/i.test(i.description.trim()));
+    if (jmLatest && !/DISSOLVED/i.test(jmLatest.description)) {
         window.setMode('joint-meeting');
-        if (jmItem.pubDate && elements.jointMeetingTime) {
-            elements.jointMeetingTime.textContent = new Date(jmItem.pubDate).toLocaleTimeString('en-US', {
+        updateJointMeetingSection(items);
+        if (jmLatest.pubDate && elements.jointMeetingTime) {
+            elements.jointMeetingTime.textContent = new Date(jmLatest.pubDate).toLocaleTimeString('en-US', {
                 hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
             });
-        }
-        if (elements.jointMeetingDescriptionLine) {
-            elements.jointMeetingDescriptionLine.textContent = decodeHtml(jmItem.description.replace(/^JOINT MEETING\s*[-–]\s*/i, '').trim());
         }
         return;
     }
@@ -6641,6 +6640,16 @@ function updateJointSessionSection(items) {
         } else {
             elements.jointSessionPresidingLine.textContent = '';
         }
+    }
+}
+
+// Update joint meeting section
+function updateJointMeetingSection(items) {
+    const item = items.find(i => /^JOINT MEETING\b/i.test(i.description.trim()) && !/DISSOLVED/i.test(i.description));
+    if (!item) return;
+    const stripped = decodeHtml(item.description.replace(/^JOINT MEETING\s*[-–]\s*/i, '').trim());
+    if (elements.jointMeetingDescriptionLine) {
+        elements.jointMeetingDescriptionLine.textContent = stripped || 'The House convened in Joint Meeting with the Senate.';
     }
 }
 
