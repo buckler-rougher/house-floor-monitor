@@ -1820,14 +1820,6 @@ const elements = {
     jointMeetingTime: document.getElementById('joint-meeting-time'),
     jointMeetingDescriptionLine: document.getElementById('joint-meeting-description-line'),
     tellersTime: document.getElementById('tellers-time'),
-    tellersImagePlaceholder: document.getElementById('tellers-image-placeholder'),
-    tellersImage: document.getElementById('tellers-image'),
-    tellersMemberTitle: document.getElementById('tellers-member-title'),
-    tellersMemberName: document.getElementById('tellers-member-name'),
-    tellersPartyTag: document.getElementById('tellers-party-tag'),
-    tellersMemberDetails: document.getElementById('tellers-member-details'),
-    tellersMemberAdditional: document.getElementById('tellers-member-additional'),
-    tellersMemberWebsite: document.getElementById('tellers-member-website'),
     tellersDescription: document.getElementById('tellers-description'),
     tellersList: document.getElementById('tellers-list'),
     messageTime: document.getElementById('message-time'),
@@ -6780,24 +6772,6 @@ async function fetchTellerInfo(nameStr, cardEl) {
             if (placeholder && photoUrl) placeholder.style.display = 'none';
         }
 
-        if (elements.tellersMemberTitle) elements.tellersMemberTitle.textContent = 'Appointment of Tellers';
-        if (elements.tellersMemberName) elements.tellersMemberName.textContent = bestMatch.fullName;
-        if (elements.tellersPartyTag) {
-            elements.tellersPartyTag.textContent = bestMatch.party || '';
-            elements.tellersPartyTag.className = `speaker-party-tag ${partyClass}`;
-        }
-        if (elements.tellersMemberDetails) elements.tellersMemberDetails.textContent = `${bestMatch.state}${district ? '-' + district : ''}`;
-        if (elements.tellersMemberAdditional) elements.tellersMemberAdditional.textContent = town || '';
-        setMemberProfileLink(elements.tellersMemberWebsite, profileUrl);
-        if (elements.tellersImage) {
-            elements.tellersImage.style.display = 'block';
-            elements.tellersImage.style.opacity = '0';
-            elements.tellersImage.onload = () => { elements.tellersImage.style.opacity = '1'; };
-            elements.tellersImage.onerror = () => { elements.tellersImage.style.display = 'none'; };
-            if (photoUrl) elements.tellersImage.src = photoUrl;
-            elements.tellersImage.alt = bestMatch.fullName;
-        }
-        if (elements.tellersImagePlaceholder && photoUrl) elements.tellersImagePlaceholder.style.display = 'none';
     } catch (e) {
         console.error('fetchTellerInfo error:', e);
     }
