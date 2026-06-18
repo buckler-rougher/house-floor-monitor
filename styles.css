@@ -5320,10 +5320,9 @@ font-family: var(--font-mono);
 /* Keep tag text vertically centered without relying on a fixed offset that
    varies across platforms and font renderers. */
 [class*="-tag-text"] {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
     line-height: 1;
-    vertical-align: middle;
+    transform: translateY(0.05em);
 }
 /* Same font-metrics issue in section info pills — shift text down 2px by
    adding 2px to top padding and removing from bottom (same total height). */
@@ -5332,10 +5331,9 @@ font-family: var(--font-mono);
     padding-bottom: calc(var(--sp-4) - 2px);
 }
 [class$="-approval-label"] {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
     line-height: 1;
-    vertical-align: middle;
+    transform: translateY(0.05em);
 }
 
 /* Info button & popup */
