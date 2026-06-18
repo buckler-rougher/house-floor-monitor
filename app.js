@@ -519,15 +519,16 @@ function formatNextSessionCountdown(target) {
     const diffMs = target.getTime() - Date.now();
     if (diffMs <= 0) return 'NEXT SESSION: NOW';
 
-    const totalMins = Math.floor(diffMs / 60000);
-    const days = Math.floor(totalMins / 1440);
-    const hours = Math.floor((totalMins % 1440) / 60);
-    const mins = totalMins % 60;
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
     const parts = [];
     if (days) parts.push(`${days}D`);
     if (hours) parts.push(`${hours}H`);
-    if (!days && mins) parts.push(`${mins}M`);
-    if (!parts.length) parts.push('LESS THAN 1M');
+    if (mins || days || hours) parts.push(`${mins}M`);
+    parts.push(`${String(secs).padStart(2, '0')}S`);
     return `NEXT SESSION IN ${parts.join(' ')}`;
 }
 

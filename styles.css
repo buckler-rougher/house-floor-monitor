@@ -6749,7 +6749,7 @@ a.bill-card-rule-link {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-6);
-    margin-top: var(--sp-6);
+    margin-top: 2px;
     font-family: var(--font-mono);
     font-size: var(--fs-md);
     font-weight: 600;
