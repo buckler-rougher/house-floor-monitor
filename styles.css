@@ -5317,11 +5317,13 @@ font-family: var(--font-mono);
     align-items: center;
     gap: 7px;
 }
-/* Mono bold tag text sits 1px high relative to the lighter time span due to
-   font metrics; nudge it down to visually realign. */
+/* Keep tag text vertically centered without relying on a fixed offset that
+   varies across platforms and font renderers. */
 [class*="-tag-text"] {
-    position: relative;
-    top: 1px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    vertical-align: middle;
 }
 /* Same font-metrics issue in section info pills — shift text down 2px by
    adding 2px to top padding and removing from bottom (same total height). */
@@ -5329,10 +5331,11 @@ font-family: var(--font-mono);
     padding-top: calc(var(--sp-4) + 2px);
     padding-bottom: calc(var(--sp-4) - 2px);
 }
-/* Approval badge label spans have same mono font metric offset — nudge 1px down. */
 [class$="-approval-label"] {
-    position: relative;
-    top: 1px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 /* Info button & popup */
