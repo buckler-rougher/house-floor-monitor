@@ -494,7 +494,52 @@ function updateSessionStatus(status = null) {
             elements.sessionText.textContent = 'SESSION UNKNOWN';
             break;
     }
-    
+    updateNextSessionCountdown();
+}
+
+function parseNextSessionFromProceedings(items) {
+    if (!Array.isArray(items) || items.length === 0) return null;
+    const latest = items[0];
+    const text = (latest?.description || '').replace(/\s+/g, ' ').trim();
+    const match = text.match(/next meeting is scheduled for\s+(.+?)\s+on\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})\s*\.?$/i);
+    if (!match) return null;
+
+    const timeText = match[1]
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b([ap])\.m\.?/ig, (_, ap) => `${ap.toUpperCase()}M`)
+        .replace(/\b([ap])m\b/ig, (_, ap) => `${ap.toUpperCase()}M`);
+    const dateText = match[2].replace(/\s+/g, ' ').trim();
+    const parsed = new Date(`${dateText} ${timeText}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatNextSessionCountdown(target) {
+    if (!(target instanceof Date) || Number.isNaN(target.getTime())) return '';
+    const diffMs = target.getTime() - Date.now();
+    if (diffMs <= 0) return 'NEXT SESSION: NOW';
+
+    const totalMins = Math.floor(diffMs / 60000);
+    const days = Math.floor(totalMins / 1440);
+    const hours = Math.floor((totalMins % 1440) / 60);
+    const mins = totalMins % 60;
+    const parts = [];
+    if (days) parts.push(`${days}D`);
+    if (hours) parts.push(`${hours}H`);
+    if (!days && mins) parts.push(`${mins}M`);
+    if (!parts.length) parts.push('LESS THAN 1M');
+    return `NEXT SESSION IN ${parts.join(' ')}`;
+}
+
+function updateNextSessionCountdown() {
+    if (!elements.nextSessionCountdown) return;
+    if (!nextSessionAt) {
+        elements.nextSessionCountdown.style.display = 'none';
+        elements.nextSessionCountdown.textContent = 'Next session: --';
+        return;
+    }
+    elements.nextSessionCountdown.style.display = 'inline-flex';
+    elements.nextSessionCountdown.textContent = formatNextSessionCountdown(nextSessionAt);
 }
 
 // API Configuration
@@ -1873,6 +1918,7 @@ const elements = {
     speakerMemberWebsite: document.getElementById('speaker-member-website'),
     speakerMemberDescription: document.getElementById('speaker-member-description'),
     congressInfo: document.getElementById('congress-info'),
+    nextSessionCountdown: document.getElementById('next-session-countdown'),
     airportDelaysList: document.getElementById('airport-delays-list'),
     absenteeRollInfo: document.getElementById('absentee-roll-info'),
     // Bills This Week elements
@@ -1936,6 +1982,7 @@ const HOUSE_MAKEUP_CONFIG = {
 
 // State for RSS feed
 let proceedingsData = [];
+let nextSessionAt = null;
 
 // Absentee filter state
 let absenteeFilterMode = 'all'; // 'all' | 'rep' | 'dem'
@@ -5304,6 +5351,7 @@ async function updateProceedingsFeed() {
 
         // Store items globally so debate/mode sections can re-render after bills load
         proceedingsData = data.items;
+        nextSessionAt = parseNextSessionFromProceedings(data.items);
 
         // Auto-switch mode based on latest proceeding
         autoSwitchModeFromProceedings(data.items);
@@ -5338,6 +5386,7 @@ async function updateProceedingsFeed() {
         updateNewSessionSection(data.items);
         updateAdminOathSection(data.items);
         updateJointSessionSection(data.items);
+        updateNextSessionCountdown();
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
@@ -8177,6 +8226,7 @@ function init() {
 
     updateTimestamp();
     setInterval(updateTimestamp, 1000);
+    setInterval(updateNextSessionCountdown, 1000);
     updateTodayDate();
     setInterval(updateTodayDate, 60000); // Update date every minute
     

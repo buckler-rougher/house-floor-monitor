@@ -5322,7 +5322,7 @@ font-family: var(--font-mono);
 [class*="-tag-text"] {
     display: inline-block;
     line-height: 1;
-    transform: translateY(0.05em);
+    transform: translateY(0.03em);
 }
 /* Same font-metrics issue in section info pills — shift text down 2px by
    adding 2px to top padding and removing from bottom (same total height). */
@@ -5333,7 +5333,7 @@ font-family: var(--font-mono);
 [class$="-approval-label"] {
     display: inline-block;
     line-height: 1;
-    transform: translateY(0.05em);
+    transform: translateY(0.03em);
 }
 
 /* Info button & popup */
@@ -6741,6 +6741,19 @@ a.bill-card-rule-link {
     font-size: var(--fs-md);
     font-weight: 600;
     color: var(--accent-green);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.next-session-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-6);
+    margin-top: var(--sp-6);
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--accent-amber);
     letter-spacing: 0.4px;
     text-transform: uppercase;
 }
