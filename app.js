@@ -9513,7 +9513,16 @@ function updateLastUpdate() {
         }, 1000);
     }
 
-    // Fetch stream and load; retry every 30s if unavailable
+    // Fetch stream and load; retry while the feed is still not live.
+    // The timer callback clears its own guard before re-entering fetchAndLoad().
+    function scheduleFetchAndLoad(delayMs = 5000) {
+        if (pipWaitTimer !== null) clearTimeout(pipWaitTimer);
+        pipWaitTimer = setTimeout(() => {
+            pipWaitTimer = null;
+            fetchAndLoad();
+        }, delayMs);
+    }
+
     function fetchAndLoad() {
         if (pipWaitTimer !== null) return;
         pipWaitTimer = -1;
@@ -9526,12 +9535,12 @@ function updateLastUpdate() {
                 } else {
                     hidePipLoading();
                     if (d?.url && !pipFrozen) loadPipSnapshot(d.url);
-                    pipWaitTimer = setTimeout(fetchAndLoad, 30_000);
+                    scheduleFetchAndLoad();
                 }
             })
             .catch(() => {
                 pipWaitTimer = null;
-                pipWaitTimer = setTimeout(fetchAndLoad, 30_000);
+                scheduleFetchAndLoad();
             });
     }
 
