@@ -3002,9 +3002,34 @@ function handleOptions() {
   });
 }
 
+// Live self-test of the Congress.gov dependency. Returns the key presence and
+// the HTTP status of a minimal API call so /api/health can distinguish
+// "secret not set" from "secret set but rejected (403)" from "API down" —
+// the three states that all surface identically as empty bill modals.
+async function checkCongressApiHealth() {
+  if (!_congressApiKey) {
+    return { keyPresent: false, ok: false, status: null, note: 'CONGRESS_API_KEY secret is not set on this worker — bill enrichment disabled' };
+  }
+  try {
+    const resp = await fetch(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hr/1?api_key=${_congressApiKey}&format=json`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    const note = resp.ok ? 'Congress.gov reachable and key valid'
+      : resp.status === 403 ? 'Key present but rejected by Congress.gov (403 — invalid/expired key)'
+      : `Congress.gov returned HTTP ${resp.status}`;
+    return { keyPresent: true, ok: resp.ok, status: resp.status, note };
+  } catch (e) {
+    return { keyPresent: true, ok: false, status: null, note: `Congress.gov request failed: ${e.name || e.message}` };
+  }
+}
+
 async function handleRequest(request, env) {
   _congressApiKey  = env?.CONGRESS_API_KEY  || '';
   _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
+  if (!_congressApiKey) {
+    console.warn('[house-floor] CONGRESS_API_KEY is empty — bill modal enrichment (summaries, sponsors, cosponsors, committees) is disabled. Set it with `wrangler secret put CONGRESS_API_KEY`.');
+  }
 
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/house-floor/, '');
@@ -3188,12 +3213,16 @@ async function handleRequest(request, env) {
     return await handleRollCall(rollNumber);
   } else if (path === '/api/health' && request.method === 'GET') {
     const coordinator = await getStreamCoordinator(env);
-    const streamStatus = await coordinator.fetch(new Request(`${url.origin}/api/stream/votes/current/status?status=1`, { method: 'POST' })).then(r => r.json()).catch(() => null);
+    const [streamStatus, congress] = await Promise.all([
+      coordinator.fetch(new Request(`${url.origin}/api/stream/votes/current/status?status=1`, { method: 'POST' })).then(r => r.json()).catch(() => null),
+      checkCongressApiHealth(),
+    ]);
     return new Response(JSON.stringify({
       status: 'ok',
       timestamp: new Date().toISOString(),
       sourceOfTruth: 'durable-object',
-      stream: streamStatus
+      stream: streamStatus,
+      congress
     }), {
       headers: {
         ...CORS_HEADERS,
