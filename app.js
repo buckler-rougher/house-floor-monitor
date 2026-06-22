@@ -3004,6 +3004,15 @@ function updateVoteTimelineStatus() {
             badges.appendChild(span);
         }
     });
+    // Once every vote has a terminal result the series is over — hide immediately
+    // rather than waiting for the next full re-render (matches renderVoteTimeline).
+    if (liveStatuses.length && liveStatuses.every(s => s === 'passed' || s === 'failed')) {
+        currentVotesList = [];
+        body.innerHTML = '<div class="whip-updates-loading">No active vote series.</div>';
+        const subHeader = document.getElementById('vote-series-sub-header');
+        if (subHeader) subHeader.hidden = true;
+        return;
+    }
     // Refresh connector-dotted classes based on updated statuses
     items.forEach((item, i) => {
         const nextStatus = liveStatuses[i + 1];
@@ -3216,9 +3225,32 @@ function renderVoteTimeline(items) {
         return;
     }
 
+    // Hide the section once the most-recent series is no longer useful:
+    //  (a) every vote has a terminal result (all passed/failed) — the series concluded; or
+    //  (b) it's stale — the latest notice is too old to be the current session's series
+    //      (its roll-log data may also have been purged, which would render blank circles).
+    // Staleness is measured in elapsed time (not calendar day) so an overnight series
+    // posted the previous night still shows the next morning.
+    const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
+    const meta = parseVoteSeriesMeta(currentItem, votes);
+    const allComplete = statuses.every(s => s === 'passed' || s === 'failed');
+    // Anchor staleness to elapsed time, NOT meta.isLive: a notice's "the House is now
+    // taking..." text is frozen, so an 11-day-old series still parses as isLive — the very
+    // case we must hide. A genuinely live series is inherently recent, so the time window
+    // alone correctly keeps it visible.
+    const staleAnchor = meta.endTime || (currentItem.publishedAt ? new Date(currentItem.publishedAt) : null);
+    const VOTE_SERIES_STALE_MS = 12 * 60 * 60 * 1000; // hide ~12h after the series' estimated end
+    const isStale = staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
+    if (allComplete || isStale) {
+        currentVotesList = [];
+        body.innerHTML = '<div class="whip-updates-loading">No active vote series.</div>';
+        hideSubHeader();
+        return;
+    }
+
     // ── Secondary header ─────────────────────────────────────────────────────
     if (subHeader && subStatus && subTiming) {
-        const { isLive, approxStart, totalMin, endTime } = parseVoteSeriesMeta(currentItem, votes);
+        const { isLive, approxStart, totalMin, endTime } = meta;
         const etFmt = (d, opts) => d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', ...opts });
 
         // Left: status message
@@ -3251,9 +3283,6 @@ function renderVoteTimeline(items) {
 
     // Store for vote-recs modal access
     currentVotesList = votes;
-
-    // Compute statuses upfront so we can derive connector-dotted classes
-    const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
 
     const itemsHtml = votes.map(({ text, billId, duration, action }, i) => {
         const status = statuses[i];
