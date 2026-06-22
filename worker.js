@@ -99,14 +99,19 @@ const DOMEWATCH_CONFIG = {
   baseUrl: 'https://data.domewatch.us/v1'
 };
 // Auto-advances on Jan 3 of each odd year. 119th started Jan 3, 2025; 120th starts Jan 3, 2027.
-const CURRENT_CONGRESS = (function() {
+// MUST be recomputed per request: on Cloudflare Workers the clock is frozen at the Unix
+// epoch (1970) during module-global initialization, so evaluating this at load time yields
+// the wrong Congress (91) and every Congress.gov call 404s. handleRequest() reassigns
+// CURRENT_CONGRESS on each request, where Date reflects real (request-time) wall-clock.
+function computeCurrentCongress() {
   const now = new Date();
   const year = now.getFullYear();
   const isAfterJan3 = now.getMonth() > 0 || now.getDate() >= 3;
   const effectiveYear = isAfterJan3 ? year : year - 1;
   const startYear = effectiveYear % 2 === 0 ? effectiveYear - 1 : effectiveYear;
   return 118 + (startYear - 2023) / 2;
-}());
+}
+let CURRENT_CONGRESS = computeCurrentCongress();
 // Physical KV storage lifetime for all cached entries.
 // Entries never auto-expire so we always have a previous value to compare against.
 // Freshness is controlled by the ttlSeconds parameter inside kvCache, not by this TTL.
@@ -1433,7 +1438,8 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  const cacheKey = quick ? 'bills-weekly-quick-v7' : 'bills-weekly-v7';
+  // v8: invalidate caches poisoned with un-enriched bills from the CURRENT_CONGRESS=91 bug.
+  const cacheKey = quick ? 'bills-weekly-quick-v8' : 'bills-weekly-v8';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -3007,26 +3013,30 @@ function handleOptions() {
 // "secret not set" from "secret set but rejected (403)" from "API down" —
 // the three states that all surface identically as empty bill modals.
 async function checkCongressApiHealth() {
+  const currentCongress = CURRENT_CONGRESS;
   if (!_congressApiKey) {
-    return { keyPresent: false, ok: false, status: null, note: 'CONGRESS_API_KEY secret is not set on this worker — bill enrichment disabled' };
+    return { keyPresent: false, ok: false, status: null, currentCongress, note: 'CONGRESS_API_KEY secret is not set on this worker — bill enrichment disabled' };
   }
   try {
-    const resp = await fetch(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hr/1?api_key=${_congressApiKey}&format=json`, {
+    const resp = await fetch(`https://api.congress.gov/v3/bill/${currentCongress}/hr/1?api_key=${_congressApiKey}&format=json`, {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(5000),
     });
     const note = resp.ok ? 'Congress.gov reachable and key valid'
       : resp.status === 403 ? 'Key present but rejected by Congress.gov (403 — invalid/expired key)'
+      : resp.status === 404 ? `Key valid but Congress ${currentCongress} not found — likely a wrong CURRENT_CONGRESS value`
       : `Congress.gov returned HTTP ${resp.status}`;
-    return { keyPresent: true, ok: resp.ok, status: resp.status, note };
+    return { keyPresent: true, ok: resp.ok, status: resp.status, currentCongress, note };
   } catch (e) {
-    return { keyPresent: true, ok: false, status: null, note: `Congress.gov request failed: ${e.name || e.message}` };
+    return { keyPresent: true, ok: false, status: null, currentCongress, note: `Congress.gov request failed: ${e.name || e.message}` };
   }
 }
 
 async function handleRequest(request, env) {
   _congressApiKey  = env?.CONGRESS_API_KEY  || '';
   _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
+  // Recompute with the request-time clock (module-load value is wrong on Workers — see note above).
+  CURRENT_CONGRESS = computeCurrentCongress();
   if (!_congressApiKey) {
     console.warn('[house-floor] CONGRESS_API_KEY is empty — bill modal enrichment (summaries, sponsors, cosponsors, committees) is disabled. Set it with `wrangler secret put CONGRESS_API_KEY`.');
   }
