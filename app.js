@@ -3234,9 +3234,13 @@ function renderVoteTimeline(items) {
     const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
     const meta = parseVoteSeriesMeta(currentItem, votes);
     const allComplete = statuses.every(s => s === 'passed' || s === 'failed');
+    // Anchor staleness to elapsed time, NOT meta.isLive: a notice's "the House is now
+    // taking..." text is frozen, so an 11-day-old series still parses as isLive — the very
+    // case we must hide. A genuinely live series is inherently recent, so the time window
+    // alone correctly keeps it visible.
     const staleAnchor = meta.endTime || (currentItem.publishedAt ? new Date(currentItem.publishedAt) : null);
     const VOTE_SERIES_STALE_MS = 12 * 60 * 60 * 1000; // hide ~12h after the series' estimated end
-    const isStale = !meta.isLive && staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
+    const isStale = staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
     if (allComplete || isStale) {
         currentVotesList = [];
         body.innerHTML = '<div class="whip-updates-loading">No active vote series.</div>';
