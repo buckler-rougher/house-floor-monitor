@@ -3321,16 +3321,17 @@ export class DomeWatchStreamCoordinator {
     return mins >= 535 && mins < 1200; // 8:55am=535, 8:00pm=1200
   }
 
-  // Returns true if the House appears to be in session, based on last known floor status
+  // Returns true if the dashboard should poll fast, based on last known floor status
   // combined with a business-hours schedule as a safety net.
-  // Fast = floor actively doing something OR (inside hours AND status unknown/active).
-  // Slow = explicitly inactive (recess/not_in_session) OR outside hours with no active status.
+  // Fast = floor actively doing something, OR (recess/unknown AND inside business hours).
+  // Slow = adjourned for the day (house_not_in_session), OR recess/unknown outside business hours.
+  // Recess defers to the schedule rather than forcing slow: the House routinely recesses
+  // mid-session and is expected to resume, so a recess during business hours stays fast.
   _shouldPollFast() {
-    const INACTIVE = new Set(['recess', 'house_not_in_session']);
     const s = this._floorStatusValue;
-    if (s !== null && !INACTIVE.has(s)) return true;  // known active status → fast
-    if (s !== null && INACTIVE.has(s)) return false;  // known inactive → slow
-    return this._inBusinessHours();                   // unknown → fall back to schedule
+    if (s === 'house_not_in_session') return false;                  // adjourned → slow regardless of clock
+    if (s === null || s === 'recess') return this._inBusinessHours(); // recess/unknown → defer to schedule
+    return true;                                                     // any other known status → actively in session → fast
   }
 
   startProceedingsBroadcast() {
@@ -3398,7 +3399,6 @@ export class DomeWatchStreamCoordinator {
         // Broadcast poll-mode event when state changes so the dashboard can reflect it
         if (this._lastPollFast !== fast) {
           this._lastPollFast = fast;
-          const INACTIVE = new Set(['recess', 'house_not_in_session']);
           const s = this._floorStatusValue;
           const reason = s !== null ? s : 'schedule';
           this.broadcast(`event: poll-mode\ndata: ${JSON.stringify({ fast, reason, intervalMs: nextMs })}\n\n`).catch(() => {});
@@ -3560,7 +3560,6 @@ export class DomeWatchStreamCoordinator {
     if (casualtyData) send('casualty-list', casualtyData);
     // Send current poll-mode so new clients don't have to wait for the next mode change
     if (this._lastPollFast !== null) {
-      const INACTIVE = new Set(['recess', 'house_not_in_session']);
       const s = this._floorStatusValue;
       const reason = s !== null ? s : 'schedule';
       const intervalMs = this._lastPollFast ? 10_000 : 3 * 60_000;
