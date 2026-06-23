@@ -4924,7 +4924,7 @@ Passage requires a two-thirds supermajority. Debate is capped at 40 minutes (20 
     'dem-whip-notices': {
         title: 'Dem Whip Notices',
         tags: ['DEMOCRATIC MINORITY'],
-        body: `This section displays notices published by the House Democratic Whip's office via DomeWatch. This site does not endorse either political party; Democratic Whip notices are shown because they are publicly available in a structured format.
+        body: `This section republishes notices from the House Democratic Whip's office via DomeWatch for informational purposes only.
 
 The Republican Whip's notices are not publicly available in a machine-readable format and are therefore not included.
 
