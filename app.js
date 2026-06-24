@@ -2685,6 +2685,7 @@ function parseVoteItemsFromHtml(htmlBody) {
     // scheduling context, reminders, postponements, cancellations.
     const NON_VOTE_RE = new RegExp([
         /^[\*\s]*members\s+are\s+(?:advised|reminded|further\s+advised)\b/,
+        /^any\s+recorded\s+votes?\s+requested\s+on\b/,
         /\bwill\s+be\s+postponed\b/,
         /\bhave\s+been\s+postponed\b/,
         /^next\/last\s+votes?\s+predicted:/,
