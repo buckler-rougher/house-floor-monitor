@@ -757,6 +757,15 @@ const CONGRESS_URL_PREFIX = {
   'senate-joint-resolution':     'S.J.Res.',
   'senate-resolution':           'S.Res.',   // actual Congress.gov URL segment
   'senate-simple-resolution':    'S.Res.',   // alias, just in case
+  // Short prefixes used in Congress.gov URLs (e.g., /119/HR/7401)
+  'hr':                          'H.R.',
+  's':                           'S.',
+  'hconres':                     'H.Con.Res.',
+  'hjres':                       'H.J.Res.',
+  'hres':                        'H.Res.',
+  'sconres':                     'S.Con.Res.',
+  'sjres':                       'S.J.Res.',
+  'sres':                        'S.Res.',
 };
 function congressUrlToBillId(url) {
   const m = url.match(/congress\.gov\/bill\/[^/]+\/([^/?#]+)\/(\d+)/i);
