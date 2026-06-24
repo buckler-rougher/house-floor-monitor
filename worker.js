@@ -1686,6 +1686,29 @@ async function _fetchBills(request, env) {
     parseBillsFromSection(suspensionSection, suspensionBills);
     parseBillsFromSection(mayBeConsideredSection, mayBeConsideredBills);
 
+    // Add bills from proceedings that are not in the schedule (e.g., postponed bills)
+    // These get added to mayBeConsideredBills with their proceedings status
+    const scheduledBillIds = new Set([...ruleBills, ...suspensionBills, ...mayBeConsideredBills].map(b => b.id.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim()));
+    for (const [billId, statusInfo] of Object.entries(proceedingsStatuses)) {
+      if (!scheduledBillIds.has(billId)) {
+        mayBeConsideredBills.push({
+          id: billId,
+          title: 'Proceedings update',
+          isRule: false,
+          description: '',
+          pubDate: new Date(contentUpdatedAt),
+          status: statusInfo.status,
+          latestAction: statusInfo.statusText,
+          latestActionDate: new Date(contentUpdatedAt),
+          considered: true,
+          actionSource: 'proceedings',
+          actionSourceUrl: statusInfo.sourceUrl || null,
+          textUrl: billIdToGovInfoPdf(billId),
+        });
+        scheduledBillIds.add(billId);
+      }
+    }
+
     // Second pass: enrich with Congress.gov floor actions + summaries + sponsor/cosponsors/committees.
     // Skipped on quick=1 requests — caller already has this data from the initial full fetch.
     // Results are cached in KV for 30 minutes so Congress.gov is only hit on cold cache,
