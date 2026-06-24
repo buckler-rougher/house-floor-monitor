@@ -851,13 +851,13 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
 
     // Recorded vote requested and deferred to a later vote series. The Clerk
     // posts these as "POSTPONED PROCEEDINGS - ... further proceedings on <bill>
-    // would be postponed." The bill link may be in this row or nearby. Maps to the
+    // were postponed." The bill link may be in this row or nearby. Maps to the
     // "roll-call" (VOTE REQUESTED) status. Only set it if the bill has no
     // stronger status yet — passage/failure rows are processed earlier in this
     // same (reverse-chronological) loop, so they already win.
     const isPostponed =
       /postponed proceedings/i.test(description) ||
-      /further proceedings\b[\s\S]*\bwould be postponed/i.test(description) ||
+      /further proceedings\b[\s\S]*\bwere postponed/i.test(description) ||
       /recorded vote requested.*postponed/i.test(description) ||
       /postponed.*recorded vote/i.test(description);
     if (isPostponed) {
