@@ -1,0 +1,13 @@
+{
+  "name": "Monitoring the House Floor",
+  "short_name": "House Monitor",
+  "description": "Real-time U.S. House floor activity — live video, vote tallies, bills, and congressional news.",
+  "icons": [
+    { "src": "favicon.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "theme_color": "#0d1117",
+  "background_color": "#0d1117",
+  "display": "standalone",
+  "start_url": "/"
+}

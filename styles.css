@@ -289,11 +289,9 @@ body {
     color: var(--text-secondary);
     font-family: var(--font-mono);
     margin-left: 0;
-    margin-top: 1px;
     display: block;
     position: relative;
     z-index: 1;
-    line-height: 1.05;
 }
 
 /* Anchor scroll offset — clear the fixed 100px header + section-gap breathing room */
@@ -6725,7 +6723,6 @@ a.bill-card-rule-link {
     border-radius: var(--radius-8);
     padding: var(--sp-8) var(--sp-16);
     text-align: center;
-    line-height: 1.08;
 }
 
 .congress-text {
@@ -6755,14 +6752,13 @@ a.bill-card-rule-link {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-6);
-    margin-top: -1px;
+    margin-top: 2px;
     font-family: var(--font-mono);
     font-size: var(--fs-md);
     font-weight: 600;
     color: var(--accent-amber);
     letter-spacing: 0.4px;
     text-transform: uppercase;
-    line-height: 1.05;
 }
 
 /* Airport Delays Panel */
