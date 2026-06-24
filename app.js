@@ -4179,7 +4179,10 @@ function updateBillsDisplay() {
                     <button class="bill-card" data-bill-id="${ruleCardId}" data-status="${statusClass}" type="button">
                         <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
                         <div class="bill-info">
-                            <div class="bill-id">${rule.hres}</div>
+                            <div class="bill-id-row">
+                                <span class="bill-id">${rule.hres}</span>
+                                ${whipRecTagHtml(rule.hres)}
+                            </div>
                             <div class="bill-title">${escapeHtml(rule.title || 'Special rule governing floor consideration')}</div>
                             <div class="bill-meta">
                                 <div class="bill-action">${actionText}</div>
