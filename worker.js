@@ -869,7 +869,8 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       for (let j = 1; j <= 3 && !pid; j++) {
         if (i - j >= 0 && rows[i - j].billId) pid = rows[i - j].billId;
       }
-      if (pid && !statuses[pid]) {
+      // Always set postponed status, even if bill already has a status (it might be 'scheduled')
+      if (pid) {
         statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
       }
       continue;
