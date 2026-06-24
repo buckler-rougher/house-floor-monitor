@@ -2832,6 +2832,22 @@ function getVoteTlStatus(billId, action = null) {
         }
     }
 
+    // Check rollLog directly — also check entry.bill (not just entry.question)
+    // since some procedural votes ("On Ordering the Previous Question") don't
+    // include the H.Res. number in the question text.
+    // extractBillNormFromText handles flexible spacing ("H. R." vs "H.R.").
+    // IMPORTANT: Check rollLog BEFORE billDataMap so completed votes are detected
+    // even if they haven't been updated in billDataMap yet (e.g., during final vote).
+    const billNorm = normalizeBillIdForRules(billId);
+    for (const entry of rollLog) {
+        const qNorm = extractBillNormFromText(entry.question);
+        const bNorm = extractBillNormFromText(entry.bill);
+        if (qNorm !== billNorm && bNorm !== billNorm) continue;
+        const yeas = entry.totals?.yeas || 0;
+        const nays = entry.totals?.nays || 0;
+        if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
+    }
+
     // Check billDataMap (updated by applyRollLogToBills via SSE)
     let bill = billDataMap.get(billId);
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
@@ -2844,20 +2860,6 @@ function getVoteTlStatus(billId, action = null) {
     }
     if (bill?.status === 'passed') return 'passed';
     if (bill?.status === 'failed') return 'failed';
-
-    // Check rollLog directly — also check entry.bill (not just entry.question)
-    // since some procedural votes ("On Ordering the Previous Question") don't
-    // include the H.Res. number in the question text.
-    // extractBillNormFromText handles flexible spacing ("H. R." vs "H.R.").
-    const billNorm = normalizeBillIdForRules(billId);
-    for (const entry of rollLog) {
-        const qNorm = extractBillNormFromText(entry.question);
-        const bNorm = extractBillNormFromText(entry.bill);
-        if (qNorm !== billNorm && bNorm !== billNorm) continue;
-        const yeas = entry.totals?.yeas || 0;
-        const nays = entry.totals?.nays || 0;
-        if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
-    }
 
     return 'pending';
 }
