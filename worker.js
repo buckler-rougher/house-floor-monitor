@@ -1625,7 +1625,7 @@ async function _fetchBills(request, env) {
 
         const legisNum = legisNumMatch[1].replace(/<[^>]*>/g, '').trim();
         const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
-        if (!legisNum || !floorText || legisNum.includes('::')) continue;
+        if (!legisNum || !floorText) continue;
 
         // Bill-text PDF: the schedule row links the exact document on the floor.
         // Prefer the docs.house.gov floor doc (often a Rules Committee Print — the precise
