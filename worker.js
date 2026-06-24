@@ -870,7 +870,8 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     const isPassageMotion =
       /on motion to suspend the rules and (pass|agree)/i.test(description) ||
       /\bon passage\b/i.test(description) ||
-      /on agreeing to the (resolution|amendment)\b/i.test(description);
+      /on agreeing to the (resolution|amendment)\b/i.test(description) ||
+      /on passage of the bill\b/i.test(description);
     if (!isPassageMotion) continue;
 
     let status, statusText;
