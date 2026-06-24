@@ -1633,8 +1633,9 @@ async function _fetchBills(request, env) {
         const textUrl = pdfHrefs.find((h) => /docs\.house\.gov/i.test(h)) || pdfHrefs[0] || null;
 
         // Normalize bill ID for lookups: "H. Res. 1300" → "H.Res. 1300", "H. Con. Res. 86" → "H.Con.Res. 86"
-        // The schedule XML is inconsistent with spacing inside type abbreviations.
-        const normId = legisNum.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
+        // The schedule XML is inconsistent with spacing inside type abbreviations and between type and number.
+        // Ensure exactly one space between type and number to match proceedingsStatuses format.
+        const normId = legisNum.replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.').replace(/\s+/g, ' ').trim();
 
         // Default: bill is scheduled but not yet acted upon
         let billStatus = 'scheduled';
