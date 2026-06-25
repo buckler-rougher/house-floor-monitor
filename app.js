@@ -2838,8 +2838,11 @@ function getVoteTlStatus(billId, action = null) {
     // extractBillNormFromText handles flexible spacing ("H. R." vs "H.R.").
     // IMPORTANT: Check rollLog BEFORE billDataMap so completed votes are detected
     // even if they haven't been updated in billDataMap yet (e.g., during final vote).
+    // Also skip the currently active roll to avoid marking in-progress votes as completed.
     const billNorm = normalizeBillIdForRules(billId);
+    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
     for (const entry of rollLog) {
+        if (activeRoll && String(entry.roll) === activeRoll) continue; // Skip active roll
         const qNorm = extractBillNormFromText(entry.question);
         const bNorm = extractBillNormFromText(entry.bill);
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
