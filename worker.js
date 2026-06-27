@@ -855,30 +855,64 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   //   [i]   "On motion to suspend the rules and pass... Agreed to by Yeas and Nays: 405-0"  ← outcome, NO bill link
   //   [i+1] "Considered as unfinished business. <bill link>"  ← HAS bill link
   // So for each outcome row, look up to 3 rows away for the associated bill link.
+
+  // Returns true if a row description is itself an outcome (postponed or passage
+  // motion). Used to bound the bill-link search so we don't cross into another
+  // outcome's territory and grab the wrong bill.
+  const isOutcomeRow = (desc) =>
+    /postponed proceedings/i.test(desc) ||
+    /further proceedings\b[\s\S]*\bwere postponed/i.test(desc) ||
+    /recorded vote requested.*postponed/i.test(desc) ||
+    /postponed.*recorded vote/i.test(desc) ||
+    /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
+    /\bon passage\b/i.test(desc) ||
+    /on agreeing to the (resolution|amendment)\b/i.test(desc) ||
+    /on passage of the bill\b/i.test(desc) ||
+    /agree to the senate amendment/i.test(desc);
+
+  // Extract a bill ID mentioned inline in plain text (e.g. "H.R. 1234" in the
+  // postponed description). Used as a fallback before searching nearby rows.
+  const inlineBillId = (desc) => {
+    const m = desc.match(/\b(H\.R\.|S\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.Res\.|S\.J\.Res\.|S\.Con\.Res\.)\s*(\d+)/i);
+    return m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
+  };
+
+  // Search for the associated bill link within a window around row i, stopping
+  // early if another outcome row is encountered (to avoid cross-contamination).
+  const findBillId = (i, fwdLimit, bwdLimit) => {
+    if (rows[i].billId) return rows[i].billId;
+    for (let j = 1; j <= fwdLimit; j++) {
+      const r = rows[i + j];
+      if (!r) break;
+      if (j > 1 && isOutcomeRow(r.description)) break;
+      if (r.billId) return r.billId;
+    }
+    for (let j = 1; j <= bwdLimit; j++) {
+      const r = rows[i - j];
+      if (!r) break;
+      if (isOutcomeRow(r.description)) break;
+      if (r.billId) return r.billId;
+    }
+    return null;
+  };
+
   for (let i = 0; i < rows.length; i++) {
     const { description } = rows[i];
 
     // Recorded vote requested and deferred to a later vote series. The Clerk
     // posts these as "POSTPONED PROCEEDINGS - ... further proceedings on <bill>
     // were postponed." The bill link may be in this row or nearby. Maps to the
-    // "roll-call" (VOTE REQUESTED) status. Only set it if the bill has no
-    // stronger status yet — passage/failure rows are processed earlier in this
-    // same (reverse-chronological) loop, so they already win.
+    // "roll-call" (VOTE REQUESTED) status. Always set it — it should override
+    // 'scheduled', and passage/failure rows earlier in the loop already win via
+    // STATUS_RANK.
     const isPostponed =
       /postponed proceedings/i.test(description) ||
       /further proceedings\b[\s\S]*\bwere postponed/i.test(description) ||
       /recorded vote requested.*postponed/i.test(description) ||
       /postponed.*recorded vote/i.test(description);
     if (isPostponed) {
-      let pid = rows[i].billId;
-      // Search for bill link if not in same row (similar to passage motion logic)
-      for (let j = 1; j <= 6 && !pid; j++) {
-        if (i + j < rows.length && rows[i + j].billId) pid = rows[i + j].billId;
-      }
-      for (let j = 1; j <= 3 && !pid; j++) {
-        if (i - j >= 0 && rows[i - j].billId) pid = rows[i - j].billId;
-      }
-      // Always set postponed status, even if bill already has a status (it might be 'scheduled')
+      // Prefer inline bill ID from description text; fall back to nearby rows.
+      const pid = rows[i].billId || inlineBillId(description) || findBillId(i, 6, 3);
       if (pid) {
         statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
       }
@@ -916,15 +950,9 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     // Find the bill ID for this passage motion. The bill-link row ("Considered
     // as unfinished business. H.R. ####") follows the passage in the reverse-
     // chronological feed, but intervening rows (motion to recommit, previous
-    // question, etc.) can push it several rows down — so search FORWARD up to 6
-    // rows first, then a smaller backward window.
-    let billId = rows[i].billId;
-    for (let j = 1; j <= 6 && !billId; j++) {
-      if (i + j < rows.length && rows[i + j].billId) billId = rows[i + j].billId;
-    }
-    for (let j = 1; j <= 3 && !billId; j++) {
-      if (i - j >= 0 && rows[i - j].billId) billId = rows[i - j].billId;
-    }
+    // question, etc.) can push it several rows down — so search forward up to 6
+    // rows first, then a smaller backward window. Stop at outcome boundaries.
+    const billId = findBillId(i, 6, 3);
 
     if (billId && status) {
       const existing = statuses[billId];
