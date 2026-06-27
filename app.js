@@ -1081,6 +1081,10 @@ function updateVoteCountsDisplay(counts) {
         if (elements.yeasBar)    elements.yeasBar.style.width    = `${yPct}%`;
         if (elements.naysBar)    elements.naysBar.style.width    = `${nPct}%`;
         if (elements.presentBar) elements.presentBar.style.width = `${pPct}%`;
+
+        // Round the right edge of whichever bar sits at the far right
+        if (elements.presentBar) elements.presentBar.classList.toggle('right-cap', present > 0 && nays === 0);
+        if (elements.yeasBar)    elements.yeasBar.classList.toggle('right-cap',    yeas > 0 && nays === 0 && present === 0);
     }
 
     // Bold whichever side is leading
@@ -2548,6 +2552,11 @@ function applyWhipFeedData({ floor = [], notices = [] }) {
     // timestamps so the two series sort chronologically against each other.
     const EDT_OFFSET_MS = 4 * 60 * 60 * 1000;
     const sortKey = (item) => {
+        // For whip notices, use publishDate (YYYY-MM-DD) for sorting by intended date
+        // For floor updates, use publishedAt (actual timestamp)
+        if ((item.noticeType || 'floor') !== 'floor' && item.publishDate) {
+            return new Date(item.publishDate + 'T12:00:00Z').getTime() + EDT_OFFSET_MS;
+        }
         const t = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
         return (item.noticeType || 'floor') === 'floor' ? t : t + EDT_OFFSET_MS;
     };

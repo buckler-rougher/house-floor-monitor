@@ -1123,6 +1123,11 @@ body.tellers-mode .tellers-column { display: flex; }
     box-shadow: 0 0 15px rgba(210, 153, 34, 0.5);
 }
 
+.progress-fill.right-cap {
+    border-top-right-radius: var(--radius-6) !important;
+    border-bottom-right-radius: var(--radius-6) !important;
+}
+
 .progress-fill.nays {
     background: var(--accent-red);
     border-radius: 0 var(--radius-6) var(--radius-6) 0;
