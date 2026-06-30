@@ -2862,6 +2862,7 @@ function getVoteTlStatus(billId, action = null) {
     // Also skip the currently active roll to avoid marking in-progress votes as completed.
     const billNorm = normalizeBillIdForRules(billId);
     const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    let anyMatchedRoll = null; // roll number of a resolved entry for this bill (any action) — used for the PQ fallback below
     for (const entry of rollLog) {
         if (activeRoll && String(entry.roll) === activeRoll) continue; // Skip active roll
         const qNorm = extractBillNormFromText(entry.question);
@@ -2869,7 +2870,24 @@ function getVoteTlStatus(billId, action = null) {
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
-        if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
+        if (yeas + nays > 0) {
+            if (action !== 'previous question') return yeas > nays ? 'passed' : 'failed';
+            anyMatchedRoll = entry.roll;
+        }
+    }
+
+    // PQ roll-call entries often carry no bill reference at all (DomeWatch's rc.bill
+    // is empty for "On Ordering the Previous Question"), so the loop above never
+    // matches by billNorm. PQ always votes on the immediately preceding roll number
+    // relative to the substantive vote on the same bill — use that adjacency.
+    if (action === 'previous question' && anyMatchedRoll != null) {
+        const pqRoll = String(Number(anyMatchedRoll) - 1);
+        const pqEntry = rollLog.find(e => String(e.roll) === pqRoll && /previous\s+question/i.test(e.question || ''));
+        if (pqEntry) {
+            const yeas = pqEntry.totals?.yeas || 0;
+            const nays = pqEntry.totals?.nays || 0;
+            if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
+        }
     }
 
     // Check billDataMap (updated by applyRollLogToBills via SSE)
@@ -5039,6 +5057,16 @@ function autoSwitchModeFromProceedings(items) {
                        liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive;
     if (inVoteMode) {
         window.setMode('vote');
+        return;
+    }
+
+    // DomeWatch's own status is authoritative for recess/adjournment — proceedings
+    // text matching below can be fooled by stale or ambiguous Clerk items (e.g. a
+    // Committee-of-the-Whole item that scrolled past the recess marker in the feed
+    // window). If DomeWatch already says recess/adjourned, trust it over text-sniffing.
+    const domeStatusLower = (floorData.currentStatus?.text || floorData.currentStatus?.value || '').toLowerCase();
+    if (domeStatusLower.includes('recess') || domeStatusLower.includes('adjourn')) {
+        window.setMode('recess');
         return;
     }
 
