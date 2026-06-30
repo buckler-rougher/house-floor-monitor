@@ -868,7 +868,8 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     /\bon passage\b/i.test(desc) ||
     /on agreeing to the (resolution|amendment)\b/i.test(desc) ||
     /on passage of the bill\b/i.test(desc) ||
-    /agree to the senate amendment/i.test(desc);
+    /agree to the senate amendment/i.test(desc) ||
+    /on ordering the previous question/i.test(desc);
 
   // Extract a bill ID mentioned inline in plain text (e.g. "H.R. 1234" in the
   // postponed description). Used as a fallback before searching nearby rows.
@@ -925,7 +926,8 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       /\bon passage\b/i.test(description) ||
       /on agreeing to the (resolution|amendment)\b/i.test(description) ||
       /on passage of the bill\b/i.test(description) ||
-      /agree to the senate amendment/i.test(description);
+      /agree to the senate amendment/i.test(description) ||
+      /on ordering the previous question/i.test(description);
     if (!isPassageMotion) continue;
 
     let status, statusText;
