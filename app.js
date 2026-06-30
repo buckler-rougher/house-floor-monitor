@@ -5669,7 +5669,7 @@ function updateDebateSection(items) {
                 const name = `${s.firstName} ${s.lastName}`;
                 const loc = s.state + (s.district != null ? `-${String(s.district).padStart(2, '0')}` : '');
                 const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
-                elements.debateSponsorInner.innerHTML = `
+                setIfChanged(elements.debateSponsorInner, `
                     <div class="absentee-member" style="padding:0;border:none;">
                         <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
                             <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
@@ -5680,7 +5680,7 @@ function updateDebateSection(items) {
                             <span class="absentee-name">${name}</span>
                             <span class="absentee-state">${loc}</span>
                         </div>
-                    </div>`;
+                    </div>`);
                 elements.debateSponsorSection.style.display = '';
             } else {
                 elements.debateSponsorSection.style.display = 'none';
