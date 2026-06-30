@@ -2752,8 +2752,6 @@ function parseVoteItemsFromHtml(htmlBody) {
         }
 
         const billId = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
-        if (seen.has(billId)) continue;
-        seen.add(billId);
 
         // Strip inline connector phrases and VOTE YES/NO badges
         const stripped = raw
@@ -2770,6 +2768,12 @@ function parseVoteItemsFromHtml(htmlBody) {
         } else {
             action = suspensionContext ? 'suspension' : null;
         }
+
+        // Deduplicate on (billId, action) so the same bill can appear twice with
+        // different actions (e.g. Previous Question + Adoption on H.Res. 1398).
+        const seenKey = `${billId}::${action ?? ''}`;
+        if (seen.has(seenKey)) continue;
+        seen.add(seenKey);
 
         const text = actionMatch ? stripped.slice(actionMatch[0].length).trim() : stripped;
         const durMatch = text.match(/\b(\d+)\s*min(?:utes?)?/i);
