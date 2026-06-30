@@ -5934,7 +5934,7 @@ a.bill-card-rule-link {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
-    z-index: 1002; /* above vrec-overlay (1001) so bill modal stacks on top */
+    z-index: 1200; /* above pip (1099/1100) and vrec-overlay (1001) */
     display: flex;
     align-items: center;
     justify-content: center;
