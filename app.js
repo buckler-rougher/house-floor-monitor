@@ -2872,11 +2872,16 @@ function getVoteTlStatus(billId, action = null) {
         const nays = entry.totals?.nays || 0;
         if (yeas + nays > 0) {
             if (action !== 'previous question') return yeas > nays ? 'passed' : 'failed';
+            // If this entry IS the PQ roll (question contains "previous question"), resolve directly.
+            // (DomeWatch often includes the bill ID in the PQ question text, so qNorm matches billNorm
+            // here even though rc.bill is empty — we can read the result straight from this entry.)
+            if (/previous\s+question/i.test(entry.question || '')) return yeas > nays ? 'passed' : 'failed';
+            // Otherwise it's a substantive vote for the same bill — save roll for adjacency fallback below.
             anyMatchedRoll = entry.roll;
         }
     }
 
-    // PQ roll-call entries often carry no bill reference at all (DomeWatch's rc.bill
+    // PQ roll-call entries sometimes carry no bill reference at all (DomeWatch's rc.bill
     // is empty for "On Ordering the Previous Question"), so the loop above never
     // matches by billNorm. PQ always votes on the immediately preceding roll number
     // relative to the substantive vote on the same bill — use that adjacency.
