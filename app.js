@@ -2832,6 +2832,14 @@ function getVoteTlStatus(billId, action = null) {
         const billMatches = (qm && normalizeBillIdForRules(`${qm[1]} ${qm[2]}`) === billNormActive) ||
                             (lm && normalizeBillIdForRules(`${lm[1]} ${lm[2]}`) === billNormActive);
         if (billMatches && questionMatchesAction(activeQ, action)) return 'active';
+
+        // PQ votes often omit the H.Res. number from the question text entirely.
+        // If the question matches a PQ pattern and this item's action is 'previous
+        // question', treat it as active — the question type alone is sufficient since
+        // there can only be one PQ vote at a time.
+        if (!billMatches && action === 'previous question' && /previous\s+question/i.test(activeQ)) {
+            return 'active';
+        }
     }
 
     // For H.Res. resolutions, check specialRulesMap — rule votes store their
