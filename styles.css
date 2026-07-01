@@ -10555,6 +10555,9 @@ body.all-mode .floor-grid-panel {
     cursor: pointer;
     white-space: normal;
     max-width: 72px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all .4s cubic-bezier(.15,.83,.66,1);
 }
 #suggest-fab::before {
@@ -10655,7 +10658,7 @@ body.all-mode .floor-grid-panel {
     margin-top: var(--sp-16);
     font-size: var(--fs-sm);
     font-weight: 600;
-    color: rgba(255,255,255,.7);
+    color: color-mix(in srgb, var(--accent-green) 80%, rgba(255,255,255,.7));
     background: radial-gradient(ellipse at bottom, var(--border-color) 0%, var(--bg-elevated) 45%);
     border: 0;
     border-radius: var(--radius-6);
@@ -10672,7 +10675,7 @@ body.all-mode .floor-grid-panel {
     opacity: .2;
     transition: all .4s cubic-bezier(.15,.83,.66,1);
 }
-.suggest-submit:hover:not(:disabled) { color: #fff; transform: scale(1.02); }
+.suggest-submit:hover:not(:disabled) { color: var(--accent-green); transform: scale(1.02); }
 .suggest-submit:hover:not(:disabled)::before { opacity: 1; }
 .suggest-submit:disabled { opacity: .35; cursor: default; }
 
