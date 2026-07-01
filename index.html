@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260629b">
+    <link rel="stylesheet" href="styles.css?v=20260701a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -139,8 +139,52 @@
                     <span class="clock-time" id="utc-time">--:--:--</span>
                 </div>
             </div>
+            <button id="suggest-fab" aria-label="Open suggestion box">SUGGEST</button>
                     </div>
     </header>
+
+<!-- Suggestion drawer -->
+<div id="suggest-overlay" class="suggest-overlay" style="display:none"></div>
+<div id="suggest-drawer" class="suggest-drawer" aria-hidden="true" role="dialog" aria-label="Suggestion box">
+  <div class="suggest-drawer-header">
+    <span class="suggest-drawer-title">SUGGESTION BOX</span>
+    <button class="suggest-drawer-close" id="suggest-close" aria-label="Close">&times;</button>
+  </div>
+  <form id="suggest-form" class="suggest-form" novalidate>
+    <input type="text" name="website" class="suggest-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+    <input type="hidden" name="ref" value="house-floor" />
+    <input type="hidden" name="subject" value="House Floor Monitor — Suggestion" />
+    <input type="hidden" name="name" value="Anonymous" />
+    <label class="suggest-label" for="suggest-message">MESSAGE <span class="suggest-req">*</span></label>
+    <textarea id="suggest-message" name="message" class="suggest-textarea" rows="5" placeholder="Ideas, bugs, data questions…" required></textarea>
+    <label class="suggest-label" for="suggest-email">EMAIL <span class="suggest-opt">(optional, for follow-up)</span></label>
+    <input type="email" id="suggest-email" name="email" class="suggest-input" placeholder="you@example.com" autocomplete="email" />
+    <div id="suggest-error" class="suggest-error" style="display:none"></div>
+    <p class="suggest-consent">By submitting, you agree to the <a href="javascript:void(0)" id="suggest-privacy-link" class="suggest-privacy-link">use of your data</a>.</p>
+    <button type="submit" class="suggest-submit" id="suggest-submit">SEND</button>
+  </form>
+  <div id="suggest-success" class="suggest-success" style="display:none">
+    <div class="suggest-success-icon">✓</div>
+    <div class="suggest-success-msg">GOT IT — THANKS.</div>
+  </div>
+</div>
+
+<!-- Data & privacy modal -->
+<div id="suggest-data-modal" class="suggest-data-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="suggest-data-modal-title">
+  <div class="suggest-data-backdrop" id="suggest-data-backdrop"></div>
+  <div class="suggest-data-box">
+    <button class="suggest-data-close" id="suggest-data-close" aria-label="Close">&times;</button>
+    <h2 id="suggest-data-modal-title" class="suggest-data-title">DATA &amp; PRIVACY</h2>
+    <p class="suggest-data-p">When you submit a suggestion, the following is collected and sent to me by email:</p>
+    <ul class="suggest-data-list">
+      <li>Your message</li>
+      <li>Your email address, if provided</li>
+      <li>Your IP address and the time of submission</li>
+    </ul>
+    <p class="suggest-data-p">This information is used solely to read and respond to your suggestion. It is not stored in a database, not shared with third parties, and not used for marketing.</p>
+    <p class="suggest-data-p">For more, see the <a href="/legal.html#privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
+  </div>
+</div>
     
     <main class="container">
                     <!-- Congress Info Display -->
@@ -1451,7 +1495,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260630a"></script>
+    <script src="app.js?v=20260701a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
