@@ -10658,11 +10658,11 @@ body.all-mode .floor-grid-panel {
     margin-top: var(--sp-16);
     font-size: var(--fs-sm);
     font-weight: 600;
-    color: color-mix(in srgb, var(--accent-green) 80%, rgba(255,255,255,.7));
-    background: radial-gradient(ellipse at bottom, var(--border-color) 0%, var(--bg-elevated) 45%);
+    color: rgba(255,255,255,.85);
+    background: radial-gradient(ellipse at bottom, color-mix(in srgb, var(--accent-green) 40%, var(--bg-elevated)) 0%, var(--bg-elevated) 55%);
     border: 0;
     border-radius: var(--radius-6);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.1);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-green) 30%, transparent);
     padding: 8px 0;
     width: 100%;
     cursor: pointer;
@@ -10675,7 +10675,7 @@ body.all-mode .floor-grid-panel {
     opacity: .2;
     transition: all .4s cubic-bezier(.15,.83,.66,1);
 }
-.suggest-submit:hover:not(:disabled) { color: var(--accent-green); transform: scale(1.02); }
+.suggest-submit:hover:not(:disabled) { color: #fff; transform: scale(1.02); }
 .suggest-submit:hover:not(:disabled)::before { opacity: 1; }
 .suggest-submit:disabled { opacity: .35; cursor: default; }
 
