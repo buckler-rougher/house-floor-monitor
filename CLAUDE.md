@@ -12,7 +12,7 @@
 - Never recommend paid APIs or services (especially X/Twitter API)
 - Never refer to Twitter as "X" — always "Twitter"
 - Never use `wrangler deploy`
-- Never use curl or external API calls to verify fixes — reason from local code only
+- External API calls and curl are allowed for research and data fetching; do not use them solely to verify code fixes (reason from local code for that)
 
 ## Architecture
 - Cloudflare Pages (static) + Cloudflare Workers (REST + SSE via Durable Object)
