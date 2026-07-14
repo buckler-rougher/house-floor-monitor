@@ -3865,7 +3865,12 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
             }
         }
         specialRulesMap.clear();
-        for (const rule of (rulesData.rules || [])) {
+        // Sort ascending by H.Res. number so that when a bill has been re-attached to
+        // successive rules across weeks, the newest rule always wins the .set() below —
+        // Congress.gov's updateDate order is not reliable for this (a bill can appear in
+        // several rules, and the map must resolve to whichever one currently governs it).
+        const sortedRules = [...(rulesData.rules || [])].sort((a, b) => Number(a.hresNum) - Number(b.hresNum));
+        for (const rule of sortedRules) {
             const override = ruleStatusOverrides.get(rule.hresNum);
             for (const billKey of rule.bills) {
                 specialRulesMap.set(billKey, {
