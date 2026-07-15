@@ -2750,20 +2750,23 @@ function parseVoteItemsFromHtml(htmlBody) {
             const durMatch = raw.match(/\b(\d+)\s*min(?:utes?)?/i);
 
             // Whip notices list amendment votes as "Sponsor #N" with no bill reference
-            // at all (e.g. "Boebert #1 – Eliminates funding..."). Resolve the bill via
-            // the amendment-vote map built from proceedings text so these are clickable.
+            // at all (e.g. "Boebert #1 – Eliminates funding..."). Resolve the bill (and
+            // exact amendment number/en bloc group) via the amendment-vote map built
+            // from proceedings text so these are clickable and open pre-narrowed.
             const amdtM = labelText.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
-            let amdtBillId = null;
+            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null;
             if (amdtM) {
                 const sponsorKey = amendmentSponsorKey(amdtM[1]);
-                amdtBillId = resolveAmendmentVoteBillId(sponsorKey, parseInt(amdtM[2], 10));
+                const entry = resolveAmendmentVoteEntry(sponsorKey, parseInt(amdtM[2], 10));
+                if (entry) { amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums; }
             }
 
             // billId stays null (this item's status/label must NOT be driven by the
             // underlying bill's own votes — a passed suspension vote on the same bill
             // would otherwise make an unrelated, still-pending amendment show as
-            // "passed"). amdtBillId is only used to make the item clickable.
-            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId });
+            // "passed"). amdtBillId/amdtNum/amdtEnBlocNums are only used to make the
+            // item clickable and to narrow the Amendments panel to the right entry.
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums });
             continue;
         }
 
@@ -3349,7 +3352,7 @@ function renderVoteTimeline(items) {
     // Store for vote-recs modal access
     currentVotesList = votes;
 
-    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId }, i) => {
+    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId, amdtNum, amdtEnBlocNums }, i) => {
         const status = statuses[i];
         const nextStatus = statuses[i + 1];
         // Dotted connector when this item or the next is pending
@@ -3363,9 +3366,11 @@ function renderVoteTimeline(items) {
         const extraClass = connectorDotted ? ' connector-dotted' : '';
         const hasBadges = duration || resultText || absHtml;
         // Amendment-vote items (e.g. "Boebert #1") carry no billId of their own (see
-        // parseVoteItemsFromHtml) but amdtBillId links to the bill's Amendments tab.
+        // parseVoteItemsFromHtml) but amdtBillId links to the bill's Amendments tab,
+        // narrowed to the exact amendment (or en bloc group) via amdtNum/amdtEnBlocNums.
+        const amdtArgs = `${amdtNum != null ? amdtNum : 'null'}, ${amdtEnBlocNums ? JSON.stringify(amdtEnBlocNums) : 'null'}`;
         const clickAttr = billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"`
-                         : amdtBillId ? ` onclick="openBillModalToAmendments('${escapeHtml(amdtBillId)}')"`
+                         : amdtBillId ? ` onclick="openBillModalToAmendments('${escapeHtml(amdtBillId)}', ${amdtArgs})"`
                          : '';
         return `
             <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
@@ -3790,6 +3795,11 @@ let amendmentsPartyFilter = 'all';
 let amendmentsMemberFilter = null;
 // Amendment text search query
 let amendmentsSearchQuery = '';
+// Deep-link narrowing: number | number[] | null. Set when jumping to the Amendments
+// panel from an amendment-vote indicator (bill card or Vote Series item) so the panel
+// opens narrowed to that specific amendment (or en bloc group) instead of the full list.
+// Cleared whenever the user types in the search box manually.
+let amendmentsExactFilter = null;
 
 function sortBillsForDisplay(bills) {
     const indexed = bills.map((b, i) => ({ ...b, _origIdx: b._origIdx ?? i }));
@@ -4195,13 +4205,14 @@ function getAmendmentVotesForBill(billId) {
     return [...amendmentVotes.values()].filter(v => v.billId === norm);
 }
 
-// Resolve which bill an amendment vote belongs to, given a sponsor key + amendment
-// number (matches either an individual amendment or an en bloc grouping number).
-// Used to give whip-notice vote-series items like "Boebert #1" a clickable bill link
-// even though the notice text itself never mentions the underlying bill.
-function resolveAmendmentVoteBillId(sponsorKey, num) {
+// Resolve the amendment-vote entry for a sponsor key + amendment number (matches
+// either an individual amendment or an en bloc grouping number). Used to give
+// whip-notice vote-series items like "Boebert #1" a clickable, precisely-targeted
+// link into the Amendments panel even though the notice text never mentions the
+// underlying bill or which specific amendment(s) the number refers to.
+function resolveAmendmentVoteEntry(sponsorKey, num) {
     for (const v of amendmentVotes.values()) {
-        if (v.sponsorKey === sponsorKey && (v.num === num || v.enBlocNum === String(num))) return v.billId;
+        if (v.sponsorKey === sponsorKey && (v.num === num || v.enBlocNum === String(num))) return v;
     }
     return null;
 }
@@ -4641,8 +4652,10 @@ function createBillCard(bill, procedure) {
                    ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
                    : v.status === 'passed' ? '✓'
                    : '';
+        const numAttr = v.num != null ? ` data-amdt-num="${v.num}"` : '';
+        const enBlocAttr = v.enBlocNums && v.enBlocNums.length ? ` data-amdt-enbloc-nums="${v.enBlocNums.join(',')}"` : '';
         return `
-        <div class="amdt-vote-card amdt-vote-${v.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
+        <div class="amdt-vote-card amdt-vote-${v.status}" data-bill-id="${bill.id}"${numAttr}${enBlocAttr} role="button" tabindex="0">
             <span class="amdt-vote-circle" aria-hidden="true">${icon}</span>
             <span class="amdt-vote-label">${escapeHtml(label)} ${statusText}</span>
         </div>
@@ -4676,8 +4689,29 @@ function billIdToRulesSlug(billId) {
     return `${typeSlug}-${m[2]}`;
 }
 
-function openBillModalToAmendments(billId) {
+// num / enBlocNums narrow the Amendments panel to a specific amendment (or en bloc
+// group) instead of showing the full submitted-amendments list — used when jumping
+// here from an amendment-vote indicator (bill card or Vote Series item), where we
+// already know exactly which amendment(s) the vote was about.
+function openBillModalToAmendments(billId, num = null, enBlocNums = null) {
     openBillModal(billId);
+
+    // openBillModal's own reset (amendmentsExactFilter = null) already ran by now —
+    // set the real target after it, then force a re-render for the case where
+    // loadAmendments hit its in-memory cache and already rendered synchronously
+    // (a fresh fetch will pick up amendmentsExactFilter once it resolves).
+    amendmentsExactFilter = (enBlocNums && enBlocNums.length) ? enBlocNums : (num != null ? num : null);
+    const body = document.getElementById('amendments-body');
+    if (body) {
+        const searchInput = document.querySelector('#bill-amendments-panel-el [data-amdt-search]');
+        if (searchInput) {
+            searchInput.value = enBlocNums && enBlocNums.length ? `En Bloc: ${enBlocNums.join(', ')}` : (num != null ? `#${num}` : '');
+        }
+        const slug = body.dataset.amendmentsSlug;
+        const cached = slug && _amendmentsDataCache.get(slug);
+        if (cached) renderAmendmentsTable(cached, body);
+    }
+
     // Switch immediately to amendments panel after the modal is built
     const nav = document.getElementById('bill-panel-nav');
     const mainPanel = document.getElementById('bill-main-panel');
@@ -5013,6 +5047,7 @@ function openBillModal(billId) {
     amendmentsPartyFilter = 'all';
     amendmentsMemberFilter = null;
     amendmentsSearchQuery = '';
+    amendmentsExactFilter = null;
     // Sync sort + filter buttons without CSS transitions (prevents flash/fade on open)
     overlay.querySelectorAll('.amdt-filter-btn, .amdt-sort-btn').forEach(btn => { btn.style.transition = 'none'; });
     overlay.querySelectorAll('.amdt-sort-btn').forEach(btn =>
@@ -5119,6 +5154,13 @@ function sortAmendmentsForDisplay(amendments) {
 
 function renderAmendmentsTable({ amendments }, body) {
     let display = sortAmendmentsForDisplay(amendments);
+
+    // Deep-link narrowing (from an amendment-vote indicator) — exact match on
+    // amendment number(s), takes priority over the other filters below.
+    if (amendmentsExactFilter != null) {
+        const targets = (Array.isArray(amendmentsExactFilter) ? amendmentsExactFilter : [amendmentsExactFilter]).map(Number);
+        display = display.filter(a => targets.includes(Number(a.num)));
+    }
 
     // Party filter
     if (amendmentsPartyFilter === 'bipartisan') {
@@ -8745,6 +8787,7 @@ function init() {
     document.addEventListener('input', e => {
         if (!e.target.closest('[data-amdt-search]')) return;
         amendmentsSearchQuery = e.target.value.trim();
+        amendmentsExactFilter = null; // manual typing overrides any deep-link narrowing
         _reRenderAllAmendmentBodies();
     });
 
@@ -8795,20 +8838,25 @@ function init() {
     });
 
     // Bill card click → modal; sort button click → re-sort
+    const openAmdtCard = amdtCard => {
+        const num = amdtCard.dataset.amdtNum != null ? parseInt(amdtCard.dataset.amdtNum, 10) : null;
+        const enBlocNums = amdtCard.dataset.amdtEnblocNums ? amdtCard.dataset.amdtEnblocNums.split(',').map(Number) : null;
+        openBillModalToAmendments(amdtCard.dataset.billId, num, enBlocNums);
+    };
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
         billsSection.addEventListener('click', e => {
             const sortBtn = e.target.closest('.bills-sort-btn');
             if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
             const amdtCard = e.target.closest('.amdt-vote-card');
-            if (amdtCard) { openBillModalToAmendments(amdtCard.dataset.billId); return; }
+            if (amdtCard) { openAmdtCard(amdtCard); return; }
             const card = e.target.closest('[data-bill-id]');
             if (card) openBillModal(card.dataset.billId);
         });
         billsSection.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
                 const amdtCard = e.target.closest('.amdt-vote-card');
-                if (amdtCard) { e.preventDefault(); openBillModalToAmendments(amdtCard.dataset.billId); return; }
+                if (amdtCard) { e.preventDefault(); openAmdtCard(amdtCard); return; }
                 const card = e.target.closest('[data-bill-id]');
                 if (card) { e.preventDefault(); openBillModal(card.dataset.billId); }
             }
