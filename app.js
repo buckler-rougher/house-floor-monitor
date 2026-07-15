@@ -670,6 +670,13 @@ function applyRollLogToBills(entries, activeRoll) {
         }
 
         if (PROCEDURAL.test(q)) continue;
+        // An amendment roll's question mentions the bill number too (e.g. "H R 8595 -
+        // Boebert ... Part A Amendment No. 1 - On Agreeing to the Amendment"), but it's
+        // not a vote on the BILL itself — without this guard its tally gets stamped
+        // onto bill.status as if it were the bill's own passage/failure result. Doesn't
+        // catch "as Amended" (passage text) or "On Agreeing to the Resolution" (rule
+        // adoption), which correctly still fall through to the logic below.
+        if (/\bamendment\b/i.test(q)) continue;
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
         if (yeas + nays === 0) continue;
