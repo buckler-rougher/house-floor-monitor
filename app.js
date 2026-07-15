@@ -3388,6 +3388,11 @@ function renderVoteTimeline(items) {
     }).join('');
 
     body.innerHTML = `<div class="vote-tl-items">${itemsHtml}</div>`;
+
+    // Bill cards read currentVotesList (just updated above) to show a "Vote Pending"
+    // MTR indicator ahead of the actual proceedings text existing — redraw now so
+    // that shows up immediately rather than waiting on some unrelated refresh.
+    updateBillsDisplay();
 }
 
 // Build the Dem Whip recommendation tag for a bill, or '' if none.
@@ -4612,9 +4617,18 @@ function createBillCard(bill, procedure) {
         </button>`;
 
     // Live proceedings map wins; fall back to value stored on the bill object (survives daily rollover)
-    // Only show if there's an actual vote result — pending MTR on a passed/finished bill is noise
-    const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
-    const hasMtr = mtr && mtr.voteText;
+    const mtrResolved = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
+    // A "pending" MTR from proceedings text alone is noise (can be stale/leftover from an
+    // earlier bill) — but if today's Whip vote-series notice explicitly lists an MTR for
+    // this bill as an upcoming vote, that's fresh, current-day evidence it's really next.
+    const mtrSeriesItem = (!mtrResolved || !mtrResolved.voteText) && procedure === 'rule'
+        ? (currentVotesList || []).find(v => v.billId && /motion to (?:re)?commit/i.test(v.action || '') &&
+            normalizeBillIdForRules(v.billId) === normalizeBillIdForRules(bill.id))
+        : null;
+    const mtr = (mtrResolved && mtrResolved.voteText) ? mtrResolved
+              : mtrSeriesItem ? { type: /recommit/i.test(mtrSeriesItem.action) ? 'recommit' : 'commit', status: 'pending', voteText: null }
+              : null;
+    const hasMtr = !!mtr;
 
     // Amendment votes — only rule bills can have amendments (suspension/may-be-considered never do)
     const amdtVotes = procedure === 'rule'
@@ -4628,7 +4642,7 @@ function createBillCard(bill, procedure) {
         const mtrTypeName = mtr.type === 'commit' ? 'Motion to Commit' : 'Motion to Recommit';
         const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                        : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
-                       : mtrTypeName;
+                       : `${mtrTypeName} · Vote Pending`;
         const mtrIcon  = mtr.status === 'failed'
                        ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
                        : mtr.status === 'passed' ? '✓'
