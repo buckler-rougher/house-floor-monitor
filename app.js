@@ -4324,8 +4324,8 @@ function updateAmendmentVotes(items) {
     }
 
     let changed = false;
-    const requestedRe = /at the conclusion of debate on the (.+?) amendment(?:\s+en\s+bloc\s+No\.\s*(\d+))?,[\s\S]*?demanded a recorded vote/i;
-    const outcomeRe = /On agreeing to the (.+?) amendments?(?:\s+en\s+bloc\s+No\.\s*(\d+))?;?\s*(Agreed to|Not agreed to|Failed)\s+by\s+(voice vote|recorded vote:\s*(\d+)\s*[-–]\s*(\d+))/i;
+    const requestedRe = /at the conclusion of debate on the (.+?) amendment(?:\s+en\s+bloc\s+No\.\s*(\d+)|\s+No\.\s*(\d+))?,[\s\S]*?demanded a recorded vote/i;
+    const outcomeRe = /On agreeing to the (.+?) amendments?(?:\s+en\s+bloc\s+No\.\s*(\d+))?;?\s*(?:as \w+\s+)?(Agreed to|Not agreed to|Failed)\s+by\s+(voice vote|recorded vote:\s*(\d+)\s*[-–]\s*(\d+))/i;
 
     const applyEntry = (mapKey, entry) => {
         amendmentVotes.set(mapKey, entry);
@@ -4359,7 +4359,7 @@ function updateAmendmentVotes(items) {
 
         if (reqM) {
             const enBlocNum = reqM[2] || null;
-            const num = enBlocNum ? null : (individualNums.get(sponsorKey) ?? null);
+            const num = enBlocNum ? null : (reqM[3] ? parseInt(reqM[3], 10) : (individualNums.get(sponsorKey) ?? null));
             const enBlocNums = enBlocNum ? (enBlocCompositions.get(`${sponsorKey}|${enBlocNum}`) || null) : null;
             const mapKey = `${billId}|${sponsorKey}|${enBlocNum ?? num ?? 'x'}`;
             const existing = amendmentVotes.get(mapKey);
