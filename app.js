@@ -2748,7 +2748,22 @@ function parseVoteItemsFromHtml(htmlBody) {
                 .trim();
             if (!labelText) continue;
             const durMatch = raw.match(/\b(\d+)\s*min(?:utes?)?/i);
-            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null });
+
+            // Whip notices list amendment votes as "Sponsor #N" with no bill reference
+            // at all (e.g. "Boebert #1 – Eliminates funding..."). Resolve the bill via
+            // the amendment-vote map built from proceedings text so these are clickable.
+            const amdtM = labelText.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
+            let amdtBillId = null;
+            if (amdtM) {
+                const sponsorKey = amendmentSponsorKey(amdtM[1]);
+                amdtBillId = resolveAmendmentVoteBillId(sponsorKey, parseInt(amdtM[2], 10));
+            }
+
+            // billId stays null (this item's status/label must NOT be driven by the
+            // underlying bill's own votes — a passed suspension vote on the same bill
+            // would otherwise make an unrelated, still-pending amendment show as
+            // "passed"). amdtBillId is only used to make the item clickable.
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId });
             continue;
         }
 
@@ -3334,7 +3349,7 @@ function renderVoteTimeline(items) {
     // Store for vote-recs modal access
     currentVotesList = votes;
 
-    const itemsHtml = votes.map(({ text, billId, duration, action }, i) => {
+    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId }, i) => {
         const status = statuses[i];
         const nextStatus = statuses[i + 1];
         // Dotted connector when this item or the next is pending
@@ -3347,11 +3362,16 @@ function renderVoteTimeline(items) {
         const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : '';
         const extraClass = connectorDotted ? ' connector-dotted' : '';
         const hasBadges = duration || resultText || absHtml;
+        // Amendment-vote items (e.g. "Boebert #1") carry no billId of their own (see
+        // parseVoteItemsFromHtml) but amdtBillId links to the bill's Amendments tab.
+        const clickAttr = billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"`
+                         : amdtBillId ? ` onclick="openBillModalToAmendments('${escapeHtml(amdtBillId)}')"`
+                         : '';
         return `
             <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
                 <div class="vote-tl-circle ${status}"><span class="vote-tl-num">${i + 1}</span></div>
                 <div class="vote-tl-content">
-                    <div class="vote-tl-bill"${billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"` : ''}>${escapeHtml(billLabel)}</div>
+                    <div class="vote-tl-bill"${clickAttr}>${escapeHtml(billLabel)}</div>
                     ${desc ? `<div class="vote-tl-desc">${escapeHtml(desc)}</div>` : ''}
                     ${hasBadges ? `<div class="vote-tl-badges">
                         ${duration ? `<span class="vote-tl-duration">${escapeHtml(duration)}</span>` : ''}
@@ -4173,6 +4193,17 @@ const amendmentVotes = new Map();
 function getAmendmentVotesForBill(billId) {
     const norm = normalizeBillIdForRules(billId);
     return [...amendmentVotes.values()].filter(v => v.billId === norm);
+}
+
+// Resolve which bill an amendment vote belongs to, given a sponsor key + amendment
+// number (matches either an individual amendment or an en bloc grouping number).
+// Used to give whip-notice vote-series items like "Boebert #1" a clickable bill link
+// even though the notice text itself never mentions the underlying bill.
+function resolveAmendmentVoteBillId(sponsorKey, num) {
+    for (const v of amendmentVotes.values()) {
+        if (v.sponsorKey === sponsorKey && (v.num === num || v.enBlocNum === String(num))) return v.billId;
+    }
+    return null;
 }
 
 // "Mr. Carter (TX)" / "Ms. Wasserman Schultz (FL)" / "Carter of Texas" → "carter-tx" (or just "carter" if no state)
