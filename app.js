@@ -1255,6 +1255,7 @@ function startSSEStreaming() {
                     autoSwitchModeFromProceedings(data.items);
                     updateBillStatusFromProceedings(data.items);
                     if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
+                    if (updateAmendmentVotes(data.items)) updateBillsDisplay();
                     updateDebateSection(data.items);
                     updatePrayerSection(data.items);
                     updateSilenceSection(data.items);
@@ -3899,12 +3900,21 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
     loadMtrFromStorage();
     applyStoredMtrToBills();
 
+    // Restore amendment vote outcomes from localStorage (same pattern as MTR)
+    loadAmendmentVotesFromStorage();
+    applyStoredAmendmentVotesToBills();
+
     updateBillsDisplay();
 
     // Backfill MTR outcomes from past proceedings (runs once after first bills load)
     if (!backfillMtrFromProceedings._done) {
         backfillMtrFromProceedings._done = true;
         backfillMtrFromProceedings();
+    }
+    // Backfill amendment vote outcomes from past proceedings (runs once after first bills load)
+    if (!backfillAmendmentVotesFromProceedings._done) {
+        backfillAmendmentVotesFromProceedings._done = true;
+        backfillAmendmentVotesFromProceedings();
     }
     if (proceedingsData.length) updateDebateSection(proceedingsData);
 }
@@ -4152,6 +4162,255 @@ function updateMotionsToRecommit(items) {
     return changed;
 }
 
+// ── Amendment votes ──────────────────────────────────────────────────────────
+// Map: `${normalizedBillId}|${sponsorKey}|${enBlocNum ?? num ?? 'x'}` →
+//   { billId, sponsorRaw, num, enBlocNum, enBlocNums, status: 'requested'|'passed'|'failed', voteText }
+// Populated from proceedings items; shown as indicator(s) above the bill card.
+// Only amendments where a recorded vote was requested/held get an entry — the vast
+// majority that pass/fail by voice vote are intentionally never recorded here.
+const amendmentVotes = new Map();
+
+function getAmendmentVotesForBill(billId) {
+    const norm = normalizeBillIdForRules(billId);
+    return [...amendmentVotes.values()].filter(v => v.billId === norm);
+}
+
+// "Mr. Carter (TX)" / "Ms. Wasserman Schultz (FL)" / "Carter of Texas" → "carter-tx" (or just "carter" if no state)
+function amendmentSponsorKey(raw) {
+    const cleaned = (raw || '').replace(/^(Mr\.|Ms\.|Mrs\.)\s+/i, '').trim();
+    const parenMatch = cleaned.match(/^(.+?)\s*\(([A-Z]{2})\)$/);
+    if (parenMatch) return `${parenMatch[1].trim().toLowerCase()}-${parenMatch[2].toLowerCase()}`;
+    const ofMatch = cleaned.match(/^(.+?)\s+of\s+([A-Za-z]+)$/i);
+    if (ofMatch) return ofMatch[1].trim().toLowerCase();
+    return cleaned.toLowerCase();
+}
+
+const AMDT_STORAGE_KEY = 'amendment-vote-outcomes';
+const AMDT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function saveAmendmentVotesToStorage() {
+    try {
+        const entries = [];
+        for (const [key, data] of amendmentVotes) {
+            if (data.status === 'passed' || data.status === 'failed') {
+                entries.push([key, { ...data, _saved: Date.now() }]);
+            }
+        }
+        localStorage.setItem(AMDT_STORAGE_KEY, JSON.stringify(entries));
+    } catch {}
+}
+
+function loadAmendmentVotesFromStorage() {
+    try {
+        const raw = localStorage.getItem(AMDT_STORAGE_KEY);
+        if (!raw) return;
+        const now = Date.now();
+        const entries = JSON.parse(raw);
+        for (const [key, data] of entries) {
+            if (now - (data._saved || 0) > AMDT_TTL_MS) continue; // expired
+            if (!amendmentVotes.has(key)) {
+                const { _saved, ...rest } = data;
+                amendmentVotes.set(key, rest);
+            }
+        }
+    } catch {}
+}
+
+// Apply stored amendment vote outcomes onto bill objects (called after bills load)
+function applyStoredAmendmentVotesToBills() {
+    for (const data of amendmentVotes.values()) {
+        if (data.status !== 'passed' && data.status !== 'failed') continue;
+        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+            const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === data.billId);
+            if (bill) {
+                bill.amendmentVotes = bill.amendmentVotes || [];
+                if (!bill.amendmentVotes.some(v => v.sponsorKey === data.sponsorKey && v.enBlocNum === data.enBlocNum && v.num === data.num)) {
+                    bill.amendmentVotes.push(data);
+                }
+                break;
+            }
+        }
+    }
+}
+
+// Fetch proceedings for the past 2 days and backfill amendment vote outcomes.
+// Mirrors backfillMtrFromProceedings — called once after bills load.
+async function backfillAmendmentVotesFromProceedings() {
+    const API = 'https://api.evanhollander.org/house-floor/api/proceedings';
+    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    let changed = false;
+    for (let d = 1; d <= 2; d++) {
+        const dt = new Date(nowET);
+        dt.setDate(dt.getDate() - d);
+        const mm = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const yyyy = dt.getFullYear();
+        try {
+            const resp = await fetch(`${API}?date=${mm}/${dd}/${yyyy}`, { signal: AbortSignal.timeout(8000) });
+            if (!resp.ok) continue;
+            const data = await resp.json();
+            if (data?.items?.length) {
+                if (updateAmendmentVotes(data.items)) changed = true;
+            }
+        } catch { /* non-critical */ }
+    }
+    if (changed) updateBillsDisplay();
+}
+
+// Scan proceedings items for amendment-vote lifecycle events (en bloc composition,
+// recorded-vote requests, and resolved recorded-vote outcomes) and update the map.
+// Returns true if anything changed (caller should redraw bills if so).
+//
+// Proceedings items arrive newest-first (reverse chronological — confirmed against
+// /api/proceedings output). Postponed ("requested") amendment votes are typically
+// taken up as a batch well after the original debate, and the resulting outcome row
+// almost never repeats the en bloc/amendment number — so this function walks the
+// array in true chronological order (oldest → newest, i.e. from the end of the array
+// backwards) and matches each outcome to the OLDEST unresolved "requested" entry for
+// that sponsor (FIFO), which mirrors how the House actually clears postponed votes.
+function updateAmendmentVotes(items) {
+    if (!items?.length) return false;
+    const billIdPat = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
+    const extractNormId = text => {
+        const m = text.match(billIdPat);
+        return m ? normalizeBillIdForRules(`${m[1].trim()} ${m[2]}`) : null;
+    };
+    const findBillId = i => {
+        let billId = extractNormId(items[i].description || '');
+        for (let j = 1; j <= 10 && !billId; j++) {
+            if (i + j < items.length) billId = extractNormId(items[i + j].description || '');
+            if (!billId && i - j >= 0) billId = extractNormId(items[i - j].description || '');
+        }
+        return billId;
+    };
+    // Fallback bill association: amendment-marathon proceedings are dominated by rows
+    // about one bill, but the amendment-specific rows themselves rarely mention the
+    // bill inline (see comment above on why proximity search can miss it entirely for
+    // a delayed outcome row) — so fall back to whichever bill is mentioned most often
+    // in this batch.
+    const billMentionCounts = new Map();
+    for (const item of items) {
+        const id = extractNormId(item.description || '');
+        if (id) billMentionCounts.set(id, (billMentionCounts.get(id) || 0) + 1);
+    }
+    let dominantBillId = null, dominantCount = 0;
+    for (const [id, count] of billMentionCounts) {
+        if (count > dominantCount) { dominantBillId = id; dominantCount = count; }
+    }
+
+    // Pass 1 (chronological order): gather en bloc compositions ("...offered by Mr.
+    // Carter (TX), comprised of the following amendments printed in ... as en bloc
+    // No. 2: Nos. 1, 14, 15, 19, 25, 28, and 32.") keyed by sponsorKey|enBlocNum, plus
+    // individual amendment numbers ("An amendment, offered by Mr. Joyce (OH), numbered
+    // 21...") keyed by sponsorKey.
+    const enBlocCompositions = new Map(); // "sponsorKey|N" → number[]
+    const individualNums = new Map();     // sponsorKey → number (most recently offered)
+    const enBlocRe = /Amendments?\s+en\s+bloc\s+offered\s+by\s+([^,]+),[\s\S]*?as\s+en\s+bloc\s+No\.\s*(\d+):\s*Nos?\.\s*((?:\d+,\s*)*(?:and\s+)?\d+)\./i;
+    const individualRe = /An\s+amendment,\s*offered\s+by\s+([^,]+),\s*numbered\s+(\d+)/i;
+    const debateRe = /debate\s+on\s+the\s+(.+?)\s+amendment\s+No\.\s*(\d+)\b/i;
+    for (let i = items.length - 1; i >= 0; i--) {
+        const desc = items[i].description || '';
+        const enBlocM = desc.match(enBlocRe);
+        if (enBlocM) {
+            const sponsorKey = amendmentSponsorKey(enBlocM[1]);
+            const nums = enBlocM[3].split(/,|\band\b/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+            enBlocCompositions.set(`${sponsorKey}|${enBlocM[2]}`, nums);
+            continue;
+        }
+        const indM = desc.match(individualRe);
+        if (indM) { individualNums.set(amendmentSponsorKey(indM[1]), parseInt(indM[2], 10)); continue; }
+        const debM = desc.match(debateRe);
+        if (debM) { individualNums.set(amendmentSponsorKey(debM[1]), parseInt(debM[2], 10)); }
+    }
+
+    let changed = false;
+    const requestedRe = /at the conclusion of debate on the (.+?) amendment(?:\s+en\s+bloc\s+No\.\s*(\d+))?,[\s\S]*?demanded a recorded vote/i;
+    const outcomeRe = /On agreeing to the (.+?) amendments?(?:\s+en\s+bloc\s+No\.\s*(\d+))?;?\s*(Agreed to|Not agreed to|Failed)\s+by\s+(voice vote|recorded vote:\s*(\d+)\s*[-–]\s*(\d+))/i;
+
+    const applyEntry = (mapKey, entry) => {
+        amendmentVotes.set(mapKey, entry);
+        if (entry.status === 'passed' || entry.status === 'failed') {
+            for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === entry.billId);
+                if (bill) {
+                    bill.amendmentVotes = bill.amendmentVotes || [];
+                    const idx = bill.amendmentVotes.findIndex(v => v.sponsorKey === entry.sponsorKey && v.enBlocNum === entry.enBlocNum && v.num === entry.num);
+                    if (idx >= 0) bill.amendmentVotes[idx] = entry; else bill.amendmentVotes.push(entry);
+                    break;
+                }
+            }
+            saveAmendmentVotesToStorage();
+        }
+        changed = true;
+    };
+
+    // Pass 2 (true chronological order — process requests before their later outcomes)
+    const pendingBySpon = new Map(); // sponsorKey → [mapKey, ...] oldest-unresolved first
+    for (let i = items.length - 1; i >= 0; i--) {
+        const desc = items[i].description || '';
+        const reqM = desc.match(requestedRe);
+        const outM = !reqM ? desc.match(outcomeRe) : null;
+        if (!reqM && !outM) continue;
+
+        const sponsorRaw = (reqM ? reqM[1] : outM[1]).trim();
+        const sponsorKey = amendmentSponsorKey(sponsorRaw);
+        const billId = findBillId(i) || dominantBillId;
+        if (!billId) continue;
+
+        if (reqM) {
+            const enBlocNum = reqM[2] || null;
+            const num = enBlocNum ? null : (individualNums.get(sponsorKey) ?? null);
+            const enBlocNums = enBlocNum ? (enBlocCompositions.get(`${sponsorKey}|${enBlocNum}`) || null) : null;
+            const mapKey = `${billId}|${sponsorKey}|${enBlocNum ?? num ?? 'x'}`;
+            const existing = amendmentVotes.get(mapKey);
+            // Only a brand-new entry counts as a change — re-affirming an already
+            // "requested" entry on every SSE tick shouldn't trigger a re-render, and an
+            // already-resolved entry must never be downgraded back to requested.
+            if (!existing) {
+                applyEntry(mapKey, { billId, sponsorRaw, sponsorKey, num, enBlocNum, enBlocNums, status: 'requested', voteText: null });
+            }
+            if (!pendingBySpon.has(sponsorKey)) pendingBySpon.set(sponsorKey, []);
+            pendingBySpon.get(sponsorKey).push(mapKey);
+            continue;
+        }
+
+        // Outcome row
+        const isVoice = /voice vote/i.test(outM[4]);
+        if (isVoice) continue; // voice-vote-only outcome — never create a card
+
+        const explicitEnBlocNum = outM[2] || null;
+        let mapKey, base;
+        if (explicitEnBlocNum) {
+            mapKey = `${billId}|${sponsorKey}|${explicitEnBlocNum}`;
+            base = amendmentVotes.get(mapKey) || {
+                billId, sponsorRaw, sponsorKey, num: null, enBlocNum: explicitEnBlocNum,
+                enBlocNums: enBlocCompositions.get(`${sponsorKey}|${explicitEnBlocNum}`) || null,
+            };
+        } else {
+            const queue = pendingBySpon.get(sponsorKey);
+            if (queue && queue.length) {
+                mapKey = queue.shift(); // FIFO: postponed votes are cleared in the order demanded
+                base = amendmentVotes.get(mapKey);
+            } else {
+                // No prior postponement seen (e.g. an immediate recorded vote) — key by
+                // the individual amendment number if we have one.
+                const num = individualNums.get(sponsorKey) ?? null;
+                mapKey = `${billId}|${sponsorKey}|${num ?? 'x'}`;
+                base = amendmentVotes.get(mapKey) || { billId, sponsorRaw, sponsorKey, num, enBlocNum: null, enBlocNums: null };
+            }
+        }
+        if (!base) continue;
+
+        const failed = /Not agreed to|Failed/i.test(outM[3]);
+        const status = failed ? 'failed' : 'passed';
+        const voteText = `${outM[5]}-${outM[6]}`;
+        if (base.status !== status || base.voteText !== voteText) {
+            applyEntry(mapKey, { ...base, status, voteText });
+        }
+    }
+    return changed;
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -4313,23 +4572,54 @@ function createBillCard(bill, procedure) {
     // Live proceedings map wins; fall back to value stored on the bill object (survives daily rollover)
     // Only show if there's an actual vote result — pending MTR on a passed/finished bill is noise
     const mtr = motionsToRecommit.get(normalizeBillIdForRules(bill.id)) || bill.mtr || null;
-    if (!mtr || !mtr.voteText) return cardHtml;
+    const hasMtr = mtr && mtr.voteText;
 
-    const mtrTypeName = mtr.type === 'commit' ? 'Motion to Commit' : 'Motion to Recommit';
-    const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
-                   : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
-                   : mtrTypeName;
-    const mtrIcon  = mtr.status === 'failed'
-                   ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
-                   : mtr.status === 'passed' ? '✓'
-                   : '';
+    // Amendment votes — only rule bills can have amendments (suspension/may-be-considered never do)
+    const amdtVotes = procedure === 'rule'
+        ? (getAmendmentVotesForBill(bill.id).length ? getAmendmentVotesForBill(bill.id) : (bill.amendmentVotes || []))
+        : [];
 
-    return `<div class="bill-slot">
+    if (!hasMtr && !amdtVotes.length) return cardHtml;
+
+    let mtrBlockHtml = '';
+    if (hasMtr) {
+        const mtrTypeName = mtr.type === 'commit' ? 'Motion to Commit' : 'Motion to Recommit';
+        const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
+                       : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
+                       : mtrTypeName;
+        const mtrIcon  = mtr.status === 'failed'
+                       ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
+                       : mtr.status === 'passed' ? '✓'
+                       : '';
+        mtrBlockHtml = `
         <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
             <span class="mtr-label">${mtrLabel}</span>
         </div>
-        <div class="mtr-connector" aria-hidden="true"></div>
+        <div class="mtr-connector" aria-hidden="true"></div>`;
+    }
+
+    const amdtBlockHtml = amdtVotes.map(v => {
+        const label = v.enBlocNum
+            ? `${v.sponsorRaw} Amendment En Bloc No. ${v.enBlocNum}`
+            : `${v.sponsorRaw} Amendment${v.num ? ' No. ' + v.num : ''}`;
+        const statusText = v.status === 'passed' ? `Passed${v.voteText ? ' · ' + v.voteText : ''}`
+                          : v.status === 'failed' ? `Failed${v.voteText ? ' · ' + v.voteText : ''}`
+                          : 'Recorded Vote Requested';
+        const icon = v.status === 'failed'
+                   ? `<svg width="9" height="9" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
+                   : v.status === 'passed' ? '✓'
+                   : '';
+        return `
+        <div class="amdt-vote-card amdt-vote-${v.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
+            <span class="amdt-vote-circle" aria-hidden="true">${icon}</span>
+            <span class="amdt-vote-label">${escapeHtml(label)} ${statusText}</span>
+        </div>
+        <div class="amdt-vote-connector" aria-hidden="true"></div>`;
+    }).join('');
+
+    return `<div class="bill-slot">
+        ${amdtBlockHtml}${mtrBlockHtml}
         ${cardHtml}
     </div>`;
 }
@@ -5458,6 +5748,9 @@ async function updateProceedingsFeed() {
 
         // Update motion to recommit indicator on bill cards
         if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
+
+        // Update amendment vote indicators on bill cards
+        if (updateAmendmentVotes(data.items)) updateBillsDisplay();
 
         // Update debate section with latest bill information
         updateDebateSection(data.items);
@@ -8476,11 +8769,15 @@ function init() {
         billsSection.addEventListener('click', e => {
             const sortBtn = e.target.closest('.bills-sort-btn');
             if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
+            const amdtCard = e.target.closest('.amdt-vote-card');
+            if (amdtCard) { openBillModalToAmendments(amdtCard.dataset.billId); return; }
             const card = e.target.closest('[data-bill-id]');
             if (card) openBillModal(card.dataset.billId);
         });
         billsSection.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
+                const amdtCard = e.target.closest('.amdt-vote-card');
+                if (amdtCard) { e.preventDefault(); openBillModalToAmendments(amdtCard.dataset.billId); return; }
                 const card = e.target.closest('[data-bill-id]');
                 if (card) { e.preventDefault(); openBillModal(card.dataset.billId); }
             }

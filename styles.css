@@ -5869,23 +5869,78 @@ a.bill-card-rule-link {
 .mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
 .mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
 
-/* Hover anywhere in the slot lights up all three elements in one colour.
-   Uses :has() so the bill's data-status drives both cards.
+/* Amendment vote mini-card — same shape/behavior as .mtr-card, stacked above it */
+.amdt-vote-card {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-6);
+    padding: 4px 10px;
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.55;
+    user-select: none;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.amdt-vote-circle {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.amdt-vote-connector {
+    width: 2px;
+    height: 8px;
+    margin-left: 16px;
+    background: var(--border-color);
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+}
+
+.amdt-vote-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: rgba(255, 193, 7, 0.75); }
+.amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: rgba(248, 81, 73, 0.75); }
+.amdt-vote-card.amdt-vote-passed    .amdt-vote-circle { color: rgba(63, 185, 80, 0.75); }
+
+/* Hover anywhere in the slot lights up every stacked element in one colour.
+   Uses :has() so the bill's data-status drives all indicator cards.
    box-shadow:none resets any standalone card :hover rule so there is only
    one border — no double-outline. Passed bills → green; everything else → grey. */
-.bill-slot:hover .mtr-card {
+.bill-slot:hover .mtr-card,
+.bill-slot:hover .amdt-vote-card {
     opacity: 0.85;
     cursor: pointer;
 }
-.bill-slot:hover .mtr-connector {
+.bill-slot:hover .mtr-connector,
+.bill-slot:hover .amdt-vote-connector {
     opacity: 0.65;
 }
-/* Passed-bill slot: MTR card + connector + bill card all go green */
-.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-card {
+/* Passed-bill slot: indicator cards + connectors + bill card all go green */
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-card,
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .amdt-vote-card {
     border-color: rgba(63, 185, 80, 0.4);
     background: rgba(63, 185, 80, 0.06);
 }
-.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-connector {
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .mtr-connector,
+.bill-slot:hover:has(.bill-card[data-status="passed"]) .amdt-vote-connector {
     background: rgba(63, 185, 80, 0.4);
 }
 .bill-slot:hover:has(.bill-card[data-status="passed"]) .bill-card {
@@ -5896,8 +5951,9 @@ a.bill-card-rule-link {
 .bill-slot:hover:has(.bill-card[data-status="passed"]) .bill-card .bill-chevron {
     color: var(--accent-green);
 }
-/* Non-passed slot: both cards go neutral grey */
-.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .mtr-card {
+/* Non-passed slot: indicator cards + bill card go neutral grey */
+.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .mtr-card,
+.bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .amdt-vote-card {
     border-color: rgba(139, 148, 158, 0.35);
     background: rgba(139, 148, 158, 0.06);
 }
