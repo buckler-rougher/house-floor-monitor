@@ -2887,6 +2887,14 @@ function getVoteTlStatus(billId, action = null) {
         const qNorm = extractBillNormFromText(entry.question);
         const bNorm = extractBillNormFromText(entry.bill);
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
+        // Guard against a DIFFERENT vote on the same bill number — e.g. an amendment
+        // roll call ("H R 8595 - Boebert ... - On Agreeing to the Amendment") — being
+        // misattributed to this item just because the bill number matches. Require the
+        // question text to actually match the expected type. Skip this guard for
+        // 'previous question' items: the branch below intentionally needs to find the
+        // SUBSTANTIVE (non-PQ) vote on this bill to save its roll for the PQ-adjacency
+        // fallback, so it can't itself require PQ-shaped question text.
+        if (action !== 'previous question' && !questionMatchesAction(entry.question || '', action)) continue;
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
         if (yeas + nays > 0) {
