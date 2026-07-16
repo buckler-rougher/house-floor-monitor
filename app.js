@@ -2761,11 +2761,14 @@ function parseVoteItemsFromHtml(htmlBody) {
             // exact amendment number/en bloc group) via the amendment-vote map built
             // from proceedings text so these are clickable and open pre-narrowed.
             const amdtM = labelText.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
-            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null;
+            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null, amdtStatus = null, amdtVoteText = null;
             if (amdtM) {
                 const sponsorKey = amendmentSponsorKey(amdtM[1]);
                 const entry = resolveAmendmentVoteEntry(sponsorKey, parseInt(amdtM[2], 10));
-                if (entry) { amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums; }
+                if (entry) {
+                    amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums;
+                    amdtStatus = entry.status; amdtVoteText = entry.voteText;
+                }
             }
 
             // billId stays null (this item's status/label must NOT be driven by the
@@ -2773,7 +2776,9 @@ function parseVoteItemsFromHtml(htmlBody) {
             // would otherwise make an unrelated, still-pending amendment show as
             // "passed"). amdtBillId/amdtNum/amdtEnBlocNums are only used to make the
             // item clickable and to narrow the Amendments panel to the right entry.
-            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums });
+            // amdtStatus/amdtVoteText carry this specific amendment's own real result
+            // (from the amendment-vote map, not from a bill-level rollLog match).
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums, amdtStatus, amdtVoteText });
             continue;
         }
 
@@ -3314,7 +3319,12 @@ function renderVoteTimeline(items) {
     //      (its roll-log data may also have been purged, which would render blank circles).
     // Staleness is measured in elapsed time (not calendar day) so an overnight series
     // posted the previous night still shows the next morning.
-    const statuses = votes.map(({ billId, action }) => getVoteTlStatus(billId, action));
+    // Amendment items carry their own real status (from the amendment-vote map, keyed
+    // by sponsor+number) since billId is intentionally null for them — see
+    // parseVoteItemsFromHtml. 'requested' (not yet a recorded-vote result) maps to
+    // the normal 'pending' circle.
+    const statuses = votes.map(({ billId, action, amdtStatus }) =>
+        amdtStatus === 'passed' ? 'passed' : amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action));
     const meta = parseVoteSeriesMeta(currentItem, votes);
     const allComplete = statuses.every(s => s === 'passed' || s === 'failed');
     // Anchor staleness to elapsed time, NOT meta.isLive: a notice's "the House is now
@@ -3367,13 +3377,17 @@ function renderVoteTimeline(items) {
     // Store for vote-recs modal access
     currentVotesList = votes;
 
-    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId, amdtNum, amdtEnBlocNums }, i) => {
+    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId, amdtNum, amdtEnBlocNums, amdtVoteText }, i) => {
         const status = statuses[i];
         const nextStatus = statuses[i + 1];
         // Dotted connector when this item or the next is pending
         const connectorDotted = nextStatus !== undefined && (status === 'pending' || nextStatus === 'pending');
-        const resultText = voteTlResultText(billId, status);
-        const absences = getVoteTlAbsences(billId, status);
+        // Amendment items have no billId (deliberately, see parseVoteItemsFromHtml) so
+        // voteTlResultText/getVoteTlAbsences can't look anything up for them via rollLog
+        // — use the tally already resolved onto amdtVoteText instead. No absences data
+        // is captured for amendment votes, so that badge is simply omitted for these.
+        const resultText = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
+        const absences = amdtVoteText ? null : getVoteTlAbsences(billId, status);
         const absHtml = buildAbsenceHtml(absences);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
