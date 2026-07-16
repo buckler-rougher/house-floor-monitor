@@ -3052,14 +3052,21 @@ function updateVoteTimelineStatus() {
     items.forEach((item, idx) => {
         const billId = item.dataset.billId || null;
         const action = item.dataset.action || null;
-        const status = getVoteTlStatus(billId, action);
+        // Amendment-vote items have no data-bill-id (see parseVoteItemsFromHtml/
+        // renderVoteTimeline) so getVoteTlStatus(null, ...) always reads 'pending' for
+        // them here. Consult the original vote object (same array/order renderVoteTimeline
+        // built the DOM from) for their real amdtStatus/amdtVoteText/amdtAbsences —
+        // otherwise this fast path silently reverts them to pending every ~30s and the
+        // "all complete" hide check below can never fire while any are present.
+        const vote = currentVotesList[idx] || {};
+        const status = vote.amdtStatus === 'passed' ? 'passed' : vote.amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action);
         liveStatuses.push(status);
         const circle = item.querySelector('.vote-tl-circle');
         const result = item.querySelector('.vote-tl-result');
         if (circle) {
             circle.className = `vote-tl-circle ${status}`;
         }
-        const text = voteTlResultText(billId, status);
+        const text = vote.amdtVoteText ? `${status.toUpperCase()} ${vote.amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
         if (result) {
             result.className = `vote-tl-result ${status}`;
             result.textContent = text;
@@ -3078,7 +3085,7 @@ function updateVoteTimelineStatus() {
             badges.appendChild(span);
         }
         // Update absences badge
-        const absences = getVoteTlAbsences(billId, status);
+        const absences = vote.amdtVoteText ? vote.amdtAbsences : getVoteTlAbsences(billId, status);
         const absHtml = buildAbsenceHtml(absences);
         const absEl = item.querySelector('.vote-tl-absences');
         if (absEl) {
