@@ -2761,13 +2761,13 @@ function parseVoteItemsFromHtml(htmlBody) {
             // exact amendment number/en bloc group) via the amendment-vote map built
             // from proceedings text so these are clickable and open pre-narrowed.
             const amdtM = labelText.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
-            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null, amdtStatus = null, amdtVoteText = null;
+            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null, amdtStatus = null, amdtVoteText = null, amdtAbsences = null;
             if (amdtM) {
                 const sponsorKey = amendmentSponsorKey(amdtM[1]);
                 const entry = resolveAmendmentVoteEntry(sponsorKey, parseInt(amdtM[2], 10));
                 if (entry) {
                     amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums;
-                    amdtStatus = entry.status; amdtVoteText = entry.voteText;
+                    amdtStatus = entry.status; amdtVoteText = entry.voteText; amdtAbsences = entry.absences || null;
                 }
             }
 
@@ -2776,9 +2776,9 @@ function parseVoteItemsFromHtml(htmlBody) {
             // would otherwise make an unrelated, still-pending amendment show as
             // "passed"). amdtBillId/amdtNum/amdtEnBlocNums are only used to make the
             // item clickable and to narrow the Amendments panel to the right entry.
-            // amdtStatus/amdtVoteText carry this specific amendment's own real result
-            // (from the amendment-vote map, not from a bill-level rollLog match).
-            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums, amdtStatus, amdtVoteText });
+            // amdtStatus/amdtVoteText/amdtAbsences carry this specific amendment's own
+            // real result (from the amendment-vote map, not from a bill-level rollLog match).
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums, amdtStatus, amdtVoteText, amdtAbsences });
             continue;
         }
 
@@ -3377,17 +3377,17 @@ function renderVoteTimeline(items) {
     // Store for vote-recs modal access
     currentVotesList = votes;
 
-    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId, amdtNum, amdtEnBlocNums, amdtVoteText }, i) => {
+    const itemsHtml = votes.map(({ text, billId, duration, action, amdtBillId, amdtNum, amdtEnBlocNums, amdtVoteText, amdtAbsences }, i) => {
         const status = statuses[i];
         const nextStatus = statuses[i + 1];
         // Dotted connector when this item or the next is pending
         const connectorDotted = nextStatus !== undefined && (status === 'pending' || nextStatus === 'pending');
         // Amendment items have no billId (deliberately, see parseVoteItemsFromHtml) so
         // voteTlResultText/getVoteTlAbsences can't look anything up for them via rollLog
-        // — use the tally already resolved onto amdtVoteText instead. No absences data
-        // is captured for amendment votes, so that badge is simply omitted for these.
+        // — use the tally/absences already resolved onto amdtVoteText/amdtAbsences instead
+        // (matched to the amendment's own rollLog entry by sponsor+number).
         const resultText = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
-        const absences = amdtVoteText ? null : getVoteTlAbsences(billId, status);
+        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status);
         const absHtml = buildAbsenceHtml(absences);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
@@ -4251,6 +4251,30 @@ function resolveAmendmentVoteEntry(sponsorKey, num) {
     return null;
 }
 
+// Match a resolved amendment vote to its rollLog entry (by sponsor name + amendment/en
+// bloc number appearing in the roll's question text, e.g. "H R 8595 - Boebert of
+// Colorado Part A Amendment No. 1 - On Agreeing to the Amendment", or "... Carter of
+// Texas Amendment En Bloc No. 2") so the per-party not-voting breakdown can be shown
+// alongside the amendment's pass/fail tally, same as regular bill votes get.
+const AMDT_ROLLLOG_QUESTION_RE = /-\s*([A-Za-z][A-Za-z.\s'"()-]*?)\s+(?:of\s+[A-Za-z]+\s+)?(?:Part\s+[A-Z]\s+)?Amendment(?:\s+En\s+Bloc)?\s+No\.\s*(\d+)\b/i;
+function findRollLogEntryForAmendment(sponsorKey, num, enBlocNum) {
+    const target = enBlocNum != null ? Number(enBlocNum) : num;
+    if (target == null) return null;
+    for (const entry of rollLog) {
+        const m = (entry.question || '').match(AMDT_ROLLLOG_QUESTION_RE);
+        if (!m) continue;
+        if (amendmentSponsorKey(m[1]) !== sponsorKey) continue;
+        if (parseInt(m[2], 10) !== target) continue;
+        return entry;
+    }
+    return null;
+}
+function amendmentAbsencesFromRollLog(sponsorKey, num, enBlocNum) {
+    const entry = findRollLogEntryForAmendment(sponsorKey, num, enBlocNum);
+    if (!entry) return null;
+    return { d: entry.dem?.notVoting ?? 0, r: entry.rep?.notVoting ?? 0, i: entry.ind?.notVoting ?? 0 };
+}
+
 // "Mr. Carter (TX)" / "Ms. Wasserman Schultz (FL)" / "Carter of Texas" → "carter-tx" (or just "carter" if no state)
 function amendmentSponsorKey(raw) {
     const cleaned = (raw || '').replace(/^(Mr\.|Ms\.|Mrs\.)\s+/i, '').trim();
@@ -4481,7 +4505,8 @@ function updateAmendmentVotes(items) {
         const status = failed ? 'failed' : 'passed';
         const voteText = `${outM[5]}-${outM[6]}`;
         if (base.status !== status || base.voteText !== voteText) {
-            applyEntry(mapKey, { ...base, status, voteText });
+            const absences = amendmentAbsencesFromRollLog(base.sponsorKey, base.num, base.enBlocNum);
+            applyEntry(mapKey, { ...base, status, voteText, absences });
         }
     }
     return changed;
