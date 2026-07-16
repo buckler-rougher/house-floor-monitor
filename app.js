@@ -2575,12 +2575,16 @@ function applyWhipFeedData({ floor = [], notices = [] }) {
     // Firestore floor timestamps are real UTC. Add the EDT offset (4h) to DomeWatch
     // timestamps so the two series sort chronologically against each other.
     const EDT_OFFSET_MS = 4 * 60 * 60 * 1000;
+    // Sort purely by real (corrected) publishedAt — a prior version anchored non-floor
+    // notices (daily/nightly/weekly previews) to a fixed noon-UTC point derived from
+    // publishDate instead, ignoring their actual publish time entirely. Since a Daily
+    // and Nightly notice for the same target date share that identical artificial
+    // anchor, and it lands later than same-day floor updates published in the morning,
+    // real chronology got scrambled: e.g. a 9:01am Daily preview and a 6:16pm-the-
+    // PRIOR-evening Nightly preview would both outrank a 10:51am floor update. True
+    // timestamps (with the EDT correction, which is a genuine and separate fix — see
+    // above) sort correctly with no special-casing needed.
     const sortKey = (item) => {
-        // For whip notices, use publishDate (YYYY-MM-DD) for sorting by intended date
-        // For floor updates, use publishedAt (actual timestamp)
-        if ((item.noticeType || 'floor') !== 'floor' && item.publishDate) {
-            return new Date(item.publishDate + 'T12:00:00Z').getTime() + EDT_OFFSET_MS;
-        }
         const t = item.publishedAt ? new Date(item.publishedAt).getTime() : 0;
         return (item.noticeType || 'floor') === 'floor' ? t : t + EDT_OFFSET_MS;
     };
