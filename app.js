@@ -572,13 +572,24 @@ let floorData = {
 let rollLog = [];           // in-memory mirror of what's been POSTed to worker
 let rollLogCurrentRoll = null; // roll number we're currently tracking
 
-
+// floorData.rollCall stays populated with the LAST roll's info indefinitely — DomeWatch
+// doesn't clear it just because the vote concluded or the House adjourned. Treating its
+// mere presence as "this roll is still in progress" (as every call site here used to)
+// means a roll's real, final result can never be read out of rollLog once the House
+// moves on: the "skip the active roll" guards below would skip it forever. Only trust
+// rollCall.number as "active" when the floor status itself says a vote is underway —
+// matching the same currentStatus check worker.js's maybeWriteRollLog already uses.
+function getActiveRollNumber() {
+    const status = floorData?.currentStatus?.value || floorData?.now?.value;
+    if (status !== 'vote' && status !== 'voting') return null;
+    return floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+}
 
 // Called by both the initial REST load and the SSE event: roll-log handler.
 function applyRollLogData(entries) {
     if (!Array.isArray(entries)) return;
     rollLog = entries;
-    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    const activeRoll = getActiveRollNumber();
     const isSubstantive = e => {
         if (activeRoll && String(e.roll) === activeRoll) return false;
         const total = (e.totals?.yeas || 0) + (e.totals?.nays || 0);
@@ -2897,7 +2908,7 @@ function getVoteTlStatus(billId, action = null) {
     // even if they haven't been updated in billDataMap yet (e.g., during final vote).
     // Also skip the currently active roll to avoid marking in-progress votes as completed.
     const billNorm = normalizeBillIdForRules(billId);
-    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    const activeRoll = getActiveRollNumber();
     let anyMatchedRoll = null; // roll number of a resolved entry for this bill (any action) — used for the PQ fallback below
     for (const entry of rollLog) {
         if (activeRoll && String(entry.roll) === activeRoll) continue; // Skip active roll
@@ -3969,7 +3980,7 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
     }
 
     // Apply any completed roll results from the roll log (catches missed transitions)
-    const activeRoll = floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
+    const activeRoll = getActiveRollNumber();
     applyRollLogToBills(rollLog, activeRoll);
 
     // Restore MTR outcomes from localStorage (survives page reloads & daily proceedings rollover)
