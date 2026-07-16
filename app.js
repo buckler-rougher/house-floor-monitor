@@ -325,8 +325,13 @@ function renderVotingDaysCalendar() {
 
     if (!prevEl || !currentEl || !nextEl) return;
 
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
+    // The House operates on Eastern time, and .toISOString() forces UTC — right after
+    // 8pm ET that's already past midnight UTC, which was highlighting tomorrow's date
+    // as "today". Compute both the month grid and today's date string from the same
+    // ET-converted instant instead, so they can't disagree with each other or with the
+    // viewer's own arbitrary local timezone.
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const baseMonth = new Date(now.getFullYear(), now.getMonth() + calendarMonthOffset, 1);
     const monthDates = [
         new Date(baseMonth.getFullYear(), baseMonth.getMonth() - 1, 1),
