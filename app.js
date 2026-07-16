@@ -2986,17 +2986,19 @@ function voteTlResultText(billId, status) {
             }
         }
     }
+    // extractBillNormFromText (same helper getVoteTlStatus/getVoteTlAbsences use) allows
+    // "H R 9237" (no periods, as rollLog question text actually reads) — the previous
+    // inline regex here required literal periods ("H.R."), so it never matched rollLog's
+    // real format and this always fell through to the billDataMap fallback below,
+    // silently dropping the vote count even once status correctly resolved to passed/failed.
     const rlNorm = normalizeBillIdForRules(billId || '');
     for (const entry of rollLog) {
-        const eq = entry.question || '';
-        const eb = entry.bill || '';
-        const combined = eq + (eb ? ' ' + eb : '');
-        const em = combined.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
-        if (em && normalizeBillIdForRules(`${em[1]} ${em[2]}`) === rlNorm) {
-            const y = entry.totals?.yeas || 0;
-            const n = entry.totals?.nays || 0;
-            if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
-        }
+        const qNorm = extractBillNormFromText(entry.question);
+        const bNorm = extractBillNormFromText(entry.bill);
+        if (qNorm !== rlNorm && bNorm !== rlNorm) continue;
+        const y = entry.totals?.yeas || 0;
+        const n = entry.totals?.nays || 0;
+        if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
     }
     // Fallback to billDataMap latestAction vote counts
     let bill = billId ? billDataMap.get(billId) : null;
