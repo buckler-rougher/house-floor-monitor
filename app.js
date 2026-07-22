@@ -2729,6 +2729,13 @@ function parseVoteItemsFromHtml(htmlBody) {
         /^(?:after|following)\s+(?:last\s+votes?|(?:general\s+)?debate|the\s+(?:first|second|third|fourth)\s+vote\s+series|this\s+vote\s+series)\b/,
         /\bsign\s+the\s+\S+\s+discharge\s+petition\b/i,
         /house\s+republicans\s+have\s+pulled\s+the\s+vote/,
+        // Intro/connector sentences ("The House is now taking the following votes on
+        // H.R. 8800 – ...:" / "...the House will take the following vote on a bill
+        // considered under suspension...:") often name the bill under consideration,
+        // which made them get parsed as if they were a real vote item for that bill —
+        // showing up as a phantom entry with whatever rollLog result happened to match
+        // that bill number first, unrelated to any real vote/action.
+        /\bthe\s+following\s+votes?\b/,
     ].map(r => r.source).join('|'), 'i');
 
     // Full action-prefix regex — order matters (longer/more-specific first)
@@ -2761,6 +2768,41 @@ function parseVoteItemsFromHtml(htmlBody) {
         if (SUSPENSION_RE.test(raw)) suspensionContext = true;
         if (NON_VOTE_RE.test(raw)) continue; // scheduling/reminder text — not a vote item
 
+        // Check for the "Sponsor #N" amendment format FIRST, before the generic bill-ID
+        // scan below — an amendment's own summary text can legitimately reference some
+        // OTHER, unrelated bill (e.g. "Self #28 – ... This amendment is identical to
+        // H.R.8769, introduced by Rep. Keith Self..."), which the generic scan would
+        // otherwise match and mistake for this item's actual subject, hiding it from the
+        // amendment-vote handling entirely. "Sponsor #N –" is a distinctive prefix used
+        // only for amendment vote-series items, so it always wins when present.
+        if (el.tagName.toLowerCase() === 'li') {
+            const amdtPrefixM = raw.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
+            if (amdtPrefixM) {
+                const labelText = raw
+                    .replace(/\s*[–\-]\s*VOTE\s+(?:YES|NO)\b/gi, '')
+                    .replace(/\s*[–\-]\s*\d+\s*min(?:utes?)?/gi, '')
+                    .trim();
+                const durMatch = raw.match(/\b(\d+)\s*min(?:utes?)?/i);
+                const sponsorKey = amendmentSponsorKey(amdtPrefixM[1]);
+                let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null, amdtStatus = null, amdtVoteText = null, amdtAbsences = null;
+                const entry = resolveAmendmentVoteEntry(sponsorKey, parseInt(amdtPrefixM[2], 10));
+                if (entry) {
+                    amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums;
+                    amdtStatus = entry.status; amdtVoteText = entry.voteText; amdtAbsences = entry.absences || null;
+                }
+                // billId stays null (this item's status/label must NOT be driven by the
+                // underlying bill's own votes — a passed suspension vote on the same bill
+                // would otherwise make an unrelated, still-pending amendment show as
+                // "passed"). amdtBillId/amdtNum/amdtEnBlocNums are only used to make the
+                // item clickable and to narrow the Amendments panel to the right entry.
+                // amdtSponsorKey lets updateVoteTimelineStatus re-resolve the live entry
+                // fresh on every fast-path update instead of trusting this snapshot, which
+                // would otherwise go stale between full re-renders (every ~2min at most).
+                results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums, amdtSponsorKey: sponsorKey, amdtStatus, amdtVoteText, amdtAbsences });
+                continue;
+            }
+        }
+
         const m = raw.match(/(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i);
 
         // Items with no bill reference: include <li> elements that aren't connector
@@ -2775,30 +2817,7 @@ function parseVoteItemsFromHtml(htmlBody) {
                 .trim();
             if (!labelText) continue;
             const durMatch = raw.match(/\b(\d+)\s*min(?:utes?)?/i);
-
-            // Whip notices list amendment votes as "Sponsor #N" with no bill reference
-            // at all (e.g. "Boebert #1 – Eliminates funding..."). Resolve the bill (and
-            // exact amendment number/en bloc group) via the amendment-vote map built
-            // from proceedings text so these are clickable and open pre-narrowed.
-            const amdtM = labelText.match(/^([A-Za-z][A-Za-z.\s'"()-]*?)\s+#\s*(\d+)\b/);
-            let amdtBillId = null, amdtNum = null, amdtEnBlocNums = null, amdtStatus = null, amdtVoteText = null, amdtAbsences = null;
-            if (amdtM) {
-                const sponsorKey = amendmentSponsorKey(amdtM[1]);
-                const entry = resolveAmendmentVoteEntry(sponsorKey, parseInt(amdtM[2], 10));
-                if (entry) {
-                    amdtBillId = entry.billId; amdtNum = entry.num; amdtEnBlocNums = entry.enBlocNums;
-                    amdtStatus = entry.status; amdtVoteText = entry.voteText; amdtAbsences = entry.absences || null;
-                }
-            }
-
-            // billId stays null (this item's status/label must NOT be driven by the
-            // underlying bill's own votes — a passed suspension vote on the same bill
-            // would otherwise make an unrelated, still-pending amendment show as
-            // "passed"). amdtBillId/amdtNum/amdtEnBlocNums are only used to make the
-            // item clickable and to narrow the Amendments panel to the right entry.
-            // amdtStatus/amdtVoteText/amdtAbsences carry this specific amendment's own
-            // real result (from the amendment-vote map, not from a bill-level rollLog match).
-            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null, amdtBillId, amdtNum, amdtEnBlocNums, amdtStatus, amdtVoteText, amdtAbsences });
+            results.push({ text: labelText, billId: null, duration: durMatch ? `${durMatch[1]} min` : null, action: null });
             continue;
         }
 
@@ -3071,19 +3090,27 @@ function updateVoteTimelineStatus() {
         const action = item.dataset.action || null;
         // Amendment-vote items have no data-bill-id (see parseVoteItemsFromHtml/
         // renderVoteTimeline) so getVoteTlStatus(null, ...) always reads 'pending' for
-        // them here. Consult the original vote object (same array/order renderVoteTimeline
-        // built the DOM from) for their real amdtStatus/amdtVoteText/amdtAbsences —
-        // otherwise this fast path silently reverts them to pending every ~30s and the
-        // "all complete" hide check below can never fire while any are present.
+        // them here. Re-resolve the LIVE entry from amendmentVotes by sponsor+number on
+        // every call (not the amdtStatus/amdtVoteText snapshotted onto currentVotesList
+        // at whip-notice-parse time) — that snapshot only gets refreshed by a full
+        // renderVoteTimeline re-render, which can be ~2min+ apart (or longer, since it
+        // only fires when the notice text itself changes), so trusting it here left
+        // amendments stuck showing whatever status they had when the notice was last
+        // parsed even after they'd actually resolved. Without this, the "all complete"
+        // hide check below can also never fire while any amendment item is present.
         const vote = currentVotesList[idx] || {};
-        const status = vote.amdtStatus === 'passed' ? 'passed' : vote.amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action);
+        const liveAmdt = vote.amdtSponsorKey ? resolveAmendmentVoteEntry(vote.amdtSponsorKey, vote.amdtNum) : null;
+        const amdtStatus = liveAmdt?.status ?? vote.amdtStatus;
+        const amdtVoteText = liveAmdt?.voteText ?? vote.amdtVoteText;
+        const amdtAbsences = liveAmdt?.absences ?? vote.amdtAbsences;
+        const status = amdtStatus === 'passed' ? 'passed' : amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action);
         liveStatuses.push(status);
         const circle = item.querySelector('.vote-tl-circle');
         const result = item.querySelector('.vote-tl-result');
         if (circle) {
             circle.className = `vote-tl-circle ${status}`;
         }
-        const text = vote.amdtVoteText ? `${status.toUpperCase()} ${vote.amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
+        const text = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
         if (result) {
             result.className = `vote-tl-result ${status}`;
             result.textContent = text;
@@ -3102,7 +3129,7 @@ function updateVoteTimelineStatus() {
             badges.appendChild(span);
         }
         // Update absences badge
-        const absences = vote.amdtVoteText ? vote.amdtAbsences : getVoteTlAbsences(billId, status);
+        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status);
         const absHtml = buildAbsenceHtml(absences);
         const absEl = item.querySelector('.vote-tl-absences');
         if (absEl) {
