@@ -4454,7 +4454,11 @@ function updateAmendmentVotes(items) {
 
     let changed = false;
     const requestedRe = /at the conclusion of debate on the (.+?) amendment(?:\s+en\s+bloc\s+No\.\s*(\d+)|\s+No\.\s*(\d+))?,[\s\S]*?demanded a recorded vote/i;
-    const outcomeRe = /On agreeing to the (.+?) amendments?(?:\s+en\s+bloc\s+No\.\s*(\d+))?;?\s*(?:as \w+\s+)?(Agreed to|Not agreed to|Failed)\s+by\s+(voice vote|recorded vote:\s*(\d+)\s*[-–]\s*(\d+))/i;
+    // recorded vote's tally can appear two ways: inline ("recorded vote: 219 - 206") or,
+    // as the Clerk actually formats it in the current session, as just a roll reference
+    // ("recorded vote: (Roll no. 273)") with no tally in the text at all — the real yeas/
+    // nays then has to be looked up from rollLog by that roll number (see below).
+    const outcomeRe = /On agreeing to the (.+?) amendments?(?:\s+en\s+bloc\s+No\.\s*(\d+))?;?\s*(?:as \w+\s+)?(Agreed to|Not agreed to|Failed)\s+by\s+(voice vote|recorded vote:\s*(?:(\d+)\s*[-–]\s*(\d+)|\(Roll no\.\s*(\d+)\)))/i;
 
     const applyEntry = (mapKey, entry) => {
         amendmentVotes.set(mapKey, entry);
@@ -4532,7 +4536,19 @@ function updateAmendmentVotes(items) {
 
         const failed = /Not agreed to|Failed/i.test(outM[3]);
         const status = failed ? 'failed' : 'passed';
-        const voteText = `${outM[5]}-${outM[6]}`;
+        let voteText;
+        if (outM[5] && outM[6]) {
+            voteText = `${outM[5]}-${outM[6]}`;
+        } else if (outM[7]) {
+            // Tally wasn't in the text — look it up from rollLog by roll number. If
+            // rollLog hasn't caught up yet (it polls independently), skip for now and
+            // pick this back up on the next proceedings update once it has.
+            const rollEntry = rollLog.find(e => String(e.roll) === outM[7]);
+            if (!rollEntry) continue;
+            voteText = `${rollEntry.totals?.yeas ?? 0}-${rollEntry.totals?.nays ?? 0}`;
+        } else {
+            continue;
+        }
         if (base.status !== status || base.voteText !== voteText) {
             const absences = amendmentAbsencesFromRollLog(base.sponsorKey, base.num, base.enBlocNum);
             applyEntry(mapKey, { ...base, status, voteText, absences });
