@@ -5698,11 +5698,20 @@ function autoSwitchModeFromProceedings(items) {
 
     // Find the most recent passage/vote outcome item — if it's newer than the debate item,
     // the bill has already passed and we should not re-enter debate mode for it.
+    // IMPORTANT: this must only match the BILL's own final passage/failure, not routine
+    // amendment outcomes — during Committee-of-the-Whole amendment debate (e.g. the NDAA's
+    // ~300 amendments), every single one resolves with "On agreeing to the X amendment;
+    // Agreed to by voice vote." every few minutes. The previous, broader patterns
+    // ("on agreeing to the (resolution|amendment)", "agreed to by voice vote/without
+    // objection") matched that routine text too, so the moment any amendment resolved,
+    // this looked newer than the active debate item and cotwItem was wrongly excluded —
+    // falling through to whatever episodic item (e.g. that morning's One Minute Speeches)
+    // was still in the post-recess window, and the page would flicker to that mode
+    // throughout the entire amendment marathon.
     const outcomeItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return /\bon passage\b/.test(d) ||
-               /on agreeing to the (resolution|amendment)\b/.test(d) ||
-               /agreed to by (recorded vote|voice vote|without objection)/i.test(d) ||
+               /on motion to suspend the rules and (pass|agree)/i.test(d) ||
                /passed by (recorded vote|voice vote)/i.test(d);
     });
 
