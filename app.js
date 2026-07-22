@@ -5955,6 +5955,7 @@ async function updateProceedingsFeed() {
 }
 
 let _debateLastBillId = null; // tracks which bill is shown so tab isn't reset on every poll
+let _debateLastAmendmentKey = null; // tracks which amendment is being debated so the Amendments tab re-narrows when it changes
 
 // Update debate section with bill information
 function updateDebateSection(items) {
@@ -6023,6 +6024,22 @@ function updateDebateSection(items) {
                     }
                 }
             }
+        }
+    }
+
+    // ── 2b. Detect individual-amendment debate ("...debate on the Self amendment
+    // No. 28.") so the panel can auto-switch to Amendments and narrow to that exact
+    // one, same as the amendment-vote indicators elsewhere already do via
+    // amendmentsExactFilter. En bloc debate ("...amendment en bloc No. 2") isn't
+    // handled here — resolving its underlying amendment numbers needs the
+    // composition text from a separate proceedings item this function doesn't have
+    // on hand, so it's left showing Bill Details as before (not a regression).
+    let debateAmendmentNum = null;
+    if (activeItem) {
+        const desc = activeItem.description;
+        if (!/\bamendment\s+en\s+bloc\b/i.test(desc)) {
+            const amdtM = desc.match(/debate\s+on\s+the\s+.+?\s+amendment\s+No\.\s*(\d+)\b/i);
+            if (amdtM) debateAmendmentNum = parseInt(amdtM[1], 10);
         }
     }
 
@@ -6175,11 +6192,34 @@ function updateDebateSection(items) {
             // Reset to bill panel only when the bill changes (not on every 15s poll)
             if (foundBillId !== _debateLastBillId) {
                 _debateLastBillId = foundBillId;
+                _debateLastAmendmentKey = null; // force re-evaluation below for the new bill
                 navBtns.forEach(b => b.classList.remove('is-active'));
                 navBtns[0]?.classList.add('is-active');
                 if (billPanel) billPanel.style.display = '';
                 if (amendPanel) amendPanel.style.display = 'none';
                 setDebateSource('bill');
+            }
+            // When debate moves onto a specific amendment (or a new one), auto-switch to
+            // Amendments and narrow to it — same exact-match mechanism the amendment-vote
+            // indicators elsewhere use (amendmentsExactFilter), so a user watching the
+            // live feed sees the amendment currently being debated without having to
+            // search for it themselves. Manual search input still overrides this (see the
+            // global [data-amdt-search] input listener), and it re-triggers whenever
+            // debateAmendmentNum changes to a different amendment.
+            const amendmentKey = debateAmendmentNum != null ? `num-${debateAmendmentNum}` : null;
+            if (amendmentKey && amendmentKey !== _debateLastAmendmentKey) {
+                _debateLastAmendmentKey = amendmentKey;
+                navBtns.forEach(b => b.classList.remove('is-active'));
+                [...navBtns].find(b => b.dataset.panel !== 'bill')?.classList.add('is-active');
+                if (billPanel) billPanel.style.display = 'none';
+                if (amendPanel) amendPanel.style.display = '';
+                amendmentsExactFilter = debateAmendmentNum;
+                const searchInput = elements.debateAmendmentsPanel?.querySelector('[data-amdt-search]');
+                if (searchInput) searchInput.value = `#${debateAmendmentNum}`;
+                loadAmendments(rulesSlug, 'debate-amendments-body', 'debate-amendments-count');
+                setDebateSource('amendments');
+            } else if (!amendmentKey) {
+                _debateLastAmendmentKey = null; // no amendment currently debated — always re-trigger for the next one
             }
         } else {
             elements.debatePanelNav.style.display = 'none';
