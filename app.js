@@ -5998,11 +5998,30 @@ function updateDebateSection(items) {
             const prefix = onBillMatch[1].replace(/\s+/g, '').replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.') + ' ';
             foundBillId = prefix + onBillMatch[2];
         } else {
-            // Fallback: first bill pattern in description
+            // Fallback: first bill pattern in description — but skip a rule citation used
+            // only as procedural authority ("Pursuant to the provisions of H. Res. NNNN, ").
+            // Every Committee-of-the-Whole debate line opens with that citation, including
+            // amendment-debate lines ("...proceeded with 10 minutes of debate on the Self
+            // amendment No. 28."), which otherwise have no bill ID at all in the sentence —
+            // so without stripping it, this always matched the RULE, not the actual subject.
+            const descForFallback = desc.replace(/^DEBATE\s*-\s*Pursuant to the provisions of\s+H\.\s*Res\.\s*\d+,?\s*/i, '');
             const billPattern = /\b(H\.R\.|H\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Con\.\s*Res\.|S\.(?:\s*Res\.|\s*Con\.\s*Res\.|\s*J\.\s*Res\.)?)\s*(\d+)/gi;
-            const m = billPattern.exec(desc);
+            const m = billPattern.exec(descForFallback);
             if (m) {
                 foundBillId = m[1].replace(/\s+/g, '').replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.') + ' ' + m[2];
+            } else {
+                // Amendment-only debate line: no bill ID anywhere in the sentence itself.
+                // Find the bill actually pending in Committee of the Whole from the nearest
+                // "Considered as unfinished business. H.R. NNNN" item — the House Clerk's
+                // standard phrasing for the bill currently under active consideration.
+                const unfinishedRe = /\bconsidered as unfinished business\b[\s\S]{0,20}?\b(H\.R\.|H\.\s*Res\.|H\.\s*J\.\s*Res\.|H\.\s*Con\.\s*Res\.|S\.(?:\s*Res\.|\s*Con\.\s*Res\.|\s*J\.\s*Res\.)?)\s*(\d+)/i;
+                for (const item of recentItems) {
+                    const um = (item.description || '').match(unfinishedRe);
+                    if (um) {
+                        foundBillId = um[1].replace(/\s+/g, '').replace(/([A-Z])\.\s*(?=[A-Z])/gi, '$1.') + ' ' + um[2];
+                        break;
+                    }
+                }
             }
         }
     }
