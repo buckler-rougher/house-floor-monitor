@@ -3343,9 +3343,22 @@ function renderVoteTimeline(items) {
     const currentItem = seriesItems[0]; // newest-first from Firestore
 
     const currentVotes = parseVoteItemsFromHtml(currentItem.body);
-    const currentBillSet = new Set(currentVotes.map(v => v.billId).filter(Boolean));
+    // Dedup key must include the action, not just the bill — a single bill can have
+    // several distinct vote-series entries (e.g. Motion to Recommit AND Final Passage
+    // both on H.R. 8800). Keying by billId alone meant that once ANY entry for a bill
+    // was in the current list, every OTHER entry for that same bill got silently
+    // dropped when merging in completed votes from older notices below — e.g. once
+    // Final Passage of H.R. 8800 was in the current list, its earlier Motion to
+    // Recommit (a different action, same bill) could never be merged back in from the
+    // older notice that still had it, and vice versa — exactly the "Final Passage is
+    // missing" symptom reported. Amendment items (billId null, tracked via amdtBillId/
+    // amdtSponsorKey/amdtNum instead) get an analogous composite key.
+    const voteKey = v => v.billId ? `${v.billId}::${v.action ?? ''}`
+        : v.amdtBillId ? `amdt::${v.amdtBillId}::${v.amdtSponsorKey ?? ''}::${v.amdtNum ?? (v.amdtEnBlocNums || []).join(',')}`
+        : null;
+    const currentKeySet = new Set(currentVotes.map(voteKey).filter(Boolean));
 
-    // Scan older notices within 90 min for bills since completed & dropped
+    // Scan older notices within 90 min for votes since completed & dropped
     const LOOKBACK_MS = 90 * 60 * 1000;
     const baseTime = currentItem.publishedAt ? new Date(currentItem.publishedAt).getTime() : Date.now();
     const completedVotes = [];
@@ -3354,9 +3367,10 @@ function renderVoteTimeline(items) {
         if (!prev.publishedAt) continue;
         if (baseTime - new Date(prev.publishedAt).getTime() > LOOKBACK_MS) break;
         for (const vote of parseVoteItemsFromHtml(prev.body)) {
-            if (vote.billId && !currentBillSet.has(vote.billId)) {
+            const key = voteKey(vote);
+            if (key && !currentKeySet.has(key)) {
                 completedVotes.push(vote);
-                currentBillSet.add(vote.billId);
+                currentKeySet.add(key);
             }
         }
     }
