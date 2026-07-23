@@ -5537,6 +5537,50 @@ font-family: var(--font-mono);
     width: 100%;
 }
 
+.bill-card[data-tracked="true"] {
+    border-color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.06);
+    box-shadow: 0 0 0 1px var(--accent-blue);
+}
+
+.bill-card-wrap {
+    position: relative;
+}
+
+.bill-track-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    opacity: 0.7;
+    cursor: pointer;
+    transition: color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.bill-card-wrap:hover .bill-track-btn {
+    opacity: 0.85;
+}
+
+.bill-track-btn:hover {
+    color: var(--accent-blue);
+    opacity: 1;
+}
+
+.bill-track-btn.tracked {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    opacity: 1;
+}
+
 /* Rule cards are <a> tags — reset link styles */
 a.bill-card-rule-link {
     text-decoration: none;
