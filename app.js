@@ -1207,10 +1207,6 @@ function startSSEStreaming() {
                 liveIndicator.classList.add('live');
                 liveIndicator.classList.remove('connecting');
             }
-            // REST fallback: load roll-log and whip-feed directly so vote-series
-            // absences and timeline are available even if DO polling is delayed.
-            loadRollLog();
-            loadWhipFeed();
         };
 
         // DomeWatch sends named events — onmessage only fires for unnamed events,
@@ -1253,11 +1249,17 @@ function startSSEStreaming() {
             }
         });
 
-        // connected: initial handshake — no data to process, just confirms stream is live
+        // connected: initial handshake — starts the ping loop, and tells us whether the
+        // DO actually had roll-log/whip-feed cached to replay (a warm DO) or not (just
+        // instantiated — its first poll hasn't resolved yet). Only fall back to a direct
+        // REST fetch in the cold case; a warm DO already delivered this data above via
+        // sendCachedDataToClient, so firing REST unconditionally on every connect was
+        // pure duplicate cost (scattered across edge isolates, hitting KV) for no benefit.
         eventSource.addEventListener('connected', (event) => {
-            // Start pinging the DO every 45s so it can detect and evict zombie connections.
             try {
-                const { clientId } = JSON.parse(event.data);
+                const { clientId, rollLogCold, whipFeedCold } = JSON.parse(event.data);
+                if (rollLogCold) loadRollLog();
+                if (whipFeedCold) loadWhipFeed();
                 if (clientId) {
                     const pingUrl = `https://api.evanhollander.org/house-floor/api/stream/votes/current?ping=${encodeURIComponent(clientId)}`;
                     const sendPing = () => fetch(pingUrl, { method: 'POST' }).catch(() => {});
