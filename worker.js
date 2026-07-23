@@ -2377,26 +2377,20 @@ function buildRollLogEntry(data) {
   };
 }
 
-// Write a roll-log entry to KV when the floor is in an active vote state.
-// Called as a side-effect inside handleDomeWatchFloor (only when cache is cold).
-async function maybeWriteRollLog(data, env) {
-  if (!env?.HLS_CACHE) return;
-  const status = data.currentStatus?.value || data.now?.value;
-  if (status !== 'vote' && status !== 'voting') return;
-  const roll = (data.roll_call || data.rollCall)?.number;
-  if (!roll) return;
+// Write a single roll-log entry to KV. Called exactly once per closed roll — see
+// DomeWatchStreamCoordinator.trackRollLogTransition, which buffers the latest snapshot
+// of the currently-active roll in memory on every 10s poll tick (no KV I/O at all) and
+// only calls this once, on the tick where that roll is no longer active — instead of
+// writing on every tally change throughout the vote, which is all that's needed since
+// nothing reads the in-progress tally back out of KV while the roll is still active
+// (getActiveRollNumber() client-side deliberately treats it as unresolved either way).
+async function writeRollLogEntry(entry, env) {
+  if (!env?.HLS_CACHE || !entry?.roll) return;
   try {
-    const entry = buildRollLogEntry(data);
-    // Skip KV read+write if totals haven't changed since last write (dedup within this isolate)
-    const dedupKey = `roll-log-dedup:${roll}`;
-    const sig = `${entry.totals.yeas}-${entry.totals.nays}-${entry.totals.present}`;
-    if (_mGet(dedupKey) === sig) return;
-    _mSet(dedupKey, sig, 15_000); // 15s — slightly longer than the 10s poll interval
-
     const key = rollLogKey();
     const existing = await env.HLS_CACHE.get(key, 'json') || { entries: [] };
     const entries = existing.entries || [];
-    const idx = entries.findIndex(e => e.roll === roll);
+    const idx = entries.findIndex(e => e.roll === entry.roll);
     if (idx >= 0) entries[idx] = entry; else entries.push(entry);
     if (entries.length > 50) entries.splice(0, entries.length - 50);
     await env.HLS_CACHE.put(key, JSON.stringify({ entries }), { expirationTtl: 7 * 24 * 3600 });
@@ -2416,8 +2410,11 @@ async function handleDomeWatchFloor(env) {
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       const data = await response.json();
-      // Write roll-log server-side — eliminates the need for a public POST endpoint.
-      await maybeWriteRollLog(data, env);
+      // Roll-log writes happen via the DO's own poll (DomeWatchStreamCoordinator.
+      // trackRollLogTransition) — that's the single, consistently-running 10s poll with
+      // the in-memory state needed to write once per closed roll instead of on every
+      // tally change. This REST path is just an occasional per-client fallback for fresh
+      // display data when SSE goes stale, so it doesn't duplicate that write.
       return new Response(JSON.stringify(data), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=10' }
       });
@@ -3323,6 +3320,7 @@ export class DomeWatchStreamCoordinator {
     this.floorTimeout = null;
     this._floorStatusValue = null; // last known now.value from DomeWatch floor endpoint
     this._lastPollFast = null;     // last broadcast poll-mode state (null = not yet sent)
+    this._lastActiveRollSnapshot = null; // { roll, entry } — buffered in memory each tick while a vote is active; written to KV once, when it closes
     this.dataIntervals = new Map(); // name → intervalId
     this.dataCache = new Map();     // name → last JSON string (change detection)
     this.nextClientId = 1;
@@ -3435,9 +3433,9 @@ export class DomeWatchStreamCoordinator {
           // Update cached floor status for adaptive polling decisions
           let parsed = null;
           try { parsed = JSON.parse(json); this._floorStatusValue = parsed?.now?.value ?? null; } catch {}
-          // Write roll-log directly from DO — bypasses the worker in-memory cache
-          // that was preventing maybeWriteRollLog from being called on each poll.
-          if (parsed) maybeWriteRollLog(parsed, this.env).catch(() => {});
+          // Track roll-log transitions directly from the DO's own poll state — see
+          // trackRollLogTransition below for why this replaces a write on every tick.
+          if (parsed) this.trackRollLogTransition(parsed).catch(() => {});
           if (this.dataCache.get('floor') !== json) {
             this.dataCache.set('floor', json);
             await this.broadcast(`event: floor\ndata: ${json}\n\n`);
@@ -3458,6 +3456,32 @@ export class DomeWatchStreamCoordinator {
       }
     };
     this.floorTimeout = setTimeout(poll, 0); // run immediately
+  }
+
+  // Buffers the latest snapshot of the currently-active roll in memory on every 10s
+  // poll tick (no KV I/O — just an instance variable) and writes it to KV exactly once,
+  // on the tick where that roll is no longer active (status changed away from
+  // vote/voting, or a different roll number appeared). Replaces writing on every tally
+  // change throughout a vote, which produced dozens of KV writes per roll for data that
+  // was only ever read back out once the vote closed anyway (getActiveRollNumber()
+  // client-side deliberately treats the currently-active roll as unresolved either way).
+  async trackRollLogTransition(data) {
+    const status = data.currentStatus?.value || data.now?.value;
+    const roll = (data.roll_call || data.rollCall)?.number ?? null;
+    const isActive = (status === 'vote' || status === 'voting') && !!roll;
+    const prev = this._lastActiveRollSnapshot;
+
+    if (isActive) {
+      if (prev && prev.roll !== roll) {
+        // A different roll became active — the one we were tracking just closed.
+        await writeRollLogEntry(prev.entry, this.env);
+      }
+      this._lastActiveRollSnapshot = { roll, entry: buildRollLogEntry(data) };
+    } else if (prev) {
+      // No longer an active vote — write the last snapshot we buffered for it.
+      await writeRollLogEntry(prev.entry, this.env);
+      this._lastActiveRollSnapshot = null;
+    }
   }
 
   // Polls low-frequency data sources once per interval for ALL connected clients,
