@@ -5865,9 +5865,9 @@ a.bill-card-rule-link {
     transition: opacity 0.15s ease;
 }
 
-.mtr-card.mtr-pending .mtr-circle { color: rgba(210, 153, 34, 0.75); }
-.mtr-card.mtr-failed  .mtr-circle { color: rgba(248, 81, 73, 0.75);  }
-.mtr-card.mtr-passed  .mtr-circle { color: rgba(63, 185, 80, 0.75);  }
+.mtr-card.mtr-pending .mtr-circle { color: var(--accent-amber); opacity: 0.75; }
+.mtr-card.mtr-failed  .mtr-circle { color: #f85149;             opacity: 0.75; }
+.mtr-card.mtr-passed  .mtr-circle { color: var(--accent-green); opacity: 0.75; }
 
 /* Amendment vote mini-card — same shape/behavior as .mtr-card, stacked above it */
 .amdt-vote-card {
@@ -5916,9 +5916,9 @@ a.bill-card-rule-link {
     overflow-wrap: anywhere;
 }
 
-.amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: rgba(255, 193, 7, 0.75); }
-.amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: rgba(248, 81, 73, 0.75); }
-.amdt-vote-card.amdt-vote-passed    .amdt-vote-circle { color: rgba(63, 185, 80, 0.75); }
+.amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: #ffc107;             opacity: 0.75; }
+.amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: #f85149;             opacity: 0.75; }
+.amdt-vote-card.amdt-vote-passed    .amdt-vote-circle { color: var(--accent-green); opacity: 0.75; }
 
 /* Hover anywhere in the slot lights up every stacked element in one colour.
    Uses :has() so the bill's data-status drives all indicator cards.
