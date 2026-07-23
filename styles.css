@@ -5320,6 +5320,9 @@ font-family: var(--font-mono);
 .bills-tracked-filter-btn.active svg {
     fill: currentColor;
 }
+.bills-tracked-filter-btn svg {
+    transform: translateY(-1px);
+}
 .bills-tracked-filter-count {
     opacity: 0.7;
     font-weight: 400;
