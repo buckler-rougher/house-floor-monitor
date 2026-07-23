@@ -2228,6 +2228,25 @@ async function handleRollLogGet(env) {
   }
 }
 
+// Bundles roll-log + whip-floor-updates + whip-notices-feed into one response —
+// the client's cold-DO fallback (fires only when the DO's SSE cache was empty at
+// connect time) used to be 3 separate REST calls; this collapses it to 1.
+async function handleColdStartBundle(env) {
+  const [rollLogResp, floorResp, noticesResp] = await Promise.all([
+    handleRollLogGet(env),
+    handleWhipFloorUpdates(env),
+    handleWhipNoticesFeed(env),
+  ]);
+  const rollLog  = rollLogResp.ok  ? await rollLogResp.json()  : { entries: [] };
+  const floor    = floorResp.ok    ? await floorResp.json()    : { items: [] };
+  const notices  = noticesResp.ok  ? await noticesResp.json()  : { items: [] };
+  return new Response(JSON.stringify({
+    rollLog: rollLog.entries || [],
+    whipFloor: floor.items || [],
+    whipNotices: notices.items || [],
+  }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -3141,6 +3160,8 @@ async function handleRequest(request, env) {
     return await handleLastSessionDate(request);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
     return await handleRollLogGet(env);
+  } else if (path === '/api/cold-start-bundle' && request.method === 'GET') {
+    return await handleColdStartBundle(env);
   } else if (path === '/api/roll-log-debug' && request.method === 'GET') {
     // Temporary: peek at KV keys for past 7 days to diagnose missing roll-log data
     if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });

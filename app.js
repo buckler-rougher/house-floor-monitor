@@ -613,25 +613,15 @@ function applyRollLogData(entries) {
     updateVoteTimelineStatus(); // refresh absence badges with newly loaded data
 }
 
-async function loadRollLog() {
+// Cold-DO fallback only (see the SSE 'connected' listener) — one combined request
+// instead of separate roll-log/whip-floor-updates/whip-notices-feed calls.
+async function loadColdStartBundle(wantRollLog, wantWhipFeed) {
     try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/roll-log');
+        const resp = await fetch('https://api.evanhollander.org/house-floor/api/cold-start-bundle');
         const data = await resp.json();
-        applyRollLogData(data.entries);
-    } catch(e) { console.error('[loadRollLog]', e); }
-}
-
-async function loadWhipFeed() {
-    try {
-        const BASE = 'https://api.evanhollander.org/house-floor/api';
-        const [floorResp, noticesResp] = await Promise.all([
-            fetch(`${BASE}/whip-floor-updates`),
-            fetch(`${BASE}/whip-notices-feed`),
-        ]);
-        const floor   = floorResp.ok   ? (await floorResp.json()).items   || [] : [];
-        const notices = noticesResp.ok ? (await noticesResp.json()).items || [] : [];
-        applyWhipFeedData({ floor, notices });
-    } catch(e) { console.error('[loadWhipFeed]', e); }
+        if (wantRollLog) applyRollLogData(data.rollLog || []);
+        if (wantWhipFeed) applyWhipFeedData({ floor: data.whipFloor || [], notices: data.whipNotices || [] });
+    } catch(e) { console.error('[loadColdStartBundle]', e); }
 }
 
 function applyRollLogToBills(entries, activeRoll) {
@@ -1258,8 +1248,7 @@ function startSSEStreaming() {
         eventSource.addEventListener('connected', (event) => {
             try {
                 const { clientId, rollLogCold, whipFeedCold } = JSON.parse(event.data);
-                if (rollLogCold) loadRollLog();
-                if (whipFeedCold) loadWhipFeed();
+                if (rollLogCold || whipFeedCold) loadColdStartBundle(rollLogCold, whipFeedCold);
                 if (clientId) {
                     const pingUrl = `https://api.evanhollander.org/house-floor/api/stream/votes/current?ping=${encodeURIComponent(clientId)}`;
                     const sendPing = () => fetch(pingUrl, { method: 'POST' }).catch(() => {});
