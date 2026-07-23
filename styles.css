@@ -5538,9 +5538,9 @@ font-family: var(--font-mono);
 }
 
 .bill-card[data-tracked="true"] {
-    border-color: var(--accent-blue);
+    border-color: rgba(88, 166, 255, 0.5);
     background: rgba(88, 166, 255, 0.06);
-    box-shadow: 0 0 0 1px var(--accent-blue);
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.5);
 }
 
 .bill-card-wrap {
@@ -5561,12 +5561,14 @@ font-family: var(--font-mono);
     border: 1px solid var(--border-color);
     background: var(--bg-card);
     color: var(--text-muted);
-    opacity: 0.7;
+    opacity: 0;
     cursor: pointer;
     transition: color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 
-.bill-card-wrap:hover .bill-track-btn {
+.bill-card-wrap:hover .bill-track-btn,
+.bill-track-btn:focus-visible,
+.bill-track-btn.tracked {
     opacity: 0.85;
 }
 
@@ -5578,6 +5580,32 @@ font-family: var(--font-mono);
 .bill-track-btn.tracked {
     color: var(--accent-blue);
     border-color: var(--accent-blue);
+    opacity: 1;
+}
+
+.bill-track-btn[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-6);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: 0;
+    white-space: nowrap;
+    padding: 4px 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 100;
+}
+
+.bill-track-btn:hover[data-tooltip]::after {
     opacity: 1;
 }
 

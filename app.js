@@ -4766,7 +4766,8 @@ function createBillCard(bill, procedure) {
         : '';
 
     const tracked = trackedBillIds.has(bill.id);
-    const trackBtnHtml = `<button class="bill-track-btn${tracked ? ' tracked' : ''}" data-bill-id="${bill.id}" type="button" aria-pressed="${tracked}" aria-label="${tracked ? 'Stop tracking' : 'Track'} ${escapeHtml(bill.id)}">
+    const trackTooltip = tracked ? 'Stop tracking this bill' : 'Track this bill';
+    const trackBtnHtml = `<button class="bill-track-btn${tracked ? ' tracked' : ''}" data-bill-id="${bill.id}" data-tooltip="${trackTooltip}" type="button" aria-pressed="${tracked}" aria-label="${trackTooltip}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="${tracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     </button>`;
 
