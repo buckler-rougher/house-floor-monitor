@@ -3995,11 +3995,13 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
     // Apply rules — preserve any in-memory ruleStatus overrides set by reconcileVoteWithBills
     if (rulesData) {
         const ruleStatusOverrides = new Map();
+        const prevRuleStatus = new Map(); // hresNum -> ruleStatus, for notification transitions below
         for (const entry of specialRulesMap.values()) {
             if ((entry.ruleStatus === 'passed' || entry.ruleStatus === 'failed') &&
                 !ruleStatusOverrides.has(entry.hresNum)) {
                 ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote });
             }
+            if (!prevRuleStatus.has(entry.hresNum)) prevRuleStatus.set(entry.hresNum, entry.ruleStatus);
         }
         specialRulesMap.clear();
         // Sort ascending by H.Res. number so that when a bill has been re-attached to
@@ -4009,13 +4011,25 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
         const sortedRules = [...(rulesData.rules || [])].sort((a, b) => Number(a.hresNum) - Number(b.hresNum));
         for (const rule of sortedRules) {
             const override = ruleStatusOverrides.get(rule.hresNum);
+            const resolvedStatus = override?.ruleStatus ?? rule.ruleStatus;
             for (const billKey of rule.bills) {
                 specialRulesMap.set(billKey, {
                     hres: rule.hres, hresNum: rule.hresNum, title: rule.title || null,
                     passageVote: override?.passageVote ?? rule.passageVote ?? null,
-                    pdfUrl: rule.pdfUrl, ruleStatus: override?.ruleStatus ?? rule.ruleStatus,
+                    pdfUrl: rule.pdfUrl, ruleStatus: resolvedStatus,
                     bills: rule.bills, sponsor: rule.sponsor || null,
                 });
+            }
+            // Notify once per rule (not per bill) when it's reported or adopted, if any
+            // tracked bill is covered — combines multiple tracked bills under one rule.
+            const prev = prevRuleStatus.get(rule.hresNum);
+            if (prev !== resolvedStatus && (resolvedStatus === 'reported' || resolvedStatus === 'passed')) {
+                const anyTracked = rule.bills.some(b => [...trackedBillIds].some(id => normalizeBillIdForRules(id) === b));
+                if (anyTracked) {
+                    notifyOnce(`rule-${rule.hresNum}-${resolvedStatus}`,
+                        resolvedStatus === 'passed' ? `${rule.hres} adopted` : `${rule.hres} reported`,
+                        rule.title || '');
+                }
             }
         }
     }
@@ -4197,6 +4211,84 @@ function toggleBillTracked(billId) {
     updateBillsDisplay();
 }
 
+// ── Tracked-bill notifications ───────────────────────────────────────────────
+// Client-side only: fires while this tab is open (background/unfocused is fine),
+// not true push — no backend, no service worker, nothing survives the tab closing.
+let notificationsEnabled = localStorage.getItem('bills-alerts-on') === '1';
+const _notifiedEventKeys = new Set(); // in-memory de-dup guard, resets on reload
+
+function canNotify() {
+    return notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+}
+
+// eventKey is the de-dup unit — e.g. keying rule events by hresNum instead of by bill
+// id is what naturally collapses multiple tracked bills under one rule into one alert.
+function notifyOnce(eventKey, title, body, billId = null) {
+    if (_notifiedEventKeys.has(eventKey)) return;
+    _notifiedEventKeys.add(eventKey);
+    if (!canNotify()) return;
+    try {
+        const n = new Notification(title, { body, tag: eventKey, icon: '/favicon.png' });
+        n.onclick = () => {
+            window.focus();
+            if (billId) openBillModal(billId);
+            n.close();
+        };
+    } catch {}
+}
+
+function toggleNotificationsEnabled() {
+    if (Notification.permission === 'granted') {
+        notificationsEnabled = !notificationsEnabled;
+        localStorage.setItem('bills-alerts-on', notificationsEnabled ? '1' : '0');
+        updateAlertsButtonUI();
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        updateAlertsButtonUI();
+        return;
+    }
+    Notification.requestPermission().then(perm => {
+        notificationsEnabled = perm === 'granted';
+        localStorage.setItem('bills-alerts-on', notificationsEnabled ? '1' : '0');
+        updateAlertsButtonUI();
+    });
+}
+
+function updateAlertsButtonUI() {
+    const btn = document.getElementById('bills-alerts-btn');
+    if (!btn) return;
+    const denied = typeof Notification !== 'undefined' && Notification.permission === 'denied';
+    const on = canNotify();
+    btn.classList.toggle('active', on);
+    btn.classList.toggle('denied', denied);
+    btn.dataset.tooltip = denied
+        ? 'Blocked by your browser — allow notifications in site settings to enable'
+        : 'Notifies you while this tab stays open (background is fine) — closing the tab or browser stops alerts';
+}
+
+// Per-tracked-bill status snapshot, diffed on every updateBillsDisplay() call to
+// detect vote-open (→ roll-call) / vote-close (→ passed/failed) transitions, including
+// the voice-vote case where a suspension bill resolves without ever hitting roll-call.
+const _trackedStatusSnapshot = new Map();
+function checkTrackedBillStatusTransitions() {
+    for (const id of trackedBillIds) {
+        const bill = billDataMap.get(id);
+        if (!bill) continue;
+        const prev = _trackedStatusSnapshot.get(id);
+        _trackedStatusSnapshot.set(id, bill.status);
+        if (prev === bill.status || prev === undefined) continue;
+        if (bill.status === 'roll-call') {
+            notifyOnce(`vote-open-${id}`, `Vote opened: ${id}`, bill.title || '', id);
+        } else if (bill.status === 'passed' || bill.status === 'failed') {
+            const viaVoiceVote = prev !== 'roll-call';
+            notifyOnce(`vote-close-${id}`,
+                `${id} ${bill.status}${viaVoiceVote ? ' (voice vote)' : ''}`,
+                bill.statusText || bill.latestAction || '', id);
+        }
+    }
+}
+
 // ── Motion to Recommit / Commit ──────────────────────────────────────────────
 // Map: normalizedBillId → { status: 'pending'|'failed'|'passed', voteText: string|null }
 // Populated from proceedings items; shown as an indicator above the bill card.
@@ -4318,6 +4410,12 @@ function updateMotionsToRecommit(items) {
                     if (bill) { bill.mtr = mtrData; break; }
                 }
                 saveMtrToStorage();
+            }
+            const trackedRaw = [...trackedBillIds].find(id => normalizeBillIdForRules(id) === billId);
+            if (trackedRaw) {
+                const typeName = mtrType === 'commit' ? 'Motion to Commit' : 'Motion to Recommit';
+                if (status === 'pending') notifyOnce(`mtr-${billId}-pending`, `${typeName} offered: ${trackedRaw}`, '', trackedRaw);
+                else notifyOnce(`mtr-${billId}-${status}`, `${typeName} ${status}: ${trackedRaw}`, voteText || '', trackedRaw);
             }
             changed = true;
         }
@@ -4769,6 +4867,8 @@ function updateBillsDisplay() {
 
     // Re-evaluate VIEW BILL button — bills may have just loaded for the first time
     syncVoteBillBtn();
+
+    checkTrackedBillStatusTransitions();
 }
 
 function createBillCard(bill, procedure) {
@@ -6073,6 +6173,7 @@ async function updateProceedingsFeed() {
 
 let _debateLastBillId = null; // tracks which bill is shown so tab isn't reset on every poll
 let _debateLastAmendmentKey = null; // tracks which amendment is being debated so the Amendments tab re-narrows when it changes
+let _notifiedDebateBillId = null; // separate from _debateLastBillId — that one only updates when hasAmendments, this always does
 
 // Update debate section with bill information
 function updateDebateSection(items) {
@@ -6141,6 +6242,16 @@ function updateDebateSection(items) {
                     }
                 }
             }
+        }
+    }
+
+    // Debate-began notification — unconditional (unlike _debateLastBillId below, which
+    // only updates when hasAmendments, since it exists purely to reset the tab switcher).
+    if (foundBillId && foundBillId !== _notifiedDebateBillId) {
+        _notifiedDebateBillId = foundBillId;
+        const normFound = normalizeBillIdForRules(foundBillId);
+        if ([...trackedBillIds].some(id => normalizeBillIdForRules(id) === normFound)) {
+            notifyOnce(`debate-${normFound}`, `Debate began: ${foundBillId}`, '', foundBillId);
         }
     }
 
@@ -8950,6 +9061,7 @@ function updateModeClasses(mode) {
 // Initialize
 function init() {
     loadTrackedBillsFromStorage();
+    updateAlertsButtonUI();
 
     const footerYear = document.getElementById('footer-year');
     if (footerYear) footerYear.textContent = new Date().getFullYear();
@@ -9121,6 +9233,8 @@ function init() {
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
         billsSection.addEventListener('click', e => {
+            const alertsBtn = e.target.closest('#bills-alerts-btn');
+            if (alertsBtn) { toggleNotificationsEnabled(); return; }
             const trackFilterBtn = e.target.closest('.bills-tracked-filter-btn');
             if (trackFilterBtn) { billsTrackedFilterOn = !billsTrackedFilterOn; updateBillsDisplay(); return; }
             const sortBtn = e.target.closest('.bills-sort-btn');
