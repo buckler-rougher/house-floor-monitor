@@ -4168,6 +4168,33 @@ function updateBillStatusFromProceedings(items) {
     if (ruleChanged) updateBillsDisplay();
 }
 
+// ── Tracked bills ─────────────────────────────────────────────────────────
+// Set of normalizedBillId the user has starred. Persists indefinitely (no TTL) —
+// unlike MTR/amendment outcomes, this is a deliberate user choice, not proceedings-derived.
+const trackedBillIds = new Set();
+const TRACKED_BILLS_STORAGE_KEY = 'tracked-bills';
+
+function saveTrackedBillsToStorage() {
+    try {
+        localStorage.setItem(TRACKED_BILLS_STORAGE_KEY, JSON.stringify([...trackedBillIds]));
+    } catch {}
+}
+
+function loadTrackedBillsFromStorage() {
+    try {
+        const raw = localStorage.getItem(TRACKED_BILLS_STORAGE_KEY);
+        if (!raw) return;
+        for (const id of JSON.parse(raw)) trackedBillIds.add(id);
+    } catch {}
+}
+
+function toggleBillTracked(billId) {
+    if (trackedBillIds.has(billId)) trackedBillIds.delete(billId);
+    else trackedBillIds.add(billId);
+    saveTrackedBillsToStorage();
+    updateBillsDisplay();
+}
+
 // ── Motion to Recommit / Commit ──────────────────────────────────────────────
 // Map: normalizedBillId → { status: 'pending'|'failed'|'passed', voteText: string|null }
 // Populated from proceedings items; shown as an indicator above the bill card.
@@ -4738,8 +4765,13 @@ function createBillCard(bill, procedure) {
         ? `<span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span>`
         : '';
 
+    const tracked = trackedBillIds.has(bill.id);
+    const trackBtnHtml = `<button class="bill-track-btn${tracked ? ' tracked' : ''}" data-bill-id="${bill.id}" type="button" aria-pressed="${tracked}" aria-label="${tracked ? 'Stop tracking' : 'Track'} ${escapeHtml(bill.id)}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="${tracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    </button>`;
+
     const cardHtml = `
-        <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" type="button">
+        <button class="bill-card" data-bill-id="${bill.id}" data-status="${statusClass}" data-tracked="${tracked}" type="button">
             <div class="bill-status ${statusClass}" aria-hidden="true">${statusSymbol}</div>
             <div class="bill-info">
                 <div class="bill-id-row">
@@ -4775,7 +4807,7 @@ function createBillCard(bill, procedure) {
         ? (getAmendmentVotesForBill(bill.id).length ? getAmendmentVotesForBill(bill.id) : (bill.amendmentVotes || []))
         : [];
 
-    if (!hasMtr && !amdtVotes.length) return cardHtml;
+    if (!hasMtr && !amdtVotes.length) return `<div class="bill-card-wrap">${trackBtnHtml}${cardHtml}</div>`;
 
     let mtrBlockHtml = '';
     if (hasMtr) {
@@ -4818,7 +4850,7 @@ function createBillCard(bill, procedure) {
 
     return `<div class="bill-slot">
         ${amdtBlockHtml}${mtrBlockHtml}
-        ${cardHtml}
+        <div class="bill-card-wrap">${trackBtnHtml}${cardHtml}</div>
     </div>`;
 }
 
@@ -8898,6 +8930,8 @@ function updateModeClasses(mode) {
 
 // Initialize
 function init() {
+    loadTrackedBillsFromStorage();
+
     const footerYear = document.getElementById('footer-year');
     if (footerYear) footerYear.textContent = new Date().getFullYear();
 
@@ -9070,6 +9104,8 @@ function init() {
         billsSection.addEventListener('click', e => {
             const sortBtn = e.target.closest('.bills-sort-btn');
             if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
+            const trackBtn = e.target.closest('.bill-track-btn');
+            if (trackBtn) { toggleBillTracked(trackBtn.dataset.billId); return; }
             const amdtCard = e.target.closest('.amdt-vote-card');
             if (amdtCard) { openAmdtCard(amdtCard); return; }
             const card = e.target.closest('[data-bill-id]');
