@@ -3394,14 +3394,10 @@ export class DomeWatchStreamCoordinator {
       this.proceedingsTimeout = null;
       if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
       try {
-        const resp = await fetch(`https://clerk.house.gov/Home/Feed?_=${Date.now()}`, {
-          headers: { 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' },
-          signal: AbortSignal.timeout(8000),
-          cf: { cacheTtl: 0, cacheEverything: false },
-        });
+        // Direct in-process call — same code path as /api/proceedings, no self-fetch.
+        const resp = await handleProceedings(new Request('https://internal/api/proceedings'), this.env);
         if (resp.ok) {
-          const xml = await resp.text();
-          const result = parseRSSFeed(xml, 'proceedings');
+          const result = await resp.json();
           if (result.items?.length) {
             await this.broadcast(`event: proceedings\ndata: ${JSON.stringify({ items: result.items })}\n\n`);
           }
@@ -3424,10 +3420,8 @@ export class DomeWatchStreamCoordinator {
       this.floorTimeout = null;
       if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
       try {
-        const resp = await fetch('https://api.evanhollander.org/house-floor/api/domewatch-floor', {
-          signal: AbortSignal.timeout(10000),
-          cf: { cacheTtl: 0, cacheEverything: false },
-        });
+        // Direct in-process call — same code path as /api/domewatch-floor, no self-fetch.
+        const resp = await handleDomeWatchFloor(this.env);
         if (resp.ok) {
           const json = await resp.text();
           // Update cached floor status for adaptive polling decisions
@@ -3487,23 +3481,18 @@ export class DomeWatchStreamCoordinator {
   // Polls low-frequency data sources once per interval for ALL connected clients,
   // then broadcasts via SSE. Eliminates per-user Worker requests for these endpoints.
   startDataBroadcasts() {
-    const BASE = 'https://api.evanhollander.org/house-floor/api';
-
-    // Simple single-URL sources
+    // Simple single-URL sources — direct in-process handler calls, no self-fetch.
     const sources = [
-      { name: 'tweets',        url: `${BASE}/tweets`,         ms: 10 * 60 * 1000 },
-      { name: 'airportdelays', url: `${BASE}/airport-delays`, ms: 30 * 60 * 1000 },
-      { name: 'housemakeup',   url: `${BASE}/member-data`,    ms: 30 * 60 * 1000 },
+      { name: 'tweets',        handler: () => handleTweets(this.env),      ms: 10 * 60 * 1000 },
+      { name: 'airportdelays', handler: () => handleAirportDelays(),       ms: 30 * 60 * 1000 },
+      { name: 'housemakeup',   handler: () => handleMemberData(this.env),  ms: 30 * 60 * 1000 },
     ]; // bluesky removed — ticker is hidden (display:none)
-    for (const { name, url, ms } of sources) {
+    for (const { name, handler, ms } of sources) {
       if (this.dataIntervals.has(name)) continue;
       const poll = async () => {
         if (this.clients.size === 0) return;
         try {
-          const resp = await fetch(url, {
-            signal: AbortSignal.timeout(20000),
-            cf: { cacheTtl: 0, cacheEverything: false },
-          });
+          const resp = await handler();
           if (!resp.ok) return;
           const json = await resp.text();
           if (this.dataCache.get(name) === json) return; // unchanged, skip broadcast
@@ -3521,10 +3510,11 @@ export class DomeWatchStreamCoordinator {
       const pollBills = async () => {
         if (this.clients.size === 0) return;
         try {
+          // Direct in-process handler calls, no self-fetch.
           const [billsResp, rulesResp, whipResp] = await Promise.all([
-            fetch(`${BASE}/bills`,        { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
-            fetch(`${BASE}/rules`,        { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
-            fetch(`${BASE}/whip-notices`, { signal: AbortSignal.timeout(20000), cf: { cacheTtl: 0, cacheEverything: false } }),
+            handleBills(new Request('https://internal/api/bills'), this.env),
+            handleRules(new Request('https://internal/api/rules'), this.env),
+            handleWhipNotices(this.env),
           ]);
           if (!billsResp.ok) return; // bills are essential; skip if unavailable
           const bills = await billsResp.text();
@@ -3553,9 +3543,10 @@ export class DomeWatchStreamCoordinator {
       const pollWhip = async () => {
         if (this.clients.size === 0) return;
         try {
+          // Direct in-process handler calls, no self-fetch.
           const [floorResp, noticesResp] = await Promise.all([
-            fetch(`${BASE}/whip-floor-updates`,  { signal: AbortSignal.timeout(15000), cf: { cacheTtl: 0, cacheEverything: false } }),
-            fetch(`${BASE}/whip-notices-feed`,   { signal: AbortSignal.timeout(15000), cf: { cacheTtl: 0, cacheEverything: false } }),
+            handleWhipFloorUpdates(this.env),
+            handleWhipNoticesFeed(this.env),
           ]);
           const floor   = floorResp.ok   ? await floorResp.json()   : { items: [] };
           const notices = noticesResp.ok ? await noticesResp.json() : { items: [] };
@@ -3575,10 +3566,8 @@ export class DomeWatchStreamCoordinator {
       const pollRollLog = async () => {
         if (this.clients.size === 0) return;
         try {
-          const resp = await fetch(`${BASE}/roll-log`, {
-            signal: AbortSignal.timeout(10000),
-            cf: { cacheTtl: 0, cacheEverything: false },
-          });
+          // Direct in-process call, no self-fetch.
+          const resp = await handleRollLogGet(this.env);
           if (!resp.ok) return;
           const json = await resp.text();
           if (this.dataCache.get('roll-log') === json) return;
@@ -3596,10 +3585,8 @@ export class DomeWatchStreamCoordinator {
       const pollCasualty = async () => {
         if (this.clients.size === 0) return;
         try {
-          const resp = await fetch(`${BASE}/casualty-list`, {
-            signal: AbortSignal.timeout(10000),
-            cf: { cacheTtl: 0, cacheEverything: false },
-          });
+          // Direct in-process call, no self-fetch.
+          const resp = await handleCasualtyList(this.env);
           if (!resp.ok) return;
           const json = await resp.text();
           if (this.dataCache.get('casualty-list') === json) return;
