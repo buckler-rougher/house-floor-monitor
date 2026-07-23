@@ -3669,8 +3669,15 @@ export class DomeWatchStreamCoordinator {
       start: (controller) => {
         this.clients.set(clientId, { controller, lastPingAt: Date.now() });
         this.syncHealth();
+        // Tell the client whether roll-log/whip-feed were actually cached (a DO that's
+        // been warm since an earlier client connected) or not (freshly instantiated —
+        // startDataBroadcasts()'s first poll hasn't resolved yet). The client uses this
+        // to decide whether it needs its own REST fallback fetch, instead of firing one
+        // unconditionally on every connect regardless of whether SSE will cover it.
+        const rollLogCold = !this.dataCache.get('roll-log');
+        const whipFeedCold = !this.dataCache.get('whip-feed');
         controller.enqueue(this.encoder.encode(
-          `event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true, clientId })}\n\n`
+          `event: connected\ndata: ${JSON.stringify({ ok: true, sourceOfTruth: true, clientId, rollLogCold, whipFeedCold })}\n\n`
         ));
         this.sendCachedDataToClient(controller); // replay any cached state immediately
         this.startHeartbeat();
