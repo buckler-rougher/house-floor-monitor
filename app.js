@@ -4736,9 +4736,15 @@ function updateBillsDisplay() {
         if (headerEl) headerEl.textContent = cards.length === 1 ? 'SPECIAL RULE' : 'SPECIAL RULES';
         if (ruleGoverningSection) ruleGoverningSection.style.display = show ? '' : 'none';
         ruleTagsContainer.style.display = show ? '' : 'none';
+        // bills-column-header-sub adds top margin meant to separate this header from the
+        // Special Rules section above it — only wanted when that section is actually showing.
+        document.getElementById('rule-bills-title')?.closest('.bills-column-header')
+            ?.classList.toggle('bills-column-header-sub', show);
     } else {
         if (ruleGoverningSection) ruleGoverningSection.style.display = 'none';
         if (ruleTagsContainer) ruleTagsContainer.style.display = 'none';
+        document.getElementById('rule-bills-title')?.closest('.bills-column-header')
+            ?.classList.remove('bills-column-header-sub');
     }
 
     // Populate MAY BE CONSIDERED section — exclude H.Res. bills already shown as special rules

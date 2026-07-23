@@ -20,7 +20,7 @@
     <meta name="twitter:title" content="Monitoring the House Floor">
     <meta name="twitter:description" content="Real-time U.S. House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/social.webp">
-    <link rel="stylesheet" href="styles.css?v=20260722d">
+    <link rel="stylesheet" href="styles.css?v=20260722e">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1181,8 +1181,8 @@
                             <button class="info-btn" data-info="under-rule" aria-label="About special rules">?</button>
                         </div>
                         <div class="bills-list" id="rule-tags-container" style="display:none"></div>
-                        <!-- UNDER RULE header -->
-                        <div class="bills-column-header bills-column-header-sub">
+                        <!-- UNDER RULE header — bills-column-header-sub added by JS only when Special Rules section above is visible -->
+                        <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title" id="rule-bills-title">SUBJECT TO A RULE</span>
                             </div>
@@ -1498,7 +1498,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20260722m"></script>
+    <script src="app.js?v=20260722n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
