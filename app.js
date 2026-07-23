@@ -3886,6 +3886,8 @@ function riceIndexColor(rice) {
 
 // Sort mode: 'status' (default) | 'listed'
 let billsSortMode = 'status';
+// When true, the three bill lists show only bills in trackedBillIds
+let billsTrackedFilterOn = false;
 
 const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, postponed: 2 };
 
@@ -4637,19 +4639,29 @@ function updateBillsDisplay() {
 
     billDataMap.clear();
 
-    const sortedRule = sortBillsForDisplay(billsData.ruleBills);
-    const sortedSuspension = sortBillsForDisplay(billsData.suspensionBills);
+    const filterTracked = arr => billsTrackedFilterOn ? arr.filter(b => trackedBillIds.has(b.id)) : arr;
+    const sortedRule = sortBillsForDisplay(filterTracked(billsData.ruleBills));
+    const sortedSuspension = sortBillsForDisplay(filterTracked(billsData.suspensionBills));
 
     if (sortedRule.length > 0) {
         setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
-        setIfChanged(elements.ruleBillsList, '<div class="no-bills">No bills subject to a rule</div>');
+        setIfChanged(elements.ruleBillsList, `<div class="no-bills">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills subject to a rule'}</div>`);
     }
 
     if (sortedSuspension.length > 0) {
         setIfChanged(elements.suspensionBillsList, sortedSuspension.map(bill => createBillCard(bill, 'suspension')).join(''));
     } else {
-        setIfChanged(elements.suspensionBillsList, '<div class="no-bills">No bills under suspension</div>');
+        setIfChanged(elements.suspensionBillsList, `<div class="no-bills">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills under suspension'}</div>`);
+    }
+
+    const trackedFilterBtn = document.getElementById('bills-tracked-filter-btn');
+    if (trackedFilterBtn) {
+        trackedFilterBtn.classList.toggle('active', billsTrackedFilterOn);
+        trackedFilterBtn.querySelector('.bills-tracked-filter-count')?.remove();
+        if (trackedBillIds.size > 0) {
+            trackedFilterBtn.insertAdjacentHTML('beforeend', `<span class="bills-tracked-filter-count">(${trackedBillIds.size})</span>`);
+        }
     }
 
     if (elements.billsLastUpdate) {
@@ -4734,7 +4746,7 @@ function updateBillsDisplay() {
     const mayBeConsideredSection = document.getElementById('may-be-considered-section');
     const shownHresNorms = new Set([...specialRulesMap.values()].map(r => normalizeBillIdForRules(r.hres)));
     const sortedMaybe = sortBillsForDisplay(
-        (billsData.mayBeConsideredBills || []).filter(b => !shownHresNorms.has(normalizeBillIdForRules(b.id)))
+        filterTracked((billsData.mayBeConsideredBills || []).filter(b => !shownHresNorms.has(normalizeBillIdForRules(b.id))))
     );
     if (mayBeConsideredList) {
         if (sortedMaybe.length > 0) {
@@ -9103,6 +9115,8 @@ function init() {
     const billsSection = document.querySelector('.bills-section');
     if (billsSection) {
         billsSection.addEventListener('click', e => {
+            const trackFilterBtn = e.target.closest('.bills-tracked-filter-btn');
+            if (trackFilterBtn) { billsTrackedFilterOn = !billsTrackedFilterOn; updateBillsDisplay(); return; }
             const sortBtn = e.target.closest('.bills-sort-btn');
             if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
             const trackBtn = e.target.closest('.bill-track-btn');

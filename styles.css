@@ -5304,6 +5304,26 @@ font-family: var(--font-mono);
     color: var(--accent-blue);
     background: rgba(88, 166, 255, 0.12);
 }
+.bills-tracked-filter-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+.bills-tracked-filter-btn.active {
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.12);
+    border-color: rgba(88, 166, 255, 0.5);
+}
+.bills-tracked-filter-btn.active svg {
+    fill: currentColor;
+}
+.bills-tracked-filter-count {
+    opacity: 0.7;
+    font-weight: 400;
+}
 .bill-modal-source-link {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
@@ -5583,7 +5603,8 @@ font-family: var(--font-mono);
     opacity: 1;
 }
 
-.bill-track-btn[data-tooltip]::after {
+.bill-track-btn[data-tooltip]::after,
+.bills-tracked-filter-btn[data-tooltip]::after {
     content: attr(data-tooltip);
     position: absolute;
     top: calc(100% + 5px);
@@ -5605,7 +5626,8 @@ font-family: var(--font-mono);
     z-index: 100;
 }
 
-.bill-track-btn:hover[data-tooltip]::after {
+.bill-track-btn:hover[data-tooltip]::after,
+.bills-tracked-filter-btn:hover[data-tooltip]::after {
     opacity: 1;
 }
 
