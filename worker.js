@@ -3783,6 +3783,18 @@ export class DomeWatchStreamCoordinator {
       ]);
 
       while (true) {
+        if (this.clients.size === 0) {
+          // No one's watching — release the upstream connection so the DO can go
+          // idle instead of holding it open forever. The next client to connect
+          // calls ensureUpstream() again to reopen it. Worst case this check is
+          // delayed up to STALE_MS (5 min) if the last client leaves mid-read
+          // during a quiet (no-vote) period — bounded, not indefinite.
+          try { reader.cancel(); } catch {}
+          this.upstreamReader = null;
+          this.upstreamConnected = false;
+          this.syncHealth();
+          return;
+        }
         const { value, done } = await readWithTimeout();
         if (done) break;
 
@@ -3804,6 +3816,7 @@ export class DomeWatchStreamCoordinator {
   }
 
   async scheduleReconnect() {
+    if (this.clients.size === 0) return; // nobody to reconnect for — let the DO go idle
     await new Promise(resolve => setTimeout(resolve, 3000));
     this.upstreamReader = null;
     this.ensureUpstream();
