@@ -1,0 +1,4 @@
+name = "openshort-link-generator"
+main = "openshort-worker.js"
+compatibility_date = "2024-01-01"
+account_id = "ce55e9960094bcc712fc82a8086248d5"
