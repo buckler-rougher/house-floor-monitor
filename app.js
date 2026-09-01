@@ -579,9 +579,12 @@ let rollLogCurrentRoll = null; // roll number we're currently tracking
 // moves on: the "skip the active roll" guards below would skip it forever. Only trust
 // rollCall.number as "active" when the floor status itself says a vote is underway —
 // matching the same currentStatus check worker.js's maybeWriteRollLog already uses.
-function getActiveRollNumber() {
+function isFloorVoteInProgress() {
     const status = floorData?.currentStatus?.value || floorData?.now?.value;
-    if (status !== 'vote' && status !== 'voting') return null;
+    return status === 'vote' || status === 'voting';
+}
+function getActiveRollNumber() {
+    if (!isFloorVoteInProgress()) return null;
     return floorData?.rollCall?.number ? String(floorData.rollCall.number) : null;
 }
 
@@ -2844,9 +2847,7 @@ function parseVoteItemsFromHtml(htmlBody) {
     return results;
 }
 
-// Determine status of a vote-timeline item from live data.
-// Returns 'pending' | 'active' | 'passed' | 'failed'
-// Map action token → patterns that the live rollCall.question should match.
+// Map action token → patterns that a roll call's question should match.
 // Used to disambiguate two items with the same billId (e.g. PQ and Rule adoption
 // both reference H.Res. 722 — we only mark the one whose question type matches).
 const ACTION_QUESTION_PATTERNS = {
@@ -2872,44 +2873,74 @@ function questionMatchesAction(question, action) {
     return patterns.some(re => re.test(question));
 }
 
-function getVoteTlStatus(billId, action = null) {
-    if (!billId) return 'pending';
+// Actions that are a motion ON a bill rather than a vote on the bill itself. Their
+// outcome only ever lives in that motion's own roll call — never in the bill-level
+// status billDataMap/specialRulesMap carry.
+const PROCEDURAL_TL_ACTIONS = new Set([
+    'previous question', 'motion to recommit', 'motion to commit', 'motion to table',
+    'motion to discharge', 'motion to refer', 'consideration', 'amendment to rule',
+]);
+
+// Resolve one vote-timeline item's status AND where that verdict came from:
+//   'active'   — this is the roll call currently on the floor
+//   'rollcall' — a completed roll call matching this bill AND this question type
+//   'rules'    — specialRulesMap's recorded outcome for an H.Res. rule
+//   'billdata' — the bill's own status (Clerk proceedings feed / Congress.gov). Weak:
+//                it is ONE status for the whole bill, not one per question, so it says
+//                nothing about where the series has actually got to — see the ordering
+//                guard in resolveVoteSeriesStatuses().
+//   'none'     — nothing resolved it (pending)
+// Status is one of 'pending' | 'active' | 'passed' | 'failed'.
+function getVoteTlStatusDetail(billId, action = null) {
+    if (!billId) return { status: 'pending', source: 'none' };
 
     // Normalize for H.Res. lookups
     const hresMatch = billId.match(/^H\.Res\.\s*(\d+)/i);
     const hresNum = hresMatch ? hresMatch[1] : null;
+    const billNorm = normalizeBillIdForRules(billId);
+    const isProcedural = PROCEDURAL_TL_ACTIONS.has((action || '').toLowerCase());
 
     // Check if this bill is currently being voted on.
     // Strategy: match bill# in question or bill.legisNum, then verify the question
     // type matches the expected action so PQ and Rule adoption on the same H.Res.
     // don't both show as active simultaneously.
-    const activeRC = floorData.rollCall;
+    // Gated on the floor status actually saying a vote is underway: rollCall stays
+    // populated after a vote ends (see getActiveRollNumber), so its mere presence would
+    // otherwise pin the last-voted item at "VOTING" indefinitely.
+    const activeRC = isFloorVoteInProgress() ? floorData.rollCall : null;
     if (activeRC) {
-        const BILL_ID_RE = /(H\.J\.\s*Res\.|H\.Con\.\s*Res\.|H\.\s*Res\.|H\.R\.|S\.J\.\s*Res\.|S\.Con\.\s*Res\.|S\.\s*Res\.|S\.)\s*(\d+)/i;
-        const billNormActive = normalizeBillIdForRules(billId);
         const activeQ = activeRC.question || '';
-        const qm = activeQ.match(BILL_ID_RE);
-        const lm = (activeRC.bill?.legisNum || '').match(BILL_ID_RE);
-        const billMatches = (qm && normalizeBillIdForRules(`${qm[1]} ${qm[2]}`) === billNormActive) ||
-                            (lm && normalizeBillIdForRules(`${lm[1]} ${lm[2]}`) === billNormActive);
-        if (billMatches && questionMatchesAction(activeQ, action)) return 'active';
+        // Match via extractBillNormFromText, NOT a literal-period regex. A resolution's
+        // question routinely carries no bill number at all ("On Agreeing to the
+        // Resolution"), leaving rollCall.bill.legisNum as the only handle — and that
+        // arrives in the Clerk/DomeWatch dotless form ("H RES 1490"), which a
+        // /H\.\s*Res\./-style pattern never matches. The vote actually on the floor
+        // therefore never resolved to 'active' and sat there reading pending while the
+        // rest of the series showed results around it. Same literal-period trap already
+        // fixed in voteTlResultText/getVoteTlAbsences.
+        const qNorm = extractBillNormFromText(activeQ);
+        const lNorm = extractBillNormFromText(activeRC.bill?.legisNum || '');
+        const billMatches = qNorm === billNorm || lNorm === billNorm;
+        if (billMatches && questionMatchesAction(activeQ, action)) return { status: 'active', source: 'active' };
 
         // PQ votes often omit the H.Res. number from the question text entirely.
         // If the question matches a PQ pattern and this item's action is 'previous
         // question', treat it as active — the question type alone is sufficient since
         // there can only be one PQ vote at a time.
         if (!billMatches && action === 'previous question' && /previous\s+question/i.test(activeQ)) {
-            return 'active';
+            return { status: 'active', source: 'active' };
         }
     }
 
     // For H.Res. resolutions, check specialRulesMap — rule votes store their
-    // outcome in ruleStatus, not in billDataMap.status.
-    if (hresNum) {
+    // outcome in ruleStatus, not in billDataMap.status. ruleStatus describes the
+    // resolution's own adoption, so it must not answer for a procedural motion on
+    // that same H.Res. (its Previous Question item has its own roll call).
+    if (hresNum && !isProcedural) {
         for (const entry of specialRulesMap.values()) {
             if (String(entry.hresNum) === hresNum) {
-                if (entry.ruleStatus === 'passed') return 'passed';
-                if (entry.ruleStatus === 'failed') return 'failed';
+                if (entry.ruleStatus === 'passed') return { status: 'passed', source: 'rules' };
+                if (entry.ruleStatus === 'failed') return { status: 'failed', source: 'rules' };
             }
         }
     }
@@ -2921,7 +2952,6 @@ function getVoteTlStatus(billId, action = null) {
     // IMPORTANT: Check rollLog BEFORE billDataMap so completed votes are detected
     // even if they haven't been updated in billDataMap yet (e.g., during final vote).
     // Also skip the currently active roll to avoid marking in-progress votes as completed.
-    const billNorm = normalizeBillIdForRules(billId);
     const activeRoll = getActiveRollNumber();
     let anyMatchedRoll = null; // roll number of a resolved entry for this bill (any action) — used for the PQ fallback below
     for (const entry of rollLog) {
@@ -2940,11 +2970,11 @@ function getVoteTlStatus(billId, action = null) {
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
         if (yeas + nays > 0) {
-            if (action !== 'previous question') return yeas > nays ? 'passed' : 'failed';
+            if (action !== 'previous question') return { status: yeas > nays ? 'passed' : 'failed', source: 'rollcall' };
             // If this entry IS the PQ roll (question contains "previous question"), resolve directly.
             // (DomeWatch often includes the bill ID in the PQ question text, so qNorm matches billNorm
             // here even though rc.bill is empty — we can read the result straight from this entry.)
-            if (/previous\s+question/i.test(entry.question || '')) return yeas > nays ? 'passed' : 'failed';
+            if (/previous\s+question/i.test(entry.question || '')) return { status: yeas > nays ? 'passed' : 'failed', source: 'rollcall' };
             // Otherwise it's a substantive vote for the same bill — save roll for adjacency fallback below.
             anyMatchedRoll = entry.roll;
         }
@@ -2960,28 +2990,59 @@ function getVoteTlStatus(billId, action = null) {
         if (pqEntry) {
             const yeas = pqEntry.totals?.yeas || 0;
             const nays = pqEntry.totals?.nays || 0;
-            if (yeas + nays > 0) return yeas > nays ? 'passed' : 'failed';
+            if (yeas + nays > 0) return { status: yeas > nays ? 'passed' : 'failed', source: 'rollcall' };
         }
     }
+
+    // A procedural motion stops here. billDataMap holds ONE status for the whole bill,
+    // so reading it for a Motion to Recommit / Previous Question stamps the BILL's
+    // outcome onto the motion's item — that is how a single H.R. could show both its
+    // Motion to Recommit AND its Passage as PASSED off one flag, neither vote taken.
+    if (isProcedural) return { status: 'pending', source: 'none' };
 
     // Check billDataMap (updated by applyRollLogToBills via SSE)
     let bill = billDataMap.get(billId);
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
     // Normalized scan — handles "H. Res. 1335" (XML) vs "H.Res. 1335" (Whip) spacing mismatch
     if (!bill) {
-        const norm = normalizeBillIdForRules(billId);
         for (const [key, val] of billDataMap) {
-            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+            if (normalizeBillIdForRules(key) === billNorm) { bill = val; break; }
         }
     }
-    if (bill?.status === 'passed') return 'passed';
-    if (bill?.status === 'failed') return 'failed';
+    if (bill?.status === 'passed') return { status: 'passed', source: 'billdata' };
+    if (bill?.status === 'failed') return { status: 'failed', source: 'billdata' };
 
-    return 'pending';
+    return { status: 'pending', source: 'none' };
+}
+
+// Status every item of a vote series at once. Resolving items one at a time can't see
+// that an EARLIER vote in the series hasn't happened yet, and that context is what
+// separates a real result from a misattributed one.
+// Items may carry a live amendment status instead of a billId (amendment items
+// deliberately have none — see parseVoteItemsFromHtml).
+function resolveVoteSeriesStatuses(votes) {
+    const details = votes.map(({ billId, action, amdtStatus }) => {
+        if (amdtStatus === 'passed') return { status: 'passed', source: 'amendment' };
+        if (amdtStatus === 'failed') return { status: 'failed', source: 'amendment' };
+        return getVoteTlStatusDetail(billId, action);
+    });
+
+    // The House takes a vote series in the order the Whip notice lists it, so nothing
+    // below the vote currently on the floor can already be finished. Only 'billdata'
+    // verdicts are walked back: those are inferences about the bill, not a record of
+    // this question being called, and they are the ones that jump ahead of the series.
+    // Roll-call/rule/amendment outcomes are left alone — an item whose proceedings were
+    // postponed legitimately stays pending while later votes complete.
+    let sawUnfinished = false;
+    return details.map(({ status, source }) => {
+        if (status === 'pending' || status === 'active') { sawUnfinished = true; return status; }
+        if (sawUnfinished && source === 'billdata') return 'pending';
+        return status;
+    });
 }
 
 // Format a vote result badge string for a completed/active circle.
-function voteTlResultText(billId, status) {
+function voteTlResultText(billId, status, action = null) {
     if (status === 'pending') return '';
     if (status === 'active') {
         const vc = floorData.voteCounts;
@@ -2990,30 +3051,41 @@ function voteTlResultText(billId, status) {
         }
         return 'VOTING';
     }
-    // passed/failed — find the vote counts from specialRulesMap, rollLog, or billDataMap
+    // passed/failed — find the vote counts from specialRulesMap, rollLog, or billDataMap.
+    // Every lookup below is narrowed to this item's own question type: a bill can carry
+    // several roll calls (Motion to Recommit, Previous Question, Passage), and matching
+    // on the bill number alone printed whichever tally came first onto all of them.
+    const isProcedural = PROCEDURAL_TL_ACTIONS.has((action || '').toLowerCase());
     const hresNum = billId?.match(/^H\.Res\.\s*(\d+)/i)?.[1];
-    // For H.Res., specialRulesMap stores passageVote as "yeas-nays"
-    if (hresNum) {
+    // For H.Res., specialRulesMap stores passageVote as "yeas-nays" — the resolution's
+    // own adoption, so it can't answer for a procedural motion on that resolution.
+    if (hresNum && !isProcedural) {
         for (const entry of specialRulesMap.values()) {
             if (String(entry.hresNum) === hresNum && entry.passageVote) {
                 return `${status.toUpperCase()} ${entry.passageVote.replace('-', '–')}`;
             }
         }
     }
-    // extractBillNormFromText (same helper getVoteTlStatus/getVoteTlAbsences use) allows
+    // extractBillNormFromText (same helper getVoteTlStatusDetail/getVoteTlAbsences use) allows
     // "H R 9237" (no periods, as rollLog question text actually reads) — the previous
     // inline regex here required literal periods ("H.R."), so it never matched rollLog's
     // real format and this always fell through to the billDataMap fallback below,
     // silently dropping the vote count even once status correctly resolved to passed/failed.
     const rlNorm = normalizeBillIdForRules(billId || '');
+    const activeRoll = getActiveRollNumber();
     for (const entry of rollLog) {
+        if (activeRoll && String(entry.roll) === activeRoll) continue; // in-progress tally isn't this item's result
         const qNorm = extractBillNormFromText(entry.question);
         const bNorm = extractBillNormFromText(entry.bill);
         if (qNorm !== rlNorm && bNorm !== rlNorm) continue;
+        if (!questionMatchesAction(entry.question || '', action)) continue;
         const y = entry.totals?.yeas || 0;
         const n = entry.totals?.nays || 0;
         if (y + n > 0) return `${status.toUpperCase()} ${y}–${n}`;
     }
+    // A procedural motion has no bill-level fallback — its result exists only as its own
+    // roll call, so report the outcome without a tally rather than the bill's.
+    if (isProcedural) return status.toUpperCase();
     // Fallback to billDataMap latestAction vote counts
     let bill = billId ? billDataMap.get(billId) : null;
     if (!bill && hresNum) bill = billDataMap.get(`hres-${hresNum}`);
@@ -3030,7 +3102,7 @@ function voteTlResultText(billId, status) {
 
 // Returns { d, r, i } absences for a vote-timeline item, or null if unavailable.
 // Active vote: live not_voting from current tally. Completed: from roll log.
-function getVoteTlAbsences(billId, status) {
+function getVoteTlAbsences(billId, status, action = null) {
     if (status === 'pending') return null;
     if (status === 'active') {
         const vc = floorData?.voteCounts;
@@ -3044,13 +3116,18 @@ function getVoteTlAbsences(billId, status) {
     // passed / failed — match against roll log
     if (!billId) return null;
     const billNorm = normalizeBillIdForRules(billId);
+    const activeRoll = getActiveRollNumber();
     for (const entry of rollLog) {
+        if (activeRoll && String(entry.roll) === activeRoll) continue; // in-progress tally isn't this item's result
         // Search question first, then fall back to bill legisNum — same as applyRollLogToBills.
         // extractBillNormFromText allows spaces inside bill-type prefixes ("H. R." etc.)
         // and no-space formats ("H.R.3633") that DomeWatch sometimes returns.
         const qNorm = extractBillNormFromText(entry.question);
         const bNorm = extractBillNormFromText(entry.bill);
         if (qNorm !== billNorm && bNorm !== billNorm) continue;
+        // Narrowed to this item's question type, as in voteTlResultText — otherwise the
+        // absences from a different roll call on the same bill get shown here.
+        if (!questionMatchesAction(entry.question || '', action)) continue;
         const d = entry.dem?.notVoting ?? null;
         const r = entry.rep?.notVoting ?? null;
         if (d !== null || r !== null) return { d: d ?? 0, r: r ?? 0, i: entry.ind?.notVoting ?? 0 };
@@ -3075,33 +3152,39 @@ function updateVoteTimelineStatus() {
     const body = document.getElementById('vote-series-body');
     if (!body) return;
     const items = Array.from(body.querySelectorAll('.vote-tl-item'));
-    const liveStatuses = [];
-    items.forEach((item, idx) => {
-        const billId = item.dataset.billId || null;
-        const action = item.dataset.action || null;
-        // Amendment-vote items have no data-bill-id (see parseVoteItemsFromHtml/
-        // renderVoteTimeline) so getVoteTlStatus(null, ...) always reads 'pending' for
-        // them here. Re-resolve the LIVE entry from amendmentVotes by sponsor+number on
-        // every call (not the amdtStatus/amdtVoteText snapshotted onto currentVotesList
-        // at whip-notice-parse time) — that snapshot only gets refreshed by a full
-        // renderVoteTimeline re-render, which can be ~2min+ apart (or longer, since it
-        // only fires when the notice text itself changes), so trusting it here left
-        // amendments stuck showing whatever status they had when the notice was last
-        // parsed even after they'd actually resolved. Without this, the "all complete"
-        // hide check below can also never fire while any amendment item is present.
+    // Pass 1 — collect each item's live inputs. Amendment-vote items have no
+    // data-bill-id (see parseVoteItemsFromHtml/renderVoteTimeline) so the bill lookup
+    // always reads 'pending' for them. Re-resolve the LIVE entry from amendmentVotes by
+    // sponsor+number on every call (not the amdtStatus/amdtVoteText snapshotted onto
+    // currentVotesList at whip-notice-parse time) — that snapshot only gets refreshed by
+    // a full renderVoteTimeline re-render, which can be ~2min+ apart (or longer, since
+    // it only fires when the notice text itself changes), so trusting it here left
+    // amendments stuck showing whatever status they had when the notice was last parsed
+    // even after they'd actually resolved. Without this, the "all complete" hide check
+    // below can also never fire while any amendment item is present.
+    const liveVotes = items.map((item, idx) => {
         const vote = currentVotesList[idx] || {};
         const liveAmdt = vote.amdtSponsorKey ? resolveAmendmentVoteEntry(vote.amdtSponsorKey, vote.amdtNum) : null;
-        const amdtStatus = liveAmdt?.status ?? vote.amdtStatus;
-        const amdtVoteText = liveAmdt?.voteText ?? vote.amdtVoteText;
-        const amdtAbsences = liveAmdt?.absences ?? vote.amdtAbsences;
-        const status = amdtStatus === 'passed' ? 'passed' : amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action);
-        liveStatuses.push(status);
+        return {
+            billId: item.dataset.billId || null,
+            action: item.dataset.action || null,
+            amdtStatus: liveAmdt?.status ?? vote.amdtStatus,
+            amdtVoteText: liveAmdt?.voteText ?? vote.amdtVoteText,
+            amdtAbsences: liveAmdt?.absences ?? vote.amdtAbsences,
+        };
+    });
+    // Pass 2 — status the series as a whole, so the ordering guard can see every item
+    // (resolving one at a time can't tell an earlier vote hasn't been taken yet).
+    const liveStatuses = resolveVoteSeriesStatuses(liveVotes);
+    items.forEach((item, idx) => {
+        const { billId, action, amdtVoteText, amdtAbsences } = liveVotes[idx];
+        const status = liveStatuses[idx];
         const circle = item.querySelector('.vote-tl-circle');
         const result = item.querySelector('.vote-tl-result');
         if (circle) {
             circle.className = `vote-tl-circle ${status}`;
         }
-        const text = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
+        const text = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status, action);
         if (result) {
             result.className = `vote-tl-result ${status}`;
             result.textContent = text;
@@ -3120,7 +3203,7 @@ function updateVoteTimelineStatus() {
             badges.appendChild(span);
         }
         // Update absences badge
-        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status);
+        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status, action);
         const absHtml = buildAbsenceHtml(absences);
         const absEl = item.querySelector('.vote-tl-absences');
         if (absEl) {
@@ -3384,8 +3467,7 @@ function renderVoteTimeline(items) {
     // by sponsor+number) since billId is intentionally null for them — see
     // parseVoteItemsFromHtml. 'requested' (not yet a recorded-vote result) maps to
     // the normal 'pending' circle.
-    const statuses = votes.map(({ billId, action, amdtStatus }) =>
-        amdtStatus === 'passed' ? 'passed' : amdtStatus === 'failed' ? 'failed' : getVoteTlStatus(billId, action));
+    const statuses = resolveVoteSeriesStatuses(votes);
     const meta = parseVoteSeriesMeta(currentItem, votes);
     const allComplete = statuses.every(s => s === 'passed' || s === 'failed');
     // Anchor staleness to elapsed time, NOT meta.isLive: a notice's "the House is now
@@ -3447,8 +3529,8 @@ function renderVoteTimeline(items) {
         // voteTlResultText/getVoteTlAbsences can't look anything up for them via rollLog
         // — use the tally/absences already resolved onto amdtVoteText/amdtAbsences instead
         // (matched to the amendment's own rollLog entry by sponsor+number).
-        const resultText = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status);
-        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status);
+        const resultText = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status, action);
+        const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status, action);
         const absHtml = buildAbsenceHtml(absences);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
