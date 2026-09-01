@@ -3045,9 +3045,15 @@ function resolveVoteSeriesStatuses(votes) {
 function voteTlResultText(billId, status, action = null) {
     if (status === 'pending') return '';
     if (status === 'active') {
-        const vc = floorData.voteCounts;
-        if (vc) {
-            return `VOTING ${vc.yeas || 0}–${vc.nays || 0}`;
+        // Live DomeWatch counts nest the running tally under .totals (with .blue/.red
+        // holding the party splits) — the same shape getVoteTlAbsences reads just below
+        // and every other consumer of floorData.voteCounts uses. Reading vc.yeas/vc.nays
+        // off the top level always found undefined, so this badge rendered a frozen
+        // "VOTING 0–0" that never moved no matter how many tally ticks arrived.
+        const totals = floorData.voteCounts?.totals;
+        if (totals) {
+            const iv = v => Math.max(parseInt(v) || 0, 0);
+            return `VOTING ${iv(totals.yeas)}–${iv(totals.nays)}`;
         }
         return 'VOTING';
     }
