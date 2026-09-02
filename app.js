@@ -2732,6 +2732,22 @@ function parseVoteItemsFromHtml(htmlBody) {
         /\bthe\s+following\s+votes?\b/,
     ].map(r => r.source).join('|'), 'i');
 
+    // The sentence introducing the NEXT vote is frequently tacked onto the END of the
+    // CURRENT <li> rather than living in its own element:
+    //   <li>…Passage of H.J.Res. 1 – … – 15 minutes<br><br>Following this vote, the
+    //   House will take the following vote:</li>
+    // Because NON_VOTE_RE vetoes the whole element, that trailing connector took the
+    // real vote item down with it and the first vote of the series vanished from the
+    // timeline entirely. Cut the text at the connector so the veto below judges only
+    // this item's own words.
+    // No leading \b: <br> contributes no text, so the element reads
+    // "…15 minutesFollowing this vote…" with no separator at all.
+    // A connector at position 0 is deliberately left alone — nothing precedes it, so
+    // the element really is pure connector text and NON_VOTE_RE should still veto it
+    // (that guard is what stops intro sentences naming a bill from becoming phantom
+    // vote entries).
+    const NEXT_VOTE_CONNECTOR_RE = /(?:following\s+(?:this|that|these)\s+votes?\b|after\s+(?:this|these)\s+votes?\b|the\s+house\s+will\s+then\s+take\b)/i;
+
     // Full action-prefix regex — order matters (longer/more-specific first)
     const ACTION_RE = /^(?:\(IF\s+(?:REQUESTED|OFFERED)\)\s*)?(?:(?:democratic|republican)\s+)?(concurring\s+in\s+the\s+senate\s+amendments?\s+to|final\s+passage\s+of|adoption\s+of|passage\s+of|consideration\s+of|amendment\s+to|motion\s+on\s+ordering\s+the\s+previous\s+question\s*(?:\([^)]*\))?|motion\s+to\s+recommit\s+on|motion\s+to\s+(?:re)?commit\s+on|motion\s+to\s+discharge\s+(?:on\s+)?|motion\s+to\s+table\s+(?:on\s+)?|motion\s+to\s+refer\s+(?:on\s+)?)\s*/i;
 
@@ -2756,10 +2772,16 @@ function parseVoteItemsFromHtml(htmlBody) {
     let suspensionContext = false;
 
     for (const el of div.querySelectorAll('p, li')) {
-        const raw = el.textContent.trim();
-        if (!raw) continue;
+        const rawFull = el.textContent.trim();
+        if (!rawFull) continue;
 
-        if (SUSPENSION_RE.test(raw)) suspensionContext = true;
+        // Suspension context is read from the full text — it can be stated in the same
+        // element that carries a trailing connector.
+        if (SUSPENSION_RE.test(rawFull)) suspensionContext = true;
+
+        const connM = NEXT_VOTE_CONNECTOR_RE.exec(rawFull);
+        const raw = (connM && connM.index > 0) ? rawFull.slice(0, connM.index).trim() : rawFull;
+        if (!raw) continue;
         if (NON_VOTE_RE.test(raw)) continue; // scheduling/reminder text — not a vote item
 
         // Check for the "Sponsor #N" amendment format FIRST, before the generic bill-ID
