@@ -2719,7 +2719,21 @@ function parseVoteItemsFromHtml(htmlBody) {
         /^any\s+recorded\s+votes?\s+requested\s+on\b/,
         /\bwill\s+be\s+postponed\b/,
         /\bhave\s+been\s+postponed\b/,
-        /^next\/last\s+votes?\s+predicted:/,
+        // A forecast of votes still to come, not an item in THIS series. Unanchored and
+        // tolerant of the Whip's variants ("Next votes predicted:", "Next/Last expected
+        // votes predicted:") — the anchored, literal-"next/last" version this replaces
+        // matched neither of the forms the feed actually publishes, and the phrase is
+        // appended to the end of a paragraph as often as it starts one.
+        /\bnext(?:\/last)?(?:\s+expected)?\s+votes?\s+predicted\b/,
+        // Scheduling sentences for LATER business: "At approximately 5:00 p.m., the
+        // House will take a vote on passage of H.R. 8035." They name a bill, so without
+        // this they became phantom rows carrying no action — across the Whip's whole
+        // feed this was the ONLY reason a series ever showed more votes than the notice
+        // announced. Real items open with an action ("Passage of…", "Adoption of…",
+        // "Motion on Ordering…") or a bare bill ID, never with a clock time.
+        // The series' own start estimate reads "At approximately…" from the notice text
+        // in parseVoteSeriesMeta, independently of this parse, so it is unaffected.
+        /^at\s+approximately\b/,
         /^(?:after|following)\s+(?:last\s+votes?|(?:general\s+)?debate|the\s+(?:first|second|third|fourth)\s+vote\s+series|this\s+vote\s+series)\b/,
         /\bsign\s+the\s+\S+\s+discharge\s+petition\b/i,
         /house\s+republicans\s+have\s+pulled\s+the\s+vote/,
