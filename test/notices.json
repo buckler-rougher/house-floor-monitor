@@ -1,0 +1,486 @@
+{
+ "_comment": "Real Democratic Whip floor-update notices captured from the public DomeWatch Firestore feed (project pacific-castle-135023, ActivityFeeds, Office.id C001101). Bodies are verbatim. See test/parse.test.js.",
+ "capturedAt": "2026-09-03T12:23:40.800Z",
+ "cases": [
+  {
+   "publishedAt": "2026-04-15T17:07:45.942Z",
+   "title": "Floor Update – 3 Votes",
+   "note": "\"Next/Last expected votes predicted:\" — the variant the old anchored guard missed.",
+   "declaredVotes": 3,
+   "expected": [
+    {
+     "billId": "H.Res. 1174",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1174",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1174 – Rule providing for consideration of H.R. 6409"
+    },
+    {
+     "billId": "H.Res. 965",
+     "action": "motion to discharge",
+     "duration": "5 min",
+     "text": "H.Res. 965 – Providing for consideration of the bill (H.R. 1"
+    }
+   ],
+   "body": "<p>The House has reconvened and is now taking the following votes:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1174)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up the bipartisan Senate-passed bill to fund the Department of Homeland Security for FY26 except for ICE and CBP –<strong> <u>VOTE NO</u> </strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>H.Res. 1174&nbsp;</strong>– Rule providing for consideration of <strong>H.R. 6409</strong>&nbsp;– FENCES Act; <strong>H.R. 6398</strong> – RED Tape Act; <strong>H.Res. 1156</strong> – Expressing support for tax policies that support working families; and <strong>H.R. 6387</strong> – FIRE Act –<strong> <u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:#427DFF;\"><strong>Democratic&nbsp;Motion to Discharge&nbsp;</strong></span><span style=\"color:rgb(66,125,255);\"><strong>H.Res. 965</strong>&nbsp;– Providing for consideration of the bill (<strong>H.R. 1689</strong>) to require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>) (Rep. Pressley – Rules) – <strong><u>VOTE YES</u> </strong>– <u>5 minutes</u></span></li></ol><p>Following the first vote series, if the Democratic Motion to Discharge is adopted, the House will begin one hour of debate on&nbsp;<strong>H.Res. 965</strong>&nbsp;– Providing for consideration of the bill (H.R. 1689) to require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>).<br><br>After debate on&nbsp;<strong>H.Res. 965</strong>, the House will begin one hour of debate on <strong>H.R. 6409&nbsp;</strong>– FENCES Act.</p><p>Following debate on&nbsp;<strong>H.R. 6409</strong>, the House will begin one hour of debate on <strong>H.R. 6398 </strong>–&nbsp;RED Tape Act.</p><p>After debate on&nbsp;<strong>H.R. 6398</strong>, the House will begin one hour of debate on <strong>H.Res. 1156</strong> – Expressing support for tax policies that support working families.<br><br>Following debate on <strong>H.Res. 1156</strong>, the House will recess.</p><p>At approximately <strong>9:15 p.m.</strong>, the House will reconvene and take a second series of votes.<strong> </strong>These will be the last expected votes of the day.</p><p><strong><u>Next/Last expected votes predicted</u></strong>: at approximately <strong>9:15 p.m.</strong>, on the motion to recommit and passage of <strong>H.R. 6409</strong> and adoption of <strong>H.Res. 1156.</strong></p><p><strong>**Members are advised that legislative action related to FISA is still possible on the Floor today. Additional information will be provided as soon as it becomes available.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-04-16T15:20:11.510Z",
+   "title": "Floor Update – 6 Votes",
+   "note": "Whip typo — fifth item says \"Passage of H.R. 6409 – RED TAPE Act\" (that bill is H.R. 6398), so it dedupes to five rows. Republished corrected 7 min later (see 15:39).",
+   "declaredVotes": 6,
+   "expected": [
+    {
+     "billId": "H.Con.Res. 40",
+     "action": "adoption",
+     "duration": "15 min",
+     "text": "H.Con.Res. 40 – Directing the President, pursuant to section"
+    },
+    {
+     "billId": "H.R. 6409",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 6409 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 6409",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 6409 – FENCES Act (Rep. Pfluger – Energy and Commerce)"
+    },
+    {
+     "billId": "H.R. 6398",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 6398 – 5 minutes"
+    },
+    {
+     "billId": "H.Res. 965",
+     "action": "adoption",
+     "duration": "5 min",
+     "text": "H.Res. 965 – Providing for consideration of the bill (H.R. 1"
+    }
+   ],
+   "body": "<p>At approximately <strong>11:30 a.m.</strong>, the House will take the following votes:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Adoption of H.Con.Res. 40 </strong>–&nbsp;Directing the President, pursuant to section 5(c) of the War Powers Resolution, to remove United States Armed Forces from hostilities with Iran<strong> </strong>– <strong><u>VOTE YES </u></strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 6409 </strong>– <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Passage of H.R. 6409 </strong>–&nbsp;<strong>FENCES Act</strong> (Rep. Pfluger – Energy and Commerce)&nbsp;– <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u>&nbsp;</span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 6398 </strong>– <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Passage of H.R. 6409 </strong>–&nbsp;RED TAPE Act (Rep. Joyce (PA) – Energy and Commerce)&nbsp;– <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Adoption of H.Res. 965</strong>&nbsp;– Providing for consideration of the bill (H.R. 1689) to require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>) –<strong> <u>VOTE YES </u></strong>– <u>5 minutes</u></span></li></ol><p>After the first vote series, the House will begin one hour of debate on <strong>H.R. 1689</strong> – To require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>).</p><p>At approximately <strong>1:30 – 1:45 p.m.</strong>, the House will take a second series of votes.</p><p>Following the second vote series, the House will begin one hour of debate on the Rule providing for consideration of <strong>H.R. 8035</strong> – To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978 through October 20, 2027, and for other purposes.</p><p>At approximately <strong>3:15 p.m.</strong>, the House will take a third series of votes on the Rule.</p><p>After the third vote series, if the Rule is adopted, the House will begin one hour of debate on <strong>H.R. 8035 </strong>–&nbsp;To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978 through October 20, 2027, and for other purposes.</p><p>At approximately <strong>5:00 p.m.</strong>, the House will take a vote on passage of <strong>H.R. 8035</strong>. This will be the last expected vote of the day.<br><br><strong><u>Next votes predicted</u></strong>: at approximately <strong>1:30 – 1:45 p.m.</strong>, on passage of <strong>H.R. 1689</strong> – To require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>) and adoption of <strong>H.Res. 1156</strong> – Expressing support for tax policies that support working families.</p>"
+  },
+  {
+   "publishedAt": "2026-04-16T15:39:16.591Z",
+   "title": "Floor Update – 6 Votes",
+   "note": "Six votes: MTR/passage pairs for two bills.",
+   "declaredVotes": 6,
+   "expected": [
+    {
+     "billId": "H.Con.Res. 40",
+     "action": "adoption",
+     "duration": "15 min",
+     "text": "H.Con.Res. 40 – Directing the President, pursuant to section"
+    },
+    {
+     "billId": "H.R. 6409",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 6409 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 6409",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 6409 – FENCES Act (Rep. Pfluger – Energy and Commerce)"
+    },
+    {
+     "billId": "H.R. 6398",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 6398 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 6398",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 6398 – RED TAPE Act (Rep. Joyce (PA) – Energy and Comme"
+    },
+    {
+     "billId": "H.Res. 965",
+     "action": "adoption",
+     "duration": "5 min",
+     "text": "H.Res. 965 – Providing for consideration of the bill (H.R. 1"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Adoption of H.Con.Res. 40 </strong>–&nbsp;Directing the President, pursuant to section 5(c) of the War Powers Resolution, to remove United States Armed Forces from hostilities with Iran<strong> </strong>– <strong><u>VOTE YES </u></strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 6409 </strong>– <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Passage of H.R. 6409 </strong>–&nbsp;<strong>FENCES Act</strong> (Rep. Pfluger – Energy and Commerce)&nbsp;– <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u>&nbsp;</span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 6398 </strong>– <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Passage of H.R. 6398 </strong>–&nbsp;RED TAPE Act (Rep. Joyce (PA) – Energy and Commerce)&nbsp;– <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Adoption of H.Res. 965</strong>&nbsp;– Providing for consideration of the bill (H.R. 1689) to require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>) –<strong> <u>VOTE YES </u></strong>– <u>5 minutes</u></span></li></ol><p>After the first vote series, the House will begin one hour of debate on <strong>H.R. 1689</strong> – To require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>).</p><p>At approximately <strong>1:30 – 1:45 p.m.</strong>, the House will take a second series of votes.</p><p>Following the second vote series, the House will begin one hour of debate on the Rule providing for consideration of <strong>H.R. 8035</strong> – To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978 through October 20, 2027, and for other purposes.</p><p>At approximately <strong>3:15 p.m.</strong>, the House will take a third series of votes on the Rule.</p><p>After the third vote series, if the Rule is adopted, the House will begin one hour of debate on <strong>H.R. 8035 </strong>–&nbsp;To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978 through October 20, 2027, and for other purposes.</p><p>At approximately <strong>5:00 p.m.</strong>, the House will take a vote on passage of <strong>H.R. 8035</strong>. This will be the last expected vote of the day.<br><br><strong><u>Next votes predicted</u></strong>: at approximately <strong>1:30 – 1:45 p.m.</strong>, on passage of <strong>H.R. 1689</strong> – To require the Secretary of Homeland Security to designate Haiti for temporary protected status (<strong>Rep. Pressley's Discharge Petition</strong>) and adoption of <strong>H.Res. 1156</strong> – Expressing support for tax policies that support working families.</p>"
+  },
+  {
+   "publishedAt": "2026-04-17T04:11:59.752Z",
+   "title": "Floor Update – 3 Votes",
+   "note": "Amendment-to-rule item, plus \"Next votes predicted\" with an en-dash time range.",
+   "declaredVotes": 3,
+   "expected": [
+    {
+     "billId": "H.Res. 1175",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– 15 minutes"
+    },
+    {
+     "billId": "H.Res. 1175",
+     "action": "amendment to rule",
+     "duration": "5 min",
+     "text": "H.Res. 1175 – This amendment to the Rule updates the text of"
+    },
+    {
+     "billId": "H.Res. 1175",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1175 – Rule providing for consideration of H.R. 8035"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes:</p><ol><li><span style=\"color:#427DFF;\"><strong>Motion on Ordering the Previous Question (H.Res. 1175)</strong></span><span style=\"color:rgb(66,125,255);\"> –<strong> <u>VOTE NO</u> </strong>– <u>15 minutes</u></span></li><li><span style=\"color:#427DFF;\"><strong>Amendment to H.Res. 1175</strong>&nbsp;– This amendment to the Rule updates the text of H.R. 8035. </span><span style=\"color:rgb(66,125,255);\">Text can be found<strong> </strong></span><a href=\"https://attachments.domewatch.us/attachments/H.R. 8035 updated_Jnu8lOiHjlEPWcXcuI422.pdf\"><span style=\"color:rgb(66,125,255);\"><strong>HERE</strong></span></a><span style=\"color:rgb(66,125,255);\"> </span><span style=\"color:#427DFF;\">– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>H.Res. 1175</strong> – Rule providing for consideration of <strong>H.R. 8035 </strong>–<strong> </strong>To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978<strong> </strong>– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span></li></ol><p>After this vote series, if the Rule is adopted, the House will begin one hour of debate on <strong>H.R. 8035 </strong>–&nbsp;To amend the FISA Amendments Act of 2008 to extend the authorities of title VII of the Foreign Intelligence Surveillance Act of 1978.</p><p>At approximately <strong>2:15 – 2:45 a.m.</strong>, the House will take a vote.</p><p><strong><u>Next votes predicted</u></strong>: at approximately <strong>2:15 – 2:45 a.m.</strong>, on passage of <strong>H.R. 8035</strong>.</p>"
+  },
+  {
+   "publishedAt": "2026-04-22T15:15:10.179Z",
+   "title": "Floor Update – 2 Votes",
+   "note": "Rule adoption written as a bare bill ID with no action prefix.",
+   "declaredVotes": 2,
+   "expected": [
+    {
+     "billId": "H.Res. 1189",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1189",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1189 – Rule providing for consideration of H.Res. 118"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1189)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up the bipartisan Senate-passed bill to fund the Department of Homeland Security for FY26 except for ICE and CBP –<strong> <u>VOTE NO</u> </strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>H.Res. 1189</strong> – Rule providing for consideration of <strong>H.Res. 1182</strong>&nbsp;–&nbsp;Expressing support for rural communities across the United States as stewards of the environment, major suppliers of United States energy resources, critical providers of food production and manufacturing capacity, and drivers of national economic stability, and recognizing the work of the House of Representatives in the 119th Congress in support of those vital communities; <strong>H.R. 4690</strong>&nbsp;– Reliable Federal Infrastructure Act; <strong>H.R. 1897</strong>&nbsp;–&nbsp;ESA Amendments Act of 2025; and <strong>H.R. 5587</strong>&nbsp;–&nbsp;HEATS Act of 2026 – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li></ol><p>Following the first vote series, the House will recess.</p><p>At approximately <strong>12:45 p.m.</strong>, the House will reconvene and begin one hour of debate on <strong>H.Res. 1182</strong>&nbsp;–&nbsp;Expressing support for rural communities across the United States as stewards of the environment, major suppliers of United States energy resources, critical providers of food production and manufacturing capacity, and drivers of national economic stability, and recognizing the work of the House of Representatives in the 119th Congress in support of those vital communities.<br><br>After debate on <strong>H.Res. 1182</strong>, the House will begin one hour of debate on <strong>H.R. 4690</strong>&nbsp;– Reliable Federal Infrastructure Act.<br><br>Following debate on <strong>H.R. 4690</strong>, the House will begin one hour of debate on <strong>H.R. 1897</strong>&nbsp;–&nbsp;ESA Amendments Act of 2025.<br><br>At approximately <strong>4:00 p.m.</strong>, the House will take a second series of votes. These will be the last votes of the day.<br><br><strong><u>Next/Last votes predicted</u></strong>: at approximately <strong>4:00 p.m.</strong>, on the motion to recommit and passage&nbsp;of<strong> H.R. 1897,</strong> adoption of <strong>H.Res. 1182</strong>, the motion to recommit and passage&nbsp;of <strong>H.R. 4690</strong>, and the motion to recommit and passage&nbsp;of&nbsp;<strong>H.R. 6387</strong>&nbsp;–&nbsp;FIRE Act.</p>"
+  },
+  {
+   "publishedAt": "2026-04-29T14:33:26.519Z",
+   "title": "Floor Update – 2 Votes",
+   "note": "Two separate phantoms: a scheduling paragraph and a \"Next votes predicted:\" line.",
+   "declaredVotes": 2,
+   "expected": [
+    {
+     "billId": "H.Res. 1224",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1224",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1224 – Rule providing for consideration of S. 1318 –"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1224)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up the bipartisan Senate-passed bill to fund the Department of Homeland Security for FY26 except for ICE and CBP –<strong> <u>VOTE NO</u>&nbsp;</strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>H.Res. 1224</strong> – Rule providing for consideration of <strong>S. 1318</strong>&nbsp;– Foreign Intelligence Accountability Act; <strong>H.R. 2616</strong>&nbsp;– Stopping Indoctrination and Protecting Kids Act; <strong>S.Con.Res. 33</strong>&nbsp;–&nbsp;Setting forth the congressional budget for the United States Government for fiscal year 2026 and setting forth the appropriate budgetary levels for fiscal years 2027 through 2035; <strong>H.R. 7567</strong>&nbsp;– Farm, Food, and National Security Act of 2026; and <strong>H.R. 1346</strong>&nbsp;– Nationwide Consumer and Fuel Retailer Choice Act of 2025 – <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u></span></li></ol><p>After the first vote series, the House will begin one hour of debate on <strong>S. 1318</strong>&nbsp;– Foreign Intelligence Accountability Act.</p><p>Following debate on <strong>S. 1318, </strong>the House will begin one hour of debate on <strong>H.R. 1346</strong>&nbsp;– Nationwide Consumer and Fuel Retailer Choice Act of 2025.</p><p>After debate on <strong>H.R. 1346, </strong>the House will begin one hour of debate on <strong>S.Con.Res. 33</strong>&nbsp;–&nbsp;Setting forth the congressional budget for the United States Government for fiscal year 2026 and setting forth the appropriate budgetary levels for fiscal years 2027 through 2035.</p><p>Following debate on <strong>S.Con.Res. 33, </strong>the House will begin one hour of general debate on <strong>H.R. 7567</strong>&nbsp;– Farm, Food, and National Security Act of 2026.</p><p>After general debate on <strong>H.R. 7567</strong>, the House will begin consideration of amendments to <strong>H.R. 7567</strong>. Members may track consideration of amendments <a href=\"https://democraticwhip.house.gov/floor-resources/amendment-tracker/hr-7567-farm-food-and-national-security-act-of-2026\"><strong><u>HERE</u></strong></a>.</p><p>At approximately <strong>4:30 p.m.</strong>, the House will take a second series of votes.</p><p>Following the second vote series, the House will continue consideration of amendments to <strong>H.R. 7567</strong>.</p><p>At approximately <strong>9:00 p.m.</strong>, the House will take a third series of votes on pending amendments to <strong>H.R. 7567</strong>. These will be the last expected votes of the day.</p><p><strong><u>Next votes predicted</u></strong>: at approximately <strong>4:30 p.m.</strong>, on passage of <strong>S. 1318, </strong>adoption of<strong> S.Con.Res. 33, </strong>and pending amendments to <strong>H.R. 7567</strong>.</p>"
+  },
+  {
+   "publishedAt": "2026-05-13T18:49:57.068Z",
+   "title": "Floor Update – 5 Votes",
+   "note": "Scheduling paragraph inherits the sticky suspension flag; H.Con.Res. 75 is not a vote here.",
+   "declaredVotes": 5,
+   "expected": [
+    {
+     "billId": "H.Res. 1275",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1275",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1275 – Rule providing for consideration of H.Con.Res."
+    },
+    {
+     "billId": "H.Res. 1274",
+     "action": "previous question",
+     "duration": "5 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1274",
+     "action": "suspension",
+     "duration": "5 min",
+     "text": "H.Res. 1274 – Rule providing that section 11 of House Resolu"
+    },
+    {
+     "billId": "H.Res. 1252",
+     "action": "suspension",
+     "duration": "5 min",
+     "text": "H.Res. 1252 – Resolution memorializing law enforcement offic"
+    }
+   ],
+   "body": "<p>The House has reconvened and is now taking the following votes:</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1275)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up Rep. Ross' No Rewards for January 6 Rioters Act, which prohibits the use of federal funds to compensate anyone prosecuted for the insurrection at the Capitol on January 6, 2021–<strong> <u>VOTE NO</u> </strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1275 </strong>– Rule providing for consideration of <strong>H.Con.Res. 96&nbsp;</strong>– Expressing support for law enforcement officers; <strong>H.R. 5625</strong>&nbsp;– Cashless Bail Reporting Act; <strong>H.R. 6260</strong>&nbsp;– Keeping Violent Offenders Off Our Streets Act; <strong>H.R. 8365</strong>&nbsp;–&nbsp;Monitor Accountability Act; and <strong>H.R. 8469</strong>&nbsp;–&nbsp;Military Construction, Veterans Affairs, and Related Agencies Appropriations Act, 2027 – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1274)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up Rep. McDonald Rivet's Lower Prices at the Pump Act, which protects Americans from gasoline and fuel price gouging as President Trump's war of choice with Iran continues –<strong> <u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1274 </strong>– Rule providing that section 11 of House Resolution 1224 shall have no force or effect (decoupling <strong>H.R. 1346</strong>&nbsp;– Nationwide Consumer and Fuel Retailer Choice Act of 2025 from <strong>H.R. 7567</strong>&nbsp;– Farm, Food, and National Security Act of 2026) – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span><br><br>Following these votes, the House will take the following vote on a bill considered under suspension of the Rules:&nbsp;<br>&nbsp;</li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1252</strong>&nbsp;– Resolution memorializing law enforcement officers killed in the line of duty&nbsp;(Rep. Guest – Judiciary)<strong> </strong>– <u>5 minutes</u></span></li></ol><p>Following the first vote series, the House will begin one hour of debate on&nbsp;<strong>H.R. 1346</strong>&nbsp;– Nationwide Consumer and Fuel Retailer Choice Act of 2025.<br><br>After debate on&nbsp;<strong>H.R. 1346</strong>, the House will begin one hour of debate on&nbsp;<strong>H.Con.Res. 96&nbsp;</strong>– Expressing support for law enforcement officers.</p><p>At approximately <strong>5:30 p.m.</strong>, the House will take a second series of votes. These will be the last votes of the day.<br><br>Following last votes, the House will begin one hour of debate on&nbsp;<strong>H.Con.Res. 75</strong>&nbsp;–&nbsp;Directing the President, pursuant to section 5(c) of the War Powers Resolution, to remove the United States Armed Forces from hostilities against the Islamic Republic of Iran.</p><p>Any recorded vote requested on <strong>H.Con.Res. 75 </strong>will be postponed until tomorrow.</p><p><strong><u>Next/Last votes predicted</u></strong>: at approximately <strong>5:30 p.m.</strong>, on passage of <strong>H.R. 1346</strong>, adoption of <strong>H.Con.Res. 96</strong>, and two postponed Suspensions.</p>"
+  },
+  {
+   "publishedAt": "2026-06-09T17:33:55.283Z",
+   "title": "Floor Update – 3 Votes",
+   "note": "Trailing \"At approximately…the House will take a vote on passage of H.R. 5408\" must not become a row.",
+   "declaredVotes": 3,
+   "expected": [
+    {
+     "billId": "H.Res. 1345",
+     "action": "previous question",
+     "duration": "15 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1345",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1345 – Rule providing for consideration of S. 2 – Sec"
+    },
+    {
+     "billId": "H.Res. 1140",
+     "action": "motion to discharge",
+     "duration": "5 min",
+     "text": "H.Res. 1140 – Providing for consideration of the bill (H.R."
+    }
+   ],
+   "body": "<p>The House has reconvened and is now taking the following votes:</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1345)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would make in order Rep. Raskin's amendment prohibiting anyone who was convicted of or pleaded guilty to assaulting a law enforcement officer during the insurrection at the Capitol on January 6, 2021, from receiving a taxpayer-funded settlement –<strong> <u>VOTE NO</u> </strong>– <u>15 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1345 </strong>– Rule providing for consideration of&nbsp;<strong>S. 2</strong> – Secure America Act; <strong>H.R. 8312 </strong>– Fraud Prevention and Accountability Act; <strong>H.R. 8464</strong> – Stopping Fraudulent Payments Act; and <strong>H.Res. 1335</strong> – Condemning actors seeking to defraud the United States Government, and expressing the sense of the House of Representatives that governmentwide fraud and improper payment prevention reforms will meaningfully improve the financial prosperity of the United States, and that Federal program eligibility should be verified before payment – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Democratic&nbsp;Motion to Discharge&nbsp;H.Res. 1140&nbsp;</strong>– Providing for consideration of the bill (<strong>H.R. 5408</strong>)&nbsp;to accelerate workplace time-to-contract under the National Labor Relations Act (<strong>Rep. Norcross' Discharge Petition</strong>) (Rep. Norcross – Rules) – <strong><u>VOTE YES</u> </strong>– <u>5 minutes</u></span></li></ol><p>After the first vote series, if the Democratic Motion to Discharge is adopted, the House will begin one hour of debate on <strong>H.Res. 1140&nbsp;</strong>– Providing for consideration of the bill (H.R. 5408)&nbsp;to accelerate workplace time-to-contract under the National Labor Relations Act (<strong>Rep. Norcross' Discharge Petition</strong>).<br><br>Following debate on&nbsp;<strong>H.Res. 1140</strong>, the House will begin one hour of debate on&nbsp;<strong>S. 2</strong>&nbsp;– Secure America Act.</p><p>After debate on&nbsp;<strong>S. 2</strong>, the House will begin one hour of debate on&nbsp;<strong>H.R. 7892&nbsp;</strong>–<strong>&nbsp;</strong>No Aid for Ghost Students Act of 2026.</p><p>At approximately <strong>4:30 p.m.</strong>, the House will take a second series of votes.</p><p>Following the second vote series, the House will begin one hour of debate on <strong>H.R. 5408</strong>&nbsp;– Faster Labor Contracts Act (<strong>Rep. Norcross' Discharge Petition</strong>).</p><p>At approximately <strong>6:30 p.m.</strong>, the House will take a vote on passage of <strong>H.R. 5408. </strong>This will be the last expected vote of the day.<br><br><strong><u>Next votes predicted</u></strong>: at approximately <strong>4:30 p.m.</strong>, on passage of <strong>H.R. 7892,</strong> the motion to commit and passage of <strong>S. 2, </strong>and adoption of <strong>H.Res. 1140.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-07-22T19:22:35.173Z",
+   "title": "Floor Update – 9 Votes – Last Votes",
+   "note": "Coverage: scheduling-para, mtr, postponed, members-advised, item-without-bill",
+   "declaredVotes": 9,
+   "expected": [
+    {
+     "billId": null,
+     "action": null,
+     "duration": "15 min",
+     "text": "Self #28 – Codifies protections and responsibilities for cha"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Issa #30 – Authorizes the Secretary to approve any eligible"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Harrigan #44 – Prohibits use of automated speed enforcement"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Grothman #316 – Requires the Secretary of Defense to submit"
+    },
+    {
+     "billId": "H.R. 8800",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 8800 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 8800",
+     "action": "final passage",
+     "duration": "5 min",
+     "text": "H.R. 8800 – National Defense Authorization Act for Fiscal Ye"
+    },
+    {
+     "billId": "H.R. 7008",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 7008 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 7008",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 7008 – Stop Insider Trading Act (Rep. Steil – House Adm"
+    },
+    {
+     "billId": "H.Con.Res. 113",
+     "action": "adoption",
+     "duration": "5 min",
+     "text": "H.Con.Res. 113 – Establishing the congressional budget for t"
+    }
+   ],
+   "body": "<p>At approximately <strong>3:30 p.m.</strong>, the House will take the following votes on <strong>H.R. 8800</strong>&nbsp;– National Defense Authorization Act for Fiscal Year 2027:</p><ol><li><span style=\"color:rgb(66,125,255);\"><strong>Self #28 </strong>– Codifies protections and responsibilities for chaplains and subjects such protections to prosecution under the Uniform Code of Military Justice. This amendment is identical to H.R.8769, introduced by Rep. Keith Self in the 119th Congress – <u>15 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Issa #30</strong> – Authorizes the Secretary to approve any eligible investor and cleared investment professional who meets the program’s statutory and regulatory requirements to assess potential investment opportunities that match with the Department of War's requirements or potential requirements. It also makes clear that the program is not capped, allowing an unlimited number of qualified investors, cleared personnel, and covered companies to participate at the discretion of the Secretary of War – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Harrigan #44 </strong>– Prohibits use of automated speed enforcement cameras on military installations – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Grothman #316</strong> – Requires the Secretary of Defense to submit a report detailing options for reducing the number of civilians employed by the Department of Defense by 200,000 – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 8800</strong> – <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Final Passage of H.R. 8800</strong>&nbsp;– National Defense Authorization Act for Fiscal Year 2027 (Rep. Rogers (AL) – Armed Services)&nbsp;– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span><br><br>Following these votes, the House will take the following votes:<br>&nbsp;</li><li><span style=\"color:rgb(66,125,255);\"><strong>Democratic Motion to Recommit on H.R. 7008</strong> – <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Passage of H.R. 7008 </strong>– Stop Insider Trading Act (Rep. Steil – House Administration)&nbsp;– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66,125,255);\"><strong>Adoption of H.Con.Res. 113</strong> – Establishing the congressional budget for the United States Government for fiscal year 2027 and setting forth the appropriate budgetary levels for fiscal years 2028 through 2036 (Rep. Arrington – Budget)<strong> </strong>– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span></li></ol><p style=\"text-align:center;\"><strong><u>These are the last votes for the day</u></strong></p><p>After last votes, the House will begin one hour of debate on <strong>H.Con.Res. 89&nbsp;</strong>– Directing the President, pursuant to section 5(c) of the War Powers Resolution, to remove United States Armed Forces from hostilities with Iran.</p><p>Any recorded vote requested on <strong>H.Con.Res. 89 </strong>will be postponed.</p><p><strong>**Members are advised that the text of S. 1383 – SAVE America Act will be added to the NDAA upon passage of the NDAA on the Floor.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-07-22T19:36:37.964Z",
+   "title": "Floor Update – 9 Votes – Last Votes",
+   "note": "Coverage: mtr, postponed, members-advised, item-without-bill",
+   "declaredVotes": 9,
+   "expected": [
+    {
+     "billId": null,
+     "action": null,
+     "duration": "15 min",
+     "text": "Self #28 – Codifies protections and responsibilities for cha"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Issa #30 – Authorizes the Secretary to approve any eligible"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Harrigan #44 – Prohibits use of automated speed enforcement"
+    },
+    {
+     "billId": null,
+     "action": null,
+     "duration": "2 min",
+     "text": "Grothman #316 – Requires the Secretary of Defense to submit"
+    },
+    {
+     "billId": "H.R. 8800",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 8800 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 8800",
+     "action": "final passage",
+     "duration": "5 min",
+     "text": "H.R. 8800 – National Defense Authorization Act for Fiscal Ye"
+    },
+    {
+     "billId": "H.R. 7008",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 7008 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 7008",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 7008 – Stop Insider Trading Act (Rep. Steil – House Adm"
+    },
+    {
+     "billId": "H.Con.Res. 113",
+     "action": "adoption",
+     "duration": "5 min",
+     "text": "H.Con.Res. 113 – Establishing the congressional budget for t"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes on <strong>H.R. 8800</strong>&nbsp;– National Defense Authorization Act for Fiscal Year 2027:</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Self #28 </strong>– Codifies protections and responsibilities for chaplains and subjects such protections to prosecution under the Uniform Code of Military Justice. This amendment is identical to H.R.8769, introduced by Rep. Keith Self in the 119th Congress – <u>15 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Issa #30</strong> – Authorizes the Secretary to approve any eligible investor and cleared investment professional who meets the program’s statutory and regulatory requirements to assess potential investment opportunities that match with the Department of War's requirements or potential requirements. It also makes clear that the program is not capped, allowing an unlimited number of qualified investors, cleared personnel, and covered companies to participate at the discretion of the Secretary of War – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Harrigan #44 </strong>– Prohibits use of automated speed enforcement cameras on military installations – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Grothman #316</strong> – Requires the Secretary of Defense to submit a report detailing options for reducing the number of civilians employed by the Department of Defense by 200,000 – <u>2 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Democratic Motion to Recommit on H.R. 8800</strong> – <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Final Passage of H.R. 8800</strong>&nbsp;– National Defense Authorization Act for Fiscal Year 2027 (Rep. Rogers (AL) – Armed Services)&nbsp;– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span><br><br>Following these votes, the House will take the following votes:<br>&nbsp;</li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Democratic Motion to Recommit on H.R. 7008</strong> – <strong><u>VOTE YES</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Passage of H.R. 7008 </strong>– Stop Insider Trading Act (Rep. Steil – House Administration)&nbsp;– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Adoption of H.Con.Res. 113</strong> – Establishing the congressional budget for the United States Government for fiscal year 2027 and setting forth the appropriate budgetary levels for fiscal years 2028 through 2036 (Rep. Arrington – Budget)<strong> </strong>– <strong><u>VOTE NO</u></strong> – <u>5 minutes</u></span></li></ol><p style=\"text-align:center;\"><strong><u>These are the last votes for the day</u></strong></p><p>After last votes, the House will begin one hour of debate on <strong>H.Con.Res. 89&nbsp;</strong>– Directing the President, pursuant to section 5(c) of the War Powers Resolution, to remove United States Armed Forces from hostilities with Iran.</p><p>Any recorded vote requested on <strong>H.Con.Res. 89 </strong>will be postponed.</p><p><strong>**Members are advised that the text of S. 1383 – SAVE America Act will be added to the NDAA upon passage of the NDAA on the Floor.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-09-01T16:56:09.940Z",
+   "title": "Floor Update – 3 Votes",
+   "note": "Coverage: connector-inside-li, scheduling-para, votes-predicted, suspension, mtr, previous-question, senate-amendment, members-advised",
+   "declaredVotes": 3,
+   "expected": [
+    {
+     "billId": "H.R. 6500",
+     "action": "senate amendment",
+     "duration": "15 min",
+     "text": "H.R. 6500 – Continuing Appropriations and Extensions Act, 20"
+    },
+    {
+     "billId": "H.Res. 1499",
+     "action": "previous question",
+     "duration": "5 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1499",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1499 – Rule providing for consideration of H.R. 9436"
+    }
+   ],
+   "body": "<p>The House is currently in recess subject to the call of the Chair.</p><p>At approximately <strong>1:25 p.m.</strong>, the House will reconvene and take the following vote on a bill considered under suspension of the Rules:&nbsp;</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Concurring in the Senate Amendment to H.R. 6500&nbsp;</strong>– Continuing Appropriations and Extensions Act, 2027 (Rep. Smith (MO) – Appropriations) – <u>15 minutes</u></span><br><br>Following this vote, the House will take the following votes:<br>&nbsp;</li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1499)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up Rep. Salinas' Universal Right To Vote by Mail Act, which helps ensure all eligible voters have the option to vote by mail in federal elections –<strong> <u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1499&nbsp;</strong>– Rule providing for consideration of <strong>H.R. 9436</strong> – Northeast Lobsterman Protection Act of 2026; <strong>H.Res. 1490</strong> – Providing for the condemnation and denouncement of socialism in all its forms; <strong>H.R. 1501</strong> – Protecting Domestic Mining Act; and <strong>H.R. 4795</strong> – Protect Economic and Academic Freedom Act – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li></ol><p>Following the first vote series, the House will begin one hour of debate on&nbsp;<strong>H.Res. 1498 </strong>– Censuring Representative Chuck Edwards. Text can be found <a href=\"https://www.congress.gov/bill/119th-congress/house-resolution/1498\"><strong><u>HERE</u></strong></a>.</p><p>After debate on&nbsp;<strong>H.Res. 1498</strong>, the House will begin debate on the two remaining bills listed for consideration under suspension of the Rules.</p><p>Following debate on Suspensions, the House will begin one hour of debate on <strong>H.R. 9436</strong> – Northeast Lobsterman Protection Act of 2026.</p><p>After debate on <strong>H.R. 9436</strong>, the House will begin one hour of debate on <strong>H.Res. 1490</strong> – Providing for the condemnation and denouncement of socialism in all its forms.</p><p>At approximately <strong>5:15 p.m.</strong>, the House will take a second series of votes. These will be the last votes of the day.</p><p><strong><u>Next/Last votes predicted</u></strong>: at approximately <strong>5:15 p.m.</strong>, on adoption of <strong>H.Res. 1490, </strong>the motion to recommit and passage of <strong>H.R. 9436, </strong>and adoption of <strong>H.Res. 1498.</strong></p><p><strong>**Members are advised that Rep.-elect Everton Blair (GA-13) will be sworn in at 1:25 p.m.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-09-01T17:41:32.712Z",
+   "title": "Floor Update – 3 Votes",
+   "note": "Coverage: connector-inside-li, scheduling-para, votes-predicted, suspension, mtr, previous-question, senate-amendment",
+   "declaredVotes": 3,
+   "expected": [
+    {
+     "billId": "H.R. 6500",
+     "action": "senate amendment",
+     "duration": "15 min",
+     "text": "H.R. 6500 – Continuing Appropriations and Extensions Act, 20"
+    },
+    {
+     "billId": "H.Res. 1499",
+     "action": "previous question",
+     "duration": "5 min",
+     "text": "– Democrats are urged to vote no on the Previous Question. V"
+    },
+    {
+     "billId": "H.Res. 1499",
+     "action": null,
+     "duration": "5 min",
+     "text": "H.Res. 1499 – Rule providing for consideration of H.R. 9436"
+    }
+   ],
+   "body": "<p>The House has reconvened and is now taking the following vote on a bill considered under suspension of the Rules:&nbsp;</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Concurring in the Senate Amendment to H.R. 6500&nbsp;</strong>– Continuing Appropriations and Extensions Act, 2027 (Rep. Smith (MO) – Appropriations) – <u>15 minutes</u></span><br><br>Following this vote, the House will take the following votes:<br>&nbsp;</li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Motion on Ordering the Previous Question (H.Res. 1499)</strong> – Democrats are urged to vote no on the Previous Question. Voting no will allow House Democrats to offer an amendment to the Rule that would call up Rep. Salinas' Universal Right To Vote by Mail Act, which helps ensure all eligible voters have the option to vote by mail in federal elections –<strong> <u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>H.Res. 1499&nbsp;</strong>– Rule providing for consideration of <strong>H.R. 9436</strong> – Northeast Lobsterman Protection Act of 2026; <strong>H.Res. 1490</strong> – Providing for the condemnation and denouncement of socialism in all its forms; <strong>H.R. 1501</strong> – Protecting Domestic Mining Act; and <strong>H.R. 4795</strong> – Protect Economic and Academic Freedom Act – <strong><u>VOTE NO</u> </strong>– <u>5 minutes</u></span></li></ol><p>Following the first vote series, the House will begin one hour of debate on&nbsp;<strong>H.Res. 1498 </strong>– Censuring Representative Chuck Edwards. Text can be found <a href=\"https://www.congress.gov/bill/119th-congress/house-resolution/1498\"><strong><u>HERE</u></strong></a>.</p><p>After debate on&nbsp;<strong>H.Res. 1498</strong>, the House will begin debate on the two remaining bills listed for consideration under suspension of the Rules.</p><p>Following debate on Suspensions, the House will begin one hour of debate on <strong>H.R. 9436</strong> – Northeast Lobsterman Protection Act of 2026.</p><p>After debate on <strong>H.R. 9436</strong>, the House will begin one hour of debate on <strong>H.Res. 1490</strong> – Providing for the condemnation and denouncement of socialism in all its forms.</p><p>At approximately <strong>5:15 p.m.</strong>, the House will take a second series of votes. These will be the last votes of the day.</p><p><strong><u>Next/Last votes predicted</u></strong>: at approximately <strong>5:15 p.m.</strong>, on adoption of <strong>H.Res. 1490, </strong>the motion to recommit and passage of <strong>H.R. 9436, </strong>and adoption of <strong>H.Res. 1498.</strong></p>"
+  },
+  {
+   "publishedAt": "2026-09-01T21:13:49.788Z",
+   "title": "Floor Update – 4 Votes – Last Votes",
+   "note": "Four-vote series: rule adoption, MTR and passage on one bill, censure resolution.",
+   "declaredVotes": 4,
+   "expected": [
+    {
+     "billId": "H.Res. 1490",
+     "action": "adoption",
+     "duration": "15 min",
+     "text": "H.Res. 1490 – Providing for the condemnation and denouncemen"
+    },
+    {
+     "billId": "H.R. 9436",
+     "action": "motion to recommit",
+     "duration": "5 min",
+     "text": "H.R. 9436 – 5 minutes"
+    },
+    {
+     "billId": "H.R. 9436",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 9436 – Northeast Lobsterman Protection Act of 2026 (Rep"
+    },
+    {
+     "billId": "H.Res. 1498",
+     "action": "adoption",
+     "duration": "5 min",
+     "text": "H.Res. 1498 – Censuring Representative Chuck Edwards (Rep. G"
+    }
+   ],
+   "body": "<p>The House is now taking the following votes:</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Adoption of H.Res. 1490</strong> – Providing for the condemnation and denouncement of socialism in all its forms (Rep. Crank – House Administration)<strong>&nbsp;</strong>– <u>15 minutes</u>&nbsp;</span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Democratic Motion to Recommit on H.R. 9436&nbsp;</strong>– <strong><u>VOTE YES</u></strong> –&nbsp;<u>5 minutes</u></span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Passage of H.R. 9436</strong> – Northeast Lobsterman Protection Act of 2026 (Rep. Lawler – Natural Resources) – <strong><u>VOTE NO</u>&nbsp;</strong>– <u>5 minutes</u>&nbsp;</span></li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Adoption o</strong>f <strong>H.Res. 1498 </strong>– Censuring Representative Chuck Edwards (Rep. Guest – Ethics) – <u>5 minutes</u>&nbsp;</span></li></ol><p style=\"text-align:center;\"><strong><u>These are the last votes for the day</u></strong></p>"
+  },
+  {
+   "publishedAt": "2026-09-02T20:03:13.301Z",
+   "title": "Floor Update – 2 Votes – Last Votes",
+   "note": "Connector for the NEXT vote is glued inside the FIRST <li>; both votes must survive.",
+   "declaredVotes": 2,
+   "expected": [
+    {
+     "billId": "H.J.Res. 1",
+     "action": "passage",
+     "duration": "15 min",
+     "text": "H.J.Res. 1 – Proposing an amendment to the Constitution of t"
+    },
+    {
+     "billId": "H.R. 1501",
+     "action": "passage",
+     "duration": "5 min",
+     "text": "H.R. 1501 – Protecting Domestic Mining Act (Rep. Shreve – Na"
+    }
+   ],
+   "body": "<p>The House is now taking the following vote on a bill considered under suspension of the Rules:&nbsp;</p><ol><li><span style=\"color:rgb(66, 125, 255);\"><strong>Passage of H.J.Res. 1</strong> – Proposing an amendment to the Constitution of the United States to require that the Supreme Court of the United States be composed of nine justices (Rep. Biggs (AZ) – Judiciary) – <strong><u>VOTE NO</u> </strong>– <u>15 minutes</u></span><br><br>Following this vote, the House will take the following vote:<br>&nbsp;</li><li><span style=\"color:rgb(66, 125, 255);\"><strong>Passage of H.R. 1501</strong> – Protecting Domestic Mining Act (Rep. Shreve – Natural Resources)<strong> </strong>– <u>5 minutes</u>&nbsp;</span></li></ol><p style=\"text-align:center;\"><strong><u>These are the last votes for the day</u></strong></p>"
+  }
+ ]
+}
