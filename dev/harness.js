@@ -29,6 +29,17 @@
   const log = (...a) => console.info('%c[harness]', 'color:#58a6ff;font-weight:bold', ...a);
   const warn = (...a) => console.warn('%c[harness]', 'color:#d29922;font-weight:bold', ...a);
 
+  // ── Always refetch the stylesheet ──────────────────────────────────────────
+  // styles.css?v=NNN is a separate URL from the page, so cache-busting the page
+  // does NOT get you fresh CSS. When you edit styles.css between two captures,
+  // some frames keep serving the old file and the snapshot diff reports changes
+  // that are pure cache artifacts. Re-pointing the link at a unique URL on every
+  // harness load makes "what's on disk" and "what's rendered" the same thing.
+  for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+    link.href = link.href.replace(/[?&]_hcb=\d+/, '') +
+                (link.href.includes('?') ? '&' : '?') + '_hcb=' + Date.now();
+  }
+
   // ── Frozen clock ───────────────────────────────────────────────────────────
   // Snapshots compare computed styles across a refactor; a live clock would make
   // every run differ (header times, "3m ago", vote countdown). Must stay in sync
@@ -178,6 +189,36 @@
       writable: false, configurable: false,
     });
   } catch { /* non-fatal: worst case the players try to load */ }
+
+  // ── Remote images ──────────────────────────────────────────────────────────
+  // <img src> never passes through window.fetch, so tweet avatars and media
+  // (proxied via /api/img-proxy) go to the real network. In practice ~27 per
+  // page never resolve, which leaves layout settling at a different moment on
+  // every run — the baseline then reports a different random handful of modes
+  // as "changed". Swapping every remote image for one fixed placeholder makes
+  // capture deterministic. Sizes come from CSS, not the intrinsic image, so the
+  // layout under test is unaffected.
+  const PLACEHOLDER =
+    'data:image/svg+xml;charset=utf-8,' +
+    encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23233044"/></svg>');
+
+  const isRemote = src => /^https?:\/\//i.test(src) && !src.startsWith(location.origin);
+  const swap = img => {
+    const src = img.getAttribute('src');
+    if (src && isRemote(src)) img.setAttribute('src', PLACEHOLDER);
+  };
+  new MutationObserver(muts => {
+    for (const m of muts) {
+      if (m.type === 'attributes' && m.target.tagName === 'IMG') swap(m.target);
+      for (const n of m.addedNodes || []) {
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === 'IMG') swap(n);
+        else n.querySelectorAll && n.querySelectorAll('img').forEach(swap);
+      }
+    }
+  }).observe(document.documentElement, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['src'],
+  });
 
   wireMode();
   window.addEventListener('load', () => {

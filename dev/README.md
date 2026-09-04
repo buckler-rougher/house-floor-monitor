@@ -64,6 +64,41 @@ reads as one line rather than 86.
 
 Snapshot sets are gitignored — they're large and machine-specific.
 
+### The capture protocol matters
+
+Four things had to be fixed before before/after captures agreed with each other
+on an *unchanged* stylesheet. Skip any of them and the diff reports a different
+random handful of modes each run:
+
+1. **Bust the stylesheet, not just the page.** `styles.css?v=NNN` is its own URL,
+   so cache-busting the page URL still serves the cached CSS. Frames then render
+   a mix of old and new. `harness.js` now re-points every stylesheet link at a
+   unique URL on each harness load. This was the single biggest source of
+   phantom diffs.
+2. **Wait for the DOM to stop growing.** Panels are built asynchronously as
+   fixture data arrives; under load that runs well past any fixed delay, and an
+   early capture yields a half-built page (the tell is an element count far
+   below the ~3157 steady state). `__ready()` polls for a stable element count.
+3. **Don't depend on `requestAnimationFrame`.** It does not fire in a hidden or
+   background document, so a bare rAF await hangs whenever the pane isn't
+   visible. `__ready()` races it against a timer.
+4. **Exclude used-value geometry.** `width`, `height`, `margin` (which resolves
+   `auto` to px) and the bounding box settle at slightly different moments
+   depending on when async content lands. `__digest()` drops them by default;
+   pass `{geometry: true}` when geometry is what you're testing. Any real layout
+   change still shows up, because it must first change one of the *inputs* to
+   layout — display, padding, border, font — which stay in the digest.
+
+Always capture as: **fresh cache-busted load → `__ready()` → `__digest()`**, and
+never compare a frame that has been sitting idle against a freshly loaded one.
+
+### Known residual nondeterminism
+
+Two seats in the chamber map (`#floor-arch` children 406 and 439) flip between
+`class="seat vacant"` and `class="seat"` across loads *with an unchanged
+stylesheet* — a race between the vacancy list and member data in app.js, not a
+CSS issue. Expect `recess` to report 2 changed elements; anything else is real.
+
 ## Files
 
 | | |
@@ -89,6 +124,12 @@ Snapshot sets are gitignored — they're large and machine-specific.
   link to `/?…`, never `/index.html?…`.
 - Loading all 22 modes at once in `screens.html` is slow (22 app instances);
   leave "load on scroll" checked for browsing, uncheck only to capture.
+
+## Finding: two chamber seats race on load
+
+See "Known residual nondeterminism" above — `#floor-arch` children 406 and 439
+sometimes render as vacant and sometimes not, with identical inputs. Harmless
+visually, but it is a real race in app.js worth a look.
 
 ## Finding: `sine-die` mode looks unreachable in production
 
