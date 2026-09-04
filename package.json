@@ -4,9 +4,11 @@
   "description": "Congressional dome monitoring dashboard",
   "main": "index.html",
   "scripts": {
-    "dev": "npx serve . -p 8080",
+    "dev": "npx serve . -p 3456",
     "deploy-worker": "wrangler deploy",
-    "test": "node test/parse-notices.test.js"
+    "test": "node test/parse-notices.test.js",
+    "fixtures": "./dev/capture-fixtures.sh",
+    "check-modes": "node dev/check-modes.mjs"
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
