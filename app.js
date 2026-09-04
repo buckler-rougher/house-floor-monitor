@@ -697,8 +697,17 @@ function applyRollLogToBills(entries, activeRoll) {
         const isSuspension = /suspend/i.test(q);
         const required = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
         const passed = yeas >= required;
+        // Compare normalized, not raw. matchBillId/normalizeBillType build ids in
+        // the compact form ("H.Res. 1499"), but the Whip schedule spells them
+        // "H. Res. 1499" — and, inconsistently, "H.R.1869" with no space at all.
+        // Raw === therefore matched H.R./H.J.Res. and silently missed EVERY
+        // H. Res., so resolutions stayed stuck on whatever intermediate status
+        // the proceedings text last gave them ("Recorded vote requested —
+        // postponed") even with the roll call sitting in rollLog. The motion-to-
+        // recommit branch above already compares this way.
+        const billNorm = normalizeBillIdForRules(billId);
         for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
-            const bill = (billsData[key] || []).find(b => b.id === billId);
+            const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billNorm);
             if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
                 bill.status = passed ? 'passed' : 'failed';
                 bill.latestAction = passed ? `Passed (Roll Call ${entry.roll}): ${yeas}-${nays}` : `Failed (Roll Call ${entry.roll}): ${yeas}-${nays}`;
@@ -4319,9 +4328,27 @@ function loadTrackedBillsFromStorage() {
     } catch {}
 }
 
+// Tracked ids live in localStorage as whatever spelling the schedule used when
+// the star was clicked. The schedule is not consistent about spacing ("H.R. 9436"
+// vs "H.R.1869"), and the worker now normalizes it, so a raw string compare would
+// silently un-track a bill whose id spelling changed under the user. Compare
+// normalized instead — "HR1869" either way.
+function isBillTracked(billId) {
+    if (trackedBillIds.has(billId)) return true;
+    const n = normalizeBillIdForRules(billId);
+    for (const id of trackedBillIds) if (normalizeBillIdForRules(id) === n) return true;
+    return false;
+}
+
 function toggleBillTracked(billId) {
-    if (trackedBillIds.has(billId)) trackedBillIds.delete(billId);
-    else trackedBillIds.add(billId);
+    if (isBillTracked(billId)) {
+        const n = normalizeBillIdForRules(billId);
+        for (const id of [...trackedBillIds]) {
+            if (normalizeBillIdForRules(id) === n) trackedBillIds.delete(id);
+        }
+    } else {
+        trackedBillIds.add(billId);
+    }
     saveTrackedBillsToStorage();
     updateBillsDisplay();
 }
@@ -4852,7 +4879,7 @@ function updateBillsDisplay() {
 
     billDataMap.clear();
 
-    const filterTracked = arr => billsTrackedFilterOn ? arr.filter(b => trackedBillIds.has(b.id)) : arr;
+    const filterTracked = arr => billsTrackedFilterOn ? arr.filter(b => isBillTracked(b.id)) : arr;
     const sortedRule = sortBillsForDisplay(filterTracked(billsData.ruleBills));
     const sortedSuspension = sortBillsForDisplay(filterTracked(billsData.suspensionBills));
 
@@ -4998,7 +5025,7 @@ function createBillCard(bill, procedure) {
         ? `<span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span>`
         : '';
 
-    const tracked = trackedBillIds.has(bill.id);
+    const tracked = isBillTracked(bill.id);
     const trackTooltip = tracked ? 'Stop tracking this bill' : 'Track this bill';
     const trackBtnHtml = `<button class="bill-track-btn${tracked ? ' tracked' : ''}" data-bill-id="${bill.id}" data-tooltip="${trackTooltip}" type="button" aria-pressed="${tracked}" aria-label="${trackTooltip}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="${tracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
