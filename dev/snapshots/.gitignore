@@ -1,0 +1,4 @@
+# Snapshot sets are large, machine-specific working artifacts — regenerate them
+# with dev/screens.html rather than committing them.
+*/
+!.gitignore

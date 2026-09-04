@@ -26,6 +26,15 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <!-- Dev harness (dev/README.md): fixtures, mode forcing and a frozen clock for
+         CSS work. Only fetched when ?fixtures / ?mode / ?freeze is present, so
+         normal page views cost nothing. document.write is deliberate — the shim
+         must install before hls.js and app.js run. -->
+    <script>
+        if (/[?&](fixtures|mode|freeze)=?/.test(location.search)) {
+            document.write('<scr' + 'ipt src="dev/harness.js?v=20260904a"></scr' + 'ipt>');
+        }
+    </script>
 </head>
 <body class="recess-mode">
     <noscript><div style="padding:2rem;text-align:center;color:#e6edf3;background:#0d1117;font-family:system-ui,sans-serif">JavaScript is required to use House Floor Monitor.</div></noscript>

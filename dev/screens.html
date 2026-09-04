@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>House Floor — all modes</title>
+<style>
+  :root { --bg:#0d1117; --panel:#0f1720; --line:#233044; --text:#e6edf3; --muted:#9aa6b2; --accent:#58a6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:13px/1.5 'SF Mono','Fira Code',ui-monospace,monospace; }
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px;
+           flex-wrap:wrap; padding:12px 20px; background:rgba(13,17,23,.94);
+           backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:13px; letter-spacing:.5px; text-transform:uppercase; }
+  button { font:inherit; background:var(--panel); color:var(--text); border:1px solid var(--line);
+           border-radius:6px; padding:6px 12px; cursor:pointer; }
+  button:hover { border-color:var(--accent); color:var(--accent); }
+  button[disabled] { opacity:.5; cursor:default; }
+  #status { color:var(--muted); }
+  label { color:var(--muted); display:flex; align-items:center; gap:6px; }
+  .grid { display:flex; flex-direction:column; gap:28px; padding:20px; }
+  figure { margin:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel); }
+  figcaption { display:flex; justify-content:space-between; align-items:center; gap:12px;
+               padding:8px 14px; border-bottom:1px solid var(--line);
+               text-transform:uppercase; letter-spacing:.5px; font-size:11px; }
+  figcaption a { color:var(--accent); text-decoration:none; }
+  figcaption .state { color:var(--muted); text-transform:none; letter-spacing:0; }
+  .state.bad { color:#f85149; }
+  .state.good { color:#3fb950; }
+  /* The iframe lays out at a fixed 1280px so snapshots are comparable, then is
+     scaled down purely for display. Scaling must not change layout width. */
+  .frame { width:1280px; height:900px; border:0; transform-origin:0 0; display:block; }
+  .clip { overflow:hidden; }
+</style>
+</head>
+<body>
+<header>
+  <h1>All floor modes</h1>
+  <label>scale
+    <input id="scale" type="range" min="30" max="100" value="55">
+  </label>
+  <label><input id="lazy" type="checkbox" checked> load on scroll</label>
+  <button id="snap">Capture snapshots</button>
+  <span id="status">—</span>
+</header>
+<div class="grid" id="grid"></div>
+
+<script>
+/**
+ * Renders every floor mode at once, and captures a computed-style baseline from
+ * all of them in one pass.
+ *
+ * Local-use only: production sends `X-Frame-Options: DENY` (see _headers), so
+ * these iframes work against `npm run dev` but not against the deployed site.
+ *
+ * Each frame reports whether the app actually landed in the mode it was asked
+ * for — a red state means that mode's fixture no longer matches the triggers in
+ * autoSwitchModeFromProceedings(), which is exactly the drift worth catching.
+ */
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const scale = document.getElementById('scale');
+const lazyBox = document.getElementById('lazy');
+const SETTLE_MS = 2200; // harness pins the mode at ~1200ms; leave margin
+
+const setStatus = t => statusEl.textContent = t;
+// Must target the directory, not `../index.html`: `npx serve` 301s /index.html
+// to /index and drops the query string, which silently disables the harness.
+const frameSrc = m => `../?fixtures&mode=${encodeURIComponent(m)}`;
+
+let modes = [];
+
+function applyScale() {
+  const s = scale.value / 100;
+  for (const f of document.querySelectorAll('.frame')) f.style.transform = `scale(${s})`;
+  for (const c of document.querySelectorAll('.clip')) {
+    c.style.height = (900 * s) + 'px';
+    c.style.width = (1280 * s) + 'px';
+  }
+}
+scale.addEventListener('input', applyScale);
+
+function build(mode) {
+  const fig = document.createElement('figure');
+  fig.innerHTML = `
+    <figcaption>
+      <span>${mode}</span>
+      <span class="state" data-state>not loaded</span>
+      <a href="${frameSrc(mode)}" target="_blank">open ↗</a>
+    </figcaption>
+    <div class="clip"><iframe class="frame" data-mode="${mode}"></iframe></div>`;
+  grid.appendChild(fig);
+  const iframe = fig.querySelector('iframe');
+  const state = fig.querySelector('[data-state]');
+
+  iframe.addEventListener('load', () => {
+    setTimeout(() => {
+      try {
+        const cls = [...iframe.contentDocument.body.classList].filter(c => c.endsWith('-mode'));
+        // vote mode is the absence of a mode class, not a class of its own.
+        const ok = mode === 'vote' ? cls.length === 0 : cls.includes(mode + '-mode');
+        state.textContent = ok ? (mode === 'vote' ? 'vote (no class)' : `${mode}-mode`)
+                               : `landed: ${cls.join(', ') || 'none'}`;
+        state.className = 'state ' + (ok ? 'good' : 'bad');
+      } catch (e) {
+        state.textContent = 'blocked: ' + e.message;
+        state.className = 'state bad';
+      }
+    }, SETTLE_MS);
+  });
+  return iframe;
+}
+
+async function init() {
+  modes = await (await fetch('fixtures/modes/index.json')).json();
+  setStatus(`${modes.length} modes`);
+  const frames = modes.map(build);
+  applyScale();
+
+  if (lazyBox.checked) {
+    const io = new IntersectionObserver(es => {
+      for (const e of es) if (e.isIntersecting && !e.target.src) {
+        e.target.src = frameSrc(e.target.dataset.mode);
+        io.unobserve(e.target);
+      }
+    }, { rootMargin: '400px' });
+    frames.forEach(f => io.observe(f));
+  } else {
+    frames.forEach(f => f.src = frameSrc(f.dataset.mode));
+  }
+}
+
+document.getElementById('snap').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  const snapSrc = await (await fetch('snapshot.js')).text();
+  const out = {};
+  const frames = [...document.querySelectorAll('.frame')];
+
+  for (let i = 0; i < frames.length; i++) {
+    const f = frames[i], mode = f.dataset.mode;
+    setStatus(`capturing ${i + 1}/${frames.length}: ${mode}`);
+    // Force a reload even for frames the lazy observer already loaded, so every
+    // capture starts from the same state.
+    await new Promise(res => { f.onload = res; f.src = frameSrc(mode); });
+    await new Promise(res => setTimeout(res, SETTLE_MS));
+    try {
+      const w = f.contentWindow;
+      w.eval(snapSrc);
+      out[mode] = w.__snapshot();
+    } catch (err) {
+      out[mode] = { error: String(err) };
+    }
+  }
+
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'snapshots.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus(`captured ${Object.keys(out).length} modes → snapshots.json (save with dev/save-snapshot.mjs)`);
+  btn.disabled = false;
+});
+
+init();
+</script>
+</body>
+</html>
