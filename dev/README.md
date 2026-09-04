@@ -92,6 +92,22 @@ random handful of modes each run:
 Always capture as: **fresh cache-busted load → `__ready()` → `__digest()`**, and
 never compare a frame that has been sitting idle against a freshly loaded one.
 
+### The SSE stub replays two events
+
+The `EventSource` stub is not silent. In normal operation the Durable Object
+pushes most panel data, so a stub that only reports "open" leaves whole panels
+empty and untestable:
+
+- **`connected`** — app.js only fetches the cold-start bundle (which carries
+  `rollLog`) when the stream announces cold server caches. Without it the
+  roll-call path never runs at all.
+- **`bills`** — the bills panel is populated by this push;
+  `fetchBillsThisWeek()` is reached only for date overrides. Without it the panel
+  renders "No bills subject to a rule".
+
+Adding these raised the steady-state element count from ~3157 to ~4053, so any
+digest baseline captured before them is not comparable to one captured after.
+
 ### Known residual nondeterminism
 
 Two seats in the chamber map (`#floor-arch` children 406 and 439) flip between

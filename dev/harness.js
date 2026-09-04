@@ -168,6 +168,24 @@
       setTimeout(() => {
         this.onopen && this.onopen({ type: 'open' });
         (this._l.open || []).forEach(f => f({ type: 'open' }));
+        // app.js only loads the cold-start bundle — which carries rollLog, the
+        // input to applyRollLogToBills — when the stream announces itself with a
+        // `connected` event saying the server's caches are cold. Without this the
+        // harness never exercises the roll-call path at all, so bills sit on
+        // whatever status the proceedings text gave them. clientId is omitted on
+        // purpose: it would start a POST ping loop with nothing to talk to.
+        const connected = { type: 'connected', data: JSON.stringify({ rollLogCold: true, whipFeedCold: true }) };
+        (this._l.connected || []).forEach(f => f(connected));
+
+        // Replay the pushes the Durable Object normally makes. The bills panel
+        // in particular is only populated by the `bills` event in normal
+        // operation — fetchBillsThisWeek() is reached only for date overrides —
+        // so without this replay the panel renders "No bills subject to a rule"
+        // and none of the bills logic can be exercised in the harness at all.
+        loadFixture('bills.json').then(text => {
+          const ev = { type: 'bills', data: JSON.stringify({ bills: JSON.parse(text) }) };
+          (this._l.bills || []).forEach(f => f(ev));
+        }).catch(() => {});
       }, 0);
     }
     addEventListener(t, f) { (this._l[t] ||= []).push(f); }

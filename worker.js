@@ -814,18 +814,24 @@ async function fetchProceedingsBillStatuses() {
 
     // Merge oldest→newest so today's data takes precedence.
     let merged = {};
+    let mergedTitles = {};
     for (const { d, r } of responses) {
       if (!r?.ok) continue;
       const url = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(fmtClerk(d))}`;
-      const dayStatuses = extractBillStatusesFromProceedings(await r.text(), url);
-      merged = { ...merged, ...dayStatuses };
+      const { statuses, titles } = extractBillStatusesFromProceedings(await r.text(), url);
+      merged = { ...merged, ...statuses };
+      mergedTitles = { ...mergedTitles, ...titles };
     }
-    return merged;
-  } catch { return {}; }
+    return { statuses: merged, titles: mergedTitles };
+  } catch { return { statuses: {}, titles: {} }; }
 }
 
 function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   const statuses = {};
+  // Text seen alongside each bill link, keyed by bill id. Used to resolve
+  // schedule entries the Whip published before the resolution was numbered
+  // (see resolveUnnumberedResolutions).
+  const titles = {};
 
   // Parse each activity row: extract plain-text description + any Congress.gov bill link
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -847,6 +853,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     const description = decodeHtmlEntities(raw).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
     rows.push({ billId, description });
+    if (billId) titles[billId] = ((titles[billId] || '') + ' ' + description).trim();
   }
 
   // Rows are in reverse-chronological order.
@@ -965,7 +972,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     }
   }
 
-  return statuses;
+  return { statuses, titles };
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1509,12 +1516,14 @@ async function _fetchBills(request, env) {
     // Proceedings (House Clerk) is the authoritative source for the full vote
     // lifecycle — recorded vote requested/postponed → passed/failed — so the
     // partisan Bluesky/Dem Cloakroom feed is no longer used for bill status.
-    const [billsXmlText, proceedingsStatuses, sapMapRaw] = await Promise.all([
+    const [billsXmlText, proceedingsData, sapMapRaw] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
       fetchProceedingsBillStatuses(),
       fetchSapMap(env).catch(() => '{}'),
     ]);
     const sapMap = (() => { try { return JSON.parse(sapMapRaw); } catch { return {}; } })();
+    const proceedingsStatuses = proceedingsData?.statuses || {};
+    const proceedingsTitles = proceedingsData?.titles || {};
 
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
@@ -1652,9 +1661,19 @@ async function _fetchBills(request, env) {
 
     // Extract the governing H.Res number from the rule section header, e.g.
     // "…pursuant to a rule (H. Res. 630, Agreed to 232-195)…"
-    // This is the authoritative source — the schedule XML always names the governing rule.
-    const governingHresMatch = ruleSection.match(/H\.?\s*Res\.?\s*(\d+)/i);
-    const governingHres = governingHresMatch ? `H.Res. ${governingHresMatch[1]}` : null;
+    //
+    // This must be anchored to the header's own parenthetical. The old pattern
+    // scanned the WHOLE rule section for the first "H. Res. N", which is only
+    // the rule when the header happens to carry one. When the schedule ships the
+    // bare header (as in "Update 12" for the week of Aug 31 2026, where
+    // ruleHeader is just "Items that may be considered pursuant to a rule"), the
+    // first match in the body is instead one of the measures the rule provides
+    // for — that week it picked H. Res. 1490, the socialism resolution, over the
+    // actual rule H. Res. 1499. The tell was H. Res. 1490 being listed as its own
+    // governing rule.
+    let governingHres = null;
+    const headerHres = ruleSection.match(/pursuant to a rule[^)\n]{0,80}?\(\s*H\.?\s*Res\.?\s*(\d+)/i);
+    if (headerHres) governingHres = `H.Res. ${headerHres[1]}`;
 
     // Parse bills arrays for all three consideration types
     const ruleBills = [];
@@ -1672,7 +1691,14 @@ async function _fetchBills(request, env) {
 
         if (!legisNumMatch || !floorTextMatch) continue;
 
-        const legisNum = legisNumMatch[1].replace(/<[^>]*>/g, '').trim();
+        // The schedule is inconsistent about the space before the number — most
+        // rows read "H.R. 9436" but some arrive as "H.R.1869". Insert the space
+        // so ids are uniform wherever they are displayed. Comparisons elsewhere
+        // normalize anyway, so this is presentation only.
+        const legisNum = legisNumMatch[1]
+          .replace(/<[^>]*>/g, '')
+          .replace(/^(H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H\.?\s*Res\.?|H\.?\s*R\.?|S\.?\s*J\.?\s*Res\.?|S\.?\s*Con\.?\s*Res\.?|S\.?\s*Res\.?|S\.?)(\d)/i, '$1 $2')
+          .trim();
         const floorText = floorTextMatch[1].replace(/<[^>]*>/g, '').trim();
         if (!legisNum || !floorText) continue;
 
@@ -1727,6 +1753,96 @@ async function _fetchBills(request, env) {
     parseBillsFromSection(ruleSection, ruleBills);
     parseBillsFromSection(suspensionSection, suspensionBills);
     parseBillsFromSection(mayBeConsideredSection, mayBeConsideredBills);
+
+    // The Whip publishes the weekly schedule before some resolutions are
+    // numbered, listing them by the committee report they accompany:
+    //   "H. Res. ___ (H. Rept. 119-693)"
+    // On the floor they become real resolutions (H. Res. 1504 / 1505 that week)
+    // and the proceedings feed reports them under those numbers — so the status
+    // is computed and then thrown away, and the row sits on "Scheduled for
+    // consideration" forever even after the House agrees to it.
+    //
+    // Reconcile on the text of the measure, which survives the renumbering: the
+    // schedule's "Report to accompany the Resolution recommending that …" and
+    // the Clerk's "Resolution recommending that …" share everything after the
+    // report boilerplate.
+    const usedResolutionIds = new Set();
+    const resolveUnnumberedResolutions = (bills) => {
+      const normText = t => (t || '')
+        .replace(/^\s*Report to accompany (?:the\s+)?/i, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const candidates = Object.entries(proceedingsTitles)
+        .filter(([id]) => /^H\.?\s*Res\.?/i.test(id))
+        .map(([id, text]) => [id, normText(text)]);
+
+      for (const bill of bills) {
+        if (!/_{2,}/.test(bill.id)) continue;            // only unnumbered placeholders
+        const full = normText(bill.title);
+
+        // Match on a prefix of the measure's text, shrinking until exactly one
+        // resolution matches. Length matters more than it looks: these titles
+        // read "resolution recommending that the house of representatives find
+        // <NAME> in contempt of congress …", so the name — the only
+        // distinguishing part — does not appear until about character 63. Too
+        // short a prefix matches every contempt resolution equally and silently
+        // collapses them onto whichever was seen first.
+        let hit = null;
+        for (const len of [150, 130, 110, 90]) {
+          if (full.length < len) continue;
+          const needle = full.slice(0, len);
+          const matches = candidates.filter(([id, text]) =>
+            !usedResolutionIds.has(id) && text.includes(needle));
+          if (matches.length === 1) { hit = matches[0][0]; break; }
+          if (matches.length > 1) break;                 // ambiguous — leave it alone
+        }
+        if (!hit) continue;
+
+        usedResolutionIds.add(hit);                      // never claim one twice
+        bill.resolvedFrom = bill.id;                     // keep the report-number form
+        bill.id = hit.replace(/^H\.Res\./i, 'H. Res. ').replace(/\s+/g, ' ').trim();
+        const st = proceedingsStatuses[hit];
+        if (st) {
+          bill.status = st.status;
+          bill.latestAction = st.statusText;
+          bill.considered = true;
+          bill.actionSource = 'proceedings';
+          bill.actionSourceUrl = st.sourceUrl || null;
+        }
+      }
+    };
+    resolveUnnumberedResolutions(ruleBills);
+    resolveUnnumberedResolutions(suspensionBills);
+    resolveUnnumberedResolutions(mayBeConsideredBills);
+
+    // Fallback when the header carried no rule number: a special rule is the
+    // resolution whose text opens "Providing for consideration of …". That is
+    // the House's own fixed formula, so it identifies the rule far more reliably
+    // than position in the document. The rule itself is listed outside the rule
+    // section (the Whip files it under "may be considered"), so search every
+    // bucket, and never let a measure end up governing itself.
+    if (!governingHres) {
+      const isRuleTitle = b => /^\s*Providing for consideration of\b/i.test(b.title || '');
+      const ruleRes = [...mayBeConsideredBills, ...ruleBills, ...suspensionBills]
+        .find(b => /^H\.?\s*Res\.?/i.test(b.id) && isRuleTitle(b));
+      if (ruleRes) {
+        const n = ruleRes.id.match(/(\d+)/);
+        if (n) governingHres = `H.Res. ${n[1]}`;
+      }
+    }
+    // Stamp it on the rule bills now that it is known (parseBillsFromSection ran
+    // before the fallback could resolve it).
+    for (const bill of ruleBills) {
+      if (governingHres && bill.isRule) {
+        const selfRef = bill.id.replace(/[.\s]/g, '').toUpperCase() ===
+                        governingHres.replace(/[.\s]/g, '').toUpperCase();
+        if (selfRef) delete bill.governingHres;
+        else bill.governingHres = governingHres;
+      }
+    }
 
     // Second pass: enrich with Congress.gov floor actions + summaries + sponsor/cosponsors/committees.
     // Skipped on quick=1 requests — caller already has this data from the initial full fetch.
