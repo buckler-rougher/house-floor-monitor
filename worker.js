@@ -1,6 +1,10 @@
 // Cloudflare Worker for RSS Feed Processing
 // Handles CORS, caching, and XML parsing server-side
 
+// Shared with app.js — see lib/bill-id.js for why bill ids must never be
+// compared as raw strings. Side-effect import: the file assigns globalThis.BillId.
+import './lib/bill-id.js';
+
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
   'https://monitor-a6i.pages.dev',
@@ -1837,8 +1841,7 @@ async function _fetchBills(request, env) {
     // before the fallback could resolve it).
     for (const bill of ruleBills) {
       if (governingHres && bill.isRule) {
-        const selfRef = bill.id.replace(/[.\s]/g, '').toUpperCase() ===
-                        governingHres.replace(/[.\s]/g, '').toUpperCase();
+        const selfRef = BillId.sameBill(bill.id, governingHres);
         if (selfRef) delete bill.governingHres;
         else bill.governingHres = governingHres;
       }
@@ -2934,15 +2937,13 @@ async function applyRollLogToBillList(env, items) {
   } catch { /* roll log is a bonus; the schedule status still stands */ }
   if (!entries.length) return items;
 
-  const norm = v => String(v || '').toUpperCase().replace(/[.\s]/g, '');
-  const PROCEDURAL = /motion to (commit|recommit|table)|previous question|ordering the previous/i;
   const byBill = new Map();
   for (const e of entries) {
     const q = e.question || '';
-    if (PROCEDURAL.test(q) || /\bamendment\b/i.test(q)) continue;
-    const m = q.match(/^\s*(H\s*J\s*RES|H\s*CON\s*RES|H\s*RES|H\s*R|S\s*J\s*RES|S\s*CON\s*RES|S\s*RES|S)\s+(\d+)/i);
-    if (!m) continue;
-    const key = norm(`${m[1]}${m[2]}`);
+    // Returns null for procedural motions and amendment votes, which name a bill
+    // number without being a vote on the bill itself.
+    const key = BillId.billIdFromRollCallQuestion(q);
+    if (!key) continue;
     const yeas = Number(e.totals?.yeas || 0), nays = Number(e.totals?.nays || 0);
     if (!(yeas + nays)) continue;
     const required = /suspend/i.test(q) ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
@@ -2951,7 +2952,7 @@ async function applyRollLogToBillList(env, items) {
 
   for (const it of items) {
     if (it.status === 'passed' || it.status === 'failed') continue;
-    const hit = byBill.get(norm(it.id));
+    const hit = byBill.get(BillId.normalizeBillId(it.id));
     if (!hit) continue;
     it.status = hit.passed ? 'passed' : 'failed';
     it.action = `${hit.passed ? 'Passed' : 'Failed'} (Roll Call ${hit.roll}): ${hit.yeas}-${hit.nays}`;

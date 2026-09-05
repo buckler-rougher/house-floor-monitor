@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx serve . -p 3456",
     "deploy-worker": "wrangler deploy",
-    "test": "node test/parse-notices.test.js",
+    "test": "node test/bill-id.test.js && node test/parse-notices.test.js",
     "fixtures": "./dev/capture-fixtures.sh",
     "check-modes": "node dev/check-modes.mjs"
   },
