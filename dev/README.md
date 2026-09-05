@@ -122,8 +122,18 @@ app-level, not CSS:
   bills loaded before proceedings rendered changes the class. Usually shows up
   in `debate`.
 
-Anything beyond those two is a real change. When a mode differs, re-check that
-one mode alone with the old and new stylesheet back to back before believing it.
+A third source is transient UI state: a batch capture can catch a hover- or
+focus-revealed element open (`#connection-dashboard`, `#weather-panel`), which
+shows up as a large diff — ~90 elements — on one arbitrary mode.
+
+Anything beyond those is a real change. **When a mode differs, re-check that one
+mode alone, with the old and the new stylesheet back to back, before believing
+it.** Every diff investigated so far has turned out to be capture noise, and the
+single-mode re-check settles it in under a minute:
+
+    old CSS, run twice  -> same hash?   (is the mode itself stable)
+    new CSS, run twice  -> same hash?
+    old vs new          -> differ?      (only now is it real)
 
 ## Files
 
