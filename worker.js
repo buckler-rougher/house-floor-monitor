@@ -2548,6 +2548,7 @@ const ASK_QUESTIONS = {
   'next-votes':   'When are the next votes?',
   'bills':        'What is on the floor this week?',
   'last-vote':    'How did the last vote go?',
+  'timer':        'How long is left on the vote, and who has not voted?',
 };
 
 // House business runs on Eastern time; every date phrase below is ET.
@@ -2672,10 +2673,69 @@ async function answerLastVote(env) {
   };
 }
 
+// The vote-series clock exists only in the Whip's prose — DomeWatch reports the
+// running vote, and the House calendar only knows whole days. These are the
+// shapes the Whip actually publishes:
+//   "Next votes are expected at approximately 6:30 p.m. on Monday, September 14, 2026."
+//   "At approximately 9:40 – 9:50 a.m., the House will take the following vote:"
+//   "Next/Last votes predicted : at approximately 4:00 p.m."
+// A day can hold several series, so the newest notice wins; and a time-of-day
+// claim is only trusted from a notice published TODAY, or a stale "4:00 p.m."
+// from last week would be read as this afternoon.
+function whipVoteTiming(items) {
+  if (!Array.isArray(items)) return null;
+  const strip = h => decodeHtmlEntities(String(h || ''))
+    .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  // "9:40 – 9:50 a.m." and "6:30 p.m." both, with the Whip's stray spaces removed.
+  const tidy = t => String(t).replace(/\s+/g, ' ')
+    .replace(/\s*([–—-])\s*/g, ' $1 ')
+    .replace(/([ap])\s*\.\s*m\s*\.?/i, (_, ap) => `${ap.toLowerCase()}.m.`)
+    .trim();
+  const TIME = String.raw`\d{1,2}:\d{2}\s*(?:[–—-]\s*\d{1,2}:\d{2}\s*)?[ap]\s*\.?\s*m\s*\.?`;
+  const today = etDateStr();
+
+  const sorted = [...items].sort((a, b) =>
+    String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')));
+
+  for (const it of sorted) {
+    const body = strip(it.body);
+    const day = String(it.publishedAt || '').slice(0, 10);
+
+    // Carries its own date, so it stays trustworthy however old the notice is.
+    let m = body.match(new RegExp(
+      String.raw`next votes?\s+(?:are|is)\s+expected\s+at\s+approximately\s+(${TIME})` +
+      String.raw`(?:\s*on\s+(?:[A-Za-z]+day,?\s+)?([A-Za-z]+\s+\d{1,2}),?\s*(\d{4})?)?`, 'i'));
+    if (m) return { time: tidy(m[1]), dateText: m[2] || null, sameDay: !m[2], title: it.title || null };
+
+    if (day && day !== today) continue;
+
+    m = body.match(new RegExp(String.raw`at\s+approximately\s+(${TIME})\s*,?\s*the\s+House\s+will\s+take`, 'i'))
+     || body.match(new RegExp(String.raw`next\s*/?\s*last\s+votes?\s+predicted\s*:?\s*at\s+approximately\s+(${TIME})`, 'i'));
+    if (m) return { time: tidy(m[1]), dateText: null, sameDay: true, title: it.title || null };
+  }
+  return null;
+}
+
 async function answerNextVotes(env) {
-  const [floor, vdResp] = await Promise.all([askFloor(env), handleVotingDays(env)]);
+  const [floor, vdResp, whipResp] = await Promise.all([
+    askFloor(env), handleVotingDays(env), handleWhipFloorUpdates(env).catch(() => null),
+  ]);
   if (isVotingNow(floor)) {
     return { answer: 'The House is voting right now.', voting: true };
+  }
+
+  // Prefer a published series time over the calendar's whole-day answer: on a
+  // sitting day "the next votes are at approximately 4:00 p.m." is the question
+  // being asked, and it is also the only thing that can answer it when the House
+  // is between series on the same day.
+  const whip = whipResp && whipResp.ok ? await whipResp.json().catch(() => null) : null;
+  const timing = whipVoteTiming(whip?.items);
+  if (timing) {
+    const where = timing.dateText ? ` on ${timing.dateText}` : ' today';
+    return {
+      answer: `The next votes are expected at approximately ${timing.time}${where}.`,
+      time: timing.time, date: timing.dateText, source: timing.title,
+    };
   }
   if (!vdResp.ok) return { answer: 'I could not reach the House calendar just now.' };
   const { votingDays = [] } = await vdResp.json();
@@ -2700,12 +2760,91 @@ async function answerNextVotes(env) {
     .find(([, summaries]) => isVoteDay(summaries));
 
   if (!upcoming) return { answer: 'I do not see any scheduled vote days on the House calendar ahead.' };
-  const [date] = upcoming;
+
+  // A vote day the House has already adjourned out of is finished business.
+  // Saying "votes are scheduled today" at 8pm, after everyone has flown home,
+  // is the wrong answer to "when are the next votes" — roll forward instead.
+  const doneForToday = upcoming[0] === today &&
+    /adjourn/i.test(String(floor?.now?.text || '') + String(floor?.now?.value || ''));
+  const next = doneForToday
+    ? [...byDate.entries()].filter(([d]) => d > today).sort((a, b) => a[0] < b[0] ? -1 : 1).find(([, ss]) => isVoteDay(ss))
+    : upcoming;
+
+  if (!next) {
+    return { answer: 'Votes have finished for today, and I do not see another vote day scheduled ahead.',
+             date: null, finishedToday: true };
+  }
+  const [date] = next;
   const when = relativeDay(today, date);
+  const lead = doneForToday ? 'Votes have finished for today. The next scheduled votes are' : 'The next scheduled votes are';
   const answer = date === today
     ? `Votes are scheduled today, ${speakDate(date)}.`
-    : `The next scheduled votes are ${when}, on ${speakDate(date)}.`;
-  return { answer, date, daysAway: daysBetween(today, date) };
+    : `${lead} ${when}, on ${speakDate(date)}.`;
+  return { answer, date, daysAway: daysBetween(today, date), finishedToday: doneForToday };
+}
+
+async function answerTimer(env) {
+  const floor = await askFloor(env);
+  if (!floor) return { answer: 'I could not reach the House floor feed just now.' };
+  if (!isVotingNow(floor)) {
+    const s = await answerStatus(env);
+    return { answer: `No vote is in progress. ${s.answer}`, voting: false };
+  }
+
+  const t = floor.votes?.counts?.totals || {};
+  // DomeWatch writes "" for fields it has no value for, and Number("") is 0 —
+  // so an empty not_voting would otherwise read as "every Member has voted"
+  // when the truth is that we don't know. Blank must be null, not zero.
+  const num = v => {
+    const raw = String(v ?? '').trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  const yeas = num(t.yeas) ?? 0, nays = num(t.nays) ?? 0, present = num(t.present) ?? 0;
+  const notVoting = num(t.not_voting);
+  const cast = yeas + nays + present;
+
+  // DomeWatch's not_voting counts down as Members vote, so during a live vote it
+  // IS "yet to vote". Its sum with the cast votes is the voting membership that
+  // day (435 minus vacancies), which is why it is not hardcoded here.
+  const outstanding = notVoting;
+  const chamber = outstanding !== null ? cast + outstanding : null;
+  const whoLeft = outstanding === null
+    ? ''
+    : outstanding === 0
+      ? ' Every Member has voted.'
+      : ` ${outstanding} Member${outstanding === 1 ? ' has' : 's have'} not voted yet.`;
+
+  // seconds_remaining is reported against timer.timestamp, so the clock expires
+  // at timestamp + seconds_remaining. Votes are routinely held open past zero,
+  // and DomeWatch floors seconds_remaining at 0 rather than going negative —
+  // so overtime has to be derived, not read. Only meaningful while the vote is
+  // open; against a finished vote the timestamp is stale and would report days.
+  const secs = num(floor.timer?.seconds_remaining) ?? 0;
+  const ts = Date.parse(floor.timer?.timestamp || '');
+  let clock, overtimeSec = null;
+  if (secs > 0) {
+    clock = `${speakDuration(secs)} left on the clock.`;
+  } else if (Number.isFinite(ts)) {
+    overtimeSec = Math.max(0, Math.round((Date.now() - (ts + secs * 1000)) / 1000));
+    clock = overtimeSec >= 30
+      ? `The clock ran out about ${speakDuration(overtimeSec)} ago and the vote is still open.`
+      : 'The clock has just run out and the vote is still open.';
+  } else {
+    clock = 'The clock has run out and the vote is still open.';
+  }
+
+  return {
+    answer: `${clock}${whoLeft}`.replace(/\s+/g, ' ').trim(),
+    voting: true,
+    secondsRemaining: secs > 0 ? secs : 0,
+    secondsOvertime: overtimeSec,
+    yeas, nays, present,
+    notVoting: outstanding,
+    votesCast: cast,
+    votingMembership: chamber,
+  };
 }
 
 async function answerBills(request, env) {
@@ -2766,6 +2905,7 @@ async function handleAsk(request, env) {
       case 'last-vote':    return send(await answerLastVote(env));
       case 'next-votes':   return send(await answerNextVotes(env));
       case 'bills':        return send(await answerBills(request, env));
+      case 'timer':        return send(await answerTimer(env));
       default:
         return send({ answer: `I do not know how to answer "${q}". Try /api/ask for the list.` }, 404);
     }
