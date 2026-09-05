@@ -110,10 +110,20 @@ digest baseline captured before them is not comparable to one captured after.
 
 ### Known residual nondeterminism
 
-Two seats in the chamber map (`#floor-arch` children 406 and 439) flip between
-`class="seat vacant"` and `class="seat"` across loads *with an unchanged
-stylesheet* — a race between the vacancy list and member data in app.js, not a
-CSS issue. Expect `recess` to report 2 changed elements; anything else is real.
+Two known races produce digest diffs with an *unchanged* stylesheet. Both are
+app-level, not CSS:
+
+- **Chamber seats.** `#floor-arch` children 406 and 439 flip between
+  `class="seat vacant"` and `class="seat"` — the vacancy list races member data.
+  Expect `recess` to report 2 changed elements.
+- **Proceedings bill links.** `linkifyBillNumbers()` emits `proc-bill-link` (a
+  button opening the modal) when `billDataMap` already holds the bill, and
+  `proc-bill-external` (an anchor to congress.gov) when it does not — so whether
+  bills loaded before proceedings rendered changes the class. Usually shows up
+  in `debate`.
+
+Anything beyond those two is a real change. When a mode differs, re-check that
+one mode alone with the old and new stylesheet back to back before believing it.
 
 ## Files
 

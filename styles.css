@@ -1,5 +1,7 @@
 /* Dome Watch - Pentagon Pizza Tracker Theme */
 
+@layer app {
+
 * {
     margin: 0;
     padding: 0;
@@ -537,7 +539,7 @@ body {
    !important needed because individual panel rules later in the file
    have equal specificity and would otherwise win by source order. */
 .main-display > * {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
 }
 
 /* Vote column — wraps Happening Now → Threshold → Quorum → Chamber Map.
@@ -554,7 +556,7 @@ body {
     background-repeat: no-repeat;
 }
 .vote-column > * {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
 }
 
 /* Mode columns — each live-mode section whose quote block floats below it is
@@ -572,7 +574,7 @@ body {
     background-repeat: no-repeat;
 }
 .mode-column > * {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
 }
 
 .oath-column, .pledge-column, .cert-election-column, .cert-electoral-column,
@@ -600,9 +602,9 @@ body.tellers-mode .tellers-column { display: flex; }
     flex-direction: column;
 }
 .quote-card > * {
-    border-radius: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
+    border-radius: 0;
+    margin: 0;
+    background: transparent;
 }
 
 /* ── Live-mode panels ─────────────────────────────────────────────────────
@@ -622,7 +624,7 @@ body.tellers-mode .tellers-column { display: flex; }
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
     overflow: hidden;
-    padding: 0 !important; /* card replaces the old vertical padding */
+    padding: 0; /* card replaces the old vertical padding */
 }
 
 /* Header bar — HAPPENING NOW title (::before) + mode tag, source pushed right. */
@@ -632,14 +634,14 @@ body.tellers-mode .tellers-column { display: flex; }
 .message-section-header, .joint-meeting-section-header, .journal-section-header,
 .joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
 .sine-die-section-header, .new-session-section-header, .admin-oath-section-header {
-    display: flex !important;
+    display: flex;
     align-items: center;
     justify-content: flex-start;
     gap: var(--sp-12);
     padding: var(--sp-12) var(--sp-24);
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-color);
-    margin: 0 !important;
+    margin: 0;
 }
 
 .one-minute-section-header::before, .special-order-section-header::before, .morning-hour-section-header::before,
@@ -675,7 +677,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
 .sine-die-source, .new-session-source, .admin-oath-source {
-    font-size: var(--fs-2xs) !important; /* match .panel-source over per-section rules */
+    font-size: var(--fs-2xs); /* match .panel-source over per-section rules */
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -690,10 +692,10 @@ body.tellers-mode .tellers-column { display: flex; }
 .joint-meeting-content, .journal-content, .joint-session-content,
 .cert-election-content, .cert-electoral-content, .sine-die-content,
 .new-session-content, .admin-oath-content, .tellers-content {
-    padding: var(--sp-16) var(--sp-24) !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
+    padding: var(--sp-16) var(--sp-24);
+    background: transparent;
+    border: none;
+    border-radius: 0;
 }
 
 /* Vote Header */
@@ -1013,8 +1015,8 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .progress-fill.right-cap {
-    border-top-right-radius: var(--radius-6) !important;
-    border-bottom-right-radius: var(--radius-6) !important;
+    border-top-right-radius: var(--radius-6);
+    border-bottom-right-radius: var(--radius-6);
 }
 
 .progress-fill.nays {
@@ -4495,7 +4497,7 @@ a.tweet-quote:hover {
 .cal-day-added:hover { background: rgba(210,153,34,0.26); }
 .cal-day-cancelled { background: rgba(139,148,158,0.10); }
 .cal-day-cancelled:hover { background: rgba(139,148,158,0.18); }
-.cal-day-today     { border-color: rgba(88, 166, 255, 0.35) !important; }
+.cal-day-today     { border-color: rgba(88, 166, 255, 0.35); }
 .cal-num {
     position: absolute;
     top: 2px;
@@ -6131,8 +6133,8 @@ font-family: var(--font-mono);
 .amdt-pdf-cell {
     text-align: center;
     vertical-align: middle;
-    padding-right: var(--sp-14) !important;
-    padding-left: var(--sp-6) !important;
+    padding-right: var(--sp-14);
+    padding-left: var(--sp-6);
 }
 .amdt-pdf-btn {
     display: inline-flex;
@@ -8295,7 +8297,7 @@ body.joint-meeting-mode .joint-meeting-section {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
     overflow: hidden;
-    padding: 0 !important;
+    padding: 0;
     margin-bottom: var(--sp-24);
 }
 
@@ -8312,7 +8314,7 @@ body.tellers-mode .tellers-section {
     padding: var(--sp-12) var(--sp-24);
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-color);
-    margin: 0 !important;
+    margin: 0;
 }
 
 .tellers-header-right {
@@ -9956,4 +9958,101 @@ body.all-mode .floor-grid-panel {
         transform: translateY(100%);
     }
     .suggest-drawer.open { transform: translateY(0); }
+}
+
+}  /* end @layer app */
+
+/* ── Deliberate overrides (unlayered) ──────────────────────────────────────
+   An unlayered rule beats every rule inside @layer app regardless of specificity
+   or source order. Each declaration below previously carried !important for one
+   reason only: it has the SAME specificity as a component rule defined later in
+   the file and would otherwise lose on source order. The layer states that
+   intent directly.
+
+   Only the overriding declarations live here — never a whole rule. The rest of
+   each rule stays in the layer, because a block can mix an override with an
+   ordinary default that other rules must still be able to beat (e.g.
+   .tellers-section overrides padding but its display:none default has to stay
+   beatable by body.tellers-mode .tellers-section).
+
+   Anything added below this line outranks the entire stylesheet. Component
+   styles belong inside the layer. */
+
+.main-display > * {
+    margin-bottom: 0;
+}
+
+.vote-column > * {
+    margin-bottom: 0;
+}
+
+.mode-column > * {
+    margin-bottom: 0;
+}
+
+.quote-card > * {
+    border-radius: 0;
+    margin: 0;
+    background: transparent;
+}
+
+.one-minute-section, .special-order-section, .morning-hour-section,
+.prayer-section, .silence-section, .oath-section, .speaker-section,
+.committee-chair-section, .pledge-section, .message-section,
+.joint-meeting-section, .journal-section, .joint-session-section,
+.cert-election-section, .cert-electoral-section, .sine-die-section,
+.new-session-section, .admin-oath-section {
+    padding: 0;
+}
+
+.one-minute-section-header, .special-order-section-header, .morning-hour-section-header,
+.prayer-section-header, .silence-section-header, .oath-section-header,
+.speaker-section-header, .committee-chair-section-header, .pledge-section-header,
+.message-section-header, .joint-meeting-section-header, .journal-section-header,
+.joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
+.sine-die-section-header, .new-session-section-header, .admin-oath-section-header {
+    display: flex;
+    margin: 0;
+}
+
+.one-minute-source, .special-order-source, .morning-hour-source, .prayer-source,
+.silence-source, .oath-source, .speaker-source, .committee-chair-source,
+.pledge-source, .message-source, .joint-meeting-source, .journal-source,
+.joint-session-source, .cert-election-source, .cert-electoral-source,
+.sine-die-source, .new-session-source, .admin-oath-source {
+    font-size: var(--fs-2xs);
+}
+
+.one-minute-content, .special-order-content, .morning-hour-content,
+.prayer-content, .silence-content, .oath-content, .speaker-content,
+.committee-chair-content, .pledge-content, .message-content,
+.joint-meeting-content, .journal-content, .joint-session-content,
+.cert-election-content, .cert-electoral-content, .sine-die-content,
+.new-session-content, .admin-oath-content, .tellers-content {
+    padding: var(--sp-16) var(--sp-24);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+}
+
+.progress-fill.right-cap {
+    border-top-right-radius: var(--radius-6);
+    border-bottom-right-radius: var(--radius-6);
+}
+
+.cal-day-today {
+    border-color: rgba(88, 166, 255, 0.35);
+}
+
+.amdt-pdf-cell {
+    padding-right: var(--sp-14);
+    padding-left: var(--sp-6);
+}
+
+.tellers-section {
+    padding: 0;
+}
+
+.tellers-section-header {
+    margin: 0;
 }
