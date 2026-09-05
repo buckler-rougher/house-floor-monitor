@@ -629,18 +629,9 @@ async function loadColdStartBundle(wantRollLog, wantWhipFeed) {
 
 function applyRollLogToBills(entries, activeRoll) {
     if (!Array.isArray(entries) || !billsData) return;
-    const PROCEDURAL = /motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i;
-    const normalizeBillType = raw => {
-        const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
-        return { 'H':'H.R.','H.':'H.R.',
-                 'HR':'H.R.','H.R.':'H.R.','HRES':'H.Res.','H.RES.':'H.Res.',
-                 'HJRES':'H.J.Res.','HCONRES':'H.Con.Res.',
-                 'S':'S.','S.':'S.','SRES':'S.Res.','S.RES.':'S.Res.',
-                 'SJRES':'S.J.Res.','SCONRES':'S.Con.Res.' }[t] || null;
-    };
-    const matchBillId = q =>
-        q.match(/(?:^|\s[-–]\s)(H\.?\s*R\.?|H\.?\s*Res\.?|H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H|S\.?(?:\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?)?)\s+(\d+)/i)
-        || q.match(/\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?)\s*(\d+)/i);
+    // Bill-id matching lives in lib/bill-id.js: the roll-call question spells
+    // ids "H RES 1499" while the schedule spells them "H. Res. 1499", and
+    // comparing those raw is what hid every resolution's result here.
     let changed = false;
     for (const entry of entries) {
         if (activeRoll && String(entry.roll) === activeRoll) continue; // skip active vote
@@ -651,13 +642,13 @@ function applyRollLogToBills(entries, activeRoll) {
             const yeas = entry.totals?.yeas || 0;
             const nays = entry.totals?.nays || 0;
             if (yeas + nays > 0) {
-                // Try question string first, then fall back to the dedicated bill field
-                let bid = null;
-                const qm = matchBillId(q) || (entry.bill ? matchBillId(entry.bill) : null);
-                if (qm) {
-                    const type = normalizeBillType(qm[1]);
-                    if (type) bid = normalizeBillIdForRules(`${type} ${qm[2]}`);
-                }
+                // Try question string first, then fall back to the dedicated bill field.
+                // parseBillId directly, not billIdFromRollCallQuestion — an MTR is a
+                // procedural motion, which that helper deliberately rejects, and here
+                // the procedural motion is exactly what we are recording.
+                const qm = BillId.parseBillId(q, { anchored: true })
+                        || (entry.bill ? BillId.parseBillId(entry.bill) : null);
+                const bid = qm ? qm.normalized : null;
                 if (bid) {
                     const existing = motionsToRecommit.get(bid);
                     const status = yeas > nays ? 'passed' : 'failed';
@@ -678,34 +669,18 @@ function applyRollLogToBills(entries, activeRoll) {
             continue;
         }
 
-        if (PROCEDURAL.test(q)) continue;
-        // An amendment roll's question mentions the bill number too (e.g. "H R 8595 -
-        // Boebert ... Part A Amendment No. 1 - On Agreeing to the Amendment"), but it's
-        // not a vote on the BILL itself — without this guard its tally gets stamped
-        // onto bill.status as if it were the bill's own passage/failure result. Doesn't
-        // catch "as Amended" (passage text) or "On Agreeing to the Resolution" (rule
-        // adoption), which correctly still fall through to the logic below.
-        if (/\bamendment\b/i.test(q)) continue;
         const yeas = entry.totals?.yeas || 0;
         const nays = entry.totals?.nays || 0;
         if (yeas + nays === 0) continue;
-        const qm = matchBillId(q);
-        if (!qm) continue;
-        const type = normalizeBillType(qm[1]);
-        if (!type) continue;
-        const billId = `${type} ${qm[2]}`;
+        // null for procedural motions and amendment votes — both name a bill
+        // number without being a vote on the bill itself.
+        const billNorm = BillId.billIdFromRollCallQuestion(q);
+        if (!billNorm) continue;
+        const parsedQ = BillId.parseBillId(q, { anchored: true });
+        const billId = parsedQ.display;
         const isSuspension = /suspend/i.test(q);
         const required = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
         const passed = yeas >= required;
-        // Compare normalized, not raw. matchBillId/normalizeBillType build ids in
-        // the compact form ("H.Res. 1499"), but the Whip schedule spells them
-        // "H. Res. 1499" — and, inconsistently, "H.R.1869" with no space at all.
-        // Raw === therefore matched H.R./H.J.Res. and silently missed EVERY
-        // H. Res., so resolutions stayed stuck on whatever intermediate status
-        // the proceedings text last gave them ("Recorded vote requested —
-        // postponed") even with the roll call sitting in rollLog. The motion-to-
-        // recommit branch above already compares this way.
-        const billNorm = normalizeBillIdForRules(billId);
         for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billNorm);
             if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
@@ -1686,38 +1661,19 @@ function reconcileVoteWithBills(force = false) {
     // Parse bill ID from question, e.g. "S 1003 - On Motion to Suspend..." or "H R 1041 - ..."
     const question = floorData.rollCall.question || '';
 
-    // Skip procedural motions — these are not passage votes
-    if (/motion to (commit|recommit|table)|previous question|ordering the previous|motion to refer/i.test(question)) return;
-    // Normalize abbreviation with optional spaces/dots to our canonical form
-    const normalizeBillType = raw => {
-        const t = raw.replace(/\s*\.\s*/g, '.').replace(/\s+/g, '').toUpperCase();
-        const map = {
-            'H': 'H.R.', 'H.': 'H.R.',  // plain "H" or "H." = H.R. (DomeWatch format)
-            'HR': 'H.R.', 'H.R.': 'H.R.',
-            'HRES': 'H.Res.', 'H.RES.': 'H.Res.',
-            'HJRES': 'H.J.Res.', 'H.J.RES.': 'H.J.Res.',
-            'HCONRES': 'H.Con.Res.', 'H.CON.RES.': 'H.Con.Res.',
-            'S': 'S.', 'S.': 'S.', 'SRES': 'S.Res.', 'S.RES.': 'S.Res.',
-            'SJRES': 'S.J.Res.', 'SCONRES': 'S.Con.Res.'
-        };
-        return map[t] || null;
-    };
-    // Try space-separated DomeWatch format: "H R 8464", "H 8464", "S 1003", "H Res 100"
-    // then fall back to standard dotted notation: "H.R. 8464", "H.Res. 100"
-    const qm = question.match(/(?:^|\s[-–]\s)(H\.?\s*R\.?|H\.?\s*Res\.?|H\.?\s*J\.?\s*Res\.?|H\.?\s*Con\.?\s*Res\.?|H|S\.?(?:\s*(?:J\.?\s*)?(?:Con\.?\s*)?Res\.?)?)\s+(\d+)/i)
-            || question.match(/\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?)\s*(\d+)/i);
-    if (!qm) return;
-
-    const type = normalizeBillType(qm[1]);
-    if (!type) return;
-    const billId = `${type} ${qm[2]}`;
+    // Procedural motions are not passage votes, and the roll-call question spells
+    // ids "H RES 1499" / "H 8464" while the schedule spells them "H. Res. 1499" —
+    // both rules live in lib/bill-id.js.
+    const billNorm = BillId.billIdFromRollCallQuestion(question);
+    if (!billNorm) return;
+    const billId = BillId.parseBillId(question, { anchored: true }).display;
 
     // Look for the bill across all three billsData arrays
     const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
     let found = false;
     for (const key of allArrays) {
         const arr = billsData[key] || [];
-        const bill = arr.find(b => b.id === billId);
+        const bill = arr.find(b => BillId.normalizeBillId(b.id) === billNorm);
         if (bill) {
             // Determine pass/fail: suspension requires 2/3 of votes cast; regular = simple majority
             const isSuspension = /suspend/i.test(question);
@@ -2496,7 +2452,9 @@ let casualtyMap = {};
 
 // Normalize a bill ID to match the rules.house.gov slug format, e.g. "H.R. 1041" -> "HR1041"
 function normalizeBillIdForRules(billId) {
-    return billId.toUpperCase().replace(/[.\s]/g, '');
+    // One rule, shared with worker.js — see lib/bill-id.js. Kept as a wrapper
+    // because this name is used in ~30 places here.
+    return BillId.normalizeBillId(billId);
 }
 
 // Extract a normalized bill ID from arbitrary text (question, legisNum, etc.).
