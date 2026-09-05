@@ -2549,6 +2549,7 @@ const ASK_QUESTIONS = {
   'bills':        'What is on the floor this week?',
   'last-vote':    'How did the last vote go?',
   'timer':        'How long is left on the vote, and who has not voted?',
+  'votes':        'List this week\'s measures with congress.gov links.',
 };
 
 // House business runs on Eastern time; every date phrase below is ET.
@@ -2866,6 +2867,174 @@ async function answerBills(request, env) {
   };
 }
 
+// Congress.gov slugs differ from the short type codes used elsewhere.
+const CONGRESS_GOV_SLUG = {
+  hr: 'house-bill', s: 'senate-bill',
+  hres: 'house-resolution', sres: 'senate-resolution',
+  hjres: 'house-joint-resolution', sjres: 'senate-joint-resolution',
+  hconres: 'house-concurrent-resolution', sconres: 'senate-concurrent-resolution',
+};
+function billIdToCongressGovUrl(billId) {
+  const parsed = billIdToCongressType(billId);
+  const slug = parsed && CONGRESS_GOV_SLUG[parsed.type];
+  if (!slug) return null;
+  return `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/${slug}/${parsed.number}`;
+}
+
+// The schedule feed only knows what the Clerk's proceedings text says, so a
+// measure whose result arrived as a roll call sits on whatever intermediate
+// status it last had ("Recorded vote requested - postponed") even though it
+// passed. The website resolves this client-side in applyRollLogToBills(); these
+// endpoints have to do the same or a Shortcut will contradict the site.
+//
+// Comparison is normalized: the roll-call question spells ids compactly
+// ("H.Res. 1499") while the schedule spells them "H. Res. 1499" — the exact
+// mismatch that made every resolution miss on the site.
+async function applyRollLogToBillList(env, items) {
+  let entries = [];
+  try {
+    const r = await handleRollLogGet(env);
+    if (r.ok) {
+      const d = await r.json();
+      entries = Array.isArray(d) ? d : (d.rollLog || d.entries || []);
+    }
+  } catch { /* roll log is a bonus; the schedule status still stands */ }
+  if (!entries.length) return items;
+
+  const norm = v => String(v || '').toUpperCase().replace(/[.\s]/g, '');
+  const PROCEDURAL = /motion to (commit|recommit|table)|previous question|ordering the previous/i;
+  const byBill = new Map();
+  for (const e of entries) {
+    const q = e.question || '';
+    if (PROCEDURAL.test(q) || /\bamendment\b/i.test(q)) continue;
+    const m = q.match(/^\s*(H\s*J\s*RES|H\s*CON\s*RES|H\s*RES|H\s*R|S\s*J\s*RES|S\s*CON\s*RES|S\s*RES|S)\s+(\d+)/i);
+    if (!m) continue;
+    const key = norm(`${m[1]}${m[2]}`);
+    const yeas = Number(e.totals?.yeas || 0), nays = Number(e.totals?.nays || 0);
+    if (!(yeas + nays)) continue;
+    const required = /suspend/i.test(q) ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
+    byBill.set(key, { passed: yeas >= required, yeas, nays, roll: e.roll });
+  }
+
+  for (const it of items) {
+    if (it.status === 'passed' || it.status === 'failed') continue;
+    const hit = byBill.get(norm(it.id));
+    if (!hit) continue;
+    it.status = hit.passed ? 'passed' : 'failed';
+    it.action = `${hit.passed ? 'Passed' : 'Failed'} (Roll Call ${hit.roll}): ${hit.yeas}-${hit.nays}`;
+    it.name = `${it.id} — ${it.action}`;
+  }
+  return items;
+}
+
+// A list a Shortcut can put straight into "Choose from List", where picking a row
+// yields a congress.gov URL to open. Plain text stays readable for humans; the
+// JSON form is the one Shortcuts actually consumes.
+async function answerVotes(env) {
+  const r = await handleBills(new Request('https://internal/api/bills'), env);
+  if (!r.ok) return { answer: 'I could not reach this week\'s floor schedule just now.', items: [] };
+  const d = await r.json();
+  const groups = [
+    ['under a rule', d.ruleBills || []],
+    ['under suspension', d.suspensionBills || []],
+    ['may be considered', d.mayBeConsideredBills || []],
+  ];
+  const items = [];
+  for (const [group, bills] of groups) {
+    for (const b of bills) {
+      // Unnumbered placeholders ("H. Res. ___ (H. Rept. 119-693)") have no
+      // congress.gov page until the resolution is numbered on the floor.
+      const url = billIdToCongressGovUrl(b.id);
+      items.push({
+        id: b.id,
+        title: b.title || '',
+        group,
+        status: b.status || 'scheduled',
+        action: b.latestAction || '',
+        // What Shortcuts shows in the list, and what it opens.
+        name: `${b.id} — ${b.latestAction || 'Scheduled'}`,
+        url,
+      });
+    }
+  }
+  if (!items.length) return { answer: 'Nothing is listed on the House floor schedule this week.', items: [] };
+  await applyRollLogToBillList(env, items);
+  const lines = items.map(i => `${i.id} — ${i.action || 'Scheduled'}${i.url ? `\n   ${i.url}` : ''}`);
+  return {
+    answer: `${items.length} measures on the floor this week:\n` + lines.join('\n'),
+    count: items.length,
+    items,
+  };
+}
+
+// Subscribable calendar of House vote days. Answers "show me the next vote day
+// in Calendar" far better than a Shortcut can: subscribe once in Calendar and
+// every scheduled vote day appears and keeps itself up to date.
+async function handleCalendarIcs(request, env) {
+  const cors = corsForRequest(request);
+  const r = await handleVotingDays(env);
+  if (!r.ok) {
+    return new Response('Unable to build calendar', { status: 502, headers: { ...cors, 'Content-Type': 'text/plain' } });
+  }
+  const { votingDays = [] } = await r.json();
+
+  // Same rule the spoken answer uses: a date is a vote day when a summary names
+  // one without naming a cancellation, decided per date because a date carries
+  // several entries (a fly-in and a vote day share September 14).
+  const byDate = new Map();
+  for (const d of votingDays) {
+    if (!byDate.has(d.date)) byDate.set(d.date, []);
+    byDate.get(d.date).push(d.summary || '');
+  }
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const compact = iso => iso.replace(/-/g, '');
+  const dayAfter = iso => {
+    const [y, m, dd] = iso.split('-').map(Number);
+    const n = new Date(Date.UTC(y, m - 1, dd + 1));
+    return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, '0')}${String(n.getUTCDate()).padStart(2, '0')}`;
+  };
+  const esc = t => String(t).replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+
+  const events = [];
+  for (const [date, summaries] of [...byDate.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1)) {
+    if (!summaries.some(x => /vote day/i.test(x) && !/cancel/i.test(x))) continue;
+    const added = summaries.some(x => /added vote day/i.test(x));
+    const extras = summaries.filter(x => !/vote day/i.test(x)).map(x => x.replace(/^[^\w]+/, '').trim()).filter(Boolean);
+    events.push([
+      'BEGIN:VEVENT',
+      `UID:vote-day-${date}@house-floor.evanhollander.org`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${compact(date)}`,
+      `DTEND;VALUE=DATE:${dayAfter(date)}`,
+      `SUMMARY:${esc(added ? 'House Vote Day (added)' : 'House Vote Day')}`,
+      extras.length ? `DESCRIPTION:${esc(extras.join('; '))}` : null,
+      'TRANSP:TRANSPARENT',
+      'END:VEVENT',
+    ].filter(Boolean).join('\r\n'));
+  }
+
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0',
+    'PRODID:-//house-floor.evanhollander.org//House Vote Days//EN',
+    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:House Vote Days',
+    'X-WR-CALDESC:Days the U.S. House of Representatives is scheduled to vote',
+    // Calendar clients poll subscriptions on their own schedule; both spellings
+    // are needed because Apple honours X-PUBLISHED-TTL and others REFRESH-INTERVAL.
+    'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H',
+    ...events, 'END:VCALENDAR', '',
+  ].join('\r\n');
+
+  return new Response(ics, {
+    headers: {
+      ...cors,
+      'Content-Type': 'text/calendar; charset=utf-8',
+      'Content-Disposition': 'inline; filename="house-vote-days.ics"',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+}
+
 async function handleAsk(request, env) {
   const url = new URL(request.url);
   // The API is mounted under /house-floor in production, so the raw pathname is
@@ -2906,6 +3075,7 @@ async function handleAsk(request, env) {
       case 'next-votes':   return send(await answerNextVotes(env));
       case 'bills':        return send(await answerBills(request, env));
       case 'timer':        return send(await answerTimer(env));
+      case 'votes':        return send(await answerVotes(env));
       default:
         return send({ answer: `I do not know how to answer "${q}". Try /api/ask for the list.` }, 404);
     }
@@ -3650,6 +3820,8 @@ async function handleRequest(request, env) {
     return await handleWhipNotices(env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
+  } else if ((path === '/api/calendar.ics' || path === '/api/calendar') && request.method === 'GET') {
+    return await handleCalendarIcs(request, env);
   } else if (path.startsWith('/api/ask') && request.method === 'GET') {
     return await handleAsk(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
