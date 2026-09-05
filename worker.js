@@ -2979,17 +2979,39 @@ async function handleAsk(request, env) {
     .replace(/^\/api\/ask\/?/, '')
     .replace(/\/+$/, '');
   const cors = corsForRequest(request);
-  const asJson = url.searchParams.get('format') === 'json';
+  const format = url.searchParams.get('format') || '';
+  const asJson = format === 'json';
+  // Shortcuts' "Choose from List" renders every dictionary row as the literal
+  // word "Dictionary" — it can only label rows it is given as plain strings.
+  // format=map therefore returns a FLAT object of "label" -> "url", which pairs
+  // with Get Dictionary Value's "All Keys": choose from the keys (real labels),
+  // then look the chosen key back up to get the URL.
+  const asMap = format === 'map' || format === 'shortcuts';
 
   const send = (result, status = 200) => {
-    const body = asJson
-      ? JSON.stringify({ question: q || 'index', ...result }, null, 1)
-      : result.answer;
-    return new Response(body + (asJson ? '\n' : ''), {
+    let body, json = asJson;
+    if (asMap) {
+      // Later duplicates would silently overwrite earlier ones, so a repeated
+      // label gets its id appended rather than vanishing from the list.
+      const map = {};
+      for (const it of result.items || []) {
+        if (!it.url) continue;                       // nothing to open
+        let label = it.name || it.id;
+        if (map[label]) label = `${label} (${it.id})`;
+        map[label] = it.url;
+      }
+      body = JSON.stringify(map, null, 1);
+      json = true;
+    } else if (asJson) {
+      body = JSON.stringify({ question: q || 'index', ...result }, null, 1);
+    } else {
+      body = result.answer;
+    }
+    return new Response(body + (json ? '\n' : ''), {
       status,
       headers: {
         ...cors,
-        'Content-Type': asJson ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8',
+        'Content-Type': json ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8',
         // Short cache: a Shortcut asked twice in a minute should not re-hit upstream,
         // but a live vote tally must not go stale either.
         'Cache-Control': 'public, max-age=20',
