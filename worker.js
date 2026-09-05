@@ -2615,13 +2615,44 @@ function isVotingNow(floor) {
   return v.includes('vote') || v.includes('voting') || t.includes('voting');
 }
 
-async function askFloor(env) {
+// ?demo=… returns a synthetic live vote so a Shortcut can be built and heard
+// without waiting for the House to be in session. Two shapes, because the timer
+// answer takes a different branch once the clock passes zero and both are worth
+// hearing: demo=1 mid-vote, demo=overtime for a vote held open.
+function demoFloor(kind) {
+  const overtime = kind === 'overtime' || kind === '2';
+  const secs = overtime ? 0 : 214;
+  return {
+    now: { text: 'Voting in progress', value: 'vote' },
+    roll_call: {
+      number: '296',
+      question: 'H R 1501 - On Passage',
+      bill: { id: '1501', number: '1501', title: 'Protecting Domestic Mining Act of 2025' },
+    },
+    // Backdate the timestamp so the overtime branch computes a real overrun.
+    timer: {
+      seconds_remaining: secs,
+      timestamp: new Date(Date.now() - (overtime ? 125000 : 0)).toISOString(),
+      value: overtime ? '0:00' : '3:34',
+    },
+    votes: { counts: { totals: {
+      yeas: overtime ? '214' : '201',
+      nays: overtime ? '211' : '180',
+      present: '0',
+      not_voting: overtime ? '8' : '52',
+    } } },
+    _demo: true,
+  };
+}
+
+async function askFloor(env, demo) {
+  if (demo) return demoFloor(demo);
   const r = await handleDomeWatchFloor(env);
   return r.ok ? await r.json() : null;
 }
 
-async function answerStatus(env) {
-  const floor = await askFloor(env);
+async function answerStatus(env, demo) {
+  const floor = await askFloor(env, demo);
   if (!floor?.now) return { answer: 'I could not reach the House floor feed just now.' };
   const text = String(floor.now.text || '').trim();
   const answer = isVotingNow(floor)
@@ -2633,11 +2664,11 @@ async function answerStatus(env) {
   return { answer, status: text, voting: isVotingNow(floor) };
 }
 
-async function answerCurrentVote(env) {
-  const floor = await askFloor(env);
+async function answerCurrentVote(env, demo) {
+  const floor = await askFloor(env, demo);
   if (!floor) return { answer: 'I could not reach the House floor feed just now.' };
   if (!isVotingNow(floor)) {
-    const s = await answerStatus(env);
+    const s = await answerStatus(env, demo);
     return { answer: `No vote is in progress. ${s.answer}`, voting: false };
   }
   const rc = floor.roll_call || {};
@@ -2656,8 +2687,8 @@ async function answerCurrentVote(env) {
   };
 }
 
-async function answerLastVote(env) {
-  const floor = await askFloor(env);
+async function answerLastVote(env, demo) {
+  const floor = await askFloor(env, demo);
   const rc = floor?.roll_call;
   if (!rc?.number) return { answer: 'I do not have a recent roll call vote on record.' };
   const t = floor.votes?.counts?.totals || {};
@@ -2719,9 +2750,9 @@ function whipVoteTiming(items) {
   return null;
 }
 
-async function answerNextVotes(env) {
+async function answerNextVotes(env, demo) {
   const [floor, vdResp, whipResp] = await Promise.all([
-    askFloor(env), handleVotingDays(env), handleWhipFloorUpdates(env).catch(() => null),
+    askFloor(env, demo), handleVotingDays(env), handleWhipFloorUpdates(env).catch(() => null),
   ]);
   if (isVotingNow(floor)) {
     return { answer: 'The House is voting right now.', voting: true };
@@ -2786,11 +2817,11 @@ async function answerNextVotes(env) {
   return { answer, date, daysAway: daysBetween(today, date), finishedToday: doneForToday };
 }
 
-async function answerTimer(env) {
-  const floor = await askFloor(env);
+async function answerTimer(env, demo) {
+  const floor = await askFloor(env, demo);
   if (!floor) return { answer: 'I could not reach the House floor feed just now.' };
   if (!isVotingNow(floor)) {
-    const s = await answerStatus(env);
+    const s = await answerStatus(env, demo);
     return { answer: `No vote is in progress. ${s.answer}`, voting: false };
   }
 
@@ -3016,6 +3047,9 @@ async function handleAsk(request, env) {
   // with Get Dictionary Value's "All Keys": choose from the keys (real labels),
   // then look the chosen key back up to get the URL.
   const asMap = format === 'map' || format === 'shortcuts';
+  // Only an explicit ?demo= produces synthetic data, and the response is marked
+  // with an X-Demo header so a Shortcut wired to it by accident is discoverable.
+  const demo = url.searchParams.get('demo') || '';
 
   const send = (result, status = 200) => {
     let body, json = asJson;
@@ -3032,7 +3066,7 @@ async function handleAsk(request, env) {
       body = JSON.stringify(map, null, 1);
       json = true;
     } else if (asJson) {
-      body = JSON.stringify({ question: q || 'index', ...result }, null, 1);
+      body = JSON.stringify({ question: q || 'index', ...(demo ? { demo: true } : {}), ...result }, null, 1);
     } else {
       body = result.answer;
     }
@@ -3041,9 +3075,10 @@ async function handleAsk(request, env) {
       headers: {
         ...cors,
         'Content-Type': json ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8',
+        ...(demo ? { 'X-Demo': '1' } : {}),
         // Short cache: a Shortcut asked twice in a minute should not re-hit upstream,
         // but a live vote tally must not go stale either.
-        'Cache-Control': 'public, max-age=20',
+        'Cache-Control': demo ? 'no-store' : 'public, max-age=20',
       },
     });
   };
@@ -3053,13 +3088,16 @@ async function handleAsk(request, env) {
       case '':             return send({ answer:
         'Ask the House floor a question. Available:\n' +
         Object.entries(ASK_QUESTIONS).map(([k, v]) => `  /api/ask/${k}  — ${v}`).join('\n') +
-        '\nAdd ?format=json for structured output.', questions: ASK_QUESTIONS });
-      case 'status':       return send(await answerStatus(env));
-      case 'current-vote': return send(await answerCurrentVote(env));
-      case 'last-vote':    return send(await answerLastVote(env));
-      case 'next-votes':   return send(await answerNextVotes(env));
+        '\nAdd ?format=json for structured output, or ?format=map on /votes for a\n' +
+        'label-to-URL object suited to Shortcuts\' Choose from List.\n' +
+        'Add ?demo=1 (or ?demo=overtime) to hear a synthetic live vote when the\n' +
+        'House is not sitting.', questions: ASK_QUESTIONS });
+      case 'status':       return send(await answerStatus(env, demo));
+      case 'current-vote': return send(await answerCurrentVote(env, demo));
+      case 'last-vote':    return send(await answerLastVote(env, demo));
+      case 'next-votes':   return send(await answerNextVotes(env, demo));
       case 'bills':        return send(await answerBills(request, env));
-      case 'timer':        return send(await answerTimer(env));
+      case 'timer':        return send(await answerTimer(env, demo));
       case 'votes':        return send(await answerVotes(env));
       default:
         return send({ answer: `I do not know how to answer "${q}". Try /api/ask for the list.` }, 404);
