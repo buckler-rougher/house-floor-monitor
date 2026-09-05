@@ -2969,74 +2969,6 @@ async function answerVotes(env) {
   };
 }
 
-// Subscribable calendar of House vote days. Answers "show me the next vote day
-// in Calendar" far better than a Shortcut can: subscribe once in Calendar and
-// every scheduled vote day appears and keeps itself up to date.
-async function handleCalendarIcs(request, env) {
-  const cors = corsForRequest(request);
-  const r = await handleVotingDays(env);
-  if (!r.ok) {
-    return new Response('Unable to build calendar', { status: 502, headers: { ...cors, 'Content-Type': 'text/plain' } });
-  }
-  const { votingDays = [] } = await r.json();
-
-  // Same rule the spoken answer uses: a date is a vote day when a summary names
-  // one without naming a cancellation, decided per date because a date carries
-  // several entries (a fly-in and a vote day share September 14).
-  const byDate = new Map();
-  for (const d of votingDays) {
-    if (!byDate.has(d.date)) byDate.set(d.date, []);
-    byDate.get(d.date).push(d.summary || '');
-  }
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  const compact = iso => iso.replace(/-/g, '');
-  const dayAfter = iso => {
-    const [y, m, dd] = iso.split('-').map(Number);
-    const n = new Date(Date.UTC(y, m - 1, dd + 1));
-    return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, '0')}${String(n.getUTCDate()).padStart(2, '0')}`;
-  };
-  const esc = t => String(t).replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
-
-  const events = [];
-  for (const [date, summaries] of [...byDate.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1)) {
-    if (!summaries.some(x => /vote day/i.test(x) && !/cancel/i.test(x))) continue;
-    const added = summaries.some(x => /added vote day/i.test(x));
-    const extras = summaries.filter(x => !/vote day/i.test(x)).map(x => x.replace(/^[^\w]+/, '').trim()).filter(Boolean);
-    events.push([
-      'BEGIN:VEVENT',
-      `UID:vote-day-${date}@house-floor.evanhollander.org`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${compact(date)}`,
-      `DTEND;VALUE=DATE:${dayAfter(date)}`,
-      `SUMMARY:${esc(added ? 'House Vote Day (added)' : 'House Vote Day')}`,
-      extras.length ? `DESCRIPTION:${esc(extras.join('; '))}` : null,
-      'TRANSP:TRANSPARENT',
-      'END:VEVENT',
-    ].filter(Boolean).join('\r\n'));
-  }
-
-  const ics = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0',
-    'PRODID:-//house-floor.evanhollander.org//House Vote Days//EN',
-    'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-    'X-WR-CALNAME:House Vote Days',
-    'X-WR-CALDESC:Days the U.S. House of Representatives is scheduled to vote',
-    // Calendar clients poll subscriptions on their own schedule; both spellings
-    // are needed because Apple honours X-PUBLISHED-TTL and others REFRESH-INTERVAL.
-    'REFRESH-INTERVAL;VALUE=DURATION:PT12H', 'X-PUBLISHED-TTL:PT12H',
-    ...events, 'END:VCALENDAR', '',
-  ].join('\r\n');
-
-  return new Response(ics, {
-    headers: {
-      ...cors,
-      'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'inline; filename="house-vote-days.ics"',
-      'Cache-Control': 'public, max-age=3600',
-    },
-  });
-}
-
 async function handleAsk(request, env) {
   const url = new URL(request.url);
   // The API is mounted under /house-floor in production, so the raw pathname is
@@ -3822,8 +3754,6 @@ async function handleRequest(request, env) {
     return await handleWhipNotices(env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
-  } else if ((path === '/api/calendar.ics' || path === '/api/calendar') && request.method === 'GET') {
-    return await handleCalendarIcs(request, env);
   } else if (path.startsWith('/api/ask') && request.method === 'GET') {
     return await handleAsk(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
