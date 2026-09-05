@@ -2924,7 +2924,8 @@ async function applyRollLogToBillList(env, items) {
     if (!hit) continue;
     it.status = hit.passed ? 'passed' : 'failed';
     it.action = `${hit.passed ? 'Passed' : 'Failed'} (Roll Call ${hit.roll}): ${hit.yeas}-${hit.nays}`;
-    it.name = `${it.id} — ${it.action}`;
+    // _head carries "id · short title" so the corrected row keeps its title.
+    it.name = `${it._head || it.id} — ${it.action}`;
   }
   return items;
 }
@@ -2941,26 +2942,54 @@ async function answerVotes(env) {
     ['under suspension', d.suspensionBills || []],
     ['may be considered', d.mayBeConsideredBills || []],
   ];
+  // The schedule often gives a long formal title with the real short title in
+  // brackets — "To amend the Consolidated Appropriations Act, 2023 … [Northeast
+  // Lobsterman Protection Act of 2026]". The bracketed name is the one worth
+  // showing in a list.
+  const shortTitle = (raw) => {
+    let t = String(raw || '').replace(/\s+/g, ' ').trim();
+    const bracketed = t.match(/\[([^\]]{4,})\]\s*$/);
+    if (bracketed) t = bracketed[1].trim();
+    t = t.replace(/,?\s*as amended$/i, '');
+    if (t.length > 52) t = t.slice(0, 51).replace(/[\s,;:.\u2014-]+$/, '') + '…';
+    return t;
+  };
+
+  // Pending business first: a measure still awaiting a vote is the reason to
+  // open this list at all, and finished ones are reference.
+  const rank = (status) => status === 'roll-call' ? 0 : status === 'scheduled' ? 1 : 2;
+
   const items = [];
   for (const [group, bills] of groups) {
     for (const b of bills) {
       // Unnumbered placeholders ("H. Res. ___ (H. Rept. 119-693)") have no
       // congress.gov page until the resolution is numbered on the floor.
       const url = billIdToCongressGovUrl(b.id);
+      const status = b.status || 'scheduled';
+      const action = b.latestAction || 'Scheduled';
+      const title = shortTitle(b.title);
       items.push({
         id: b.id,
         title: b.title || '',
         group,
-        status: b.status || 'scheduled',
+        status,
         action: b.latestAction || '',
         // What Shortcuts shows in the list, and what it opens.
-        name: `${b.id} — ${b.latestAction || 'Scheduled'}`,
+        _head: `${b.id}${title ? ` · ${title}` : ''}`,
+        name: `${b.id}${title ? ` · ${title}` : ''} — ${action}`,
         url,
+        _rank: rank(status),
       });
     }
   }
   if (!items.length) return { answer: 'Nothing is listed on the House floor schedule this week.', items: [] };
   await applyRollLogToBillList(env, items);
+  // Rank AFTER the roll log lands: it resolves measures that were still shown as
+  // pending, and those belong at the bottom, not the top.
+  for (const it of items) it._rank = rank(it.status);
+  // Stable sort, so schedule order survives inside each band.
+  items.sort((a, b) => a._rank - b._rank);
+  for (const it of items) { delete it._rank; delete it._head; }
   const lines = items.map(i => `${i.id} — ${i.action || 'Scheduled'}${i.url ? `\n   ${i.url}` : ''}`);
   return {
     answer: `${items.length} measures on the floor this week:\n` + lines.join('\n'),
