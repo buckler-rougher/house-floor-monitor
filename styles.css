@@ -6618,12 +6618,14 @@ font-family: var(--font-mono);
    specificity of its most specific argument, so body:is(.x-mode) .y is still
    (0,2,1), the same as the body.x-mode .y rules it replaces.
 
-   The !important is load-bearing and stays: app.js sets element.style.display
-   directly in ~120 places, and an inline style beats any class rule without it.
-   Removing it is Phase 2's job, once JS stops owning visibility.
+   No !important needed. app.js sets element.style.display in ~120 places, but
+   never on any of these six — checked each one — so there is no inline style to
+   beat. The only other rules touching their display are .vote-header and
+   .vote-display's own `display:flex` at (0,1,0), which this outranks.
 
-   body.all-mode later in this file re-shows all six (same specificity, later
-   wins) for the lockMode('all') debug view. */
+   body.all-mode later in this file re-shows all six for the lockMode('all')
+   debug view: equal specificity, later in the file, so it wins on source order
+   without !important either. */
 body:is(
     .admin-oath-mode,
     .cert-election-mode,
@@ -6654,7 +6656,7 @@ body:is(
     .quorum-panel,
     .floor-grid-panel
 ) {
-    display: none !important;
+    display: none;
 }
 
 
@@ -9729,7 +9731,7 @@ body.all-mode .vote-header,
 body.all-mode .threshold-panel,
 body.all-mode .quorum-panel,
 body.all-mode .floor-grid-panel {
-    display: block !important;
+    display: block;
 }
 
 /* Respect reduced-motion preferences */
