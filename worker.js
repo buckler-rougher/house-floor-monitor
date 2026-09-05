@@ -2534,6 +2534,240 @@ async function writeRollLogEntry(entry, env) {
   } catch(e) { console.error('[roll-log] write failed:', e?.message || e); }
 }
 
+// ─── Plain-language answers for iOS Shortcuts ────────────────────────────────
+// GET /api/ask/<question> returns ONE speakable sentence as text/plain, so a
+// Shortcut can pipe "Get Contents of URL" straight into "Speak Text" with no
+// parsing. Add ?format=json for the same answer plus the facts behind it.
+//
+// Deliberately plain text, not JSON, by default: Shortcuts' JSON handling is
+// fiddly, and the whole point is to ask Siri a question and hear an answer.
+
+const ASK_QUESTIONS = {
+  'status':       'Is the House in session right now?',
+  'current-vote': 'What is the House voting on?',
+  'next-votes':   'When are the next votes?',
+  'bills':        'What is on the floor this week?',
+  'last-vote':    'How did the last vote go?',
+};
+
+// House business runs on Eastern time; every date phrase below is ET.
+function etNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+function etDateStr(d = etNow()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function speakDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const day = dt.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  const month = dt.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' });
+  return `${day}, ${month} ${d}`;
+}
+function daysBetween(aIso, bIso) {
+  return Math.round((Date.parse(bIso + 'T00:00:00Z') - Date.parse(aIso + 'T00:00:00Z')) / 86400000);
+}
+function relativeDay(fromIso, toIso) {
+  const n = daysBetween(fromIso, toIso);
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  return `in ${n} days`;
+}
+// "3 minutes 34 seconds" reads better than "3:34" when spoken aloud.
+function speakDuration(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s / 60), rem = s % 60;
+  const parts = [];
+  if (m) parts.push(`${m} minute${m === 1 ? '' : 's'}`);
+  if (rem) parts.push(`${rem} second${rem === 1 ? '' : 's'}`);
+  return parts.join(' ') || 'less than a second';
+}
+// DomeWatch writes bill numbers unpunctuated ("H R 4795", "H RES 1499"). Restore
+// the conventional punctuation so the sentence reads correctly on screen; Siri
+// says the letters either way.
+function speakBillId(raw) {
+  if (!raw) return '';
+  return String(raw).trim()
+    .replace(/^H\s+J\s+RES\s+/i, 'H.J. Res. ')
+    .replace(/^H\s+CON\s+RES\s+/i, 'H. Con. Res. ')
+    .replace(/^H\s+RES\s+/i, 'H. Res. ')
+    .replace(/^H\s+R\s+/i, 'H.R. ')
+    .replace(/^S\s+J\s+RES\s+/i, 'S.J. Res. ')
+    .replace(/^S\s+RES\s+/i, 'S. Res. ')
+    .replace(/\s+/g, ' ');
+}
+
+// DomeWatch questions read "H R 4795 - On Passage": a measure and a motion.
+function splitQuestion(question) {
+  const m = String(question || '').match(/^(.*?)\s+-\s+(.*)$/);
+  return m ? { measure: speakBillId(m[1]), motion: m[2].trim() }
+           : { measure: speakBillId(question), motion: '' };
+}
+
+// DomeWatch leaves roll_call populated with the LAST roll indefinitely, so its
+// presence never means "a vote is happening" — only the floor status does.
+// Mirrors getActiveRollNumber() in app.js.
+function isVotingNow(floor) {
+  const v = (floor?.now?.value || '').toLowerCase();
+  const t = (floor?.now?.text || '').toLowerCase();
+  return v.includes('vote') || v.includes('voting') || t.includes('voting');
+}
+
+async function askFloor(env) {
+  const r = await handleDomeWatchFloor(env);
+  return r.ok ? await r.json() : null;
+}
+
+async function answerStatus(env) {
+  const floor = await askFloor(env);
+  if (!floor?.now) return { answer: 'I could not reach the House floor feed just now.' };
+  const text = String(floor.now.text || '').trim();
+  const answer = isVotingNow(floor)
+    ? 'The House is voting right now.'
+    : /adjourn/i.test(text) ? 'The House is adjourned.'
+    : /recess/i.test(text)  ? 'The House is in recess.'
+    : text ? `The House floor status is: ${text}.`
+           : 'The House floor status is unavailable.';
+  return { answer, status: text, voting: isVotingNow(floor) };
+}
+
+async function answerCurrentVote(env) {
+  const floor = await askFloor(env);
+  if (!floor) return { answer: 'I could not reach the House floor feed just now.' };
+  if (!isVotingNow(floor)) {
+    const s = await answerStatus(env);
+    return { answer: `No vote is in progress. ${s.answer}`, voting: false };
+  }
+  const rc = floor.roll_call || {};
+  const { measure, motion } = splitQuestion(rc.question);
+  const title = rc.bill?.title ? `, ${rc.bill.title}` : '';
+  const what = measure ? `${measure}${title}` : 'a measure';
+  const on = motion ? ` — ${motion.toLowerCase()}` : '';
+  const t = floor.votes?.counts?.totals || {};
+  const tally = (t.yeas || t.nays) ? ` The tally is ${t.yeas || 0} yea to ${t.nays || 0} nay.` : '';
+  const secs = Number(floor.timer?.seconds_remaining || 0);
+  const left = secs > 0 ? ` ${speakDuration(secs)} left.` : '';
+  return {
+    answer: `The House is voting on ${what}${on}.${tally}${left}`.replace(/\s+/g, ' ').trim(),
+    voting: true, roll: rc.number || null, question: rc.question || null,
+    yeas: t.yeas || null, nays: t.nays || null, secondsRemaining: secs || null,
+  };
+}
+
+async function answerLastVote(env) {
+  const floor = await askFloor(env);
+  const rc = floor?.roll_call;
+  if (!rc?.number) return { answer: 'I do not have a recent roll call vote on record.' };
+  const t = floor.votes?.counts?.totals || {};
+  const yeas = Number(t.yeas || 0), nays = Number(t.nays || 0);
+  const outcome = (yeas || nays)
+    ? ` It ${yeas > nays ? 'passed' : 'failed'}, ${yeas} to ${nays}.` : '';
+  const { measure, motion } = splitQuestion(rc.question);
+  const title = rc.bill?.title ? `, ${rc.bill.title}` : '';
+  const on = motion ? ` — ${motion.toLowerCase()}` : '';
+  const live = isVotingNow(floor) ? ' That vote is still open.' : '';
+  return {
+    answer: `The most recent roll call was number ${rc.number}, on ${measure || 'a measure'}${title}${on}.${outcome}${live}`.replace(/\s+/g, ' ').trim(),
+    roll: rc.number, yeas: yeas || null, nays: nays || null,
+  };
+}
+
+async function answerNextVotes(env) {
+  const [floor, vdResp] = await Promise.all([askFloor(env), handleVotingDays(env)]);
+  if (isVotingNow(floor)) {
+    return { answer: 'The House is voting right now.', voting: true };
+  }
+  if (!vdResp.ok) return { answer: 'I could not reach the House calendar just now.' };
+  const { votingDays = [] } = await vdResp.json();
+
+  // A date can carry several entries (a fly-in and a vote day share a date), and
+  // a scheduled vote day can later be cancelled — so decide per date, and let a
+  // cancellation on that date veto it.
+  const byDate = new Map();
+  for (const d of votingDays) {
+    if (!byDate.has(d.date)) byDate.set(d.date, []);
+    byDate.get(d.date).push(d.summary || '');
+  }
+  const today = etDateStr();
+  // "Canceled Vote Day" contains both words, so a summary naming a vote day
+  // without naming a cancellation is the whole test.
+  const isVoteDay = (summaries) =>
+    summaries.some(s => /vote day/i.test(s) && !/cancel/i.test(s));
+
+  const upcoming = [...byDate.entries()]
+    .filter(([date]) => date >= today)
+    .sort((a, b) => a[0] < b[0] ? -1 : 1)
+    .find(([, summaries]) => isVoteDay(summaries));
+
+  if (!upcoming) return { answer: 'I do not see any scheduled vote days on the House calendar ahead.' };
+  const [date] = upcoming;
+  const when = relativeDay(today, date);
+  const answer = date === today
+    ? `Votes are scheduled today, ${speakDate(date)}.`
+    : `The next scheduled votes are ${when}, on ${speakDate(date)}.`;
+  return { answer, date, daysAway: daysBetween(today, date) };
+}
+
+async function answerBills(request, env) {
+  const r = await handleBills(new Request('https://internal/api/bills'), env);
+  if (!r.ok) return { answer: 'I could not reach this week\'s floor schedule just now.' };
+  const d = await r.json();
+  const rule = d.ruleBills || [], susp = d.suspensionBills || [], mbc = d.mayBeConsideredBills || [];
+  const all = [...rule, ...susp, ...mbc];
+  if (!all.length) return { answer: 'Nothing is listed on the House floor schedule this week.' };
+  const passed = all.filter(b => b.status === 'passed').length;
+  const n = (c, s, p) => `${c} ${c === 1 ? s : p}`;
+  const parts = [];
+  if (rule.length) parts.push(`${n(rule.length, 'measure', 'measures')} under a rule`);
+  if (susp.length) parts.push(`${n(susp.length, 'measure', 'measures')} under suspension`);
+  if (mbc.length) parts.push(`${n(mbc.length, 'more', 'more')} that may be considered`);
+  return {
+    answer: `This week the House floor has ${parts.join(', ')}. ${passed} of the ${all.length} have passed so far.`,
+    total: all.length, passed, underRule: rule.length, underSuspension: susp.length,
+  };
+}
+
+async function handleAsk(request, env) {
+  const url = new URL(request.url);
+  const q = url.pathname.replace(/^\/api\/ask\/?/, '').replace(/\/+$/, '');
+  const cors = corsForRequest(request);
+  const asJson = url.searchParams.get('format') === 'json';
+
+  const send = (result, status = 200) => {
+    const body = asJson
+      ? JSON.stringify({ question: q || 'index', ...result }, null, 1)
+      : result.answer;
+    return new Response(body + (asJson ? '\n' : ''), {
+      status,
+      headers: {
+        ...cors,
+        'Content-Type': asJson ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8',
+        // Short cache: a Shortcut asked twice in a minute should not re-hit upstream,
+        // but a live vote tally must not go stale either.
+        'Cache-Control': 'public, max-age=20',
+      },
+    });
+  };
+
+  try {
+    switch (q) {
+      case '':             return send({ answer:
+        'Ask the House floor a question. Available:\n' +
+        Object.entries(ASK_QUESTIONS).map(([k, v]) => `  /api/ask/${k}  — ${v}`).join('\n') +
+        '\nAdd ?format=json for structured output.', questions: ASK_QUESTIONS });
+      case 'status':       return send(await answerStatus(env));
+      case 'current-vote': return send(await answerCurrentVote(env));
+      case 'last-vote':    return send(await answerLastVote(env));
+      case 'next-votes':   return send(await answerNextVotes(env));
+      case 'bills':        return send(await answerBills(request, env));
+      default:
+        return send({ answer: `I do not know how to answer "${q}". Try /api/ask for the list.` }, 404);
+    }
+  } catch (err) {
+    return send({ answer: 'Something went wrong answering that.', error: String(err && err.message || err) }, 500);
+  }
+}
+
 async function handleDomeWatchFloor(env) {
   // kvTtl=0: skip KV writes entirely. SSE is the real-time channel; REST is a supplement.
   // Each PoP caches independently in memory (10s), avoiding cross-PoP KV write churn.
@@ -3270,6 +3504,8 @@ async function handleRequest(request, env) {
     return await handleWhipNotices(env);
   } else if (path === '/api/amendments' && request.method === 'GET') {
     return await handleAmendments(request, env);
+  } else if (path.startsWith('/api/ask') && request.method === 'GET') {
+    return await handleAsk(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
