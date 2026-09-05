@@ -2729,7 +2729,13 @@ async function answerBills(request, env) {
 
 async function handleAsk(request, env) {
   const url = new URL(request.url);
-  const q = url.pathname.replace(/^\/api\/ask\/?/, '').replace(/\/+$/, '');
+  // The API is mounted under /house-floor in production, so the raw pathname is
+  // /house-floor/api/ask/<q>. handleRequest strips that prefix before routing;
+  // strip it here too or every question looks unknown once deployed.
+  const q = url.pathname
+    .replace(/^\/house-floor/, '')
+    .replace(/^\/api\/ask\/?/, '')
+    .replace(/\/+$/, '');
   const cors = corsForRequest(request);
   const asJson = url.searchParams.get('format') === 'json';
 
