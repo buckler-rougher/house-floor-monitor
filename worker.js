@@ -2705,7 +2705,9 @@ function whipVoteTiming(items) {
     // Carries its own date, so it stays trustworthy however old the notice is.
     let m = body.match(new RegExp(
       String.raw`next votes?\s+(?:are|is)\s+expected\s+at\s+approximately\s+(${TIME})` +
-      String.raw`(?:\s*on\s+(?:[A-Za-z]+day,?\s+)?([A-Za-z]+\s+\d{1,2}),?\s*(\d{4})?)?`, 'i'));
+      // Capture the weekday too — "on Monday, September 14" reads better aloud
+      // than "on September 14", and the Whip always writes it.
+      String.raw`(?:\s*on\s+((?:[A-Za-z]+day,?\s+)?[A-Za-z]+\s+\d{1,2}),?\s*(\d{4})?)?`, 'i'));
     if (m) return { time: tidy(m[1]), dateText: m[2] || null, sameDay: !m[2], title: it.title || null };
 
     if (day && day !== today) continue;
