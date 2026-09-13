@@ -1,6 +1,6 @@
 /* Dome Watch - Pentagon Pizza Tracker Theme */
 
-/* Hollvetica Mono (a renamed subset of Fira Code) — self-hosted from cdn.evanhollander.org. One variable file covers
+/* EMH Mono (a renamed subset of Fira Code) — self-hosted from cdn.evanhollander.org. One variable file covers
    300-700, which is every weight this UI puts on mono text (600 on 64 rules,
    700 on 49). font-display: swap so a slow font never blocks the vote tally.
 
@@ -10,22 +10,22 @@
    Windows. The fallbacks below are kept deliberately: if the CDN is unreachable
    the page degrades to exactly how it looked before, not to Courier. */
 @font-face {
-    font-family: 'Hollvetica Mono';
-    src: url('https://cdn.evanhollander.org/fonts/HollveticaMono.woff2') format('woff2-variations'),
-         url('https://cdn.evanhollander.org/fonts/HollveticaMono.woff2') format('woff2');
+    font-family: 'EMH Mono';
+    src: url('https://cdn.evanhollander.org/fonts/EMHMono.woff2') format('woff2-variations'),
+         url('https://cdn.evanhollander.org/fonts/EMHMono.woff2') format('woff2');
     font-weight: 300 700;
     font-style: normal;
     font-display: swap;
 }
 
-/* Hollvetica Sans (a renamed subset of Inter) — the same house face
+/* EMH Grotesk (a renamed subset of Inter) — the same house face
    house-salaries and pgp use, so the sans half stops being whatever font the
    visitor's OS happens to ship. Both axes preserved, so browsers keep applying
    automatic optical sizing. */
 @font-face {
-    font-family: 'Hollvetica Sans';
-    src: url('https://cdn.evanhollander.org/fonts/HollveticaSans.woff2') format('woff2-variations'),
-         url('https://cdn.evanhollander.org/fonts/HollveticaSans.woff2') format('woff2');
+    font-family: 'EMH Grotesk';
+    src: url('https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2') format('woff2-variations'),
+         url('https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2') format('woff2');
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
@@ -88,8 +88,8 @@
     --track-wide:  0.5px;
     --track-wider: 1px;
 
-    --font-sans: 'Hollvetica Sans', system-ui, sans-serif;
-    --font-mono: 'Hollvetica Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --font-sans: 'EMH Grotesk', system-ui, sans-serif;
+    --font-mono: 'EMH Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     --section-gap: 1.5rem; /* 24px */
 
     /* ── Type scale ───────────────────────────────────────────────────────────
