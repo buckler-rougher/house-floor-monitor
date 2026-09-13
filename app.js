@@ -8516,10 +8516,20 @@ async function fetchTweets(preData = null, userHandle = null) {
             const apiUrl = userHandle
                 ? `https://api.evanhollander.org/house-floor/api/tweets?user=${encodeURIComponent(userHandle)}`
                 : 'https://api.evanhollander.org/house-floor/api/tweets';
-            data = await fetch(apiUrl).then(r => r.json());
+            // Read the response, not just the body: kvCache marks a last-known-good
+            // fallback with X-Stale so we can show the posts AND say they are old.
+            // The worker marks a last-known-good fallback in the body (so the SSE
+            // push carries it too) and in X-Stale for plain REST callers.
+            const resp = await fetch(apiUrl);
+            data = await resp.json().catch(() => ({}));
+            if (resp.headers.get('X-Stale') === '1' && !data.stale) data = { ...data, stale: true };
         }
         if (!data.tweets || !data.tweets.length) {
-            feed.innerHTML = '<div class="tweets-empty">No posts available.</div>';
+            // Distinguish an upstream outage from a genuinely quiet feed. Nitter is
+            // down to a single working instance, so this is a question of when.
+            feed.innerHTML = data.error === 'upstream-unavailable'
+                ? '<div class="tweets-empty">Reporter feed unavailable — the upstream Twitter mirror is not responding.</div>'
+                : '<div class="tweets-empty">No posts available.</div>';
             return;
         }
         const renderTweet = (t, opts = {}) => {
@@ -8644,7 +8654,12 @@ async function fetchTweets(preData = null, userHandle = null) {
                 i += 1;
             }
         }
-        feed.innerHTML = items.join('');
+        // Last-known-good: the posts are real but the upstream mirror is down, so
+        // say so rather than letting hours-old posts read as current.
+        const staleBanner = data.stale
+            ? '<div class="tweets-stale">Upstream mirror unavailable — showing the last posts retrieved.</div>'
+            : '';
+        feed.innerHTML = staleBanner + items.join('');
         applyTweetFilter();
 
         // "↑ N new tweets" banner — shown when new posts arrived while user was scrolled down
