@@ -472,7 +472,13 @@ async function handleTweets(env) {
       } catch (_) { continue; }
     }
     if (!rawXml || !usedInstance) {
-      return new Response(JSON.stringify({ tweets: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      // Non-ok on purpose: a 200 with an empty array is indistinguishable from
+      // "the reporters have not posted", and it would let kvCache overwrite the
+      // last good feed with nothing. Failing here makes kvCache serve the
+      // previous body instead, and tells the client the feed is unavailable.
+      return new Response(
+        JSON.stringify({ tweets: [], error: 'upstream-unavailable', source: 'nitter' }),
+        { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
 
     const getTag = (tag, xml) => {
@@ -527,7 +533,10 @@ async function handleUserTweets(handle) {
     } catch (_) { continue; }
   }
   if (!rawXml || !usedInstance) {
-    return new Response(JSON.stringify({ tweets: [] }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    // See handleTweets — signal the outage rather than reporting an empty feed.
+    return new Response(
+      JSON.stringify({ tweets: [], error: 'upstream-unavailable', source: 'nitter' }),
+      { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
 
   const getTag = (tag, xml) => {
@@ -1238,6 +1247,33 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
         await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
       }
     } catch {}
+    return response;
+  }
+
+  // Origin failed. If KV still holds a previous good body, serve THAT rather than
+  // the failure: for a feed whose upstream can disappear (Nitter is down to one
+  // working instance), yesterday's posts are far more useful than an empty panel,
+  // and an outage must never overwrite good data with nothing. Marked stale so
+  // the client can say so instead of implying the feed is genuinely empty.
+  if (prevBody !== null) {
+    // Mark staleness in the BODY, not only in a header: this same response is
+    // also pushed over SSE by the Durable Object, and an SSE frame carries no
+    // headers — so a header-only flag would let stale posts arrive on the page
+    // looking current. The header stays for plain REST callers.
+    let body = prevBody;
+    try {
+      const parsed = JSON.parse(prevBody);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        body = JSON.stringify({ ...parsed, stale: true, staleAt: new Date().toISOString() });
+      }
+    } catch { /* not an object — serve verbatim */ }
+    return new Response(body, {
+      headers: {
+        ...CORS_HEADERS, 'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60',
+        'X-Stale': '1',
+      },
+    });
   }
   return response;
 }

@@ -9983,6 +9983,19 @@ body.all-mode .floor-grid-panel {
     .suggest-drawer.open { transform: translateY(0); }
 }
 
+
+.tweets-stale {
+    padding: var(--sp-8) var(--sp-12);
+    margin-bottom: var(--sp-8);
+    background: rgba(210, 153, 34, 0.10);
+    border: 1px solid rgba(210, 153, 34, 0.35);
+    border-radius: var(--radius-6);
+    color: var(--accent-amber);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+}
+
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
