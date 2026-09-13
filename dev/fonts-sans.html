@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Sans candidates — House Floor</title>
+<style>
+  @font-face{font-family:'Inter';src:url('https://cdn.evanhollander.org/fonts/InterVF-latin.woff2') format('woff2');font-weight:100 900;font-display:swap}
+  @font-face{font-family:'Public Sans';src:url('https://cdn.evanhollander.org/fonts/PublicSansVF.woff2') format('woff2');font-weight:100 900;font-display:swap}
+  @font-face{font-family:'Source Sans 3';src:url('https://cdn.evanhollander.org/fonts/SourceSans3VF.woff2') format('woff2');font-weight:200 900;font-display:swap}
+  @font-face{font-family:'IBM Plex Sans';src:url('https://cdn.evanhollander.org/fonts/IBMPlexSansVF.woff2') format('woff2');font-weight:100 700;font-display:swap}
+  @font-face{font-family:'Figtree';src:url('https://cdn.evanhollander.org/fonts/FigtreeVF.woff2') format('woff2');font-weight:300 900;font-display:swap}
+  @font-face{font-family:'Geist';src:url('https://cdn.evanhollander.org/fonts/GeistVF.woff2') format('woff2');font-weight:100 900;font-display:swap}
+  @font-face{font-family:'Open Sans';src:url('https://cdn.evanhollander.org/fonts/OpenSansVF.woff2') format('woff2');font-weight:300 800;font-display:swap}
+  @font-face{font-family:'Fira Code';src:url('https://cdn.evanhollander.org/fonts/FiraCodeVF.woff2') format('woff2');font-weight:300 700;font-display:swap}
+
+  :root{--bg:#0d1117;--card:#0f1720;--line:#233044;--text:#e6edf3;--muted:#9aa6b2;--blue:#58a6ff;--green:#3fb950;--amber:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}
+  header{position:sticky;top:0;z-index:5;padding:12px 20px;background:rgba(13,17,23,.95);backdrop-filter:blur(8px);
+         border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  h1{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+  label{color:var(--muted);font-size:12px;display:flex;gap:6px;align-items:center}
+  table.drift{border-collapse:collapse;margin:16px 20px;font-size:12px}
+  table.drift th,table.drift td{border-bottom:1px solid var(--line);padding:6px 12px;text-align:left}
+  table.drift th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+  .good{color:var(--green)}.warn{color:var(--amber)}
+  .grid{display:grid;gap:16px;padding:0 20px 24px;grid-template-columns:repeat(auto-fill,minmax(460px,1fr))}
+  .card{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+  .card h2{margin:0;padding:9px 14px;border-bottom:1px solid var(--line);font-size:12px;text-transform:uppercase;
+           letter-spacing:.5px;display:flex;justify-content:space-between;align-items:baseline}
+  .card h2 .kb{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+  .body{padding:14px}
+  /* mono stays Fira Code everywhere — we are only judging the sans half */
+  .mono{font-family:'Fira Code',monospace}
+  .billid{font-size:13px;font-weight:700}
+  .title{font-size:15px;line-height:1.35;margin:2px 0 6px}
+  .tick{font-size:12px;color:var(--muted)}
+  .tweet{font-size:13px;line-height:1.45;margin:6px 0}
+  .name{font-size:13px;font-weight:600}
+  .small{font-size:11px;color:var(--muted)}
+  hr{border:0;border-top:1px solid var(--line);margin:10px 0}
+</style></head><body>
+<header>
+  <h1>Sans candidates</h1>
+  <label>size <input id="scale" type="range" min="85" max="125" value="100"><span id="sv">100%</span></label>
+  <label><input id="one" type="checkbox"> one column</label>
+  <span class="small">mono is Fira Code throughout — only the sans differs</span>
+</header>
+
+<table class="drift" id="drift"><thead><tr>
+  <th>face</th><th>size</th><th>width vs current</th><th>cap height</th><th>verdict</th>
+</tr></thead><tbody></tbody></table>
+
+<div class="grid" id="grid"></div>
+<script>
+// system-ui is the control: it is what the site renders today.
+const FONTS = [
+  ['system-ui',      null, 'current'],
+  ['Figtree',        19.6],
+  ['Public Sans',    26.2],
+  ['Source Sans 3',  28.0],
+  ['Geist',          28.7],
+  ['IBM Plex Sans',  44.6],
+  ['Inter',          47.1],
+  ['Open Sans',      47.1],
+];
+
+// Real sans-rendered strings from the site: bill titles, tweet bodies, ticker.
+const sample = `
+  <div class="mono billid">H.R. 4795 <span style="color:var(--blue);font-size:11px">Passed 237-169</span></div>
+  <div class="title">Protect Economic and Academic Freedom Act of 2026</div>
+  <div class="title">To amend the Consolidated Appropriations Act, 2023 to extend the time period for which certain regulations concerning the North Atlantic right whale are effective.</div>
+  <hr>
+  <div class="name">Jake Sherman <span class="small mono">@JakeSherman · 12m</span></div>
+  <div class="tweet">NEW: The House will vote this afternoon on the rule for H.R. 1501, setting up final passage votes before members leave for the district work period.</div>
+  <hr>
+  <div class="tick"><span class="mono" style="color:var(--muted)">THE HILL</span> · Speaker announces the House will consider the contempt resolutions under suspension of the rules</div>
+  <div class="small">Report to accompany the Resolution Recommending that the House find Michael Joseph in contempt of Congress</div>`;
+
+const grid=document.getElementById('grid');
+grid.innerHTML = FONTS.map(([f,kb,tag])=>`<figure class="card" style="margin:0">
+    <h2><span>${f}</span><span class="kb">${tag||''}${kb?kb+'KB':''}</span></h2>
+    <div class="body" style="font-family:'${f}',sans-serif">${sample}</div></figure>`).join('');
+
+document.getElementById('scale').oninput = e => {
+  document.documentElement.style.fontSize = e.target.value+'%';
+  document.getElementById('sv').textContent = e.target.value+'%'; };
+document.getElementById('one').onchange = e => {
+  grid.style.gridTemplateColumns = e.target.checked?'1fr':'repeat(auto-fill,minmax(460px,1fr))'; };
+
+// How far does each face drift from what the site renders today? Width drives
+// reflow (do bill titles still fit on the same number of lines); cap height
+// drives whether it reads bigger or smaller at the same px.
+document.fonts.ready.then(()=>{
+  const probe=(fam,txt,size=15,weight=400)=>{
+    const s=document.createElement('span');
+    s.textContent=txt;
+    s.style.cssText=`position:absolute;visibility:hidden;white-space:nowrap;font:${weight} ${size}px ${fam}`;
+    document.body.appendChild(s); const r=s.getBoundingClientRect(); s.remove(); return r; };
+  const LINE='To amend the Consolidated Appropriations Act, 2023 to extend the time period';
+  const base=probe("system-ui",LINE).width;
+  const capOf=f=>{const d=document.createElement('div');
+    d.textContent='H'; d.style.cssText=`position:absolute;visibility:hidden;font:400 100px '${f}',sans-serif`;
+    document.body.appendChild(d); const h=d.getBoundingClientRect().height; d.remove(); return h; };
+  const baseCap=capOf('system-ui');
+  const tb=document.querySelector('#drift tbody');
+  tb.innerHTML = FONTS.map(([f,kb,tag])=>{
+    const w=probe(`'${f}',sans-serif`,LINE).width;
+    const d=((w-base)/base*100);
+    const cap=((capOf(f)-baseCap)/baseCap*100);
+    const cls=Math.abs(d)<2?'good':Math.abs(d)<5?'':'warn';
+    return `<tr><td>${f}${tag?' <span class="small">(current)</span>':''}</td>
+      <td>${kb?kb+'KB':'—'}</td>
+      <td class="${cls}">${d>=0?'+':''}${d.toFixed(1)}%</td>
+      <td>${cap>=0?'+':''}${cap.toFixed(1)}%</td>
+      <td class="small">${Math.abs(d)<2?'near-identical metrics':Math.abs(d)<5?'minor reflow':'noticeable reflow'}</td></tr>`;
+  }).join('');
+});
+</script></body></html>
