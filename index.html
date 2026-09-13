@@ -23,9 +23,10 @@
     <!-- Preload the mono face: it is used by almost every label on the page, so
          discovering it only after styles.css parses costs a visible reflow. -->
     <link rel="preconnect" href="https://cdn.evanhollander.org" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preload" as="font" type="font/woff2" crossorigin
-          href="https://cdn.evanhollander.org/fonts/FiraCodeVF.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260913c">
+          href="https://cdn.evanhollander.org/fonts/HollveticaMono.woff2">
+    <link rel="stylesheet" href="styles.css?v=20260913d">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1359,7 +1360,11 @@
             </div>
 
 <!-- place scripts at end of body -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js" integrity="sha384-5E8B0pTlZZJMabWpC0fyYf6OUpe15jJij34BqBAh4NXoHAlLNOjCPRrwtOXOQFAn" crossorigin="anonymous"></script>
+<!-- hls.js is 159KB from a third-party origin and only the video needs it.
+     defer lets the rest of the document finish parsing first. All three of
+     our scripts are deferred, and deferred scripts run in document order, so
+     hls.js still executes before app.js exactly as it did when synchronous. -->
+<script defer src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js" integrity="sha384-5E8B0pTlZZJMabWpC0fyYf6OUpe15jJij34BqBAh4NXoHAlLNOjCPRrwtOXOQFAn" crossorigin="anonymous"></script>
 
         <!-- PiP — always-on live feed, click to expand -->
         <div id="pip-backdrop" class="pip-backdrop"></div>
@@ -1518,8 +1523,8 @@
 
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
-    <script src="lib/bill-id.js?v=20260905a"></script>
-    <script src="app.js?v=20260913a"></script>
+    <script defer src="lib/bill-id.js?v=20260905a"></script>
+    <script defer src="app.js?v=20260913b"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 /* Dome Watch - Pentagon Pizza Tracker Theme */
 
-/* Fira Code — self-hosted from cdn.evanhollander.org. One variable file covers
+/* Hollvetica Mono (a renamed subset of Fira Code) — self-hosted from cdn.evanhollander.org. One variable file covers
    300-700, which is every weight this UI puts on mono text (600 on 64 rules,
    700 on 49). font-display: swap so a slow font never blocks the vote tally.
 
@@ -10,9 +10,9 @@
    Windows. The fallbacks below are kept deliberately: if the CDN is unreachable
    the page degrades to exactly how it looked before, not to Courier. */
 @font-face {
-    font-family: 'Fira Code';
-    src: url('https://cdn.evanhollander.org/fonts/FiraCodeVF.woff2') format('woff2-variations'),
-         url('https://cdn.evanhollander.org/fonts/FiraCodeVF.woff2') format('woff2');
+    font-family: 'Hollvetica Mono';
+    src: url('https://cdn.evanhollander.org/fonts/HollveticaMono.woff2') format('woff2-variations'),
+         url('https://cdn.evanhollander.org/fonts/HollveticaMono.woff2') format('woff2');
     font-weight: 300 700;
     font-style: normal;
     font-display: swap;
@@ -76,7 +76,7 @@
     --track-wider: 1px;
 
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    --font-mono: 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --font-mono: 'Hollvetica Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     --section-gap: 1.5rem; /* 24px */
 
     /* ── Type scale ───────────────────────────────────────────────────────────
@@ -1926,7 +1926,7 @@ body.tellers-mode .tellers-column { display: flex; }
 ::cue {
   background-color: transparent;
   color: #ffffff;
-  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.82em;
   line-height: 1.5;
   text-shadow:
