@@ -4,6 +4,9 @@
 // Shared with app.js — see lib/bill-id.js for why bill ids must never be
 // compared as raw strings. Side-effect import: the file assigns globalThis.BillId.
 import './lib/bill-id.js';
+// Subrequest budgeting for Congress.gov enrichment — see the header of that file
+// for why going over the free plan's 50-subrequest cap fails silently.
+import './lib/enrich-plan.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -1195,6 +1198,10 @@ const TERMINAL_STATUSES = new Set(['passed', 'failed']);
 // Response header a producer sets to say "serve this, but do not persist it".
 // Used for degraded payloads that would otherwise outlive the degradation.
 const KV_NO_STORE_HEADER = 'x-kv-no-store';
+// Response header a producer sets to shorten the KV freshness window for THIS
+// entry only, so a known-incomplete payload is revisited sooner than the caller's
+// default. Never lengthens it — the caller's kvFreshTtl stays the ceiling.
+const KV_FRESH_TTL_HEADER = 'x-kv-fresh-ttl';
 
 const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
 
@@ -1237,18 +1244,20 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
       const raw = await env.HLS_CACHE.get(key);
       if (raw !== null) {
         // Entries are stored as { body, cachedAt }. Legacy raw strings → treat as stale (age=Infinity).
-        let body = raw, age = Infinity;
+        let body = raw, age = Infinity, freshMs = kvFreshMs;
         try {
           const w = JSON.parse(raw);
           if (typeof w?.body === 'string' && typeof w?.cachedAt === 'number') {
             body = w.body;
             age = now - w.cachedAt;
+            // Producer-shortened window for this entry (never longer than the caller's).
+            if (typeof w.freshMs === 'number') freshMs = Math.min(kvFreshMs, w.freshMs);
           }
         } catch {}
         prevBody = body; // saved for post-fetch comparison
-        if (age < kvFreshMs) {
+        if (age < freshMs) {
           // Still fresh per KV freshness window — serve, warm in-memory
-          _mSet(key, body, Math.min(ttlMs, kvFreshMs - age));
+          _mSet(key, body, Math.min(ttlMs, freshMs - age));
           return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
         }
         // Stale by KV window — fall through to origin; prevBody held for comparison
@@ -1267,7 +1276,10 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
       if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
         // Write only if content changed — stable data may never write again after first fetch
         console.log(`[KV-WRITE] key=${key} prevNull=${prevBody===null} bodyLen=${body.length}`);
-        await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
+        const entry = { body, cachedAt: now };
+        const freshOverride = Number(response.headers.get(KV_FRESH_TTL_HEADER));
+        if (Number.isFinite(freshOverride) && freshOverride > 0) entry.freshMs = freshOverride * 1000;
+        await env.HLS_CACHE.put(key, JSON.stringify(entry), { expirationTtl: KV_STORAGE_TTL });
       }
     } catch {}
     return response;
@@ -1306,6 +1318,25 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
 // Physical KV TTL = KV_STORAGE_TTL (30 days). Write-on-change: only writes when enrichment data
 // actually differs from what is already in KV (e.g. newly published CRS summary, updated status).
 const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
+
+// ── Congress.gov enrichment is subrequest-bound, not CPU-bound.
+// The Workers FREE plan allows 50 subrequests per invocation. Enrichment spends
+// 5 per cold bill (actions + summaries + the three fetchBillMeta calls), so a
+// ~13-bill week already overruns it — and the overrun is silent: fetch() throws,
+// all three enrichment helpers swallow the error, and every bill past the cap
+// comes back with no sponsor, cosponsors, committees or summary while the first
+// handful look perfect. That is what left the vast majority of bill modals empty.
+//
+// In the Durable Object this invocation also carries handleRules() and
+// handleWhipNotices(), and _fetchBills itself spends 3 before enrichment starts,
+// so the budget below is deliberately well under 50.
+const ENRICH_SUBREQUEST_BUDGET = 30;
+const ENRICH_RECHECK_NULL_MS = globalThis.EnrichPlan.DEFAULT_RECHECK_NULL_MS; // 6 hours
+// KV freshness for a bills payload whose enrichment was cut short. The full hour
+// would strand the remaining bills until the cache expired; a few minutes lets
+// the Durable Object's 10-minute poll pick up the next slice, so a fresh week
+// converges in well under an hour instead of never.
+const ENRICH_INCOMPLETE_FRESH_TTL = 300; // seconds
 
 async function getCachedBillEnrichment(env, billId) {
   const key = `bill-enrich-v3:${billId}`;
@@ -1912,9 +1943,35 @@ async function _fetchBills(request, env) {
     // Results are cached in KV for 30 minutes so Congress.gov is only hit on cold cache,
     // not on every page load.
     const allBills = [...ruleBills, ...suspensionBills, ...mayBeConsideredBills];
-    if (!quick) await Promise.all(allBills.map(async (bill) => {
-      // Check KV cache first — avoids hitting Congress.gov on warm loads
-      const enrichCached = await getCachedBillEnrichment(env, bill.id);
+
+    // How many Congress.gov calls each bill still owes, so the budget is spent
+    // deliberately instead of discovered by running out. planEnrichment is pure and
+    // covered by test/enrich-budget.test.js — see lib/enrich-plan.js for why.
+    const enrichEntries = !quick ? await Promise.all(allBills.map(async (bill) => ({
+      id: bill.id,
+      // KV read, not a fetch — costs nothing against the subrequest budget, and the
+      // 6h in-memory layer inside getCachedBillEnrichment absorbs most of these.
+      cached: await getCachedBillEnrichment(env, bill.id),
+    }))) : [];
+    const { plans: enrichPlans, spent: enrichSpent, incomplete: enrichIncomplete } =
+      globalThis.EnrichPlan.planEnrichment(enrichEntries, {
+        budget: ENRICH_SUBREQUEST_BUDGET,
+        recheckNullMs: ENRICH_RECHECK_NULL_MS,
+        terminalStatuses: [...TERMINAL_STATUSES],
+      });
+    if (enrichIncomplete) {
+      console.warn(`[house-floor] enrichment budget exhausted: ${enrichSpent}/${ENRICH_SUBREQUEST_BUDGET} subrequests over ${allBills.length} bills — remaining bills deferred to the next pass`);
+    }
+
+    if (!quick) await Promise.all(enrichPlans.map(async (plan) => {
+      // planEnrichment preserves input order and stamps each plan with its index.
+      // Index rather than look up by id: the same measure can appear in two
+      // sections, and a Map keyed by id would enrich one object twice and the
+      // other never.
+      const bill = allBills[plan.index];
+      const enrichCached = plan.cached;
+      if (!bill) return;
+      if (plan.skipped && !enrichCached) return; // nothing cached, nothing funded — leave bare
       let congressStatus, summary, meta;
       // Both safe wrappers return undefined on transient errors (429, 5xx, network) so callers
       // can distinguish "genuinely no data" (null) from "failed this time" (undefined).
@@ -1922,17 +1979,7 @@ async function _fetchBills(request, env) {
       const safeFetchMeta    = (id) => fetchBillMeta(id).catch(() => undefined);
       if (enrichCached) {
         congressStatus = enrichCached.congressStatus ?? null;
-        // Retry summary/meta when null — Congress.gov may have published since last fetch.
-        // Always re-verify a cached terminal status (passed/failed) from Congress.gov — the
-        // original detection may have been a false positive (e.g. motion text misread as passage).
-        // Also retry when the cached entry predates committeeReport support.
-        const needsSummary            = !enrichCached.summary;
-        // Re-fetch meta when missing, or when the cached entry predates committeeReportUrl
-        // support (key absent entirely — null means "checked, no report").
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta);
-        const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
-        const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
-        const needsStatusRefresh      = needsCommitteeReport || needsStatusVerify;
+        const { needsSummary, needsMeta, needsStatusRefresh } = plan;
         if (needsSummary || needsMeta || needsStatusRefresh) {
           const [summaryResult, newMeta, freshStatus] = await Promise.all([
             needsSummary       ? safeFetchSummary(bill.id)        : Promise.resolve(enrichCached.summary),
@@ -1949,9 +1996,20 @@ async function _fetchBills(request, env) {
           if (freshStatus != null) {
             congressStatus = freshStatus;
           }
-          if (summaryToCache || metaToCache || freshStatus != null) {
-            await setCachedBillEnrichment(env, bill.id, { congressStatus, summary: summaryToCache, meta: metaToCache });
-          }
+          // undefined from either safe wrapper means the call failed transiently
+          // (429/5xx/network), not that Congress.gov has nothing — don't let a blip
+          // settle the bill for the next six hours.
+          const transient = summaryResult === undefined || newMeta === undefined;
+          // Always write when a check ran, even if everything came back empty: the
+          // checkedAt stamp is the only thing that stops this bill re-asking on
+          // every pass forever. setCachedBillEnrichment still skips the KV put when
+          // the body is byte-identical, which is what a transient pass produces.
+          await setCachedBillEnrichment(env, bill.id, {
+            congressStatus,
+            summary: summaryToCache,
+            meta: metaToCache,
+            checkedAt: transient ? (enrichCached.checkedAt ?? null) : Date.now(),
+          });
         } else {
           summary = enrichCached.summary;
           meta    = enrichCached.meta;
@@ -1971,6 +2029,9 @@ async function _fetchBills(request, env) {
             congressStatus,
             summary: summaryResult !== undefined ? summaryResult : null,
             meta:    metaResult    !== undefined ? metaResult    : null,
+            // Leave unstamped on a transient failure so the next pass retries
+            // rather than settling an answer we never actually got.
+            checkedAt: (summaryResult === undefined || metaResult === undefined) ? null : Date.now(),
           });
         }
       }
@@ -2062,7 +2123,10 @@ async function _fetchBills(request, env) {
         // cosponsors or committees. It is still worth serving, but it must never
         // be written to the shared KV cache: one misconfigured isolate would
         // otherwise blank out every bill modal on the site for an hour.
-        ...(!quick && !_congressApiKey ? { [KV_NO_STORE_HEADER]: '1' } : {})
+        ...(!quick && !_congressApiKey ? { [KV_NO_STORE_HEADER]: '1' } : {}),
+        // Enrichment ran out of subrequest budget — come back for the rest sooner
+        // than the caller's default hour.
+        ...(enrichIncomplete ? { [KV_FRESH_TTL_HEADER]: String(ENRICH_INCOMPLETE_FRESH_TTL) } : {})
       }
     });
 
