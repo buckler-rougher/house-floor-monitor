@@ -124,6 +124,21 @@ const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
 let _congressApiKey = '';
 let _domewatchApiKey = '';
 
+// Hydrate the module globals from env and recompute the Congress number.
+//
+// These are module globals, so they are per-ISOLATE, not per-request — and the
+// Durable Object runs in its own isolate that never goes through handleRequest().
+// Any entry point that can be the first thing to run in an isolate MUST call this
+// before touching Congress.gov or DomeWatch, or it runs with an empty API key and
+// the epoch-clock Congress number (91), and every upstream call 403s/404s.
+function initRuntimeGlobals(env) {
+  _congressApiKey  = env?.CONGRESS_API_KEY  || '';
+  _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
+  // Recompute with the live clock — the module-load value is wrong on Workers
+  // (frozen epoch clock during global init) and a DO isolate can outlive a Jan 3 rollover.
+  CURRENT_CONGRESS = computeCurrentCongress();
+}
+
 const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator';
 const STREAM_FALLBACK_KEY = '__domewatch_stream_fallback__';
 
@@ -1177,6 +1192,10 @@ async function fetchCongressBillStatus(billId) {
 
 // Terminal statuses — once reached, never downgrade.
 const TERMINAL_STATUSES = new Set(['passed', 'failed']);
+// Response header a producer sets to say "serve this, but do not persist it".
+// Used for degraded payloads that would otherwise outlive the degradation.
+const KV_NO_STORE_HEADER = 'x-kv-no-store';
+
 const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
 
 // ── Generic KV response cache ─────────────────────────────────────────────────
@@ -1200,6 +1219,8 @@ const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, schedu
 //                  Often longer than ttlSeconds so cold isolates don't re-fetch too aggressively.
 //                  Defaults to ttlSeconds when not specified.
 //   Physical KV storage is always KV_STORAGE_TTL (30 days) so old values persist for comparison.
+//   A producer can set the KV_NO_STORE_HEADER response header to opt a single
+//   response out of the KV write (still served, still memoized in-isolate).
 async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
   const ttlMs = ttlSeconds * 1000;
   const kvFreshMs = kvFreshTtl * 1000;
@@ -1241,7 +1262,9 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
     try {
       const body = await response.clone().text();
       _mSet(key, body, ttlMs);
-      if (kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
+      const noStore = response.headers.get(KV_NO_STORE_HEADER) === '1';
+      if (noStore) console.warn(`[house-floor] kvCache: not persisting degraded payload for key=${key}`);
+      if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
         // Write only if content changed — stable data may never write again after first fetch
         console.log(`[KV-WRITE] key=${key} prevNull=${prevBody===null} bodyLen=${body.length}`);
         await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
@@ -1536,8 +1559,9 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
-  // v8: invalidate caches poisoned with un-enriched bills from the CURRENT_CONGRESS=91 bug.
-  const cacheKey = quick ? 'bills-weekly-quick-v8' : 'bills-weekly-v8';
+  // v9: invalidate caches poisoned with un-enriched bills written by the Durable
+  // Object isolate, which never initialised _congressApiKey / CURRENT_CONGRESS.
+  const cacheKey = quick ? 'bills-weekly-quick-v9' : 'bills-weekly-v9';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -2033,7 +2057,12 @@ async function _fetchBills(request, env) {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=30' // 30 seconds — bills update during active floor sessions
+        'Cache-Control': 'public, max-age=30', // 30 seconds — bills update during active floor sessions
+        // A full response built without an API key has no summaries, sponsors,
+        // cosponsors or committees. It is still worth serving, but it must never
+        // be written to the shared KV cache: one misconfigured isolate would
+        // otherwise blank out every bill modal on the site for an hour.
+        ...(!quick && !_congressApiKey ? { [KV_NO_STORE_HEADER]: '1' } : {})
       }
     });
 
@@ -3827,10 +3856,7 @@ async function checkCongressApiHealth() {
 }
 
 async function handleRequest(request, env) {
-  _congressApiKey  = env?.CONGRESS_API_KEY  || '';
-  _domewatchApiKey = env?.DOMEWATCH_API_KEY || '';
-  // Recompute with the request-time clock (module-load value is wrong on Workers — see note above).
-  CURRENT_CONGRESS = computeCurrentCongress();
+  initRuntimeGlobals(env);
   if (!_congressApiKey) {
     console.warn('[house-floor] CONGRESS_API_KEY is empty — bill modal enrichment (summaries, sponsors, cosponsors, committees) is disabled. Set it with `wrangler secret put CONGRESS_API_KEY`.');
   }
@@ -4056,6 +4082,9 @@ export class DomeWatchStreamCoordinator {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+    // The DO has its own isolate and never runs handleRequest(), so nothing else
+    // would ever populate the API-key / Congress-number globals here.
+    initRuntimeGlobals(env);
     // Map<connectionId, { controller, lastPingAt }>
     this.clients = new Map();
     this.upstreamReader = null;
@@ -4142,6 +4171,7 @@ export class DomeWatchStreamCoordinator {
     const poll = async () => {
       this.proceedingsTimeout = null;
       if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
+      initRuntimeGlobals(this.env);
       try {
         // Direct in-process call — same code path as /api/proceedings, no self-fetch.
         const resp = await handleProceedings(new Request('https://internal/api/proceedings'), this.env);
@@ -4168,6 +4198,7 @@ export class DomeWatchStreamCoordinator {
     const poll = async () => {
       this.floorTimeout = null;
       if (this.clients.size === 0) return; // heartbeat will clear; don't reschedule
+      initRuntimeGlobals(this.env);
       try {
         // Direct in-process call — same code path as /api/domewatch-floor, no self-fetch.
         const resp = await handleDomeWatchFloor(this.env);
@@ -4240,6 +4271,7 @@ export class DomeWatchStreamCoordinator {
       if (this.dataIntervals.has(name)) continue;
       const poll = async () => {
         if (this.clients.size === 0) return;
+        initRuntimeGlobals(this.env);
         try {
           const resp = await handler();
           if (!resp.ok) return;
@@ -4258,6 +4290,7 @@ export class DomeWatchStreamCoordinator {
     if (!this.dataIntervals.has('bills')) {
       const pollBills = async () => {
         if (this.clients.size === 0) return;
+        initRuntimeGlobals(this.env);
         try {
           // Direct in-process handler calls, no self-fetch.
           const [billsResp, rulesResp, whipResp] = await Promise.all([
@@ -4291,6 +4324,7 @@ export class DomeWatchStreamCoordinator {
     if (!this.dataIntervals.has('whip-feed')) {
       const pollWhip = async () => {
         if (this.clients.size === 0) return;
+        initRuntimeGlobals(this.env);
         try {
           // Direct in-process handler calls, no self-fetch.
           const [floorResp, noticesResp] = await Promise.all([
@@ -4314,6 +4348,7 @@ export class DomeWatchStreamCoordinator {
     if (!this.dataIntervals.has('roll-log')) {
       const pollRollLog = async () => {
         if (this.clients.size === 0) return;
+        initRuntimeGlobals(this.env);
         try {
           // Direct in-process call, no self-fetch.
           const resp = await handleRollLogGet(this.env);
@@ -4333,6 +4368,7 @@ export class DomeWatchStreamCoordinator {
     if (!this.dataIntervals.has('casualty-list')) {
       const pollCasualty = async () => {
         if (this.clients.size === 0) return;
+        initRuntimeGlobals(this.env);
         try {
           // Direct in-process call, no self-fetch.
           const resp = await handleCasualtyList(this.env);
@@ -4380,6 +4416,7 @@ export class DomeWatchStreamCoordinator {
   }
 
   async fetch(request) {
+    initRuntimeGlobals(this.env);
     const url = new URL(request.url);
     const cors = corsForRequest(request);
     if (request.method === 'POST' && url.searchParams.has('status')) {
