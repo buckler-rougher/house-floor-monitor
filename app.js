@@ -10834,16 +10834,11 @@ function updateLastUpdate() {
             : (serverData.sessionState && serverData.sessionState !== 'in-session'
                 ? { basis: serverData.sessionState, sessionUntil: serverData.sessionUntil }
                 : null);
-        if (adjourned) {
-            row.classList.remove('is-uncertain', 'is-stale');
-            row.classList.add('is-unknown');
-            name.textContent = adjourned.basis === 'recess' ? 'In recess' : 'Adjourned';
-            meta.textContent = adjourned.sessionUntil ? `until ${adjourned.sessionUntil.toLowerCase()}` : 'the House has risen';
-            renderPhoto(null);
-            row.title = 'the Speaker declared the House out of session';
-            row.hidden = false;
-            return;
-        }
+        // Nothing to say once the House has risen. The video is showing the Clerk's
+        // own "not in session" slate, which states it and says when they return, so
+        // a line repeating that is noise — the detection still matters, because
+        // without it the last member of the night stays named over that slate.
+        if (adjourned) return clear();
 
         if (!serverData.current) return clear();
 
