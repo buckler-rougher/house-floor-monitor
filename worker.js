@@ -4,6 +4,9 @@
 // Shared with app.js — see lib/bill-id.js for why bill ids must never be
 // compared as raw strings. Side-effect import: the file assigns globalThis.BillId.
 import './lib/bill-id.js';
+// Who is speaking on the floor, derived from the Clerk's captions — see
+// lib/floor-speaker.js for why the caption labels themselves are useless.
+import './lib/floor-speaker.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -2504,6 +2507,90 @@ async function fetchBroadcastEvents(dateId) {
   } catch { return null; }
 }
 
+// ── /api/floor-speaker ────────────────────────────────────────────────────────
+// The House caption feed labels every turn "UNIDENTIFIED SPEAKER:" and the floor
+// camera has no chyron, so identity has to be reconstructed from the parliamentary
+// ritual in the caption text. lib/floor-speaker.js does that; this handler just
+// feeds it the three inputs and caches the result.
+//
+// Cached 15s in memory only. The caption blob is ~750KB four hours into a session
+// and grows all day, and it is rewritten by the Clerk roughly every 15-30s, so a
+// shorter TTL buys nothing and a KV write of that payload on every poll would be
+// absurd. Nothing here is worth persisting: it is fully recomputable from the blob.
+function extractCaptionsUrl(data) {
+  if (!Array.isArray(data) || !data[0]) return null;
+  const files = (data[0].asset || {}).files || [];
+  const vtt = files.filter(f => (f.type || '').toUpperCase() === 'WEBVTT');
+  if (!vtt.length) return null;
+  const preferred = vtt.find(f => f.url && f.url.includes('/east/')) || vtt[0];
+  return preferred?.url ? preferred.url.replace(/#.*$/, '') : null;
+}
+
+async function handleFloorSpeaker(request, env) {
+  const MEM_KEY = 'floor-speaker';
+  const memHit = _mGet(MEM_KEY);
+  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } });
+
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get('limit')) || 40, 400);
+  const dateId = /^\d{8}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : getTodayDateET();
+
+  const reply = (obj, ttlMs) => {
+    const body = JSON.stringify(obj);
+    if (ttlMs > 0) _mSet(MEM_KEY, body, ttlMs);
+    return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${Math.round(ttlMs / 1000) || 15}` } });
+  };
+
+  try {
+    let events = null;
+    try { events = await fetchBroadcastEvents(dateId); } catch { /* not started yet */ }
+    const captionsUrl = extractCaptionsUrl(events);
+    if (!captionsUrl) {
+      // Before the first gavel there is no asset at all. Cache the miss so we do
+      // not hammer the broadcast API from every page load on a non-session day.
+      return reply({ available: false, reason: 'no-broadcast', date: dateId, current: null, timeline: [] }, 60_000);
+    }
+
+    const isLive = String((events[0] || {}).isLiveBroadcast || '').toLowerCase() === 'true';
+
+    const [vttResp, memberResp] = await Promise.all([
+      fetch(captionsUrl, { signal: AbortSignal.timeout(10000) }),
+      handleMemberData(env),
+    ]);
+    if (!vttResp.ok) return reply({ available: false, reason: `captions-${vttResp.status}`, date: dateId, current: null, timeline: [] }, 20_000);
+
+    const vttText = await vttResp.text();
+    const memberJson = await memberResp.json();
+    const roster = globalThis.HouseFloorSpeaker.buildRoster(memberJson.xmlData || '');
+    if (!roster.length) return reply({ available: false, reason: 'no-roster', date: dateId, current: null, timeline: [] }, 20_000);
+
+    const H = globalThis.HouseFloorSpeaker;
+    const turns = H.splitTurns(H.parseCaptionCues(vttText));
+    const resolved = H.resolveFloorSpeakers(turns, roster, { limit });
+
+    const speech = resolved.timeline.filter(x => x.role === 'speech');
+    return reply({
+      available: true,
+      date: dateId,
+      isLive,
+      captionsUrl,
+      // Caption text trails the video live edge by roughly 90 seconds; surfaced so
+      // the UI can say "as of ~90s ago" rather than implying it is instantaneous.
+      captionLagSeconds: 90,
+      lastModified: vttResp.headers.get('last-modified') || null,
+      turns: turns.length,
+      current: resolved.current,
+      managers: resolved.managers,
+      resolvedPct: speech.length ? Math.round(speech.filter(x => x.member).length / speech.length * 100) : null,
+      timeline: resolved.timeline,
+    }, isLive ? 15_000 : 120_000);
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    });
+  }
+}
+
 async function handleHlsUrl(env) {
   // In-memory cache only (no KV writes — this endpoint is called on every page load).
   const MEM_KEY = 'hls-url';
@@ -4029,6 +4116,8 @@ async function handleRequest(request, env) {
       errors,
       skipped,
     }, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  } else if (path === '/api/floor-speaker' && request.method === 'GET') {
+    return await handleFloorSpeaker(request, env);
   } else if (path === '/api/hls-url' && request.method === 'GET') {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
