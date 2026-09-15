@@ -10737,9 +10737,9 @@ function updateLastUpdate() {
     // stream) and stops counting as coverage, however long it ran before.
     const LIVE_DEAD_AFTER_MS = 30000;
     let timer = null;
-    let lastPhotoId = null;
+    let lastPhotoId;   // undefined = nothing rendered yet; null = deliberately blank
 
-    const clear = () => { row.hidden = true; lastPhotoId = null; };
+    const clear = () => { row.hidden = true; lastPhotoId = undefined; };
 
     const formatCaptionAge = (s) => (s < 90 ? `${s}s` : `${Math.round(s / 60)}m`);
 
@@ -10800,7 +10800,10 @@ function updateLastUpdate() {
 
     function renderPhoto(bioguideId) {
         // Only rebuild the <img> when the member actually changes, so the fade-in
-        // does not restart on every 20s poll of the same speaker.
+        // does not restart on every poll of the same speaker. The sentinel is
+        // undefined rather than null because null is a real state — "show the
+        // placeholder, no member" — and starting there made the first blanking a
+        // no-op, leaving an empty grey square where the placeholder should be.
         if (bioguideId === lastPhotoId) return;
         lastPhotoId = bioguideId;
         const url = bioguideId ? buildBioguidePhotoUrl(bioguideId) : '';
@@ -10810,18 +10813,22 @@ function updateLastUpdate() {
 
     function render(data) {
         if (data) serverData = data;
-        if (!serverData || !serverData.available || !serverData.current) return clear();
+        if (!serverData || !serverData.available) return clear();
 
         // The video's caption track is ahead of the sidecar the server parses, so a
         // hand-off found there supersedes the server's answer outright — including
         // its staleness, which no longer applies to a name read off the live stream.
         const live = tryLive();
 
-        // The House rising beats everything. The live track carries the Speaker's
-        // declaration seconds after it is spoken, while the broadcast API still
-        // claims the stream is live — so without this the last member of the night
-        // stays on screen, over the House's own "not in session" slate, until
-        // morning.
+        // The House rising beats everything, and is tested BEFORE the "nobody is
+        // speaking" bail-out below. An adjourned House is precisely when there is no
+        // current speaker, so bailing on that first threw this branch away every
+        // time and left the row hidden instead of saying the House had risen.
+        //
+        // The live track carries the Speaker's declaration seconds after it is
+        // spoken, while the broadcast API still claims the stream is live: hours
+        // after tonight's gavel it still reported isLiveBroadcast "True" with an
+        // empty endDate.
         const adjourned = (live && (live.basis === 'adjourned' || live.basis === 'recess'))
             ? live
             : (serverData.sessionState && serverData.sessionState !== 'in-session'
@@ -10837,6 +10844,8 @@ function updateLastUpdate() {
             row.hidden = false;
             return;
         }
+
+        if (!serverData.current) return clear();
 
         const useLive = !!(live && live.member);
 
