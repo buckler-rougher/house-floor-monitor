@@ -10360,6 +10360,10 @@ function updateLastUpdate() {
     let liveCaptionText = '';
     let liveFirstCueAt = 0;   // when this stream's live track started producing
     let liveLastCueAt = 0;    // when it last did, so a stalled track stops counting
+    // Total characters ever appended. liveCaptionText is truncated from the front,
+    // so an offset within it shifts as the stream grows; this does not, which is
+    // what lets the readout tell one hand-off from the next.
+    let liveTotalChars = 0;
     const _liveSeen = new Set();
 
     function harvestLiveCues() {
@@ -10376,6 +10380,7 @@ function updateLastUpdate() {
         const now = Date.now();
         if (!liveFirstCueAt) liveFirstCueAt = now;
         liveLastCueAt = now;
+        liveTotalChars += added.length + 1;
         liveCaptionText = (liveCaptionText + ' ' + added).slice(-LIVE_TEXT_MAX);
         // The dedupe set must not grow all session; the tail is what matters.
         if (_liveSeen.size > 4000) _liveSeen.clear();
@@ -10385,7 +10390,7 @@ function updateLastUpdate() {
     // How long the live track has been watched without interruption. The speaker
     // readout uses this to decide whether the server's older snapshot leaves any
     // window unaccounted for.
-    window.__liveCaptionMeta = () => ({ firstCueAt: liveFirstCueAt, lastCueAt: liveLastCueAt });
+    window.__liveCaptionMeta = () => ({ firstCueAt: liveFirstCueAt, lastCueAt: liveLastCueAt, totalChars: liveTotalChars });
 
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
@@ -10614,6 +10619,7 @@ function updateLastUpdate() {
         liveCaptionText = '';
         liveFirstCueAt = 0;
         liveLastCueAt = 0;
+        liveTotalChars = 0;
         _liveSeen.clear();
         pipFrozen = false;
         const gen = ++pipGen; // invalidates any in-flight snapshot/freeze from a prior load
@@ -10768,6 +10774,11 @@ function updateLastUpdate() {
     // and the line that established that scrolled past hours ago.
     let serverData = null;
     let liveRoster = null;
+    // The last hand-off seen on the live track: where it sat in the stream, and
+    // when it was first seen there. Both are needed — the position identifies the
+    // hand-off, the timestamp says whether it is newer than the server's snapshot.
+    let liveHandoffPos = -1;
+    let liveHandoffAt = 0;
 
     // The roster is needed client-side to fuzzy-match surnames out of live captions.
     // Fetched once; the Clerk publishes it monthly.
@@ -10842,7 +10853,22 @@ function updateLastUpdate() {
 
         if (!serverData.current) return clear();
 
-        const useLive = !!(live && live.member);
+        // Prefer the live track only when what it found is NEWER than the server's
+        // snapshot. It used to win unconditionally, which meant a hand-off sitting
+        // in the live buffer kept beating fresher server data indefinitely: the row
+        // held Virginia Foxx long after George Latimer had the floor, and only a
+        // reload fixed it, because reloading is what empties that buffer.
+        //
+        // The live buffer is a rolling window of the recent past, so finding a
+        // hand-off in it says nothing about when it happened.
+        let useLive = false;
+        if (live && live.member) {
+            const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
+            const pos = meta ? meta.totalChars - live.fromEnd : -1;
+            if (pos !== liveHandoffPos) { liveHandoffPos = pos; liveHandoffAt = Date.now(); }
+            const serverAt = Date.parse(serverData.lastModified || '') || 0;
+            useLive = liveHandoffAt >= serverAt;
+        }
 
         const cur = useLive
             ? { member: live.member, basis: live.basis, confidence: 0.9 }

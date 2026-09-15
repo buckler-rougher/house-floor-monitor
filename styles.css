@@ -2046,11 +2046,24 @@ body.tellers-mode .tellers-column { display: flex; }
   display: flex;
   align-items: center;
   gap: var(--sp-8);
-  padding: var(--sp-6) var(--sp-12);
+  /* Indented past the source line below it, so the microphone, face and name read
+     as one group rather than as another row of panel chrome. */
+  padding: var(--sp-6) var(--sp-12) var(--sp-6) var(--sp-14);
   background: var(--bg-elevated);
   min-width: 0;
   overflow: hidden;
 }
+
+.pip-speaker-mic {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+/* Nothing is at the microphone when the speaker is unknown or the guess is weak,
+   so the icon fades with the rest of the row rather than asserting otherwise. */
+.pip-speaker.is-uncertain .pip-speaker-mic,
+.pip-speaker.is-unknown .pip-speaker-mic { opacity: 0.4; }
 
 .pip-speaker-photo-wrap {
   width: 26px;
