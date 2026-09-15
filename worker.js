@@ -2629,6 +2629,7 @@ async function handleFloorSpeaker(request, env) {
       turns: turns.length,
       current: resolved.current,
       managers: resolved.managers,
+      bindings: resolved.bindings,
       speechTurns: resolved.speechTurns,
       resolvedPct: resolved.speechTurns ? Math.round(resolved.resolvedTurns / resolved.speechTurns * 100) : null,
       timeline: resolved.timeline,

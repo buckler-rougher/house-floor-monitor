@@ -200,6 +200,39 @@ check('limit does not change the resolved count', trimmed.resolvedTurns, full.re
 check('speech-turn count matches the timeline', full.speechTurns, full.timeline.filter((x) => x.role === 'speech').length);
 check('limit does not change who is current', trimmed.current.t, full.current.t);
 
+// ── Live caption track (unsegmented) ────────────────────────────────────────
+// The video carries its own CEA-608 track whose cues arrive ahead of the picture,
+// while captions.vtt is rewritten only every 70-78s. But the live track has no
+// "UNIDENTIFIED SPEAKER:" markers — those are added by the stenographer in the
+// sidecar only — so there are no turn boundaries to split on. resolveLiveFloor
+// replays just the events that move the floor over a seeded binding table.
+const liveSeed = {
+  FLORIDA: roster.find((r) => r.last === 'MAST'),
+  MASSACHUSETTS: roster.find((r) => r.last === 'MOULTON'),
+};
+const live = (t) => H.resolveLiveFloor(t, roster, liveSeed);
+
+check('state-only hand-off resolves off the seed',
+  live('AND I YIELD BACK. GENTLEMAN RESERVES. THE GENTLEMAN FROM FLORIDA IS RECOGNIZED.').member.last, 'Mast');
+check('a name in the recognition wins',
+  live('WITHOUT OBJECTION, THE GENTLEMAN FROM COLORADO, MR. CROW, IS RECOGNIZED FOR ONE MINUTE.').member.last, 'Crow');
+check('yield then a bare recognition',
+  live('I YIELD THREE MINUTES TO MY COLLEAGUE FROM COLORADO, MR. CROW. GENTLEMAN RECOGNIZED FOR THREE MINUTES.').member.last, 'Crow');
+check('the LAST hand-off wins, not the first',
+  live('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED. ... THE GENTLEMAN FROM MASSACHUSETTS IS RECOGNIZED.').member.last, 'Moulton');
+
+// Text with no hand-off must report nothing, so the caller keeps the server's
+// answer instead of blanking a correct name mid-speech.
+check('no hand-off in the text yields null',
+  live('AND THAT IS WHY I URGE MY COLLEAGUES TO SUPPORT THIS GOOD LEGISLATION.'), null);
+check('no roster yields null', H.resolveLiveFloor('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED.', [], {}), null);
+check('empty text yields null', H.resolveLiveFloor('', roster, liveSeed), null);
+
+// Roll-up captions repeat the previous line with every new one.
+check('roll-up duplicates collapse',
+  H.dedupeLiveCues([{ text: 'A B' }, { text: 'C D' }, { text: 'A B' }, { text: '  ' }, { text: 'C  D' }]),
+  ['A B', 'C D']);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
