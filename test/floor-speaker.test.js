@@ -75,12 +75,12 @@ const who = (hhmmss) => { const x = at(hhmmss); return x && (x.role !== 'speech'
 
 // Hand-verified against the caption text, turn by turn.
 check('04:21:41 clerk reads the title, not a member', who('04:21:41'), '[clerk]');
-check('04:22:02 manager UC request',                  who('04:22:02'), 'WESTERMAN');
-check('04:22:19 majority manager opens',              who('04:22:19'), 'WESTERMAN');
-check('04:24:21 minority manager responds',           who('04:24:21'), 'HOYLE');
-check('04:26:34 yielded sponsor speaks',              who('04:26:34'), 'MCCLINTOCK');
-check('04:29:39 floor returns to manager',            who('04:29:39'), 'WESTERMAN');
-check('04:29:46 minority manager closes',             who('04:29:46'), 'HOYLE');
+check('04:22:02 manager UC request',                  who('04:22:02'), 'Westerman');
+check('04:22:19 majority manager opens',              who('04:22:19'), 'Westerman');
+check('04:24:21 minority manager responds',           who('04:24:21'), 'Hoyle');
+check('04:26:34 yielded sponsor speaks',              who('04:26:34'), 'McClintock');
+check('04:29:39 floor returns to manager',            who('04:29:39'), 'Westerman');
+check('04:29:46 minority manager closes',             who('04:29:46'), 'Hoyle');
 
 // "GENTLEMAN FROM ARKANSAS." with no verb is the chair trailing off mid-handoff.
 // Read as a member turn it silently keeps the previous speaker on the floor.

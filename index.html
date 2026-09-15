@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260913e">
+    <link rel="stylesheet" href="styles.css?v=20260914a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1373,8 +1373,19 @@
         <div id="youtube-pip" class="youtube-pip" aria-label="Live floor feed">
             <div class="youtube-pip-header">
                 <div class="youtube-pip-header-left">
-                    <span class="pip-live-dot"></span>
-                    <span class="youtube-pip-label">LIVE FLOOR FEED</span>
+                    <div class="youtube-pip-title-row">
+                        <span class="pip-live-dot"></span>
+                        <span class="youtube-pip-label">LIVE FLOOR FEED</span>
+                    </div>
+                    <!-- Who is speaking. Populated by the floor-speaker poller in app.js
+                         from /api/floor-speaker; hidden until there is something to say. -->
+                    <div class="pip-speaker" id="pip-speaker" hidden>
+                        <span class="pip-speaker-photo-wrap" id="pip-speaker-photo-wrap"></span>
+                        <span class="pip-speaker-text">
+                            <span class="pip-speaker-name" id="pip-speaker-name"></span>
+                            <span class="pip-speaker-meta" id="pip-speaker-meta"></span>
+                        </span>
+                    </div>
                 </div>
                 <div class="youtube-pip-header-right">
                     <button class="pip-mute-btn" id="pip-mute-btn" aria-label="Unmute" aria-pressed="false" title="Unmute">
@@ -1526,7 +1537,7 @@
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
-    <script defer src="app.js?v=20260913b"></script>
+    <script defer src="app.js?v=20260914a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
