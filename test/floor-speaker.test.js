@@ -154,6 +154,34 @@ check('08:36:18 "GENTLEMAN RECOGNIZED." is the chair', hoAt('08:36:18').role, 'c
 check('08:36:20 reply is Moulton, not Mast', hoWho('08:36:20'), 'Moulton');
 check('08:36:20 attributed with full confidence', hoAt('08:36:20').confidence, 0.9);
 
+// A yield is where most members are named at all, and members do not say
+// "gentleman" — Moulton handed Crow three minutes as "MY DISTINGUISHED COLLEAGUE
+// FROM COLORADO, MR. CROW". With only the chair's nouns accepted, that name was
+// invisible and the chair's follow-up ("GENTLEMAN RECOGNIZED FOR THREE MINUTES.",
+// no state) fell back to the manager — captioning Crow's three minutes as Moulton.
+check('08:51:44 yielded member is Crow, not the manager', hoWho('08:51:44'), 'Crow');
+check('08:51:44 credited to the yield', hoAt('08:51:44').basis, 'yielded-named');
+
+// Backstop for when the yield itself cannot be read: nobody thanks themselves.
+const selfThank = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM FLORIDA, MR. MAST, AND THE GENTLEMAN FROM MASSACHUSETTS, MR. MOULTON, EACH WILL CONTROL 30 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM MASSACHUSETTS IS RECOGNIZED.' },
+  { t: 2, text: 'THANK YOU, MR. SPEAKER. AND THANK YOU, REPRESENTATIVE MOULTON, FOR YOUR LEADERSHIP ON THIS.' },
+], roster);
+check('a member thanking Moulton is not Moulton', selfThank.timeline[2].member, null);
+check('self-thank is reported as contradicted', selfThank.timeline[2].basis, 'contradicted');
+
+// "I YIELD AS MUCH TIME AS I MAY CONSUME TO BRIEFLY RESPOND" is a yield to SELF;
+// the "to" is an infinitive. Reading it as a hand-off blanks the speaker.
+const infinitive = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM FLORIDA, MR. MAST, AND THE GENTLEMAN FROM MASSACHUSETTS, MR. MOULTON, EACH WILL CONTROL 30 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM FLORIDA IS RECOGNIZED.' },
+  { t: 2, text: 'I YIELD AS MUCH TIME AS I MAY CONSUME TO BRIEFLY RESPOND TO MY COLLEAGUE.' },
+  { t: 3, text: 'THE GENTLEMAN IS RECOGNIZED.' },
+  { t: 4, text: 'AS I WAS SAYING, THE THREAT IS REAL.' },
+], roster);
+check('yield-to-self keeps the floor', infinitive.timeline[4].member && infinitive.timeline[4].member.last, 'Mast');
+
 // A member's own sentence can end in a state name. That must never be read as a
 // chair hand-off, or a manager yielding would hand the floor to themselves.
 const selfYield = H.resolveFloorSpeakers(
