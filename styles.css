@@ -2015,10 +2015,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .youtube-pip-header {
   display: flex;
-  /* Top-aligned, not centred: the left side is now a two-line stack (label over
-     the current speaker) and the mute/close buttons must stay level with the
-     label rather than drifting down to the middle of the stack. */
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--sp-8);
   padding: var(--sp-8) var(--sp-12);
@@ -2028,34 +2025,32 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .youtube-pip-header-left {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-6);
-  min-width: 0; /* lets the speaker name below actually ellipsis instead of pushing the buttons off */
-}
-
-.youtube-pip-title-row {
-  display: flex;
   align-items: center;
   gap: var(--sp-6);
-}
-
-/* ── Current speaker ───────────────────────────────────────────────────────
-   Nobody is named in the House caption feed, so this line is always an
-   inference (see lib/floor-speaker.js). When the guess is weak it is dimmed
-   and marked, and when there is no guess at all it says so rather than
-   leaving the last member's face under a live camera pointed at someone else. */
-.pip-speaker {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-6);
-  max-width: 100%;
   min-width: 0;
 }
 
+/* ── Current speaker ───────────────────────────────────────────────────────
+   Its own band directly beneath the picture, above the source line, so the name
+   sits with the face it describes rather than with the panel's title.
+
+   Nobody is named in the House caption feed, so this line is always an inference
+   (see lib/floor-speaker.js). When the guess is weak it is dimmed and marked, and
+   when there is no guess at all it says so rather than leaving the last member's
+   face under a live camera pointed at someone else. */
+.pip-speaker {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-6) var(--sp-12);
+  background: var(--bg-elevated);
+  min-width: 0;
+  overflow: hidden;
+}
+
 .pip-speaker-photo-wrap {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   position: relative;
   border-radius: var(--radius-6);
@@ -2091,7 +2086,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .pip-speaker-name {
-  font-size: var(--fs-md);
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -2100,7 +2095,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .pip-speaker-meta {
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   letter-spacing: var(--track-wide);
   text-transform: uppercase;
   color: var(--text-muted);
