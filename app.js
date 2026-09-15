@@ -10540,8 +10540,18 @@ function updateLastUpdate() {
         if (window.Hls && Hls.isSupported()) {
             if (pipHls) { try { pipHls.destroy(); } catch {} pipHls = null; }
             pipHls = new Hls({
-                maxBufferLength: 2, maxMaxBufferLength: 4,
-                liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2,
+                // Enough buffer to actually survive a hiccup. At maxBufferLength 2
+                // with liveSyncDurationCount 1 the player sat one 2s segment from
+                // the live edge and repeatedly ran the buffer to zero; measured on
+                // the live feed, frames dropped exactly when it did — 0 dropped per
+                // 4s while 2s were buffered, 29 then 61 once the buffer hit 0.
+                //
+                // Six seconds behind the edge instead of two costs nothing that
+                // matters here: the speaker attribution beside this video comes
+                // from captions that already trail the picture by about 90s, so
+                // four more seconds of video latency is not perceptible in context.
+                maxBufferLength: 10, maxMaxBufferLength: 30,
+                liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 10,
                 liveDurationInfinity: true,
                 // The level is chosen explicitly in applyPipLevel() rather than by
                 // hls.js, because it has to follow expand/collapse rather than the
