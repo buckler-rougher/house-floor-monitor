@@ -2628,6 +2628,11 @@ async function handleFloorSpeaker(request, env) {
       lastModified,
       turns: turns.length,
       current: resolved.current,
+      // 'in-session' | 'recess' | 'adjourned'. Taken from the Speaker's own words
+      // in the captions, because the broadcast API is no help: isLiveBroadcast was
+      // still "True" with an empty endDate long after the House had gavelled out.
+      sessionState: resolved.sessionState,
+      sessionUntil: resolved.sessionUntil,
       managers: resolved.managers,
       bindings: resolved.bindings,
       speechTurns: resolved.speechTurns,
