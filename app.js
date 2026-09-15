@@ -10555,106 +10555,88 @@ function updateLastUpdate() {
     // Mute/unmute toggle
     // ── Live audio tap ────────────────────────────────────────────────────────
     //
-    // Feeds the waveform beside the speaker's name from the floor's actual audio,
-    // so the bars move when somebody is talking.
+    // Feeds the level meter beside the speaker's name from the floor's real audio.
     //
-    // The catch is that the PiP autoplays, which browsers only allow while muted —
-    // and a muted element hands an AnalyserNode pure silence. Measured on the live
-    // stream: peak-to-peak 0, 0, 0, 0 while muted, then 89, 66, 33, 55, 100 the
-    // instant the element was unmuted.
+    // captureStream() taps the element's media directly, and crucially it keeps
+    // delivering audio while the element is MUTED — verified on the live stream:
+    // peak-to-peak 1, 161, 5, 1, 1, 125, 33, 3 with muted true and playback
+    // untouched. That matters because the obvious route, createMediaElementSource,
+    // hands back pure silence from a muted element, and unmuting to fix that is
+    // what froze the video: unmuting an autoplaying element without a user gesture
+    // makes Chrome pause it.
     //
-    // So the element is unmuted and audibility moves to a gain node instead: the
-    // analyser sees real samples while the viewer hears nothing until they ask to.
-    // From here on `muted` is an implementation detail and gainNode.gain is the
-    // mute control — the button below switches to it once this succeeds.
-    //
-    // Everything is conditional on that succeeding. If the AudioContext will not
-    // start, or unmuting trips an autoplay policy and pauses playback, the tap is
-    // abandoned and the element goes back to plain muted autoplay: a still icon is
-    // a far better outcome than a dead video.
-    let audioGraph = null;      // the routing, permanent once built
-    let meterLive = false;      // whether we are holding the element unmuted for it
-    let audioTapTried = false;  // createMediaElementSource throws on a second call
-    let wantSound = false;      // what the viewer asked for, independent of `muted`
+    // So nothing here touches `muted`, needs a gesture, or reroutes the element's
+    // own audio. The mute button below is left exactly as it was.
+    let audioTap = null;        // { ctx, analyser, buf, history }
+    let audioTapTried = false;
+    let audioTapNextTry = 0;
+    const METER_BARS = 4;
 
-    // Only ever after a real user gesture.
-    //
-    // Unmuting an autoplaying element without one makes Chrome pause it, which is
-    // exactly what happened: the video froze to a still frame on a browser whose
-    // autoplay policy had not been satisfied, while behaving perfectly on one where
-    // it had. A 300ms "did it pause?" check missed it because the pause arrives
-    // later than that. A gesture removes the question rather than racing it.
-    async function ensureAudioTap() {
-        if (audioTapTried) return;
-        audioTapTried = true;
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
+    function ensureAudioTap() {
+        // Called from the meter's animation frame, so the retry is throttled: the
+        // audio track is not there the instant the element is, and captureStream()
+        // mints a new MediaStream every call.
+        if (audioTapTried || performance.now() < audioTapNextTry) return;
+        const capture = pipVideo.captureStream || pipVideo.mozCaptureStream;
+        if (!capture) { audioTapTried = true; return; }
+        audioTapNextTry = performance.now() + 1000;
         try {
+            const stream = capture.call(pipVideo);
+            if (!stream.getAudioTracks().length) return;   // audio not up yet; retry later
+            audioTapTried = true;
+            const AC = window.AudioContext || window.webkitAudioContext;
             const ctx = new AC();
-            const src = ctx.createMediaElementSource(pipVideo);
             const analyser = ctx.createAnalyser();
-            analyser.fftSize = 64;               // 32 bins is plenty for four bars
-            analyser.smoothingTimeConstant = 0.65;
-            const gain = ctx.createGain();
-            gain.gain.value = wantSound ? 1 : 0;
-            src.connect(analyser); analyser.connect(gain); gain.connect(ctx.destination);
-            audioGraph = { ctx, analyser, gain, bins: new Uint8Array(analyser.frequencyBinCount) };
-            pipVideo.muted = false;
-            meterLive = true;
-            await ctx.resume().catch(() => {});
-            syncMuteBtn();
+            analyser.fftSize = 1024;
+            ctx.createMediaStreamSource(stream).connect(analyser);
+            // Sunk through a silent gain: some engines will not pull a stream source
+            // that reaches no destination, and zero gain guarantees the tap stays
+            // inaudible no matter what the element is doing.
+            const sink = ctx.createGain(); sink.gain.value = 0;
+            analyser.connect(sink); sink.connect(ctx.destination);
+            ctx.resume().catch(() => {});
+            audioTap = { ctx, analyser, buf: new Uint8Array(analyser.fftSize), history: new Array(METER_BARS).fill(0), last: 0 };
         } catch (_) {
-            surrenderAudioTap();
+            audioTap = null;
         }
     }
-
-    // Give the element back its own mute control and stop the meter.
-    //
-    // createMediaElementSource cannot be undone — the audio is routed through the
-    // graph for the life of the element — so the gain is opened to 1 on the way
-    // out. Leaving it at 0 would make `muted = false` produce silence forever, a
-    // permanently broken mute button.
-    function surrenderAudioTap() {
-        if (audioGraph) { try { audioGraph.gain.gain.value = 1; } catch (_) {} }
-        meterLive = false;
-        pipVideo.muted = !wantSound;
-        syncMuteBtn();
-        pipVideo.play().catch(() => {});
-    }
-
-    // Belt and braces. If the element pauses while we are holding it unmuted, and
-    // it is not the deliberate freeze at end of stream, assume the policy objected
-    // and hand the element back rather than leaving a still frame on screen.
-    pipVideo.addEventListener('pause', () => {
-        if (!meterLive || pipFrozen) return;
-        surrenderAudioTap();
-    });
-
+    // An AudioContext created before any interaction can start suspended; a gesture
+    // is the only thing that can start it. Harmless when it is already running.
     ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
-        window.addEventListener(ev, () => ensureAudioTap(), { capture: true, passive: true }));
+        window.addEventListener(ev, () => { audioTap && audioTap.ctx.resume().catch(() => {}); },
+            { capture: true, passive: true }));
 
-    // Four bands, 0..1, or null when there is nothing real to show. The speaker
-    // row reads this; a suspended context returns silence, not stale values.
+    // Loudness over TIME, not across the spectrum.
+    //
+    // Splitting the spectrum into four bands looked wrong because speech energy is
+    // overwhelmingly low: the left bar sat pegged at full height and the right two
+    // barely moved. Four slices of recent loudness instead, shifted along on each sample,
+    // so the bars scroll like a waveform and all of them move with the voice.
     window.__pipAudioLevels = () => {
-        if (!meterLive || !audioGraph || audioGraph.ctx.state !== 'running' || pipVideo.paused) return null;
-        const { analyser, bins } = audioGraph;
-        analyser.getByteFrequencyData(bins);
-        // Low bins carry most speech energy, so the bands are widened as they rise
-        // rather than split evenly — an even split leaves the top two bars dead.
-        const edges = [0, 3, 7, 14, 26];
-        const out = [];
-        for (let b = 0; b < 4; b++) {
+        ensureAudioTap();
+        if (!audioTap || audioTap.ctx.state !== 'running' || pipVideo.paused) return null;
+        const now = performance.now();
+        if (now - audioTap.last >= 80) {          // ~12Hz; faster just blurs
+            audioTap.last = now;
+            audioTap.analyser.getByteTimeDomainData(audioTap.buf);
             let sum = 0;
-            for (let i = edges[b]; i < edges[b + 1] && i < bins.length; i++) sum += bins[i];
-            out.push(Math.min(1, (sum / (edges[b + 1] - edges[b]) / 255) * 1.7));
+            for (let i = 0; i < audioTap.buf.length; i++) {
+                const d = (audioTap.buf[i] - 128) / 128;
+                sum += d * d;
+            }
+            const rms = Math.sqrt(sum / audioTap.buf.length);
+            // Speech RMS sits low; the curve lifts quiet passages into visible range
+            // without letting loud ones peg.
+            audioTap.history.push(Math.min(1, Math.pow(rms * 3.2, 0.7)));
+            audioTap.history.shift();
         }
-        return out;
+        return audioTap.history.slice();
     };
 
     const muteBtn = document.getElementById('pip-mute-btn');
     function syncMuteBtn() {
         if (!muteBtn) return;
-        const unmuted = meterLive ? wantSound : !pipVideo.muted;
+        const unmuted = !pipVideo.muted;
         muteBtn.classList.toggle('is-unmuted', unmuted);
         muteBtn.setAttribute('aria-pressed', String(unmuted));
         muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
@@ -10663,19 +10645,8 @@ function updateLastUpdate() {
     if (muteBtn) {
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            wantSound = meterLive ? !wantSound : pipVideo.muted;
-            if (meterLive && audioGraph) {
-                // Ramped rather than stepped: a gain node snapping between 0 and 1
-                // clicks audibly. Also a user gesture, so a context the autoplay
-                // policy left suspended can finally start.
-                const t = audioGraph.ctx.currentTime;
-                audioGraph.gain.gain.cancelScheduledValues(t);
-                audioGraph.gain.gain.setTargetAtTime(wantSound ? 1 : 0, t, 0.02);
-                audioGraph.ctx.resume().catch(() => {});
-            } else {
-                pipVideo.muted = !wantSound;
-            }
-            pipVideo.play().catch(() => {});
+            pipVideo.muted = !pipVideo.muted;
+            if (!pipVideo.muted) pipVideo.play().catch(() => {});
             syncMuteBtn();
         });
         pipVideo.addEventListener('volumechange', syncMuteBtn);
