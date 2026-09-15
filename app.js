@@ -10346,6 +10346,38 @@ function updateLastUpdate() {
         commitCaption(el, capDisp.filter(Boolean).join('\n'));
     }
     let pipCaptionPoll = null;
+    // The video's own CEA-608 track, accumulated for the speaker readout.
+    //
+    // These cues arrive AHEAD of the picture, while captions.vtt — the sidecar the
+    // server parses — is rewritten by the Clerk only every 70-78 seconds. Reading
+    // hand-offs off this track is the difference between naming the new speaker as
+    // the chair recognises them and naming them a minute later.
+    //
+    // Roll-up captions repeat the previous line with every new one, so this dedupes
+    // by text and keeps a bounded tail: only the recent past can contain a hand-off
+    // that has not already been reflected.
+    const LIVE_TEXT_MAX = 12000;
+    let liveCaptionText = '';
+    const _liveSeen = new Set();
+
+    function harvestLiveCues() {
+        if (!pipCaptionTrack || !pipCaptionTrack.cues) return;
+        const cues = pipCaptionTrack.cues;
+        let added = '';
+        for (let i = 0; i < cues.length; i++) {
+            const line = (cues[i].text || '').replace(/\s+/g, ' ').trim();
+            if (!line || _liveSeen.has(line)) continue;
+            _liveSeen.add(line);
+            added += (added ? ' ' : '') + line;
+        }
+        if (!added) return;
+        liveCaptionText = (liveCaptionText + ' ' + added).slice(-LIVE_TEXT_MAX);
+        // The dedupe set must not grow all session; the tail is what matters.
+        if (_liveSeen.size > 4000) _liveSeen.clear();
+        if (typeof window.__onLiveCaptionText === 'function') window.__onLiveCaptionText(liveCaptionText);
+    }
+    window.__liveCaptionText = () => liveCaptionText;
+
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
         if (!tracks.length) return false;
@@ -10357,7 +10389,7 @@ function updateLastUpdate() {
         // reliably fire cuechange on hidden tracks, but it DOES keep activeCues
         // populated. renderActiveCues dedupes, so a 250ms poll is cheap and
         // repaints only when the caption text actually changes.
-        if (!pipCaptionPoll) pipCaptionPoll = setInterval(renderActiveCues, 250);
+        if (!pipCaptionPoll) pipCaptionPoll = setInterval(() => { renderActiveCues(); harvestLiveCues(); }, 250);
         // Also listen for cuechange where it does fire (Chrome) for instant updates.
         english.removeEventListener('cuechange', renderActiveCues);
         english.addEventListener('cuechange', renderActiveCues);
@@ -10692,6 +10724,42 @@ function updateLastUpdate() {
 
     const formatCaptionAge = (s) => (s < 90 ? `${s}s` : `${Math.round(s / 60)}m`);
 
+    // Server state, kept so the live path can resolve against it. The bindings are
+    // the load-bearing part: a live "THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED"
+    // means nothing without knowing who controls Arkansas's time on this measure,
+    // and the line that established that scrolled past hours ago.
+    let serverData = null;
+    let liveRoster = null;
+
+    // The roster is needed client-side to fuzzy-match surnames out of live captions.
+    // Fetched once; the Clerk publishes it monthly.
+    async function ensureRoster() {
+        if (liveRoster) return liveRoster;
+        try {
+            const r = await fetch('https://api.evanhollander.org/house-floor/api/member-data');
+            const j = await r.json();
+            const built = globalThis.HouseFloorSpeaker?.buildRoster(j.xmlData || '');
+            if (built && built.length) liveRoster = built;
+        } catch {}
+        return liveRoster;
+    }
+
+    // Re-resolve from the video's own caption track whenever new text arrives.
+    // Falls back silently: if the live tail holds no hand-off, or the roster has not
+    // loaded, the server's slower answer stands rather than blanking the row.
+    function tryLive() {
+        const H = globalThis.HouseFloorSpeaker;
+        if (!H || !liveRoster || !serverData || !serverData.available) return null;
+        const text = typeof window.__liveCaptionText === 'function' ? window.__liveCaptionText() : '';
+        if (!text) return null;
+        const seed = {};
+        for (const b of serverData.bindings || []) {
+            const m = liveRoster.find((r) => r.bioguideId === b.bioguideId);
+            if (m) seed[b.state] = m;
+        }
+        try { return H.resolveLiveFloor(text, liveRoster, seed); } catch { return null; }
+    }
+
     function renderPhoto(bioguideId) {
         // Only rebuild the <img> when the member actually changes, so the fade-in
         // does not restart on every 20s poll of the same speaker.
@@ -10703,12 +10771,22 @@ function updateLastUpdate() {
     }
 
     function render(data) {
-        if (!data || !data.available || !data.current) return clear();
-        const cur = data.current;
+        if (data) serverData = data;
+        if (!serverData || !serverData.available || !serverData.current) return clear();
+
+        // The video's caption track is ahead of the sidecar the server parses, so a
+        // hand-off found there supersedes the server's answer outright — including
+        // its staleness, which no longer applies to a name read off the live stream.
+        const live = tryLive();
+        const useLive = !!(live && live.member);
+
+        const cur = useLive
+            ? { member: live.member, basis: live.basis, confidence: 0.9 }
+            : serverData.current;
         const member = cur.member;
         const conf = typeof cur.confidence === 'number' ? cur.confidence : 0;
 
-        const age = typeof data.captionAgeSeconds === 'number' ? data.captionAgeSeconds : null;
+        const age = useLive ? 0 : (typeof serverData.captionAgeSeconds === 'number' ? serverData.captionAgeSeconds : null);
         const stale = age !== null && age > STALE_AFTER_S;
 
         row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
@@ -10738,7 +10816,8 @@ function updateLastUpdate() {
         }
 
         row.title = [
-            age !== null ? `captions last updated ${formatCaptionAge(age)} ago` : null,
+            useLive ? 'from the live caption track in the video stream' :
+                (age !== null ? `captions last updated ${formatCaptionAge(age)} ago` : null),
             member ? `${member.first} ${member.last} (${member.party}-${member.state})` : 'Not identified in the captions',
             cur.basis ? `basis: ${cur.basis}` : null,
             typeof cur.confidence === 'number' ? `confidence: ${Math.round(cur.confidence * 100)}%` : null,
@@ -10749,12 +10828,18 @@ function updateLastUpdate() {
 
     function poll() {
         if (document.hidden) return schedule();
+        ensureRoster();
         fetch('https://api.evanhollander.org/house-floor/api/floor-speaker?limit=1')
             .then(r => r.json())
             .then(render)
             .catch(() => { /* leave the last state; a blip should not blank the line */ })
             .finally(schedule);
     }
+
+    // New caption text arrives every few hundred milliseconds. Re-rendering is
+    // cheap and idempotent, and this is what makes the name change at the moment
+    // the chair is heard to recognise somebody.
+    window.__onLiveCaptionText = () => { if (serverData) render(null); };
 
     function schedule() {
         if (timer !== null) clearTimeout(timer);
