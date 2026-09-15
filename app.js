@@ -10831,6 +10831,16 @@ function updateLastUpdate() {
     // A live track with no new cues for this long has stalled (paused video, ended
     // stream) and stops counting as coverage, however long it ran before.
     const LIVE_DEAD_AFTER_MS = 30000;
+    // How far the sidecar's CONTENT trails the live caption track, on top of how
+    // long ago the file was written. Measured against a real hand-off: the sidecar
+    // named the previous speaker for 57 seconds after the video's own caption track
+    // had carried the new recognition, while reporting itself freshly written.
+    //
+    // Counting only the write age let the row assert a name it could not know was
+    // current — silently, because the shortfall looked small. On a page that has
+    // just loaded, with the live track having watched almost nothing yet, the true
+    // exposure is closer to two minutes.
+    const SIDECAR_CONTENT_LAG_S = 60;
     let timer = null;
     let lastPhotoId;   // undefined = nothing rendered yet; null = deliberately blank
 
@@ -10854,7 +10864,7 @@ function updateLastUpdate() {
         const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
         const watching = meta && meta.firstCueAt && (Date.now() - meta.lastCueAt) < LIVE_DEAD_AFTER_MS;
         const coverage = watching ? Math.round((Date.now() - meta.firstCueAt) / 1000) : 0;
-        return Math.max(0, captionAge - coverage);
+        return Math.max(0, captionAge + SIDECAR_CONTENT_LAG_S - coverage);
     }
 
     // Server state, kept so the live path can resolve against it. The bindings are
