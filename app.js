@@ -10586,7 +10586,6 @@ function updateLastUpdate() {
     let audioTap = null;        // { ctx, analyser, buf, history }
     let audioTapTried = false;
     let audioTapNextTry = 0;
-    const METER_BARS = 4;
 
     function ensureAudioTap() {
         // Called from the meter's animation frame, so the retry is throttled: the
@@ -10611,7 +10610,7 @@ function updateLastUpdate() {
             const sink = ctx.createGain(); sink.gain.value = 0;
             analyser.connect(sink); sink.connect(ctx.destination);
             ctx.resume().catch(() => {});
-            audioTap = { ctx, analyser, buf: new Uint8Array(analyser.fftSize), history: new Array(METER_BARS).fill(0), last: 0 };
+            audioTap = { ctx, analyser, buf: new Uint8Array(analyser.fftSize) };
         } catch (_) {
             audioTap = null;
         }
@@ -10622,31 +10621,22 @@ function updateLastUpdate() {
         window.addEventListener(ev, () => { audioTap && audioTap.ctx.resume().catch(() => {}); },
             { capture: true, passive: true }));
 
-    // Loudness over TIME, not across the spectrum.
-    //
-    // Splitting the spectrum into four bands looked wrong because speech energy is
-    // overwhelmingly low: the left bar sat pegged at full height and the right two
-    // barely moved. Four slices of recent loudness instead, shifted along on each sample,
-    // so the bars scroll like a waveform and all of them move with the voice.
-    window.__pipAudioLevels = () => {
+    // A single loudness figure, 0..1, or null when there is no real audio to read.
+    // The meter owns the scrolling history so that this and the caption-flow
+    // fallback below can feed the same animation.
+    window.__pipAudioLevel = () => {
         ensureAudioTap();
         if (!audioTap || audioTap.ctx.state !== 'running' || pipVideo.paused) return null;
-        const now = performance.now();
-        if (now - audioTap.last >= 80) {          // ~12Hz; faster just blurs
-            audioTap.last = now;
-            audioTap.analyser.getByteTimeDomainData(audioTap.buf);
-            let sum = 0;
-            for (let i = 0; i < audioTap.buf.length; i++) {
-                const d = (audioTap.buf[i] - 128) / 128;
-                sum += d * d;
-            }
-            const rms = Math.sqrt(sum / audioTap.buf.length);
-            // Speech RMS sits low; the curve lifts quiet passages into visible range
-            // without letting loud ones peg.
-            audioTap.history.push(Math.min(1, Math.pow(rms * 3.2, 0.7)));
-            audioTap.history.shift();
+        audioTap.analyser.getByteTimeDomainData(audioTap.buf);
+        let sum = 0;
+        for (let i = 0; i < audioTap.buf.length; i++) {
+            const d = (audioTap.buf[i] - 128) / 128;
+            sum += d * d;
         }
-        return audioTap.history.slice();
+        const rms = Math.sqrt(sum / audioTap.buf.length);
+        // Speech RMS sits low; the curve lifts quiet passages into visible range
+        // without letting loud ones peg.
+        return Math.min(1, Math.pow(rms * 3.2, 0.7));
     };
 
     const muteBtn = document.getElementById('pip-mute-btn');
@@ -11057,28 +11047,61 @@ function updateLastUpdate() {
     poll();
 
     // ── The level meter ───────────────────────────────────────────────────────
-    // Driven from the floor audio (see the tap in the PiP block). Runs only while
-    // the row is on screen and the tab is visible; a hidden tab throttles rAF to a
-    // crawl anyway, and there is nothing to look at.
-    const IDLE_H = 4.6, IDLE_Y = 9.7, MAX_H = 19;
+    //
+    // Two sources, same animation.
+    //
+    // Real audio, where the browser allows it. Chromium does: captureStream() taps
+    // a muted element and an AudioContext will start without a gesture. Safari does
+    // not implement captureStream() on media elements at all, and Firefox restricts
+    // mozCaptureStream() for MSE-backed media, which is exactly what hls.js feeds
+    // the element — and neither will start an AudioContext unprompted. A real
+    // amplitude meter with no click is therefore impossible there, browser policy
+    // rather than something to engineer around.
+    //
+    // So elsewhere the bars follow the rate the CAPTIONS are arriving at. That is
+    // still the floor speaking — the words appear as they are spoken — it is simply
+    // activity rather than volume. It moves while somebody is talking and settles
+    // flat when the floor goes quiet, which is what the meter is there to show.
+    const IDLE_H = 4.6, IDLE_Y = 9.7, MAX_H = 19, SAMPLE_MS = 80;
     const bars = document.getElementById('pip-speaker-wave');
     if (bars) {
         const rects = [...bars.querySelectorAll('rect')];
-        let idled = true;
+        const history = new Array(rects.length).fill(0);
+        let lastSample = 0, idled = true, lastChars = null, capEnv = 0;
+
+        // Caption flow as a stand-in for loudness: characters arriving per sample,
+        // with a decay so one line of captions reads as a pulse rather than a step.
+        const captionLevel = () => {
+            const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
+            if (!meta || !meta.lastCueAt || Date.now() - meta.lastCueAt > 15000) return null;
+            const delta = lastChars === null ? 0 : Math.max(0, meta.totalChars - lastChars);
+            lastChars = meta.totalChars;
+            capEnv = Math.max(capEnv * 0.82, Math.min(1, delta / 14));
+            return capEnv;
+        };
+
         const draw = () => {
             requestAnimationFrame(draw);
             if (document.hidden || row.hidden) return;
-            const levels = typeof window.__pipAudioLevels === 'function' ? window.__pipAudioLevels() : null;
-            if (!levels) {
-                // Settle flat once, then stop touching the DOM until audio returns.
+            const now = performance.now();
+            if (now - lastSample < SAMPLE_MS) return;
+            lastSample = now;
+
+            const audio = typeof window.__pipAudioLevel === 'function' ? window.__pipAudioLevel() : null;
+            const level = audio !== null ? audio : captionLevel();
+
+            if (level === null) {
+                // Settle flat once, then stop touching the DOM until signal returns.
                 if (idled) return;
                 idled = true;
+                history.fill(0);
                 for (const r of rects) { r.setAttribute('y', IDLE_Y); r.setAttribute('height', IDLE_H); }
                 return;
             }
             idled = false;
+            history.push(level); history.shift();
             for (let i = 0; i < rects.length; i++) {
-                const h = IDLE_H + (MAX_H - IDLE_H) * (levels[i] || 0);
+                const h = IDLE_H + (MAX_H - IDLE_H) * history[i];
                 rects[i].setAttribute('height', h.toFixed(2));
                 rects[i].setAttribute('y', (12 - h / 2).toFixed(2));
             }
