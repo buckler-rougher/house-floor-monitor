@@ -10676,12 +10676,21 @@ function updateLastUpdate() {
     const meta  = document.getElementById('pip-speaker-meta');
     if (!row || !photo || !name || !meta) return;
 
-    const POLL_MS = 20000;   // captions are rewritten every ~15-30s; the API caches 15s
+    // The Clerk rewrites the caption blob irregularly — 78s gaps were measured
+    // live — and that delay is not ours to remove. Polling hard at least stops us
+    // adding to it: the API answers a 304 from its own parse, so this is cheap.
+    const POLL_MS = 8000;
     const CONFIDENT = 0.6;   // below this the resolver is carrying a stale attribution
+    // Past this, the caption text behind the name is old enough that the member on
+    // camera has plausibly already changed, so the page says so instead of
+    // presenting a stale name as current.
+    const STALE_AFTER_S = 45;
     let timer = null;
     let lastPhotoId = null;
 
     const clear = () => { row.hidden = true; lastPhotoId = null; };
+
+    const formatCaptionAge = (s) => (s < 90 ? `${s}s` : `${Math.round(s / 60)}m`);
 
     function renderPhoto(bioguideId) {
         // Only rebuild the <img> when the member actually changes, so the fade-in
@@ -10699,15 +10708,20 @@ function updateLastUpdate() {
         const member = cur.member;
         const conf = typeof cur.confidence === 'number' ? cur.confidence : 0;
 
+        const age = typeof data.captionAgeSeconds === 'number' ? data.captionAgeSeconds : null;
+        const stale = age !== null && age > STALE_AFTER_S;
+
         row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
         row.classList.toggle('is-unknown', !member);
+        row.classList.toggle('is-stale', stale);
 
         if (member) {
             const party = (member.party || '').toUpperCase();
             const cls = party === 'R' ? 'r' : party === 'D' ? 'd' : 'i';
             name.textContent = `${member.first || ''} ${member.last || ''}`.trim();
             meta.innerHTML = `<span class="pip-speaker-party-${cls}">${escapeHtml(party || '?')}-${escapeHtml(member.state || '')}</span>` +
-                (conf < CONFIDENT ? ' · unconfirmed' : '');
+                (conf < CONFIDENT ? ' · unconfirmed' : '') +
+                (stale ? ` · ${formatCaptionAge(age)} behind` : '');
             renderPhoto(member.bioguideId);
         } else {
             // The chair recognised somebody without naming them. Say exactly that,
@@ -10724,10 +10738,10 @@ function updateLastUpdate() {
         }
 
         row.title = [
+            age !== null ? `captions last updated ${formatCaptionAge(age)} ago` : null,
             member ? `${member.first} ${member.last} (${member.party}-${member.state})` : 'Not identified in the captions',
             cur.basis ? `basis: ${cur.basis}` : null,
             typeof cur.confidence === 'number' ? `confidence: ${Math.round(cur.confidence * 100)}%` : null,
-            data.captionLagSeconds ? `captions run ~${data.captionLagSeconds}s behind the video` : null,
         ].filter(Boolean).join('\n');
 
         row.hidden = false;

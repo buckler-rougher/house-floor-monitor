@@ -2517,13 +2517,28 @@ async function fetchBroadcastEvents(dateId) {
 // and grows all day, and it is rewritten by the Clerk roughly every 15-30s, so a
 // shorter TTL buys nothing and a KV write of that payload on every poll would be
 // absurd. Nothing here is worth persisting: it is fully recomputable from the blob.
-function extractCaptionsUrl(data) {
-  if (!Array.isArray(data) || !data[0]) return null;
+// Both regional mirrors, because they are written on offset schedules and either
+// one can be the fresher. Sampled during a live session: central led east by 5-7s
+// most of the time, but at 01:18:54 east was 63 SECONDS ahead — a full write cycle,
+// since the Clerk only rewrites this blob every 70-78s. Taking whichever is newer
+// is the one piece of that delay actually available to us.
+function extractCaptionsUrls(data) {
+  if (!Array.isArray(data) || !data[0]) return [];
   const files = (data[0].asset || {}).files || [];
-  const vtt = files.filter(f => (f.type || '').toUpperCase() === 'WEBVTT');
-  if (!vtt.length) return null;
-  const preferred = vtt.find(f => f.url && f.url.includes('/east/')) || vtt[0];
-  return preferred?.url ? preferred.url.replace(/#.*$/, '') : null;
+  return files
+    .filter(f => (f.type || '').toUpperCase() === 'WEBVTT' && f.url)
+    .map(f => f.url.replace(/#.*$/, ''));
+}
+
+// Parsed caption state per asset URL, so a 304 can be answered without redoing
+// the work. One entry; the asset URL changes once per legislative day.
+const _captionParse = Object.create(null);
+
+function captionAge(lastModified) {
+  if (!lastModified) return null;
+  const t = Date.parse(lastModified);
+  if (!isFinite(t)) return null;
+  return Math.max(0, Math.round((Date.now() - t) / 1000));
 }
 
 async function handleFloorSpeaker(request, env) {
@@ -2536,18 +2551,19 @@ async function handleFloorSpeaker(request, env) {
   // for anything asking for a real timeline.
   const MEM_KEY = `floor-speaker:${dateId}:${limit}`;
   const memHit = _mGet(MEM_KEY);
-  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } });
+  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3' } });
 
   const reply = (obj, ttlMs) => {
     const body = JSON.stringify(obj);
     if (ttlMs > 0) _mSet(MEM_KEY, body, ttlMs);
-    return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${Math.round(ttlMs / 1000) || 15}` } });
+    return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${Math.max(Math.round(ttlMs / 1000), 3)}` } });
   };
 
   try {
     let events = null;
     try { events = await fetchBroadcastEvents(dateId); } catch { /* not started yet */ }
-    const captionsUrl = extractCaptionsUrl(events);
+    const captionsUrls = extractCaptionsUrls(events);
+    const captionsUrl = captionsUrls[0] || null;
     if (!captionsUrl) {
       // Before the first gavel there is no asset at all. Cache the miss so we do
       // not hammer the broadcast API from every page load on a non-session day.
@@ -2556,12 +2572,44 @@ async function handleFloorSpeaker(request, env) {
 
     const isLive = String((events[0] || {}).isLiveBroadcast || '').toLowerCase() === 'true';
 
-    const [vttResp, memberResp] = await Promise.all([
-      fetch(captionsUrl, { signal: AbortSignal.timeout(10000) }),
-      handleMemberData(env),
-    ]);
-    if (!vttResp.ok) return reply({ available: false, reason: `captions-${vttResp.status}`, date: dateId, current: null, timeline: [] }, 20_000);
+    // Conditional GET, so this can be polled hard without re-downloading 800KB or
+    // re-parsing 12,000 cues every few seconds. The Clerk rewrites the caption blob
+    // irregularly — gaps of 78s were measured during a live session — so almost
+    // every poll is a 304 and the previous parse is still the freshest thing that
+    // exists. Recomputing only on a genuine change is also what keeps this inside
+    // the Workers CPU budget at a 3s cache.
+    const cacheKey = (events[0].asset || {}).name || captionsUrl;
+    const prior = _captionParse[cacheKey];
 
+    const responses = await Promise.all(captionsUrls.map((u) =>
+      fetch(u, {
+        headers: prior?.etags?.[u] ? { 'If-None-Match': prior.etags[u] } : {},
+        signal: AbortSignal.timeout(10000),
+      }).catch(() => null)
+    ));
+    const memberResp = await handleMemberData(env);
+
+    // Newest 200 wins. Everything 304 (or failed) means nothing has moved since the
+    // last parse, which is then still the freshest text in existence.
+    let best = null;
+    for (let i = 0; i < responses.length; i++) {
+      const r = responses[i];
+      if (!r || !r.ok) continue;
+      const lm = Date.parse(r.headers.get('last-modified') || '') || 0;
+      if (!best || lm > best.lm) best = { resp: r, lm, url: captionsUrls[i] };
+    }
+
+    if (!best) {
+      if (prior) return reply({ ...prior.payload, captionAgeSeconds: captionAge(prior.lastModified) }, 3_000);
+      const failed = responses.find((r) => r && !r.ok);
+      return reply({ available: false, reason: `captions-${failed ? failed.status : 'unreachable'}`, date: dateId, current: null, timeline: [] }, 20_000);
+    }
+    // A mirror that went stale relative to what we already parsed is not an update.
+    if (prior && Date.parse(prior.lastModified || '') >= best.lm) {
+      return reply({ ...prior.payload, captionAgeSeconds: captionAge(prior.lastModified) }, 3_000);
+    }
+
+    const vttResp = best.resp;
     const vttText = await vttResp.text();
     const memberJson = await memberResp.json();
     const roster = globalThis.HouseFloorSpeaker.buildRoster(memberJson.xmlData || '');
@@ -2571,22 +2619,32 @@ async function handleFloorSpeaker(request, env) {
     const turns = H.splitTurns(H.parseCaptionCues(vttText));
     const resolved = H.resolveFloorSpeakers(turns, roster, { limit });
 
-    return reply({
+    const lastModified = vttResp.headers.get('last-modified') || null;
+    const payload = {
       available: true,
       date: dateId,
       isLive,
-      captionsUrl,
-      // Caption text trails the video live edge by roughly 90 seconds; surfaced so
-      // the UI can say "as of ~90s ago" rather than implying it is instantaneous.
-      captionLagSeconds: 90,
-      lastModified: vttResp.headers.get('last-modified') || null,
+      captionsUrl: best.url,
+      lastModified,
       turns: turns.length,
       current: resolved.current,
       managers: resolved.managers,
       speechTurns: resolved.speechTurns,
       resolvedPct: resolved.speechTurns ? Math.round(resolved.resolvedTurns / resolved.speechTurns * 100) : null,
       timeline: resolved.timeline,
-    }, isLive ? 15_000 : 120_000);
+    };
+
+    _captionParse[cacheKey] = {
+      etags: { ...(prior?.etags || {}), [best.url]: vttResp.headers.get('etag') || null },
+      lastModified,
+      payload,
+    };
+
+    // How old the underlying caption text is, which is what actually governs how
+    // far behind the picture this name can be. The page shows it once it gets
+    // large enough to matter, because a stale name beside a live camera is the
+    // failure a viewer notices and cannot otherwise explain.
+    return reply({ ...payload, captionAgeSeconds: captionAge(lastModified) }, isLive ? 3_000 : 120_000);
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
