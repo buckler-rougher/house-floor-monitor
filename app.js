@@ -10572,16 +10572,23 @@ function updateLastUpdate() {
     // start, or unmuting trips an autoplay policy and pauses playback, the tap is
     // abandoned and the element goes back to plain muted autoplay: a still icon is
     // a far better outcome than a dead video.
-    let audioTap = null;        // { ctx, analyser, gain, bins }
+    let audioGraph = null;      // the routing, permanent once built
+    let meterLive = false;      // whether we are holding the element unmuted for it
     let audioTapTried = false;  // createMediaElementSource throws on a second call
     let wantSound = false;      // what the viewer asked for, independent of `muted`
 
+    // Only ever after a real user gesture.
+    //
+    // Unmuting an autoplaying element without one makes Chrome pause it, which is
+    // exactly what happened: the video froze to a still frame on a browser whose
+    // autoplay policy had not been satisfied, while behaving perfectly on one where
+    // it had. A 300ms "did it pause?" check missed it because the pause arrives
+    // later than that. A gesture removes the question rather than racing it.
     async function ensureAudioTap() {
         if (audioTapTried) return;
         audioTapTried = true;
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return;
-        const wasMuted = pipVideo.muted;
         try {
             const ctx = new AC();
             const src = ctx.createMediaElementSource(pipVideo);
@@ -10591,25 +10598,46 @@ function updateLastUpdate() {
             const gain = ctx.createGain();
             gain.gain.value = wantSound ? 1 : 0;
             src.connect(analyser); analyser.connect(gain); gain.connect(ctx.destination);
+            audioGraph = { ctx, analyser, gain, bins: new Uint8Array(analyser.frequencyBinCount) };
             pipVideo.muted = false;
+            meterLive = true;
             await ctx.resume().catch(() => {});
-            // Give the autoplay policy a moment to object before trusting this.
-            await new Promise((r) => setTimeout(r, 300));
-            if (pipVideo.paused) throw new Error('unmuting paused playback');
-            audioTap = { ctx, analyser, gain, bins: new Uint8Array(analyser.frequencyBinCount) };
             syncMuteBtn();
         } catch (_) {
-            audioTap = null;
-            pipVideo.muted = wasMuted;
-            pipVideo.play().catch(() => {});
+            surrenderAudioTap();
         }
     }
+
+    // Give the element back its own mute control and stop the meter.
+    //
+    // createMediaElementSource cannot be undone — the audio is routed through the
+    // graph for the life of the element — so the gain is opened to 1 on the way
+    // out. Leaving it at 0 would make `muted = false` produce silence forever, a
+    // permanently broken mute button.
+    function surrenderAudioTap() {
+        if (audioGraph) { try { audioGraph.gain.gain.value = 1; } catch (_) {} }
+        meterLive = false;
+        pipVideo.muted = !wantSound;
+        syncMuteBtn();
+        pipVideo.play().catch(() => {});
+    }
+
+    // Belt and braces. If the element pauses while we are holding it unmuted, and
+    // it is not the deliberate freeze at end of stream, assume the policy objected
+    // and hand the element back rather than leaving a still frame on screen.
+    pipVideo.addEventListener('pause', () => {
+        if (!meterLive || pipFrozen) return;
+        surrenderAudioTap();
+    });
+
+    ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
+        window.addEventListener(ev, () => ensureAudioTap(), { capture: true, passive: true }));
 
     // Four bands, 0..1, or null when there is nothing real to show. The speaker
     // row reads this; a suspended context returns silence, not stale values.
     window.__pipAudioLevels = () => {
-        if (!audioTap || audioTap.ctx.state !== 'running' || pipVideo.paused) return null;
-        const { analyser, bins } = audioTap;
+        if (!meterLive || !audioGraph || audioGraph.ctx.state !== 'running' || pipVideo.paused) return null;
+        const { analyser, bins } = audioGraph;
         analyser.getByteFrequencyData(bins);
         // Low bins carry most speech energy, so the bands are widened as they rise
         // rather than split evenly — an even split leaves the top two bars dead.
@@ -10626,7 +10654,7 @@ function updateLastUpdate() {
     const muteBtn = document.getElementById('pip-mute-btn');
     function syncMuteBtn() {
         if (!muteBtn) return;
-        const unmuted = audioTap ? wantSound : !pipVideo.muted;
+        const unmuted = meterLive ? wantSound : !pipVideo.muted;
         muteBtn.classList.toggle('is-unmuted', unmuted);
         muteBtn.setAttribute('aria-pressed', String(unmuted));
         muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
@@ -10635,15 +10663,15 @@ function updateLastUpdate() {
     if (muteBtn) {
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            wantSound = audioTap ? !wantSound : pipVideo.muted;
-            if (audioTap) {
+            wantSound = meterLive ? !wantSound : pipVideo.muted;
+            if (meterLive && audioGraph) {
                 // Ramped rather than stepped: a gain node snapping between 0 and 1
                 // clicks audibly. Also a user gesture, so a context the autoplay
                 // policy left suspended can finally start.
-                const t = audioTap.ctx.currentTime;
-                audioTap.gain.gain.cancelScheduledValues(t);
-                audioTap.gain.gain.setTargetAtTime(wantSound ? 1 : 0, t, 0.02);
-                audioTap.ctx.resume().catch(() => {});
+                const t = audioGraph.ctx.currentTime;
+                audioGraph.gain.gain.cancelScheduledValues(t);
+                audioGraph.gain.gain.setTargetAtTime(wantSound ? 1 : 0, t, 0.02);
+                audioGraph.ctx.resume().catch(() => {});
             } else {
                 pipVideo.muted = !wantSound;
             }
@@ -10737,7 +10765,6 @@ function updateLastUpdate() {
                 applyPipLevel();
                 pipVideo.play().catch(() => {});
                 startEdgeKeeper();
-                ensureAudioTap();
             });
             pipHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, enablePipCaptions);
             pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); captureCurrentFrame(gen); } });
