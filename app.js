@@ -10816,6 +10816,28 @@ function updateLastUpdate() {
         // hand-off found there supersedes the server's answer outright — including
         // its staleness, which no longer applies to a name read off the live stream.
         const live = tryLive();
+
+        // The House rising beats everything. The live track carries the Speaker's
+        // declaration seconds after it is spoken, while the broadcast API still
+        // claims the stream is live — so without this the last member of the night
+        // stays on screen, over the House's own "not in session" slate, until
+        // morning.
+        const adjourned = (live && (live.basis === 'adjourned' || live.basis === 'recess'))
+            ? live
+            : (serverData.sessionState && serverData.sessionState !== 'in-session'
+                ? { basis: serverData.sessionState, sessionUntil: serverData.sessionUntil }
+                : null);
+        if (adjourned) {
+            row.classList.remove('is-uncertain', 'is-stale');
+            row.classList.add('is-unknown');
+            name.textContent = adjourned.basis === 'recess' ? 'In recess' : 'Adjourned';
+            meta.textContent = adjourned.sessionUntil ? `until ${adjourned.sessionUntil.toLowerCase()}` : 'the House has risen';
+            renderPhoto(null);
+            row.title = 'the Speaker declared the House out of session';
+            row.hidden = false;
+            return;
+        }
+
         const useLive = !!(live && live.member);
 
         const cur = useLive

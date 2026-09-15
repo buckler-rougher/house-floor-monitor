@@ -235,16 +235,64 @@ check('given name narrows the delegation',
   H.matchPersonTokens('MIKE VOSS', 'ILLINOIS', roster).member.last, 'BOST');
 check('surname alone would not have', H.matchSurname('VOSS', 'ILLINOIS', roster), null);
 
+const liveSeedLate = {
+  FLORIDA: roster.find((r) => r.last === 'MAST'),
+  MASSACHUSETTS: roster.find((r) => r.last === 'MOULTON'),
+};
+
+// ── The House rising ────────────────────────────────────────────────────────
+// Nobody holds the floor once the Speaker gavels out, and the broadcast API does
+// not say so: hours after the House adjourned on 2026-09-14 it still reported
+// isLiveBroadcast "True" with an empty endDate. Only the captions know, so the
+// last member of the night otherwise stays on screen over the House's own "not in
+// session" slate until the next morning.
+const adj = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM FLORIDA, MR. MAST, AND THE GENTLEMAN FROM MASSACHUSETTS, MR. MOULTON, EACH WILL CONTROL 30 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM FLORIDA IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I RISE IN SUPPORT.' },
+  { t: 3, text: 'MR. SPEAKER, I MOVE THAT THE HOUSE DO NOW ADJOURN.' },
+  { t: 4, text: 'THE QUESTION IS ON THE MOTION TO ADJOURN. THOSE IN FAVOR SAY AYE. THE AYES HAVE IT.' },
+  { t: 5, text: 'THE HOUSE STANDS ADJOURNED UNTIL 10 A.M. TOMORROW FOR MORNING HOUR DEBATE.' },
+], roster);
+check('adjournment is detected', adj.sessionState, 'adjourned');
+check('and when they return', adj.sessionUntil, '10 A.M. TOMORROW');
+check('nobody holds the floor after it', adj.current, null);
+
+// The motion and the vote on it are not the House rising. Treating them as such
+// would blank the speaker several turns early, every single session.
+const motion = H.resolveFloorSpeakers(adj.timeline.slice(0, 5).map((x) => ({ t: x.t, text: x.text })), roster);
+check('a motion to adjourn is not an adjournment', motion.sessionState, 'in-session');
+check('and the speaker is untouched', motion.current.member.last, 'Mast');
+
+// A recess ends without announcement — anyone speaking means they are back.
+const back = H.resolveFloorSpeakers([
+  { t: 0, text: 'THE HOUSE STANDS IN RECESS UNTIL 2 P.M. TODAY.' },
+  { t: 1, text: 'THE GENTLEMAN FROM FLORIDA IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I RISE IN SUPPORT OF THIS MEASURE.' },
+], roster);
+check('recess is detected', H.resolveFloorSpeakers([{ t: 0, text: 'THE HOUSE STANDS IN RECESS UNTIL 2 P.M. TODAY.' }], roster).sessionState, 'recess');
+check('speech means they are back', back.sessionState, 'in-session');
+
+// The live path must clear on its own, seconds after the words are spoken, rather
+// than waiting for the sidecar the server reads.
+const liveAdj = H.resolveLiveFloor('THE AYES HAVE IT. THE HOUSE STANDS ADJOURNED UNTIL 10 A.M. TOMORROW.', roster, liveSeedLate);
+check('live track reports adjournment', liveAdj.basis, 'adjourned');
+check('with no member attached', liveAdj.member, null);
+check('live motion alone is not adjournment',
+  H.resolveLiveFloor('MR. SPEAKER, I MOVE THAT THE HOUSE DO NOW ADJOURN.', roster, liveSeedLate), null);
+
+// "10 A.M. TOMORROW" is full of periods, and every caption is capitalized, so
+// neither "stop at the first period" nor "stop before a capital" works.
+check('until-clause survives A.M.', H.cleanUntil('10 A.M. TOMORROW FOR MORNING HOUR DEBATE.'), '10 A.M. TOMORROW');
+check('and stops at a real sentence end', H.cleanUntil('NOON TOMORROW. THE CLERK WILL NOTIFY THE SENATE.'), 'NOON TOMORROW');
+
 // ── Live caption track (unsegmented) ────────────────────────────────────────
 // The video carries its own CEA-608 track whose cues arrive ahead of the picture,
 // while captions.vtt is rewritten only every 70-78s. But the live track has no
 // "UNIDENTIFIED SPEAKER:" markers — those are added by the stenographer in the
 // sidecar only — so there are no turn boundaries to split on. resolveLiveFloor
 // replays just the events that move the floor over a seeded binding table.
-const liveSeed = {
-  FLORIDA: roster.find((r) => r.last === 'MAST'),
-  MASSACHUSETTS: roster.find((r) => r.last === 'MOULTON'),
-};
+const liveSeed = liveSeedLate;
 const live = (t) => H.resolveLiveFloor(t, roster, liveSeed);
 
 check('state-only hand-off resolves off the seed',
