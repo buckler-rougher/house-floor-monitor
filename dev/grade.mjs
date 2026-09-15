@@ -42,9 +42,30 @@ async function captionsUrlFor(date) {
   return pick?.url ? pick.url.replace(/#.*$/, '') : null;
 }
 
+// Yesterday in Eastern Time — the House runs on ET, and the Record for a sitting
+// day is published the following morning.
+function yesterdayET() {
+  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  et.setDate(et.getDate() - 1);
+  return `${et.getFullYear()}${String(et.getMonth() + 1).padStart(2, '0')}${String(et.getDate()).padStart(2, '0')}`;
+}
+
+const args = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const i = args.indexOf(name);
+  return i === -1 ? fallback : args[i + 1];
+};
+// Below this, something has genuinely broken rather than one name drifting: a
+// single unconfirmed member is ordinary, and a job that goes red most nights is a
+// job nobody reads.
+const MIN_PRECISION = Number(flag('--min-precision', 90));
+const summaryPath = args.includes('--summary') ? process.env.GITHUB_STEP_SUMMARY : null;
+const summary = [];
+const say = (line) => { console.log(line); if (summaryPath) summary.push(line); };
+
 const roster = H.buildRoster(await get(MEMBERS, 'member data'));
-const dates = process.argv.slice(2);
-if (!dates.length) { console.error('usage: node dev/grade.mjs YYYYMMDD [...]'); process.exit(2); }
+const dates = args.filter((a) => /^\d{8}$/.test(a));
+if (!dates.length) dates.push(yesterdayET());
 
 const byId = new Map(roster.map((r) => [r.bioguideId, r]));
 const nameOf = (id, fallback) => {
@@ -52,12 +73,13 @@ const nameOf = (id, fallback) => {
   return r ? `${r.lastDisplay} (${r.party}-${r.postal})` : (fallback || id);
 };
 
-let anyBad = false;
+let worstPrecision = null;
+let gradedAny = false;
 for (const date of dates) {
-  console.log(`\n=== ${date} ===`);
+  say(`\n### ${date}`);
   try {
     const capUrl = await captionsUrlFor(date);
-    if (!capUrl) { console.log('  no broadcast for this date'); continue; }
+    if (!capUrl) { say('  no broadcast for this date'); continue; }
 
     const [vtt, mods] = await Promise.all([
       get(capUrl, 'captions'),
@@ -68,21 +90,22 @@ for (const date of dates) {
     const crec = C.parseCrecSpeakers(mods);
     const g = C.gradeTimeline(resolved.timeline, crec);
 
-    console.log(`  turns ${g.speechTurns}  attributed ${g.attributedTurns} (${g.coveragePct}%)`);
-    if (!g.graded) { console.log(`  not graded: ${g.reason}`); continue; }
-    console.log(`  speakers: record ${g.crecSpeakers}, ours ${g.ourSpeakers}, confirmed ${g.confirmed}`);
-    console.log(`  precision ${g.precisionPct}%   recall ${g.recallPct}%   order ${g.sequencePct}%`);
+    say(`  turns ${g.speechTurns}  attributed ${g.attributedTurns} (${g.coveragePct}%)`);
+    if (!g.graded) { say(`  not graded: ${g.reason}`); continue; }
+    gradedAny = true;
+    if (worstPrecision === null || g.precisionPct < worstPrecision) worstPrecision = g.precisionPct;
+    say(`  speakers: record ${g.crecSpeakers}, ours ${g.ourSpeakers}, confirmed ${g.confirmed}`);
+    say(`  precision ${g.precisionPct}%   recall ${g.recallPct}%   order ${g.sequencePct}%`);
 
     if (g.unconfirmedIds.length) {
-      anyBad = true;
-      console.log(`  UNCONFIRMED — named by the site, absent from the Record:`);
-      for (const id of g.unconfirmedIds) console.log(`      ${nameOf(id)}`);
-      console.log('  by rule:');
-      for (const [basis, s] of Object.entries(g.byBasis).sort((a, b) => b[1].unconfirmedTurns - a[1].unconfirmedTurns)) {
-        if (s.unconfirmedTurns) console.log(`      ${basis}: ${s.unconfirmedTurns}/${s.turns} turns unconfirmed`);
+      say(`  UNCONFIRMED — named by the site, absent from the Record:`);
+      for (const id of g.unconfirmedIds) say(`      ${nameOf(id)}`);
+      say('  by rule:');
+      for (const [basis, st] of Object.entries(g.byBasis).sort((a, b) => b[1].unconfirmedTurns - a[1].unconfirmedTurns)) {
+        if (st.unconfirmedTurns) say(`      ${basis}: ${st.unconfirmedTurns}/${st.turns} turns unconfirmed`);
       }
     } else {
-      console.log('  every name the site printed appears in the Record');
+      say('  every name the site printed appears in the Record');
     }
 
     if (g.missedIds.length) {
@@ -90,10 +113,16 @@ for (const date of dates) {
         const hit = crec.find((s) => s.bioguideId === id);
         return nameOf(id, hit?.parsedName);
       });
-      console.log(`  not identified (${g.missedIds.length}): ${shown.join(', ')}${g.missedIds.length > 12 ? ', …' : ''}`);
+      say(`  not identified (${g.missedIds.length}): ${shown.join(', ')}${g.missedIds.length > 12 ? ', …' : ''}`);
     }
   } catch (err) {
-    console.log(`  failed: ${err.message}`);
+    say(`  failed: ${err.message}`);
   }
 }
-process.exit(anyBad ? 1 : 0);
+const failed = gradedAny && worstPrecision !== null && worstPrecision < MIN_PRECISION;
+if (gradedAny) say(`\nlowest precision ${worstPrecision}% (threshold ${MIN_PRECISION}%)`);
+if (summaryPath && summary.length) {
+  const { appendFileSync } = await import('node:fs');
+  appendFileSync(summaryPath, ['## Floor speaker attribution vs the Congressional Record', ...summary, ''].join('\n'));
+}
+process.exit(failed ? 1 : 0);

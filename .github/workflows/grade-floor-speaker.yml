@@ -1,0 +1,60 @@
+# Grade yesterday's speaker attribution against the Congressional Record.
+#
+# WHY THIS RUNS UNATTENDED
+# lib/floor-speaker.js infers every name from the parliamentary ritual in the
+# Clerk's captions, because the captions name nobody. The House keeps inventing
+# wordings it has not seen — a dropped "IS", a stray period, "COLLEAGUE" instead of
+# "GENTLEMAN", a Special Order's "I NOW INVITE" — and each one silently puts the
+# wrong member's name on somebody's speech. Nine such formulas turned up in a
+# single evening, eight of them because a person happened to be watching the screen
+# at the right moment. That does not scale and it does not happen overnight.
+#
+# GPO publishes the Record the next morning with every floor speech tagged by
+# bioguide id, free and without an API key, so yesterday can always be graded
+# exactly. This is the only check on that resolver's accuracy that runs without
+# somebody looking.
+#
+# NOT IN THE WORKER: Cron Triggers get 10ms of CPU on the free plan, and this parses
+# an ~800KB caption file and a ~900KB metadata file. It belongs here.
+name: Grade floor speaker attribution
+
+on:
+  schedule:
+    # 12:00 UTC — 8am ET, by which the Record for the previous sitting day is up.
+    # Daily rather than weekdays only: the House sits some Saturdays, and a day with
+    # no session simply reports "not graded" and passes.
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Day to grade, YYYYMMDD (default: yesterday, Eastern Time)'
+        required: false
+      min_precision:
+        description: 'Fail below this precision percentage'
+        required: false
+        default: '90'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grade-floor-speaker
+  cancel-in-progress: false
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Grade against the Congressional Record
+        run: >-
+          node dev/grade.mjs
+          ${{ inputs.date }}
+          --summary
+          --min-precision ${{ inputs.min_precision || '90' }}
