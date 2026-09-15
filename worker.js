@@ -2527,13 +2527,16 @@ function extractCaptionsUrl(data) {
 }
 
 async function handleFloorSpeaker(request, env) {
-  const MEM_KEY = 'floor-speaker';
-  const memHit = _mGet(MEM_KEY);
-  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } });
-
   const url = new URL(request.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit')) || 40, 400);
   const dateId = /^\d{8}$/.test(url.searchParams.get('date') || '') ? url.searchParams.get('date') : getTodayDateET();
+
+  // The limit and the date change the BODY, so they have to be in the key. Keyed
+  // on the bare string, a ?limit=1 poll from the PiP header poisoned the cache
+  // for anything asking for a real timeline.
+  const MEM_KEY = `floor-speaker:${dateId}:${limit}`;
+  const memHit = _mGet(MEM_KEY);
+  if (memHit) return new Response(memHit, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } });
 
   const reply = (obj, ttlMs) => {
     const body = JSON.stringify(obj);
@@ -2568,7 +2571,6 @@ async function handleFloorSpeaker(request, env) {
     const turns = H.splitTurns(H.parseCaptionCues(vttText));
     const resolved = H.resolveFloorSpeakers(turns, roster, { limit });
 
-    const speech = resolved.timeline.filter(x => x.role === 'speech');
     return reply({
       available: true,
       date: dateId,
@@ -2581,7 +2583,8 @@ async function handleFloorSpeaker(request, env) {
       turns: turns.length,
       current: resolved.current,
       managers: resolved.managers,
-      resolvedPct: speech.length ? Math.round(speech.filter(x => x.member).length / speech.length * 100) : null,
+      speechTurns: resolved.speechTurns,
+      resolvedPct: resolved.speechTurns ? Math.round(resolved.resolvedTurns / resolved.speechTurns * 100) : null,
       timeline: resolved.timeline,
     }, isLive ? 15_000 : 120_000);
   } catch (error) {
