@@ -10580,6 +10580,101 @@ function updateLastUpdate() {
     fetchAndLoad();
 })();
 
+// ── Current floor speaker ─────────────────────────────────────────────────────
+// The House caption feed labels every turn "UNIDENTIFIED SPEAKER:" and the floor
+// camera carries no chyron, so this name is always INFERRED from the
+// parliamentary ritual in the caption text — see lib/floor-speaker.js for how,
+// and why roughly a quarter of turns legitimately cannot be resolved at all.
+//
+// Two rules follow from that and neither is cosmetic:
+//   1. A weak guess must LOOK weak. The resolver returns a confidence and the
+//      most common failure is a manager yielding without the chair re-recognising,
+//      which leaves the manager's name attached to somebody else's speech.
+//   2. No guess must clear the line. Leaving the previous member's face up while
+//      a live camera points at a different person is the one genuinely misleading
+//      thing this panel could do.
+(function initFloorSpeaker() {
+    const row   = document.getElementById('pip-speaker');
+    const photo = document.getElementById('pip-speaker-photo-wrap');
+    const name  = document.getElementById('pip-speaker-name');
+    const meta  = document.getElementById('pip-speaker-meta');
+    if (!row || !photo || !name || !meta) return;
+
+    const POLL_MS = 20000;   // captions are rewritten every ~15-30s; the API caches 15s
+    const CONFIDENT = 0.6;   // below this the resolver is carrying a stale attribution
+    let timer = null;
+    let lastPhotoId = null;
+
+    const clear = () => { row.hidden = true; lastPhotoId = null; };
+
+    function renderPhoto(bioguideId) {
+        // Only rebuild the <img> when the member actually changes, so the fade-in
+        // does not restart on every 20s poll of the same speaker.
+        if (bioguideId === lastPhotoId) return;
+        lastPhotoId = bioguideId;
+        const url = bioguideId ? buildBioguidePhotoUrl(bioguideId) : '';
+        photo.innerHTML = `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>` +
+            (url ? `<img class="pip-speaker-photo" src="${url}" alt="" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : '');
+    }
+
+    function render(data) {
+        if (!data || !data.available || !data.current) return clear();
+        const cur = data.current;
+        const member = cur.member;
+        const conf = typeof cur.confidence === 'number' ? cur.confidence : 0;
+
+        row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
+        row.classList.toggle('is-unknown', !member);
+
+        if (member) {
+            const party = (member.party || '').toUpperCase();
+            const cls = party === 'R' ? 'r' : party === 'D' ? 'd' : 'i';
+            name.textContent = `${member.first || ''} ${member.last || ''}`.trim();
+            meta.innerHTML = `<span class="pip-speaker-party-${cls}">${escapeHtml(party || '?')}-${escapeHtml(member.state || '')}</span>` +
+                (conf < CONFIDENT ? ' · unconfirmed' : '');
+            renderPhoto(member.bioguideId);
+        } else {
+            // The chair recognised somebody without naming them. Say exactly that,
+            // and show the state when the captions gave one — "one of 52 from
+            // California" is still more than nothing.
+            // Kept short on purpose: the PiP floors at 220px wide and
+            // "Unidentified speaker" measured exactly to the pixel there, so any
+            // font shift would have clipped it. The detail lives on the line below.
+            name.textContent = 'Unidentified';
+            meta.textContent = cur.candidateState
+                ? `${cur.candidateState}${cur.candidates ? ` · 1 of ${cur.candidates}` : ''}`
+                : 'not named aloud';
+            renderPhoto(null);
+        }
+
+        row.title = [
+            member ? `${member.first} ${member.last} (${member.party}-${member.state})` : 'Not identified in the captions',
+            cur.basis ? `basis: ${cur.basis}` : null,
+            typeof cur.confidence === 'number' ? `confidence: ${Math.round(cur.confidence * 100)}%` : null,
+            data.captionLagSeconds ? `captions run ~${data.captionLagSeconds}s behind the video` : null,
+        ].filter(Boolean).join('\n');
+
+        row.hidden = false;
+    }
+
+    function poll() {
+        if (document.hidden) return schedule();
+        fetch('https://api.evanhollander.org/house-floor/api/floor-speaker?limit=1')
+            .then(r => r.json())
+            .then(render)
+            .catch(() => { /* leave the last state; a blip should not blank the line */ })
+            .finally(schedule);
+    }
+
+    function schedule() {
+        if (timer !== null) clearTimeout(timer);
+        timer = setTimeout(poll, POLL_MS);
+    }
+
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+    poll();
+})();
+
 // ── Hash routing for Build Vote Recs modal ───────────────────────────────────
 // Open modal if URL already has the hash on load; handle back/forward navigation.
 window.addEventListener('popstate', () => {
