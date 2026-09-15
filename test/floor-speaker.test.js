@@ -57,6 +57,43 @@ for (const [heard, state, want] of [
   check(`${heard} (${state}) -> ${want}`, hit && hit.member.last, want);
 }
 
+// An honorific that disagrees rules out an INEXACT match. Found by the Record
+// grader on 2026-09-03: "I NOW YIELD TO THE DISTINGUISHED GENTLEMAN FROM NEW YORK,
+// MR. FENIG" was resolving to Grace Meng — two edits, inside the allowance for a
+// five-letter surname, and she is a gentlewoman. Saying nothing is right here; the
+// member behind "FENIG" is not recoverable from that spelling.
+check('a garbled name with a conflicting honorific resolves to nobody',
+  H.matchSurname('FENIG', 'NEW YORK', roster, 'M'), null);
+// The captions get honorifics wrong on their own ("THE GENTLEMAN FROM MARYLAND,
+// MS. ELFRETH"), so an exact spelling still wins whatever the honorific claims.
+check('an exact spelling outranks a wrong honorific',
+  H.matchSurname('ELFRETH', 'MARYLAND', roster, 'M').member.last, 'ELFRETH');
+// And the real garbles must survive the filter.
+for (const [heard, state, gender, want] of [
+  ['KEELEY', 'CALIFORNIA', 'M', 'KILEY'],
+  ['MORELLI', 'NEW YORK', 'M', 'MORELLE'],
+  ['WHITMAN', 'VIRGINIA', 'M', 'WITTMAN'],
+  ['FOX', 'NORTH CAROLINA', 'F', 'FOXX'],
+  ['BOLTON', 'MASSACHUSETTS', 'M', 'MOULTON'],
+]) check(`${heard} (${gender}) still resolves to ${want}`,
+  H.matchSurname(heard, state, roster, gender).member.last, want);
+
+// "FOR YIELDING" names the member who yielded TO the speaker — the opposite
+// direction. Testing for the bare word set the next speaker from whichever name
+// the sentence contained, which put one member's name on the following turn and
+// the thanking member's on this one.
+const thanksForYield = H.resolveFloorSpeakers([
+  { t: 0, text: 'THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, IS RECOGNIZED FOR FIVE MINUTES.' },
+  { t: 1, text: 'MR. SPEAKER, I RISE TODAY IN REMEMBRANCE.' },
+  { t: 2, text: 'THANK YOU TO MY COLLEAGUE FROM NEW YORK, MR. MORELLE, FOR YIELDING. I RISE AS WELL.' },
+  { t: 3, text: 'MR. SPEAKER, I ASK FOR A MOMENT OF SILENCE.' },
+], roster);
+check('the recognition names the speaker', thanksForYield.timeline[1].member.last, 'Westerman');
+// Turn 2 thanks a DIFFERENT member for yielding. Read as a hand-off it made turn 3
+// Morelle; it must stay with whoever actually holds the floor.
+check('being thanked for yielding does not hand over the next turn',
+  thanksForYield.timeline[3].member.last, 'Westerman');
+
 // A short surname must not drift: FOXX is one edit from COX, and both sit in the
 // roster. Only the state keeps them apart, so the national fallback must refuse.
 check('short name will not drift nationally', H.matchSurname('FOX', null, roster), null);
