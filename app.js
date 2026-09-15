@@ -10826,6 +10826,8 @@ function updateLastUpdate() {
     // as current. See uncoveredSeconds() — this is not simply the age of the
     // server's text.
     const STALE_AFTER_S = 45;
+    // How long a hand-off read off the live caption track stays authoritative.
+    const LIVE_HANDOFF_TTL_MS = 3 * 60 * 1000;
     // A live track with no new cues for this long has stalled (paused video, ended
     // stream) and stops counting as coverage, however long it ran before.
     const LIVE_DEAD_AFTER_MS = 30000;
@@ -10952,16 +10954,29 @@ function updateLastUpdate() {
         if (live && live.member) {
             const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
             const pos = meta ? meta.totalChars - live.fromEnd : -1;
-            // Dated by when the text itself arrived. Stamping it on first resolve
-            // made an old hand-off look new whenever the resolve was what was late —
-            // the roster fetch is async, so the first successful one can be minutes
-            // after the words, which is how a finished speaker kept the row until a
-            // reload cleared the buffer.
             liveHandoffPos = pos;
             liveHandoffAt = typeof window.__liveCaptionTimeAt === 'function'
                 ? window.__liveCaptionTimeAt(pos) : 0;
-            const serverAt = Date.parse(serverData.lastModified || '') || 0;
-            useLive = liveHandoffAt > 0 && liveHandoffAt >= serverAt;
+            // A live hand-off wins for as long as it can be trusted to be the latest
+            // one, and is not weighed against the server's timestamp at all.
+            //
+            // That comparison was the bug behind the row running a minute and a half
+            // late. The sidecar's Last-Modified is when the file was WRITTEN, not how
+            // current its contents are: caught live, it had been rewritten one second
+            // earlier and still named the previous speaker while the video's own
+            // caption track had already carried the next recognition. Treating a
+            // fresh write as fresher knowledge handed every hand-off back to the slow
+            // source.
+            //
+            // The live track is strictly ahead of the sidecar — same words, sooner —
+            // so a hand-off seen there is never behind it. The only way it goes stale
+            // is if a LATER hand-off was missed, worded in some way the patterns do
+            // not cover yet, which is a thing that keeps happening. So it expires:
+            // past this window the server, which has had ample time to catch up,
+            // takes over again. Shorter than the gap between one-minute speeches, so
+            // a missed hand-off costs a few minutes at worst rather than the rest of
+            // the session.
+            useLive = liveHandoffAt > 0 && (Date.now() - liveHandoffAt) < LIVE_HANDOFF_TTL_MS;
         }
 
         const cur = useLive
