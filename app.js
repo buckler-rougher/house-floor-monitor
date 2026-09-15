@@ -4315,7 +4315,44 @@ function toggleBillTracked(billId) {
 // Client-side only: fires while this tab is open (background/unfocused is fine),
 // not true push — no backend, no service worker, nothing survives the tab closing.
 let notificationsEnabled = localStorage.getItem('bills-alerts-on') === '1';
-const _notifiedEventKeys = new Set(); // in-memory de-dup guard, resets on reload
+// De-dup guard for notifications, persisted across reloads.
+//
+// This was an in-memory Set, which started empty on every page load — so the
+// first data poll after a reload re-announced every event that had ALREADY
+// happened: each open vote, each debate under way, each resolved rule. Reloading
+// the page produced a burst of notifications about nothing new.
+//
+// Keys are stamped and pruned after three days. That is long enough that a
+// reload, or leaving the tab open overnight, never re-announces yesterday's
+// votes, and short enough that the store cannot grow without bound. Storage is
+// per-browser and may throw (private windows, blocked site data), so every access
+// is guarded and the in-memory Set remains the source of truth for this session.
+const NOTIFY_STORE_KEY = 'dw-notified-events';
+const NOTIFY_KEY_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+
+function loadNotifiedKeys() {
+    const now = Date.now();
+    const fresh = new Map();
+    try {
+        const raw = localStorage.getItem(NOTIFY_STORE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            for (const [k, ts] of Object.entries(parsed || {})) {
+                if (typeof ts === 'number' && now - ts < NOTIFY_KEY_TTL_MS) fresh.set(k, ts);
+            }
+        }
+    } catch {}
+    return fresh;
+}
+
+const _notifiedEventKeys = loadNotifiedKeys();
+
+function rememberNotifiedKey(key) {
+    _notifiedEventKeys.set(key, Date.now());
+    try {
+        localStorage.setItem(NOTIFY_STORE_KEY, JSON.stringify(Object.fromEntries(_notifiedEventKeys)));
+    } catch {}
+}
 
 function canNotify() {
     return notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted';
@@ -4325,7 +4362,7 @@ function canNotify() {
 // id is what naturally collapses multiple tracked bills under one rule into one alert.
 function notifyOnce(eventKey, title, body, billId = null) {
     if (_notifiedEventKeys.has(eventKey)) return;
-    _notifiedEventKeys.add(eventKey);
+    rememberNotifiedKey(eventKey);
     if (!canNotify()) return;
     try {
         const n = new Notification(title, { body, tag: eventKey, icon: '/favicon.png' });
