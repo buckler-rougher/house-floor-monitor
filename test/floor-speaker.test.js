@@ -160,6 +160,18 @@ const selfYield = H.resolveFloorSpeakers(
   [{ t: 0, text: 'MR. SPEAKER, I YIELD TWO MINUTES TO THE GENTLEMAN FROM MASSACHUSETTS.' }], roster);
 check('member yield is not a chair hand-off', selfYield.timeline[0].role, 'speech');
 
+// ── Stats are session-wide, not window-wide ─────────────────────────────────
+// `limit` trims what the caller SEES. If the counts are taken after that trim,
+// resolvedPct reads 100% whenever the newest turn happens to be resolved — which
+// is exactly what the live endpoint reported before this was separated out.
+const full    = H.resolveFloorSpeakers(H.splitTurns(H.parseCaptionCues(read('captions-suspension.vtt'))), roster);
+const trimmed = H.resolveFloorSpeakers(H.splitTurns(H.parseCaptionCues(read('captions-suspension.vtt'))), roster, { limit: 1 });
+check('limit trims the visible timeline', trimmed.timeline.length, 1);
+check('limit does not change the speech-turn count', trimmed.speechTurns, full.speechTurns);
+check('limit does not change the resolved count', trimmed.resolvedTurns, full.resolvedTurns);
+check('speech-turn count matches the timeline', full.speechTurns, full.timeline.filter((x) => x.role === 'speech').length);
+check('limit does not change who is current', trimmed.current.t, full.current.t);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
