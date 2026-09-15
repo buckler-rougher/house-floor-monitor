@@ -10423,6 +10423,30 @@ function updateLastUpdate() {
         }
     }
 
+    // Match the rendition to the size the video is actually being drawn at.
+    //
+    // Expanded, the PiP is a real video player and gets the top rendition — that
+    // is the point of expanding. Collapsed it is ~220px wide, and decoding the
+    // 1280x720 rendition into it was throwing away roughly three quarters of every
+    // frame while the two-second live buffer below left no slack to absorb the
+    // cost: measured 13-42% dropped frames on the collapsed PiP. Picking the
+    // smallest rendition that still covers the box at this display's pixel ratio
+    // keeps it sharp and stops the stutter.
+    function applyPipLevel() {
+        if (!pipHls || !pipHls.levels || !pipHls.levels.length) return;
+        const top = pipHls.levels.length - 1;
+        if (expanded) { pipHls.nextLevel = top; return; }
+        const dpr = window.devicePixelRatio || 1;
+        const need = Math.round(pipVideo.getBoundingClientRect().width * dpr);
+        if (!need) { pipHls.nextLevel = top; return; }   // not laid out yet — no basis to choose
+        let best = top;
+        for (let i = 0; i < pipHls.levels.length; i++) {
+            const w = pipHls.levels[i].width || 0;
+            if (w >= need && w < (pipHls.levels[best].width || Infinity)) best = i;
+        }
+        pipHls.nextLevel = best;
+    }
+
     // Audio is controlled explicitly by the mute button (below), NOT by
     // expanding/collapsing — so expand/collapse no longer touch muted state.
     function expand() {
@@ -10431,6 +10455,7 @@ function updateLastUpdate() {
         pip.classList.add('pip-expanded');
         if (backdrop) backdrop.classList.add('pip-backdrop-visible');
         if (pipOverlay) pipOverlay.style.pointerEvents = 'none';
+        applyPipLevel();
     }
 
     function collapse() {
@@ -10439,6 +10464,9 @@ function updateLastUpdate() {
         pip.classList.remove('pip-expanded');
         if (backdrop) backdrop.classList.remove('pip-backdrop-visible');
         if (pipOverlay) pipOverlay.style.pointerEvents = 'auto';
+        // Let the collapse transition finish before measuring, or `need` is taken
+        // from the expanded box and the top rendition is chosen for a thumbnail.
+        setTimeout(applyPipLevel, 250);
     }
 
     // Mute/unmute toggle
@@ -10515,7 +10543,9 @@ function updateLastUpdate() {
                 maxBufferLength: 2, maxMaxBufferLength: 4,
                 liveSyncDurationCount: 1, liveMaxLatencyDurationCount: 2,
                 liveDurationInfinity: true,
-                // Don't cap quality to the small PiP box — keep it sharp at any size.
+                // The level is chosen explicitly in applyPipLevel() rather than by
+                // hls.js, because it has to follow expand/collapse rather than the
+                // element's size at load time.
                 capLevelToPlayerSize: false,
                 startLevel: -1,
             });
@@ -10523,8 +10553,7 @@ function updateLastUpdate() {
             pipHls.attachMedia(pipVideo);
             pipVideo.addEventListener('canplay', hidePipLoading, { once: true });
             pipHls.on(Hls.Events.MANIFEST_PARSED, () => {
-                // Force the highest rendition regardless of the player's size.
-                if (pipHls.levels && pipHls.levels.length) pipHls.nextLevel = pipHls.levels.length - 1;
+                applyPipLevel();
                 pipVideo.play().catch(() => {});
                 startEdgeKeeper();
             });
