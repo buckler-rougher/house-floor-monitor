@@ -116,6 +116,50 @@ check('every attributed turn carries a confidence',
 check('no member attached to an unknown basis',
   susp.timeline.concat(om.timeline).filter((x) => x.member && /unknown|state-only/.test(x.basis || '')).length, 0);
 
+// ── Manager hand-off with mangled chair formulas ────────────────────────────
+// Captured live on 2026-09-14 while the House debated the Iran war powers
+// resolution. Both chair turns in this window are broken in ways that had the
+// resolver leave the floor with the outgoing manager for ten straight minutes,
+// showing Mast on screen while Moulton was the one speaking:
+//
+//   "GENTLEMAN. RESERVES. GENTLEMAN FROM MASSACHUSETTS."  <- stray period, and
+//                                                            the state trails a
+//                                                            clause instead of
+//                                                            standing alone
+//   "GENTLEMAN RECOGNIZED."                               <- "IS" simply dropped
+//
+// Neither is a typo we can wish away; both recur. If this block goes red the
+// site will confidently caption one member's speech with another's name.
+const ho = H.resolveFloorSpeakers(H.splitTurns(H.parseCaptionCues(read('captions-handoff.vtt'))), roster);
+const hoAt = (hhmmss) => {
+  const [h, m, sec] = hhmmss.split(':').map(Number);
+  return ho.timeline.find((x) => Math.floor(x.t) === h * 3600 + m * 60 + sec);
+};
+const hoWho = (hhmmss) => { const x = hoAt(hhmmss); return x && (x.role !== 'speech' ? `[${x.role}]` : (x.member ? x.member.last : '???')); };
+
+// The hour was assigned as "EQUALLY DIVIDED AND CONTROLLED BY REPRESENTATIVE
+// MAST OF FLORIDA AND REPRESENTATIVE MOULTON OF MASSACHUSETTS" — surname before
+// state, the inverse of the suspension formula, and the form used for privileged
+// resolutions. The same sentence then said "THE GENTLEMAN FROM MASSACHUSETTS,
+// MR. BOLTON", so the two spellings of one seat disagree and the closer one has
+// to win.
+check('both managers bound from the privileged-resolution formula',
+  ho.managers.map((m) => m.last).sort(), ['MAST', 'MOULTON']);
+check('BOLTON resolves to Moulton', H.matchSurname('BOLTON', 'MASSACHUSETTS', roster).member.last, 'MOULTON');
+
+check('08:32:29 majority manager holds the floor', hoWho('08:32:29'), 'Mast');
+check('08:36:12 "GENTLEMAN. RESERVES." is the chair', hoAt('08:36:12').role, 'chair');
+check('08:36:15 floor moves to the minority manager', hoWho('08:36:15'), 'Moulton');
+check('08:36:18 "GENTLEMAN RECOGNIZED." is the chair', hoAt('08:36:18').role, 'chair');
+check('08:36:20 reply is Moulton, not Mast', hoWho('08:36:20'), 'Moulton');
+check('08:36:20 attributed with full confidence', hoAt('08:36:20').confidence, 0.9);
+
+// A member's own sentence can end in a state name. That must never be read as a
+// chair hand-off, or a manager yielding would hand the floor to themselves.
+const selfYield = H.resolveFloorSpeakers(
+  [{ t: 0, text: 'MR. SPEAKER, I YIELD TWO MINUTES TO THE GENTLEMAN FROM MASSACHUSETTS.' }], roster);
+check('member yield is not a chair hand-off', selfYield.timeline[0].role, 'speech');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
