@@ -10553,10 +10553,80 @@ function updateLastUpdate() {
     }
 
     // Mute/unmute toggle
+    // ── Live audio tap ────────────────────────────────────────────────────────
+    //
+    // Feeds the waveform beside the speaker's name from the floor's actual audio,
+    // so the bars move when somebody is talking.
+    //
+    // The catch is that the PiP autoplays, which browsers only allow while muted —
+    // and a muted element hands an AnalyserNode pure silence. Measured on the live
+    // stream: peak-to-peak 0, 0, 0, 0 while muted, then 89, 66, 33, 55, 100 the
+    // instant the element was unmuted.
+    //
+    // So the element is unmuted and audibility moves to a gain node instead: the
+    // analyser sees real samples while the viewer hears nothing until they ask to.
+    // From here on `muted` is an implementation detail and gainNode.gain is the
+    // mute control — the button below switches to it once this succeeds.
+    //
+    // Everything is conditional on that succeeding. If the AudioContext will not
+    // start, or unmuting trips an autoplay policy and pauses playback, the tap is
+    // abandoned and the element goes back to plain muted autoplay: a still icon is
+    // a far better outcome than a dead video.
+    let audioTap = null;        // { ctx, analyser, gain, bins }
+    let audioTapTried = false;  // createMediaElementSource throws on a second call
+    let wantSound = false;      // what the viewer asked for, independent of `muted`
+
+    async function ensureAudioTap() {
+        if (audioTapTried) return;
+        audioTapTried = true;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        const wasMuted = pipVideo.muted;
+        try {
+            const ctx = new AC();
+            const src = ctx.createMediaElementSource(pipVideo);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 64;               // 32 bins is plenty for four bars
+            analyser.smoothingTimeConstant = 0.65;
+            const gain = ctx.createGain();
+            gain.gain.value = wantSound ? 1 : 0;
+            src.connect(analyser); analyser.connect(gain); gain.connect(ctx.destination);
+            pipVideo.muted = false;
+            await ctx.resume().catch(() => {});
+            // Give the autoplay policy a moment to object before trusting this.
+            await new Promise((r) => setTimeout(r, 300));
+            if (pipVideo.paused) throw new Error('unmuting paused playback');
+            audioTap = { ctx, analyser, gain, bins: new Uint8Array(analyser.frequencyBinCount) };
+            syncMuteBtn();
+        } catch (_) {
+            audioTap = null;
+            pipVideo.muted = wasMuted;
+            pipVideo.play().catch(() => {});
+        }
+    }
+
+    // Four bands, 0..1, or null when there is nothing real to show. The speaker
+    // row reads this; a suspended context returns silence, not stale values.
+    window.__pipAudioLevels = () => {
+        if (!audioTap || audioTap.ctx.state !== 'running' || pipVideo.paused) return null;
+        const { analyser, bins } = audioTap;
+        analyser.getByteFrequencyData(bins);
+        // Low bins carry most speech energy, so the bands are widened as they rise
+        // rather than split evenly — an even split leaves the top two bars dead.
+        const edges = [0, 3, 7, 14, 26];
+        const out = [];
+        for (let b = 0; b < 4; b++) {
+            let sum = 0;
+            for (let i = edges[b]; i < edges[b + 1] && i < bins.length; i++) sum += bins[i];
+            out.push(Math.min(1, (sum / (edges[b + 1] - edges[b]) / 255) * 1.7));
+        }
+        return out;
+    };
+
     const muteBtn = document.getElementById('pip-mute-btn');
     function syncMuteBtn() {
         if (!muteBtn) return;
-        const unmuted = !pipVideo.muted;
+        const unmuted = audioTap ? wantSound : !pipVideo.muted;
         muteBtn.classList.toggle('is-unmuted', unmuted);
         muteBtn.setAttribute('aria-pressed', String(unmuted));
         muteBtn.setAttribute('aria-label', unmuted ? 'Mute' : 'Unmute');
@@ -10565,8 +10635,19 @@ function updateLastUpdate() {
     if (muteBtn) {
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            pipVideo.muted = !pipVideo.muted;
-            if (!pipVideo.muted) pipVideo.play().catch(() => {});
+            wantSound = audioTap ? !wantSound : pipVideo.muted;
+            if (audioTap) {
+                // Ramped rather than stepped: a gain node snapping between 0 and 1
+                // clicks audibly. Also a user gesture, so a context the autoplay
+                // policy left suspended can finally start.
+                const t = audioTap.ctx.currentTime;
+                audioTap.gain.gain.cancelScheduledValues(t);
+                audioTap.gain.gain.setTargetAtTime(wantSound ? 1 : 0, t, 0.02);
+                audioTap.ctx.resume().catch(() => {});
+            } else {
+                pipVideo.muted = !wantSound;
+            }
+            pipVideo.play().catch(() => {});
             syncMuteBtn();
         });
         pipVideo.addEventListener('volumechange', syncMuteBtn);
@@ -10656,6 +10737,7 @@ function updateLastUpdate() {
                 applyPipLevel();
                 pipVideo.play().catch(() => {});
                 startEdgeKeeper();
+                ensureAudioTap();
             });
             pipHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, enablePipCaptions);
             pipHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hidePipLoading(); captureCurrentFrame(gen); } });
@@ -10951,6 +11033,36 @@ function updateLastUpdate() {
 
     document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
     poll();
+
+    // ── The level meter ───────────────────────────────────────────────────────
+    // Driven from the floor audio (see the tap in the PiP block). Runs only while
+    // the row is on screen and the tab is visible; a hidden tab throttles rAF to a
+    // crawl anyway, and there is nothing to look at.
+    const IDLE_H = 4.6, IDLE_Y = 9.7, MAX_H = 19;
+    const bars = document.getElementById('pip-speaker-wave');
+    if (bars) {
+        const rects = [...bars.querySelectorAll('rect')];
+        let idled = true;
+        const draw = () => {
+            requestAnimationFrame(draw);
+            if (document.hidden || row.hidden) return;
+            const levels = typeof window.__pipAudioLevels === 'function' ? window.__pipAudioLevels() : null;
+            if (!levels) {
+                // Settle flat once, then stop touching the DOM until audio returns.
+                if (idled) return;
+                idled = true;
+                for (const r of rects) { r.setAttribute('y', IDLE_Y); r.setAttribute('height', IDLE_H); }
+                return;
+            }
+            idled = false;
+            for (let i = 0; i < rects.length; i++) {
+                const h = IDLE_H + (MAX_H - IDLE_H) * (levels[i] || 0);
+                rects[i].setAttribute('height', h.toFixed(2));
+                rects[i].setAttribute('y', (12 - h / 2).toFixed(2));
+            }
+        };
+        requestAnimationFrame(draw);
+    }
 })();
 
 // ── Hash routing for Build Vote Recs modal ───────────────────────────────────
