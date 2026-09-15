@@ -10364,6 +10364,12 @@ function updateLastUpdate() {
     // so an offset within it shifts as the stream grows; this does not, which is
     // what lets the readout tell one hand-off from the next.
     let liveTotalChars = 0;
+    // (characterCount, wallClock) marks, so any position in the stream can be dated.
+    // Without this a hand-off is dated when the READOUT first resolved it, which is
+    // not when it was spoken: the roster loads asynchronously, so the first
+    // successful resolve can land minutes after the text arrived and stamp an old
+    // hand-off as brand new — which is how a finished speaker outranks the server.
+    const liveMarks = [];
     const _liveSeen = new Set();
 
     function harvestLiveCues() {
@@ -10381,6 +10387,8 @@ function updateLastUpdate() {
         if (!liveFirstCueAt) liveFirstCueAt = now;
         liveLastCueAt = now;
         liveTotalChars += added.length + 1;
+        liveMarks.push({ c: liveTotalChars, t: now });
+        while (liveMarks.length > 600) liveMarks.shift();
         liveCaptionText = (liveCaptionText + ' ' + added).slice(-LIVE_TEXT_MAX);
         // The dedupe set must not grow all session; the tail is what matters.
         if (_liveSeen.size > 4000) _liveSeen.clear();
@@ -10391,6 +10399,14 @@ function updateLastUpdate() {
     // readout uses this to decide whether the server's older snapshot leaves any
     // window unaccounted for.
     window.__liveCaptionMeta = () => ({ firstCueAt: liveFirstCueAt, lastCueAt: liveLastCueAt, totalChars: liveTotalChars });
+    // When the text at this character position arrived. Older than every mark we
+    // still hold means older than the window itself, so it is dated to the oldest
+    // mark — old enough to lose to anything the server has.
+    window.__liveCaptionTimeAt = (pos) => {
+        if (!liveMarks.length) return 0;
+        for (const m of liveMarks) if (m.c >= pos) return m.t;
+        return liveMarks[liveMarks.length - 1].t;
+    };
 
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
@@ -10700,6 +10716,7 @@ function updateLastUpdate() {
         liveFirstCueAt = 0;
         liveLastCueAt = 0;
         liveTotalChars = 0;
+        liveMarks.length = 0;
         _liveSeen.clear();
         pipFrozen = false;
         const gen = ++pipGen; // invalidates any in-flight snapshot/freeze from a prior load
@@ -10945,9 +10962,16 @@ function updateLastUpdate() {
         if (live && live.member) {
             const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
             const pos = meta ? meta.totalChars - live.fromEnd : -1;
-            if (pos !== liveHandoffPos) { liveHandoffPos = pos; liveHandoffAt = Date.now(); }
+            // Dated by when the text itself arrived. Stamping it on first resolve
+            // made an old hand-off look new whenever the resolve was what was late —
+            // the roster fetch is async, so the first successful one can be minutes
+            // after the words, which is how a finished speaker kept the row until a
+            // reload cleared the buffer.
+            liveHandoffPos = pos;
+            liveHandoffAt = typeof window.__liveCaptionTimeAt === 'function'
+                ? window.__liveCaptionTimeAt(pos) : 0;
             const serverAt = Date.parse(serverData.lastModified || '') || 0;
-            useLive = liveHandoffAt >= serverAt;
+            useLive = liveHandoffAt > 0 && liveHandoffAt >= serverAt;
         }
 
         const cur = useLive
