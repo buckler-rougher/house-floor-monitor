@@ -2054,16 +2054,20 @@ body.tellers-mode .tellers-column { display: flex; }
   overflow: hidden;
 }
 
-.pip-speaker-mic {
+.pip-speaker-wave {
   flex-shrink: 0;
   color: var(--text-muted);
   opacity: 0.75;
 }
 
-/* Nothing is at the microphone when the speaker is unknown or the guess is weak,
-   so the icon fades with the rest of the row rather than asserting otherwise. */
-.pip-speaker.is-uncertain .pip-speaker-mic,
-.pip-speaker.is-unknown .pip-speaker-mic { opacity: 0.4; }
+/* The bars are set per frame from the audio, so no CSS transition on them — it
+   would fight the animation and smear it. Smoothing lives in the AnalyserNode. */
+
+/* Nobody is confidently at the microphone when the speaker is unknown or the guess
+   is weak, so the meter fades with the rest of the row rather than asserting
+   otherwise. It keeps moving: the audio is real even when the name is a guess. */
+.pip-speaker.is-uncertain .pip-speaker-wave,
+.pip-speaker.is-unknown .pip-speaker-wave { opacity: 0.4; }
 
 .pip-speaker-photo-wrap {
   width: 26px;
