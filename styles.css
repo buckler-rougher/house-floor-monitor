@@ -2119,6 +2119,14 @@ body.tellers-mode .tellers-column { display: flex; }
 .pip-speaker.is-uncertain .pip-speaker-photo-wrap { opacity: 0.55; }
 .pip-speaker.is-unknown .pip-speaker-name { color: var(--text-muted); font-weight: 500; font-style: italic; }
 
+/* The caption text behind this name is old enough that the floor may already have
+   moved on. The name is still the best available answer, so it stays — but it
+   stops looking like a live readout, because next to a live camera that is exactly
+   what a viewer would otherwise assume it is. */
+.pip-speaker.is-stale .pip-speaker-photo-wrap { opacity: 0.5; }
+.pip-speaker.is-stale .pip-speaker-name { color: var(--text-secondary); }
+.pip-speaker.is-stale .pip-speaker-meta { color: var(--accent-amber); opacity: 0.85; }
+
 .youtube-pip-label {
   font-size: var(--fs-base);
   font-weight: 600;
