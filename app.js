@@ -10883,11 +10883,21 @@ function updateLastUpdate() {
         row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
         row.classList.toggle('is-unknown', !member);
         row.classList.toggle('is-stale', stale);
+        // Reveal before writing the name. The fitting check below measures the
+        // rendered text, and a display:none element reports every width as 0, so
+        // measuring first silently compared 0 > 0 and never shortened anything.
+        row.hidden = false;
 
         if (member) {
             const party = (member.party || '').toUpperCase();
             const cls = party === 'R' ? 'r' : party === 'D' ? 'd' : 'i';
+            // The surname is the half that identifies a member, and it is the half an
+            // ellipsis eats first: "Mariannette Miller-M…" at the panel's 220px floor.
+            // Drop the given name to an initial instead, and only when it does not fit.
             name.textContent = `${member.first || ''} ${member.last || ''}`.trim();
+            if (member.first && member.last && name.scrollWidth > name.clientWidth) {
+                name.textContent = `${member.first.trim().charAt(0)}. ${member.last}`;
+            }
             meta.innerHTML = `<span class="pip-speaker-party-${cls}">${escapeHtml(party || '?')}-${escapeHtml(member.state || '')}</span>` +
                 (conf < CONFIDENT ? ' · unconfirmed' : '') +
                 (stale ? ` · up to ${formatCaptionAge(age)} behind` : '');
