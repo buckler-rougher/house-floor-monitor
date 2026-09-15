@@ -10358,6 +10358,8 @@ function updateLastUpdate() {
     // that has not already been reflected.
     const LIVE_TEXT_MAX = 12000;
     let liveCaptionText = '';
+    let liveFirstCueAt = 0;   // when this stream's live track started producing
+    let liveLastCueAt = 0;    // when it last did, so a stalled track stops counting
     const _liveSeen = new Set();
 
     function harvestLiveCues() {
@@ -10371,12 +10373,19 @@ function updateLastUpdate() {
             added += (added ? ' ' : '') + line;
         }
         if (!added) return;
+        const now = Date.now();
+        if (!liveFirstCueAt) liveFirstCueAt = now;
+        liveLastCueAt = now;
         liveCaptionText = (liveCaptionText + ' ' + added).slice(-LIVE_TEXT_MAX);
         // The dedupe set must not grow all session; the tail is what matters.
         if (_liveSeen.size > 4000) _liveSeen.clear();
         if (typeof window.__onLiveCaptionText === 'function') window.__onLiveCaptionText(liveCaptionText);
     }
     window.__liveCaptionText = () => liveCaptionText;
+    // How long the live track has been watched without interruption. The speaker
+    // readout uses this to decide whether the server's older snapshot leaves any
+    // window unaccounted for.
+    window.__liveCaptionMeta = () => ({ firstCueAt: liveFirstCueAt, lastCueAt: liveLastCueAt });
 
     function enablePipCaptions() {
         const tracks = [...pipVideo.textTracks].filter(t => t.kind === 'captions' || t.kind === 'subtitles');
@@ -10600,6 +10609,12 @@ function updateLastUpdate() {
 
     // Load the live stream
     function loadPip(url) {
+        // A new stream means the live caption watch starts over: the old text
+        // belongs to a different timeline and must not be credited as coverage.
+        liveCaptionText = '';
+        liveFirstCueAt = 0;
+        liveLastCueAt = 0;
+        _liveSeen.clear();
         pipFrozen = false;
         const gen = ++pipGen; // invalidates any in-flight snapshot/freeze from a prior load
         if (pipSnapshotHls) { try { pipSnapshotHls.destroy(); } catch {} pipSnapshotHls = null; }
@@ -10713,16 +10728,39 @@ function updateLastUpdate() {
     // adding to it: the API answers a 304 from its own parse, so this is cheap.
     const POLL_MS = 8000;
     const CONFIDENT = 0.6;   // below this the resolver is carrying a stale attribution
-    // Past this, the caption text behind the name is old enough that the member on
-    // camera has plausibly already changed, so the page says so instead of
-    // presenting a stale name as current.
+    // Past this much UNWATCHED time, the member on camera has plausibly changed
+    // without us having seen it, so the page says so instead of presenting a name
+    // as current. See uncoveredSeconds() — this is not simply the age of the
+    // server's text.
     const STALE_AFTER_S = 45;
+    // A live track with no new cues for this long has stalled (paused video, ended
+    // stream) and stops counting as coverage, however long it ran before.
+    const LIVE_DEAD_AFTER_MS = 30000;
     let timer = null;
     let lastPhotoId = null;
 
     const clear = () => { row.hidden = true; lastPhotoId = null; };
 
     const formatCaptionAge = (s) => (s < 90 ? `${s}s` : `${Math.round(s / 60)}m`);
+
+    // How much of the recent past nothing was watching.
+    //
+    // The server's answer is current as of `captionAge` seconds ago, because the
+    // Clerk rewrites captions.vtt only every 70-78s. But the video's own caption
+    // track has been read continuously since the stream loaded, and a hand-off in
+    // that window would have been caught. So the name is only really behind by the
+    // part of the gap the live track was not there for — which after a minute or so
+    // of watching is nothing at all.
+    //
+    // Reporting the raw age instead said "55s behind" while the live track was
+    // wide awake and would have seen any change the moment it was spoken.
+    function uncoveredSeconds(captionAge) {
+        if (captionAge === null) return null;
+        const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
+        const watching = meta && meta.firstCueAt && (Date.now() - meta.lastCueAt) < LIVE_DEAD_AFTER_MS;
+        const coverage = watching ? Math.round((Date.now() - meta.firstCueAt) / 1000) : 0;
+        return Math.max(0, captionAge - coverage);
+    }
 
     // Server state, kept so the live path can resolve against it. The bindings are
     // the load-bearing part: a live "THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED"
@@ -10786,7 +10824,8 @@ function updateLastUpdate() {
         const member = cur.member;
         const conf = typeof cur.confidence === 'number' ? cur.confidence : 0;
 
-        const age = useLive ? 0 : (typeof serverData.captionAgeSeconds === 'number' ? serverData.captionAgeSeconds : null);
+        const rawAge = typeof serverData.captionAgeSeconds === 'number' ? serverData.captionAgeSeconds : null;
+        const age = useLive ? 0 : uncoveredSeconds(rawAge);
         const stale = age !== null && age > STALE_AFTER_S;
 
         row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
@@ -10799,7 +10838,7 @@ function updateLastUpdate() {
             name.textContent = `${member.first || ''} ${member.last || ''}`.trim();
             meta.innerHTML = `<span class="pip-speaker-party-${cls}">${escapeHtml(party || '?')}-${escapeHtml(member.state || '')}</span>` +
                 (conf < CONFIDENT ? ' · unconfirmed' : '') +
-                (stale ? ` · ${formatCaptionAge(age)} behind` : '');
+                (stale ? ` · up to ${formatCaptionAge(age)} behind` : '');
             renderPhoto(member.bioguideId);
         } else {
             // The chair recognised somebody without naming them. Say exactly that,
@@ -10816,8 +10855,10 @@ function updateLastUpdate() {
         }
 
         row.title = [
-            useLive ? 'from the live caption track in the video stream' :
-                (age !== null ? `captions last updated ${formatCaptionAge(age)} ago` : null),
+            useLive ? 'from the live caption track in the video stream'
+                : stale ? `up to ${formatCaptionAge(age)} of the floor has not been watched yet`
+                : rawAge !== null ? `server text ${formatCaptionAge(rawAge)} old, covered since by the live caption track`
+                : null,
             member ? `${member.first} ${member.last} (${member.party}-${member.state})` : 'Not identified in the captions',
             cur.basis ? `basis: ${cur.basis}` : null,
             typeof cur.confidence === 'number' ? `confidence: ${Math.round(cur.confidence * 100)}%` : null,
