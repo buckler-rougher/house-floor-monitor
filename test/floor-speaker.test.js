@@ -200,6 +200,41 @@ check('limit does not change the resolved count', trimmed.resolvedTurns, full.re
 check('speech-turn count matches the timeline', full.speechTurns, full.timeline.filter((x) => x.role === 'speech').length);
 check('limit does not change who is current', trimmed.current.t, full.current.t);
 
+// ── Special Order hours ─────────────────────────────────────────────────────
+// A different format entirely, and most of an evening is made of them. The chair
+// recognises the holder once, for sixty minutes, and then says nothing at all:
+// the holder introduces each guest and speaks again between them. Every rule the
+// bill-debate path relies on — manager bindings, chair recognitions — is absent.
+const so = H.resolveFloorSpeakers([
+  { t: 0, text: "UNDER THE SPEAKER'S ANNOUNCED POLICY OF JANUARY 3RD, 2025, THE GENTLEWOMAN FROM WYOMING, MS. HAGEMAN, IS RECOGNIZED FOR 60 MINUTES." },
+  { t: 1, text: 'THANK YOU, MR. SPEAKER. WE HAVE GATHERED THIS EVENING TO TALK ABOUT TRUCKING.' },
+  { t: 2, text: 'I NOW INVITE REPRESENTATIVE RALPH NORMAN FROM SOUTH CAROLINA TO ADDRESS THE BODY.' },
+  { t: 3, text: 'I WANT TO THANK CONGRESSWOMAN HAGERMAN FOR LEADING THIS CHARGE.' },
+  { t: 4, text: 'THANK YOU, REPRESENTATIVE NORMAN. I NOW INVITE REPRESENTATIVE MIKE VOSS FROM ILLINOIS TO ADDRESS THE BODY.' },
+  { t: 5, text: 'I THANK THE GENTLEMAN FOR YIELDING. I RISE TODAY IN RECOGNITION OF TRUCK DRIVERS.' },
+], roster);
+const soWho = (i) => so.timeline[i].member && so.timeline[i].member.last;
+
+check('the hour opens with its holder', soWho(1), 'Hageman');
+// "REPRESENTATIVE RALPH NORMAN FROM SOUTH CAROLINA" — surname after the given
+// name and FROM rather than OF, the inverse of the suspension formula.
+check('invited guest takes the floor', soWho(3), 'Norman');
+// Only the holder invites, so the introducing turn is theirs — otherwise it is
+// credited to the guest who just finished.
+check('the introduction belongs to the holder', soWho(2), 'Hageman');
+// Reclaiming the floor from a guest IS an inference from the format's shape, and
+// is labelled so the confidence drops. (The opening introduction needs no such
+// inference — the holder already had the floor.)
+check('holder reclaims between guests', soWho(4), 'Hageman');
+check('the reclaim is marked as an inference', so.timeline[4].basis, 'hour-holder');
+check('and carries lower confidence', so.timeline[4].confidence < so.timeline[3].confidence, true);
+// "MIKE VOSS" is Mike Bost. VOSS->BOST is two edits, more than a four-letter
+// surname is allowed alone; the given name narrows Illinois first.
+check('a garbled surname resolves via the given name', soWho(5), 'Bost');
+check('given name narrows the delegation',
+  H.matchPersonTokens('MIKE VOSS', 'ILLINOIS', roster).member.last, 'BOST');
+check('surname alone would not have', H.matchSurname('VOSS', 'ILLINOIS', roster), null);
+
 // ── Live caption track (unsegmented) ────────────────────────────────────────
 // The video carries its own CEA-608 track whose cues arrive ahead of the picture,
 // while captions.vtt is rewritten only every 70-78s. But the live track has no
