@@ -428,6 +428,28 @@ const stutter = H.resolveFloorSpeakers([
 ], roster);
 check('the floor moves despite the stutter', stutter.timeline[4].member.last, 'Magaziner');
 
+// ── A hand-off buried inside somebody's turn ────────────────────────────────
+// Turn boundaries exist only where the stenographer types "UNIDENTIFIED SPEAKER:",
+// and sometimes they simply do not — one turn then swallows a recognition and
+// everything after it, and the floor changes hands with nothing noticing.
+const SP = H.buildPatterns(roster);
+const merged = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM MICHIGAN, MR. WALBERG, AND THE GENTLEMAN FROM VIRGINIA, MR. SCOTT, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM VIRGINIA IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I RISE IN FAVOR OF THIS BILL. IT CLOSES A LOOPHOLE THAT HAS PERSISTED FOR YEARS AND I URGE MY COLLEAGUES TO SUPPORT IT. I YIELD BACK. THE GENTLEMAN FROM MICHIGAN IS RECOGNIZED. MR. SPEAKER, I THANK THE RANKING MEMBER AND RISE IN STRONG SUPPORT.' },
+], roster);
+check('the buried hand-off is found', merged.current.member.last, 'Walberg');
+check('and the speech before it still belongs to the first member',
+  merged.timeline.filter((x) => x.role === 'speech')[0].member.last, 'Scott');
+
+// The chair's own turns must survive intact. "THE GENTLEMAN RESERVES." in front of
+// a recognition is one chair turn, not two — and the lead-in test missed it for a
+// while because it was anchored without allowing the leading "THE".
+check('a chair turn is not split', H.splitEmbeddedChairTurns(
+  [{ t: 0, text: 'THE GENTLEMAN RESERVES. THE GENTLEMAN FROM NEW YORK IS RECOGNIZED.' }], SP).length, 1);
+check('nor is one opening with a yield-back', H.splitEmbeddedChairTurns(
+  [{ t: 0, text: "THE GENTLEMAN'S TIME HAS EXPIRED. THE GENTLEMAN FROM TEXAS IS RECOGNIZED." }], SP).length, 1);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
