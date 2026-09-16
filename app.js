@@ -4402,48 +4402,49 @@ async function fetchBillsThisWeek() {
 function updateBillStatusFromProceedings(items) {
     if (!items || items.length === 0) return;
 
-    const billIdPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
+    // Row classification is shared with the worker — see lib/floor-status.js.
+    // Before that file existed this function knew only one shape of row, the
+    // voice-vote passage, so a suspension whose recorded vote had been demanded
+    // and postponed showed as merely "scheduled" for the hours between the
+    // demand and the vote series. The only code that understood postponement
+    // lived in the worker, behind an hour-long cache — long after it mattered.
+    const { classifyFloorAction, billIdFromText, outranks } = globalThis.FloorStatus;
     const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
     let changed = false;
 
-    const extractBillId = desc => {
-        const m = desc.match(billIdPattern);
-        return m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
-    };
-
-    const isOutcomeRow = desc =>
-        /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
-        /\bon passage\b/i.test(desc) ||
-        /on agreeing to the (resolution|amendment)\b/i.test(desc);
-
-    const isPassed = desc =>
-        /(agreed to|passed)\b/i.test(desc) &&
-        !/not agreed to|failed/i.test(desc) &&
-        /voice vote|without objection/i.test(desc);
+    const normalize = id => String(id || '').replace(/\s+/g, '').toUpperCase();
 
     for (let i = 0; i < items.length; i++) {
         const desc = items[i].description || '';
-        if (!isOutcomeRow(desc) || !isPassed(desc)) continue;
+        const action = classifyFloorAction(desc);
+        if (!action) continue;
+        // Passage is only claimed here for a voice vote. A recorded vote's
+        // outcome arrives with its tally from the roll log and the server, and
+        // guessing it from row prose would race them.
+        if (action.status !== 'roll-call' && !action.viaVoiceVote) continue;
 
-        // Outcome row rarely contains the bill ID itself; look at nearby items
-        let billId = extractBillId(desc);
+        // A postponed row names its bill inline; a passage row usually does not,
+        // so fall back to scanning neighbours for it.
+        let billId = billIdFromText(desc);
         for (let j = 1; j <= 3 && !billId; j++) {
-            if (i + j < items.length) billId = extractBillId(items[i + j].description || '');
-            if (!billId && i - j >= 0) billId = extractBillId(items[i - j].description || '');
+            if (i + j < items.length) billId = billIdFromText(items[i + j].description || '');
+            if (!billId && i - j >= 0) billId = billIdFromText(items[i - j].description || '');
         }
         if (!billId) continue;
 
-        const normId = billId.replace(/\s+/g, '');
+        const normId = normalize(billId);
         for (const key of allArrays) {
-            const bill = (billsData[key] || []).find(b => b.id.replace(/\s+/g, '') === normId);
-            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
-                bill.status = 'passed';
-                bill.latestAction = 'Passed (voice vote)';
-                bill.latestActionDate = items[i].pubDate || '';
-                bill.actionSource = 'proceedings';
-                bill.actionSourceUrl = items[i].link || '';
-                changed = true;
-            }
+            const bill = (billsData[key] || []).find(b => normalize(b.id) === normId);
+            // outranks() keeps this from walking a settled outcome backwards:
+            // items are newest-first, so a morning postponement is seen after
+            // the afternoon passage it was resolved by.
+            if (!bill || !outranks(action.status, bill.status)) continue;
+            bill.status = action.status;
+            bill.latestAction = action.statusText;
+            bill.latestActionDate = items[i].pubDate || '';
+            bill.actionSource = 'proceedings';
+            bill.actionSourceUrl = items[i].link || '';
+            changed = true;
         }
     }
 

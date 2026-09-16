@@ -7,6 +7,9 @@ import './lib/bill-id.js';
 // Who is speaking on the floor, derived from the Clerk's captions — see
 // lib/floor-speaker.js for why the caption labels themselves are useless.
 import './lib/floor-speaker.js';
+// How a Clerk activity row maps to a bill status, shared with app.js so the live
+// page and the server cannot disagree about what "vote requested" looks like.
+import './lib/floor-status.js';
 // Subrequest budgeting for Congress.gov enrichment — see the header of that file
 // for why going over the free plan's 50-subrequest cap fails silently.
 import './lib/enrich-plan.js';
@@ -897,27 +900,10 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   //   [i+1] "Considered as unfinished business. <bill link>"  ← HAS bill link
   // So for each outcome row, look up to 3 rows away for the associated bill link.
 
-  // Returns true if a row description is itself an outcome (postponed or passage
-  // motion). Used to bound the bill-link search so we don't cross into another
-  // outcome's territory and grab the wrong bill.
-  const isOutcomeRow = (desc) =>
-    /postponed proceedings/i.test(desc) ||
-    /further proceedings\b[\s\S]*\bwere postponed/i.test(desc) ||
-    /recorded vote requested.*postponed/i.test(desc) ||
-    /postponed.*recorded vote/i.test(desc) ||
-    /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
-    /\bon passage\b/i.test(desc) ||
-    /on agreeing to the (resolution|amendment)\b/i.test(desc) ||
-    /on passage of the bill\b/i.test(desc) ||
-    /agree to the senate amendment/i.test(desc) ||
-    /on ordering the previous question/i.test(desc);
-
-  // Extract a bill ID mentioned inline in plain text (e.g. "H.R. 1234" in the
-  // postponed description). Used as a fallback before searching nearby rows.
-  const inlineBillId = (desc) => {
-    const m = desc.match(/\b(H\.R\.|S\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.Res\.|S\.J\.Res\.|S\.Con\.Res\.)\s*(\d+)/i);
-    return m ? `${m[1].replace(/\s+/g, '')} ${m[2]}` : null;
-  };
+  // Row classification and inline bill-id extraction are shared with app.js —
+  // see lib/floor-status.js. isOutcomeRow bounds the bill-link search so one
+  // motion never borrows the bill belonging to another.
+  const { classifyFloorAction, billIdFromText: inlineBillId, isOutcomeRow, outranks } = globalThis.FloorStatus;
 
   // Search for the associated bill link within a window around row i, stopping
   // early if another outcome row is encountered (to avoid cross-contamination).
@@ -940,69 +926,27 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
 
   for (let i = 0; i < rows.length; i++) {
     const { description } = rows[i];
+    const action = classifyFloorAction(description);
+    if (!action) continue;
 
-    // Recorded vote requested and deferred to a later vote series. The Clerk
-    // posts these as "POSTPONED PROCEEDINGS - ... further proceedings on <bill>
-    // were postponed." The bill link may be in this row or nearby. Maps to the
-    // "roll-call" (VOTE REQUESTED) status. Always set it — it should override
-    // 'scheduled', and passage/failure rows earlier in the loop already win via
-    // STATUS_RANK.
-    const isPostponed =
-      /postponed proceedings/i.test(description) ||
-      /further proceedings\b[\s\S]*\bwere postponed/i.test(description) ||
-      /recorded vote requested.*postponed/i.test(description) ||
-      /postponed.*recorded vote/i.test(description);
-    if (isPostponed) {
-      // Prefer inline bill ID from description text; fall back to nearby rows.
-      const pid = rows[i].billId || inlineBillId(description) || findBillId(i, 6, 3);
-      if (pid) {
-        statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
-      }
-      continue;
-    }
+    // Postponed rows carry the bill inline ("...to suspend the rules and pass
+    // H.R. 1234, the Chair put the question...") far more reliably than they
+    // carry a link, so read the prose before searching neighbours. Passage rows
+    // are the other way round: the bill link sits in the "Considered as
+    // unfinished business" row that follows, and intervening rows (motion to
+    // recommit, previous question) can push it several rows down — hence the
+    // wider forward window, bounded at the next outcome.
+    const billId = action.status === 'roll-call'
+      ? (rows[i].billId || inlineBillId(description) || findBillId(i, 6, 3))
+      : findBillId(i, 6, 3);
+    if (!billId) continue;
 
-    // Only process rows that are actual bill passage/failure motions
-    const isPassageMotion =
-      /on motion to suspend the rules and (pass|agree)/i.test(description) ||
-      /\bon passage\b/i.test(description) ||
-      /on agreeing to the (resolution|amendment)\b/i.test(description) ||
-      /on passage of the bill\b/i.test(description) ||
-      /agree to the senate amendment/i.test(description) ||
-      /on ordering the previous question/i.test(description);
-    if (!isPassageMotion) continue;
-
-    let status, statusText;
-    if (/(agreed to|passed)\b/i.test(description) && !/not agreed to|failed/i.test(description)) {
-      status = 'passed';
-      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
-      if (/voice vote|without objection/i.test(description)) {
-        statusText = 'Passed (voice vote)';
-      } else if (votes) {
-        statusText = `Passed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}`;
-      } else {
-        statusText = 'Passed';
-      }
-    } else if (/\b(failed|not agreed to)\b/i.test(description)) {
-      status = 'failed';
-      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
-      statusText = votes ? `Failed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}` : 'Failed';
-    } else {
-      continue;
-    }
-
-    // Find the bill ID for this passage motion. The bill-link row ("Considered
-    // as unfinished business. H.R. ####") follows the passage in the reverse-
-    // chronological feed, but intervening rows (motion to recommit, previous
-    // question, etc.) can push it several rows down — so search forward up to 6
-    // rows first, then a smaller backward window. Stop at outcome boundaries.
-    const billId = findBillId(i, 6, 3);
-
-    if (billId && status) {
-      const existing = statuses[billId];
-      // "passed" and "failed" are final — don't downgrade
-      if (!existing || existing.status !== 'passed') {
-        statuses[billId] = { status, statusText, sourceUrl };
-      }
+    // Rows are NEWEST FIRST, so a bill postponed in the morning and passed in
+    // the afternoon reaches us passage-first and postponement-second. Assigning
+    // blindly let the older row win and reverted a bill that had already passed
+    // back to "vote requested" — resolve by rank, not by arrival.
+    if (outranks(action.status, statuses[billId]?.status)) {
+      statuses[billId] = { status: action.status, statusText: action.statusText, sourceUrl };
     }
   }
 
@@ -1214,7 +1158,14 @@ const KV_NO_STORE_HEADER = 'x-kv-no-store';
 // default. Never lengthens it — the caller's kvFreshTtl stays the ceiling.
 const KV_FRESH_TTL_HEADER = 'x-kv-fresh-ttl';
 
-const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
+// One ranking, shared with app.js's merge and with the Clerk-row resolution in
+// lib/floor-status.js. This used to be a third, private copy that ranked
+// 'postponed' ABOVE 'roll-call' — the reverse of the other two — so a stale
+// entry could hold a bill at "Postponed" instead of the Clerk's own "Recorded
+// vote requested". Nothing feeds 'postponed' into a bill status any more (it
+// comes only from the Bluesky ticker, which no longer drives status), so this
+// is the correct ordering and the disagreement was pure hazard.
+const STATUS_RANK = globalThis.FloorStatus.STATUS_RANK;
 
 // ── Generic KV response cache ─────────────────────────────────────────────────
 // kvCache(env, key, ttlSeconds, fn, kvTtl?)
