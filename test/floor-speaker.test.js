@@ -567,19 +567,27 @@ const LIVE_MEMBER = { basis: 'live-named', member: { last: 'Massie' }, fromEnd: 
 const LIVE_CLERK = { basis: 'clerk', member: null, fromEnd: 12 };
 
 // The bug, stated as the two cases that used to be unreachable.
-check('a stale live result does not hide the chair', H.floorRole(LIVE_MEMBER, false, CHAIR), 'chair');
-check('a stale live result does not hide the clerk', H.floorRole(LIVE_MEMBER, false, CLERK), 'clerk');
+check('a stale live result does not hide the chair', H.floorRole(LIVE_MEMBER, false, CHAIR, true), 'chair');
+check('a stale live result does not hide the clerk', H.floorRole(LIVE_MEMBER, false, CLERK, true), 'clerk');
 
 // And the reason the gate existed in the first place: fresh live really does win.
-check('a fresh live naming outranks the server chair', H.floorRole(LIVE_MEMBER, true, CHAIR), 'member');
-check('a fresh live clerk call outranks the server speech', H.floorRole(LIVE_CLERK, true, SPEECH), 'clerk');
-check('a fresh live naming outranks the server clerk', H.floorRole(LIVE_MEMBER, true, CLERK), 'member');
+check('a fresh live naming outranks the server chair', H.floorRole(LIVE_MEMBER, true, CHAIR, true), 'member');
+check('a fresh live clerk call outranks the server speech', H.floorRole(LIVE_CLERK, true, SPEECH, true), 'clerk');
+check('a fresh live naming outranks the server clerk', H.floorRole(LIVE_MEMBER, true, CLERK, true), 'member');
 
 // No live track at all — Safari, a dropped stream, the panel closed.
-check('no live result falls back to the server chair', H.floorRole(null, false, CHAIR), 'chair');
-check('no live result falls back to the server clerk', H.floorRole(null, false, CLERK), 'clerk');
-check('no live result falls back to the server member', H.floorRole(null, false, SPEECH), 'member');
-check('no server current is survivable', H.floorRole(null, false, null), 'member');
+check('no live result falls back to the server chair', H.floorRole(null, false, CHAIR, true), 'chair');
+check('no live result falls back to the server clerk', H.floorRole(null, false, CLERK, true), 'clerk');
+check('no live result falls back to the server member', H.floorRole(null, false, SPEECH, true), 'member');
+check('no server current is survivable', H.floorRole(null, false, null, true), 'member');
+
+// A stale snapshot must not assert either mark. Both are present-tense claims
+// about this instant — the clerk is reading NOW — and a reading lasts about
+// fifteen seconds while the sidecar can be two minutes behind, so off stale
+// evidence the quill turns up after the clerk has sat down and then stays.
+check('a stale snapshot does not assert the clerk', H.floorRole(null, false, CLERK, false), 'member');
+check('nor the chair', H.floorRole(null, false, CHAIR, false), 'member');
+check('but a fresh live clerk call still counts', H.floorRole(LIVE_CLERK, true, SPEECH, false), 'clerk');
 
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
