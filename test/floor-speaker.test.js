@@ -529,6 +529,24 @@ const yto = (t) => yieldedToOffice.timeline.find((x) => Math.floor(x.t) === t);
 check('the yielder keeps the turn they yielded in', yto(2).member.last, 'Subramanyam');
 check('the office that follows is not them', yto(3).member, null);
 check('and says why', yto(3).basis, 'yield-unresolved');
+// And reports no delegation. purposeState is the state the CHAIR last recognised,
+// which after this yield is a fact about the member who yielded, not the one
+// speaking — it billed the Democratic Leader of New York as an unidentified
+// Virginian, which is a worse answer than admitting to nothing.
+check('and claims no delegation it does not have', yto(3).candidateState, null);
+
+// The contrast: a yield that DOES name a state, whose surname is past recovery.
+// "MR. NILS" is Mr. Nehls. An unidentified Texan is exactly what is known here,
+// so this one keeps its delegation.
+const yieldedNamelessInState = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEMAN FROM VIRGINIA, MR. SUBRAMANYAM, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I YIELD TWO MINUTES TO THE GENTLEMAN FROM TEXAS, WHO KNOWS THIS ISSUE WELL. MR. NILS.' },
+  { t: 3, text: 'THANK YOU, MR. SPEAKER. I RISE IN STRONG SUPPORT OF MY BILL.' },
+], roster);
+const ynis = yieldedNamelessInState.timeline.find((x) => Math.floor(x.t) === 3);
+check('a nameless in-state yield is still nameless', ynis.member, null);
+check('but keeps the delegation the chair was given', ynis.candidateState, 'TEXAS');
 
 // ── Which of the three the speaker row shows ────────────────────────────────
 //
