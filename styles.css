@@ -2148,6 +2148,21 @@ body.tellers-mode .tellers-column { display: flex; }
   color: var(--text-primary);
 }
 
+/* The Speaker's seal, in place of a photograph while they preside. Full colour
+   rather than masked: it is a seal, not a glyph, and flattening it to one tone
+   would turn it into a disc. */
+.pip-speaker.is-presiding .pip-speaker-photo-wrap {
+  background: transparent;
+  border-color: transparent;
+}
+
+.pip-speaker-seal {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .pip-speaker-quill {
   width: 100%;
   height: 100%;

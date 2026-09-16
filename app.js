@@ -10416,8 +10416,17 @@ function updateLastUpdate() {
     function harvestLiveCues() {
         if (!pipCaptionTrack || !pipCaptionTrack.cues) return;
         const cues = pipCaptionTrack.cues;
+        // Only cues playback has actually reached.
+        //
+        // The track holds everything buffered, which runs AHEAD of the picture —
+        // measured at cue start 21607.8 against a currentTime of 21605 — so reading
+        // the whole list named the next speaker several seconds before the viewer
+        // could hear the chair recognise them. A cue beyond the playhead is not
+        // skipped permanently, just left for the tick that reaches it.
+        const playhead = pipVideo.currentTime;
         let added = '';
         for (let i = 0; i < cues.length; i++) {
+            if (cues[i].startTime > playhead) continue;
             const line = (cues[i].text || '').replace(/\s+/g, ' ').trim();
             if (!line || _liveSeen.has(line)) continue;
             _liveSeen.add(line);
@@ -10998,6 +11007,30 @@ function updateLastUpdate() {
         // identifies a voice rather than decorating the panel. Before this, clerk
         // turns were skipped entirely and the previous member kept the row through
         // the whole reading.
+        // The presiding officer. The Speaker gets the seal of the office; the Chair
+        // of the Committee of the Whole gets the generic silhouette, because that
+        // role rotates among members all day and naming them would be a guess.
+        if (!live && serverData.current.role === 'chair') {
+            row.classList.remove('is-uncertain', 'is-stale', 'is-unknown', 'is-clerk');
+            row.classList.add('is-presiding');
+            const inCommittee = serverData.current.presiding === 'chair';
+            name.textContent = inCommittee ? 'The Chair' : 'The Speaker';
+            meta.textContent = inCommittee ? 'committee of the whole' : 'presiding';
+            const want = inCommittee ? 'chair' : 'speaker';
+            if (lastPhotoId !== want) {
+                lastPhotoId = want;
+                photo.innerHTML = inCommittee
+                    ? `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>`
+                    : '<img class="pip-speaker-seal" src="speaker-seal.svg" alt="">';
+            }
+            row.title = inCommittee
+                ? 'the Chair of the Committee of the Whole is presiding'
+                : 'the Speaker, or a Speaker pro tempore, is presiding';
+            row.hidden = false;
+            return;
+        }
+        row.classList.remove('is-presiding');
+
         const clerkNow = live ? live.basis === 'clerk' : serverData.current.role === 'clerk';
         if (clerkNow) {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown');
