@@ -104,6 +104,10 @@ const nameOf = (id, fallback) => {
 
 let worstPrecision = null;
 let gradedAny = false;
+// Turns we resolved on a day the Record could not score. A quiet week is fine; a
+// full session that produced no grade means this tool is broken, and the two look
+// identical in a green run unless they are told apart.
+let ungradedTurns = 0;
 for (const date of dates) {
   say(`\n### ${date}`);
   try {
@@ -120,7 +124,11 @@ for (const date of dates) {
     const g = C.gradeTimeline(resolved.timeline, crec);
 
     say(`  turns ${g.speechTurns}  attributed ${g.attributedTurns} (${g.coveragePct}%)`);
-    if (!g.graded) { say(`  not graded: ${g.reason}`); continue; }
+    if (!g.graded) {
+      say(`  not graded: ${g.reason}`);
+      ungradedTurns = Math.max(ungradedTurns, g.attributedTurns || 0);
+      continue;
+    }
     gradedAny = true;
     if (worstPrecision === null || g.precisionPct < worstPrecision) worstPrecision = g.precisionPct;
     say(`  speakers: record ${g.crecSpeakers}, ours ${g.ourSpeakers}, confirmed ${g.confirmed}`);
@@ -148,8 +156,14 @@ for (const date of dates) {
     say(`  failed: ${err.message}`);
   }
 }
-const failed = gradedAny && worstPrecision !== null && worstPrecision < MIN_PRECISION;
+// A whole session that went unscored is a failure of this tool, not of the
+// resolver — the first scheduled run reported exactly that and passed green.
+const SESSION_TURNS = 50;
+const brokenlyQuiet = !gradedAny && ungradedTurns >= SESSION_TURNS;
+const failed = (gradedAny && worstPrecision !== null && worstPrecision < MIN_PRECISION) || brokenlyQuiet;
 if (gradedAny) say(`\nlowest precision ${worstPrecision}% (threshold ${MIN_PRECISION}%)`);
+else if (brokenlyQuiet) say(`\nGRADED NOTHING, yet a day carried ${ungradedTurns} attributed turns — the Record should have covered it`);
+else say('\nnothing to grade: no floor speech in the Record for any day checked');
 if (summaryPath && summary.length) {
   const { appendFileSync } = await import('node:fs');
   appendFileSync(summaryPath, ['## Floor speaker attribution vs the Congressional Record', ...summary, ''].join('\n'));

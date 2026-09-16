@@ -110,6 +110,46 @@ const brokenYield = H.resolveFloorSpeakers([
 check('a yield survives a stray period mid-phrase', brokenYield.timeline[4].member.last, 'Carter');
 check('and is credited to the yield', brokenYield.timeline[4].basis, 'yielded-named');
 
+// A state is stronger evidence than a spelling the stenographer typed at speed.
+//
+// "THE GENTLEMAN FROM OREGON, MR. BOYLE" is Ms. Hoyle — the captions garbled her
+// name AND her gender. Rejecting the one-edit match on the honorific and falling
+// through to the whole roster found an exact "Boyle" in Pennsylvania, which is a
+// worse answer than the near miss it replaced. So: a one-edit match outranks a
+// disagreeing honorific, and a state that has plausible candidates is never
+// abandoned for a national search.
+check('a garbled name beats a garbled honorific',
+  H.matchSurname('BOYLE', 'OREGON', roster, 'M').member.last, 'HOYLE');
+check('two edits plus a wrong honorific is not enough',
+  H.matchSurname('FENIG', 'NEW YORK', roster, 'M'), null);
+check('and it never escapes to another state',
+  (H.matchSurname('BOYLE', 'OREGON', roster, 'M') || {}).scope, 'state');
+
+// A yield whose name trails a long appositive, and which does not resolve.
+// "MR. NILS" is Mr. Nehls — four letters, two edits, not recoverable. What matters
+// is that the Texas binding from earlier is dropped rather than reused, so the
+// floor reports an unidentified Texan instead of the wrong one.
+const staleBind = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEMAN FROM TEXAS, MR. CASTRO, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I YIELD TWO MINUTES TO THE GENTLEMAN FROM TEXAS, THE LEAD SPONSOR OF THIS BILL AND SOMEONE WHO PERSONALLY KNOWS ABOUT LAW ENFORCEMENT, HAVING SERVED AS A SHERIFF. MR. NILS.' },
+  { t: 3, text: 'THE GENTLEMAN FROM TEXAS IS RECOGNIZED FOR TWO MINUTES.' },
+  { t: 4, text: 'THANK YOU, MR. SPEAKER. I RISE IN STRONG SUPPORT OF MY BILL.' },
+], roster);
+check('an unreadable yield target does not inherit the old binding',
+  staleBind.timeline[4].member, null);
+
+// The same construction with a readable name must still bind, appositive and all.
+const longAppositive = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEWOMAN FROM OREGON, MS. HOYLE, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I YIELD TWO MINUTES TO THE GENTLEMAN FROM CALIFORNIA, THE LEAD SPONSOR OF THIS BILL AND A LONG-SERVING MEMBER OF THIS COMMITTEE, MR. MCCLINTOCK.' },
+  { t: 3, text: 'THE GENTLEMAN FROM CALIFORNIA IS RECOGNIZED FOR TWO MINUTES.' },
+  { t: 4, text: 'THANK YOU, MR. SPEAKER.' },
+], roster);
+check('a readable name behind a long appositive still binds',
+  longAppositive.timeline[4].member.last, 'McClintock');
+
 // A short surname must not drift: FOXX is one edit from COX, and both sit in the
 // roster. Only the state keeps them apart, so the national fallback must refuse.
 check('short name will not drift nationally', H.matchSurname('FOX', null, roster), null);
