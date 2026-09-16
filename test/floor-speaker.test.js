@@ -315,7 +315,10 @@ check('nobody holds the floor after it', adj.current, null);
 // would blank the speaker several turns early, every single session.
 const motion = H.resolveFloorSpeakers(adj.timeline.slice(0, 5).map((x) => ({ t: x.t, text: x.text })), roster);
 check('a motion to adjourn is not an adjournment', motion.sessionState, 'in-session');
-check('and the speaker is untouched', motion.current.member.last, 'Mast');
+// `current` can be the chair now, so this asks the question it always meant to:
+// the member holding the floor is untouched by the motion being put.
+const lastMember = [...motion.timeline].reverse().find((x) => x.role === 'speech' && x.member);
+check('and the member holding the floor is untouched', lastMember.member.last, 'Mast');
 
 // A recess ends without announcement — anyone speaking means they are back.
 const back = H.resolveFloorSpeakers([
