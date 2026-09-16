@@ -397,6 +397,34 @@ check('the live track reports the clerk', liveClerk.basis, 'clerk');
 check('with no member attached', liveClerk.member, null);
 check('and carries what they are doing', liveClerk.clerkAction, 'reading the bill title');
 
+// ── Which state was recognised ──────────────────────────────────────────────
+// The two orderings fight each other — "THE CHAIR RECOGNIZES THE GENTLEMAN FROM
+// ARKANSAS" puts the state after the word, "THE GENTLEMAN FROM ARKANSAS IS
+// RECOGNIZED" before it — and a chair turn routinely settles the last speaker
+// before naming the next. Proximity to the word is what binds them, not order.
+const RP = H.buildPatterns(roster);
+for (const [label, text, want] of [
+  ['stray periods mid-phrase',
+   'GENTLEMAN RESERVES. GENTLEMAN FROM RHODE ISLAND. MR. MAGAZINE. MAGAZINER IS RECOGNIZED.', 'RHODE ISLAND'],
+  ['two states, the later one wins',
+   'THE GENTLEMAN FROM RHODE ISLAND YIELDS BACK. THE GENTLEMAN FROM TEXAS IS RECOGNIZED.', 'TEXAS'],
+  ['state after the word',
+   'THE CHAIR RECOGNIZES THE GENTLEMAN FROM ARKANSAS.', 'ARKANSAS'],
+  ['reserves, then the next',
+   'GENTLEMAN RESERVES. THE GENTLEMAN FROM OREGON IS RECOGNIZED.', 'OREGON'],
+]) check(label, H.recognitionState(text, RP), want);
+check('no recognition, no state', H.recognitionState('THE GENTLEMAN FROM TEXAS YIELDS BACK.', RP), null);
+
+// End to end: the caption stutter that cost Magaziner a whole speech.
+const stutter = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM TEXAS, MR. CASTRO, AND THE GENTLEMAN FROM RHODE ISLAND, MR. MAGAZINER, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM TEXAS IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I RISE IN SUPPORT.' },
+  { t: 3, text: 'GENTLEMAN RESERVES. GENTLEMAN FROM RHODE ISLAND. MR. MAGAZINE. MAGAZINER IS RECOGNIZED.' },
+  { t: 4, text: 'THANK YOU, MR. SPEAKER. I YIELD MYSELF SUCH TIME AS I MAY CONSUME.' },
+], roster);
+check('the floor moves despite the stutter', stutter.timeline[4].member.last, 'Magaziner');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
