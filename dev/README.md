@@ -10,7 +10,7 @@ Two things made CSS work on this site unverifiable:
 1. **You can't run it locally.** The worker's CORS allowlist is
    `house-floor.evanhollander.org` and `monitor-a6i.pages.dev` only, so every API
    call from `localhost` fails and the page renders empty.
-2. **You can't see 20 of the 22 floor modes.** `prayer`, `sine-die`, `tellers`,
+2. **You can’t see 21 of the 23 floor modes.** `prayer`, `sine-die`, `tellers`,
    `joint-meeting` and the rest only appear when the House is actually in that
    state. Refactoring their CSS blind means finding out weeks later, live.
 
@@ -24,7 +24,7 @@ npm run dev                 # http://localhost:3456
 |---|---|
 | `/?fixtures` | serve every API call from `dev/fixtures/`, off-network |
 | `/?fixtures&mode=prayer` | …and drive the app into one floor mode |
-| `/dev/screens.html` | all 22 modes on one page + snapshot capture |
+| `/dev/screens.html` | all 23 modes on one page + snapshot capture |
 | `/?fixtures&freeze=0` | fixtures, but with a live clock |
 
 Mode names are in `fixtures/modes/index.json`. `?mode=` also works without
@@ -39,7 +39,7 @@ choose, then pins the result. So a fixture that stops selecting its own mode is
 itself a regression signal — the console warns when the app lands somewhere
 other than the mode you asked for.
 
-`node dev/check-modes.mjs` re-checks all 22 statically, without a browser.
+`node dev/check-modes.mjs` re-checks all 23 statically, without a browser.
 
 ## Snapshots
 
@@ -158,7 +158,7 @@ single-mode re-check settles it in under a minute:
   PiP renders as an empty black box on purpose — that keeps snapshots stable.
 - **`serve` drops query strings on `/index.html`.** It 301s to `/index`. Always
   link to `/?…`, never `/index.html?…`.
-- Loading all 22 modes at once in `screens.html` is slow (22 app instances);
+- Loading all 23 modes at once in `screens.html` is slow (23 app instances);
   leave "load on scroll" checked for browsing, uncheck only to capture.
 
 ## Finding: two chamber seats race on load

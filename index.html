@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260916k">
+    <link rel="stylesheet" href="styles.css?v=20260916l">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -640,13 +640,12 @@
             </div>
 
             <!-- Point of Personal Privilege Section -->
-            <div class="mode-column privilege-column">
             <div class="privilege-section" id="privilege-section">
                 <div class="privilege-section-header">
                     <div class="section-tag-wrap">
-                        <div class="speaker-tag">
-                            <span class="speaker-tag-text">POINT OF PERSONAL PRIVILEGE</span>
-                            <span class="speaker-tag-time" id="privilege-time"></span>
+                        <div class="privilege-tag">
+                            <span class="privilege-tag-text">POINT OF PERSONAL PRIVILEGE</span>
+                            <span class="privilege-tag-time" id="privilege-time"></span>
                         </div>
                     </div>
                     <div class="privilege-header-right">
@@ -654,10 +653,30 @@
                     </div>
                 </div>
                 <div class="privilege-content">
-                    <p class="privilege-member" id="privilege-member"></p>
-                    <p class="privilege-description" id="privilege-description">Loading point of personal privilege...</p>
+                    <div class="privilege-card">
+                        <div class="privilege-image-container">
+                            <div class="privilege-image-placeholder" id="privilege-image-placeholder">
+                                <svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>
+                            </div>
+                            <img class="privilege-image" id="privilege-image" alt="Member" />
+                        </div>
+                        <div class="privilege-info">
+                            <h2 class="privilege-member-name" id="privilege-member-name">--</h2>
+                            <div class="privilege-member-meta">
+                                <span class="privilege-party-tag" id="privilege-party-tag"></span>
+                                <span class="privilege-member-details" id="privilege-member-details"></span>
+                            </div>
+                            <p class="privilege-member-additional" id="privilege-member-additional"></p>
+                            <p class="privilege-member-title">Rose to a question of personal privilege</p>
+                            <div class="privilege-tags-row">
+                                <span class="privilege-pill" id="privilege-pill-time" hidden></span>
+                                <span class="privilege-pill">Interrupts pending business</span>
+                            </div>
+                            <a class="privilege-member-website" id="privilege-member-website" href="#" target="_blank" rel="noopener">--</a>
+                        </div>
+                    </div>
+                    <p class="privilege-description-line" id="privilege-description">Loading point of personal privilege...</p>
                 </div>
-            </div>
             </div>
 
             <!-- Appointment of Tellers Section -->
@@ -1572,8 +1591,8 @@
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
-    <script defer src="lib/floor-speaker.js?v=20260916k"></script>
-    <script defer src="app.js?v=20260916k"></script>
+    <script defer src="lib/floor-speaker.js?v=20260916l"></script>
+    <script defer src="app.js?v=20260916l"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

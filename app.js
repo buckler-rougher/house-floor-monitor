@@ -1853,8 +1853,15 @@ const elements = {
     journalChairWebsite: document.getElementById('journal-chair-website'),
     journalLastSessionDate: document.getElementById('journal-last-session-date'),
     privilegeTime: document.getElementById('privilege-time'),
-    privilegeMember: document.getElementById('privilege-member'),
     privilegeDescription: document.getElementById('privilege-description'),
+    privilegeImage: document.getElementById('privilege-image'),
+    privilegeImagePlaceholder: document.getElementById('privilege-image-placeholder'),
+    privilegeMemberName: document.getElementById('privilege-member-name'),
+    privilegePartyTag: document.getElementById('privilege-party-tag'),
+    privilegeMemberDetails: document.getElementById('privilege-member-details'),
+    privilegeMemberAdditional: document.getElementById('privilege-member-additional'),
+    privilegeMemberWebsite: document.getElementById('privilege-member-website'),
+    privilegePillTime: document.getElementById('privilege-pill-time'),
     oneMinuteTime: document.getElementById('one-minute-time'),
     oneMinuteDescriptionLine: document.getElementById('one-minute-description-line'),
     specialOrderTime: document.getElementById('special-order-time'),
@@ -6159,13 +6166,7 @@ function autoSwitchModeFromProceedings(items) {
                     hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
                 });
             }
-            // "POINT OF PERSONAL PRIVILEGE - Mr. Massie rose to a point of personal
-            // privilege..." — the Clerk names the member outright here, which the
-            // captions do not: the chair recognises them by state alone.
-            const desc = decodeHtml(ppItem.description).replace(/^POINT OF PERSONAL PRIVILEGE\s*[-–—]\s*/i, '').trim();
-            const who = desc.match(/^((?:Mr|Mrs|Ms|Miss|Dr)\.?\s+[^,.]+?)\s+rose\b/i);
-            if (elements.privilegeMember) elements.privilegeMember.textContent = who ? who[1].trim() : '';
-            if (elements.privilegeDescription) elements.privilegeDescription.textContent = desc;
+            updatePrivilegeSection(ppItem);
         } else if (winner.mode === 'debate') {
             window.setMode('debate');
             updateDebateSection(items);
@@ -7418,6 +7419,116 @@ function updateSpeakerSection(items) {
     elements.speakerMemberName.textContent = leaderName;
 
     fetchSpeakerMemberInfo(leaderName);
+}
+
+// "POINT OF PERSONAL PRIVILEGE - Mr. Massie rose to a point of personal privilege.
+// The Chair announced that it was made aware of the basis ... and recognized Mr.
+// Massie to proceed for one hour on his point of personal privilege."
+//
+// The Clerk names the member outright here, which the captions never do — the
+// chair recognises them as the gentleman from their state, one of however many.
+// So this is the one mode where the section can show a face without inferring it
+// from the speech.
+function updatePrivilegeSection(ppItem) {
+    if (!ppItem) return;
+
+    if (ppItem.pubDate && elements.privilegeTime) {
+        elements.privilegeTime.textContent = new Date(ppItem.pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+
+    const desc = decodeHtml(ppItem.description)
+        .replace(/^POINT OF PERSONAL PRIVILEGE\s*[-–—]\s*/i, '')
+        .trim();
+    if (elements.privilegeDescription) elements.privilegeDescription.textContent = desc;
+
+    // The Chair sets the time when it recognises — one hour here, but it is stated
+    // in the text rather than fixed, so read it instead of asserting it.
+    if (elements.privilegePillTime) {
+        const forTime = desc.match(/to\s+proceed\s+for\s+([^.,]+?)\s+on\s+(?:his|her|their)\s+point/i);
+        elements.privilegePillTime.textContent = forTime ? `Recognized for ${forTime[1].trim()}` : '';
+        elements.privilegePillTime.hidden = !forTime;
+    }
+
+    // Surname, plus the "of <State>" the Clerk adds when the surname alone would
+    // be ambiguous ("Mr. Scott of Virginia rose...").
+    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+rose\b/i);
+    const raw = who ? who[1].trim() : '';
+    const ofState = raw.match(/^(.*?)\s+of\s+(.+)$/i);
+    const surname = (ofState ? ofState[1] : raw).trim();
+    const stateName = ofState ? ofState[2].trim() : '';
+
+    // The Clerk's own wording stands until the roster lookup confirms a single
+    // member; it never gets replaced by a guess.
+    if (elements.privilegeMemberName) elements.privilegeMemberName.textContent = raw || '--';
+    if (surname) fetchPrivilegeMemberInfo(surname, stateName);
+}
+
+async function fetchPrivilegeMemberInfo(surname, stateName) {
+    try {
+        const state = stateName ? (STATE_NAME_TO_ABBR[stateName] || '') : '';
+        const xmlDoc = parseMemberDataXml(await getMemberDataXml());
+
+        // Exact surname only, and only if it lands on exactly one member. A
+        // near-match would put the wrong person's face on the screen, which is
+        // worse than showing no face at all — so ambiguity leaves the card blank
+        // rather than picking a favourite.
+        const hits = [];
+        for (const member of xmlDoc.querySelectorAll('member')) {
+            const lastNameEl = member.querySelector('lastname');
+            const firstNameEl = member.querySelector('firstname');
+            const bioguideEl = member.querySelector('bioguideID');
+            if (!lastNameEl || !firstNameEl || !bioguideEl) continue;
+            if (lastNameEl.textContent.trim().toLowerCase() !== surname.toLowerCase()) continue;
+
+            const stateEl = member.querySelector('state');
+            const memberState = stateEl ? (stateEl.getAttribute('postal-code') || '').toUpperCase() : '';
+            if (state && memberState !== state) continue;
+
+            const partyEl = member.querySelector('party');
+            const districtEl = member.querySelector('district');
+            const townEl = member.querySelector('townname');
+            hits.push({
+                fullName: `${firstNameEl.textContent.trim()} ${lastNameEl.textContent.trim()}`,
+                bioguideId: bioguideEl.textContent.trim(),
+                party: partyEl ? partyEl.textContent.trim() : '',
+                district: districtEl ? districtEl.textContent.trim() : '',
+                state: memberState,
+                town: townEl ? townEl.textContent.trim() : ''
+            });
+        }
+
+        if (hits.length !== 1) return;
+        const m = hits[0];
+
+        if (elements.privilegeMemberName) elements.privilegeMemberName.textContent = m.fullName;
+        if (elements.privilegeMemberDetails) {
+            elements.privilegeMemberDetails.textContent = `${m.state}-${normalizeDistrict(m.district)}`;
+        }
+        if (elements.privilegePartyTag) {
+            elements.privilegePartyTag.textContent = m.party || '';
+            elements.privilegePartyTag.className = 'privilege-party-tag';
+            if (m.party === 'R') elements.privilegePartyTag.classList.add('republican');
+            else if (m.party === 'D') elements.privilegePartyTag.classList.add('democrat');
+            else elements.privilegePartyTag.classList.add('independent');
+        }
+        if (elements.privilegeMemberAdditional) {
+            elements.privilegeMemberAdditional.textContent = m.town ? `from ${m.town}, ${m.state}` : '';
+        }
+        setMemberProfileLink(elements.privilegeMemberWebsite, buildCongressProfileUrl(m.bioguideId));
+
+        if (elements.privilegeImage) {
+            elements.privilegeImage.style.display = 'block';
+            elements.privilegeImage.style.opacity = '0';
+            elements.privilegeImage.onload = () => { elements.privilegeImage.style.opacity = '1'; };
+            elements.privilegeImage.onerror = () => { elements.privilegeImage.style.display = 'none'; };
+            elements.privilegeImage.src = buildBioguidePhotoUrl(m.bioguideId);
+            elements.privilegeImage.alt = m.fullName;
+        }
+    } catch (e) {
+        console.error('fetchPrivilegeMemberInfo error:', e);
+    }
 }
 
 function updateCommitteeChairSection(items) {

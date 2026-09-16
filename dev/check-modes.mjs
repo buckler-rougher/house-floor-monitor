@@ -43,9 +43,13 @@ function pick(items, domeText) {
   const cand = recessIdx > 0 ? d.slice(0, recessIdx) : d;
   const has = re => cand.find(x => re.test(x.toLowerCase()));
   const cotw = has(/act as chairman of the committee|committee of the whole|resolved itself into the committee|^debate -/);
+  const pp = cand.find(x => /^POINT\s+OF\s+PERSONAL\s+PRIVILEGE\b/i.test(x.trim()));
   const so = has(/special order speech|special orders/);
   const om = has(/one minute speech|one-minute speech/);
   const mh = has(/morning-hour debate|morning hour debate/);
+  // A point of personal privilege is raised DURING business, so its timestamp
+  // ties with the debate it interrupts; the interruption wins that tie.
+  if (pp) return 'privilege';
   if (cotw) return 'debate';
   if (so) return 'special-order';
   if (om) return 'one-minute';
@@ -56,7 +60,8 @@ function pick(items, domeText) {
 }
 
 let bad = 0;
-for (const mode of readdirSync(MODES).filter(f => !f.endsWith('.json')).sort()) {
+const modes = readdirSync(MODES).filter(f => !f.endsWith('.json')).sort();
+for (const mode of modes) {
   const items = JSON.parse(readFileSync(join(MODES, mode, 'proceedings.json'), 'utf8')).items;
   let domeText = 'House adjourned'; // fixtures/base default
   try {
@@ -67,5 +72,5 @@ for (const mode of readdirSync(MODES).filter(f => !f.endsWith('.json')).sort()) 
   if (!ok) bad++;
   console.log(`${ok ? '  ok  ' : ' FAIL '} ${mode.padEnd(16)} → ${got}`);
 }
-console.log(bad ? `\n${bad} fixture(s) select the wrong mode` : '\nall 22 fixtures select their own mode');
+console.log(bad ? `\n${bad} fixture(s) select the wrong mode` : `\nall ${modes.length} fixtures select their own mode`);
 process.exit(bad ? 1 : 0);
