@@ -609,6 +609,40 @@ check('a member resuming is not the chair',
 check('a chair phrase left behind is not the chair now',
   liveChair('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED. THE GENTLEMAN RESERVES. ' + 'AND SO THE PROVISION WOULD TAKE EFFECT IN THE FOLLOWING FISCAL YEAR UNDER THE TERMS SET OUT IN TITLE TWO.').basis !== 'chair', true);
 
+// ── The manager slot gets a wider budget ────────────────────────────────────
+//
+// Live on 2026-09-16 the chair said "MR. COBURN" for Mr. Comer. Three edits is
+// past the ordinary cap, so Kentucky never bound, and every turn on that side of
+// the bill came back as an unidentified Kentuckian for the rest of the measure.
+// This one slot is worth more than the ordinary budget: one person, a known
+// state, a fixed sentence, spoken slowly, and a miss is expensive.
+check('COBURN in the manager slot is Comer',
+  (H.matchManagerName('COBURN', 'KENTUCKY', roster, 'M') || {}).member.last, 'COMER');
+check('and says the budget it used', H.matchManagerName('COBURN', 'KENTUCKY', roster, 'M').scope, 'manager-slot');
+check('an exact name never needs it', H.matchManagerName('COMER', 'KENTUCKY', roster, 'M').scope, 'state');
+
+// What keeps it honest. Rogers and Barr sit 4 edits from COBURN, inside the
+// widened cap — it is the first letter that rules them out, and that survives
+// seven of the eight real garbles on record here. Without it this slot would be
+// picking between three Kentuckians on a one-edit margin.
+check('the near misses lose on their first letter',
+  ['ROGERS', 'BARR'].includes(H.matchManagerName('COBURN', 'KENTUCKY', roster, 'M').member.last), false);
+check('a first letter matching nobody resolves to nobody',
+  H.matchManagerName('XOBURN', 'KENTUCKY', roster, 'M'), null);
+check('a disagreeing honorific still rules it out', H.matchManagerName('COBURN', 'KENTUCKY', roster, 'F'), null);
+check('and nonsense resolves to nobody', H.matchManagerName('ZZZZZZ', 'KENTUCKY', roster, 'M'), null);
+// The wide budget is for this slot only — an ordinary mention stays strict.
+check('the ordinary budget is unchanged', H.matchSurname('COBURN', 'KENTUCKY', roster, 'M'), null);
+
+// End to end: the seat binds and the side of the bill stops being anonymous.
+const garbledManager = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM KENTUCKY, MR. COBURN, AND THE GENTLEMAN FROM VIRGINIA, MR. SUBRAMANYAM, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM KENTUCKY IS RECOGNIZED.' },
+  { t: 2, text: 'MR. SPEAKER, I RISE IN SUPPORT OF THIS BILL AND I YIELD MYSELF SUCH TIME AS I MAY CONSUME.' },
+], roster);
+check('the garbled manager holds their seat',
+  garbledManager.timeline.find((x) => Math.floor(x.t) === 2).member.last, 'Comer');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
