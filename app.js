@@ -11207,7 +11207,12 @@ function updateLastUpdate() {
         if (role === 'chair') {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown', 'is-clerk');
             row.classList.add('is-presiding');
-            const inCommittee = serverData.current.presiding === 'chair';
+            // Whichever source actually said so. The live track carries its own
+            // reading of who is in the chair, and when it is the one being
+            // believed, the server's is a minute or two out of date.
+            const inCommittee = (live && live.basis === 'chair' && live.presiding)
+                ? live.presiding === 'chair'
+                : serverData.current.presiding === 'chair';
             name.textContent = inCommittee ? 'The Chair' : 'The Speaker';
             meta.textContent = inCommittee ? 'committee of the whole' : 'presiding';
             const want = inCommittee ? 'chair' : 'speaker';

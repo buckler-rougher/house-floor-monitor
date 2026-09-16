@@ -589,6 +589,26 @@ check('a stale snapshot does not assert the clerk', H.floorRole(null, false, CLE
 check('nor the chair', H.floorRole(null, false, CHAIR, false), 'member');
 check('but a fresh live clerk call still counts', H.floorRole(LIVE_CLERK, true, SPEECH, false), 'clerk');
 
+// The chair holding the floor, off the live track — the only source that can
+// carry it, since the sidecar is always too far behind for a present-tense mark.
+const LIVE_CHAIR = { basis: 'chair', member: null, presiding: 'speaker', fromEnd: 20 };
+check('a fresh live chair shows the chair', H.floorRole(LIVE_CHAIR, true, SPEECH, true), 'chair');
+
+// It is heard directly rather than inferred, and only while it is still current.
+const liveChair = (t) => H.resolveLiveFloor(t, roster, {});
+check('the chair putting the question',
+  liveChair('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED. THE QUESTION IS, WILL THE HOUSE SUSPEND THE RULES?').basis, 'chair');
+check('and who is presiding',
+  liveChair('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED. THE QUESTION IS, WILL THE HOUSE SUSPEND THE RULES?').presiding, 'speaker');
+// A member resuming after "without objection" gets the floor back with no
+// recognition at all, which is what put the seal over 114 turns of members.
+check('a member resuming is not the chair',
+  liveChair('THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, IS RECOGNIZED. WITHOUT OBJECTION, SO ORDERED. MR. SPEAKER, I RISE IN SUPPORT OF THIS BILL.').member.last, 'Westerman');
+// And the chair goes stale within the same breath: short utterances, and the
+// floor moves on without saying so.
+check('a chair phrase left behind is not the chair now',
+  liveChair('THE GENTLEMAN FROM FLORIDA IS RECOGNIZED. THE GENTLEMAN RESERVES. ' + 'AND SO THE PROVISION WOULD TAKE EFFECT IN THE FOLLOWING FISCAL YEAR UNDER THE TERMS SET OUT IN TITLE TWO.').basis !== 'chair', true);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
