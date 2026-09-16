@@ -2534,6 +2534,12 @@ const COMMITTEE_MARKS = {
 // content systems, paths encoding upload dates like /2024/05/, and a page that
 // breaks on somebody else's redesign. 152K for the set.
 //
+// Rendered from vector where a vector exists — Ways and Means' Commons SVG,
+// Agriculture's own logo-2023.svg — at build time rather than shipped as SVG:
+// the Ways and Means file alone is 181K against 6K for the raster, and at the
+// 22px these display at, nothing on screen can tell the difference. The whole
+// set is 112K.
+//
 // Sixteen come from the committee's own site. Three come from Wikimedia instead,
 // because what their own site serves is not a committee mark and Wikimedia holds
 // the institutional seal:
@@ -2551,6 +2557,12 @@ const COMMITTEE_MARKS = {
 // that one keeps the seal off its own site. Resolving these at runtime would
 // therefore not make them self-maintaining, it would just move the wrong picture
 // to wherever an editor put it.
+//
+// Two of the site-sourced ones needed digging past the favicon, which is where
+// this started and is only ever 32 or 48 pixels: Appropriations publishes its
+// seal at 1113px as logosealpng_0.png, and Agriculture's icon cluster comes out
+// of the vector lockup — cropped away from the wordmark beside it, which reads
+// "CHAIRMAN GT THOMPSON".
 //
 // Two still have no usable mark and keep the monogram, which belongs to nobody:
 //   foreign affairs — the shared CMS default again

@@ -6059,14 +6059,13 @@ font-family: var(--font-mono);
     height: 22px;
     object-fit: contain;
     border-radius: var(--radius-4);
-    /* These are drawn for white pages. Half of them are dark navy or black line
-       art on a transparent ground, which on this card is a dark smudge — the
-       Judiciary dome and the Intelligence seal both vanished. A light plate is
-       what a favicon gets everywhere else on a dark interface, and it costs the
-       ones that carry their own background nothing but a thin edge. */
-    background: #f4f6fb;
-    padding: 1px;
-    box-sizing: border-box;
+    /* No plate here. These are drawn for their own sites, and they do not agree
+       about which way round: most are dark line art that needs a light ground,
+       but the Judiciary's dome and scales are WHITE with a gold laurel, so a
+       light plate erased everything but the laurel and the chip read as blank.
+       Each file carries the ground it needs, chosen when it was built by
+       measuring how much of its art is near-white. One rule in CSS could not
+       have been right for both. */
 }
 
 .committee-chip-name { min-width: 0; }
