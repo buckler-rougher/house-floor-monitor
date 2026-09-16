@@ -11065,7 +11065,6 @@ function updateLastUpdate() {
     // The last hand-off seen on the live track: where it sat in the stream, and
     // when it was first seen there. Both are needed — the position identifies the
     // hand-off, the timestamp says whether it is newer than the server's snapshot.
-    let liveHandoffPos = -1;
     let liveHandoffAt = 0;
 
     // The roster is needed client-side to fuzzy-match surnames out of live captions.
@@ -11119,6 +11118,48 @@ function updateLastUpdate() {
         // its staleness, which no longer applies to a name read off the live stream.
         const live = tryLive();
 
+        // How fresh the live track's latest floor-moving event is.
+        //
+        // This used to be worked out further down and only for a live result that
+        // named a MEMBER, which left the other two branches testing `live` itself —
+        // the clerk one preferring it whenever it was non-null, the chair one
+        // requiring it to be null. Neither is a question about time, and `live` is
+        // non-null almost continuously: the buffer is a rolling window of the last
+        // few minutes of floor speech, and nearly any stretch of that contains
+        // something that moves the floor. So "there is no live result at all" is a
+        // condition that essentially never holds while the House is sitting, and
+        // the Speaker's seal and the reading clerk's quill had never once appeared.
+        //
+        // The clerk and the chair hold the floor exactly as a member does — today's
+        // timeline is 101 member turns, 93 chair, 6 clerk — so they get the member
+        // rule: the live track wins while its last event is recent enough to still
+        // be the latest one, and after that the server, which has had time to catch
+        // up, takes it back.
+        //
+        // A live event wins for as long as it can be trusted to be the latest one,
+        // and is not weighed against the server's timestamp at all. That comparison
+        // was the bug behind the row running a minute and a half late: the sidecar's
+        // Last-Modified is when the file was WRITTEN, not how current its contents
+        // are. Caught live, it had been rewritten one second earlier and still named
+        // the previous speaker while the video's own caption track had already
+        // carried the next recognition, so treating a fresh write as fresher
+        // knowledge handed every hand-off back to the slow source.
+        //
+        // The live track is strictly ahead of the sidecar — same words, sooner — so
+        // an event seen there is never behind it. The only way it goes stale is if a
+        // LATER event was missed, worded in some way the patterns do not cover yet,
+        // which is a thing that keeps happening. So it expires, and the window is
+        // shorter than the gap between one-minute speeches: a missed hand-off costs
+        // a few minutes at worst rather than the rest of the session.
+        let liveFresh = false;
+        if (live && typeof live.fromEnd === 'number') {
+            const cmeta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
+            const pos = cmeta ? cmeta.totalChars - live.fromEnd : -1;
+            liveHandoffAt = typeof window.__liveCaptionTimeAt === 'function'
+                ? window.__liveCaptionTimeAt(pos) : 0;
+            liveFresh = liveHandoffAt > 0 && (Date.now() - liveHandoffAt) < LIVE_HANDOFF_TTL_MS;
+        }
+
         // The House rising beats everything, and is tested BEFORE the "nobody is
         // speaking" bail-out below. An adjourned House is precisely when there is no
         // current speaker, so bailing on that first threw this branch away every
@@ -11149,7 +11190,10 @@ function updateLastUpdate() {
         // The presiding officer. The Speaker gets the seal of the office; the Chair
         // of the Committee of the Whole gets the generic silhouette, because that
         // role rotates among members all day and naming them would be a guess.
-        if (!live && serverData.current.role === 'chair') {
+        const H = globalThis.HouseFloorSpeaker;
+        const role = H ? H.floorRole(live, liveFresh, serverData.current) : 'member';
+
+        if (role === 'chair') {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown', 'is-clerk');
             row.classList.add('is-presiding');
             const inCommittee = serverData.current.presiding === 'chair';
@@ -11170,8 +11214,7 @@ function updateLastUpdate() {
         }
         row.classList.remove('is-presiding');
 
-        const clerkNow = live ? live.basis === 'clerk' : serverData.current.role === 'clerk';
-        if (clerkNow) {
+        if (role === 'clerk') {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown');
             row.classList.add('is-clerk');
             name.textContent = 'House Reading Clerk';
@@ -11187,42 +11230,9 @@ function updateLastUpdate() {
         }
         row.classList.remove('is-clerk');
 
-        // Prefer the live track only when what it found is NEWER than the server's
-        // snapshot. It used to win unconditionally, which meant a hand-off sitting
-        // in the live buffer kept beating fresher server data indefinitely: the row
-        // held Virginia Foxx long after George Latimer had the floor, and only a
-        // reload fixed it, because reloading is what empties that buffer.
-        //
-        // The live buffer is a rolling window of the recent past, so finding a
-        // hand-off in it says nothing about when it happened.
-        let useLive = false;
-        if (live && live.member) {
-            const meta = typeof window.__liveCaptionMeta === 'function' ? window.__liveCaptionMeta() : null;
-            const pos = meta ? meta.totalChars - live.fromEnd : -1;
-            liveHandoffPos = pos;
-            liveHandoffAt = typeof window.__liveCaptionTimeAt === 'function'
-                ? window.__liveCaptionTimeAt(pos) : 0;
-            // A live hand-off wins for as long as it can be trusted to be the latest
-            // one, and is not weighed against the server's timestamp at all.
-            //
-            // That comparison was the bug behind the row running a minute and a half
-            // late. The sidecar's Last-Modified is when the file was WRITTEN, not how
-            // current its contents are: caught live, it had been rewritten one second
-            // earlier and still named the previous speaker while the video's own
-            // caption track had already carried the next recognition. Treating a
-            // fresh write as fresher knowledge handed every hand-off back to the slow
-            // source.
-            //
-            // The live track is strictly ahead of the sidecar — same words, sooner —
-            // so a hand-off seen there is never behind it. The only way it goes stale
-            // is if a LATER hand-off was missed, worded in some way the patterns do
-            // not cover yet, which is a thing that keeps happening. So it expires:
-            // past this window the server, which has had ample time to catch up,
-            // takes over again. Shorter than the gap between one-minute speeches, so
-            // a missed hand-off costs a few minutes at worst rather than the rest of
-            // the session.
-            useLive = liveHandoffAt > 0 && (Date.now() - liveHandoffAt) < LIVE_HANDOFF_TTL_MS;
-        }
+        // A member named on the live track, while that naming is still the latest
+        // thing the track has to say. See liveFresh above for why it expires.
+        const useLive = liveFresh && !!(live && live.member);
 
         const cur = useLive
             ? { member: live.member, basis: live.basis, confidence: 0.9 }

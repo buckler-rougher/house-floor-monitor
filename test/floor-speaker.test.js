@@ -490,6 +490,39 @@ check('a chair turn is not split', H.splitEmbeddedChairTurns(
 check('nor is one opening with a yield-back', H.splitEmbeddedChairTurns(
   [{ t: 0, text: "THE GENTLEMAN'S TIME HAS EXPIRED. THE GENTLEMAN FROM TEXAS IS RECOGNIZED." }], SP).length, 1);
 
+// ── Which of the three the speaker row shows ────────────────────────────────
+//
+// The client used to decide this inline, and got it wrong in a way no test could
+// see: the chair branch ran only when the live resolver returned NOTHING, and the
+// clerk branch deferred to the live resolver whenever it returned ANYTHING. The
+// live resolver returns non-null continuously while the House is sitting — its
+// input is a rolling few minutes of floor speech and almost any slice of that
+// moves the floor — so between them, those two conditions made the Speaker's seal
+// and the reading clerk's quill unreachable. Live for months, shown never.
+//
+// The real rule is about time: a live event decides while it is still the latest
+// thing said; after that the server's snapshot, which has caught up by then, does.
+const CHAIR = { role: 'chair', member: null, presiding: 'speaker' };
+const CLERK = { role: 'clerk', member: null, clerkAction: 'reading the bill title' };
+const SPEECH = { role: 'speech', member: { last: 'Comer' } };
+const LIVE_MEMBER = { basis: 'live-named', member: { last: 'Massie' }, fromEnd: 40 };
+const LIVE_CLERK = { basis: 'clerk', member: null, fromEnd: 12 };
+
+// The bug, stated as the two cases that used to be unreachable.
+check('a stale live result does not hide the chair', H.floorRole(LIVE_MEMBER, false, CHAIR), 'chair');
+check('a stale live result does not hide the clerk', H.floorRole(LIVE_MEMBER, false, CLERK), 'clerk');
+
+// And the reason the gate existed in the first place: fresh live really does win.
+check('a fresh live naming outranks the server chair', H.floorRole(LIVE_MEMBER, true, CHAIR), 'member');
+check('a fresh live clerk call outranks the server speech', H.floorRole(LIVE_CLERK, true, SPEECH), 'clerk');
+check('a fresh live naming outranks the server clerk', H.floorRole(LIVE_MEMBER, true, CLERK), 'member');
+
+// No live track at all — Safari, a dropped stream, the panel closed.
+check('no live result falls back to the server chair', H.floorRole(null, false, CHAIR), 'chair');
+check('no live result falls back to the server clerk', H.floorRole(null, false, CLERK), 'clerk');
+check('no live result falls back to the server member', H.floorRole(null, false, SPEECH), 'member');
+check('no server current is survivable', H.floorRole(null, false, null), 'member');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
