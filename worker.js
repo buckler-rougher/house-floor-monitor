@@ -1113,7 +1113,15 @@ async function fetchBillMeta(billId) {
   if (committeesResp.ok) {
     try {
       const data = await committeesResp.json();
-      result.committees = (data.committees || []).map(c => c.name).filter(Boolean).slice(0, 3);
+      // Keep the chamber. Congress.gov sends it and we were throwing it away, which
+      // makes six of the twenty committees that turn up here unidentifiable: both
+      // chambers have a Judiciary, a Rules, an Agriculture, an Armed Services and a
+      // Veterans' Affairs, and "Judiciary Committee" alone does not say which.
+      // systemCode carries it too — hsju00 vs ssju00 — so it is the reliable one.
+      result.committees = (data.committees || [])
+        .filter(c => c.name)
+        .map(c => ({ name: c.name, chamber: c.chamber || null, systemCode: c.systemCode || null }))
+        .slice(0, 3);
     } catch {}
   }
   return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
