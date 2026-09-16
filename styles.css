@@ -6008,16 +6008,68 @@ font-family: var(--font-mono);
 .bill-modal-committee {
     display: inline-flex;
     align-items: center;
-    gap: var(--sp-12);
+    gap: var(--sp-8);
     font-size: var(--fs-base);
     font-weight: 600;
     color: var(--text-primary);
     background: var(--bg-elevated);
     border: 1px solid var(--border-color);
-    border-left: 3px solid var(--accent-blue);
+    /* The committee's own colour replaces the one blue edge every chip used to
+       share, so a row of them is scannable rather than uniform. */
+    border-left: 3px solid var(--mark, var(--accent-blue));
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
 }
+
+/* The mark: a monogram on the committee's colour. Ours, because the committees
+   have no logo that is both free, stable and non-partisan — see COMMITTEE_MARKS
+   in app.js. Sized to stay legible next to the chip's text at every width. */
+.committee-chip-mark {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-4);
+    background: var(--mark, var(--accent-blue));
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+/* A Senate committee on a House floor monitor is the exception, and reads as one:
+   the mark is outlined rather than filled, so it is legible as "not ours" without
+   needing a label to say so. */
+.bill-modal-committee.is-senate .committee-chip-mark {
+    background: transparent;
+    color: var(--mark, var(--accent-blue));
+    box-shadow: inset 0 0 0 1.5px var(--mark, var(--accent-blue));
+}
+
+/* The committee's own seal, at the same footprint as the monogram it replaces so
+   a row mixing the two still lines up. Contain rather than cover: several of
+   these are round seals and one is a banner, and none of them should be cropped. */
+.committee-chip-logo {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    border-radius: var(--radius-4);
+    /* These are drawn for white pages. Half of them are dark navy or black line
+       art on a transparent ground, which on this card is a dark smudge — the
+       Judiciary dome and the Intelligence seal both vanished. A light plate is
+       what a favicon gets everywhere else on a dark interface, and it costs the
+       ones that carry their own background nothing but a thin edge. */
+    background: #f4f6fb;
+    padding: 1px;
+    box-sizing: border-box;
+}
+
+.committee-chip-name { min-width: 0; }
 
 /* Amendments side panel */
 .bill-modal-overlay.has-amendments {
