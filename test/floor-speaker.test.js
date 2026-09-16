@@ -94,6 +94,22 @@ check('the recognition names the speaker', thanksForYield.timeline[1].member.las
 check('being thanked for yielding does not hand over the next turn',
   thanksForYield.timeline[3].member.last, 'Westerman');
 
+// The captions drop stray periods into the middle of a yield. "to the bill
+// sponsor, my friend from Louisiana, Mr. Carter" came through as "TO THE BILL.
+// SPONSOR MY FRIEND FROM LOUISIANA, MR. CARTER", and a token run that stopped dead
+// at "BILL." missed the hand-off — so the chair's bare "THE GENTLEMAN IS
+// RECOGNIZED" fell back to the manager and the row named Magaziner while Carter
+// spoke.
+const brokenYield = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM RHODE ISLAND, MR. MAGAZINER, AND THE GENTLEMAN FROM LOUISIANA, MR. CARTER, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM RHODE ISLAND IS RECOGNIZED.' },
+  { t: 2, text: 'THANK YOU, MR. SPEAKER. I YIELD TO THE BILL. SPONSOR MY FRIEND FROM LOUISIANA, MR. CARTER, AS MUCH TIME AS HE MAY CONSUME.' },
+  { t: 3, text: 'THE GENTLEMAN IS RECOGNIZED.' },
+  { t: 4, text: 'MR. SPEAKER, I RISE TODAY IN SUPPORT OF MY BILL, H.R. 5109.' },
+], roster);
+check('a yield survives a stray period mid-phrase', brokenYield.timeline[4].member.last, 'Carter');
+check('and is credited to the yield', brokenYield.timeline[4].basis, 'yielded-named');
+
 // A short surname must not drift: FOXX is one edit from COX, and both sit in the
 // roster. Only the state keeps them apart, so the national fallback must refuse.
 check('short name will not drift nationally', H.matchSurname('FOX', null, roster), null);
