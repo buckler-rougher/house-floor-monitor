@@ -2530,19 +2530,31 @@ const COMMITTEE_MARKS = {
 };
 
 // The logos themselves, committed to the repo rather than hotlinked. Harvested
-// once from each committee's own site: hotlinking them would have meant four
-// different content systems, paths encoding upload dates like /2024/05/, and a
-// page that breaks on somebody else's redesign. 116K for the set.
+// once: hotlinking the committees' own sites would have meant four different
+// content systems, paths encoding upload dates like /2024/05/, and a page that
+// breaks on somebody else's redesign. 152K for the set.
 //
-// Five committees are deliberately absent and keep the monogram instead, because
-// what their sites serve is not a committee mark:
-//   homeland        — the art reads "HOMELAND SECURITY REPUBLICANS"
-//   ways and means  — the seal's ring names the sitting chairman
-//   foreign affairs — serves the shared CMS default, byte-identical to Rules'
-//   rules           — the same file; it is a platform icon, not a seal
+// Sixteen come from the committee's own site. Three come from Wikimedia instead,
+// because what their own site serves is not a committee mark and Wikimedia holds
+// the institutional seal:
+//   homeland security — its own art reads "HOMELAND SECURITY REPUBLICANS"
+//   ways and means    — its own seal's ring names the sitting chairman; the
+//                       Commons SVG is the plain one, "1789" and nothing else
+//   rules             — its own site serves the shared CMS default, a file
+//                       byte-identical to Foreign Affairs', so a platform icon
+//
+// Wikimedia is not a general answer, which is why it is three and not twenty-one.
+// Only 7 of the 21 House committees have any committee-specific image there at
+// all; the other 14 articles illustrate with the generic seal of the House, which
+// would put the same picture on every chip. And it needs the same judgement:
+// Appropriations' Wikipedia logo is a wordmark reading "CHAIRMAN TOM COLE", so
+// that one keeps the seal off its own site. Resolving these at runtime would
+// therefore not make them self-maintaining, it would just move the wrong picture
+// to wherever an editor put it.
+//
+// Two still have no usable mark and keep the monogram, which belongs to nobody:
+//   foreign affairs — the shared CMS default again
 //   transportation  — declares no icon at all
-// The minority-side sites are not a way out of the first two: their art is the
-// other party's, not the committee's.
 const COMMITTEE_LOGOS = {
     'agriculture':                       'agriculture',
     'appropriations':                    'appropriations',
@@ -2560,6 +2572,10 @@ const COMMITTEE_LOGOS = {
     'science space and technology':      'science',
     'small business':                    'small-business',
     'veterans affairs':                  'veterans-affairs',
+    // From Wikimedia — see above.
+    'homeland security':                 'homeland-security',
+    'rules':                             'rules',
+    'ways and means':                    'ways-and-means',
 };
 
 // Fallback palette, picked for contrast against the card background rather than
