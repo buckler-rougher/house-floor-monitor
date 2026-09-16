@@ -490,6 +490,46 @@ check('a chair turn is not split', H.splitEmbeddedChairTurns(
 check('nor is one opening with a yield-back', H.splitEmbeddedChairTurns(
   [{ t: 0, text: "THE GENTLEMAN'S TIME HAS EXPIRED. THE GENTLEMAN FROM TEXAS IS RECOGNIZED." }], SP).length, 1);
 
+// ── A yield must not cost the manager their seat ────────────────────────────
+//
+// Live on 2026-09-16: the Virginia manager yielded five minutes to Mrs. Kiggans,
+// also of Virginia. `bind` is the running "last member named from this state"
+// table and the yield wrote her into it, so the chair's next "THE GENTLEMAN FROM
+// VIRGINIA IS RECOGNIZED" — him resuming control — came back as her. The row
+// named a gentlewoman for a gentleman and held her there for the rest of the bill.
+//
+// Control of time and "who was named most recently" are two different facts.
+const yieldedSameState = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEMAN FROM VIRGINIA, MR. SUBRAMANYAM, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM VIRGINIA IS RECOGNIZED.' },
+  { t: 2, text: 'THANK YOU, MR. SPEAKER. I YIELD FIVE MINUTES TO THE GENTLEWOMAN FROM VIRGINIA. MS. KIGGANS.' },
+  { t: 3, text: 'THE GENTLEWOMAN FROM VIRGINIA IS RECOGNIZED.' },
+  { t: 4, text: 'THANK YOU, MR. SPEAKER. I RISE TODAY IN SUPPORT OF MY BILL, WHICH WOULD DESIGNATE A POST OFFICE.' },
+  { t: 5, text: 'THE GENTLEMAN FROM ARKANSAS RESERVES. THE GENTLEMAN FROM VIRGINIA IS RECOGNIZED.' },
+  { t: 6, text: 'THANK YOU, MR. SPEAKER. I THANK THE GENTLEMAN FOR THIS BILL, AND I URGE MY COLLEAGUES TO SUPPORT IT.' },
+], roster);
+const yss = (t) => yieldedSameState.timeline.find((x) => Math.floor(x.t) === t);
+check('the yield target gets her own turns', yss(4).member.last, 'Kiggans');
+check('and the manager gets his seat back', yss(6).member.last, 'Subramanyam');
+
+// ── Yielding to an office nobody names ──────────────────────────────────────
+//
+// "I YIELD TO THE LEADER FOR ONE MINUTE", also live on 2026-09-16. LEADER was not
+// in the vocabulary of things one yields TO, so the resolver never saw the floor
+// move and ran the Leader's whole minute under the yielder's name. The captions
+// name an office, not a person, and there is no free feed that turns one into the
+// other — so the answer is that we do not know, not a name we know to be wrong.
+const yieldedToOffice = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEMAN FROM VIRGINIA, MR. SUBRAMANYAM, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM VIRGINIA IS RECOGNIZED.' },
+  { t: 2, text: 'THANK YOU, MR. SPEAKER. I YIELD TO THE LEADER FOR ONE MINUTE.' },
+  { t: 3, text: 'THANK YOU, MR. SPEAKER. I RISE IN STRONG SUPPORT OF THIS LEGISLATION AND I THANK MY COLLEAGUE FOR YIELDING.' },
+], roster);
+const yto = (t) => yieldedToOffice.timeline.find((x) => Math.floor(x.t) === t);
+check('the yielder keeps the turn they yielded in', yto(2).member.last, 'Subramanyam');
+check('the office that follows is not them', yto(3).member, null);
+check('and says why', yto(3).basis, 'yield-unresolved');
+
 // ── Which of the three the speaker row shows ────────────────────────────────
 //
 // The client used to decide this inline, and got it wrong in a way no test could
