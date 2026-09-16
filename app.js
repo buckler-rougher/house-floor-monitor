@@ -1852,6 +1852,9 @@ const elements = {
     journalChairAdditional: document.getElementById('journal-chair-additional'),
     journalChairWebsite: document.getElementById('journal-chair-website'),
     journalLastSessionDate: document.getElementById('journal-last-session-date'),
+    privilegeTime: document.getElementById('privilege-time'),
+    privilegeMember: document.getElementById('privilege-member'),
+    privilegeDescription: document.getElementById('privilege-description'),
     oneMinuteTime: document.getElementById('one-minute-time'),
     oneMinuteDescriptionLine: document.getElementById('one-minute-description-line'),
     specialOrderTime: document.getElementById('special-order-time'),
@@ -6115,6 +6118,12 @@ function autoSwitchModeFromProceedings(items) {
         return true;
     });
 
+    // A point of personal privilege interrupts whatever was happening — it is not
+    // debate on a measure, which is what the page went on showing through Mr.
+    // Massie's hour. Episodic like the others, so it is subject to the same rule:
+    // over as soon as legislative business resumes after it.
+    const ppItem = candidateItems.find(i => /^POINT\s+OF\s+PERSONAL\s+PRIVILEGE\b/i.test(i.description.trim()));
+
     const soItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('special order speech') || d.includes('special orders');
@@ -6133,6 +6142,9 @@ function autoSwitchModeFromProceedings(items) {
     // Build candidate list sorted by most-recent timestamp; COWH wins ties
     const candidates = [];
     if (cotwItem) candidates.push({ mode: 'debate',        item: cotwItem, tiebreak: 1 });
+    // Tiebreak 2: raised DURING business, so when its timestamp ties with the debate
+    // it interrupted, the interruption is what the floor is actually doing.
+    if (ppItem && episodicStillOpen(ppItem)) candidates.push({ mode: 'privilege', item: ppItem, tiebreak: 2 });
     if (soItem && episodicStillOpen(soItem)) candidates.push({ mode: 'special-order', item: soItem, tiebreak: 0 });
     if (omItem && episodicStillOpen(omItem)) candidates.push({ mode: 'one-minute',    item: omItem, tiebreak: 0 });
     if (mhItem && episodicStillOpen(mhItem)) candidates.push({ mode: 'morning-hour',  item: mhItem, tiebreak: 0 });
@@ -6140,7 +6152,21 @@ function autoSwitchModeFromProceedings(items) {
     if (candidates.length > 0) {
         candidates.sort((a, b) => (itemTime(b.item) - itemTime(a.item)) || (b.tiebreak - a.tiebreak));
         const winner = candidates[0];
-        if (winner.mode === 'debate') {
+        if (winner.mode === 'privilege') {
+            window.setMode('privilege');
+            if (ppItem.pubDate && elements.privilegeTime) {
+                elements.privilegeTime.textContent = new Date(ppItem.pubDate).toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+                });
+            }
+            // "POINT OF PERSONAL PRIVILEGE - Mr. Massie rose to a point of personal
+            // privilege..." — the Clerk names the member outright here, which the
+            // captions do not: the chair recognises them by state alone.
+            const desc = decodeHtml(ppItem.description).replace(/^POINT OF PERSONAL PRIVILEGE\s*[-–—]\s*/i, '').trim();
+            const who = desc.match(/^((?:Mr|Mrs|Ms|Miss|Dr)\.?\s+[^,.]+?)\s+rose\b/i);
+            if (elements.privilegeMember) elements.privilegeMember.textContent = who ? who[1].trim() : '';
+            if (elements.privilegeDescription) elements.privilegeDescription.textContent = desc;
+        } else if (winner.mode === 'debate') {
             window.setMode('debate');
             updateDebateSection(items);
         } else if (winner.mode === 'special-order') {
@@ -9155,7 +9181,7 @@ window.clearDate = function() {
 
 // Global mode switch function for console access
 window.setMode = function(mode) {
-    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'tellers', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair'];
+    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'tellers', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair', 'privilege'];
     if (!validModes.includes(mode)) {
         console.error(`Invalid mode: ${mode}. Valid modes are: ${validModes.join(', ')}`);
         return;
@@ -9195,13 +9221,13 @@ function initModeToggle() {
 
 function updateModeClasses(mode) {
     // Remove all mode classes (including all-mode debug class)
-    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'all-mode');
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode', 'all-mode');
 
     // Special: show every panel simultaneously (lockMode('all') debug helper).
     // all-mode CSS (last in stylesheet) overrides the !important vote-display
     // hiding that each individual mode class applies.
     if (mode === 'all') {
-        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode');
+        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode');
         return;
     }
 
@@ -9230,6 +9256,8 @@ function updateModeClasses(mode) {
         document.body.classList.add('special-order-mode');
     } else if (mode === 'joint-meeting') {
         document.body.classList.add('joint-meeting-mode');
+    } else if (mode === 'privilege') {
+        document.body.classList.add('privilege-mode');
     } else if (mode === 'tellers') {
         document.body.classList.add('tellers-mode');
     } else if (mode === 'message') {
