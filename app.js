@@ -24,6 +24,12 @@ function sanitizeTweetHtml(html) {
 }
 
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
+// The Office of the Clerk's quill, lifted out of their wordmark where it forms
+// the K. Inline and drawn in currentColor so it takes the row's colour and dims
+// with every other state, which a flat image could not do — the source art is
+// solid navy and would vanish against this panel.
+const CLERK_QUILL = `<svg class="pip-speaker-quill" viewBox="0 0 38.82 51.71" fill="currentColor" aria-hidden="true"><path transform="translate(-153.94152,-0.020019)" d="m 167.11,18.28 c -7,9.88 -10.38,21.33 -11.93,28.17 l -1.22755,4.836119 a 0.35545882,0.35545882 52.153335 0 0 0.34414,0.442911 l 0.40824,4.57e-4 c 0.26243,2.94e-4 0.51457,-0.208562 0.5698,-0.465106 0.67491,-3.13484 2.60619,-8.850302 4.74537,-11.474362 2.92,-3.58 13.79,-7.75 19,-14.62 -5.02052,0.640969 -9.95418,1.838329 -14.71,3.57 3.39,-2.75 9.55,-5.85 17.16,-7.67 0.95314,-2.400178 1.60478,-4.909346 1.94,-7.47 -4.06722,0.666082 -8.06187,1.717482 -11.93,3.14 3.86036,-2.873623 8.19176,-5.05286 12.8,-6.44 0.38845,-1.1089223 0.88413,-2.1773136 1.48,-3.19 1.74,-3 7,-7.09 7,-7.09 0,0 -14.61,2.59 -25.65,18.26 z"/></svg>`;
+
 const MEMBER_PHOTO_PLACEHOLDER = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
 
 // Current Congress number — auto-advances on Jan 3 of each odd year.
@@ -10986,6 +10992,24 @@ function updateLastUpdate() {
         if (adjourned) return clear();
 
         if (!serverData.current) return clear();
+
+        // The reading clerk announcing a measure. Their own mark replaces the
+        // member photograph, and only while they are actually speaking, so it
+        // identifies a voice rather than decorating the panel. Before this, clerk
+        // turns were skipped entirely and the previous member kept the row through
+        // the whole reading.
+        const clerkNow = live ? live.basis === 'clerk' : serverData.current.role === 'clerk';
+        if (clerkNow) {
+            row.classList.remove('is-uncertain', 'is-stale', 'is-unknown');
+            row.classList.add('is-clerk');
+            name.textContent = 'The Clerk';
+            meta.textContent = 'reading the measure';
+            if (lastPhotoId !== 'clerk') { lastPhotoId = 'clerk'; photo.innerHTML = CLERK_QUILL; }
+            row.title = 'the reading clerk is announcing the measure';
+            row.hidden = false;
+            return;
+        }
+        row.classList.remove('is-clerk');
 
         // Prefer the live track only when what it found is NEWER than the server's
         // snapshot. It used to win unconditionally, which meant a hand-off sitting
