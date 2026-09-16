@@ -369,6 +369,34 @@ check('roll-up duplicates collapse',
   H.dedupeLiveCues([{ text: 'A B' }, { text: 'C D' }, { text: 'A B' }, { text: '  ' }, { text: 'C  D' }]),
   ['A B', 'C D']);
 
+// ── What the reading clerk was asked to do ──────────────────────────────────
+// The clerk reads titles, but also designates resolutions, reports amendments and
+// calls the roll. A line that always read "reading the measure" was wrong for
+// three of those four, and the instruction says which it is.
+const CP = H.buildPatterns(roster);
+for (const [instruction, want] of [
+  ['THE CLERK WILL REPORT THE TITLE OF THE BILL.', 'reading the bill title'],
+  ['THE CLERK WILL DESIGNATE THE RESOLUTION.', 'designating the resolution'],
+  ['THE CLERK WILL REPORT THE AMENDMENT.', 'reading the amendment'],
+  ['THE CLERK WILL CALL THE ROLL.', 'calling the roll'],
+  ['THE CLERK WILL READ THE MESSAGE FROM THE SENATE.', 'reading a senate message'],
+]) check(`"${instruction.slice(4, 40)}" -> ${want}`, H.clerkActionPhrase(instruction, CP), want);
+
+// "reading the title of the bill" is the commonest of these and overran the panel
+// at its narrowest, so that phrasing is shortened rather than left to ellipsis.
+check('the commonest phrasing is the shortened one',
+  H.clerkActionPhrase('THE CLERK WILL REPORT THE TITLE OF THE BILL.', CP).length <= 22, true);
+check('an unreadable instruction yields nothing',
+  H.clerkActionPhrase('THE GENTLEMAN FROM TEXAS IS RECOGNIZED.', CP), null);
+
+// The live track has no turn boundaries, so the instruction itself marks the clerk.
+const liveClerk = H.resolveLiveFloor(
+  'THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED. MR. SPEAKER, I MOVE TO SUSPEND THE RULES. THE CLERK WILL REPORT THE TITLE OF THE BILL.',
+  roster, {});
+check('the live track reports the clerk', liveClerk.basis, 'clerk');
+check('with no member attached', liveClerk.member, null);
+check('and carries what they are doing', liveClerk.clerkAction, 'reading the bill title');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
