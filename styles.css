@@ -632,7 +632,8 @@ body {
 }
 
 .oath-column, .pledge-column, .cert-election-column, .cert-electoral-column,
-.sine-die-column, .new-session-column, .journal-column, .tellers-column {
+.sine-die-column, .new-session-column, .journal-column, .tellers-column,
+.privilege-column {
     display: none;
 }
 body.oath-mode .oath-column { display: flex; }
@@ -643,6 +644,7 @@ body.sine-die-mode .sine-die-column { display: flex; }
 body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 body.tellers-mode .tellers-column { display: flex; }
+body.privilege-mode .privilege-column { display: flex; }
 
 /* Floating quote card — no header, just quote text + citation. The card border
    card itself carries the opaque fill so the mode-column center line is
@@ -8492,6 +8494,57 @@ body.joint-meeting-mode .joint-meeting-section {
 .journal-source a {
     color: var(--accent-blue);
     text-decoration: none;
+}
+
+/* Point of personal privilege — a member interrupting the day's business to answer
+   something said about them personally. It is not debate on a measure, which is
+   what the page used to keep showing through it. */
+.privilege-section {
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+    padding: 0;
+    margin-bottom: var(--sp-24);
+}
+
+body.privilege-mode .privilege-section { display: block; }
+
+.privilege-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    padding: var(--sp-12) var(--sp-16);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.privilege-source {
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+}
+
+.privilege-source a { color: var(--accent-blue); text-decoration: none; }
+.privilege-source a:hover { text-decoration: underline; }
+
+.privilege-content { padding: var(--sp-16); }
+
+.privilege-member {
+    font-size: var(--fs-3xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-8);
+}
+
+.privilege-description {
+    font-size: var(--fs-lg);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
 }
 
 .tellers-section {

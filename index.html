@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260916j">
+    <link rel="stylesheet" href="styles.css?v=20260916k">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -637,6 +637,27 @@
                         The House convened in Joint Meeting with the Senate.
                     </div>
                 </div>
+            </div>
+
+            <!-- Point of Personal Privilege Section -->
+            <div class="mode-column privilege-column">
+            <div class="privilege-section" id="privilege-section">
+                <div class="privilege-section-header">
+                    <div class="section-tag-wrap">
+                        <div class="speaker-tag">
+                            <span class="speaker-tag-text">POINT OF PERSONAL PRIVILEGE</span>
+                            <span class="speaker-tag-time" id="privilege-time"></span>
+                        </div>
+                    </div>
+                    <div class="privilege-header-right">
+                        <span class="privilege-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                    </div>
+                </div>
+                <div class="privilege-content">
+                    <p class="privilege-member" id="privilege-member"></p>
+                    <p class="privilege-description" id="privilege-description">Loading point of personal privilege...</p>
+                </div>
+            </div>
             </div>
 
             <!-- Appointment of Tellers Section -->
@@ -1551,8 +1572,8 @@
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
-    <script defer src="lib/floor-speaker.js?v=20260916j"></script>
-    <script defer src="app.js?v=20260916j"></script>
+    <script defer src="lib/floor-speaker.js?v=20260916k"></script>
+    <script defer src="app.js?v=20260916k"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
