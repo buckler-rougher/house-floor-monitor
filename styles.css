@@ -6059,13 +6059,13 @@ font-family: var(--font-mono);
     height: 22px;
     object-fit: contain;
     border-radius: var(--radius-4);
-    /* No plate here. These are drawn for their own sites, and they do not agree
-       about which way round: most are dark line art that needs a light ground,
-       but the Judiciary's dome and scales are WHITE with a gold laurel, so a
-       light plate erased everything but the laurel and the chip read as blank.
-       Each file carries the ground it needs, chosen when it was built by
-       measuring how much of its art is near-white. One rule in CSS could not
-       have been right for both. */
+    /* No plate here, and almost none baked in either. Most of these are seals —
+       filled circles, which sit on the chip perfectly well by themselves — and a
+       square ground behind a circle is just a white box with a seal in it. What
+       decides is measured per file at build time: opaque through the middle and
+       clear at the corners means a self-contained shape, and it keeps its
+       transparency. Three are sparse dark line art that would vanish against this
+       card, and those three carry a light square. Nothing else does. */
 }
 
 .committee-chip-name { min-width: 0; }
