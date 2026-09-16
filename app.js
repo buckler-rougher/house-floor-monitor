@@ -5908,9 +5908,55 @@ function autoSwitchModeFromProceedings(items) {
         return;
     }
 
+    // ── Staleness guards, shared by every mode below ──────────────────────────
+    //
+    // The Clerk's feed is append-only. A marker is posted when something STARTS and
+    // nothing ever retracts it, so any mode picked by scanning the day's items for a
+    // matching line stays on long after the thing ended. That is one bug, and it has
+    // now been found in the speaker readout, the adjournment state and the mode
+    // selector; these two guards are what the mode selector uses against it.
+    const itemTime = i => i?.pubDate ? new Date(i.pubDate).getTime() : 0;
+
+    // Nothing from before the most recent recess or adjournment is current.
+    // items[0] is the newest; a recess at index N means only items[0..N-1] follow it.
+    const recessIdx = items.findIndex(i => {
+        const d = i.description.toLowerCase();
+        return d.includes('do now recess') || d.includes('stands in recess') ||
+               d.includes('house do now recess') || d.includes('adjourn');
+    });
+    const candidateItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
+
+    // And an episodic or ceremonial period is over the moment legislative business
+    // appears after it. This is what stopped that morning's One Minute Speeches
+    // winning every gap between suspension bills. Special Orders still qualify,
+    // because they come after the day's business rather than before it — which is
+    // why this compares timestamps instead of assuming a fixed order of the day.
+    const businessItem = candidateItems.find(i => {
+        const d = i.description.toLowerCase();
+        return /moved to suspend the rules/.test(d) ||
+               /considered under suspension/.test(d) ||
+               /\bon passage\b/.test(d) ||
+               /on motion to suspend the rules/.test(d) ||
+               /passed by (recorded vote|voice vote)/.test(d) ||
+               /yeas and nays were demanded/.test(d) ||
+               /postponed proceedings/.test(d) ||
+               /committee of the whole/.test(d) ||
+               /resolved itself into/.test(d) ||
+               /providing for consideration/.test(d) ||
+               d.startsWith('debate -');
+    });
+    const episodicStillOpen = item => !businessItem || itemTime(item) >= itemTime(businessItem);
+
     // Joint Session (highest priority — rare, significant)
-    // Use find() (newest first); if newest match is DISSOLVED, session is over
-    const jsItem = items.find(i => /^JOINT SESSION\b/i.test(i.description.trim()) && !/DISSOLVED/i.test(i.description));
+    //
+    // Find the newest JOINT SESSION item and THEN test it for dissolution. Folding
+    // the test into the predicate, as this did, meant find() simply skipped the
+    // "DISSOLVED" line and matched the "convened" one behind it — so the mode could
+    // never turn off, and the page stayed in joint-session all evening after a State
+    // of the Union ended. The Joint Meeting check below always had it the right way
+    // round; these now agree.
+    const jsLatest = candidateItems.find(i => /^JOINT SESSION\b/i.test(i.description.trim()));
+    const jsItem = jsLatest && !/DISSOLVED/i.test(jsLatest.description) ? jsLatest : null;
     if (jsItem) {
         window.setMode('joint-session');
         updateJointSessionSection(items);
@@ -5923,8 +5969,8 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // Certification of Electoral Votes
-    const certElectoralItem = items.find(i => /^CERTIFICATION OF ELECTORAL VOTES\b/i.test(i.description.trim()));
-    if (certElectoralItem) {
+    const certElectoralItem = candidateItems.find(i => /^CERTIFICATION OF ELECTORAL VOTES\b/i.test(i.description.trim()));
+    if (certElectoralItem && episodicStillOpen(certElectoralItem)) {
         window.setMode('cert-electoral');
         updateCertElectoralSection(items);
         if (certElectoralItem.pubDate && elements.certElectoralTime) {
@@ -5936,8 +5982,8 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // Certification of Election
-    const certElectionItem = items.find(i => /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()));
-    if (certElectionItem) {
+    const certElectionItem = candidateItems.find(i => /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()));
+    if (certElectionItem && episodicStillOpen(certElectionItem)) {
         window.setMode('cert-election');
         updateCertElectionSection(items);
         if (certElectionItem.pubDate && elements.certElectionTime) {
@@ -5949,11 +5995,11 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // New Session (20th Amendment)
-    const newSessionItem = items.find(i => {
+    const newSessionItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
         return d.includes('20th amendment') && (d.includes('convened') || d.includes('new legislative day'));
     });
-    if (newSessionItem) {
+    if (newSessionItem && episodicStillOpen(newSessionItem)) {
         window.setMode('new-session');
         updateNewSessionSection(items);
         if (newSessionItem.pubDate && elements.newSessionTime) {
@@ -5965,8 +6011,8 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // Administration of the Oath of Office (bulk/ceremonial — distinct from individual oath)
-    const adminOathItem = items.find(i => /^ADMINISTRATION OF THE OATH OF OFFICE\b/i.test(i.description.trim()));
-    if (adminOathItem) {
+    const adminOathItem = candidateItems.find(i => /^ADMINISTRATION OF THE OATH OF OFFICE\b/i.test(i.description.trim()));
+    if (adminOathItem && episodicStillOpen(adminOathItem)) {
         window.setMode('admin-oath');
         updateAdminOathSection(items);
         if (adminOathItem.pubDate && elements.adminOathTime) {
@@ -5985,7 +6031,7 @@ function autoSwitchModeFromProceedings(items) {
     }
 
     // Joint Meeting — find newest joint-meeting-related item; if it's dissolved, mode is off
-    const jmLatest = items.find(i => /^JOINT MEETING\b/i.test(i.description.trim()));
+    const jmLatest = candidateItems.find(i => /^JOINT MEETING\b/i.test(i.description.trim()));
     if (jmLatest && !/DISSOLVED/i.test(jmLatest.description)) {
         window.setMode('joint-meeting');
         updateJointMeetingSection(items);
@@ -6030,17 +6076,6 @@ function autoSwitchModeFromProceedings(items) {
     // For episodic modes (one-minute, special-order, morning-hour) vs persistent debate (COWH),
     // pick whichever has the most recent matching item — avoids stale morning speeches
     // overriding afternoon floor debate.
-    const itemTime = i => i?.pubDate ? new Date(i.pubDate).getTime() : 0;
-
-    // Don't surface episodic items from before the most recent recess/adjournment.
-    // items[0] is the most recent; recess at index N means only items[0..N-1] are post-recess.
-    const recessIdx = items.findIndex(i => {
-        const d = i.description.toLowerCase();
-        return d.includes('do now recess') || d.includes('stands in recess') ||
-               d.includes('house do now recess') || d.includes('adjourn');
-    });
-    const candidateItems = recessIdx > 0 ? items.slice(0, recessIdx) : items;
-
     // Find the most recent passage/vote outcome item — if it's newer than the debate item,
     // the bill has already passed and we should not re-enter debate mode for it.
     // IMPORTANT: this must only match the BILL's own final passage/failure, not routine
@@ -6088,34 +6123,6 @@ function autoSwitchModeFromProceedings(items) {
         const d = i.description.toLowerCase();
         return d.includes('morning-hour debate') || d.includes('morning hour debate');
     });
-
-    // An episodic marker is posted once, at the start of its period, and nothing
-    // ever retracts it. One Minute Speeches from that morning therefore sat in the
-    // feed all day as a valid candidate, and won any moment no other candidate
-    // qualified — which is every gap between suspension bills, because cotwItem is
-    // deliberately excluded once a passage outcome is newer than its debate item.
-    // The page flipped to ONE MINUTE SPEECHES for the minutes between one bill
-    // passing and the next being called up, hours after the one-minutes ended.
-    //
-    // So an episodic period is over the moment legislative business happens after
-    // it. Special Orders still qualify — they come after the day's business, not
-    // before it — which is the whole reason this is a timestamp comparison rather
-    // than a fixed ordering.
-    const businessItem = candidateItems.find(i => {
-        const d = i.description.toLowerCase();
-        return /moved to suspend the rules/.test(d) ||
-               /considered under suspension/.test(d) ||
-               /\bon passage\b/.test(d) ||
-               /on motion to suspend the rules/.test(d) ||
-               /passed by (recorded vote|voice vote)/.test(d) ||
-               /yeas and nays were demanded/.test(d) ||
-               /postponed proceedings/.test(d) ||
-               /committee of the whole/.test(d) ||
-               /resolved itself into/.test(d) ||
-               /providing for consideration/.test(d) ||
-               d.startsWith('debate -');
-    });
-    const episodicStillOpen = item => !businessItem || itemTime(item) >= itemTime(businessItem);
 
     // Build candidate list sorted by most-recent timestamp; COWH wins ties
     const candidates = [];
