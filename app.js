@@ -2534,6 +2534,11 @@ const COMMITTEE_MARKS = {
 // content systems, paths encoding upload dates like /2024/05/, and a page that
 // breaks on somebody else's redesign. 152K for the set.
 //
+// Most keep their transparency: a seal is a filled circle and belongs on the chip
+// itself, not in a white box. Only three — Armed Services, Natural Resources and
+// Science — are sparse dark line art that would disappear against the card, and
+// those carry a light ground. Decided per file by measuring it rather than by eye.
+//
 // Rendered from vector where a vector exists — Ways and Means' Commons SVG,
 // Agriculture's own logo-2023.svg — at build time rather than shipped as SVG:
 // the Ways and Means file alone is 181K against 6K for the raster, and at the
