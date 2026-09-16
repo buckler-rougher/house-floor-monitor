@@ -632,8 +632,7 @@ body {
 }
 
 .oath-column, .pledge-column, .cert-election-column, .cert-electoral-column,
-.sine-die-column, .new-session-column, .journal-column, .tellers-column,
-.privilege-column {
+.sine-die-column, .new-session-column, .journal-column, .tellers-column {
     display: none;
 }
 body.oath-mode .oath-column { display: flex; }
@@ -644,7 +643,6 @@ body.sine-die-mode .sine-die-column { display: flex; }
 body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 body.tellers-mode .tellers-column { display: flex; }
-body.privilege-mode .privilege-column { display: flex; }
 
 /* Floating quote card — no header, just quote text + citation. The card border
    card itself carries the opaque fill so the mode-column center line is
@@ -675,7 +673,7 @@ body.privilege-mode .privilege-column { display: flex; }
 .committee-chair-section, .pledge-section, .message-section,
 .joint-meeting-section, .journal-section, .joint-session-section,
 .cert-election-section, .cert-electoral-section, .sine-die-section,
-.new-session-section, .admin-oath-section {
+.new-session-section, .admin-oath-section, .privilege-section {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
@@ -689,7 +687,8 @@ body.privilege-mode .privilege-column { display: flex; }
 .speaker-section-header, .committee-chair-section-header, .pledge-section-header,
 .message-section-header, .joint-meeting-section-header, .journal-section-header,
 .joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
-.sine-die-section-header, .new-session-section-header, .admin-oath-section-header {
+.sine-die-section-header, .new-session-section-header, .admin-oath-section-header,
+.privilege-section-header {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -705,7 +704,8 @@ body.privilege-mode .privilege-column { display: flex; }
 .speaker-section-header::before, .committee-chair-section-header::before, .pledge-section-header::before,
 .message-section-header::before, .joint-meeting-section-header::before, .journal-section-header::before,
 .joint-session-section-header::before, .cert-election-section-header::before, .cert-electoral-section-header::before,
-.sine-die-section-header::before, .new-session-section-header::before, .admin-oath-section-header::before {
+.sine-die-section-header::before, .new-session-section-header::before, .admin-oath-section-header::before,
+.privilege-section-header::before {
     content: "HAPPENING NOW";
     flex-shrink: 0;
     font-size: var(--fs-base);
@@ -721,7 +721,7 @@ body.privilege-mode .privilege-column { display: flex; }
 .committee-chair-header-right, .pledge-header-right, .message-header-right,
 .joint-meeting-header-right, .journal-header-right, .joint-session-header-right,
 .cert-election-header-right, .cert-electoral-header-right, .sine-die-header-right,
-.new-session-header-right, .admin-oath-header-right {
+.new-session-header-right, .admin-oath-header-right, .privilege-header-right {
     margin-left: auto;
     display: flex;
     align-items: center;
@@ -732,7 +732,7 @@ body.privilege-mode .privilege-column { display: flex; }
 .silence-source, .oath-source, .speaker-source, .committee-chair-source,
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source {
+.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source {
     font-size: var(--fs-2xs); /* match .panel-source over per-section rules */
     color: var(--text-muted);
     text-transform: uppercase;
@@ -747,7 +747,7 @@ body.privilege-mode .privilege-column { display: flex; }
 .committee-chair-content, .pledge-content, .message-content,
 .joint-meeting-content, .journal-content, .joint-session-content,
 .cert-election-content, .cert-electoral-content, .sine-die-content,
-.new-session-content, .admin-oath-content, .tellers-content {
+.new-session-content, .admin-oath-content, .tellers-content, .privilege-content {
     padding: var(--sp-16) var(--sp-24);
     background: transparent;
     border: none;
@@ -6848,6 +6848,7 @@ body:is(
     .oath-mode,
     .one-minute-mode,
     .pledge-mode,
+    .privilege-mode,
     .prayer-mode,
     .recess-mode,
     .silence-mode,
@@ -8498,53 +8499,188 @@ body.joint-meeting-mode .joint-meeting-section {
 
 /* Point of personal privilege — a member interrupting the day's business to answer
    something said about them personally. It is not debate on a measure, which is
-   what the page used to keep showing through it. */
-.privilege-section {
-    display: none;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-12);
-    overflow: hidden;
-    padding: 0;
-    margin-bottom: var(--sp-24);
-}
+   what the page used to keep showing through it.
 
+   The panel shell, HAPPENING NOW header, source and body padding all come from
+   the grouped live-mode rules above; only the tag colour, the member card and
+   the quote block are specific to this mode. */
+.privilege-section { display: none; }
 body.privilege-mode .privilege-section { display: block; }
 
-.privilege-section-header {
-    display: flex;
-    justify-content: space-between;
+.privilege-tag {
+    display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: var(--sp-8);
-    padding: var(--sp-12) var(--sp-16);
-    border-bottom: 1px solid var(--border-color);
+    background: #0f5b5e;
+    color: white;
+    padding: var(--sp-6) var(--sp-12);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    font-family: var(--font-mono);
 }
 
-.privilege-source {
-    font-size: var(--fs-2xs);
+.privilege-tag-time {
+    font-size: var(--fs-sm);
+    margin-left: var(--sp-8);
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* Member card — same shape as the committee-chair card, but the member is the
+   subject here rather than the office, so the name is the heading. */
+.privilege-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-16);
+}
+
+.privilege-card {
+    display: flex;
+    gap: var(--sp-24);
+}
+
+.privilege-image-container {
+    flex-shrink: 0;
+    width: 150px;
+    height: 150px;
+    position: relative;
+}
+
+.privilege-image,
+.privilege-image-placeholder {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+}
+
+.privilege-image {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-12);
+    display: block;
+    opacity: 0;
+    transition: opacity var(--dur-150) ease;
+    border: 2px solid var(--border-color);
+}
+
+.privilege-image-placeholder {
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+}
+
+.privilege-info { flex: 1; min-width: 0; }
+
+.privilege-member-name {
+    font-size: var(--fs-4xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-6);
+}
+
+.privilege-member-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    margin-bottom: var(--sp-6);
+}
+
+.privilege-party-tag {
+    font-size: var(--fs-md);
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: var(--sp-2) var(--sp-8);
+    border-radius: var(--radius-4);
+    font-family: var(--font-mono);
+}
+
+/* .committee-chair-party-tag rode along with no colours of its own, so the mode
+   this card is modelled on renders its party letter unstyled. Same rules, both. */
+.privilege-party-tag.republican,
+.committee-chair-party-tag.republican {
+    background: rgba(249, 25, 28, 0.1);
+    color: #f9251c;
+}
+
+.privilege-party-tag.democrat,
+.committee-chair-party-tag.democrat {
+    background: rgba(88, 166, 255, 0.1);
+    color: #58a6ff;
+}
+
+.privilege-party-tag.independent,
+.committee-chair-party-tag.independent {
+    background: rgba(163, 113, 247, 0.1);
+    color: #a371f7;
+}
+
+.committee-chair-party-tag {
+    font-size: var(--fs-md);
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: var(--sp-2) var(--sp-8);
+    border-radius: var(--radius-4);
+    font-family: var(--font-mono);
+}
+
+.privilege-member-details {
+    font-size: var(--fs-lg);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+.privilege-member-additional {
+    font-size: var(--fs-base);
     color: var(--text-muted);
+    margin: 0 0 var(--sp-8);
+}
+
+.privilege-member-title {
+    font-size: var(--fs-xl);
+    color: var(--text-secondary);
+    margin: 0 0 var(--sp-10);
+}
+
+.privilege-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    margin-bottom: var(--sp-10);
+}
+
+.privilege-pill {
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-4);
+    padding: var(--sp-4) var(--sp-8);
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
 }
 
-.privilege-source a { color: var(--accent-blue); text-decoration: none; }
-.privilege-source a:hover { text-decoration: underline; }
+.privilege-pill[hidden] { display: none; }
 
-.privilege-content { padding: var(--sp-16); }
-
-.privilege-member {
-    font-size: var(--fs-3xl);
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 var(--sp-8);
+.privilege-member-website {
+    font-size: var(--fs-md);
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-family: var(--font-mono);
 }
 
-.privilege-description {
+.privilege-member-website:hover { text-decoration: underline; }
+
+/* The Clerk's own wording for what happened, in the body of the panel — the same
+   place every other mode puts its description line. */
+.privilege-description-line {
     font-size: var(--fs-lg);
+    line-height: 1.6;
     color: var(--text-secondary);
-    line-height: 1.5;
     margin: 0;
+    padding-top: var(--sp-16);
+    border-top: 1px solid var(--border-color);
 }
 
 .tellers-section {
@@ -10270,7 +10406,7 @@ body.all-mode .floor-grid-panel {
 .committee-chair-section, .pledge-section, .message-section,
 .joint-meeting-section, .journal-section, .joint-session-section,
 .cert-election-section, .cert-electoral-section, .sine-die-section,
-.new-session-section, .admin-oath-section {
+.new-session-section, .admin-oath-section, .privilege-section {
     padding: 0;
 }
 
@@ -10279,7 +10415,8 @@ body.all-mode .floor-grid-panel {
 .speaker-section-header, .committee-chair-section-header, .pledge-section-header,
 .message-section-header, .joint-meeting-section-header, .journal-section-header,
 .joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
-.sine-die-section-header, .new-session-section-header, .admin-oath-section-header {
+.sine-die-section-header, .new-session-section-header, .admin-oath-section-header,
+.privilege-section-header {
     display: flex;
     margin: 0;
 }
@@ -10288,7 +10425,7 @@ body.all-mode .floor-grid-panel {
 .silence-source, .oath-source, .speaker-source, .committee-chair-source,
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source {
+.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source {
     font-size: var(--fs-2xs);
 }
 
@@ -10297,7 +10434,7 @@ body.all-mode .floor-grid-panel {
 .committee-chair-content, .pledge-content, .message-content,
 .joint-meeting-content, .journal-content, .joint-session-content,
 .cert-election-content, .cert-electoral-content, .sine-die-content,
-.new-session-content, .admin-oath-content, .tellers-content {
+.new-session-content, .admin-oath-content, .tellers-content, .privilege-content {
     padding: var(--sp-16) var(--sp-24);
     background: transparent;
     border: none;
