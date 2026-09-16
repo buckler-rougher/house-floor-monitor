@@ -11003,7 +11003,11 @@ function updateLastUpdate() {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown');
             row.classList.add('is-clerk');
             name.textContent = 'House Reading Clerk';
-            meta.textContent = 'reading the measure';
+            // What the chair actually asked for — they read titles, but also
+            // designate resolutions, report amendments and call the roll. Falls back
+            // to the generic only when the instruction could not be read.
+            const clerkAction = (live && live.basis === 'clerk' ? live.clerkAction : serverData.current.clerkAction);
+            meta.textContent = clerkAction || 'reading the measure';
             if (lastPhotoId !== 'clerk') { lastPhotoId = 'clerk'; photo.innerHTML = CLERK_QUILL; }
             row.title = 'the reading clerk is announcing the measure';
             row.hidden = false;
