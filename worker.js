@@ -7,6 +7,10 @@ import './lib/bill-id.js';
 // Who is speaking on the floor, derived from the Clerk's captions — see
 // lib/floor-speaker.js for why the caption labels themselves are useless.
 import './lib/floor-speaker.js';
+// What a row of the Clerk's floor actions means — see lib/floor-status.js for the
+// two different wordings the Chair uses to postpone a vote, only one of which this
+// file used to recognise. Side-effect import: assigns globalThis.FloorStatus.
+import './lib/floor-status.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -897,17 +901,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   // Returns true if a row description is itself an outcome (postponed or passage
   // motion). Used to bound the bill-link search so we don't cross into another
   // outcome's territory and grab the wrong bill.
-  const isOutcomeRow = (desc) =>
-    /postponed proceedings/i.test(desc) ||
-    /further proceedings\b[\s\S]*\bwere postponed/i.test(desc) ||
-    /recorded vote requested.*postponed/i.test(desc) ||
-    /postponed.*recorded vote/i.test(desc) ||
-    /on motion to suspend the rules and (pass|agree)/i.test(desc) ||
-    /\bon passage\b/i.test(desc) ||
-    /on agreeing to the (resolution|amendment)\b/i.test(desc) ||
-    /on passage of the bill\b/i.test(desc) ||
-    /agree to the senate amendment/i.test(desc) ||
-    /on ordering the previous question/i.test(desc);
+  const isOutcomeRow = (desc) => globalThis.FloorStatus.isOutcomeRow(desc);
 
   // Extract a bill ID mentioned inline in plain text (e.g. "H.R. 1234" in the
   // postponed description). Used as a fallback before searching nearby rows.
@@ -944,11 +938,11 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     // "roll-call" (VOTE REQUESTED) status. Always set it — it should override
     // 'scheduled', and passage/failure rows earlier in the loop already win via
     // STATUS_RANK.
-    const isPostponed =
-      /postponed proceedings/i.test(description) ||
-      /further proceedings\b[\s\S]*\bwere postponed/i.test(description) ||
-      /recorded vote requested.*postponed/i.test(description) ||
-      /postponed.*recorded vote/i.test(description);
+    // The Speaker's standing notice at the top of the day — "votes on suspensions,
+    // if ordered, will be postponed" — sounds exactly like this and is not it. It
+    // names no measure and concerns votes not yet ordered.
+    const isPostponed = globalThis.FloorStatus.isPostponement(description) &&
+      !globalThis.FloorStatus.isBlanketSuspensionNotice(description);
     if (isPostponed) {
       // Prefer inline bill ID from description text; fall back to nearby rows.
       const pid = rows[i].billId || inlineBillId(description) || findBillId(i, 6, 3);
@@ -959,14 +953,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     }
 
     // Only process rows that are actual bill passage/failure motions
-    const isPassageMotion =
-      /on motion to suspend the rules and (pass|agree)/i.test(description) ||
-      /\bon passage\b/i.test(description) ||
-      /on agreeing to the (resolution|amendment)\b/i.test(description) ||
-      /on passage of the bill\b/i.test(description) ||
-      /agree to the senate amendment/i.test(description) ||
-      /on ordering the previous question/i.test(description);
-    if (!isPassageMotion) continue;
+    if (!globalThis.FloorStatus.isPassageMotion(description)) continue;
 
     let status, statusText;
     if (/(agreed to|passed)\b/i.test(description) && !/not agreed to|failed/i.test(description)) {
