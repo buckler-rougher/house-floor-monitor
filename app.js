@@ -11002,7 +11002,7 @@ function updateLastUpdate() {
         if (clerkNow) {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown');
             row.classList.add('is-clerk');
-            name.textContent = 'The Clerk';
+            name.textContent = 'House Reading Clerk';
             meta.textContent = 'reading the measure';
             if (lastPhotoId !== 'clerk') { lastPhotoId = 'clerk'; photo.innerHTML = CLERK_QUILL; }
             row.title = 'the reading clerk is announcing the measure';
