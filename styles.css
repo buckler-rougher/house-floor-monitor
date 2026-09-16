@@ -8541,6 +8541,17 @@ body.privilege-mode .privilege-section { display: block; }
     gap: var(--sp-24);
 }
 
+/* The author display:flex above would otherwise beat the UA sheet's [hidden],
+   the same way .pip-speaker did. */
+.privilege-card[hidden] { display: none; }
+.privilege-member-website[hidden] { display: none; }
+
+/* With no description line above it there is nothing to divide. */
+.privilege-card[hidden] + .privilege-description-line {
+    padding-top: 0;
+    border-top: none;
+}
+
 .privilege-image-container {
     flex-shrink: 0;
     width: 150px;

@@ -1862,6 +1862,7 @@ const elements = {
     privilegeMemberAdditional: document.getElementById('privilege-member-additional'),
     privilegeMemberWebsite: document.getElementById('privilege-member-website'),
     privilegePillTime: document.getElementById('privilege-pill-time'),
+    privilegeCard: document.getElementById('privilege-card'),
     oneMinuteTime: document.getElementById('one-minute-time'),
     oneMinuteDescriptionLine: document.getElementById('one-minute-description-line'),
     specialOrderTime: document.getElementById('special-order-time'),
@@ -7461,7 +7462,10 @@ function updatePrivilegeSection(ppItem) {
 
     // The Clerk's own wording stands until the roster lookup confirms a single
     // member; it never gets replaced by a guess.
-    if (elements.privilegeMemberName) elements.privilegeMemberName.textContent = raw || '--';
+    // Reveal the card only once the Clerk's sentence has actually yielded a name.
+    // Before that the panel is one true sentence, not a silhouette and two dashes.
+    if (raw && elements.privilegeMemberName) elements.privilegeMemberName.textContent = raw;
+    if (elements.privilegeCard) elements.privilegeCard.hidden = !raw;
     if (surname) fetchPrivilegeMemberInfo(surname, stateName);
 }
 
@@ -7517,6 +7521,7 @@ async function fetchPrivilegeMemberInfo(surname, stateName) {
             elements.privilegeMemberAdditional.textContent = m.town ? `from ${m.town}, ${m.state}` : '';
         }
         setMemberProfileLink(elements.privilegeMemberWebsite, buildCongressProfileUrl(m.bioguideId));
+        if (elements.privilegeMemberWebsite) elements.privilegeMemberWebsite.hidden = false;
 
         if (elements.privilegeImage) {
             elements.privilegeImage.style.display = 'block';
@@ -11191,7 +11196,13 @@ function updateLastUpdate() {
         // of the Committee of the Whole gets the generic silhouette, because that
         // role rotates among members all day and naming them would be a guess.
         const H = globalThis.HouseFloorSpeaker;
-        const role = H ? H.floorRole(live, liveFresh, serverData.current) : 'member';
+        // How much of the floor the server's snapshot has not accounted for. The
+        // present-tense marks below need this to be small; the member name below
+        // them does not, and reports its own lateness instead.
+        const rawAge = typeof serverData.captionAgeSeconds === 'number' ? serverData.captionAgeSeconds : null;
+        const uncovered = uncoveredSeconds(rawAge);
+        const serverFresh = uncovered === null || uncovered <= STALE_AFTER_S;
+        const role = H ? H.floorRole(live, liveFresh, serverData.current, serverFresh) : 'member';
 
         if (role === 'chair') {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown', 'is-clerk');
@@ -11240,8 +11251,7 @@ function updateLastUpdate() {
         const member = cur.member;
         const conf = typeof cur.confidence === 'number' ? cur.confidence : 0;
 
-        const rawAge = typeof serverData.captionAgeSeconds === 'number' ? serverData.captionAgeSeconds : null;
-        const age = useLive ? 0 : uncoveredSeconds(rawAge);
+        const age = useLive ? 0 : uncovered;
         const stale = age !== null && age > STALE_AFTER_S;
 
         row.classList.toggle('is-uncertain', !!member && conf < CONFIDENT);
