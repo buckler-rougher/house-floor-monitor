@@ -42,12 +42,34 @@ async function captionsUrlFor(date) {
   return pick?.url ? pick.url.replace(/#.*$/, '') : null;
 }
 
-// Yesterday in Eastern Time — the House runs on ET, and the Record for a sitting
-// day is published the following morning.
-function yesterdayET() {
+// N days ago in Eastern Time — the House runs on ET.
+function daysAgoET(n) {
   const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  et.setDate(et.getDate() - 1);
+  et.setDate(et.getDate() - n);
   return `${et.getFullYear()}${String(et.getMonth() + 1).padStart(2, '0')}${String(et.getDate()).padStart(2, '0')}`;
+}
+
+// Which recent days the Record actually covers.
+//
+// It does NOT arrive the next morning. Checked on 2026-09-16, the newest published
+// day was 2026-09-14: the 15th returned a 302 to govinfo's error page, as did the
+// 13th, 12th and 11th. So "grade yesterday" found nothing nearly every run — which
+// is exactly what the first scheduled run did, reporting 447 turns it could not
+// score against anything.
+//
+// Rather than guess a fixed offset, ask. Walking back also copes with weekends,
+// recesses and a lag that varies, and grading more than one day means a session
+// still gets scored on the run after it finally appears.
+async function publishedDates(maxBack, want) {
+  const found = [];
+  for (let i = 1; i <= maxBack && found.length < want; i++) {
+    const d = daysAgoET(i);
+    try {
+      const r = await fetch(crecUrl(d), { method: 'GET', redirect: 'manual' });
+      if (r.status === 200) found.push(d);
+    } catch { /* treat as unavailable */ }
+  }
+  return found;
 }
 
 const args = process.argv.slice(2);
@@ -65,7 +87,14 @@ const say = (line) => { console.log(line); if (summaryPath) summary.push(line); 
 
 const roster = H.buildRoster(await get(MEMBERS, 'member data'));
 const dates = args.filter((a) => /^\d{8}$/.test(a));
-if (!dates.length) dates.push(yesterdayET());
+if (!dates.length) {
+  const auto = await publishedDates(8, 3);
+  if (!auto.length) {
+    say('no published Congressional Record in the last 8 days — nothing to grade');
+    process.exit(0);
+  }
+  dates.push(...auto);
+}
 
 const byId = new Map(roster.map((r) => [r.bioguideId, r]));
 const nameOf = (id, fallback) => {
