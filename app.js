@@ -6089,12 +6089,40 @@ function autoSwitchModeFromProceedings(items) {
         return d.includes('morning-hour debate') || d.includes('morning hour debate');
     });
 
+    // An episodic marker is posted once, at the start of its period, and nothing
+    // ever retracts it. One Minute Speeches from that morning therefore sat in the
+    // feed all day as a valid candidate, and won any moment no other candidate
+    // qualified — which is every gap between suspension bills, because cotwItem is
+    // deliberately excluded once a passage outcome is newer than its debate item.
+    // The page flipped to ONE MINUTE SPEECHES for the minutes between one bill
+    // passing and the next being called up, hours after the one-minutes ended.
+    //
+    // So an episodic period is over the moment legislative business happens after
+    // it. Special Orders still qualify — they come after the day's business, not
+    // before it — which is the whole reason this is a timestamp comparison rather
+    // than a fixed ordering.
+    const businessItem = candidateItems.find(i => {
+        const d = i.description.toLowerCase();
+        return /moved to suspend the rules/.test(d) ||
+               /considered under suspension/.test(d) ||
+               /\bon passage\b/.test(d) ||
+               /on motion to suspend the rules/.test(d) ||
+               /passed by (recorded vote|voice vote)/.test(d) ||
+               /yeas and nays were demanded/.test(d) ||
+               /postponed proceedings/.test(d) ||
+               /committee of the whole/.test(d) ||
+               /resolved itself into/.test(d) ||
+               /providing for consideration/.test(d) ||
+               d.startsWith('debate -');
+    });
+    const episodicStillOpen = item => !businessItem || itemTime(item) >= itemTime(businessItem);
+
     // Build candidate list sorted by most-recent timestamp; COWH wins ties
     const candidates = [];
     if (cotwItem) candidates.push({ mode: 'debate',        item: cotwItem, tiebreak: 1 });
-    if (soItem)   candidates.push({ mode: 'special-order', item: soItem,   tiebreak: 0 });
-    if (omItem)   candidates.push({ mode: 'one-minute',    item: omItem,   tiebreak: 0 });
-    if (mhItem)   candidates.push({ mode: 'morning-hour',  item: mhItem,   tiebreak: 0 });
+    if (soItem && episodicStillOpen(soItem)) candidates.push({ mode: 'special-order', item: soItem, tiebreak: 0 });
+    if (omItem && episodicStillOpen(omItem)) candidates.push({ mode: 'one-minute',    item: omItem, tiebreak: 0 });
+    if (mhItem && episodicStillOpen(mhItem)) candidates.push({ mode: 'morning-hour',  item: mhItem, tiebreak: 0 });
 
     if (candidates.length > 0) {
         candidates.sort((a, b) => (itemTime(b.item) - itemTime(a.item)) || (b.tiebreak - a.tiebreak));
