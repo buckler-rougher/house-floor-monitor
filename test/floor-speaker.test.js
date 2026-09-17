@@ -676,6 +676,28 @@ const multiWordManager = H.resolveFloorSpeakers([
 check('the multi-word manager holds his seat',
   multiWordManager.timeline.find((x) => Math.floor(x.t) === 2).member.last, 'Van Epps');
 
+// ── Letting a mark settle before showing it ─────────────────────────────────
+//
+// The chair speaks in one-sentence bursts. Over one afternoon: 43 chair spells,
+// median 2.2 seconds, 77% under five. So the Speaker's seal was flashing on for
+// two seconds and off again — correct every single time, and unreadable. Waiting
+// four seconds drops 30 of those 43 flashes and keeps 95% of the time the chair
+// genuinely holds the floor.
+const T = 1_000_000;
+check('a member shows at once', H.markHasSettled('member', 0, T), true);
+check('a chair that just started does not', H.markHasSettled('chair', T, T), false);
+check('nor two seconds in — the median spell', H.markHasSettled('chair', T - 2200, T), false);
+check('but four seconds in it does', H.markHasSettled('chair', T - 4000, T), true);
+check('a long chair spell certainly does', H.markHasSettled('chair', T - 30000, T), true);
+// Readings run a median of 16 seconds, so the same wait costs the clerk nothing
+// — and it pushes the quill past the chair SAYING "the clerk will report", which
+// is about two seconds before the clerk actually starts.
+check('a clerk reading waits the same', H.markHasSettled('clerk', T - 1000, T), false);
+check('and a real reading outlasts the wait', H.markHasSettled('clerk', T - 16000, T), true);
+// A mark with no start time recorded has not settled; it must not fall through
+// to "true" and reintroduce the flash on the first render after a change.
+check('an unrecorded start has not settled', H.markHasSettled('chair', 0, T), false);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
