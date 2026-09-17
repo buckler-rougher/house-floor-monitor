@@ -88,5 +88,24 @@ for (const plain of [
 check('unfinished business is not a fresh postponement',
   F.isPostponement('Considered as unfinished business. H.R. 9497.'), false);
 
+// ── Tabling, the one disposition that reads backwards ───────────────────────
+// 2026-09-15: Mr. Green rose to a question of the privileges of the House,
+// H.Res. 1486 was considered as a privileged matter, Mr. Fry moved to table it,
+// and the motion carried 232-147. The measure is dead. Reading that "Agreed to"
+// the way every other outcome row is read would have reported it as PASSED.
+const tabled = 'On motion to table Agreed to by the Yeas and Nays: 232 - 147, 47 Present (Roll no. 498).';
+check('tabling is recognised', F.isTablingMotion(tabled), true);
+check('and bounds the bill search like any outcome', F.isOutcomeRow(tabled), true);
+// It must NOT be handled by the passage branch, which would call it a pass.
+check('tabling is not a passage motion', F.isPassageMotion(tabled), false);
+check('nor a postponement', F.isPostponement(tabled), false);
+
+// The row that follows nearly every passage in the feed. It contains "on the
+// table" and is not a tabling motion; matching it would kill measures that had
+// just passed.
+const reconsider = 'Motion to reconsider laid on the table Agreed to without objection.';
+check('reconsideration laid on the table is not tabling', F.isTablingMotion(reconsider), false);
+check('and is not an outcome at all', F.isOutcomeRow(reconsider), false);
+
 console.log(failed ? `\n${failed} failed` : `\nall floor-status assertions pass`);
 process.exit(failed ? 1 : 0);
