@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260917g">
+    <link rel="stylesheet" href="styles.css?v=20260917h">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -639,12 +639,14 @@
                 </div>
             </div>
 
-            <!-- Point of Personal Privilege Section -->
+            <!-- Rule IX privilege: a point of PERSONAL privilege, or a question of the
+                 privileges of the HOUSE. One panel, because the member who rose is
+                 the same card either way; see PRIVILEGE_KINDS in app.js. -->
             <div class="privilege-section" id="privilege-section">
                 <div class="privilege-section-header">
                     <div class="section-tag-wrap">
                         <div class="privilege-tag">
-                            <span class="privilege-tag-text">POINT OF PERSONAL PRIVILEGE</span>
+                            <span class="privilege-tag-text" id="privilege-tag-text">POINT OF PERSONAL PRIVILEGE</span>
                             <span class="privilege-tag-time" id="privilege-time"></span>
                         </div>
                     </div>
@@ -667,14 +669,18 @@
                                 <span class="privilege-member-details" id="privilege-member-details"></span>
                             </div>
                             <p class="privilege-member-additional" id="privilege-member-additional"></p>
-                            <div class="privilege-tags-row">
-                                <span class="privilege-pill" id="privilege-pill-time" hidden></span>
-                                <span class="privilege-pill">Interrupts pending business</span>
-                            </div>
+                            <div class="privilege-tags-row" id="privilege-pills"></div>
                             <a class="privilege-member-website" id="privilege-member-website" href="#" target="_blank" rel="noopener" hidden></a>
                         </div>
                     </div>
-                    <p class="privilege-description-line" id="privilege-description">A Member has risen to a question of personal privilege.</p>
+                    <div class="privilege-resolution" id="privilege-resolution" hidden>
+                        <div class="privilege-resolution-head">
+                            <a class="privilege-resolution-id" id="privilege-resolution-id" href="#" target="_blank" rel="noopener"></a>
+                            <span class="privilege-resolution-outcome" id="privilege-resolution-outcome" hidden></span>
+                        </div>
+                        <p class="privilege-resolution-title" id="privilege-resolution-title"></p>
+                    </div>
+                    <p class="privilege-description-line" id="privilege-description">A Member has risen on a question of privilege.</p>
                 </div>
             </div>
 
@@ -1590,8 +1596,8 @@
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
-    <script defer src="lib/floor-speaker.js?v=20260917g"></script>
-    <script defer src="app.js?v=20260917g"></script>
+    <script defer src="lib/floor-speaker.js?v=20260917h"></script>
+    <script defer src="app.js?v=20260917h"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
