@@ -743,6 +743,29 @@ body.tellers-mode .tellers-column { display: flex; }
     opacity: 0.8;
 }
 
+/* ...and the link inside it. This was per-panel, so privilege joined the group,
+   got the size and colour of the label, and kept the browser's default link:
+   purple once visited, underlined, against every other panel's blue. Grouped
+   now, so joining the group is all one thing. */
+.one-minute-source a, .special-order-source a, .morning-hour-source a, .prayer-source a,
+.silence-source a, .oath-source a, .speaker-source a, .committee-chair-source a,
+.pledge-source a, .message-source a, .joint-meeting-source a, .journal-source a,
+.joint-session-source a, .cert-election-source a, .cert-electoral-source a,
+.sine-die-source a, .new-session-source a, .admin-oath-source a, .privilege-source a,
+.tellers-source a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+
+.one-minute-source a:hover, .special-order-source a:hover, .morning-hour-source a:hover, .prayer-source a:hover,
+.silence-source a:hover, .oath-source a:hover, .speaker-source a:hover, .committee-chair-source a:hover,
+.pledge-source a:hover, .message-source a:hover, .joint-meeting-source a:hover, .journal-source a:hover,
+.joint-session-source a:hover, .cert-election-source a:hover, .cert-electoral-source a:hover,
+.sine-die-source a:hover, .new-session-source a:hover, .admin-oath-source a:hover, .privilege-source a:hover,
+.tellers-source a:hover {
+    text-decoration: underline;
+}
+
 /* Padded body to match other panels — strip the old inner card (border/radius/
    bg) so the body sits flush inside the new outer panel instead of nesting. */
 .one-minute-content, .special-order-content, .morning-hour-content,
