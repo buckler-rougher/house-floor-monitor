@@ -6,7 +6,11 @@
 - After every deploy, **always state the version number** — just the latest app.js version, e.g. `v=20260611p`
 - Cache-bust: bump `?v=YYYYMMDD+letter` on `styles.css` and `app.js` in `index.html` for every static file change
 - Version format: `YYYYMMDD` + sequential letter (a, b, c…), e.g. `20260612a`
-- Commit trailer: `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
+- Commit trailer: `Co-Authored-By: Claude <noreply@anthropic.com>` — no model
+  name or version. This used to pin a specific one, which meant it was wrong
+  every time a new model shipped, and the disagreement between it and whatever
+  the tooling suggested had to be resolved by hand each time. Git cares who
+  wrote it, not which build.
 
 ## Tests
 - `npm test` — checks the vote-series parser against real Whip notices saved in
