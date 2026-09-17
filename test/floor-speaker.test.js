@@ -748,6 +748,35 @@ check('so is the passive',
 check('thanking a delegation is neither',
   SP3.embeddedRecognition.test('I THANK THE GENTLEMAN FROM CALIFORNIA FOR HIS LEADERSHIP ON THIS BILL.'), false);
 
+// ── The chair's long formulas ───────────────────────────────────────────────
+//
+// The chair holds the floor for ten or fifteen seconds putting a question, and
+// the words that identify the speaker as the chair are at the START of it. The
+// recency test asks how recently the chair was heard, so by the time anyone is
+// looking, that opening is too far back and the row shows a member while the
+// chair is plainly still talking. These phrases land near the END of the same
+// sentences. Between them they were 320 of the 740 uncovered seconds in one
+// afternoon, and adding them moved chair coverage from 53% to 62% of the time the
+// chair is speaking, with precision unchanged at 96%.
+const SP4 = H.buildPatterns(roster);
+const chairNow = (t) => {
+  const r = H.resolveLiveFloor('THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, IS RECOGNIZED. ' + t, roster, {});
+  return r ? r.basis : null;
+};
+check('putting the question, at the point of the vote',
+  chairNow('THE QUESTION IS, WILL THE HOUSE SUSPEND THE RULES AND PASS THE BILL? THOSE IN FAVOR SAY AYE.'), 'chair');
+check('announcing the result', chairNow('IN THE OPINION OF THE CHAIR, THE AYES HAVE IT.'), 'chair');
+check('assigning time under the rule',
+  chairNow('PURSUANT TO THE RULE, THE GENTLEMAN FROM MISSOURI AND THE GENTLEWOMAN FROM MICHIGAN EACH WILL CONTROL 20 MINUTES.'), 'chair');
+check('and two-thirds having voted in the affirmative',
+  chairNow('TWO-THIRDS BEING IN THE AFFIRMATIVE, THE RULES ARE SUSPENDED.'), 'chair');
+
+// A member's own words must not read as the chair putting a question. "The
+// question is" in a member's mouth is argument, not procedure — so these are
+// anchored to the chair's formulas and not to the word "question".
+check('a member arguing is still the member',
+  chairNow('MR. SPEAKER, I RISE IN SUPPORT. THE REAL QUESTION FOR THIS BODY IS WHETHER WE ACT.') === 'chair', false);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
