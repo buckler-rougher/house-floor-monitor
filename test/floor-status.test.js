@@ -107,5 +107,61 @@ const reconsider = 'Motion to reconsider laid on the table Agreed to without obj
 check('reconsideration laid on the table is not tabling', F.isTablingMotion(reconsider), false);
 check('and is not an outcome at all', F.isOutcomeRow(reconsider), false);
 
+// ── How an outcome reads on the card ────────────────────────────────────────
+// The complaint that produced this: suspensions that had a recorded vote said
+// just "Passed", or "Passed 415-9", while measures under a rule said "Passed
+// (Roll Call 311): 214-208" — three wordings for one kind of event, because the
+// tally and the roll number were read by different code in different places.
+check('roll number and tally together',
+  F.formatVoteDetail('On motion to suspend the rules and pass the bill Agreed to by the Yeas and Nays: (2/3 required): 343 - 79 (Roll no. 304) .'),
+  '(Roll Call 304): 343-79');
+check('the 2/3 threshold is not mistaken for a tally',
+  F.formatVoteDetail('Agreed to by the Yeas and Nays: (2/3 required): 415 - 9 (Roll no. 313) .'),
+  '(Roll Call 313): 415-9');
+check('en dash separator reads the same as a hyphen',
+  F.formatVoteDetail('Passed by the Yeas and Nays: 214 \u2013 208 (Roll no. 311).'),
+  '(Roll Call 311): 214-208');
+check('four-digit tallies keep no comma',
+  F.formatVoteDetail('Agreed to by the Yeas and Nays: 1,024 - 2 (Roll no. 7).'),
+  '(Roll Call 7): 1024-2');
+// The Clerk sometimes posts the outcome before the tally lands in the row.
+check('a roll number with no tally still identifies the vote',
+  F.formatVoteDetail('Agreed to by recorded vote: (Roll no. 273).'), '(Roll Call 273)');
+check('a tally with no roll number is still the result',
+  F.formatVoteDetail('Agreed to by the Yeas and Nays: 262 - 159.'), '262-159');
+check('a voice vote carries neither', F.formatVoteDetail('Agreed to by voice vote.'), null);
+check('no crash on empty', F.formatVoteDetail(''), null);
+check('no crash on null', F.formatVoteDetail(null), null);
+
+// The ratchet locks a terminal status the first time it sees one, so it needs to
+// know when a later reading of the same outcome says more than the stored one.
+check('roll + tally is the fullest reading', F.statusTextDetail('Passed (Roll Call 304): 343-79'), 3);
+check('roll alone says less', F.statusTextDetail('Passed (Roll Call 273)'), 2);
+check('a tally says as much as a roll number', F.statusTextDetail('Passed 343-79'), 2);
+check('a voice vote is complete as written', F.statusTextDetail('Passed (voice vote)'), 2);
+check('bare "Passed" says the least', F.statusTextDetail('Passed'), 1);
+check('nothing at all scores zero', F.statusTextDetail(''), 0);
+// The ordering is the whole point: a fuller line must beat the stored one.
+check('a tally replaces a bare Passed',
+  F.statusTextDetail('Passed (Roll Call 304): 343-79') > F.statusTextDetail('Passed'), true);
+check('but a bare Passed never replaces a tally',
+  F.statusTextDetail('Passed') > F.statusTextDetail('Passed (Roll Call 304): 343-79'), false);
+
+// ── Senate amendments, the vote with no bill on it ──────────────────────────
+// 2026-09-16: "On motion that the House agree to the Senate amendments Agreed to
+// by the Yeas and Nays: 262 - 159 (Roll no. 308)" — no bill link, no bill number,
+// and no "Considered as unfinished business" row beside it. The only row naming
+// H.R. 5334 is the postponement this vote resolves, and both say "Senate
+// amendment", which is how worker.js pairs them.
+check('the resolving vote is recognisable',
+  F.isSenateAmendmentQuestion('On motion that the House agree to the Senate amendments Agreed to by the Yeas and Nays: 262 - 159 (Roll no. 308).'),
+  true);
+check('so is the postponement it resolves',
+  F.isSenateAmendmentQuestion('POSTPONED PROCEEDINGS - At the conclusion of debate on H.R. 5334, the Chair put the question on agreeing to the Senate amendments and by voice vote, announced the ayes had prevailed.'),
+  true);
+check('an ordinary passage is not',
+  F.isSenateAmendmentQuestion('On passage Passed by the Yeas and Nays: 214 - 208 (Roll no. 311).'), false);
+check('no crash on null', F.isSenateAmendmentQuestion(null), false);
+
 console.log(failed ? `\n${failed} failed` : `\nall floor-status assertions pass`);
 process.exit(failed ? 1 : 0);

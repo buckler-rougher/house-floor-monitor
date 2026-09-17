@@ -861,6 +861,11 @@ async function fetchProceedingsBillStatuses() {
   } catch { return { statuses: {}, titles: {} }; }
 }
 
+// Wording of an outcome line and how specific it is — both live in
+// lib/floor-status.js beside the row predicates that decide what a row means.
+const formatVoteDetail = (d) => globalThis.FloorStatus.formatVoteDetail(d);
+const statusTextDetail = (t) => globalThis.FloorStatus.statusTextDetail(t);
+
 function extractBillStatusesFromProceedings(html, sourceUrl = null) {
   const statuses = {};
   // Text seen alongside each bill link, keyed by bill id. Used to resolve
@@ -929,15 +934,40 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     return null;
   };
 
+  // The vote that finally disposes of postponed Senate amendments is written as a
+  // bare line — "On motion that the House agree to the Senate amendments Agreed to
+  // by the Yeas and Nays: 262 - 159 (Roll no. 308)" — with no bill link, no bill
+  // number, and none of the "Considered as unfinished business. <bill>" rows that
+  // let findBillId resolve a suspension. The only row that names the measure is the
+  // postponement this vote resolves, and the question ("agreeing to the Senate
+  // amendments") can belong to just one measure on a given day. H.R. 5334 passed
+  // 262-159 and sat on "Recorded vote requested — postponed" all week for want of
+  // this pairing.
+  const isSenateAmendmentQuestion = (desc) => globalThis.FloorStatus.isSenateAmendmentQuestion(desc);
+  let _deferredSenateAmendment;
+  const deferredSenateAmendmentBill = () => {
+    if (_deferredSenateAmendment !== undefined) return _deferredSenateAmendment;
+    const ids = new Set();
+    for (const r of rows) {
+      if (!isSenateAmendmentQuestion(r.description)) continue;
+      if (!globalThis.FloorStatus.isPostponement(r.description)) continue;
+      const id = r.billId || inlineBillId(r.description);
+      if (id) ids.add(id);
+    }
+    // Two measures postponed on Senate amendments the same day would make the
+    // pairing a guess — leave those to the ordinary search rather than guess.
+    _deferredSenateAmendment = ids.size === 1 ? [...ids][0] : null;
+    return _deferredSenateAmendment;
+  };
+
   for (let i = 0; i < rows.length; i++) {
     const { description } = rows[i];
 
     // Recorded vote requested and deferred to a later vote series. The Clerk
     // posts these as "POSTPONED PROCEEDINGS - ... further proceedings on <bill>
     // were postponed." The bill link may be in this row or nearby. Maps to the
-    // "roll-call" (VOTE REQUESTED) status. Always set it — it should override
-    // 'scheduled', and passage/failure rows earlier in the loop already win via
-    // STATUS_RANK.
+    // "roll-call" (VOTE REQUESTED) status, which outranks 'scheduled' but must
+    // never displace the vote that later resolved it — see the guard below.
     // The Speaker's standing notice at the top of the day — "votes on suspensions,
     // if ordered, will be postponed" — sounds exactly like this and is not it. It
     // names no measure and concerns votes not yet ordered.
@@ -947,7 +977,16 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       // Prefer inline bill ID from description text; fall back to nearby rows.
       const pid = rows[i].billId || inlineBillId(description) || findBillId(i, 6, 3);
       if (pid) {
-        statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
+        // Rows run newest-first, so any passage or failure this loop has already
+        // recorded happened AFTER this postponement — it is the deferred vote
+        // finally being taken. Overwriting it unconditionally is what made four
+        // measures that had passed on the floor read "Recorded vote requested —
+        // postponed" for the rest of the week; on suspensions the same bug was
+        // hidden by the KV ratchet's already-persisted terminal status.
+        const existing = statuses[pid];
+        if (!existing || !TERMINAL_STATUSES.has(existing.status)) {
+          statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
+        }
       }
       continue;
     }
@@ -961,12 +1000,12 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       const agreed = /(agreed to)\b/i.test(description) && !/not agreed to|failed/i.test(description);
       const tid = findBillId(i, 6, 3);
       if (tid && agreed) {
-        const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+        const detail = formatVoteDetail(description);
         const prev = statuses[tid];
         if (!prev || prev.status !== 'passed') {
           statuses[tid] = {
             status: 'failed',
-            statusText: votes ? `Tabled ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}` : 'Tabled',
+            statusText: detail ? `Tabled ${detail}` : 'Tabled',
             sourceUrl,
           };
         }
@@ -979,18 +1018,16 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     let status, statusText;
     if (/(agreed to|passed)\b/i.test(description) && !/not agreed to|failed/i.test(description)) {
       status = 'passed';
-      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+      const detail = formatVoteDetail(description);
       if (/voice vote|without objection/i.test(description)) {
         statusText = 'Passed (voice vote)';
-      } else if (votes) {
-        statusText = `Passed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}`;
       } else {
-        statusText = 'Passed';
+        statusText = detail ? `Passed ${detail}` : 'Passed';
       }
     } else if (/\b(failed|not agreed to)\b/i.test(description)) {
       status = 'failed';
-      const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
-      statusText = votes ? `Failed ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}` : 'Failed';
+      const detail = formatVoteDetail(description);
+      statusText = detail ? `Failed ${detail}` : 'Failed';
     } else {
       continue;
     }
@@ -1000,7 +1037,12 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     // chronological feed, but intervening rows (motion to recommit, previous
     // question, etc.) can push it several rows down — so search forward up to 6
     // rows first, then a smaller backward window. Stop at outcome boundaries.
-    const billId = findBillId(i, 6, 3);
+    let billId = findBillId(i, 6, 3);
+    // A row that carries its own link needs no help; one that does not, and that
+    // votes on Senate amendments, is the deferred question above.
+    if (!rows[i].billId && isSenateAmendmentQuestion(description)) {
+      billId = deferredSenateAmendmentBill() || billId;
+    }
 
     if (billId && status) {
       const existing = statuses[billId];
@@ -1183,15 +1225,17 @@ async function fetchCongressBillStatus(billId) {
                             suspensionPassed;
           const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
           if (isPassage || isFailed) {
+            // Same wording as the Clerk-proceedings path, from the same helper —
+            // a bill's status line should not change shape depending on which
+            // source happened to report it first.
+            const detail = formatVoteDetail(action.text || '');
             let statusText;
             if (isFailed) {
-              statusText = 'Failed';
+              statusText = detail ? `Failed ${detail}` : 'Failed';
             } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
               statusText = 'Passed (voice vote)';
-            } else if (t.includes('yeas and nays') || t.includes('roll no') || t.includes('record vote no')) {
-              statusText = 'Passed (roll call)';
             } else {
-              statusText = 'Passed';
+              statusText = detail ? `Passed ${detail}` : 'Passed';
             }
             floorStatus = { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: action.text };
           }
@@ -1386,7 +1430,13 @@ function ratchetStatuses(cached, bills) {
     // Congress.gov statuses are always re-fetchable from the API, so we never lock them in;
     // persisting a congress-sourced status would freeze incorrect data (e.g. false passage).
     if (bill.actionSource === 'congress') continue;
-    if (!prev || currRank > prevRank) {
+    // Equal rank still updates when the new line is more specific. The Clerk
+    // occasionally posts an outcome row a refresh before the tally lands in it,
+    // and without this the first terse reading ("Passed") is what the card shows
+    // for the rest of the week.
+    const refines = currRank === prevRank && currRank > 0 &&
+      statusTextDetail(bill.latestAction) > statusTextDetail(prev?.statusText);
+    if (!prev || currRank > prevRank || refines) {
       updated[bill.id] = {
         status: bill.status,
         statusText: bill.latestAction,
@@ -3701,6 +3751,7 @@ async function handleRules(request, env) {
             const billDetail = detailResp.ok ? (await detailResp.json()).bill || null : null;
             // Find the House passage action that contains a vote count (e.g. "208 - 207")
             let passageVote = null;
+            let passageRoll = null;
             if (actionsResp.ok) {
               const actionsData = await actionsResp.json();
               const passageAction = (actionsData.actions || []).find(a => {
@@ -3711,17 +3762,19 @@ async function handleRules(request, env) {
               if (passageAction) {
                 const m = passageAction.text.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
                 if (m) passageVote = `${m[1].replace(/,/g,'')}-${m[2].replace(/,/g,'')}`;
+                const r = passageAction.text.match(/\(\s*Roll\s*(?:no\.?|call)\s*(\d+)\s*\)/i);
+                if (r) passageRoll = r[1];
               }
             }
-            return { billDetail, passageVote };
-          } catch { return { billDetail: null, passageVote: null }; }
+            return { billDetail, passageVote, passageRoll };
+          } catch { return { billDetail: null, passageVote: null, passageRoll: null }; }
         })
       );
 
       const rules = [];
       for (let i = 0; i < candidates.length; i++) {
         const bill = candidates[i];
-        const { billDetail, passageVote } = details[i] || {};
+        const { billDetail, passageVote, passageRoll } = details[i] || {};
         const title = bill.title || '';
 
         // Extract all bill IDs mentioned in the title (the bills this rule covers).
@@ -3749,6 +3802,7 @@ async function handleRules(request, env) {
           hresNum: bill.number,
           title: bill.title || null,
           passageVote: passageVote || null,  // e.g. "208-207", null if voice vote or not yet passed
+          passageRoll: passageRoll || null,  // e.g. "311" — pairs with passageVote on the card
           pdfUrl: null,
           ruleStatus,
           bills,
