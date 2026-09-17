@@ -673,7 +673,8 @@ body.tellers-mode .tellers-column { display: flex; }
 .committee-chair-section, .pledge-section, .message-section,
 .joint-meeting-section, .journal-section, .joint-session-section,
 .cert-election-section, .cert-electoral-section, .sine-die-section,
-.new-session-section, .admin-oath-section, .privilege-section {
+.new-session-section, .admin-oath-section, .privilege-section,
+.tellers-section {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
@@ -688,7 +689,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .message-section-header, .joint-meeting-section-header, .journal-section-header,
 .joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
 .sine-die-section-header, .new-session-section-header, .admin-oath-section-header,
-.privilege-section-header {
+.privilege-section-header, .tellers-section-header {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -705,7 +706,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .message-section-header::before, .joint-meeting-section-header::before, .journal-section-header::before,
 .joint-session-section-header::before, .cert-election-section-header::before, .cert-electoral-section-header::before,
 .sine-die-section-header::before, .new-session-section-header::before, .admin-oath-section-header::before,
-.privilege-section-header::before {
+.privilege-section-header::before, .tellers-section-header::before {
     content: "HAPPENING NOW";
     flex-shrink: 0;
     font-size: var(--fs-base);
@@ -721,7 +722,8 @@ body.tellers-mode .tellers-column { display: flex; }
 .committee-chair-header-right, .pledge-header-right, .message-header-right,
 .joint-meeting-header-right, .journal-header-right, .joint-session-header-right,
 .cert-election-header-right, .cert-electoral-header-right, .sine-die-header-right,
-.new-session-header-right, .admin-oath-header-right, .privilege-header-right {
+.new-session-header-right, .admin-oath-header-right, .privilege-header-right,
+.tellers-header-right {
     margin-left: auto;
     display: flex;
     align-items: center;
@@ -732,7 +734,8 @@ body.tellers-mode .tellers-column { display: flex; }
 .silence-source, .oath-source, .speaker-source, .committee-chair-source,
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source {
+.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source,
+.tellers-source {
     font-size: var(--fs-2xs); /* match .panel-source over per-section rules */
     color: var(--text-muted);
     text-transform: uppercase;
@@ -7465,13 +7468,6 @@ body.committee-chair-mode .committee-chair-section {
     display: block;
 }
 
-.committee-chair-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--sp-8);
-}
-
 .committee-chair-tag {
     display: inline-flex;
     align-items: center;
@@ -8745,41 +8741,14 @@ body.privilege-mode .privilege-section { display: block; }
     border-top: 1px solid var(--border-color);
 }
 
-.tellers-section {
-    display: none;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-12);
-    overflow: hidden;
-    padding: 0;
-    margin-bottom: var(--sp-24);
-}
-
+/* The card, the HAPPENING NOW header and the source all come from the grouped
+   live-mode rules above now. This was the one live-mode panel without that line,
+   for no reason other than that it had been given its own header rule and never
+   added to the group that draws it. */
+.tellers-section { display: none; }
 
 body.tellers-mode .tellers-section {
     display: block;
-}
-
-.tellers-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--sp-12);
-    padding: var(--sp-12) var(--sp-24);
-    background: var(--bg-elevated);
-    border-bottom: 1px solid var(--border-color);
-    margin: 0;
-}
-
-.tellers-header-right {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.tellers-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-sans);
 }
 
 .tellers-source a {
@@ -10468,7 +10437,8 @@ body.all-mode .floor-grid-panel {
 .committee-chair-section, .pledge-section, .message-section,
 .joint-meeting-section, .journal-section, .joint-session-section,
 .cert-election-section, .cert-electoral-section, .sine-die-section,
-.new-session-section, .admin-oath-section, .privilege-section {
+.new-session-section, .admin-oath-section, .privilege-section,
+.tellers-section {
     padding: 0;
 }
 
@@ -10478,7 +10448,7 @@ body.all-mode .floor-grid-panel {
 .message-section-header, .joint-meeting-section-header, .journal-section-header,
 .joint-session-section-header, .cert-election-section-header, .cert-electoral-section-header,
 .sine-die-section-header, .new-session-section-header, .admin-oath-section-header,
-.privilege-section-header {
+.privilege-section-header, .tellers-section-header {
     display: flex;
     margin: 0;
 }
@@ -10487,7 +10457,8 @@ body.all-mode .floor-grid-panel {
 .silence-source, .oath-source, .speaker-source, .committee-chair-source,
 .pledge-source, .message-source, .joint-meeting-source, .journal-source,
 .joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source {
+.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source,
+.tellers-source {
     font-size: var(--fs-2xs);
 }
 
