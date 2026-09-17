@@ -63,6 +63,47 @@ function setIfChanged(el, html) {
 }
 
 // Set a member profile link, showing friendly text instead of raw URL
+// Put a photograph in a panel, and do nothing at all if it is already there.
+//
+// Every one of these panels refreshes on each poll of the proceedings feed, a few
+// times a minute, and each one set opacity to 0 and then assigned src. Assigning
+// the SAME src does not fire load again, so the picture faded out and stayed out
+// until something else happened to change — which on screen is a photograph
+// blinking every few seconds. The Speaker pro tempore's is the one anybody
+// notices, because that panel is up for long stretches, but it was all of them.
+//
+// Guarding on the URL is what the speaker row under the video already does, for
+// the same reason. Doing it once here rather than nine times is also why the nine
+// copies could drift: one of them faded to nothing on error instead of falling
+// back to the placeholder.
+function setMemberPhoto(img, url, alt, placeholder) {
+    if (!img) return;
+    if (!url) {
+        img.style.display = 'none';
+        delete img.dataset.photo;
+        if (placeholder) placeholder.style.display = placeholder.dataset.shown || 'flex';
+        return;
+    }
+    if (img.dataset.photo === url) {          // already showing this person
+        if (alt) img.alt = alt;
+        return;
+    }
+    img.dataset.photo = url;
+    img.style.display = 'block';
+    img.style.opacity = '0';
+    img.onload = () => {
+        img.style.opacity = '1';
+        if (placeholder) placeholder.style.display = 'none';
+    };
+    img.onerror = () => {
+        img.style.display = 'none';
+        delete img.dataset.photo;             // so a retry is possible
+        if (placeholder) placeholder.style.display = placeholder.dataset.shown || 'flex';
+    };
+    img.src = url;
+    if (alt) img.alt = alt;
+}
+
 function setMemberProfileLink(el, url) {
     if (!el) return;
     if (!url || url === '#') { el.href = '#'; el.textContent = '--'; return; }
@@ -7163,22 +7204,20 @@ function updatePrayerSection(items) {
     if (isGuestChaplain) {
         elements.prayerImage.style.display = 'none';
         elements.prayerImage.removeAttribute('src');
+        delete elements.prayerImage.dataset.photo;
         elements.prayerImagePlaceholder.style.display = 'flex';
     } else {
         // For House Chaplain, look up photo via Wikipedia using the name from proceedings.
         // Placeholder shows while loading; fades to photo on success; stays on failure.
         elements.prayerImage.alt = `${chaplainName}, House Chaplain`;
-        elements.prayerImage.style.opacity = '0';
 
+        // Same guard as everywhere else: this runs on every poll, and the cached
+        // branch below re-applied the same URL each time, so the chaplain's
+        // photograph faded out and back on a loop. setMemberPhoto keeps the
+        // placeholder in step on failure, which this had to do by hand.
         const applyChaplainPhoto = (url) => {
-            elements.prayerImagePlaceholder.style.display = 'none';
-            elements.prayerImage.style.display = 'block';
-            elements.prayerImage.onload = () => { elements.prayerImage.style.opacity = '1'; };
-            elements.prayerImage.onerror = () => {
-                elements.prayerImage.style.display = 'none';
-                elements.prayerImagePlaceholder.style.display = 'flex';
-            };
-            elements.prayerImage.src = url;
+            setMemberPhoto(elements.prayerImage, url, `${chaplainName}, House Chaplain`,
+                elements.prayerImagePlaceholder);
         };
 
         if (_chaplainPhotoCache?.name === chaplainName) {
@@ -7417,13 +7456,7 @@ function populateJournalChair(memberEl, bioguideIdOverride) {
     if (bioguideId) {
         const photoUrl = buildBioguidePhotoUrl(bioguideId);
         const profileUrl = buildCongressProfileUrl(bioguideId);
-        if (elements.journalImage) {
-            elements.journalImage.style.opacity = '0';
-            elements.journalImage.onload = () => { elements.journalImage.style.opacity = '1'; };
-            elements.journalImage.onerror = () => { elements.journalImage.style.opacity = '0'; };
-            elements.journalImage.src = photoUrl;
-            elements.journalImage.alt = `${firstName} ${lastName}`;
-        }
+        setMemberPhoto(elements.journalImage, photoUrl, `${firstName} ${lastName}`);
         setMemberProfileLink(elements.journalChairWebsite, profileUrl);
     }
 }
@@ -7466,14 +7499,7 @@ async function fetchSpeakerAsChair() {
 
         // Photo from BioGuide
         const photoUrl = buildBioguidePhotoUrl(bioguideId);
-        if (elements.pledgeImage) {
-            elements.pledgeImage.style.display = 'block';
-            elements.pledgeImage.style.opacity = '0';
-            elements.pledgeImage.onload = () => { elements.pledgeImage.style.opacity = '1'; };
-            elements.pledgeImage.onerror = () => { elements.pledgeImage.style.display = 'none'; };
-            elements.pledgeImage.src = photoUrl;
-            elements.pledgeImage.alt = name || 'Speaker of the House';
-        }
+        setMemberPhoto(elements.pledgeImage, photoUrl, name || 'Speaker of the House');
         const profileUrl = buildCongressProfileUrl(bioguideId);
         setMemberProfileLink(elements.pledgeLeaderWebsite, profileUrl);
     } catch (error) {
@@ -7555,14 +7581,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
         const websiteUrl = buildCongressProfileUrl(match.bioguideId);
         setMemberProfileLink(elements.speakerMemberWebsite, websiteUrl);
 const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
-        if (elements.speakerImage) {
-            elements.speakerImage.style.display = 'block';
-            elements.speakerImage.style.opacity = '0';
-            elements.speakerImage.onload = () => { elements.speakerImage.style.opacity = '1'; };
-            elements.speakerImage.onerror = () => { elements.speakerImage.style.display = 'none'; };
-            elements.speakerImage.src = photoUrl;
-            elements.speakerImage.alt = match.fullName || 'Speaker Pro Tempore';
-        }
+        setMemberPhoto(elements.speakerImage, photoUrl, match.fullName || 'Speaker Pro Tempore');
     } catch (error) {
         console.error('Failed to resolve speaker pro tempore member:', error);
     }
@@ -7716,14 +7735,7 @@ async function fetchPrivilegeMemberInfo(surname, stateName) {
         setMemberProfileLink(elements.privilegeMemberWebsite, buildCongressProfileUrl(m.bioguideId));
         if (elements.privilegeMemberWebsite) elements.privilegeMemberWebsite.hidden = false;
 
-        if (elements.privilegeImage) {
-            elements.privilegeImage.style.display = 'block';
-            elements.privilegeImage.style.opacity = '0';
-            elements.privilegeImage.onload = () => { elements.privilegeImage.style.opacity = '1'; };
-            elements.privilegeImage.onerror = () => { elements.privilegeImage.style.display = 'none'; };
-            elements.privilegeImage.src = buildBioguidePhotoUrl(m.bioguideId);
-            elements.privilegeImage.alt = m.fullName;
-        }
+        setMemberPhoto(elements.privilegeImage, buildBioguidePhotoUrl(m.bioguideId), m.fullName);
     } catch (e) {
         console.error('fetchPrivilegeMemberInfo error:', e);
     }
@@ -7814,14 +7826,7 @@ async function fetchCommitteeChairMemberInfo(leaderName) {
         elements.committeeChairMemberAdditional.textContent = bestMatch.town ? `from ${bestMatch.town}, ${bestMatch.state}` : '';
         setMemberProfileLink(elements.committeeChairMemberWebsite, buildCongressProfileUrl(bestMatch.bioguideId));
         const photoUrl = buildBioguidePhotoUrl(bestMatch.bioguideId);
-        if (elements.committeeChairImage) {
-            elements.committeeChairImage.style.display = 'block';
-            elements.committeeChairImage.style.opacity = '0';
-            elements.committeeChairImage.onload = () => { elements.committeeChairImage.style.opacity = '1'; };
-            elements.committeeChairImage.onerror = () => { elements.committeeChairImage.style.display = 'none'; };
-            elements.committeeChairImage.src = photoUrl;
-            elements.committeeChairImage.alt = bestMatch.fullName || 'Committee Chair';
-        }
+        setMemberPhoto(elements.committeeChairImage, photoUrl, bestMatch.fullName || 'Committee Chair');
     } catch (e) {
         console.error('fetchCommitteeChairMemberInfo error:', e);
     }
@@ -7922,6 +7927,7 @@ function updateOathSection(items) {
         elements.oathImage.style.display = 'block';
         elements.oathImage.style.opacity = '0';
         elements.oathImage.removeAttribute('src');
+        delete elements.oathImage.dataset.photo;
     }
     if (memberName) {
         const _oathLastName = memberName.trim().split(/\s+/).pop();
@@ -7938,13 +7944,7 @@ function updateOathSection(items) {
                     if (s > bestScore && s > 0.7) { bestScore = s; bestId = bg; }
                 }
                 if (bestId && elements.oathImage) {
-                    const photoUrl = buildBioguidePhotoUrl(bestId);
-                    elements.oathImage.style.display = 'block';
-                    elements.oathImage.style.opacity = '0';
-                    elements.oathImage.onload = () => { elements.oathImage.style.opacity = '1'; };
-                    elements.oathImage.onerror = () => { elements.oathImage.style.display = 'none'; };
-                    elements.oathImage.src = photoUrl;
-                    elements.oathImage.alt = memberName;
+                    setMemberPhoto(elements.oathImage, buildBioguidePhotoUrl(bestId), memberName);
                 }
             } catch (_e) { /* photo is optional */ }
         })();
@@ -8170,13 +8170,7 @@ async function fetchTellerInfo(nameStr, cardEl) {
             setMemberProfileLink(cardEl.querySelector('.teller-link'), profileUrl);
 
             const img = cardEl.querySelector('.teller-photo');
-            if (img && photoUrl) {
-                img.style.opacity = '0';
-                img.onload = () => { img.style.opacity = '1'; };
-                img.onerror = () => { img.style.display = 'none'; };
-                img.src = photoUrl;
-                img.alt = bestMatch.fullName;
-            }
+            if (img && photoUrl) setMemberPhoto(img, photoUrl, bestMatch.fullName);
             const placeholder = cardEl.querySelector('.teller-photo-placeholder');
             if (placeholder && photoUrl) placeholder.style.display = 'none';
         }
@@ -8298,11 +8292,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             // Use the official Biographical Directory image path.
             // The photo endpoint is organized by the first letter of the BioGuide ID.
             const photoUrl = `https://bioguide.congress.gov/bioguide/photo/${bestMatch.bioguideId.charAt(0)}/${bestMatch.bioguideId}.jpg`;
-            elements.pledgeImage.style.display = 'block';
-            elements.pledgeImage.style.opacity = '0';
-            elements.pledgeImage.onload = () => { elements.pledgeImage.style.opacity = '1'; };
-            elements.pledgeImage.onerror = () => { elements.pledgeImage.style.display = 'none'; };
-            elements.pledgeImage.src = photoUrl;
+            setMemberPhoto(elements.pledgeImage, photoUrl, bestMatch.fullName || 'Speaker of the House');
             return;
         }
 
@@ -8535,6 +8525,7 @@ function showPledgePlaceholder() {
     elements.pledgeImage.style.display = 'block';
     elements.pledgeImage.style.opacity = '0';
     elements.pledgeImage.removeAttribute('src');
+    delete elements.pledgeImage.dataset.photo;   // forget who was there, see setMemberPhoto
     elements.pledgePartyTag.textContent = '';
     elements.pledgeTime.textContent = '';
     elements.pledgeLeaderDetails.textContent = '';
