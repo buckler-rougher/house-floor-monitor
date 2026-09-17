@@ -63,5 +63,27 @@ check('anchored ignores later mentions',
 for (const junk of ['', null, undefined, 'On Passage', 'Q 123'])
   check(`no match for ${JSON.stringify(junk)}`, parseBillId(junk), null);
 
+// ── A schedule row that is not a bare bill number ───────────────────────────
+//
+// When the House takes up what the Senate did to a measure, the Whip lists it as
+// "Senate amendments to H.R. 5334" while the Clerk keys the outcome to H.R. 5334.
+// Comparing those as raw strings is the mistake this file exists to prevent, and
+// it cost H.R. 5334 its status on 2026-09-16: the row read "Scheduled for
+// consideration" through a 262-159 vote agreeing to the amendments.
+check('the measure is found inside a descriptive row',
+  (parseBillId('Senate amendments to H.R. 5334') || {}).display, 'H.R. 5334');
+check('singular form too',
+  (parseBillId('Senate Amendment to H.R. 5334') || {}).display, 'H.R. 5334');
+check('a Senate bill in the same shape',
+  (parseBillId('Senate amendments to S. 2403') || {}).display, 'S. 2403');
+check('and a concurrence motion',
+  (parseBillId('Concur in the Senate amendment to H.R. 1') || {}).display, 'H.R. 1');
+// "Senate" must not be read as the bare type S.
+check('the word Senate is not a bill type',
+  (parseBillId('Senate amendments to H.R. 5334') || {}).type, 'HR');
+// A trailing qualifier must not change the identity either.
+check('as-amended is the same measure',
+  (parseBillId('H.R. 5334, as amended') || {}).display, 'H.R. 5334');
+
 console.log(failed ? `\n${failed} failed` : `\nall bill-id assertions pass`);
 process.exit(failed ? 1 : 0);
