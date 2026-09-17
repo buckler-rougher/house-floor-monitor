@@ -8683,12 +8683,6 @@ body.privilege-mode .privilege-section { display: block; }
     margin: 0 0 var(--sp-8);
 }
 
-.privilege-member-title {
-    font-size: var(--fs-xl);
-    color: var(--text-secondary);
-    margin: 0 0 var(--sp-10);
-}
-
 .privilege-tags-row {
     display: flex;
     flex-wrap: wrap;
