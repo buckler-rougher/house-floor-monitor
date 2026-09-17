@@ -698,6 +698,56 @@ check('and a real reading outlasts the wait', H.markHasSettled('clerk', T - 1600
 // to "true" and reintroduce the flash on the first render after a change.
 check('an unrecorded start has not settled', H.markHasSettled('chair', 0, T), false);
 
+// ── Being introduced by your committee seat rather than your state ──────────
+//
+// On a committee bill the managers do not say "the gentleman from Ohio". They
+// say what the member does on the committee, and the name arrives after a long
+// appositive and sometimes after a full stop the stenographer invented:
+//
+//   "I WILL YIELD TWO MINUTES TO THE CHAIR OF THE ENERGY SUBCOMMITTEE.
+//    CONGRESSMAN LATTA."
+//
+// yieldNamed needs "FROM <state>" and there is none, and the hand-off detector
+// allowed only four words between TO and the noun for the person — this has five.
+// So the floor never moved and the manager kept the guest's two minutes. On
+// 2026-09-15 this was the commonest way anybody was introduced.
+const SP3 = H.buildPatterns(roster);
+const yieldTo = (t) => {
+  SP3.yieldTargetNoState.lastIndex = 0;
+  const m = SP3.yieldTargetNoState.exec(t);
+  if (!m) return null;
+  const hit = H.matchSurname(m[3], null, roster, null);
+  return hit ? hit.member.last : null;
+};
+check('a yield to a subcommittee chair, named after a stop',
+  yieldTo('I WILL YIELD TWO MINUTES TO THE CHAIR OF THE ENERGY SUBCOMMITTEE. CONGRESSMAN LATTA.'), 'LATTA');
+check('a yield to a committee member',
+  yieldTo('I YIELD TWO MINUTES TO A MEMBER OF THE ENERGY AND COMMERCE COMMITTEE, CONGRESSMAN BALDERSON.'), 'BALDERSON');
+check('an honorific spelled out in full',
+  yieldTo('I YIELD TO THE SPONSOR, MEMBER OF THE ENERGY AND COMMERCE COMMITTEE, DOCTOR MILLER-MEEKS.'), 'MILLER-MEEKS');
+check('and the ordinary form still resolves',
+  yieldTo('I YIELD SUCH TIME AS HE MAY CONSUME TO THE GENTLEMAN FROM CALIFORNIA, MR. BILIRAKIS.'), 'BILIRAKIS');
+
+// Naming somebody is not handing them the floor. The same day carries "I THANK
+// MICHELLE FISCHBACH FOR HER LEADERSHIP" and "LED BY MY COLLEAGUES
+// REPRESENTATIVE PANETTA AND PFLUGER", and neither moves anything — which is why
+// this is anchored to the span after YIELD ... TO instead of scanning the turn.
+check('thanking a colleague hands over nothing',
+  yieldTo('MR. SPEAKER, AND I THANK MICHELLE FISCHBACH FOR HER LEADERSHIP ON THIS BILL.'), null);
+check('nor does describing who wrote the bill',
+  yieldTo('H.R. 9086, LED BY MY COLLEAGUES REPRESENTATIVE PANETTA AND PFLUGER.'), null);
+check('and yielding to yourself is not a hand-off',
+  H.matchSurname('x', null, roster) === null && !SP3.yieldTargetNoState.test('I YIELD MYSELF SUCH TIME AS I MAY CONSUME.'), true);
+
+// The chair recognises in two voices. Only the passive one was being split out of
+// a member's turn, so the active one left the floor with the previous speaker.
+check('the active voice is a recognition too',
+  SP3.embeddedRecognition.test('THE CHAIR RECOGNIZES THE GENTLEMAN FROM CALIFORNIA, MR. MIN, FOR FIVE MINUTES.'), true);
+check('so is the passive',
+  SP3.embeddedRecognition.test('THE GENTLEMAN FROM CALIFORNIA, MR. MIN, IS RECOGNIZED FOR FIVE MINUTES.'), true);
+check('thanking a delegation is neither',
+  SP3.embeddedRecognition.test('I THANK THE GENTLEMAN FROM CALIFORNIA FOR HIS LEADERSHIP ON THIS BILL.'), false);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
