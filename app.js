@@ -744,6 +744,7 @@ function applyRollLogToBills(entries, activeRoll) {
                     if (String(e.hresNum) === String(hresNum) && e.ruleStatus !== 'passed' && e.ruleStatus !== 'failed') {
                         e.ruleStatus = passed ? 'passed' : 'failed';
                         e.passageVote = `${yeas}-${nays}`;
+                        e.passageRoll = entry.roll;
                         changed = true;
                     }
                 }
@@ -1748,6 +1749,7 @@ function reconcileVoteWithBills(force = false) {
                 if (String(entry.hresNum) === String(hresNum)) {
                     entry.ruleStatus = passed ? 'passed' : 'failed';
                     entry.passageVote = `${yeas}-${nays}`;
+                    entry.passageRoll = floorData.rollCall.number || null;
                     ruleUpdated = true;
                 }
             }
@@ -4342,7 +4344,7 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
         for (const entry of specialRulesMap.values()) {
             if ((entry.ruleStatus === 'passed' || entry.ruleStatus === 'failed') &&
                 !ruleStatusOverrides.has(entry.hresNum)) {
-                ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote });
+                ruleStatusOverrides.set(entry.hresNum, { ruleStatus: entry.ruleStatus, passageVote: entry.passageVote, passageRoll: entry.passageRoll });
             }
             if (!prevRuleStatus.has(entry.hresNum)) prevRuleStatus.set(entry.hresNum, entry.ruleStatus);
         }
@@ -4359,6 +4361,7 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
                 specialRulesMap.set(billKey, {
                     hres: rule.hres, hresNum: rule.hresNum, title: rule.title || null,
                     passageVote: override?.passageVote ?? rule.passageVote ?? null,
+                    passageRoll: override?.passageRoll ?? rule.passageRoll ?? null,
                     pdfUrl: rule.pdfUrl, ruleStatus: resolvedStatus,
                     bills: rule.bills, sponsor: rule.sponsor || null,
                 });
@@ -5190,7 +5193,12 @@ function updateBillsDisplay() {
                     : rule.ruleStatus === 'reported' ? 'scheduled'
                     : 'scheduled';
                 const statusSymbol = rule.ruleStatus === 'passed' ? '✓' : '';
-                const voteStr = rule.passageVote ? ` ${rule.passageVote}` : '';
+                // Same shape as every other card's status line: "Passed (Roll Call
+                // 311): 214-208". The rule used to read "Passed 214-208" while the
+                // measures it governed read the full form.
+                const voteStr = rule.passageVote
+                    ? (rule.passageRoll ? ` (Roll Call ${rule.passageRoll}): ${rule.passageVote}` : ` ${rule.passageVote}`)
+                    : '';
                 const actionText = rule.ruleStatus === 'passed' ? `Passed${voteStr}`
                     : rule.ruleStatus === 'reported' ? 'Reported by Rules Committee'
                     : 'Pending';
