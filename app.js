@@ -6324,6 +6324,12 @@ function autoSwitchModeFromProceedings(items) {
     // Massie's hour. Episodic like the others, so it is subject to the same rule:
     // over as soon as legislative business resumes after it.
     const ppItem = candidateItems.find(i => /^POINT\s+OF\s+PERSONAL\s+PRIVILEGE\b/i.test(i.description.trim()));
+    // Fill the panel whenever the day has one, not only when this mode wins.
+    // Every other section updates unconditionally and this was the exception, so
+    // the panel held its empty state until the moment it was on screen — and
+    // lockMode('all'), which is how these get inspected, showed it blank next to
+    // twenty-two populated ones.
+    if (ppItem) updatePrivilegeSection(ppItem);
 
     const soItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
@@ -6355,12 +6361,6 @@ function autoSwitchModeFromProceedings(items) {
         const winner = candidates[0];
         if (winner.mode === 'privilege') {
             window.setMode('privilege');
-            if (ppItem.pubDate && elements.privilegeTime) {
-                elements.privilegeTime.textContent = new Date(ppItem.pubDate).toLocaleTimeString('en-US', {
-                    hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
-                });
-            }
-            updatePrivilegeSection(ppItem);
         } else if (winner.mode === 'debate') {
             window.setMode('debate');
             updateDebateSection(items);
