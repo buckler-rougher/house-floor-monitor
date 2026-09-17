@@ -643,6 +643,39 @@ const garbledManager = H.resolveFloorSpeakers([
 check('the garbled manager holds their seat',
   garbledManager.timeline.find((x) => Math.floor(x.t) === 2).member.last, 'Comer');
 
+// ── Surnames of more than one word ──────────────────────────────────────────
+//
+// Ten members have one. The capture stopped at the first token, so the chair
+// naming "THE GENTLEMAN FROM TENNESSEE, MR. VAN EPPS" as a floor manager yielded
+// "VAN", which matches nobody — and because it was a MANAGER, the seat never
+// bound and 40 consecutive turns of that bill reported an unidentified
+// Tennessean. One name, 11% of that day's floor speech, and the chair had spelled
+// it perfectly.
+const SP2 = H.buildPatterns(roster);
+check('the control formula takes the whole surname',
+  SP2.control.exec('PURSUANT TO THE RULE. THE GENTLEMAN FROM TENNESSEE, MR. VAN EPPS, AND THE GENTLEMAN FROM RHODE ISLAND, MR. MAGAZINER, EACH WILL CONTROL 20 MINUTES.')[2],
+  'VAN EPPS');
+check('and matches the member', (H.matchSurname('VAN EPPS', 'TENNESSEE', roster) || {}).member.last, 'VAN EPPS');
+check('a three-word surname too', (H.matchSurname('DE LA CRUZ', 'TEXAS', roster) || {}).member.last, 'DE LA CRUZ');
+check('and one that is two full names', (H.matchSurname('WASSERMAN SCHULTZ', 'FLORIDA', roster) || {}).member.last, 'WASSERMAN SCHULTZ');
+check('single-word surnames are untouched', (H.matchSurname('MAGAZINER', 'RHODE ISLAND', roster) || {}).member.last, 'MAGAZINER');
+
+// The reason this is an exact list from the roster rather than "two capitalised
+// words": a loose capture reads the sentence carrying on as part of the name, and
+// the fuzzy matcher downstream will find somebody for anything.
+SP2.bind.lastIndex = 0;
+const loose = SP2.bind.exec('THE GENTLEMAN FROM FLORIDA, MR. MAST AND THE GENTLEMAN FROM TEXAS IS RECOGNIZED.');
+check('a following word is not swallowed into the surname', loose[3], 'MAST');
+
+// End to end: the manager binds, and the turns of that bill are his.
+const multiWordManager = H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM TENNESSEE, MR. VAN EPPS, AND THE GENTLEMAN FROM RHODE ISLAND, MR. MAGAZINER, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM TENNESSEE IS RECOGNIZED.' },
+  { t: 2, text: 'THANK YOU, MR. SPEAKER. I YIELD MYSELF SUCH TIME AS I MAY CONSUME.' },
+], roster);
+check('the multi-word manager holds his seat',
+  multiWordManager.timeline.find((x) => Math.floor(x.t) === 2).member.last, 'Van Epps');
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
