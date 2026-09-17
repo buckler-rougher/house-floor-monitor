@@ -7517,12 +7517,6 @@ body.committee-chair-mode .committee-chair-section {
     justify-content: flex-end;
 }
 
-.committee-chair-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
 .committee-chair-source a {
     color: var(--accent-blue);
     text-decoration: none;
@@ -7642,12 +7636,13 @@ body.committee-chair-mode .committee-chair-section {
     justify-content: flex-end;
 }
 
-.prayer-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
+/* The six panels that restated this — prayer, silence, oath, speaker,
+   committee-chair, pledge — set the source in the mono face while the other
+   seventeen were in the sans one, which is the whole of why pledge's source
+   line looked unlike its neighbours'. Everything else in those rules already
+   matched the group, so the only thing they did was make six panels differ.
+   Prayer had the same rule twice. The group has all of it; none of them need
+   a copy. */
 .prayer-source a {
     color: var(--accent-blue);
     text-decoration: none;
@@ -7688,12 +7683,6 @@ body.committee-chair-mode .committee-chair-section {
 .silence-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.silence-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
 }
 
 .silence-source a {
@@ -7831,12 +7820,6 @@ body.committee-chair-mode .committee-chair-section {
 
 .prayer-leader-website:hover {
     text-decoration: underline;
-}
-
-.prayer-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
 }
 
 .prayer-source a {
@@ -8017,12 +8000,6 @@ body.committee-chair-mode .committee-chair-section {
     margin-right: var(--sp-12);
 }
 
-.pledge-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
 .pledge-source a {
     color: var(--accent-blue);
     text-decoration: none;
@@ -8077,12 +8054,6 @@ body.committee-chair-mode .committee-chair-section {
 .oath-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.oath-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
 }
 
 .oath-source a {
@@ -8247,12 +8218,6 @@ body.committee-chair-mode .committee-chair-section {
 .speaker-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.speaker-source {
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
 }
 
 .speaker-source a {
@@ -8769,6 +8734,31 @@ body.privilege-mode .privilege-section { display: block; }
    for no reason other than that it had been given its own header rule and never
    added to the group that draws it. */
 .tellers-section { display: none; }
+
+/* Tellers was wearing the Speaker pro tempore's tag class, so three modes — oath,
+   speaker and this — all came out in the same amber and the one mode that counts
+   a vote had no colour of its own. Mulberry because nothing else here is: the
+   blues, greens, purples, browns and greys are all spoken for. */
+.tellers-tag {
+    display: inline-flex;
+    align-items: center;
+    background: #8a3d62;
+    color: white;
+    padding: var(--sp-6) var(--sp-12);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    font-family: var(--font-mono);
+}
+
+.tellers-tag-time {
+    font-size: var(--fs-sm);
+    margin-left: var(--sp-8);
+    opacity: 0.9;
+    font-weight: 400;
+}
 
 body.tellers-mode .tellers-section {
     display: block;
