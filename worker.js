@@ -1806,7 +1806,20 @@ async function _fetchBills(request, env) {
 
         // Proceedings (House Clerk) — the authoritative source for the full vote
         // lifecycle: recorded vote requested/postponed (roll-call) → passed/failed.
-        const proceedingsUpdate = proceedingsStatuses[normId];
+        // A schedule row is not always a bare bill number. When the House takes up
+        // what the Senate did to a measure, the Whip lists it as "Senate amendments
+        // to H.R. 5334" — and the Clerk's floor actions key the outcome to the
+        // measure itself, so the exact-string lookup missed and the row sat on
+        // "Scheduled for consideration" through a 262-159 vote agreeing to them.
+        //
+        // parseBillId is the shared reader for exactly this: pull the identifier
+        // out of whatever text surrounds it. Tried only after the exact key fails,
+        // so a row that already names a bill plainly is unaffected.
+        let proceedingsUpdate = proceedingsStatuses[normId];
+        if (!proceedingsUpdate) {
+          const parsed = globalThis.BillId.parseBillId(normId);
+          if (parsed && parsed.display !== normId) proceedingsUpdate = proceedingsStatuses[parsed.display];
+        }
         if (proceedingsUpdate) {
           billStatus = proceedingsUpdate.status;
           latestAction = proceedingsUpdate.statusText;
