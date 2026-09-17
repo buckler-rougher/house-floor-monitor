@@ -11264,6 +11264,10 @@ function updateLastUpdate() {
     // when it was first seen there. Both are needed — the position identifies the
     // hand-off, the timestamp says whether it is newer than the server's snapshot.
     let liveHandoffAt = 0;
+    // Which institutional mark the floor is currently in, and since when — see
+    // markHasSettled() for why the row waits before believing it.
+    let markKind = null;
+    let markSince = 0;
 
     // The roster is needed client-side to fuzzy-match surnames out of live captions.
     // Fetched once; the Clerk publishes it monthly.
@@ -11396,6 +11400,14 @@ function updateLastUpdate() {
         const uncovered = uncoveredSeconds(rawAge);
         const serverFresh = uncovered === null || uncovered <= STALE_AFTER_S;
         const role = H ? H.floorRole(live, liveFresh, serverData.current, serverFresh) : 'member';
+
+        // Let an institutional mark settle before showing it. The chair speaks in
+        // one-sentence bursts, so without this the Speaker's seal flashes on for
+        // two seconds and off again — right every time, and unreadable. Holding
+        // the row as it is means the member who actually has the floor stays put
+        // through the chair's interjection, which is what a viewer expects.
+        if (markKind !== role) { markKind = role; markSince = Date.now(); }
+        if (H && !H.markHasSettled(role, markSince, Date.now())) return;
 
         if (role === 'chair') {
             row.classList.remove('is-uncertain', 'is-stale', 'is-unknown', 'is-clerk');
