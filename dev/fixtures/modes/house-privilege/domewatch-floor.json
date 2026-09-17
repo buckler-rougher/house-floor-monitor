@@ -1,0 +1,10 @@
+{
+  "now": {
+    "text": "House in session",
+    "value": "house_in_session"
+  },
+  "roll_call": null,
+  "timer": null,
+  "votes": null,
+  "fetchedAt": "2026-09-03T18:30:00.000Z"
+}

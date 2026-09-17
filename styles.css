@@ -8551,7 +8551,76 @@ body.joint-meeting-mode .joint-meeting-section {
    the grouped live-mode rules above; only the tag colour, the member card and
    the quote block are specific to this mode. */
 .privilege-section { display: none; }
-body.privilege-mode .privilege-section { display: block; }
+/* One panel, two modes — see PRIVILEGE_KINDS in app.js for why they share it and
+   what differs between them. */
+body.privilege-mode .privilege-section,
+body.house-privilege-mode .privilege-section { display: block; }
+
+/* A question of the privileges of the House is the graver of the two: this is how
+   censure and impeachment reach the floor. Indigo rather than the teal, so the
+   two are not mistaken for each other at a glance. */
+.privilege-section.is-house .privilege-tag { background: #3b3f7a; }
+
+/* The resolution it was offered on, and what became of it. Only the House kind
+   has one; the personal kind leaves this hidden. */
+.privilege-resolution {
+    padding-top: var(--sp-16);
+    border-top: 1px solid var(--border-color);
+}
+
+.privilege-resolution[hidden] { display: none; }
+
+.privilege-resolution-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-10);
+    margin-bottom: var(--sp-6);
+}
+
+.privilege-resolution-id {
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent-blue);
+    padding: 3px var(--sp-8);
+    background: rgba(88, 166, 255, 0.12);
+    border-radius: var(--radius-4);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.privilege-resolution-id:hover { text-decoration: underline; }
+
+.privilege-resolution-outcome {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-4);
+    padding: var(--sp-2) var(--sp-8);
+}
+
+.privilege-resolution-outcome[hidden] { display: none; }
+
+.privilege-resolution-title {
+    font-size: var(--fs-lg);
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.privilege-resolution-title[hidden] { display: none; }
+
+/* With a resolution above it, the Clerk's sentence no longer needs its own rule
+   to separate it from the card. */
+.privilege-resolution:not([hidden]) + .privilege-description-line {
+    padding-top: var(--sp-12);
+    border-top: none;
+}
 
 .privilege-tag {
     display: inline-flex;

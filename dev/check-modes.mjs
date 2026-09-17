@@ -44,11 +44,14 @@ function pick(items, domeText) {
   const has = re => cand.find(x => re.test(x.toLowerCase()));
   const cotw = has(/act as chairman of the committee|committee of the whole|resolved itself into the committee|^debate -/);
   const pp = cand.find(x => /^POINT\s+OF\s+PERSONAL\s+PRIVILEGE\b/i.test(x.trim()));
+  const qp = cand.find(x => /^QUESTION\s+OF\s+THE\s+PRIVILEGES\s+OF\s+THE\s+HOUSE\b/i.test(x.trim()));
   const so = has(/special order speech|special orders/);
   const om = has(/one minute speech|one-minute speech/);
   const mh = has(/morning-hour debate|morning hour debate/);
   // A point of personal privilege is raised DURING business, so its timestamp
   // ties with the debate it interrupts; the interruption wins that tie.
+  // Both kinds of Rule IX privilege share a panel; the newer one wins.
+  if (qp && (!pp || d.indexOf(qp) <= d.indexOf(pp))) return 'house-privilege';
   if (pp) return 'privilege';
   if (cotw) return 'debate';
   if (so) return 'special-order';
