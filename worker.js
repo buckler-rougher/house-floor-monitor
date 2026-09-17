@@ -953,6 +953,27 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     }
 
     // Only process rows that are actual bill passage/failure motions
+    // Tabling reads backwards from everything else here: agreeing to the motion
+    // kills the measure. Handled before the passage branch so that "Agreed to"
+    // cannot be read as passage — it would have reported a buried resolution as
+    // having passed the House.
+    if (globalThis.FloorStatus.isTablingMotion(description)) {
+      const agreed = /(agreed to)\b/i.test(description) && !/not agreed to|failed/i.test(description);
+      const tid = findBillId(i, 6, 3);
+      if (tid && agreed) {
+        const votes = description.match(/(\d[\d,]*)\s*[-–]\s*(\d[\d,]*)/);
+        const prev = statuses[tid];
+        if (!prev || prev.status !== 'passed') {
+          statuses[tid] = {
+            status: 'failed',
+            statusText: votes ? `Tabled ${votes[1].replace(/,/g,'')}-${votes[2].replace(/,/g,'')}` : 'Tabled',
+            sourceUrl,
+          };
+        }
+      }
+      continue;
+    }
+
     if (!globalThis.FloorStatus.isPassageMotion(description)) continue;
 
     let status, statusText;
