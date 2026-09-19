@@ -76,6 +76,32 @@
     }
   }
 
+  // The demo cannot freeze the clock -- tickVoteTimer derives its display from
+  // Date.now() - syncedAt, so a fixed clock makes the vote timer step rather than
+  // run. But a live clock put a vote in progress on a real Saturday, with the
+  // header reading today's date and OUT OF SESSION beside a running tally.
+  //
+  // Shift instead of freeze: time still advances at one second per second, so the
+  // timer runs, but it reads as the session the demo is actually portraying --
+  // 16 September 2026, at the moment the archived video is seeked to.
+  const DEMO_CLOCK = '2026-09-16T22:49:00Z';   // 6:49 pm ET, roll call 311
+  if (demo && !freezeArg) {
+    const target = Date.parse(DEMO_CLOCK);
+    if (Number.isFinite(target)) {
+      const RealDate = Date;
+      const delta = target - RealDate.now();
+      const Shifted = function (...args) {
+        return args.length === 0 ? new RealDate(RealDate.now() + delta) : new RealDate(...args);
+      };
+      Shifted.prototype = RealDate.prototype;
+      Shifted.now = () => RealDate.now() + delta;
+      Shifted.parse = RealDate.parse;
+      Shifted.UTC = RealDate.UTC;
+      window.Date = Shifted;
+      log('clock shifted to', new RealDate(target).toISOString(), '(still running)');
+    }
+  }
+
   if (!useFixtures) { wireMode(); return; }
 
   // ── Route table ────────────────────────────────────────────────────────────
