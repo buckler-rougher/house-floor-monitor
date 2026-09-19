@@ -1660,8 +1660,15 @@ function updateFloorDisplay(status = null) {
         // updateFloorGrid() is called from updateVoteCountsDisplay() on every SSE tick
         // and from fetchFloorData() on the 30s poll — not needed here.
 
-        // updateQuorumStatus() makes a network request — run it only from the 30s REST
-        // poll (fetchFloorData), not on every SSE tick.
+        // updateQuorumStatus() reaches the Clerk's XML on its fallback path, which
+        // is why it used to be left to the 30s REST poll. But when a vote is live
+        // it answers from floorData.voteCounts and returns before either fetch —
+        // and that is exactly when the panel should be tracking the tally rather
+        // than lagging up to half a minute behind it. Run it here for the live
+        // case only; the network path stays on the poll.
+        if (floorData.currentStatus?.value === 'vote' || floorData.currentStatus?.value === 'voting') {
+            updateQuorumStatus();
+        }
     }
 
     // Countdown display is handled by tickVoteTimer() / syncVoteTimer().
