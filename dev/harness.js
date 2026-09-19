@@ -55,7 +55,12 @@
   // with BASE in make-mode-fixtures.mjs.
   const FREEZE_DEFAULT = '2026-09-03T18:30:00Z';
   const freezeArg = q.get('freeze');
-  if (freezeArg !== '0' && (useFixtures || mode || freezeArg)) {
+  // The demo runs on a live clock. A frozen Date.now() makes tickVoteTimer
+  // compute zero elapsed on every 100ms tick, so the vote clock only moved when
+  // a tally arrived and stepped two seconds at a time with the centiseconds
+  // pinned at .00 -- it read as jumping rather than running. Snapshot captures
+  // still freeze; they pass ?fixtures, not ?demo. An explicit ?freeze= still wins.
+  if (freezeArg !== '0' && (demo ? freezeArg : (useFixtures || mode || freezeArg))) {
     const fixed = Date.parse(freezeArg && freezeArg !== '1' ? freezeArg : FREEZE_DEFAULT);
     if (Number.isFinite(fixed)) {
       const RealDate = Date;
