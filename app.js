@@ -1257,7 +1257,16 @@ function startSSEStreaming() {
                 floorData = {
                     ...floorData,
                     lastUpdated: new Date(),
-                    currentStatus: { value: 'vote' },
+                    // A tally carries counts, not prose. Replacing the whole
+                    // object dropped .text, and the header fell back to
+                    // "Unknown" from the first tally until the next 30s REST
+                    // poll put it back -- for the whole of every live vote, the
+                    // one time the line matters. Keep whatever text we have
+                    // unless the event brings its own.
+                    currentStatus: {
+                        value: 'vote',
+                        text: v.now?.text || floorData.currentStatus?.text,
+                    },
                     rollCall: v.roll_call || floorData.rollCall,
                     voteCounts: v.counts || floorData.voteCounts,
                     timer: v.timer || floorData.timer,
