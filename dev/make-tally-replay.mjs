@@ -55,7 +55,13 @@ function at(p) {
 const split = (running, final, totalFinal) =>
   totalFinal === 0 ? 0 : Math.min(final, Math.round(running * (final / totalFinal)));
 
-const FRAMES = 150;           // 150 x 400ms = 60s
+// app.js updates the big counts on every tally but throttles the full render --
+// threshold, quorum, floor grid -- to 2s. At 400ms a frame those panels moved
+// once per five frames while the numbers ran away from them, which reads as the
+// panels being broken. Real DomeWatch tallies arrive seconds apart, where that
+// throttle is invisible, so the replay now runs at that cadence instead: every
+// frame gets a full render, and the whole vote still takes about 90 seconds.
+const FRAMES = 40;
 const VOTE_SECONDS = 900;     // a 15-minute vote, counted down across the replay
 const frames = [];
 for (let i = 0; i <= FRAMES; i++) {
@@ -92,7 +98,7 @@ for (const f of frames) {
   lead = l;
 }
 writeFileSync('dev/fixtures/demo/tally-replay.json', JSON.stringify({
-  intervalMs: 400,
+  intervalMs: 2200,
   bill: { id: '4795', number: '4795', title: 'Protect Economic and Academic Freedom Act of 2026' },
   rollCall: '295',
   question: 'H R 4795 - On Passage',

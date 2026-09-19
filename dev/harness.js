@@ -226,9 +226,11 @@
             } }) };
             (this._l['vote.tally'] || []).forEach(fn => fn(ev));
             // Loop, with a beat on the final tally so the result is readable
-            // before it resets rather than snapping straight back to 0-0.
+            // before it resets rather than snapping straight back to 0-0. Fixed
+            // rather than a multiple of intervalMs, which at the current cadence
+            // would freeze the board for half a minute.
             i = (i + 1) % frames.length;
-            this._replayTimer = setTimeout(tick, i === 0 ? intervalMs * 12 : intervalMs);
+            this._replayTimer = setTimeout(tick, i === 0 ? 6000 : intervalMs);
           };
           tick();
           log(`demo: replaying ${frames.length} tally frames every ${intervalMs}ms`);
