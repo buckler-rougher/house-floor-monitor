@@ -24,10 +24,21 @@ const C = globalThis.Crec;
 
 const BROADCAST = 'https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents';
 const MEMBERS = 'https://clerk.house.gov/xml/lists/MemberData.xml';
+// GPO puts a placeholder up before the real Record: four constituent granules
+// (one each for Daily Digest, Extensions, House, Senate), no congMember markup
+// anywhere, titled "Daily Digest". CREC-2026-09-16 still looked like this three
+// days after a 603-turn session. A full day's Record carries well over a hundred
+// granules, so the count separates the two cleanly.
+const SKELETON_MAX_GRANULES = 10;
+const recordIsPublished = (mods) =>
+  (mods.match(/<relatedItem type="constituent"/g) || []).length > SKELETON_MAX_GRANULES;
+
 const crecUrl = (d) => `https://www.govinfo.gov/metadata/pkg/CREC-${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}/mods.xml`;
 
-const get = async (url, label) => {
-  const r = await fetch(url);
+// 20 s cap: on 19 Sep the broadcast API hung on a no-session date and the job
+// sat for 4m13s before the proxy gave up with HTTP 499.
+const get = async (url, label, timeoutMs = 20_000) => {
+  const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
   return r.text();
 };
@@ -125,8 +136,13 @@ for (const date of dates) {
 
     say(`  turns ${g.speechTurns}  attributed ${g.attributedTurns} (${g.coveragePct}%)`);
     if (!g.graded) {
-      say(`  not graded: ${g.reason}`);
-      ungradedTurns = Math.max(ungradedTurns, g.attributedTurns || 0);
+      // Only an ungraded day whose Record GPO has actually published points at a
+      // bug here. Before publication there is nothing to grade against, and
+      // failing the build for that just means failing every run until GPO
+      // catches up -- which is what happened on 19 Sep.
+      const published = recordIsPublished(mods);
+      say(`  not graded: ${g.reason}${published ? '' : ' [Record not published yet]'}`);
+      if (published) ungradedTurns = Math.max(ungradedTurns, g.attributedTurns || 0);
       continue;
     }
     gradedAny = true;
