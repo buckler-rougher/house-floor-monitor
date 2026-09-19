@@ -87,6 +87,9 @@
     '/api/domewatch-floor':             'domewatch-floor.json',
     '/api/last-session-date':           'last-session-date.json',
     '/api/airport-delays':              'airport-delays.json',
+    // Longer key than /api/congress-index, and ROUTE_KEYS is sorted longest
+    // first, so the roll fetch resolves here rather than being handed the index.
+    '/api/congress-index/roll/':        'roll-call.xml',
     '/api/congress-index':              'congress-index.json',
     '/api/member-data':                 'member-data.json',
     '/api/proceedings':                 'proceedings.json',
@@ -121,15 +124,27 @@
     const p = (async () => {
       // Cloudflare Pages answers an unknown path with index.html and status 200,
       // so r.ok is true for a fixture that does not exist and the caller gets a
-      // page of HTML where it expected JSON. Every fixture here is JSON or CSV,
-      // and neither starts with '<' -- so that is the test, not the status code.
-      const usable = (text) => text && !text.trimStart().startsWith('<');
+      // page of HTML where it expected JSON. Test for that page specifically --
+      // an earlier version rejected anything starting with '<', which also threw
+      // away the roll-call XML fixture the absentee panel reads.
+      const usable = (text) => {
+        if (!text) return false;
+        const head = text.trimStart().slice(0, 120).toLowerCase();
+        return !head.startsWith('<!doctype html') && !head.startsWith('<html');
+      };
+      // The demo runs on a live clock, so a fixture with a fixed publishedAt
+      // would age out of the vote timeline's lookback window. Fixtures mark the
+      // spots with PLACEHOLDER_PUBLISHED and they are stamped at load time.
+      const dated = (text) => text.includes('PLACEHOLDER_PUBLISHED')
+        ? text.replace(/PLACEHOLDER_PUBLISHED/g, new Date(Date.now() - 20 * 60 * 1000).toISOString())
+        : text;
+
       for (const url of [fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
         if (!url) continue;
         const r = await fetch(url, { cache: 'no-store' });
         if (!r.ok) continue;
         const text = await r.text();
-        if (usable(text)) return text;
+        if (usable(text)) return dated(text);
       }
       const r = await fetch(BASE + 'base/' + name, { cache: 'no-store' });
       if (!r.ok) throw new Error(`fixture missing: ${name}`);
