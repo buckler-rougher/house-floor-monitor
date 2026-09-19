@@ -202,6 +202,57 @@
     return reply('{}', 'application/json');
   };
 
+  // ── Demo banner ────────────────────────────────────────────────────────────
+  // Nothing on this board is live in demo mode, and several panels are designed
+  // to look convincing -- a running tally, a chamber full of real names, footage
+  // of the actual floor. Say so plainly and permanently rather than relying on
+  // the URL, which is the first thing lost in a screenshot.
+  //
+  // The header is position:fixed at top:0, so the bar cannot simply be prepended:
+  // it is fixed above the header, the header is pushed down by its height, and
+  // the same amount is added to the body so normal-flow content follows.
+  if (demo) {
+    const BAR_H = 34;
+    const style = document.createElement('style');
+    style.textContent = `
+      .demo-banner {
+        position: fixed; top: 0; left: 0; right: 0; height: ${BAR_H}px;
+        z-index: 1001; display: flex; align-items: center; justify-content: center;
+        gap: .75em; padding: 0 1em; box-sizing: border-box;
+        background: #f0b429; color: #1a1205;
+        font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: .04em; text-transform: uppercase;
+        box-shadow: 0 1px 6px rgba(0,0,0,.45);
+      }
+      .demo-banner b { font-weight: 800; letter-spacing: .12em; }
+      .demo-banner span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+      .demo-banner a { color: inherit; font-weight: 700; text-underline-offset: 3px; }
+      @media (max-width: 760px) {
+        .demo-banner span.detail { display: none; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    const bar = document.createElement('div');
+    bar.className = 'demo-banner';
+    bar.setAttribute('role', 'note');
+    bar.innerHTML = '<b>Demo</b>'
+      + '<span class="detail">Nothing here is live \u2014 the tally is a scripted replay and the '
+      + 'video is an archived session.</span>'
+      + '<a href="/">Live board \u2192</a>';
+
+    const install = () => {
+      if (!document.body || document.querySelector('.demo-banner')) return;
+      document.body.insertBefore(bar, document.body.firstChild);
+      document.body.style.paddingTop = `${BAR_H}px`;
+      const header = document.querySelector('.main-header');
+      if (header) header.style.top = `${BAR_H}px`;
+      log('demo banner installed');
+    };
+    if (document.body) install();
+    else document.addEventListener('DOMContentLoaded', install);
+  }
+
   // ── SSE ────────────────────────────────────────────────────────────────────
   // app.js opens an EventSource to /stream/votes/current and retries on error.
   // A stub that simply reports "open" and stays quiet keeps the REST poll as the
