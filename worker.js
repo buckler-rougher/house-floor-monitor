@@ -523,6 +523,32 @@ function parseTweetDescription(html, instance) {
 }
 
 
+// A Nitter instance can stay up long after it stops ingesting: nitter.perennialte.ch
+// answered 200 with 81 well-formed items for four days, every one of them frozen at
+// 15 Sep 2026. Structural checks all passed, the fetch never failed, and kvCache
+// wrote the dead feed to KV as fresh -- so the panel showed four-day-old posts with
+// no indication anything was wrong. Liveness is not freshness; test the dates.
+//
+// Returns the age in ms of the newest item, or Infinity if no date can be read.
+function feedAgeMs(xml) {
+  const dates = [...xml.matchAll(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/gi)]
+    .map(m => Date.parse(m[1].trim()))
+    .filter(t => Number.isFinite(t));
+  if (!dates.length) return Infinity;
+  return Date.now() - Math.max(...dates);
+}
+
+// Reporters on this list post through recesses and weekends, so a feed whose newest
+// item predates this is stalled rather than quiet. Generous on purpose: rejecting a
+// merely quiet feed costs more than accepting one that is a few hours behind.
+const MAX_FEED_AGE_MS = 48 * 60 * 60 * 1000;
+
+// True when the body is a usable, currently-updating RSS feed.
+function usableFeed(xml) {
+  if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) return false;
+  return feedAgeMs(xml) <= MAX_FEED_AGE_MS;
+}
+
 async function handleTweets(env) {
   return kvCache(env, 'tweets-feed-v3', 120, async () => {
     let rawXml = null, usedInstance = null;
@@ -530,7 +556,7 @@ async function handleTweets(env) {
       try {
         const url = `https://${instance}/i/lists/${FLOOR_REPORTERS_LIST_ID}/rss`;
         const xml = await fetchRSSFeed(url, 6000);
-        if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) continue;
+        if (!usableFeed(xml)) continue;
         rawXml = xml; usedInstance = instance; break;
       } catch (_) { continue; }
     }
@@ -591,7 +617,7 @@ async function handleUserTweets(handle) {
     try {
       const url = `https://${instance}/${handle}/rss`;
       const xml = await fetchRSSFeed(url, 6000);
-      if (!xml || xml.includes('RSS feed is disabled') || xml.includes('Error |') || !xml.includes('<item>')) continue;
+      if (!usableFeed(xml)) continue;
       rawXml = xml; usedInstance = instance; break;
     } catch (_) { continue; }
   }
