@@ -256,12 +256,14 @@
       .demo-banner b { font-weight: 800; letter-spacing: .12em; }
       .demo-banner span { text-transform: none; letter-spacing: 0; font-weight: 500; }
       .demo-banner a { color: inherit; font-weight: 700; text-underline-offset: 3px; }
-      .demo-banner .demo-modes {
-        font: inherit; text-transform: none; letter-spacing: 0;
-        background: rgba(0,0,0,.12); color: inherit;
-        border: 1px solid rgba(0,0,0,.35); border-radius: 4px;
-        padding: 2px 4px; max-width: 46vw;
+      .demo-banner .demo-tabs { display: inline-flex; gap: 2px; }
+      .demo-banner .demo-tabs a {
+        text-transform: none; letter-spacing: 0; font-weight: 600;
+        padding: 3px 9px; border-radius: 3px; text-decoration: none;
+        border: 1px solid rgba(0,0,0,.3);
       }
+      .demo-banner .demo-tabs a.is-on { background: #1a1205; color: #f0b429; border-color: #1a1205; }
+      .demo-banner .demo-live { margin-left: .25em; }
       .demo-banner .short { display: none; }
       /* Narrow screens get a shorter warning, never none: the word DEMO on its
          own is not a statement that the numbers are fabricated. */
@@ -276,34 +278,26 @@
     const bar = document.createElement('div');
     bar.className = 'demo-banner';
     bar.setAttribute('role', 'note');
-    // A picker, because otherwise the other 23 modes are undiscoverable -- they
-    // exist only as a query string nobody would guess.
-    const picker = document.createElement('select');
-    picker.className = 'demo-modes';
-    picker.setAttribute('aria-label', 'Floor mode');
-    picker.onchange = () => {
+    // Two links rather than a <select>: a dropdown holding two items hides half
+    // its own content and reads as a form control, not a switch.
+    const tabs = document.createElement('span');
+    tabs.className = 'demo-tabs';
+    for (const [value, label] of [['vote', 'Vote'], ['debate', 'Debate']]) {
+      const a = document.createElement('a');
       const p = new URLSearchParams(location.search);
       p.set('demo', '1');
-      if (picker.value === 'vote') p.delete('mode'); else p.set('mode', picker.value);
-      location.search = p.toString();
-    };
-    // Only these two. The other 22 modes render off two-file fixtures built for
-    // CSS capture -- structurally correct, but with nothing in the panels, which
-    // shows a visitor an empty board rather than the site working.
-    for (const [value, label] of [['vote', 'Vote in progress'], ['debate', 'Debate']]) {
-      const o = document.createElement('option');
-      o.value = value;
-      o.textContent = label;
-      if (value === (mode || 'vote')) o.selected = true;
-      picker.appendChild(o);
+      if (value === 'vote') p.delete('mode'); else p.set('mode', value);
+      a.href = '?' + p.toString();
+      a.textContent = label;
+      if (value === (mode || 'vote')) a.className = 'is-on';
+      tabs.appendChild(a);
     }
 
     bar.innerHTML = '<b>Demo</b>'
-      + '<span class="long">Nothing here is live \u2014 the tally is a scripted replay and the '
-      + 'video is an archived session.</span>'
-      + '<span class="short">Simulated data \u2014 not live</span>'
-      + '<a href="/">Live board \u2192</a>';
-    bar.insertBefore(picker, bar.querySelector('a'));
+      + '<span class="long">Sample data. Nothing here is live.</span>'
+      + '<span class="short">Sample data, not live</span>'
+      + '<a class="demo-live" href="/">Live board</a>';
+    bar.insertBefore(tabs, bar.querySelector('.demo-live'));
 
     const install = () => {
       if (!document.body || document.querySelector('.demo-banner')) return;
