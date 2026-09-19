@@ -8840,6 +8840,13 @@ async function fetchHouseMakeup(preData = null) {
         };
         
         updatePartyBreakdownDisplay();
+
+        // The aisle position depends on the party split, which is not known when
+        // the grid is first built at page load — rebuild it now that it is.
+        if (elements.floorArch) {
+            renderArchSeats();
+            updateFloorGrid();
+        }
         
     } catch (error) {
         console.error('Error fetching house makeup:', error);
@@ -10184,21 +10191,51 @@ function createUsChamberLayout(container, config) {
     const width = container.offsetWidth || 720;
     const height = container.offsetHeight || 280;
     const centerX = width / 2;
-    const floorY = height * 0.96;
+
+    // Reserve a clear band at the bottom for the REPUBLICANS / DEMOCRATS labels.
+    // The arc used to end at 96% of the height, which ran the outermost seats of
+    // every row straight through the label text -- four of them overlapped it
+    // outright. Measured from the label so it still fits when the mobile rules
+    // shrink the type.
+    const archLabel = container.querySelector('.arch-label');
+    const labelBand = (archLabel ? archLabel.offsetHeight : 12) + 6;
+    const floorY = Math.max(height - labelBand, height * 0.80);
     const innerR = width * 0.16, outerR = width * 0.47;
     const aisleHalfW = 21;
     const seats = [];
 
+    // Where the aisle falls. The rows were split at count/2, which is not an even
+    // map at all: the odd seat in each odd row always went to the same side,
+    // giving a fixed 222 Democrat / 213 Republican chamber. Against the current
+    // 218 Republicans that is five members with nowhere to sit, and
+    // fillPartySeats clamps to seats.length -- so those votes were silently
+    // dropped from the map. Follow the real numbers, falling back to an even
+    // split until the Clerk's member data has loaded.
+    const demMembers = houseMakeup?.democrats || 0;
+    const repMembers = houseMakeup?.republicans || 0;
+    const demShare = (demMembers + repMembers) > 0
+        ? demMembers / (demMembers + repMembers)
+        : 0.5;
+
+    // Round cumulatively rather than per row: rounding each row on its own
+    // accumulates error and the side totals drift off the real counts.
+    let seatsSoFar = 0, demSoFar = 0;
+
     config.rows.forEach((count, rowIdx) => {
         const rowProgress = rowIdx / (config.rows.length - 1);
+        const demCount = Math.max(0, Math.min(count,
+            Math.round((seatsSoFar + count) * demShare) - demSoFar));
+        const repCount = count - demCount;
+        seatsSoFar += count;
+        demSoFar += demCount;
         const R = innerR + (outerR - innerR) * rowProgress;
         // gapAngle ensures center gap = exactly aisleHalfW*2 pixels at this row's radius
         const gapAngle = R > aisleHalfW ? Math.acos(aisleHalfW / R) : Math.PI / 2;
 
         for (let i = 0; i < count; i++) {
-            const side = i < count / 2 ? -1 : 1;
-            const sideIndex = side === -1 ? i : i - Math.ceil(count / 2);
-            const sideCount = side === -1 ? Math.ceil(count / 2) : Math.floor(count / 2);
+            const side = i < demCount ? -1 : 1;
+            const sideIndex = side === -1 ? i : i - demCount;
+            const sideCount = side === -1 ? demCount : repCount;
             const sideProgress = sideCount > 1 ? sideIndex / (sideCount - 1) : 0;
             // side===-1: Democrat, screen RIGHT, angle 0 (right edge, floor) → gapAngle (right of aisle)
             // side=== 1: Republican, screen LEFT, angle PI-gapAngle (left of aisle) → PI (left edge, floor)
