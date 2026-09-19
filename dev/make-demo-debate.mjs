@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 //
-// Build the demo's debate mode from H.R. 1 (117th), the For the People Act.
+// Build the demo's debate mode from H.R. 3684 (117th), the INVEST in America
+// Act, which the Senate later amended into the Infrastructure Investment and
+// Jobs Act.
 //
 //   node dev/make-demo-debate.mjs
 //
 // The vote demo replays the ACA, which was considered under a closed rule, so
 // its amendments panel is legitimately empty. Debate mode needs a bill that
-// actually went through the Rules Committee, and this one did: 183 amendments,
-// 77 Democratic, 104 Republican, 2 bipartisan, across five dispositions.
+// exercises every panel, and this one does: reported by committee on a recorded
+// 38-26 vote, 324 amendments (173 Democratic, 114 Republican, 37 bipartisan)
+// across five dispositions, three cosponsors, and a Statement of Administration
+// Policy. H.R. 1 was tried first and rejected -- it was never reported by
+// committee, so its committee-vote section could never be filled.
 //
 // Everything is fetched from the source at build time -- the amendment table
 // from rules.house.gov, the sponsor and committee referral from the introduced
@@ -19,7 +24,7 @@
 // layout. That is a live-site limitation worth fixing separately; the demo
 // sidesteps it by baking the real rows into a fixture.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' };
 const get = async (url, headers = {}) => {
@@ -30,7 +35,7 @@ const get = async (url, headers = {}) => {
 const strip = (s) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
 // ── amendments ───────────────────────────────────────────────────────────────
-const rulesHtml = await get('https://rules.house.gov/bill/117/hr-1');
+const rulesHtml = await get('https://rules.house.gov/bill/117/hr-3684');
 const amendments = [];
 for (const row of rulesHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || []) {
   if (!row.includes('amendments-rules.house.gov')) continue;
@@ -47,12 +52,16 @@ for (const row of rulesHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || []) {
 }
 
 // ── sponsor, cosponsors and committees ──────────────────────────────────────
-const billText = strip(await get('https://www.govinfo.gov/content/pkg/BILLS-117hr1ih/html/BILLS-117hr1ih.htm'));
+const billText = strip(await get('https://www.govinfo.gov/content/pkg/BILLS-117hr3684ih/html/BILLS-117hr3684ih.htm'));
 const intro = billText.slice(billText.indexOf('IN THE HOUSE OF REPRESENTATIVES'));
 const sponsorLine = (intro.match(/(M[rs]?s?\.\s[^(]+)\(for (?:himself|herself)(.*?)\) introduced/) || []);
 const sponsorName = (sponsorLine[1] || '').trim();
 const cosponsorNames = (sponsorLine[2] || '').split(/,\s*and\s+|,\s*/).map(s => s.trim()).filter(Boolean);
-const referral = (intro.match(/referred to the Committee on ([\s\S]*?), for a period/) || [, ''])[1];
+// Two referral shapes: a single committee ends at the rule line, a multi-
+// committee one runs to "for a period to be subsequently determined". Without
+// the first alternative the match ran to the end of the bill and produced two
+// thousand "committees".
+const referral = (intro.match(/referred to the Committees? on ([\s\S]{0,400}?)(?:,? for a period|\s_{5,}|$)/) || [, ''])[1];
 // Committee names contain commas of their own ("Science, Space, and
 // Technology"), so protect the compound ones before splitting the list on
 // commas -- otherwise one referral becomes three committees that do not exist.
@@ -76,12 +85,28 @@ for (const leg of voteXml.match(/<legislator[^>]*>[^<]*<\/legislator>/g) || []) 
   const shown = (leg.match(/>([^<]*)</) || [, ''])[1];
   roster.push({ surname: shown.replace(/\s*\(.*$/, '').trim(), state: at('state'), party: at('party'), id: at('name-id') });
 }
+// Delegates do not appear in roll-call rosters -- they cannot vote on passage --
+// so a cosponsor like Ms. Norton of DC is absent from the vote XML. Fall back to
+// the member-data fixture for those, still requiring a unique exact surname so
+// the wrong member can never be substituted.
+const memberXml = JSON.parse(readFileSync('dev/fixtures/base/member-data.json', 'utf8')).xmlData;
+const delegates = [];
+for (const m of memberXml.match(/<member>[\s\S]*?<\/member>/g) || []) {
+  const g = (t) => (m.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [, ''])[1];
+  const sd = g('statedistrict');
+  if (!sd || !g('lastname')) continue;
+  delegates.push({ surname: g('lastname'), state: sd.slice(0, 2), party: g('party'), id: g('bioguideID') });
+}
 const resolve = (raw) => {
   const surname = raw.replace(/^(Mr|Mrs|Ms|Miss|Dr)\.\s+/, '').replace(/\sof\s+.*$/, '').trim();
-  const hits = roster.filter(m => m.surname.toLowerCase() === surname.toLowerCase());
-  if (hits.length !== 1) return null;
-  const m = hits[0];
-  return { firstName: '', lastName: m.surname, party: m.party, state: m.state, bioguideId: m.id };
+  for (const pool of [roster, delegates]) {
+    const hits = pool.filter(m => m.surname.toLowerCase() === surname.toLowerCase());
+    if (hits.length === 1) {
+      const m = hits[0];
+      return { firstName: '', lastName: m.surname, party: m.party, state: m.state, bioguideId: m.id };
+    }
+  }
+  return null;
 };
 const sponsor = resolve(sponsorName);
 const cosponsors = cosponsorNames.map(resolve).filter(Boolean);
@@ -91,24 +116,23 @@ writeFileSync('dev/fixtures/demo/debate/amendments.json', JSON.stringify({ amend
 
 writeFileSync('dev/fixtures/demo/debate/bills.json', JSON.stringify({
   ruleBills: [{
-    id: 'H.R. 1', title: 'For the People Act of 2021', isRule: true, description: '',
-    pubDate: '2021-03-03T20:00:00.000Z', status: 'debate',
-    latestAction: 'Considered in the Committee of the Whole under the provisions of H. Res. 179',
-    latestActionDate: '2021-03-03T20:00:00.000Z',
+    id: 'H.R. 3684', title: 'INVEST in America Act', isRule: true, description: '',
+    pubDate: '2021-06-30T20:00:00.000Z', status: 'debate',
+    latestAction: 'Considered in the Committee of the Whole under the provisions of H. Res. 491',
+    latestActionDate: '2021-06-30T20:00:00.000Z',
     actionSource: 'proceedings', procedure: 'rule',
     sponsor, cosponsors, committees,
-    // The introduced text, not a reported one: H.R. 1 was never reported by
-    // committee, so BILLS-117hr1rh does not exist. govinfo answers that package
-    // with a 200 and an HTML error page, so the broken link looked like a
-    // working one until the content type was checked.
-    textUrl: 'https://www.govinfo.gov/content/pkg/BILLS-117hr1ih/pdf/BILLS-117hr1ih.pdf',
-    // Statement of Administration Policy, 1 March 2021, from the Biden White
-    // House archive rather than whitehouse.gov, where the original 404s now.
-    sapUrl: 'https://bidenwhitehouse.archives.gov/wp-content/uploads/2021/03/SAP_HR-1.pdf',
-    governingHres: 'H. Res. 179',
+    // "ordered reported to the House with a favorable recommendation, amended,
+    // by a record vote of 38 yeas and 26 nays (Roll Call Vote No. 38)".
+    committeeReport: 'Ordered reported by the Committee on Transportation and Infrastructure, 38\u201326',
+    committeeReportDate: '2021-06-10T00:00:00.000Z',
+    committeeReportUrl: 'https://www.govinfo.gov/content/pkg/CRPT-117hrpt70/pdf/CRPT-117hrpt70.pdf',
+    textUrl: 'https://www.govinfo.gov/content/pkg/BILLS-117hr3684ih/pdf/BILLS-117hr3684ih.pdf',
+    sapUrl: 'https://bidenwhitehouse.archives.gov/wp-content/uploads/2021/06/SAP-HR3684.pdf',
+    governingHres: 'H. Res. 491',
   }],
   suspensionBills: [], mayBeConsideredBills: [], consideredBills: [],
-  lastUpdated: '2021-03-03T20:00:00.000Z', weekDate: '2021-03-03', rawHeaders: [],
+  lastUpdated: '2021-06-30T20:00:00.000Z', weekDate: '2021-06-30', rawHeaders: [],
 }, null, 1));
 
 writeFileSync('dev/fixtures/demo/debate/domewatch-floor.json', JSON.stringify({
@@ -117,12 +141,12 @@ writeFileSync('dev/fixtures/demo/debate/domewatch-floor.json', JSON.stringify({
 }, null, 1));
 
 const at = (h, m, text) => ({ title: text, description: text, link: '',
-  pubDate: new Date(Date.UTC(2021, 2, 3, h + 5, m, 0)).toUTCString() });   // 3 Mar 2021 was EST
+  pubDate: new Date(Date.UTC(2021, 5, 30, h + 4, m, 0)).toUTCString() });  // 30 Jun 2021 was EDT
 writeFileSync('dev/fixtures/demo/debate/proceedings.json', JSON.stringify({
   items: [
-    at(20, 12, 'DEBATE - The Committee of the Whole proceeded with general debate on H.R. 1.'),
-    at(19, 48, 'The House resolved itself into the Committee of the Whole House on the state of the Union for consideration of H.R. 1.'),
-    at(18, 30, 'On agreeing to H. Res. 179 the resolution was agreed to by recorded vote.'),
+    at(20, 12, 'DEBATE - The Committee of the Whole proceeded with general debate on H.R. 3684.'),
+    at(19, 48, 'The House resolved itself into the Committee of the Whole House on the state of the Union for consideration of H.R. 3684.'),
+    at(18, 30, 'On agreeing to H. Res. 491 the resolution was agreed to by recorded vote.'),
     at(12, 0, 'The House convened, beginning a legislative day.'),
   ],
 }, null, 1));
