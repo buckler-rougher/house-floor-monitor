@@ -62,7 +62,16 @@ const split = (running, final, totalFinal) =>
 // throttle is invisible, so the replay now runs at that cadence instead: every
 // frame gets a full render, and the whole vote still takes about 90 seconds.
 const FRAMES = 40;
-const VOTE_SECONDS = 900;     // a 15-minute vote, counted down across the replay
+const INTERVAL_MS = 2200;
+
+// app.js ticks the clock off wall time between tallies and resyncs to whatever
+// each one carries. A nominal 15-minute countdown compressed into 90 seconds of
+// replay therefore dropped ~22s on every sync, and the timer visibly jumped
+// backwards instead of running. Deriving it from the cadence makes one replayed
+// second equal one real second, so each sync is a correction of milliseconds and
+// the clock just runs. It reads as a vote in its closing stretch, which is when
+// a board is worth watching anyway.
+const VOTE_SECONDS = Math.round((FRAMES * INTERVAL_MS) / 1000);
 const frames = [];
 for (let i = 0; i <= FRAMES; i++) {
   const p = i / FRAMES;
@@ -98,7 +107,7 @@ for (const f of frames) {
   lead = l;
 }
 writeFileSync('dev/fixtures/demo/tally-replay.json', JSON.stringify({
-  intervalMs: 2200,
+  intervalMs: INTERVAL_MS,
   bill: { id: '4795', number: '4795', title: 'Protect Economic and Academic Freedom Act of 2026' },
   rollCall: '295',
   question: 'H R 4795 - On Passage',
