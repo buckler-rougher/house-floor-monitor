@@ -21,8 +21,17 @@
   'use strict';
 
   const q = new URLSearchParams(location.search);
-  const useFixtures = q.has('fixtures') && q.get('fixtures') !== '0';
-  const mode = q.get('mode');
+  // ?demo drives the public demo at /demo: fixtures, the vote mode, and a tally
+  // that actually moves. Deliberately NOT folded into ?fixtures&mode=vote --
+  // dev/check-modes.mjs diffs computed styles against saved snapshots, and a
+  // board whose numbers change every 400ms can never match a saved frame.
+  // /demo is served by rewriting to index.html (see _redirects), which leaves the
+  // browser URL as /demo with no query string -- so the path has to count too.
+  const demo = (q.has('demo') && q.get('demo') !== '0') || /^\/demo\/?$/.test(location.pathname);
+  // The demo is fixtures + the vote mode, so it implies both rather than making
+  // the URL spell them out.
+  const useFixtures = (q.has('fixtures') && q.get('fixtures') !== '0') || demo;
+  const mode = q.get('mode') || (demo ? 'vote' : null);
   if (!useFixtures && !mode && !q.has('freeze')) return; // inert on normal loads
 
   const BASE = new URL('dev/fixtures/', new URL('.', location.href)).href;
@@ -98,16 +107,16 @@
 
   const resolve = url => ROUTE_KEYS.find(k => url.includes(k));
   const fixtureUrl = name =>
-    mode ? `${BASE}modes/${mode}/${name}` : null;
+    demo ? `${BASE}demo/${name}` : (mode ? `${BASE}modes/${mode}/${name}` : null);
 
   // Per-mode file if one exists, else the shared capture.
   const cache = new Map();
   async function loadFixture(name) {
     if (cache.has(name)) return cache.get(name);
     const p = (async () => {
-      const scoped = fixtureUrl(name);
-      if (scoped) {
-        const r = await fetch(scoped, { cache: 'no-store' });
+      for (const url of [fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
+        if (!url) continue;
+        const r = await fetch(url, { cache: 'no-store' });
         if (r.ok) return r.text();
       }
       const r = await fetch(BASE + 'base/' + name, { cache: 'no-store' });
@@ -186,11 +195,40 @@
           const ev = { type: 'bills', data: JSON.stringify({ bills: JSON.parse(text) }) };
           (this._l.bills || []).forEach(f => f(ev));
         }).catch(() => {});
+
+        // The static vote fixture shows the layout but not what the board is for:
+        // watching a close vote come in. In demo mode, push the recorded tally
+        // sequence the way the Durable Object pushes the real one.
+        if (demo && /votes|stream/.test(String(url))) this._startTallyReplay();
       }, 0);
+    }
+    _startTallyReplay() {
+      fetch(BASE + 'demo/tally-replay.json', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(({ intervalMs, frames, bill, rollCall, question }) => {
+          let i = 0;
+          const tick = () => {
+            if (this.readyState === 2) return;            // closed — stop
+            const f = frames[i];
+            const ev = { type: 'vote.tally', data: JSON.stringify({ vote: {
+              roll_call: { bill, number: rollCall, question },
+              counts: f.counts,
+              timer: { ...f.timer, timestamp: new Date().toISOString() },
+            } }) };
+            (this._l['vote.tally'] || []).forEach(fn => fn(ev));
+            // Loop, with a beat on the final tally so the result is readable
+            // before it resets rather than snapping straight back to 0-0.
+            i = (i + 1) % frames.length;
+            this._replayTimer = setTimeout(tick, i === 0 ? intervalMs * 12 : intervalMs);
+          };
+          tick();
+          log(`demo: replaying ${frames.length} tally frames every ${intervalMs}ms`);
+        })
+        .catch(e => warn('demo tally replay unavailable:', e.message));
     }
     addEventListener(t, f) { (this._l[t] ||= []).push(f); }
     removeEventListener(t, f) { this._l[t] = (this._l[t] || []).filter(x => x !== f); }
-    close() { this.readyState = 2; }
+    close() { this.readyState = 2; clearTimeout(this._replayTimer); }
   };
   window.EventSource.CONNECTING = 0;
   window.EventSource.OPEN = 1;
@@ -201,12 +239,41 @@
   // Capitol cam and floor-feed players off the network. hls.js assigns to
   // window.Hls in sloppy mode, where writing a non-writable property is a
   // silent no-op, so this survives its later <script>.
-  try {
-    Object.defineProperty(window, 'Hls', {
-      value: { isSupported: () => false, Events: {}, ErrorTypes: {} },
-      writable: false, configurable: false,
-    });
-  } catch { /* non-fatal: worst case the players try to load */ }
+  // The demo wants the real player: dev/fixtures/demo/hls-url.json points at an
+  // archived session (a VOD manifest, so it is seekable), and SEEK_TO skips the
+  // hours of holding card before the House actually convenes. Nothing is hosted
+  // here -- the Clerk serves it, and the broadcast metadata states the footage is
+  // a US Government work in the public domain.
+  const DEMO_SEEK_SECONDS = 35826;   // 18:49 ET, roll call 311, stream began 08:51:54
+  if (demo) {
+    const seekOnce = (v) => {
+      if (v.dataset.demoSeeked) return;
+      // Guard on duration: the Capitol cam is a different, shorter source and
+      // must not be dragged to an offset it does not have.
+      if (!isFinite(v.duration) || v.duration < DEMO_SEEK_SECONDS + 60) return;
+      v.dataset.demoSeeked = '1';
+      v.currentTime = DEMO_SEEK_SECONDS;
+      v.play?.().catch(() => {});
+      log(`demo: seeking floor feed to ${DEMO_SEEK_SECONDS}s`);
+    };
+    const watch = (v) => {
+      seekOnce(v);
+      v.addEventListener('loadedmetadata', () => seekOnce(v));
+      v.addEventListener('durationchange', () => seekOnce(v));
+    };
+    document.querySelectorAll('video').forEach(watch);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
+      if (n.nodeName === 'VIDEO') watch(n);
+      else if (n.querySelectorAll) n.querySelectorAll('video').forEach(watch);
+    }))).observe(document.documentElement, { childList: true, subtree: true });
+  } else {
+    try {
+      Object.defineProperty(window, 'Hls', {
+        value: { isSupported: () => false, Events: {}, ErrorTypes: {} },
+        writable: false, configurable: false,
+      });
+    } catch { /* non-fatal: worst case the players try to load */ }
+  }
 
   // ── Remote images ──────────────────────────────────────────────────────────
   // <img src> never passes through window.fetch, so tweet avatars and media
