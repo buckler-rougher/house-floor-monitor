@@ -84,7 +84,19 @@
   // Shift instead of freeze: time still advances at one second per second, so the
   // timer runs, but it reads as the session the demo is actually portraying --
   // 16 September 2026, at the moment the archived video is seeked to.
-  const DEMO_CLOCK = '2010-03-22T02:49:00Z';   // 10:49 pm ET, 21 Mar 2010: roll call 165
+  // Each demo mode is its own moment, because each is a different real session.
+  // The vote replays the ACA, which was a closed rule and so has no amendments;
+  // debate uses H.R. 1, which went through the Rules Committee and has 183.
+  const DEMO_SCENARIOS = {
+    vote:   { clock: '2010-03-22T02:49:00Z',   // 10:49 pm ET, 21 Mar 2010, roll 165
+              chamber: { democrats: 253, republicans: 178, independents: 0, total: 431 },
+              congress: 'One Hundred Eleventh Congress - Session 2' },
+    debate: { clock: '2021-03-04T01:12:00Z',   // 8:12 pm ET, 3 Mar 2021, general debate
+              chamber: { democrats: 221, republicans: 211, independents: 0, total: 432 },
+              congress: 'One Hundred Seventeenth Congress - Session 1' },
+  };
+  const SCENARIO = DEMO_SCENARIOS[mode] || DEMO_SCENARIOS.vote;
+  const DEMO_CLOCK = SCENARIO.clock;
   if (demo && !freezeArg) {
     const target = Date.parse(DEMO_CLOCK);
     if (Number.isFinite(target)) {
@@ -108,19 +120,18 @@
   // 218 Republicans for a vote in which 178 of them voted, and the header claims
   // the wrong Congress.
   if (demo) {
-    const ACA_CHAMBER = { democrats: 253, republicans: 178, independents: 0, total: 431 };
     window.addEventListener('load', () => {
       const apply = () => {
         try {
           if (typeof houseMakeup !== 'undefined') {
-            houseMakeup = ACA_CHAMBER;
+            houseMakeup = SCENARIO.chamber;
             if (typeof renderArchSeats === 'function') renderArchSeats();
             if (typeof updateFloorGrid === 'function') updateFloorGrid();
             if (typeof updatePartyBreakdownDisplay === 'function') updatePartyBreakdownDisplay();
           }
         } catch { /* app not ready yet */ }
         const el = document.querySelector('.congress-info .congress-text');
-        if (el) el.textContent = 'One Hundred Eleventh Congress - Session 2';
+        if (el) el.textContent = SCENARIO.congress;
 
         // The voting-days fixture is a current calendar and knows nothing of
         // 2010, so the badge read OUT OF SESSION over a running vote and the
@@ -150,6 +161,9 @@
     '/api/airport-delays':              'airport-delays.json',
     // Longer key than /api/congress-index, and ROUTE_KEYS is sorted longest
     // first, so the roll fetch resolves here rather than being handed the index.
+    // Served from demo/<mode>/amendments.json where a mode provides one, and
+    // answered as an empty list where none exists (the ACA's closed rule).
+    '/api/amendments':                  'amendments.json',
     '/api/congress-index/roll/':        'roll-call.xml',
     '/api/congress-index':              'congress-index.json',
     '/api/member-data':                 'member-data.json',
@@ -170,9 +184,6 @@
   // Endpoints with no fixture: answered with an empty-but-valid shape rather
   // than a network call, so a missing fixture never turns into a CORS error.
   const STUBS = {
-    // No amendments fixture: the demo replays a finished vote, and inventing
-    // amendments for a real bill is what this rebuild removed.
-    '/api/amendments': { amendments: [] },
     'en.wikipedia.org': { query: { search: [], pages: {} } },
   };
 
