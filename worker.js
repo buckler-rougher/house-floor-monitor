@@ -94,14 +94,25 @@ const NEWS_MAX_AGE_HOURS = 48;
 // Nitter instances to try for Twitter-based journalist feeds (tried in order).
 // CF Workers IPs are sometimes blocked — update this list if feeds stop working.
 // RSS URL format: https://{instance}/{twitterHandle}/rss
+// Measured 19 Sep 2026: every instance in the previous list was gone (502, or
+// no connection at all), and the panel had been serving four-day-old posts.
+//
+// Instances rate-limit intermittently rather than failing outright — the same
+// host answers 403, 403, then 200 — so the loop below retrying matters more
+// than which host is first.
+//
+// twiiit.com is a round-robin redirector to whichever instances are alive. On
+// its own it is unreliable (3 of 10 requests returned a usable feed) but it
+// reaches hosts we do not know about, so it goes last and appears several
+// times: each request lands on a different backend, so the repeats are
+// independent retries, not duplicates. When the named hosts below die, this is
+// what keeps the panel working without a code change.
 const NITTER_INSTANCES = [
-  'nitter.perennialte.ch',
-  'nitter.poast.org',
-  'nitter.privacydev.net',
-  'nitter.cz',
-  'nitter.1d4.us',
-  'nitter.nl',
-  'nitter.unixfox.eu',
+  'nitter.jaydenha.uk',      // 5/5 on the list feed, 19 Sep 2026
+  'nitter.meowing.monster',  // 5/5 on the list feed, 19 Sep 2026
+  'twiiit.com',
+  'twiiit.com',
+  'twiiit.com',
 ];
 
 const FLOOR_REPORTERS_LIST_ID = '1593329859010301953';
@@ -1367,8 +1378,9 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
   }
 
   // Origin failed. If KV still holds a previous good body, serve THAT rather than
-  // the failure: for a feed whose upstream can disappear (Nitter is down to one
-  // working instance), yesterday's posts are far more useful than an empty panel,
+  // the failure: for a feed whose upstream can disappear (Nitter instances are
+  // decommissioned constantly), yesterday's posts are far more useful than an
+  // empty panel,
   // and an outage must never overwrite good data with nothing. Marked stale so
   // the client can say so instead of implying the feed is genuinely empty.
   if (prevBody !== null) {
