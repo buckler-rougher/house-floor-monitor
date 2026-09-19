@@ -1,0 +1,49 @@
+{
+ "now": {
+  "text": "Voting in progress",
+  "value": "vote"
+ },
+ "roll_call": {
+  "bill": {
+   "id": "3590",
+   "number": "3590",
+   "title": "Patient Protection and Affordable Care Act"
+  },
+  "number": "165",
+  "question": "H R 3590 - On Motion to Concur in Senate Amendments"
+ },
+ "timer": {
+  "seconds_remaining": 88,
+  "timestamp": "PLACEHOLDER_PUBLISHED",
+  "value": "1:28"
+ },
+ "votes": {
+  "counts": {
+   "blue": {
+    "yeas": "",
+    "nays": "",
+    "present": "",
+    "not_voting": "253"
+   },
+   "red": {
+    "yeas": "",
+    "nays": "",
+    "present": "",
+    "not_voting": "178"
+   },
+   "white": {
+    "yeas": "",
+    "nays": "",
+    "present": "",
+    "not_voting": ""
+   },
+   "totals": {
+    "yeas": "0",
+    "nays": "0",
+    "present": "",
+    "not_voting": "431"
+   }
+  }
+ },
+ "fetchedAt": "PLACEHOLDER_PUBLISHED"
+}
