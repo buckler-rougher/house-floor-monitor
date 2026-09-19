@@ -1,8 +1,10 @@
 /contact https://links.evanhollander.org 301
 
-# The demo board. A rewrite rather than a redirect so the address stays /demo;
-# index.html's relative asset paths still resolve against / because /demo has no
-# trailing slash. The trailing-slash form would resolve them against /demo/, so
-# send it back to the canonical path first.
-/demo/ /demo 301
-/demo /index.html 200
+# The demo board.
+#
+# This is a redirect, not a rewrite. Cloudflare Pages canonicalises /index.html
+# to /, so a `/demo /index.html 200` rewrite is served as a 308 to / and the demo
+# never loads. Redirecting to the query form is the shape Pages actually honours,
+# so /demo is the address people type and /?demo is where they land.
+/demo/ /?demo 301
+/demo /?demo 301
