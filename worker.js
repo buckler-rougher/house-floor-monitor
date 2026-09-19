@@ -1258,7 +1258,16 @@ async function fetchCongressBillStatus(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   try {
-    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${_congressApiKey}&limit=20&sort=updateDate+desc`;
+    // limit=250 (the API maximum), not 20. The loop below wants two different
+    // things from this list: the most recent floor action, which is at the top
+    // under updateDate+desc, and the committee's "Ordered to be Reported", which
+    // is one of the oldest actions on the bill. Twenty was enough for a bill
+    // fresh out of committee but not for one that has since collected a rule,
+    // amendments and several floor days -- there the committee action falls off
+    // the end, and the bill silently shows no committee vote and no Rice index
+    // despite having been reported. The loop breaks as soon as it has both, so
+    // the larger page costs nothing in the common case.
+    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${_congressApiKey}&limit=250&sort=updateDate+desc`;
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -1433,13 +1442,16 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
 }
 
 // ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
+// v4: the actions fetch went from limit=20 to 250, so every bill cached under v3
+// may be missing a committee vote that was simply out of the old window. Bumping
+// the key re-enriches rather than waiting 30 days for the entries to expire.
 // Summaries and sponsors are permanent once published; status is covered by the proceedings ratchet.
 // Physical KV TTL = KV_STORAGE_TTL (30 days). Write-on-change: only writes when enrichment data
 // actually differs from what is already in KV (e.g. newly published CRS summary, updated status).
 const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
 
 async function getCachedBillEnrichment(env, billId) {
-  const key = `bill-enrich-v3:${billId}`;
+  const key = `bill-enrich-v4:${billId}`;
   const mem = _mGet(key);
   if (mem) return JSON.parse(mem);
   if (!env?.HLS_CACHE) return null;
@@ -1451,7 +1463,7 @@ async function getCachedBillEnrichment(env, billId) {
 }
 
 async function setCachedBillEnrichment(env, billId, data) {
-  const key = `bill-enrich-v3:${billId}`;
+  const key = `bill-enrich-v4:${billId}`;
   const body = JSON.stringify(data);
   _mSet(key, body, BILL_ENRICH_TTL * 1000);
   if (!env?.HLS_CACHE) return;
