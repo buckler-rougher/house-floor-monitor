@@ -115,6 +115,7 @@
     '/api/airport-delays':              'airport-delays.json',
     // Longer key than /api/congress-index, and ROUTE_KEYS is sorted longest
     // first, so the roll fetch resolves here rather than being handed the index.
+    '/api/amendments':                  'amendments.json',
     '/api/congress-index/roll/':        'roll-call.xml',
     '/api/congress-index':              'congress-index.json',
     '/api/member-data':                 'member-data.json',
@@ -135,13 +136,15 @@
   // Endpoints with no fixture: answered with an empty-but-valid shape rather
   // than a network call, so a missing fixture never turns into a CORS error.
   const STUBS = {
-    '/api/amendments': { amendments: [] },
     'en.wikipedia.org': { query: { search: [], pages: {} } },
   };
 
   const resolve = url => ROUTE_KEYS.find(k => url.includes(k));
   const fixtureUrl = name =>
     demo ? `${BASE}demo/${name}` : (mode ? `${BASE}modes/${mode}/${name}` : null);
+  // demo/<mode>/ overrides demo/, so a mode can replace a shared demo fixture --
+  // debate needs a bundle with no vote series in it, for instance.
+  const demoModeUrl = name => (demo && mode) ? `${BASE}demo/${mode}/${name}` : null;
 
   // Per-mode file if one exists, else the shared capture.
   const cache = new Map();
@@ -173,7 +176,7 @@
                    .replace(/PLACEHOLDER_START/g, et);
       };
 
-      for (const url of [fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
+      for (const url of [demoModeUrl(name), fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
         if (!url) continue;
         const r = await fetch(url, { cache: 'no-store' });
         if (!r.ok) continue;

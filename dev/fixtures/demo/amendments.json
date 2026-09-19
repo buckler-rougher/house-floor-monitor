@@ -1,0 +1,76 @@
+{
+ "amendments": [
+  {
+   "num": "1",
+   "sponsors": "Mr. Aderholt (AL)",
+   "party": "R",
+   "status": "Adopted",
+   "purpose": "Requires the Secretary to publish the register of reportable foreign gifts in machine-readable form.",
+   "version": "Submitted"
+  },
+  {
+   "num": "2",
+   "sponsors": "Mr. Womack (AR), Mr. Khanna (CA)",
+   "party": "R",
+   "status": "Adopted",
+   "purpose": "Exempts community colleges with fewer than 5,000 enrolled students from the contract reporting requirement.",
+   "version": "Submitted"
+  },
+  {
+   "num": "3",
+   "sponsors": "Ms. Simon (CA)",
+   "party": "D",
+   "status": "Failed",
+   "purpose": "Strikes the civil penalty provisions in section 4.",
+   "version": "Submitted"
+  },
+  {
+   "num": "4",
+   "sponsors": "Mr. Khanna (CA)",
+   "party": "D",
+   "status": "Adopted",
+   "purpose": "Extends the disclosure deadline from 30 to 90 days for institutions reporting for the first time.",
+   "version": "Submitted"
+  },
+  {
+   "num": "5",
+   "sponsors": "Mr. Calvert (CA)",
+   "party": "R",
+   "status": "Withdrawn",
+   "purpose": "Adds research security training requirements for principal investigators.",
+   "version": "Submitted"
+  },
+  {
+   "num": "6",
+   "sponsors": "Ms. Friedman (CA)",
+   "party": "D",
+   "status": "Pending",
+   "purpose": "Requires an annual GAO review of the Department’s enforcement actions.",
+   "version": "Submitted"
+  },
+  {
+   "num": "7",
+   "sponsors": "Mr. Rutherford (FL), Mr. Jackson (IL)",
+   "party": "R",
+   "status": "Pending",
+   "purpose": "Clarifies that gifts from allied governments are not subject to the register.",
+   "version": "Submitted"
+  },
+  {
+   "num": "8",
+   "sponsors": "Mr. Garcia (CA)",
+   "party": "D",
+   "status": "Pending",
+   "purpose": "Directs the Secretary to establish an appeals process for penalty determinations.",
+   "version": "Submitted"
+  },
+  {
+   "num": "9",
+   "sponsors": "Mr. Franklin (FL)",
+   "party": "R",
+   "status": "Failed",
+   "purpose": "Narrows the definition of foreign country of concern to those designated under section 1260H.",
+   "version": "Submitted"
+  }
+ ]
+}

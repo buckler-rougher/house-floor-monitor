@@ -66,6 +66,17 @@ const bundle = {
 };
 
 writeFileSync('dev/fixtures/demo/cold-start-bundle.json', JSON.stringify(bundle, null, 1));
+
+// Debate mode gets the same bundle without the live series. A board showing a
+// vote series in progress while the House is in general debate contradicts
+// itself -- the series is announced when debate ends, not during it. The roll
+// log stays, so earlier votes still read as completed.
+const debateBundle = {
+  ...bundle,
+  whipFloor: bundle.whipFloor.filter(i => i.id !== series.id),
+};
+writeFileSync('dev/fixtures/demo/debate/cold-start-bundle.json', JSON.stringify(debateBundle, null, 1));
 console.log(`  series: 5 votes, live one is #3`);
 console.log(`  rollLog: ${bundle.rollLog.length} entries (293 passed, 294 failed)`);
 console.log(`  whipFloor: ${bundle.whipFloor.length}, whipNotices: ${bundle.whipNotices.length}`);
+console.log(`  debate overlay: whipFloor ${debateBundle.whipFloor.length} (series removed)`);

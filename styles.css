@@ -6514,6 +6514,10 @@ font-family: var(--font-mono);
 }
     /* Shown only on a no-session day (see updateSessionStatus): the empty board
        reads as broken to a first-time visitor, so offer the demo instead. */
+    /* [hidden] must still win: the UA rule is display:none, and an author
+       display:block beats it, which left this showing on every page including
+       the demo. */
+    .session-demo-prompt[hidden] { display: none; }
     .session-demo-prompt {
         display: block;
         margin-top: var(--sp-6, 6px);

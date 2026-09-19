@@ -38,7 +38,234 @@
     "bioguideId": "W000798"
    },
    "summary": "Prohibits institutions of higher education that receive Federal research funding from entering into contracts with, or accepting gifts from, entities owned or controlled by a foreign country of concern, and directs the Secretary of Education to publish an annual register of reportable foreign gifts. Establishes civil penalties for failure to disclose and conditions continued eligibility for Federal research grants on compliance.",
-   "committee": "Education and Workforce"
+   "committee": "Education and Workforce",
+   "cosponsors": [
+    {
+     "firstName": "Nicholas",
+     "lastName": "Begich",
+     "party": "R",
+     "state": "AK",
+     "district": 0,
+     "bioguideId": "B001323"
+    },
+    {
+     "firstName": "J.",
+     "lastName": "Hill",
+     "party": "R",
+     "state": "AR",
+     "district": 2,
+     "bioguideId": "H001072"
+    },
+    {
+     "firstName": "Juan",
+     "lastName": "Ciscomani",
+     "party": "R",
+     "state": "AZ",
+     "district": 6,
+     "bioguideId": "C001133"
+    },
+    {
+     "firstName": "Jay",
+     "lastName": "Obernolte",
+     "party": "R",
+     "state": "CA",
+     "district": 23,
+     "bioguideId": "O000019"
+    },
+    {
+     "firstName": "Gabe",
+     "lastName": "Evans",
+     "party": "R",
+     "state": "CO",
+     "district": 8,
+     "bioguideId": "E000300"
+    },
+    {
+     "firstName": "Cory",
+     "lastName": "Mills",
+     "party": "R",
+     "state": "FL",
+     "district": 7,
+     "bioguideId": "M001216"
+    },
+    {
+     "firstName": "W.",
+     "lastName": "Steube",
+     "party": "R",
+     "state": "FL",
+     "district": 17,
+     "bioguideId": "S001214"
+    },
+    {
+     "firstName": "Earl",
+     "lastName": "Carter",
+     "party": "R",
+     "state": "GA",
+     "district": 1,
+     "bioguideId": "C001103"
+    },
+    {
+     "firstName": "Rick",
+     "lastName": "Allen",
+     "party": "R",
+     "state": "GA",
+     "district": 12,
+     "bioguideId": "A000372"
+    },
+    {
+     "firstName": "Russ",
+     "lastName": "Fulcher",
+     "party": "R",
+     "state": "ID",
+     "district": 1,
+     "bioguideId": "F000469"
+    },
+    {
+     "firstName": "James",
+     "lastName": "Baird",
+     "party": "R",
+     "state": "IN",
+     "district": 4,
+     "bioguideId": "B001307"
+    },
+    {
+     "firstName": "Ron",
+     "lastName": "Estes",
+     "party": "R",
+     "state": "KS",
+     "district": 4,
+     "bioguideId": "E000298"
+    },
+    {
+     "firstName": "Clay",
+     "lastName": "Higgins",
+     "party": "R",
+     "state": "LA",
+     "district": 3,
+     "bioguideId": "H001077"
+    },
+    {
+     "firstName": "Tom",
+     "lastName": "Barrett",
+     "party": "R",
+     "state": "MI",
+     "district": 7,
+     "bioguideId": "B001321"
+    },
+    {
+     "firstName": "Ann",
+     "lastName": "Wagner",
+     "party": "R",
+     "state": "MO",
+     "district": 2,
+     "bioguideId": "W000812"
+    },
+    {
+     "firstName": "Trent",
+     "lastName": "Kelly",
+     "party": "R",
+     "state": "MS",
+     "district": 1,
+     "bioguideId": "K000388"
+    },
+    {
+     "firstName": "Addison",
+     "lastName": "McDowell",
+     "party": "R",
+     "state": "NC",
+     "district": 6,
+     "bioguideId": "M001240"
+    },
+    {
+     "firstName": "Tim",
+     "lastName": "Moore",
+     "party": "R",
+     "state": "NC",
+     "district": 14,
+     "bioguideId": "M001236"
+    },
+    {
+     "firstName": "Thomas",
+     "lastName": "Kean",
+     "party": "R",
+     "state": "NJ",
+     "district": 7,
+     "bioguideId": "K000398"
+    },
+    {
+     "firstName": "Nicholas",
+     "lastName": "Langworthy",
+     "party": "R",
+     "state": "NY",
+     "district": 23,
+     "bioguideId": "L000600"
+    },
+    {
+     "firstName": "Warren",
+     "lastName": "Davidson",
+     "party": "R",
+     "state": "OH",
+     "district": 8,
+     "bioguideId": "D000626"
+    },
+    {
+     "firstName": "Shomari",
+     "lastName": "Figures",
+     "party": "D",
+     "state": "AL",
+     "district": 2,
+     "bioguideId": "F000481"
+    },
+    {
+     "firstName": "Ami",
+     "lastName": "Bera",
+     "party": "D",
+     "state": "CA",
+     "district": 6,
+     "bioguideId": "B001287"
+    },
+    {
+     "firstName": "Adam",
+     "lastName": "Gray",
+     "party": "D",
+     "state": "CA",
+     "district": 13,
+     "bioguideId": "G000605"
+    },
+    {
+     "firstName": "Jim",
+     "lastName": "Costa",
+     "party": "D",
+     "state": "CA",
+     "district": 21,
+     "bioguideId": "C001059"
+    },
+    {
+     "firstName": "Laura",
+     "lastName": "Friedman",
+     "party": "D",
+     "state": "CA",
+     "district": 30,
+     "bioguideId": "F000483"
+    },
+    {
+     "firstName": "Sydney",
+     "lastName": "Kamlager-Dove",
+     "party": "D",
+     "state": "CA",
+     "district": 37,
+     "bioguideId": "K000400"
+    }
+   ],
+   "committees": [
+    "Education and Workforce",
+    "Science, Space, and Technology"
+   ],
+   "committeeReport": "Reported by the Committee on Education and Workforce, 24–19",
+   "committeeReportDate": "2026-07-29T00:00:00.000Z",
+   "committeeReportUrl": "https://www.congress.gov/119/crpt/hrpt412/CRPT-119hrpt412.pdf",
+   "sapUrl": "https://www.whitehouse.gov/wp-content/uploads/2026/09/SAP-HR-4795.pdf",
+   "procedure": "rule"
   },
   {
    "id": "H.R. 1501",
