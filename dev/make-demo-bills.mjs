@@ -34,6 +34,9 @@ for (const key of ['ruleBills', 'suspensionBills', 'consideredBills', 'mayBeCons
   for (const b of bills[key] || []) {
     if (!/4795/.test(b.id || '')) continue;
     b.sponsor = SPONSOR;
+    // The panel reads foundBill.summary, not description -- description stays
+    // empty in the Clerk's own feed, which is why it was free to reuse here.
+    b.summary = SUMMARY;
     b.description = SUMMARY;
     b.committee = 'Education and Workforce';
     // Under debate, not finished: the base entry said passed, with a final tally.
