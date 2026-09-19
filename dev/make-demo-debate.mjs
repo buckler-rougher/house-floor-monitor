@@ -97,7 +97,14 @@ writeFileSync('dev/fixtures/demo/debate/bills.json', JSON.stringify({
     latestActionDate: '2021-03-03T20:00:00.000Z',
     actionSource: 'proceedings', procedure: 'rule',
     sponsor, cosponsors, committees,
-    textUrl: 'https://www.govinfo.gov/content/pkg/BILLS-117hr1rh/pdf/BILLS-117hr1rh.pdf',
+    // The introduced text, not a reported one: H.R. 1 was never reported by
+    // committee, so BILLS-117hr1rh does not exist. govinfo answers that package
+    // with a 200 and an HTML error page, so the broken link looked like a
+    // working one until the content type was checked.
+    textUrl: 'https://www.govinfo.gov/content/pkg/BILLS-117hr1ih/pdf/BILLS-117hr1ih.pdf',
+    // Statement of Administration Policy, 1 March 2021, from the Biden White
+    // House archive rather than whitehouse.gov, where the original 404s now.
+    sapUrl: 'https://bidenwhitehouse.archives.gov/wp-content/uploads/2021/03/SAP_HR-1.pdf',
     governingHres: 'H. Res. 179',
   }],
   suspensionBills: [], mayBeConsideredBills: [], consideredBills: [],
