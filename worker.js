@@ -28,6 +28,36 @@ const CORS_HEADERS = {
 // Alias kept for DO code that references CORS_HEADERS_DEFAULT explicitly.
 const CORS_HEADERS_DEFAULT = CORS_HEADERS;
 
+// Compares two strings without leaking, through how long the comparison takes,
+// how many leading characters matched — which would let a token be recovered a
+// byte at a time.
+function timingSafeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// Gate for the endpoints that write to KV or fan out to the Clerk.
+//
+// Fails closed: with ADMIN_TOKEN unset this returns false, so forgetting to set
+// the binding takes the endpoint offline rather than leaving it open. The token
+// goes in a header, never the query string, so it stays out of request logs and
+// browser history.
+function adminAuthorized(request, env) {
+  const expected = env?.ADMIN_TOKEN;
+  if (!expected) return false;
+  const presented = /^Bearer\s+(.+)$/i.exec(request?.headers?.get('Authorization') || '');
+  return presented ? timingSafeEqual(presented[1], expected) : false;
+}
+
+// 404 rather than 403, so an unauthenticated caller learns nothing about which
+// admin routes exist.
+function notFound(request) {
+  return new Response('Not found', { status: 404, headers: corsForRequest(request) });
+}
+
 // Returns per-request CORS headers that echo back the caller's origin when
 // it's an allowed origin (e.g. monitor-a6i.pages.dev preview domain).
 function corsForRequest(request) {
@@ -4153,22 +4183,14 @@ async function handleRequest(request, env) {
     return await handleRollLogGet(env);
   } else if (path === '/api/cold-start-bundle' && request.method === 'GET') {
     return await handleColdStartBundle(env);
-  } else if (path === '/api/roll-log-debug' && request.method === 'GET') {
-    // Temporary: peek at KV keys for past 7 days to diagnose missing roll-log data
-    if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });
-    const results = [];
-    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    for (let d = 0; d < 7; d++) {
-      const dt = new Date(nowET); dt.setDate(nowET.getDate() - d);
-      const key = `roll-log-${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}`;
-      const data = await env.HLS_CACHE.get(key, 'json');
-      results.push({ key, entries: data?.entries?.length ?? 0, sample: data?.entries?.[0] ?? null });
-    }
-    return new Response(JSON.stringify(results, null, 2), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } else if (path === '/api/roll-log-seed' && request.method === 'GET') {
     // Admin: backfill roll-log KV from Clerk XMLs so the vote-series can show absences.
-    // Usage: /api/roll-log-seed                    → auto-discovers latest 20 rolls via congress index
-    //        /api/roll-log-seed?rolls=218,219,220  → seed specific rolls
+    // Each call fetches up to 30 Clerk XMLs and writes to KV, so it is authenticated.
+    //
+    // Usage: curl -H "Authorization: Bearer $TOKEN" .../api/roll-log-seed
+    //          → auto-discovers the latest 20 rolls via the congress index
+    //        add ?rolls=218,219,220 to seed specific rolls instead.
+    if (!adminAuthorized(request, env)) return notFound(request);
     if (!env?.HLS_CACHE) return new Response(JSON.stringify({ error: 'no KV' }), { headers: CORS_HEADERS });
     const rollsParam = url.searchParams.get('rolls');
     let rollsToFetch = [];
