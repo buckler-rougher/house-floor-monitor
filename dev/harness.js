@@ -284,21 +284,16 @@
       if (picker.value === 'vote') p.delete('mode'); else p.set('mode', picker.value);
       location.search = p.toString();
     };
-    fetch(BASE + 'modes/index.json', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(list => {
-        const names = Array.isArray(list) ? list : (list.modes || []);
-        for (const n of names) {
-          const name = typeof n === 'string' ? n : n.name;
-          if (!name) continue;
-          const o = document.createElement('option');
-          o.value = name;
-          o.textContent = name.replace(/-/g, ' ');
-          if (name === (mode || 'vote')) o.selected = true;
-          picker.appendChild(o);
-        }
-      })
-      .catch(() => { picker.hidden = true; });
+    // Only these two. The other 22 modes render off two-file fixtures built for
+    // CSS capture -- structurally correct, but with nothing in the panels, which
+    // shows a visitor an empty board rather than the site working.
+    for (const [value, label] of [['vote', 'Vote in progress'], ['debate', 'Debate']]) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = label;
+      if (value === (mode || 'vote')) o.selected = true;
+      picker.appendChild(o);
+    }
 
     bar.innerHTML = '<b>Demo</b>'
       + '<span class="long">Nothing here is live \u2014 the tally is a scripted replay and the '

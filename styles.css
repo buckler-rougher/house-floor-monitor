@@ -6512,6 +6512,20 @@ font-family: var(--font-mono);
     letter-spacing: var(--track-wide);
     text-transform: uppercase;
 }
+    /* Shown only on a no-session day (see updateSessionStatus): the empty board
+       reads as broken to a first-time visitor, so offer the demo instead. */
+    .session-demo-prompt {
+        display: block;
+        margin-top: var(--sp-6, 6px);
+        font-size: var(--fs-sm);
+        color: var(--primary);
+        text-decoration: none;
+        border-bottom: 1px dotted currentColor;
+        width: fit-content;
+        margin-inline: auto;
+    }
+    .session-demo-prompt:hover { border-bottom-style: solid; }
+
 
 .next-session-countdown {
     display: inline-flex;

@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260917i">
+    <link rel="stylesheet" href="styles.css?v=20260919a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -40,7 +40,7 @@
          must install before hls.js and app.js run. -->
     <script>
         if (/[?&](fixtures|mode|freeze|demo)=?/.test(location.search) || /^\/demo\/?$/.test(location.pathname)) {
-            document.write('<scr' + 'ipt src="dev/harness.js?v=20260919m"></scr' + 'ipt>');
+            document.write('<scr' + 'ipt src="dev/harness.js?v=20260919n"></scr' + 'ipt>');
         }
     </script>
 </head>
@@ -212,6 +212,9 @@
                 <div class="next-session-countdown" id="next-session-countdown" style="display:none">
                     Next session: --
                 </div>
+                <a class="session-demo-prompt" id="session-demo-prompt" href="/demo" hidden>
+                    Nothing is happening on the floor right now &mdash; see how this looks during a vote &rarr;
+                </a>
                 <div class="cotw-indicator" id="cotw-indicator" style="display:none">
                     In Committee of the Whole
                 </div>
@@ -1553,6 +1556,8 @@
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="/legal">Legal</a>
             <span class="site-footer-sep">&middot;</span>
+            <a class="site-footer-license" href="/demo">Demo</a>
+            <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the House Floor" target="_blank" rel="noopener">Contact</a>
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source Code</a>
@@ -1597,7 +1602,7 @@
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="app.js?v=20260919d"></script>
+    <script defer src="app.js?v=20260919e"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
