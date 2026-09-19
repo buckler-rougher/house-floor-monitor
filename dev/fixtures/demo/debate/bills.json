@@ -1,0 +1,60 @@
+{
+ "ruleBills": [
+  {
+   "id": "H.R. 1",
+   "title": "For the People Act of 2021",
+   "isRule": true,
+   "description": "",
+   "pubDate": "2021-03-03T20:00:00.000Z",
+   "status": "debate",
+   "latestAction": "Considered in the Committee of the Whole under the provisions of H. Res. 179",
+   "latestActionDate": "2021-03-03T20:00:00.000Z",
+   "actionSource": "proceedings",
+   "procedure": "rule",
+   "sponsor": {
+    "firstName": "",
+    "lastName": "Sarbanes",
+    "party": "D",
+    "state": "MD",
+    "bioguideId": "S001168"
+   },
+   "cosponsors": [
+    {
+     "firstName": "",
+     "lastName": "Pelosi",
+     "party": "D",
+     "state": "CA",
+     "bioguideId": "P000197"
+    },
+    {
+     "firstName": "",
+     "lastName": "Lofgren",
+     "party": "D",
+     "state": "CA",
+     "bioguideId": "L000397"
+    }
+   ],
+   "committees": [
+    "House Administration",
+    "Intelligence (Permanent Select)",
+    "Judiciary",
+    "Oversight and Reform",
+    "Science, Space, and Technology",
+    "Education and Labor",
+    "Ways and Means",
+    "Financial Services",
+    "Ethics",
+    "Homeland Security",
+    "Armed Services"
+   ],
+   "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-117hr1rh/pdf/BILLS-117hr1rh.pdf",
+   "governingHres": "H. Res. 179"
+  }
+ ],
+ "suspensionBills": [],
+ "mayBeConsideredBills": [],
+ "consideredBills": [],
+ "lastUpdated": "2021-03-03T20:00:00.000Z",
+ "weekDate": "2021-03-03",
+ "rawHeaders": []
+}

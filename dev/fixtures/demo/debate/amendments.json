@@ -1,0 +1,1651 @@
+{
+ "amendments": [
+  {
+   "num": "1",
+   "version": "Version 2",
+   "sponsors": "Underwood (IL)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/UNDELA_011_xml210222112222640.pdf",
+   "summary": "Requires the Comptroller General's report on small dollar financing to include an assessment of impacts on candidate diversity."
+  },
+  {
+   "num": "2",
+   "version": "Version 1",
+   "sponsors": "Gosar (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOSAR_028_xml210223132845694.pdf",
+   "summary": "Requires disclosure of credit verification value as condition of acceptance of online contributions to federal election."
+  },
+  {
+   "num": "3",
+   "version": "Version 1",
+   "sponsors": "Craig (MN)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CRAIG_006_xml210223143602721.pdf",
+   "summary": "Prohibits Members of the House from owning the common stock of any individual corporation."
+  },
+  {
+   "num": "4",
+   "version": "Version 2",
+   "sponsors": "Torres, Ritchie (NY), Bush, Cori (MO)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TORRNY_033_xml210225184514715.pdf",
+   "summary": "Requires the Federal Election Commission to (1) study the efficacy of political voucher programs in expanding and diversifying who gives to candidates and who runs for office and (2) issue a report on how a national political voucher program could be implemented."
+  },
+  {
+   "num": "5",
+   "version": "Version 1",
+   "sponsors": "Good (VA), Duncan (SC), Gosar (AZ), Grothman (WI), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOOD_014_xml210223184117906.pdf",
+   "summary": "Strikes any provision that weakens the authority of states to enact or enforce voter ID laws. Specifically, this amendment strikes a provision that would prohibit states from requiring identification to obtain an absentee ballot and strikes another provision that requires states with voter ID laws to also accept a sworn written statement in place of photo identification."
+  },
+  {
+   "num": "6",
+   "version": "Version 1",
+   "sponsors": "Case (HI), Murphy, Stephanie (FL)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CASE_005_xml210223191312918.pdf",
+   "summary": "Directs the Election Assistance Commission to conduct a study on the 2020 elections and compile a list of recommendations to help states administer vote-by-mail elections."
+  },
+  {
+   "num": "7",
+   "version": "Version 1",
+   "sponsors": "Armstrong (ND)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/Armstrong Amendment to HR 1 re Voter Registration210224094005278.pdf",
+   "summary": "Exempts any state that does not utilize voter registration on enactment date of this Act and continuously thereafter from complying with voter registration requirements in the Act."
+  },
+  {
+   "num": "8",
+   "version": "Version 1",
+   "sponsors": "Hern (OK)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HERNOK_014_xmll210224113203482.pdf",
+   "summary": "Withholds federal funding for states who fail to certify their elections on time."
+  },
+  {
+   "num": "9",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_012_xml210224114726919.pdf",
+   "summary": "Requires the Speaker of the House, 15 days after elected as Speaker, to submit a copy of individual income tax returns for the past 10 years to the Federal Election Commission."
+  },
+  {
+   "num": "10",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_013_xml210224114835227.pdf",
+   "summary": "Amends the Ethics in Government Act to require Members of Congress or candidates for Senator, Representative, Delegate, or Resident Commissioner to submit Federal income tax returns in place of financial disclosure reports."
+  },
+  {
+   "num": "11",
+   "version": "Version 1",
+   "sponsors": "Luria (VA), Schrader (OR), Gottheimer (NJ), Spanberger (VA), Stevens (MI)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LURIVA_008_xml210224115010636.pdf",
+   "summary": "Strikes the section on public financing for Congressional campaigns."
+  },
+  {
+   "num": "12",
+   "version": "Version 1",
+   "sponsors": "Tiffany, Thomas (WI), Gallagher (WI), Mace (SC), Waltz (FL), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TIFFAN_011_xml (002)210224124939207.pdf",
+   "summary": "Bars the conversion of campaign contributions for personal use by prohibiting the practice of candidates compensating spouses for campaign-related services. Mirrors a bipartisan proposal adopted by the House in 2007 (H.R. 2630, 110th Congress)."
+  },
+  {
+   "num": "13",
+   "version": "Version 1",
+   "sponsors": "Krishnamoorthi (IL), Ocasio-Cortez (NY), Neguse (CO)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/KRISHN_012_xml210224132512531.pdf",
+   "summary": "Prohibits Members of Congress and senior Congressional staff from buying or selling individual stocks and other investments while in office (The Ban Conflicted Trading Act). Instead, Members of Congress can invest in widely held investments, such as diversified mutual funds and exchange-traded funds. Members of Congress may not serve as an officer or member of the board of any for-profit association or corporation, sitting Members of Congress would have to sell individual holdings within six months. New Members of Congress would have to sell individual holdings within six months of taking office. On a case-by-case basis, Members can hold existing investments while in office if they are transferred into a blind trust."
+  },
+  {
+   "num": "14",
+   "version": "Version 1",
+   "sponsors": "Velázquez (NY), Tlaib (MI)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/VELAZQ_030_xml_210224140233152.pdf",
+   "summary": "Prohibits the denial of voting rights of formerly incarcerated individuals due to fines, fees, or restitution owed."
+  },
+  {
+   "num": "15",
+   "version": "Version 1",
+   "sponsors": "Smith, Jason (MO), Guest (MS), Posey (FL), Bergman (MI), Grothman (WI), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SMITMO_017_xml (002)210224152320709.pdf",
+   "summary": "Provides a baseline for federal voter identification and fraud protection law by requiring the chief state election official of each state to certify that recipients of mail-in or absentee ballots are living, U.S. citizens, and eligible to vote prior to mailing a ballot for a federal election."
+  },
+  {
+   "num": "16",
+   "version": "Version 1",
+   "sponsors": "Brown (MD)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BROWMD_016_HR1AmdtText210224153146388.pdf",
+   "summary": "Requires states to include an option for an absentee ballot in the next and subsequent federal elections on a voter registration application form as part of registering for a State motor vehicle driver's license."
+  },
+  {
+   "num": "17",
+   "version": "Version 2",
+   "sponsors": "Schneider (IL), Case (HI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SCHNEI_022_xml210228191734480.pdf",
+   "summary": "Requires disclosure of donations of $5,000 or more to political committees, including super PACs, made 20 days or less before an election in order to ensure transparency of contributions not likely to be disclosed through regular reporting requirements before an election."
+  },
+  {
+   "num": "18",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/No Work, No Pay HR 1 Amendment210224160336510.pdf",
+   "summary": "Prohibits paying Members of Congress during periods during which a Government shutdown is in effect."
+  },
+  {
+   "num": "19",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/No Budget No Pay HR 1 Amendment210224161727784.pdf",
+   "summary": "Prohibits the payment of any pay to any Member of Congress: (1) if both houses of Congress have not approved a concurrent resolution on the budget for a fiscal year before October 1 of that fiscal year and have not passed all the regular appropriations bills for the next fiscal year by such date, or (2) until both houses of Congress approve such a budget resolution and pass all such appropriations bills. Retroactive pay is prohibited for such a period."
+  },
+  {
+   "num": "20",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CLEAN Public Service HR 1 Amendment210224161942753.pdf",
+   "summary": "Terminates pensions for Members of Congress."
+  },
+  {
+   "num": "21",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CLEAN Congress HR 1 Amendment210224162129462.pdf",
+   "summary": "Prohibits a single bill or joint resolution presented by Congress to the President from containing multiple subjects and to require the equal application of laws to Members of Congress."
+  },
+  {
+   "num": "22",
+   "version": "Version 1",
+   "sponsors": "Pressley (MA), Meng (NY), Schakowsky (IL)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PRESMA_011_xml[2422]210224162716207.pdf",
+   "summary": "Lowers the Mandatory Minimum Voting Age in Federal Elections to 16 years of age."
+  },
+  {
+   "num": "23",
+   "version": "Version 1",
+   "sponsors": "Schweikert (AZ)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SCHWEI_006_xml (003)210224165748080.pdf",
+   "summary": "Directs the Election Assistance Commission to conduct a study regarding the use of blockchain technology to enhance voter security in Federal elections."
+  },
+  {
+   "num": "24",
+   "version": "Version 1",
+   "sponsors": "Pappas (NH), Neguse (CO), Meng (NY), Murphy, Stephanie (FL), Gallego (AZ)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PAPPNH_018_xml (H.R. 1 Amendment)210224171133436.pdf",
+   "summary": "Strengthens federal protections guaranteed by the Twenty-Sixth Amendment to protect youth voting rights, including by increasing transparency measures, more clearly defining actions that violate the Twenty-Sixth Amendment, and providing legal tools to address and prevent actions that would undermine or abridge the right to vote on the basis of age."
+  },
+  {
+   "num": "25",
+   "version": "Version 2",
+   "sponsors": "Banks (IN), Duncan (SC), Good (VA), Malliotakis (NY), Reschenthaler (PA), Tiffany, Thomas (WI), Cammack, Kat (FL), Keller (PA), Wenstrup (OH), Jackson, Ronny (TX), Norman (SC), Clyde (GA), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BANKS_045_xml210225132646373.pdf",
+   "summary": "SUBSTITUTE Revised Replaces text of H.R. 1 with the Save Democracy Act."
+  },
+  {
+   "num": "26",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_015_xml210224172459240.pdf",
+   "summary": "Strikes Section 1403."
+  },
+  {
+   "num": "27",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_016_xml210224172636122.pdf",
+   "summary": "Strikes Section 1601."
+  },
+  {
+   "num": "28",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_017_xml210224172920376.pdf",
+   "summary": "Requires a report to Congress on the data collection practices, the required necessary security resources, and the impact of a potential data breach of local, state, or federal online voter registration systems."
+  },
+  {
+   "num": "29",
+   "version": "Version 1",
+   "sponsors": "Burgess (TX)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BURGES_018_xml210224173111523.pdf",
+   "summary": "Requires a report to Congress on the impact of wide-spread mail-in voting on the suffrage of active duty military servicemembers, how quickly their votes are counted, and whether high volumes of mail-in votes makes it harder for those individuals to vote."
+  },
+  {
+   "num": "30",
+   "version": "Version 1",
+   "sponsors": "Boyle (PA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOYLPA_087210224174356868.pdf",
+   "summary": "Allows for voter education information at naturalization ceremonies for newly sworn in citizens."
+  },
+  {
+   "num": "31",
+   "version": "Version 2",
+   "sponsors": "Steil (WI)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/STEIWI_011_xml210226095530281.pdf",
+   "summary": "Prevents voting machines and non-voting equipment from being connected to the public internet."
+  },
+  {
+   "num": "32",
+   "version": "Version 1",
+   "sponsors": "Phillips (MN), McCollum (MN)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PHILMN_007_xml210224181525627.pdf",
+   "summary": "Requires state election officials to undertake accessible public education campaigns to inform voters of any changes to election processes made in response to public emergencies."
+  },
+  {
+   "num": "33",
+   "version": "Version 1",
+   "sponsors": "Tiffany, Thomas (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TIFFAN_012_xml210224180634455.pdf",
+   "summary": "Makes it a violation of the foreign money ban for a social media platform to knowingly host the account of any official or employee of any foreign government, or any officer or employee of any entity owned or controlled directly or indirectly by the government of such country, or agents operating on behalf of such government if, under the laws of that country, there is a prohibition against the general public of such country accessing such social media platform."
+  },
+  {
+   "num": "34",
+   "version": "Version 1",
+   "sponsors": "Auchincloss (MA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/AUCHIN_001_xml210224182545247.pdf",
+   "summary": "Expands the requirements for states to receive grants for poll worker recruitment and training to ensure the state includes dedicated poll worker recruitment for youth and minors, including by recruiting at institutions of higher education and secondary education."
+  },
+  {
+   "num": "35",
+   "version": "Version 1",
+   "sponsors": "Auchincloss (MA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/AUCHIN_002_xml210224182721242.pdf",
+   "summary": "Adds “age” to the list of bases upon which voter challenges by persons other than election officials will be presumed as lacking a good faith factual basis."
+  },
+  {
+   "num": "36",
+   "version": "Version 1",
+   "sponsors": "Steil (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DB6_xml1 (003)210224183133627.pdf",
+   "summary": "Prevents any currently serving Members from receiving public campaign funds."
+  },
+  {
+   "num": "37",
+   "version": "Version 1",
+   "sponsors": "Good (VA), Duncan (SC), Gosar (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOOD_017_xml210224183516837.pdf",
+   "summary": "Amends the National Voter Registration Act of 1993 to clearly allow for states to require proof of citizenship as a condition for registering to vote."
+  },
+  {
+   "num": "38",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_012_xml210224193110129.pdf",
+   "summary": "Strikes Title V."
+  },
+  {
+   "num": "39",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ), Grothman (WI), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_013_xml210224193319828.pdf",
+   "summary": "Provides that State DMV’s shall require individuals applying for a driver’s license to indicate whether the individual resides in another State or resided in another State prior to applying, and whether the individual intends for the State to serve as the primary residence for voting. If so, the State election officer of the prior State of residence shall be notified."
+  },
+  {
+   "num": "40",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_014_xml210224193423927.pdf",
+   "summary": "Allows the state to remove the name of a voter from their official list if that the state has reason to believe the registrant is registered in another state, is fraudulently registered, or is an illegal alien."
+  },
+  {
+   "num": "41",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_015_xml210224193600325.pdf",
+   "summary": "Makes any alien, legal or illegal, who unlawfully votes in a Federal election, ineligible to apply for relief under immigration laws, adjustment of status to permanent residence, or any nonimmigrant status."
+  },
+  {
+   "num": "42",
+   "version": "Version 2",
+   "sponsors": "Biggs (AZ), Grothman (WI)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_016_xml (002)210226170452793.pdf",
+   "summary": "Requires State and local election officials to require proof of citizenship, rather than an affirmation of citizenship, to vote in Federal elections. State and local election officials will provide DHS with the registration and voting history of any alien seeking legal status upon request."
+  },
+  {
+   "num": "43",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_017_xml210224193820712.pdf",
+   "summary": "Repeals the National Voter Registration Act of 1993."
+  },
+  {
+   "num": "44",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_018_xml210224194015363.pdf",
+   "summary": "Amends the Immigration and Nationality Act to make voting in a federal election by an alien who is unlawfully in the United States an aggravated felony and a deportable offense."
+  },
+  {
+   "num": "45",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_019_xml210224194236080.pdf",
+   "summary": "Strikes Subtitle I—Voting by Mail."
+  },
+  {
+   "num": "46",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_020_xml210224194528787.pdf",
+   "summary": "Strikes Sec. 1903 - Permitting use of sworn written statement to meet identification requirements for voting."
+  },
+  {
+   "num": "47",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BIGGS_023_xml210224194729676.pdf",
+   "summary": "Requires states to remove ineligible voters from voter registration lists prior to elections."
+  },
+  {
+   "num": "48",
+   "version": "Version 1",
+   "sponsors": "Takano (CA), Evans (PA)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TAKANO_013_xml210224194753773.pdf",
+   "summary": "Requires and ensures that people who are released from prison are able to obtain proper ID cards by requiring BOP to cover the costs associated with obtaining identification cards."
+  },
+  {
+   "num": "49",
+   "version": "Version 1",
+   "sponsors": "Adams (NC)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ADAMNC_138_xml210224195029808.pdf",
+   "summary": "Requires that, in order to be eligible for funds under the program for institutions of higher education demonstrating excellence in voter registration, institutions must have engaged in initiatives to facilitate the enfranchisement of groups of individuals that have historically faced barriers to voting."
+  },
+  {
+   "num": "50",
+   "version": "Version 1",
+   "sponsors": "Adams (NC)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ADAMNC_139_xml210224195157885.pdf",
+   "summary": "Requires school districts to describe how they will prioritize access to initiatives for schools serving their most vulnerable students when applying for funds under the “Pilot Program for Providing Voter Registration Information to Secondary School Students.”"
+  },
+  {
+   "num": "51",
+   "version": "Version 2",
+   "sponsors": "Adams (NC), Sewell (AL), Ross, Deborah (NC), Williams (GA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ADAMNC_140_xml210225142925448.pdf",
+   "summary": "Requires an appropriations set-aside for minority-serving institutions (MSIs) under the grant program for institutions of higher education demonstrating excellence in voter registration."
+  },
+  {
+   "num": "52",
+   "version": "Version 1",
+   "sponsors": "Waters (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WATERS_022_xml210224200325786.pdf",
+   "summary": "Prohibits misinformation which threatens potential voters with civil or other legal penalties if they exercise their right to vote."
+  },
+  {
+   "num": "53",
+   "version": "Version 1",
+   "sponsors": "Allen (GA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ALLEGA_010_xml210224222323472.pdf",
+   "summary": "Requires that a state issued driver’s license number, state ID number or a copy of photo ID be sent when requesting an absentee ballot."
+  },
+  {
+   "num": "54",
+   "version": "Version 1",
+   "sponsors": "Spanberger (VA), Case (HI), Moulton (MA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPANVA_013_xml210224224545679.pdf",
+   "summary": "Requires disclaimers within the content of social media posts for foreign-backed political content shared on online platforms. The amendment is the text of the bipartisan Foreign Agents Disclaimer Enhancement Act."
+  },
+  {
+   "num": "55",
+   "version": "Version 1",
+   "sponsors": "Spanberger (VA), Roy (TX), Houlahan (PA), Perry (PA), Demings (FL), Keller (PA), Foster (IL)",
+   "party": "Bi-Partisan",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPANVA_012_xml210224225045440.pdf",
+   "summary": "Requires Members of Congress, as well as any spouse or dependent child of a Member, to place specified investments into a qualified blind trust (i.e., an arrangement in which certain financial holdings are placed in someone else's control to avoid a possible conflict of interest) until 180 days after the end of their tenure as a Member of Congress. The amendment is the text of the bipartisan TRUST in Congress Act."
+  },
+  {
+   "num": "56",
+   "version": "Version 1",
+   "sponsors": "Langevin (RI), Gallagher (WI)",
+   "party": "Bi-Partisan",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LANGEV_005_xml210224232420928.pdf",
+   "summary": "Implements a recommendation of the Cyberspace Solarium Commission to ensure the security of our elections and resilience of our democracy by creating the position of Senior Cyber Policy Advisor at the Election Assistance Commission (EAC) and specifying that the duties of the EAC include the development, maintenance and dissemination of cybersecurity guidelines."
+  },
+  {
+   "num": "57",
+   "version": "Version 1",
+   "sponsors": "Torres, Ritchie (NY)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TORRNY_030_xml210225071512762.pdf",
+   "summary": "Withdrawn Requires GAO to conduct a study on whether digital voting can be carried out securely."
+  },
+  {
+   "num": "58",
+   "version": "Version 1",
+   "sponsors": "Torres, Ritchie (NY)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TORRNY_031_xml210225071937153.pdf",
+   "summary": "Requires GAO to conduct a study on turnout rates based on age in States and localities that permit voters to participate in elections before reaching the age of 18."
+  },
+  {
+   "num": "59",
+   "version": "Version 1",
+   "sponsors": "Schrader (OR), Murphy, Stephanie (FL)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SCHRAD_010_xml210225073951768.pdf",
+   "summary": "Reduces member pay for every day of a lapse in federal appropriations. Conforms to the 27th Amendment by placing any such payments in an escrow account for the duration of the 117th Congress."
+  },
+  {
+   "num": "60",
+   "version": "Version 1",
+   "sponsors": "Jones, Mondaire (NY)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/JONENY_005_xml210225075620541.pdf",
+   "summary": "Withdrawn Restores the federal right to vote to all people disenfranchised for criminal convictions."
+  },
+  {
+   "num": "61",
+   "version": "Version 1",
+   "sponsors": "Jones, Mondaire (NY), Bush, Cori (MO)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/JONENY_008_xml210225075928312.pdf",
+   "summary": "Establishes automatic voter registration through State and Federal agencies responsible for administering places of incarceration."
+  },
+  {
+   "num": "62",
+   "version": "Version 2",
+   "sponsors": "Jones, Mondaire (NY)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/JONENY_006_xml210228183802359.pdf",
+   "summary": "Withdrawn Ensures federal courts protect the fundamental right to vote, by requiring heightened scrutiny of reasonable, nondiscriminatory burdens on the right to vote and strict scrutiny of severe burdens on the right to vote. Requires governments to prove by clear and convincing evidence that any burdens are necessary."
+  },
+  {
+   "num": "63",
+   "version": "Version 2",
+   "sponsors": "Jones, Mondaire (NY)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/JONENY_007_xml210228183848461.pdf",
+   "summary": "Withdrawn Authorizes campaign committees to pay limited salaries to non-incumbent candidates for Federal office."
+  },
+  {
+   "num": "64",
+   "version": "Version 1",
+   "sponsors": "Beyer (VA)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BEYER_017_xml210225080742440.pdf",
+   "summary": "Modifies the security clearance determination process for political appointees in the Executive Office of the President."
+  },
+  {
+   "num": "65",
+   "version": "Version 1",
+   "sponsors": "Cammack, Kat (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CAMMAC_010_xml210225084538109.pdf",
+   "summary": "Strikes subtitle C of title V in the bill related to presidential elections and replaces it with a new subtitle to terminate the taxpayer financing of presidential campaigns. The amendment transfers $25,200,000 from the Presidential Election Campaign Fund to the 10-Year Pediatric Research Initiative Fund and transfers all remaining amounts to the general fund of the Treasury."
+  },
+  {
+   "num": "66",
+   "version": "Version 1",
+   "sponsors": "Tlaib (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TLAIB_013_xml210225084611655.pdf",
+   "summary": "Prioritizes local education agencies that receive Title I funding from the Elementary and Secondary Education Act for the pilot program to provide voter registration information to secondary school students prior to graduation."
+  },
+  {
+   "num": "67",
+   "version": "Version 1",
+   "sponsors": "Tlaib (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TLAIB_014_xml210225084752485.pdf",
+   "summary": "Requires that every polling location has available free of charge the required forms from the relevant State for an individual to register to vote, or revise the individual's voter registration information."
+  },
+  {
+   "num": "68",
+   "version": "Version 1",
+   "sponsors": "Cammack, Kat (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CAMMAC_015_xml210225084847618.pdf",
+   "summary": "Requires all software used to administer an election for Federal office to be developed in the United States."
+  },
+  {
+   "num": "69",
+   "version": "Version 1",
+   "sponsors": "Tlaib (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TLAIB_015_xml210225084903070.pdf",
+   "summary": "Requires all polling stations to be open for a minimum of 4 total hours outside of the regular working hours from 9am to 5pm in the time zone of the polling location."
+  },
+  {
+   "num": "70",
+   "version": "Version 1",
+   "sponsors": "Cammack, Kat (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CAMMAC_016_xml210225085242713.pdf",
+   "summary": "Requires all voter registration software to be developed in the United States."
+  },
+  {
+   "num": "71",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_039_xml210225085601229.pdf",
+   "summary": "Strike section 1906 which, among other things, mandates that wait times for in-person voting not exceed 30 minutes."
+  },
+  {
+   "num": "72",
+   "version": "Version 2",
+   "sponsors": "Tonko (NY)",
+   "party": "Democrat",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TONKO_015_xml v2210225170456212.pdf",
+   "summary": "Requires paper ballots used in an election for Federal office be printed on recycled paper, if practicable."
+  },
+  {
+   "num": "73",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/RJC 001210225085252020.pdf",
+   "summary": "Strikes Section 6002 of the bill."
+  },
+  {
+   "num": "74",
+   "version": "Version 1",
+   "sponsors": "Levin, Andy (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LEVIMI_011_xml210225085738901.pdf",
+   "summary": "Amends Sec. 8042 (requiring disclosures of political donations and fundraising by certain Senate-confirmed nominees and other senior appointees) to add “chiefs of mission,” as defined by the Foreign Service Act of 1980, to the list of covered individuals."
+  },
+  {
+   "num": "75",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/RJC 002210225085925322.pdf",
+   "summary": "Strikes section 6003 of the bill."
+  },
+  {
+   "num": "76",
+   "version": "Version 1",
+   "sponsors": "Cammack, Kat (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CAMMAC_018_xml210225090011391.pdf",
+   "summary": "Prohibits individuals who have been convicted of human trafficking or related offenses from being guaranteed the right to vote in section 1403 of H.R. 1."
+  },
+  {
+   "num": "77",
+   "version": "Version 1",
+   "sponsors": "Biggs (AZ)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/RJC 003210225090015147.pdf",
+   "summary": "Strikes Section 6004 of the bill."
+  },
+  {
+   "num": "78",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_035_xml210225090142361.pdf",
+   "summary": "Withdrawn Strikes section 1907, which among other things, includes a federal mandate to provide drop boxes 45 days before an election available at any time."
+  },
+  {
+   "num": "79",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_037_xml210225090408115.pdf",
+   "summary": "Strikes section 1071."
+  },
+  {
+   "num": "80",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/Term Limits HR 1 Amendment210225090535198.pdf",
+   "summary": "Inserts a sense of Congress on the need for term limits for Members of Congress."
+  },
+  {
+   "num": "81",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/Open Primaries HR 1 Amendment210225090655144.pdf",
+   "summary": "Establishes requirements for open primary elections. States must hold open primaries for federal elections. A state may not use federal funds provided for election administration purposes unless it certifies to the Election Assistance Commission that it holds open primaries for elections for state and local office."
+  },
+  {
+   "num": "82",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_040_xml210225090903883.pdf",
+   "summary": "Strikes section 1621."
+  },
+  {
+   "num": "83",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_033_xml210225091003963.pdf",
+   "summary": "Strikes section 2431, which authorizes the payment of 150,000 per congressional district to the states for the purposes of operating independent redistricting commissions."
+  },
+  {
+   "num": "84",
+   "version": "Version 1",
+   "sponsors": "Bush, Cori (MO), Jones, Mondaire (NY), Bowman (NY), Ocasio-Cortez (NY), Omar (MN), Pressley (MA), Watson Coleman (NJ), Tlaib (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BUSH_007_xml210225091133981.pdf",
+   "summary": "Clarifies that felony convictions do not bar any eligible individual from voting in federal elections, including individuals who are currently incarcerated."
+  },
+  {
+   "num": "85",
+   "version": "Version 1",
+   "sponsors": "Smucker (PA), Moore, Barry (AL), Keller (PA), Burchett (TN), McClain (MI), Bacon (NE), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SMUCKE_009_xml210225091228230.pdf",
+   "summary": "Establishes a bipartisan, bicameral election integrity commission to review the impact of the pandemic on the administration of the 2020 election. The commission will provide recommendations on how to improve future elections."
+  },
+  {
+   "num": "86",
+   "version": "Version 2",
+   "sponsors": "Jones, Mondaire (NY)",
+   "party": "Democrat",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PC_xml210225095358293.pdf",
+   "summary": "Makes participation in the public financing program for Congressional campaigns universal."
+  },
+  {
+   "num": "87",
+   "version": "Version 1",
+   "sponsors": "Bush, Cori (MO)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BUSH_008_xml210225091420349.pdf",
+   "summary": "Expands accessibility requirements for ballot drop box locations to ensure unhoused communities can participate in federal elections."
+  },
+  {
+   "num": "88",
+   "version": "Version 2",
+   "sponsors": "Grijalva (AZ)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GRIJAL_016_xml(1)210301081030499.pdf",
+   "summary": "Requires each State to submit to the Election Assistance Commission and Congress a report that includes the number of individuals who were purged from the official voter registration list or moved to inactive status, broken down by the reason for those actions, including the method used for identifying those voters."
+  },
+  {
+   "num": "89",
+   "version": "Version 3",
+   "sponsors": "Bourdeaux (GA), Williams (GA), McBath (GA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOURDE_007_xml_FEB 28_FINAL210228174727326.pdf",
+   "summary": "Protects the ability of third parties to provide an application for an absentee ballot; ensures that election officials can send voter registration applications unsolicited; ensures that the number of drop boxes and geographical distribution of drop boxes provide a reasonable opportunity for voters to submit their ballot; permits for the security of drop boxes through remote or electronic surveillance."
+  },
+  {
+   "num": "90",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_038_xml210225091739326.pdf",
+   "summary": "Strike subtitle C of title I of division A - Prohibiting Voter Caging."
+  },
+  {
+   "num": "91",
+   "version": "Version 1",
+   "sponsors": "Golden (ME), Murphy, Stephanie (FL)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOLDEN_008_xml210225092004833.pdf",
+   "summary": "Withdrawn Requires political ads in the form of paid social media posts to be labelled as paid, even after shared by another user. Facebook and Twitter label paid posts as \"sponsored,\" or \"promoted,\" but those labels disappear once the post is shared by a another user."
+  },
+  {
+   "num": "92",
+   "version": "Version 1",
+   "sponsors": "Grijalva (AZ)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GRIJAL_018_xml210225092023516.pdf",
+   "summary": "Ensures that posting of notices at polling locations take into consideration factors including the linguistic preferences of voters in the jurisdiction."
+  },
+  {
+   "num": "93",
+   "version": "Version 3",
+   "sponsors": "DeSaulnier (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DESAUL_006_xml REVISION2210228210059351.pdf",
+   "summary": "Adds the Bots Research Act to the bill, which requires the EAC to establish a task force to study and report on the impact of automated accounts, known as “bots,” on social media, public discourse, and elections."
+  },
+  {
+   "num": "94",
+   "version": "Version 1",
+   "sponsors": "Bishop, Dan (NC), Duncan (SC), Good (VA), Moore, Barry (AL), Budd (NC), Babin (TX), Reed (NY), Grothman (WI), Perry (PA), Murphy, Gregory (NC)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BISHNC_008_xml210225092125825.pdf",
+   "summary": "Strikes sections 1903 and 303A - Permitting Use of Sworn Written Statement to Meet Voter Identification Requirements for Voting. Adds a new section stipulating that state or local governments will not be eligible for funding under this act unless the state or local government has a voter identification law in place."
+  },
+  {
+   "num": "95",
+   "version": "Version 1",
+   "sponsors": "DeSaulnier (CA)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DESAUL_007_xml210225092224168.pdf",
+   "summary": "Requires a written ethics and honesty pledge from campaign consultants who make more than $1 million and allows a private right of action if they are in violation of that pledge."
+  },
+  {
+   "num": "96",
+   "version": "Version 1",
+   "sponsors": "DeSaulnier (CA)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DESAUL_004_xml210225092209416.pdf",
+   "summary": "Withdrawn Requires free public transportation services to passengers on Election Day to decrease barriers to voting"
+  },
+  {
+   "num": "97",
+   "version": "Version 2",
+   "sponsors": "Perry (PA)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PERRY_029_xml210226124238399.pdf",
+   "summary": "SUBSTITUTE Revised Strikes all and amends the Help America Vote Act of 2002 to require individuals to provide identification as a condition of voting in elections for Federal office and to require individuals voting in such elections to vote in person at a polling place on the date of the election."
+  },
+  {
+   "num": "98",
+   "version": "Version 1",
+   "sponsors": "Boebert, Lauren (CO)",
+   "party": "Republican",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BOEBER_036_xml210225092810822.pdf",
+   "summary": "Withdrawn Strikes section 3 - Findings of General Constitutional Authority."
+  },
+  {
+   "num": "99",
+   "version": "Version 1",
+   "sponsors": "Gallego (AZ), Leger Fernandez (NM)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GALLAZ_012_xml210225092720420.pdf",
+   "summary": "Improves voting access for individuals with disabilities in the four corners region of AZ, NM, CO, and UT by making a technical fix to the Protection and Advocacy for Voting Access (PAVA) program to include all 57 Protection and Advocacy Systems as eligible funding recipients."
+  },
+  {
+   "num": "100",
+   "version": "Version 1",
+   "sponsors": "Speier (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPEIER_028_xml210225092738792.pdf",
+   "summary": "Requires large online platforms to maintain a public record of political advertisements which includes information on the total number of views generated by the advertisement, the number of views by unique individuals, and the number of shares."
+  },
+  {
+   "num": "101",
+   "version": "Version 2",
+   "sponsors": "Swalwell (CA)",
+   "party": "Democrat",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SWALWE003Axml210226190809676.pdf",
+   "summary": "Amends the Help America Vote Act to allow certain grant money to be used for states to “[d]evelop, adopt, and implement laws and procedures” to count votes before the election that have been cast before the election; only funds appropriated or made available after enactment of the For the People Act of 2021 could be used for this new purpose area. Provides also that grant money in the underlying bill for election infrastructure may be used to improve our ability to count votes quickly and accurately, including those cast before election day and received by the proper date set by federal or state law."
+  },
+  {
+   "num": "102",
+   "version": "Version 1",
+   "sponsors": "Speier (CA), Moore (WI), Lawrence (MI), Schakowsky (IL), Frankel (FL), Dingell (MI), Escobar (TX), Bush, Cori (MO), Kuster (NH), Lee, Barbara (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPEIER_026_xml210225092958221.pdf",
+   "summary": "Requires states to establish privacy programs to keep personally identifiable information in voter files, such as addresses, confidential to protect survivors of domestic violence, dating violence, stalking, sexual assault, and trafficking. For automatic voter registration, requires that individuals receive an explanation of what information is needed to access voter information online, how that information is shared or sold, and what privacy programs are available to survivors."
+  },
+  {
+   "num": "103",
+   "version": "Version 4",
+   "sponsors": "Adams (NC), DeFazio (OR)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ADAMNC_136_xml210226120700546.pdf",
+   "summary": "Inserts a provision requiring the US Postal Service to sweep its facilities and post offices daily to ensure that ballots are expeditiously transmitted to local election officials."
+  },
+  {
+   "num": "104",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/FIND_xml210225093326686.pdf",
+   "summary": "Amends Section 3 - Congressional Findings to find that states have the primary authority to establish election law and administer elections."
+  },
+  {
+   "num": "105",
+   "version": "Version 1",
+   "sponsors": "Speier (CA), Carson (IN)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPEIER_024_xml210225093431441.pdf",
+   "summary": "Extends the statute of limitations for criminal violations of Federal Election Campaign Act from 5 years to 10 years; and for civil violations from 5 years to 15 years."
+  },
+  {
+   "num": "106",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GA4_xml210225093535377.pdf",
+   "summary": "Strikes DC District Court provisions requiring that all challenges to the requirements and violations of this bill be heard in DC district court."
+  },
+  {
+   "num": "107",
+   "version": "Version 1",
+   "sponsors": "Manning (NC), Price (NC), Ross, Deborah (NC), Butterfield (NC), Maloney, Sean (NY)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/MANNIN_003_xml210225093548819.pdf",
+   "summary": "Directs the Election Assistance Commission (EAC) and the Government Accountability Office (GAO) to submit a joint study to Congress of how to best enforce the fair and equitable waiting times standards set forth in Sec. 1906 of H.R. 1. Requires that no individual waits longer than 30 minutes to cast a ballot at a polling place."
+  },
+  {
+   "num": "108",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA18_xml210225093701917.pdf",
+   "summary": "Access for Congressional Observers – Guarantees access to the election process for Congressional observers."
+  },
+  {
+   "num": "109",
+   "version": "Version 1",
+   "sponsors": "Loudermilk (GA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HR1AMD_01_xml210225093739773.pdf",
+   "summary": "Strikes section 1031 - Same Day Registration."
+  },
+  {
+   "num": "110",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DB8_xml210225093832810.pdf",
+   "summary": "Establishes a Pandemic Relief Fund, which states that any increase in corporate fine surcharges must be diverted to pandemic relief efforts."
+  },
+  {
+   "num": "111",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DB7_xml210225093940821.pdf",
+   "summary": "Strikes subtitles B and C of title V and adds the Jonny Wade Pediatric Cancer Research Act to the bill to transfer the presidential public financing fund money to pediatric cancer research."
+  },
+  {
+   "num": "112",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA25_xml210225094043885.pdf",
+   "summary": "Adds the Voluntary Minimum Standards for Software, which directs the EAC to set voluntary minimum standards for signature verification software."
+  },
+  {
+   "num": "113",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/USPS_xml210225094208726.pdf",
+   "summary": "Adds the Prioritization of Election Mail, which requires the USPS to prioritize election mail over all other types of mail."
+  },
+  {
+   "num": "114",
+   "version": "Version 1",
+   "sponsors": "Hern (OK), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HERNOK_015_xml210225094209323.pdf",
+   "summary": "Expresses a sense of Congress that illegal immigrants should not vote in federal elections. Clarifies that states must see proof of citizenship before distributing ballots."
+  },
+  {
+   "num": "115",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA31_xml210225094320631.pdf",
+   "summary": "Adds new sections - Payments to States Making Student Loan Repayments on Behalf of Polls Workers; and Student Loan Repayment on Behalf of Poll Workers and Absentee Ballot Tabulators."
+  },
+  {
+   "num": "116",
+   "version": "Version 1",
+   "sponsors": "Loudermilk (GA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HR1AMD_02_xml210225094349875.pdf",
+   "summary": "Strikes section 1041."
+  },
+  {
+   "num": "117",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA1_xml210225094423750.pdf",
+   "summary": "Strikes ballot harvesting provisions."
+  },
+  {
+   "num": "118",
+   "version": "Version 1",
+   "sponsors": "Lesko (AZ)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_004_xml210225094321533.pdf",
+   "summary": "Strikes Sec. 4208, which expands political record requirements for online platforms."
+  },
+  {
+   "num": "119",
+   "version": "Version 1",
+   "sponsors": "Loudermilk (GA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_002_xml210225094611485.pdf",
+   "summary": "Strikes section 1621."
+  },
+  {
+   "num": "120",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HR1AMD_003_xml210225094851178.pdf",
+   "summary": "Strikes Section 1502 “Paper Ballots and Manual Counting Requirements” requiring each state implement a paper ballot scheme."
+  },
+  {
+   "num": "121",
+   "version": "Version 1",
+   "sponsors": "Loudermilk (GA), Gonzalez, Anthony (OH)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA20_xml210225094834980.pdf",
+   "summary": "Requires legible postmark or barcode on each ballot to track ballots to prevent backdating."
+  },
+  {
+   "num": "122",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HR1AMD_04_xml210225095003000.pdf",
+   "summary": "Strikes Section 1504 “Durability and Readability Requirements for Ballots” requiring that all voter-verified paper audit trail (VVPAT) ballots ‘be marked or printed on durable paper.’"
+  },
+  {
+   "num": "123",
+   "version": "Version 1",
+   "sponsors": "Ruiz (CA)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/RUIZCA_021_xml210225095111454.pdf",
+   "summary": "Withdrawn Prohibits unauthorized possession of a firearm within 100 yards of a polling place or a location where ballots are being counted."
+  },
+  {
+   "num": "124",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/HR1AMD_05_xml210225095144508.pdf",
+   "summary": "Strikes Section 1601 “Requirements for Counting Provisional Ballots; Establishment of Uniform and Nondiscriminatory Standards” mandating that each election official count every provisional vote."
+  },
+  {
+   "num": "125",
+   "version": "Version 1",
+   "sponsors": "Loudermilk (GA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA23_xml210225095108769.pdf",
+   "summary": "Defines \"postmarked\" for ballots and make it a crime for anyone to use postal service equipment to backdate postmarks on mail ballots."
+  },
+  {
+   "num": "126",
+   "version": "Version 1",
+   "sponsors": "Swalwell (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SWALWE_006_xml210225095052933.pdf",
+   "summary": "Ensures college student voters are not subjected to intimidation or deceptive practices when exercising their right to vote in their college towns."
+  },
+  {
+   "num": "127",
+   "version": "Version 1",
+   "sponsors": "Castor (FL)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CASTOR_015_xml210225095138130.pdf",
+   "summary": "Candidates' authorized committee or leadership PAC may not disburse funds to a relative of the candidate unless the funds are disbursed to pay an obligation of the committee."
+  },
+  {
+   "num": "128",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_001_xml210225095252082.pdf",
+   "summary": "Strikes Section 1611 “Early Voting” requiring each state to implement an early voting period of 15 days before an election, in locations near public transportation and rural areas, where each location is open for at least 10 hours on each day."
+  },
+  {
+   "num": "129",
+   "version": "Version 1",
+   "sponsors": "Eshoo (CA), McEachin (VA), Williams (GA), Cartwright (PA), Phillips (MN), Jones, Mondaire (NY)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ESHOO_022_xml210225095234384.pdf",
+   "summary": "Requires federal agencies to treat Election Day as a federal holiday for purposes of federal employment law."
+  },
+  {
+   "num": "130",
+   "version": "Version 1",
+   "sponsors": "Swalwell (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SWALWE_005_xml210225095321851.pdf",
+   "summary": "Clarifies prohibitions on polling places or ballot drop boxes that falsely purport to be an official location established for an election."
+  },
+  {
+   "num": "131",
+   "version": "Version 1",
+   "sponsors": "Velázquez (NY), Ocasio-Cortez (NY)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/VELAZQ_032_xml210225095304350.pdf",
+   "summary": "Withdrawn Includes self-determination considerations as part of Task Force responsibilities under Section 2302."
+  },
+  {
+   "num": "132",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GA3_xml210225095356365.pdf",
+   "summary": "Strikes lines 14 thru 24 of page 214 “Subtitle L – Enhancement of Enforcement of HAVA of 2002” authorizing any person to file a complaint with a private right of action."
+  },
+  {
+   "num": "133",
+   "version": "Version 1",
+   "sponsors": "Posey (FL), Greene (GA), Perry (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/POSEY_033_xml210225095359786.pdf",
+   "summary": "Prohibits use of proprietary hardware or software unless the manufacturer of the hardware or software provides the appropriate election official with such information and assistance as the official may require to enable the voting system to be interoperable and auditable."
+  },
+  {
+   "num": "134",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DA32_xml210225095446847.pdf",
+   "summary": "Strikes Subtitle C of Title III “Enhancing Protections for United States Democratic Institutions” creating a ‘national strategy’ to protect US democratic institutions by establishing a national commission."
+  },
+  {
+   "num": "135",
+   "version": "Version 2",
+   "sponsors": "Castor (FL)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CASTOR_016_xml210301095030886.pdf",
+   "summary": "Adds campaign fund disbursement requirements for former candidates registering as an agent under the Foreign Agents Registration Act."
+  },
+  {
+   "num": "136",
+   "version": "Version 2",
+   "sponsors": "Westerman (AR)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WESTER_011_xml210225115745934.pdf",
+   "summary": "Requires states to conduct post-election audits and submit attestations to the security and integrity of their voter identification procedures and voter registration list maintenance. Additionally, the Election Assistance Commission Standards Board will be required to develop best practices to advise states on conducting audits."
+  },
+  {
+   "num": "137",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_003_xml210225095543630.pdf",
+   "summary": "Strikes Section 4122 “Judicial Review of Actions Related to Campaign Finance Laws” creating a new standard of judicial review of campaign finance laws."
+  },
+  {
+   "num": "138",
+   "version": "Version 1",
+   "sponsors": "Cartwright (PA), Eshoo (CA), Williams (GA), Bustos (IL), McEachin (VA)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CARTWRIGHT_035_xml210225095418303.pdf",
+   "summary": "Entitles employees to a minimum of 2 consecutive hours of paid leave on the day of any Federal election in order to vote."
+  },
+  {
+   "num": "139",
+   "version": "Version 1",
+   "sponsors": "Foxx (NC)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/FOXX_009_xml (003)210225095612664.pdf",
+   "summary": "Prohibits Congressional employees from receiving outside compensation from firms that are defendants in a federal antitrust case."
+  },
+  {
+   "num": "140",
+   "version": "Version 2",
+   "sponsors": "Plaskett (VI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PLASKE_028_xml210226144104349.pdf",
+   "summary": "Amends the National Voter Registration Act of 1993 to equitably include territories of the United States."
+  },
+  {
+   "num": "141",
+   "version": "Version 1",
+   "sponsors": "Donalds (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/DONALD_018_xml210225095649317.pdf",
+   "summary": "Strikes Title IV and Subtitle A of Title V."
+  },
+  {
+   "num": "142",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_005_xml210225095656368.pdf",
+   "summary": "Strikes Section 5101 – “Establishment of Pilot Program” where 3 States give each voter a $25 voucher they can contribute to candidates of their choice."
+  },
+  {
+   "num": "143",
+   "version": "Version 1",
+   "sponsors": "Golden (ME), Murphy, Stephanie (FL)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOLDEN_009_xml210225095615035.pdf",
+   "summary": "Imposes a lifetime lobbying ban on former members of Congress."
+  },
+  {
+   "num": "144",
+   "version": "Version 2",
+   "sponsors": "LaMalfa (CA), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LAMALF_020_xml210301143911543.pdf",
+   "summary": "SUBSTITUTE Revised Requires all mail-in ballots to arrive by Election Day and include the signature of the voter. Certain third parties would still be allowed to deliver ballots for a voter, but, except for mail carriers, would additionally be required to provide their own signature. None of these provisions would apply to the uniformed services."
+  },
+  {
+   "num": "145",
+   "version": "Version 3",
+   "sponsors": "Lofgren (CA)",
+   "party": "Democrat",
+   "status": "Considered as Adopted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/MNGR_xml (3.1.21, 5pm)210301175431013.pdf",
+   "summary": "MANAGER’S AMENDMENT Revised Makes technical and confirming edits; augments section on findings of general constitutional authority; clarifies standards for judicial review; requires mail-in ballots to use the Postal Service barcode service; clarifies that the definition of a “thing of value” in the Federal Election Campaign Act prohibition on foreign donations to political campaigns and candidates includes information sought or obtained for political advantage; strikes section related to the inadmissibility and deportability of aliens engaged in improper interference in United States elections; updates the findings reaffirming commitment of Congress to restore the Voting Rights Act; requires the Federal Election Commission to gather corporate governance data for separate segregated funds and to initiate a rulemaking on changing the name of the same; adds findings language related to youth voting; makes clarifying edits to the redistricting requirements, including requiring the Department of Justice to conducted an administrative review of final plans; provides for an Election Day holiday; directs the EAC, in consultation with the Access Board and CISA, to study voting systems to enhance the accessibility of voting and verification for individuals with disabilities; and amends certain effective dates."
+  },
+  {
+   "num": "146",
+   "version": "Version 3",
+   "sponsors": "Plaskett (VI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PLASKE_026_xml210226151305091.pdf",
+   "summary": "Applies federal voter protection laws to territories of the United States."
+  },
+  {
+   "num": "147",
+   "version": "Version 1",
+   "sponsors": "Davis, Rodney (IL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/H1_006_xml210225095750394.pdf",
+   "summary": "Strikes Section 5111 – “Small Dollar Financing of Congressional Election Campaigns” which creates a 6:1 match program with public funds to politicians."
+  },
+  {
+   "num": "148",
+   "version": "Version 1",
+   "sponsors": "Posey (FL), Greene (GA), Perry (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/POSEY_034_xml210225095730074.pdf",
+   "summary": "Prohibits use of voting system produced by a foreign entity. All of the hardware components and all of the software components of the system shall be manufactured in the United States, and all of the hardware components or software components shall be maintained and serviced only by persons who are in the United States."
+  },
+  {
+   "num": "149",
+   "version": "Version 2",
+   "sponsors": "Plaskett (VI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PLASKE_027_xml210226151633899.pdf",
+   "summary": "Permits each of the territories of the United States to provide and furnish statues honoring their United States citizen residents for placement in Statuary Hall in the same manner as statues honoring United States citizen residents of the several States are provided for placement in Statuary Hall."
+  },
+  {
+   "num": "150",
+   "version": "Version 2",
+   "sponsors": "Gohmert (TX), Gohmert (TX)",
+   "party": "Republican",
+   "status": "Revised",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GOHMER_008_xml210225111634838.pdf",
+   "summary": "Amends the Help America Vote Act of 2002 to prohibit the participation of foreign entities in the administration of elections for Federal office."
+  },
+  {
+   "num": "151",
+   "version": "Version 2",
+   "sponsors": "Speier (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPEIER_027_xml210225152356721.pdf",
+   "summary": "Requires a sufficient number of ballot marking machines equipped for individuals with disabilities, as defined by the Election Assistance Commission in consultation with the Access Board and the National Institute of Standards and Technology, for all in person voting options."
+  },
+  {
+   "num": "152",
+   "version": "Version 1",
+   "sponsors": "Posey (FL), Greene (GA), Perry (PA), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/POSEY_032_xml210225100037924.pdf",
+   "summary": "Prohibits connection of voting systems to the Internet. No system or device upon which ballots are programmed or votes are cast or tabulated shall be connected to the Internet at any time. The voting system may not directly tabulate any voted ballot which is transmitted to an election official online."
+  },
+  {
+   "num": "153",
+   "version": "Version 1",
+   "sponsors": "Plaskett (VI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PLASKE_024_xml210225100408273.pdf",
+   "summary": "Late Includes territories of the United States in the Automatic Voter Registration Act of 2021 in the same manner as the 50 States and the District of Columbia."
+  },
+  {
+   "num": "154",
+   "version": "Version 2",
+   "sponsors": "Comer (KY)",
+   "party": "Republican",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/COMER_002_xml.REVISED210301105247666.pdf",
+   "summary": "Late Revised Adds provisions requiring the disclosure to Congress of ethics waivers granted to executive branch officials; requiring presidential transition team members to disclose positions they held outside the federal government for the previous year, including paid and unpaid positions; and a provision barring presidential transition team members from working on transition activities who do not disclose information required in the transition “ethics plan”, all of which were included in H.R. 1 as introduced in the 116th Congress."
+  },
+  {
+   "num": "155",
+   "version": "Version 1",
+   "sponsors": "Pfluger (TX)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PFLUGE_012_Amendment to HR 1210225101010988.pdf",
+   "summary": "Late Requires States to certify that no ballots were delivered to ineligible individuals."
+  },
+  {
+   "num": "156",
+   "version": "Version 1",
+   "sponsors": "Jackson Lee (TX)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/JACKSO_007_xml210225112148637.pdf",
+   "summary": "Late Requires that the Independent Commission established by the nonpartisan agency established or designated by a State under section 2414(a) is required to seek and obtain preclearance from the U.S. Department of Justice before the appointment of the first 6 members to the Independent Commission that the proposed composition and operations of the Independent Commission will not be in violation of the Voting Rights Act of 1965."
+  },
+  {
+   "num": "157",
+   "version": "Version 1",
+   "sponsors": "Scanlon (PA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SCANPA_012_xml210225113653382.pdf",
+   "summary": "Late Expands state requirements for early voting locations to include college campuses."
+  },
+  {
+   "num": "158",
+   "version": "Version 1",
+   "sponsors": "Torres, Ritchie (NY)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/TORRNY_032_xml210225114521898.pdf",
+   "summary": "Late Requires GAO to conduct a study on the implementation and impact of ranked choice voting in States and localities with a focus on how to best implement a model for Federal elections nation wide. The study shall include the impact on voter turnout, negative campaigning, and who decides to run for office."
+  },
+  {
+   "num": "159",
+   "version": "Version 1",
+   "sponsors": "Gaetz (FL)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GAETZ_003_xml210225120556108.pdf",
+   "summary": "Late Prohibits campaign donations from lobbyists and PACs."
+  },
+  {
+   "num": "160",
+   "version": "Version 1",
+   "sponsors": "Lawrence (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LAWRMI_012_xml210225130327059.pdf",
+   "summary": "Late Prevents the United States Postal Service from enacting any new operational change that slows the delivery of voting materials in the 120-day period before an election."
+  },
+  {
+   "num": "161",
+   "version": "Version 1",
+   "sponsors": "Escobar (TX), Speier (CA), Frankel (FL), Lawrence (MI), Sarbanes (MD)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CYBER_xml210225130738092.pdf",
+   "summary": "Late Exempts cybersecurity assistance, including assistance in responding to threats or harassment online, from limits on coordinated political party expenditures."
+  },
+  {
+   "num": "162",
+   "version": "Version 1",
+   "sponsors": "Rosendale (MT)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ROSEND_036_xml210225142633911.pdf",
+   "summary": "Late Ensures that the provisions of the bill do not go into effect until the relevant state official certifies that sufficient measures are in place to prevent illegal aliens from voting."
+  },
+  {
+   "num": "163",
+   "version": "Version 1",
+   "sponsors": "Rosendale (MT), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ROSEND_033_xml210225143001457.pdf",
+   "summary": "Late Ensures states maintain access to appropriate interstate crosscheck systems by striking additional conditions on their use."
+  },
+  {
+   "num": "164",
+   "version": "Version 1",
+   "sponsors": "Rosendale (MT)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ROSEND_034_xml210225143602433.pdf",
+   "summary": "Late Ensures that states which have taken appropriate measures to increase turnout are exempt from additional election mandates."
+  },
+  {
+   "num": "165",
+   "version": "Version 1",
+   "sponsors": "Rosendale (MT)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/ROSEND_035_xml210225144110457.pdf",
+   "summary": "Late Increases election integrity by striking and replacing the provisional ballot regime in the bill by requiring ballots to be cast in the correct precinct, while permitting states flexibility to maintain their current systems."
+  },
+  {
+   "num": "166",
+   "version": "Version 1",
+   "sponsors": "Lawrence (MI)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/LAWRMI_011_xml210225145840052.pdf",
+   "summary": "Late Requires the United States Postal Service to appoint Election Mail Coordinators to assist election officials with any voting material questions."
+  },
+  {
+   "num": "167",
+   "version": "Version 1",
+   "sponsors": "Perry (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PERRY_031_xml210225172634292.pdf",
+   "summary": "Late Strikes section 1908, which prohibits States from restricting curbside voting."
+  },
+  {
+   "num": "168",
+   "version": "Version 1",
+   "sponsors": "Davidson (OH), Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WD Citizenship210225173104783.pdf",
+   "summary": "Late Provides that only citizens are counted for purposes of apportioning House seats."
+  },
+  {
+   "num": "169",
+   "version": "Version 1",
+   "sponsors": "Davidson (OH)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WD Registration AMDT210225173457781.pdf",
+   "summary": "Late Ensures that illegal aliens do not register to vote by requiring documentary proof of citizenship at the point of registration."
+  },
+  {
+   "num": "170",
+   "version": "Version 1",
+   "sponsors": "Davidson (OH)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WD Public Corp210225174500945.pdf",
+   "summary": "Late Strikes Title IV, subtitle G, which would allow the SEC to require disclosure of political contributions made by public corporations."
+  },
+  {
+   "num": "171",
+   "version": "Version 1",
+   "sponsors": "Davidson (OH)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WD Disclosure210225175441329.pdf",
+   "summary": "Late Protects the ability of 501(c)4s to advocate for causes by striking a provision intended to allow for additional IRS regulation of 501(c)4s."
+  },
+  {
+   "num": "172",
+   "version": "Version 1",
+   "sponsors": "Payne, Jr. (NJ)",
+   "party": "Democrat",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PAYNE_011_xml210225201838771.pdf",
+   "summary": "Late Adds to the findings section that President Biden won a free and fair election in accordance with the laws of all 50 states."
+  },
+  {
+   "num": "173",
+   "version": "Version 1",
+   "sponsors": "Garbarino (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GARBAR_003_xml210226121943516.pdf",
+   "summary": "Late Eliminates the provisions relating to Public Financing of Campaigns, by striking Subtitle B of Title V."
+  },
+  {
+   "num": "174",
+   "version": "Version 1",
+   "sponsors": "Swalwell (CA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SWALWE_007_xml210226143750865.pdf",
+   "summary": "Late Adds colleges’ and universities’ duty to better provide students with voter information on the school’s website and transmitted via social media."
+  },
+  {
+   "num": "175",
+   "version": "Version 1",
+   "sponsors": "Spartz (IN)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/SPARTZ_010_xml210226160455342.pdf",
+   "summary": "Late Expands auditing provisions to include risk-based procedure audits of election processes."
+  },
+  {
+   "num": "176",
+   "version": "Version 1",
+   "sponsors": "Calvert (CA), Tenney, Claudia (NY)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/CALVER_009_xml210226161855747.pdf",
+   "summary": "Late Adds a new subtitle prohibiting the practice of ballot harvesting."
+  },
+  {
+   "num": "177",
+   "version": "Version 1",
+   "sponsors": "Perry (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/PERRY_032_xml210226172321232.pdf",
+   "summary": "Late Prohibits election officials from permitting registration or voting in Federal elections by individuals convicted of election fraud."
+  },
+  {
+   "num": "178",
+   "version": "Version 5",
+   "sponsors": "Williams (GA)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/WILLGA_007_xml210301131318943.pdf",
+   "summary": "Late Revised Requires the Consumer Financial Protection Bureau, in coordination with the Election Assistance Commission, to provide a uniform statement that would be included with certain leases and vouchers for federally assisted rental housing as well as with mortgage applications to inform recipients how they can register to vote and their voting rights under law."
+  },
+  {
+   "num": "179",
+   "version": "Version 1",
+   "sponsors": "Grothman (WI)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/GROTWI_011_xml210227170521425.pdf",
+   "summary": "Late Limits states' ability to transmit absentee ballots for multiple elections."
+  },
+  {
+   "num": "180",
+   "version": "Version 1",
+   "sponsors": "Fitzpatrick (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/Voter Photo ID HR 1 Amendment210301100009984.pdf",
+   "summary": "Late Requires voters to provide photo identification when voting in a federal election. Identification must be provided without charge to individuals unable to pay costs of obtaining identification or otherwise unable to obtain identification. Provides exception for overseas military voters."
+  },
+  {
+   "num": "181",
+   "version": "Version 1",
+   "sponsors": "Butterfield (NC), Clyburn (SC), Jackson Lee (TX), Johnson, Eddie Bernice (TX), Johnson, Hank (GA), Horsford (NV), Watson Coleman (NJ), Beatty (OH)",
+   "party": "Democrat",
+   "status": "Withdrawn",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/BUTTER_010_xml210301122456738.pdf",
+   "summary": "Late Withdrawn Requires states, beginning in 2030, to submit their redistricting plans to the Department of Justice for an administrative review to determine whether the map protects the ability of minority communities to elect candidates of choice, and protects against vote dilution. The Department of Justice would terminate review upon the filing of an action in federal court within the 45 day review period that begins on the date the plan is enacted into law."
+  },
+  {
+   "num": "182",
+   "version": "Version 1",
+   "sponsors": "Luria (VA), Murphy, Stephanie (FL)",
+   "party": "Democrat",
+   "status": "Made in Order",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/FFIF_xml210301125423211.pdf",
+   "summary": "Late Prohibits taxpayer funds from being added into Freedom From Influence fund."
+  },
+  {
+   "num": "183",
+   "version": "Version 1",
+   "sponsors": "Kelly, Mike (PA)",
+   "party": "Republican",
+   "status": "Submitted",
+   "pdfUrl": "https://amendments-rules.house.gov/amendments/KELLPA_004_xml210301131305481.pdf",
+   "summary": "Late Strikes Section 4501."
+  }
+ ]
+}

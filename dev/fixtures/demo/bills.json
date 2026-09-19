@@ -22,6 +22,183 @@
    "committees": [
     "Ways and Means"
    ],
+   "cosponsors": [
+    {
+     "firstName": "",
+     "lastName": "Skelton",
+     "party": "D",
+     "state": "MO",
+     "bioguideId": "S000465"
+    },
+    {
+     "firstName": "",
+     "lastName": "Blumenauer",
+     "party": "D",
+     "state": "OR",
+     "bioguideId": "B000574"
+    },
+    {
+     "firstName": "",
+     "lastName": "Kind",
+     "party": "D",
+     "state": "WI",
+     "bioguideId": "K000188"
+    },
+    {
+     "firstName": "",
+     "lastName": "Jones",
+     "party": "R",
+     "state": "NC",
+     "bioguideId": "J000255"
+    },
+    {
+     "firstName": "",
+     "lastName": "Kagen",
+     "party": "D",
+     "state": "WI",
+     "bioguideId": "K000365"
+    },
+    {
+     "firstName": "",
+     "lastName": "Stark",
+     "party": "D",
+     "state": "CA",
+     "bioguideId": "S000810"
+    },
+    {
+     "firstName": "",
+     "lastName": "Levin",
+     "party": "D",
+     "state": "MI",
+     "bioguideId": "L000263"
+    },
+    {
+     "firstName": "",
+     "lastName": "McDermott",
+     "party": "D",
+     "state": "WA",
+     "bioguideId": "M000404"
+    },
+    {
+     "firstName": "",
+     "lastName": "Lewis",
+     "party": "D",
+     "state": "GA",
+     "bioguideId": "L000287"
+    },
+    {
+     "firstName": "",
+     "lastName": "Neal",
+     "party": "D",
+     "state": "MA",
+     "bioguideId": "N000015"
+    },
+    {
+     "firstName": "",
+     "lastName": "Tanner",
+     "party": "D",
+     "state": "TN",
+     "bioguideId": "T000038"
+    },
+    {
+     "firstName": "",
+     "lastName": "Becerra",
+     "party": "D",
+     "state": "CA",
+     "bioguideId": "B000287"
+    },
+    {
+     "firstName": "",
+     "lastName": "Doggett",
+     "party": "D",
+     "state": "TX",
+     "bioguideId": "D000399"
+    },
+    {
+     "firstName": "",
+     "lastName": "Pomeroy",
+     "party": "D",
+     "state": "ND",
+     "bioguideId": "P000422"
+    },
+    {
+     "firstName": "",
+     "lastName": "Thompson",
+     "party": "D",
+     "state": "CA",
+     "bioguideId": "T000460"
+    },
+    {
+     "firstName": "",
+     "lastName": "Larson",
+     "party": "D",
+     "state": "CT",
+     "bioguideId": "L000557"
+    },
+    {
+     "firstName": "",
+     "lastName": "Pascrell",
+     "party": "D",
+     "state": "NJ",
+     "bioguideId": "P000096"
+    },
+    {
+     "firstName": "",
+     "lastName": "Berkley",
+     "party": "D",
+     "state": "NV",
+     "bioguideId": "B001231"
+    },
+    {
+     "firstName": "",
+     "lastName": "Crowley",
+     "party": "D",
+     "state": "NY",
+     "bioguideId": "C001038"
+    },
+    {
+     "firstName": "",
+     "lastName": "Meek",
+     "party": "D",
+     "state": "FL",
+     "bioguideId": "M001148"
+    },
+    {
+     "firstName": "",
+     "lastName": "Van Hollen",
+     "party": "D",
+     "state": "MD",
+     "bioguideId": "V000128"
+    },
+    {
+     "firstName": "",
+     "lastName": "Schwartz",
+     "party": "D",
+     "state": "PA",
+     "bioguideId": "S001162"
+    },
+    {
+     "firstName": "",
+     "lastName": "Etheridge",
+     "party": "D",
+     "state": "NC",
+     "bioguideId": "E000226"
+    },
+    {
+     "firstName": "",
+     "lastName": "Higgins",
+     "party": "D",
+     "state": "NY",
+     "bioguideId": "H001038"
+    },
+    {
+     "firstName": "",
+     "lastName": "Yarmuth",
+     "party": "D",
+     "state": "KY",
+     "bioguideId": "Y000062"
+    }
+   ],
    "procedure": "rule",
    "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-111hr3590enr/pdf/BILLS-111hr3590enr.pdf"
   }

@@ -23,6 +23,10 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 
+const STATE_ABBR = { Georgia: 'GA', Massachusetts: 'MA', Florida: 'FL', California: 'CA',
+  Texas: 'TX', Ohio: 'OH', Michigan: 'MI', Washington: 'WA', 'New York': 'NY', Virginia: 'VA',
+  Tennessee: 'TN', Indiana: 'IN', Wisconsin: 'WI', Oregon: 'OR', Missouri: 'MO', Maryland: 'MD' };
+
 const ROLLS = [162, 163, 164, 165, 166, 167];
 const LIVE = 165;
 
@@ -203,6 +207,44 @@ writeFileSync('dev/fixtures/demo/cold-start-bundle.json', JSON.stringify(bundle,
 writeFileSync('dev/fixtures/demo/debate/cold-start-bundle.json',
   JSON.stringify({ ...bundle, whipFloor: [] }, null, 1));
 
+// ── cosponsors ──────────────────────────────────────────────────────────────
+// The introduced text names them, but only as "Mr. Skelton" -- no party, no
+// state. Roll 165's own XML carries every member of that House with party,
+// state and bioguide id, so it doubles as the 111th roster and each name can be
+// resolved against the Clerk's record instead of from memory. Surnames that are
+// ambiguous without a state qualifier are dropped rather than guessed: naming
+// the wrong member is the failure this rebuild exists to avoid.
+const billText = await get('https://www.govinfo.gov/content/pkg/BILLS-111hr3590ih/html/BILLS-111hr3590ih.htm');
+const plain = billText.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
+const intro = plain.slice(plain.indexOf('IN THE HOUSE OF REPRESENTATIVES')).replace(/\s+/g, ' ');
+const listed = (intro.match(/Mr\. Rangel \(for himself,(.*?)\) introduced/) || [, ''])[1];
+const names = listed.split(/,\s*and\s+|,\s*/).map(x => x.trim()).filter(Boolean);
+
+const liveXml = await get(`https://clerk.house.gov/evs/2010/roll${LIVE}.xml`);
+const roster = [];
+for (const rv of liveXml.match(/<legislator[^>]*>[^<]*<\/legislator>/g) || []) {
+  const at = (k) => (rv.match(new RegExp(`${k}="([^"]*)"`)) || [, ''])[1];
+  const shown = (rv.match(/>([^<]*)</) || [, ''])[1];
+  roster.push({ shown, surname: shown.replace(/\s*\(.*$/, '').trim(), state: at('state'), party: at('party'), id: at('name-id') });
+}
+
+const cosponsors = [];
+const dropped = [];
+for (const raw of names) {
+  const stateHint = (raw.match(/\sof\s+([A-Z][a-z]+(?: [A-Z][a-z]+)*)$/) || [, ''])[1];
+  const surname = raw.replace(/^(Mr|Mrs|Ms|Miss|Dr)\.\s+/, '').replace(/\sof\s+.*$/, '').trim();
+  const bare = surname.split(/\s+/).pop();
+  let hits = roster.filter(m => m.surname.toLowerCase() === surname.toLowerCase()
+                             || m.surname.toLowerCase() === bare.toLowerCase());
+  if (hits.length > 1 && stateHint) {
+    const st = STATE_ABBR[stateHint];
+    if (st) hits = hits.filter(m => m.state === st);
+  }
+  if (hits.length !== 1) { dropped.push(`${raw} (${hits.length} matches)`); continue; }
+  const m = hits[0];
+  cosponsors.push({ firstName: '', lastName: m.surname, party: m.party, state: m.state, bioguideId: m.id });
+}
+
 // ── the bill ────────────────────────────────────────────────────────────────
 // Sponsor and committee are the real ones: Mr. Rangel introduced H.R. 3590 on
 // 17 September 2009 as the Service Members Home Ownership Tax Act, the vehicle
@@ -222,6 +264,7 @@ const bills = {
     actionSource: 'proceedings',
     sponsor: { firstName: 'Charles', lastName: 'Rangel', party: 'D', state: 'NY', district: 15, bioguideId: 'R000053' },
     committees: ['Ways and Means'],
+    cosponsors,
     procedure: 'rule',
     textUrl: 'https://www.govinfo.gov/content/pkg/BILLS-111hr3590enr/pdf/BILLS-111hr3590enr.pdf',
   }],
@@ -275,7 +318,10 @@ console.log(`  proceedings: ${voteProceedings.items.length} items, built from th
 console.log(`  debate: own floor state (no vote) + general debate proceedings`);
 console.log(`  series: ${ROLLS.length} votes, live one is #${ROLLS.indexOf(LIVE) + 1}`);
 console.log(`  rollLog: ${bundle.rollLog.length} completed (162, 163, 164)`);
-console.log(`  bill: H.R. 3590, sponsor Rangel (D-NY-15), Ways and Means, no invented metadata`);
+console.log(`  bill: H.R. 3590, sponsor Rangel (D-NY-15), Ways and Means`);
+console.log(`  cosponsors: ${cosponsors.length} of ${names.length} resolved against roll ${LIVE}'s roster ` +
+            `(${cosponsors.filter(c => c.party === 'D').length}D / ${cosponsors.filter(c => c.party === 'R').length}R)` +
+            (dropped.length ? `; dropped ${dropped.length}: ${dropped.join(', ')}` : ''));
 console.log(`  live: roll ${LIVE} ${live.legis} ${TOTAL_YEA}-${TOTAL_NAY} (${live.result})`);
 console.log(`  party: D ${D.yeas}-${D.nays}, R ${R.yeas}-${R.nays}; chamber ${CHAMBER}`);
 console.log(`  replay: ${frames.length} frames, ${changes} lead changes, clock ${VOTE_SECONDS}s`);
