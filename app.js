@@ -7597,7 +7597,7 @@ async function fetchSpeakerMemberInfo(leaderName) {
             const website = websiteElement ? websiteElement.textContent.trim() : '';
             const score = calculateNameSimilarity(rawLastName, memberLastName);
 
-            if (score > bestScore && score > 0.3) {
+            if (score > bestScore && score >= NAME_MATCH_MIN) {
                 bestScore = score;
                 bestMatch = {
                     lastName: memberLastName,
@@ -7938,7 +7938,7 @@ async function fetchCommitteeChairMemberInfo(leaderName) {
             if (!lastNameEl || !firstNameEl || !bioguideEl) continue;
 
             const score = calculateNameSimilarity(rawLastName, lastNameEl.textContent.trim());
-            if (score > bestScore && score > 0.3) {
+            if (score > bestScore && score >= NAME_MATCH_MIN) {
                 bestScore = score;
                 bestMatch = {
                     fullName: `${firstNameEl.textContent.trim()} ${lastNameEl.textContent.trim()}`,
@@ -8391,7 +8391,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             // Score based on last name similarity
             const score = calculateNameSimilarity(lastName, memberLastName);
-            if (score > bestScore && score > 0.3) {
+            if (score > bestScore && score >= NAME_MATCH_MIN) {
                 bestScore = score;
                 bestMatch = {
                     lastName: memberLastName,
@@ -8521,7 +8521,7 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
         const town = townElement ? townElement.textContent.trim() : '';
         const score = calculateNameSimilarity(lastName, memberLastName);
 
-        if (score > bestScore && score > 0.3) {
+        if (score > bestScore && score >= NAME_MATCH_MIN) {
             bestScore = score;
             bestMatch = {
                 lastName: memberLastName,
@@ -8636,6 +8636,18 @@ async function decorateAbsenteePhotos(absentees) {
 // Calculate similarity between two names using Sørensen–Dice coefficient on bigrams.
 // This correctly penalises mismatched characters, unlike the prior character-presence
 // approach which scored "Doe" highly against "Rodriguez" (d, o, e all appear).
+// Minimum similarity for treating a Clerk-supplied name as a given member.
+//
+// calculateNameSimilarity returns 1.0 for an exact match and 0.85 for
+// containment, which is what carries the Clerk's "Smith (TX)" and
+// "McMorris Rodgers" forms. Everything below that is bigram overlap between two
+// different people, and the threshold used to be 0.3: "Boehner" scored 0.364
+// against "Turner" -- every other Ohio Republican scored 0.14 or less -- so the
+// absentee panel printed a sitting member's name and photograph beside someone
+// else's absence. Four call sites shared that number. Falling back to the
+// Clerk's own spelling is the better failure.
+const NAME_MATCH_MIN = 0.85;
+
 function calculateNameSimilarity(name1, name2) {
     const n1 = name1.toLowerCase().trim();
     const n2 = name2.toLowerCase().trim();
