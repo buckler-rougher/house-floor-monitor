@@ -121,6 +121,16 @@
         } catch { /* app not ready yet */ }
         const el = document.querySelector('.congress-info .congress-text');
         if (el) el.textContent = 'One Hundred Eleventh Congress - Session 2';
+
+        // The voting-days fixture is a current calendar and knows nothing of
+        // 2010, so the badge read OUT OF SESSION over a running vote and the
+        // out-of-session prompt invited a visitor already in the demo to go see
+        // the demo. The House sat that Sunday; say so.
+        try {
+          if (typeof updateSessionStatus === 'function') updateSessionStatus('in-session');
+        } catch { /* app not ready yet */ }
+        const prompt = document.getElementById('session-demo-prompt');
+        if (prompt) prompt.hidden = true;
       };
       setTimeout(apply, 1200);
       setTimeout(apply, 4000);
