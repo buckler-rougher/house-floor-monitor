@@ -114,14 +114,23 @@
   async function loadFixture(name) {
     if (cache.has(name)) return cache.get(name);
     const p = (async () => {
+      // Cloudflare Pages answers an unknown path with index.html and status 200,
+      // so r.ok is true for a fixture that does not exist and the caller gets a
+      // page of HTML where it expected JSON. Every fixture here is JSON or CSV,
+      // and neither starts with '<' -- so that is the test, not the status code.
+      const usable = (text) => text && !text.trimStart().startsWith('<');
       for (const url of [fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
         if (!url) continue;
         const r = await fetch(url, { cache: 'no-store' });
-        if (r.ok) return r.text();
+        if (!r.ok) continue;
+        const text = await r.text();
+        if (usable(text)) return text;
       }
       const r = await fetch(BASE + 'base/' + name, { cache: 'no-store' });
       if (!r.ok) throw new Error(`fixture missing: ${name}`);
-      return r.text();
+      const text = await r.text();
+      if (!usable(text)) throw new Error(`fixture missing: ${name} (server returned a page)`);
+      return text;
     })();
     cache.set(name, p);
     return p;
