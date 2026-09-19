@@ -227,8 +227,13 @@
       .demo-banner b { font-weight: 800; letter-spacing: .12em; }
       .demo-banner span { text-transform: none; letter-spacing: 0; font-weight: 500; }
       .demo-banner a { color: inherit; font-weight: 700; text-underline-offset: 3px; }
+      .demo-banner .short { display: none; }
+      /* Narrow screens get a shorter warning, never none: the word DEMO on its
+         own is not a statement that the numbers are fabricated. */
       @media (max-width: 760px) {
-        .demo-banner span.detail { display: none; }
+        .demo-banner { gap: .5em; font-size: 11px; }
+        .demo-banner .long { display: none; }
+        .demo-banner .short { display: inline; }
       }
     `;
     document.head.appendChild(style);
@@ -237,8 +242,9 @@
     bar.className = 'demo-banner';
     bar.setAttribute('role', 'note');
     bar.innerHTML = '<b>Demo</b>'
-      + '<span class="detail">Nothing here is live \u2014 the tally is a scripted replay and the '
+      + '<span class="long">Nothing here is live \u2014 the tally is a scripted replay and the '
       + 'video is an archived session.</span>'
+      + '<span class="short">Simulated data \u2014 not live</span>'
       + '<a href="/">Live board \u2192</a>';
 
     const install = () => {
