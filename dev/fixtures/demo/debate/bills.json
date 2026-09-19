@@ -1,61 +1,54 @@
 {
  "ruleBills": [
   {
-   "id": "H.R. 1",
-   "title": "For the People Act of 2021",
+   "id": "H.R. 3684",
+   "title": "INVEST in America Act",
    "isRule": true,
    "description": "",
-   "pubDate": "2021-03-03T20:00:00.000Z",
+   "pubDate": "2021-06-30T20:00:00.000Z",
    "status": "debate",
-   "latestAction": "Considered in the Committee of the Whole under the provisions of H. Res. 179",
-   "latestActionDate": "2021-03-03T20:00:00.000Z",
+   "latestAction": "Considered in the Committee of the Whole under the provisions of H. Res. 491",
+   "latestActionDate": "2021-06-30T20:00:00.000Z",
    "actionSource": "proceedings",
    "procedure": "rule",
    "sponsor": {
     "firstName": "",
-    "lastName": "Sarbanes",
+    "lastName": "DeFazio",
     "party": "D",
-    "state": "MD",
-    "bioguideId": "S001168"
+    "state": "OR",
+    "bioguideId": "D000191"
    },
    "cosponsors": [
     {
      "firstName": "",
-     "lastName": "Pelosi",
+     "lastName": "Norton",
      "party": "D",
-     "state": "CA",
-     "bioguideId": "P000197"
+     "state": "DC",
+     "bioguideId": "N000147"
     },
     {
      "firstName": "",
-     "lastName": "Lofgren",
+     "lastName": "Payne",
      "party": "D",
-     "state": "CA",
-     "bioguideId": "L000397"
+     "state": "NJ",
+     "bioguideId": "P000604"
     }
    ],
    "committees": [
-    "House Administration",
-    "Intelligence (Permanent Select)",
-    "Judiciary",
-    "Oversight and Reform",
-    "Science, Space, and Technology",
-    "Education and Labor",
-    "Ways and Means",
-    "Financial Services",
-    "Ethics",
-    "Homeland Security",
-    "Armed Services"
+    "Transportation and Infrastructure"
    ],
-   "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-117hr1ih/pdf/BILLS-117hr1ih.pdf",
-   "sapUrl": "https://bidenwhitehouse.archives.gov/wp-content/uploads/2021/03/SAP_HR-1.pdf",
-   "governingHres": "H. Res. 179"
+   "committeeReport": "Ordered reported by the Committee on Transportation and Infrastructure, 38–26",
+   "committeeReportDate": "2021-06-10T00:00:00.000Z",
+   "committeeReportUrl": "https://www.govinfo.gov/content/pkg/CRPT-117hrpt70/pdf/CRPT-117hrpt70.pdf",
+   "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-117hr3684ih/pdf/BILLS-117hr3684ih.pdf",
+   "sapUrl": "https://bidenwhitehouse.archives.gov/wp-content/uploads/2021/06/SAP-HR3684.pdf",
+   "governingHres": "H. Res. 491"
   }
  ],
  "suspensionBills": [],
  "mayBeConsideredBills": [],
  "consideredBills": [],
- "lastUpdated": "2021-03-03T20:00:00.000Z",
- "weekDate": "2021-03-03",
+ "lastUpdated": "2021-06-30T20:00:00.000Z",
+ "weekDate": "2021-06-30",
  "rawHeaders": []
 }

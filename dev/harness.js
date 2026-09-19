@@ -91,7 +91,7 @@
     vote:   { clock: '2010-03-22T02:49:00Z',   // 10:49 pm ET, 21 Mar 2010, roll 165
               chamber: { democrats: 253, republicans: 178, independents: 0, total: 431 },
               congress: 'One Hundred Eleventh Congress - Session 2' },
-    debate: { clock: '2021-03-04T01:12:00Z',   // 8:12 pm ET, 3 Mar 2021, general debate
+    debate: { clock: '2021-07-01T00:12:00Z',   // 8:12 pm ET, 30 Jun 2021, general debate
               chamber: { democrats: 221, republicans: 211, independents: 0, total: 432 },
               congress: 'One Hundred Seventeenth Congress - Session 1' },
   };
