@@ -24,7 +24,7 @@ const item = (action, bill, title, sponsor, mins, rec) =>
     + ` – <u>${mins} minutes</u>`)}</li>`;
 
 const body =
-  `<p>The House is now taking the following votes. At approximately 2:15 p.m. the House will `
+  `<p>The House is now taking the following votes. At approximately PLACEHOLDER_START the House will `
 + `consider the remaining measures:&nbsp;</p><ol>`
 + item('Passage', 'H.R. 3421', 'Veterans’ Housing Stability Act', 'Rep. Alford – Veterans’ Affairs', 15, 'VOTE YES')
 + item('Passage', 'H.R. 7710', 'Rural Broadband Modernization Act', 'Rep. Hoyle – Energy and Commerce', 5, 'VOTE NO')

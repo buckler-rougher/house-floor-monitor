@@ -135,9 +135,17 @@
       // The demo runs on a live clock, so a fixture with a fixed publishedAt
       // would age out of the vote timeline's lookback window. Fixtures mark the
       // spots with PLACEHOLDER_PUBLISHED and they are stamped at load time.
-      const dated = (text) => text.includes('PLACEHOLDER_PUBLISHED')
-        ? text.replace(/PLACEHOLDER_PUBLISHED/g, new Date(Date.now() - 20 * 60 * 1000).toISOString())
-        : text;
+      const dated = (text) => {
+        if (!text.includes('PLACEHOLDER_')) return text;
+        const at = new Date(Date.now() - 20 * 60 * 1000);
+        // The notice's own "At approximately H:MM a.m./p.m." has to move with the
+        // timestamp, or the panel reports a series that ended before it started.
+        const et = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true,
+        }).format(at).replace(/\u202f/g, ' ').replace(/AM/, 'a.m.').replace(/PM/, 'p.m.');
+        return text.replace(/PLACEHOLDER_PUBLISHED/g, at.toISOString())
+                   .replace(/PLACEHOLDER_START/g, et);
+      };
 
       for (const url of [fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
         if (!url) continue;
