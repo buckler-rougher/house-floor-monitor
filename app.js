@@ -521,6 +521,13 @@ function updateSessionStatus(status = null) {
     if (!elements.sessionText) return;
     
     const sessionStatus = status || votingDaysData.currentSessionStatus;
+
+    // On a day with no session the board is legitimately empty, which looks
+    // indistinguishable from a broken site to anyone arriving for the first
+    // time. Point them at the demo instead, and only then -- a live vote needs
+    // the space far more than an advert for a simulation of one.
+    const demoPrompt = document.getElementById('session-demo-prompt');
+    if (demoPrompt) demoPrompt.hidden = (sessionStatus !== 'no-session');
     
     // Update session status based on voting days calendar
     switch (sessionStatus) {
