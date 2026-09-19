@@ -10220,6 +10220,9 @@ function createUsChamberLayout(container, config) {
     // Round cumulatively rather than per row: rounding each row on its own
     // accumulates error and the side totals drift off the real counts.
     let seatsSoFar = 0, demSoFar = 0;
+    // Captured from the middle row and handed to the drawn aisle below, so the
+    // graphic follows the divide instead of staying at 50%.
+    let aisleMidAngle = Math.PI / 2;
 
     config.rows.forEach((count, rowIdx) => {
         const rowProgress = rowIdx / (config.rows.length - 1);
@@ -10232,6 +10235,16 @@ function createUsChamberLayout(container, config) {
         // gapAngle ensures center gap = exactly aisleHalfW*2 pixels at this row's radius
         const gapAngle = R > aisleHalfW ? Math.acos(aisleHalfW / R) : Math.PI / 2;
 
+        // Each side used to get exactly gapAngle of arc whatever its seat count, so
+        // a 280-member party occupied the same 224px as a 155-member one and only
+        // got denser. Split the usable arc by share instead: the blocks are now
+        // proportional and the divide slides to wherever the parties actually
+        // part, the way a parliament diagram reads. The aisle keeps its width --
+        // PI - 2*gapAngle either way -- it just stops being pinned to the middle.
+        const demSpan = 2 * gapAngle * demShare;
+        const repSpan = 2 * gapAngle - demSpan;
+        if (rowIdx === Math.floor(config.rows.length / 2)) aisleMidAngle = (demSpan + Math.PI - repSpan) / 2;
+
         for (let i = 0; i < count; i++) {
             const side = i < demCount ? -1 : 1;
             const sideIndex = side === -1 ? i : i - demCount;
@@ -10240,8 +10253,8 @@ function createUsChamberLayout(container, config) {
             // side===-1: Democrat, screen RIGHT, angle 0 (right edge, floor) → gapAngle (right of aisle)
             // side=== 1: Republican, screen LEFT, angle PI-gapAngle (left of aisle) → PI (left edge, floor)
             const angle = side === -1
-                ? gapAngle * sideProgress
-                : (Math.PI - gapAngle) + gapAngle * sideProgress;
+                ? demSpan * sideProgress
+                : (Math.PI - repSpan) + repSpan * sideProgress;
             const x = centerX + R * Math.cos(angle);
             const y = floorY - R * Math.sin(angle);
             
@@ -10254,6 +10267,18 @@ function createUsChamberLayout(container, config) {
             });
         }
     });
+
+    // Point the drawn aisle at the divide. It is anchored at the arc's centre and
+    // rotated to the dividing angle, so it stays a radius of the same chamber
+    // rather than a vertical band that happens to line up only at a 50/50 split.
+    const aisleEl = container.querySelector('.center-aisle');
+    if (aisleEl) {
+        const deg = (Math.PI / 2 - aisleMidAngle) * 180 / Math.PI;
+        aisleEl.style.left = `${(centerX / width) * 100}%`;
+        aisleEl.style.bottom = `${height - floorY}px`;
+        aisleEl.style.transformOrigin = 'bottom center';
+        aisleEl.style.transform = `translateX(-50%) rotate(${deg.toFixed(2)}deg)`;
+    }
 
     return seats.slice(0, HOUSE_TOTAL_MEMBERS);
 }
