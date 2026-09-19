@@ -253,6 +253,12 @@
       .demo-banner b { font-weight: 800; letter-spacing: .12em; }
       .demo-banner span { text-transform: none; letter-spacing: 0; font-weight: 500; }
       .demo-banner a { color: inherit; font-weight: 700; text-underline-offset: 3px; }
+      .demo-banner .demo-modes {
+        font: inherit; text-transform: none; letter-spacing: 0;
+        background: rgba(0,0,0,.12); color: inherit;
+        border: 1px solid rgba(0,0,0,.35); border-radius: 4px;
+        padding: 2px 4px; max-width: 46vw;
+      }
       .demo-banner .short { display: none; }
       /* Narrow screens get a shorter warning, never none: the word DEMO on its
          own is not a statement that the numbers are fabricated. */
@@ -267,11 +273,39 @@
     const bar = document.createElement('div');
     bar.className = 'demo-banner';
     bar.setAttribute('role', 'note');
+    // A picker, because otherwise the other 23 modes are undiscoverable -- they
+    // exist only as a query string nobody would guess.
+    const picker = document.createElement('select');
+    picker.className = 'demo-modes';
+    picker.setAttribute('aria-label', 'Floor mode');
+    picker.onchange = () => {
+      const p = new URLSearchParams(location.search);
+      p.set('demo', '1');
+      if (picker.value === 'vote') p.delete('mode'); else p.set('mode', picker.value);
+      location.search = p.toString();
+    };
+    fetch(BASE + 'modes/index.json', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(list => {
+        const names = Array.isArray(list) ? list : (list.modes || []);
+        for (const n of names) {
+          const name = typeof n === 'string' ? n : n.name;
+          if (!name) continue;
+          const o = document.createElement('option');
+          o.value = name;
+          o.textContent = name.replace(/-/g, ' ');
+          if (name === (mode || 'vote')) o.selected = true;
+          picker.appendChild(o);
+        }
+      })
+      .catch(() => { picker.hidden = true; });
+
     bar.innerHTML = '<b>Demo</b>'
       + '<span class="long">Nothing here is live \u2014 the tally is a scripted replay and the '
       + 'video is an archived session.</span>'
       + '<span class="short">Simulated data \u2014 not live</span>'
       + '<a href="/">Live board \u2192</a>';
+    bar.insertBefore(picker, bar.querySelector('a'));
 
     const install = () => {
       if (!document.body || document.querySelector('.demo-banner')) return;
@@ -319,7 +353,10 @@
         // The static vote fixture shows the layout but not what the board is for:
         // watching a close vote come in. In demo mode, push the recorded tally
         // sequence the way the Durable Object pushes the real one.
-        if (demo && /votes|stream/.test(String(url))) this._startTallyReplay();
+        // Vote mode only. A tally sets currentStatus to 'vote', so replaying one
+        // under ?demo&mode=debate dragged the vote display back over the debate
+        // panel and the board showed both at once.
+        if (demo && mode === 'vote' && /votes|stream/.test(String(url))) this._startTallyReplay();
       }, 0);
     }
     _startTallyReplay() {
