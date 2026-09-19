@@ -264,6 +264,22 @@
       v.currentTime = DEMO_SEEK_SECONDS;
       v.play?.().catch(() => {});
       log(`demo: seeking floor feed to ${DEMO_SEEK_SECONDS}s`);
+
+      // app.js snaps this player to the live edge in four places (currentTime =
+      // dur - 1, edge - 4, and so on) as segments load, which drags the demo to
+      // the end of the archive -- where the recording is a holding card for the
+      // next day. Hold the position while those fire, then stop so the viewer
+      // keeps control of the scrubber.
+      const startedAt = Date.now();
+      const hold = setInterval(() => {
+        const elapsed = (Date.now() - startedAt) / 1000;
+        if (elapsed > 25) { clearInterval(hold); return; }
+        const expected = DEMO_SEEK_SECONDS + elapsed;
+        if (Math.abs(v.currentTime - expected) > 300) {
+          v.currentTime = expected;
+          v.play?.().catch(() => {});
+        }
+      }, 1000);
     };
     const watch = (v) => {
       seekOnce(v);
