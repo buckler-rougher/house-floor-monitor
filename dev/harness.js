@@ -458,6 +458,11 @@
   // as "changed". Swapping every remote image for one fixed placeholder makes
   // capture deterministic. Sizes come from CSS, not the intrinsic image, so the
   // layout under test is unaffected.
+  //
+  // Not in the demo. There the placeholder is the bug: member photographs, tweet
+  // media and the artwork in the prayer panel all became grey squares, which
+  // read as broken rather than stubbed. Determinism buys the demo nothing, and
+  // the snapshot captures that need it pass ?fixtures, not ?demo.
   const PLACEHOLDER =
     'data:image/svg+xml;charset=utf-8,' +
     encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="%23233044"/></svg>');
@@ -467,7 +472,7 @@
     const src = img.getAttribute('src');
     if (src && isRemote(src)) img.setAttribute('src', PLACEHOLDER);
   };
-  new MutationObserver(muts => {
+  if (!demo) new MutationObserver(muts => {
     for (const m of muts) {
       if (m.type === 'attributes' && m.target.tagName === 'IMG') swap(m.target);
       for (const n of m.addedNodes || []) {
