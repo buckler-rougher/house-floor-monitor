@@ -1,5 +1,5 @@
 {
- "intervalMs": 400,
+ "intervalMs": 2200,
  "bill": {
   "id": "4795",
   "number": "4795",
@@ -43,74 +43,6 @@
    }
   },
   {
-   "yeas": 1,
-   "nays": 1,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": "213"
-    },
-    "red": {
-     "yeas": "1",
-     "nays": "",
-     "present": "",
-     "not_voting": "217"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "1",
-     "nays": "1",
-     "present": "",
-     "not_voting": "431"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 894,
-    "value": "14:54"
-   }
-  },
-  {
-   "yeas": 2,
-   "nays": 2,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "2",
-     "present": "",
-     "not_voting": "212"
-    },
-    "red": {
-     "yeas": "2",
-     "nays": "",
-     "present": "",
-     "not_voting": "216"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "2",
-     "nays": "2",
-     "present": "",
-     "not_voting": "429"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 888,
-    "value": "14:48"
-   }
-  },
-  {
    "yeas": 3,
    "nays": 4,
    "counts": {
@@ -140,144 +72,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 882,
-    "value": "14:42"
-   }
-  },
-  {
-   "yeas": 4,
-   "nays": 5,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "5",
-     "present": "",
-     "not_voting": "209"
-    },
-    "red": {
-     "yeas": "4",
-     "nays": "",
-     "present": "",
-     "not_voting": "214"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "4",
-     "nays": "5",
-     "present": "",
-     "not_voting": "424"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 876,
-    "value": "14:36"
-   }
-  },
-  {
-   "yeas": 5,
-   "nays": 6,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "6",
-     "present": "",
-     "not_voting": "208"
-    },
-    "red": {
-     "yeas": "5",
-     "nays": "",
-     "present": "",
-     "not_voting": "213"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "5",
-     "nays": "6",
-     "present": "",
-     "not_voting": "422"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 870,
-    "value": "14:30"
-   }
-  },
-  {
-   "yeas": 6,
-   "nays": 7,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "7",
-     "present": "",
-     "not_voting": "207"
-    },
-    "red": {
-     "yeas": "6",
-     "nays": "",
-     "present": "",
-     "not_voting": "212"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "6",
-     "nays": "7",
-     "present": "",
-     "not_voting": "420"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 864,
-    "value": "14:24"
-   }
-  },
-  {
-   "yeas": 6,
-   "nays": 8,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "8",
-     "present": "",
-     "not_voting": "206"
-    },
-    "red": {
-     "yeas": "6",
-     "nays": "",
-     "present": "",
-     "not_voting": "212"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "6",
-     "nays": "8",
-     "present": "",
-     "not_voting": "419"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 858,
-    "value": "14:18"
+    "seconds_remaining": 878,
+    "value": "14:38"
    }
   },
   {
@@ -310,76 +106,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 852,
-    "value": "14:12"
-   }
-  },
-  {
-   "yeas": 8,
-   "nays": 11,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "11",
-     "present": "",
-     "not_voting": "203"
-    },
-    "red": {
-     "yeas": "8",
-     "nays": "",
-     "present": "",
-     "not_voting": "210"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "8",
-     "nays": "11",
-     "present": "",
-     "not_voting": "414"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 846,
-    "value": "14:06"
-   }
-  },
-  {
-   "yeas": 9,
-   "nays": 12,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "12",
-     "present": "",
-     "not_voting": "202"
-    },
-    "red": {
-     "yeas": "9",
-     "nays": "",
-     "present": "",
-     "not_voting": "209"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "9",
-     "nays": "12",
-     "present": "",
-     "not_voting": "412"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 840,
-    "value": "14:00"
+    "seconds_remaining": 855,
+    "value": "14:15"
    }
   },
   {
@@ -412,110 +140,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 834,
-    "value": "13:54"
-   }
-  },
-  {
-   "yeas": 11,
-   "nays": 14,
-   "counts": {
-    "blue": {
-     "yeas": "",
-     "nays": "13",
-     "present": "",
-     "not_voting": "201"
-    },
-    "red": {
-     "yeas": "11",
-     "nays": "1",
-     "present": "",
-     "not_voting": "206"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "11",
-     "nays": "14",
-     "present": "",
-     "not_voting": "408"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 828,
-    "value": "13:48"
-   }
-  },
-  {
-   "yeas": 13,
-   "nays": 15,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "14",
-     "present": "",
-     "not_voting": "199"
-    },
-    "red": {
-     "yeas": "12",
-     "nays": "1",
-     "present": "",
-     "not_voting": "205"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "13",
-     "nays": "15",
-     "present": "",
-     "not_voting": "405"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 822,
-    "value": "13:42"
-   }
-  },
-  {
-   "yeas": 15,
-   "nays": 17,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "16",
-     "present": "",
-     "not_voting": "197"
-    },
-    "red": {
-     "yeas": "14",
-     "nays": "1",
-     "present": "",
-     "not_voting": "203"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "15",
-     "nays": "17",
-     "present": "",
-     "not_voting": "401"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 816,
-    "value": "13:36"
+    "seconds_remaining": 833,
+    "value": "13:53"
    }
   },
   {
@@ -553,108 +179,6 @@
    }
   },
   {
-   "yeas": 19,
-   "nays": 20,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "19",
-     "present": "",
-     "not_voting": "194"
-    },
-    "red": {
-     "yeas": "18",
-     "nays": "1",
-     "present": "",
-     "not_voting": "199"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "19",
-     "nays": "20",
-     "present": "",
-     "not_voting": "394"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 804,
-    "value": "13:24"
-   }
-  },
-  {
-   "yeas": 21,
-   "nays": 21,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "20",
-     "present": "",
-     "not_voting": "193"
-    },
-    "red": {
-     "yeas": "20",
-     "nays": "1",
-     "present": "",
-     "not_voting": "197"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "21",
-     "nays": "21",
-     "present": "",
-     "not_voting": "391"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 798,
-    "value": "13:18"
-   }
-  },
-  {
-   "yeas": 23,
-   "nays": 23,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "22",
-     "present": "",
-     "not_voting": "191"
-    },
-    "red": {
-     "yeas": "22",
-     "nays": "1",
-     "present": "",
-     "not_voting": "195"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "23",
-     "nays": "23",
-     "present": "",
-     "not_voting": "387"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 792,
-    "value": "13:12"
-   }
-  },
-  {
    "yeas": 25,
    "nays": 24,
    "counts": {
@@ -684,161 +208,25 @@
     }
    },
    "timer": {
-    "seconds_remaining": 786,
-    "value": "13:06"
+    "seconds_remaining": 788,
+    "value": "13:08"
    }
   },
   {
-   "yeas": 27,
-   "nays": 25,
+   "yeas": 32,
+   "nays": 29,
    "counts": {
     "blue": {
      "yeas": "1",
-     "nays": "24",
-     "present": "",
-     "not_voting": "189"
-    },
-    "red": {
-     "yeas": "26",
-     "nays": "1",
-     "present": "",
-     "not_voting": "191"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "27",
-     "nays": "25",
-     "present": "",
-     "not_voting": "381"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 780,
-    "value": "13:00"
-   }
-  },
-  {
-   "yeas": 29,
-   "nays": 27,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "26",
-     "present": "",
-     "not_voting": "187"
-    },
-    "red": {
-     "yeas": "28",
-     "nays": "1",
-     "present": "",
-     "not_voting": "189"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "29",
-     "nays": "27",
-     "present": "",
-     "not_voting": "377"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 774,
-    "value": "12:54"
-   }
-  },
-  {
-   "yeas": 31,
-   "nays": 28,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "27",
-     "present": "",
-     "not_voting": "186"
-    },
-    "red": {
-     "yeas": "30",
-     "nays": "1",
-     "present": "",
-     "not_voting": "187"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "31",
      "nays": "28",
-     "present": "",
-     "not_voting": "374"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 768,
-    "value": "12:48"
-   }
-  },
-  {
-   "yeas": 33,
-   "nays": 30,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "29",
-     "present": "",
-     "not_voting": "184"
-    },
-    "red": {
-     "yeas": "32",
-     "nays": "1",
      "present": "",
      "not_voting": "185"
     },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "33",
-     "nays": "30",
-     "present": "",
-     "not_voting": "370"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 762,
-    "value": "12:42"
-   }
-  },
-  {
-   "yeas": 35,
-   "nays": 31,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "30",
-     "present": "",
-     "not_voting": "183"
-    },
     "red": {
-     "yeas": "34",
+     "yeas": "31",
      "nays": "1",
      "present": "",
-     "not_voting": "183"
+     "not_voting": "186"
     },
     "white": {
      "yeas": "",
@@ -847,60 +235,26 @@
      "not_voting": "1"
     },
     "totals": {
-     "yeas": "35",
-     "nays": "31",
+     "yeas": "32",
+     "nays": "29",
      "present": "",
-     "not_voting": "367"
+     "not_voting": "372"
     }
    },
    "timer": {
-    "seconds_remaining": 756,
-    "value": "12:36"
-   }
-  },
-  {
-   "yeas": 36,
-   "nays": 33,
-   "counts": {
-    "blue": {
-     "yeas": "1",
-     "nays": "32",
-     "present": "",
-     "not_voting": "181"
-    },
-    "red": {
-     "yeas": "35",
-     "nays": "1",
-     "present": "",
-     "not_voting": "182"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "36",
-     "nays": "33",
-     "present": "",
-     "not_voting": "364"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 750,
-    "value": "12:30"
+    "seconds_remaining": 765,
+    "value": "12:45"
    }
   },
   {
    "yeas": 38,
-   "nays": 35,
+   "nays": 36,
    "counts": {
     "blue": {
      "yeas": "2",
-     "nays": "34",
+     "nays": "35",
      "present": "",
-     "not_voting": "178"
+     "not_voting": "177"
     },
     "red": {
      "yeas": "36",
@@ -916,116 +270,14 @@
     },
     "totals": {
      "yeas": "38",
-     "nays": "35",
-     "present": "",
-     "not_voting": "360"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 744,
-    "value": "12:24"
-   }
-  },
-  {
-   "yeas": 39,
-   "nays": 37,
-   "counts": {
-    "blue": {
-     "yeas": "2",
      "nays": "36",
      "present": "",
-     "not_voting": "176"
-    },
-    "red": {
-     "yeas": "37",
-     "nays": "1",
-     "present": "",
-     "not_voting": "180"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "39",
-     "nays": "37",
-     "present": "",
-     "not_voting": "357"
+     "not_voting": "359"
     }
    },
    "timer": {
-    "seconds_remaining": 738,
-    "value": "12:18"
-   }
-  },
-  {
-   "yeas": 41,
-   "nays": 40,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "39",
-     "present": "",
-     "not_voting": "173"
-    },
-    "red": {
-     "yeas": "39",
-     "nays": "1",
-     "present": "",
-     "not_voting": "178"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "41",
-     "nays": "40",
-     "present": "",
-     "not_voting": "352"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 732,
-    "value": "12:12"
-   }
-  },
-  {
-   "yeas": 42,
-   "nays": 42,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "40",
-     "present": "",
-     "not_voting": "172"
-    },
-    "red": {
-     "yeas": "40",
-     "nays": "2",
-     "present": "",
-     "not_voting": "176"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "42",
-     "nays": "42",
-     "present": "",
-     "not_voting": "349"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 726,
-    "value": "12:06"
+    "seconds_remaining": 743,
+    "value": "12:23"
    }
   },
   {
@@ -1063,109 +315,7 @@
    }
   },
   {
-   "yeas": 45,
-   "nays": 46,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "44",
-     "present": "",
-     "not_voting": "168"
-    },
-    "red": {
-     "yeas": "43",
-     "nays": "2",
-     "present": "",
-     "not_voting": "173"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "45",
-     "nays": "46",
-     "present": "",
-     "not_voting": "342"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 714,
-    "value": "11:54"
-   }
-  },
-  {
-   "yeas": 47,
-   "nays": 48,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "46",
-     "present": "",
-     "not_voting": "166"
-    },
-    "red": {
-     "yeas": "45",
-     "nays": "2",
-     "present": "",
-     "not_voting": "171"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "47",
-     "nays": "48",
-     "present": "",
-     "not_voting": "338"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 708,
-    "value": "11:48"
-   }
-  },
-  {
-   "yeas": 48,
-   "nays": 50,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "48",
-     "present": "",
-     "not_voting": "164"
-    },
-    "red": {
-     "yeas": "46",
-     "nays": "2",
-     "present": "",
-     "not_voting": "170"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "48",
-     "nays": "50",
-     "present": "",
-     "not_voting": "335"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 702,
-    "value": "11:42"
-   }
-  },
-  {
-   "yeas": 50,
+   "yeas": 49,
    "nays": 52,
    "counts": {
     "blue": {
@@ -1175,10 +325,10 @@
      "not_voting": "162"
     },
     "red": {
-     "yeas": "48",
+     "yeas": "47",
      "nays": "2",
      "present": "",
-     "not_voting": "168"
+     "not_voting": "169"
     },
     "white": {
      "yeas": "",
@@ -1187,100 +337,32 @@
      "not_voting": "1"
     },
     "totals": {
-     "yeas": "50",
-     "nays": "52",
-     "present": "",
-     "not_voting": "331"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 696,
-    "value": "11:36"
-   }
-  },
-  {
-   "yeas": 51,
-   "nays": 54,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "52",
-     "present": "",
-     "not_voting": "160"
-    },
-    "red": {
      "yeas": "49",
-     "nays": "2",
+     "nays": "52",
      "present": "",
-     "not_voting": "167"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "51",
-     "nays": "54",
-     "present": "",
-     "not_voting": "328"
+     "not_voting": "332"
     }
    },
    "timer": {
-    "seconds_remaining": 690,
-    "value": "11:30"
+    "seconds_remaining": 698,
+    "value": "11:38"
    }
   },
   {
-   "yeas": 53,
-   "nays": 57,
+   "yeas": 55,
+   "nays": 60,
    "counts": {
     "blue": {
      "yeas": "2",
-     "nays": "55",
+     "nays": "58",
      "present": "",
-     "not_voting": "157"
+     "not_voting": "154"
     },
     "red": {
-     "yeas": "51",
-     "nays": "2",
-     "present": "",
-     "not_voting": "165"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
      "yeas": "53",
-     "nays": "57",
-     "present": "",
-     "not_voting": "323"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 684,
-    "value": "11:24"
-   }
-  },
-  {
-   "yeas": 54,
-   "nays": 59,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "57",
-     "present": "",
-     "not_voting": "155"
-    },
-    "red": {
-     "yeas": "52",
      "nays": "2",
      "present": "",
-     "not_voting": "164"
+     "not_voting": "163"
     },
     "white": {
      "yeas": "",
@@ -1289,122 +371,20 @@
      "not_voting": "1"
     },
     "totals": {
-     "yeas": "54",
-     "nays": "59",
-     "present": "",
-     "not_voting": "320"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 678,
-    "value": "11:18"
-   }
-  },
-  {
-   "yeas": 56,
-   "nays": 61,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "59",
-     "present": "",
-     "not_voting": "153"
-    },
-    "red": {
-     "yeas": "54",
-     "nays": "2",
-     "present": "",
-     "not_voting": "162"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "56",
-     "nays": "61",
-     "present": "",
-     "not_voting": "316"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 672,
-    "value": "11:12"
-   }
-  },
-  {
-   "yeas": 57,
-   "nays": 63,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "61",
-     "present": "",
-     "not_voting": "151"
-    },
-    "red": {
      "yeas": "55",
-     "nays": "2",
+     "nays": "60",
      "present": "",
-     "not_voting": "161"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "57",
-     "nays": "63",
-     "present": "",
-     "not_voting": "313"
+     "not_voting": "318"
     }
    },
    "timer": {
-    "seconds_remaining": 666,
-    "value": "11:06"
+    "seconds_remaining": 675,
+    "value": "11:15"
    }
   },
   {
-   "yeas": 59,
-   "nays": 65,
-   "counts": {
-    "blue": {
-     "yeas": "2",
-     "nays": "63",
-     "present": "",
-     "not_voting": "149"
-    },
-    "red": {
-     "yeas": "57",
-     "nays": "2",
-     "present": "",
-     "not_voting": "159"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "59",
-     "nays": "65",
-     "present": "",
-     "not_voting": "309"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 660,
-    "value": "11:00"
-   }
-  },
-  {
-   "yeas": 61,
-   "nays": 66,
+   "yeas": 62,
+   "nays": 67,
    "counts": {
     "blue": {
      "yeas": "3",
@@ -1413,44 +393,10 @@
      "not_voting": "147"
     },
     "red": {
-     "yeas": "58",
-     "nays": "2",
-     "present": "",
-     "not_voting": "158"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "61",
-     "nays": "66",
-     "present": "",
-     "not_voting": "306"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 654,
-    "value": "10:54"
-   }
-  },
-  {
-   "yeas": 63,
-   "nays": 68,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "65",
-     "present": "",
-     "not_voting": "146"
-    },
-    "red": {
-     "yeas": "60",
+     "yeas": "59",
      "nays": "3",
      "present": "",
-     "not_voting": "155"
+     "not_voting": "156"
     },
     "white": {
      "yeas": "",
@@ -1459,83 +405,15 @@
      "not_voting": "1"
     },
     "totals": {
-     "yeas": "63",
-     "nays": "68",
-     "present": "",
-     "not_voting": "302"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 648,
-    "value": "10:48"
-   }
-  },
-  {
-   "yeas": 65,
-   "nays": 69,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "66",
-     "present": "",
-     "not_voting": "145"
-    },
-    "red": {
      "yeas": "62",
-     "nays": "3",
+     "nays": "67",
      "present": "",
-     "not_voting": "153"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "65",
-     "nays": "69",
-     "present": "",
-     "not_voting": "299"
+     "not_voting": "304"
     }
    },
    "timer": {
-    "seconds_remaining": 642,
-    "value": "10:42"
-   }
-  },
-  {
-   "yeas": 68,
-   "nays": 71,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "68",
-     "present": "",
-     "not_voting": "143"
-    },
-    "red": {
-     "yeas": "65",
-     "nays": "3",
-     "present": "",
-     "not_voting": "150"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "68",
-     "nays": "71",
-     "present": "",
-     "not_voting": "294"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 636,
-    "value": "10:36"
+    "seconds_remaining": 653,
+    "value": "10:53"
    }
   },
   {
@@ -1573,116 +451,14 @@
    }
   },
   {
-   "yeas": 72,
-   "nays": 74,
+   "yeas": 78,
+   "nays": 78,
    "counts": {
     "blue": {
      "yeas": "3",
-     "nays": "71",
-     "present": "",
-     "not_voting": "140"
-    },
-    "red": {
-     "yeas": "69",
-     "nays": "3",
-     "present": "",
-     "not_voting": "146"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "72",
-     "nays": "74",
-     "present": "",
-     "not_voting": "287"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 624,
-    "value": "10:24"
-   }
-  },
-  {
-   "yeas": 74,
-   "nays": 75,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "72",
-     "present": "",
-     "not_voting": "139"
-    },
-    "red": {
-     "yeas": "71",
-     "nays": "3",
-     "present": "",
-     "not_voting": "144"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "74",
      "nays": "75",
      "present": "",
-     "not_voting": "284"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 618,
-    "value": "10:18"
-   }
-  },
-  {
-   "yeas": 76,
-   "nays": 77,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "74",
-     "present": "",
-     "not_voting": "137"
-    },
-    "red": {
-     "yeas": "73",
-     "nays": "3",
-     "present": "",
-     "not_voting": "142"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "76",
-     "nays": "77",
-     "present": "",
-     "not_voting": "280"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 612,
-    "value": "10:12"
-   }
-  },
-  {
-   "yeas": 78,
-   "nays": 79,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "76",
-     "present": "",
-     "not_voting": "135"
+     "not_voting": "136"
     },
     "red": {
      "yeas": "75",
@@ -1698,99 +474,31 @@
     },
     "totals": {
      "yeas": "78",
-     "nays": "79",
+     "nays": "78",
      "present": "",
-     "not_voting": "276"
+     "not_voting": "277"
     }
    },
    "timer": {
-    "seconds_remaining": 606,
-    "value": "10:06"
+    "seconds_remaining": 608,
+    "value": "10:08"
    }
   },
   {
-   "yeas": 80,
-   "nays": 80,
+   "yeas": 86,
+   "nays": 84,
    "counts": {
     "blue": {
-     "yeas": "3",
-     "nays": "77",
+     "yeas": "4",
+     "nays": "81",
      "present": "",
-     "not_voting": "134"
+     "not_voting": "129"
     },
     "red": {
-     "yeas": "77",
-     "nays": "3",
-     "present": "",
-     "not_voting": "138"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "80",
-     "nays": "80",
-     "present": "",
-     "not_voting": "273"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 600,
-    "value": "10:00"
-   }
-  },
-  {
-   "yeas": 82,
-   "nays": 82,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "79",
-     "present": "",
-     "not_voting": "132"
-    },
-    "red": {
-     "yeas": "79",
-     "nays": "3",
-     "present": "",
-     "not_voting": "136"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
      "yeas": "82",
-     "nays": "82",
-     "present": "",
-     "not_voting": "269"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 594,
-    "value": "9:54"
-   }
-  },
-  {
-   "yeas": 84,
-   "nays": 83,
-   "counts": {
-    "blue": {
-     "yeas": "3",
-     "nays": "80",
-     "present": "",
-     "not_voting": "131"
-    },
-    "red": {
-     "yeas": "81",
      "nays": "3",
      "present": "",
-     "not_voting": "134"
+     "not_voting": "133"
     },
     "white": {
      "yeas": "",
@@ -1799,128 +507,26 @@
      "not_voting": "1"
     },
     "totals": {
-     "yeas": "84",
-     "nays": "83",
+     "yeas": "86",
+     "nays": "84",
      "present": "",
-     "not_voting": "266"
+     "not_voting": "263"
     }
    },
    "timer": {
-    "seconds_remaining": 588,
-    "value": "9:48"
-   }
-  },
-  {
-   "yeas": 87,
-   "nays": 85,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "82",
-     "present": "",
-     "not_voting": "128"
-    },
-    "red": {
-     "yeas": "83",
-     "nays": "3",
-     "present": "",
-     "not_voting": "132"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "87",
-     "nays": "85",
-     "present": "",
-     "not_voting": "261"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 582,
-    "value": "9:42"
-   }
-  },
-  {
-   "yeas": 89,
-   "nays": 86,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "83",
-     "present": "",
-     "not_voting": "127"
-    },
-    "red": {
-     "yeas": "85",
-     "nays": "3",
-     "present": "",
-     "not_voting": "130"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "89",
-     "nays": "86",
-     "present": "",
-     "not_voting": "258"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 576,
-    "value": "9:36"
-   }
-  },
-  {
-   "yeas": 91,
-   "nays": 88,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "85",
-     "present": "",
-     "not_voting": "125"
-    },
-    "red": {
-     "yeas": "87",
-     "nays": "3",
-     "present": "",
-     "not_voting": "128"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "91",
-     "nays": "88",
-     "present": "",
-     "not_voting": "254"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 570,
-    "value": "9:30"
+    "seconds_remaining": 585,
+    "value": "9:45"
    }
   },
   {
    "yeas": 93,
-   "nays": 89,
+   "nays": 90,
    "counts": {
     "blue": {
      "yeas": "4",
-     "nays": "86",
+     "nays": "87",
      "present": "",
-     "not_voting": "124"
+     "not_voting": "123"
     },
     "red": {
      "yeas": "89",
@@ -1936,116 +542,14 @@
     },
     "totals": {
      "yeas": "93",
-     "nays": "89",
-     "present": "",
-     "not_voting": "251"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 564,
-    "value": "9:24"
-   }
-  },
-  {
-   "yeas": 95,
-   "nays": 91,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "88",
-     "present": "",
-     "not_voting": "122"
-    },
-    "red": {
-     "yeas": "91",
-     "nays": "3",
-     "present": "",
-     "not_voting": "124"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "95",
-     "nays": "91",
-     "present": "",
-     "not_voting": "247"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 558,
-    "value": "9:18"
-   }
-  },
-  {
-   "yeas": 97,
-   "nays": 94,
-   "counts": {
-    "blue": {
-     "yeas": "4",
      "nays": "90",
      "present": "",
-     "not_voting": "120"
-    },
-    "red": {
-     "yeas": "93",
-     "nays": "4",
-     "present": "",
-     "not_voting": "121"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "97",
-     "nays": "94",
-     "present": "",
-     "not_voting": "242"
+     "not_voting": "250"
     }
    },
    "timer": {
-    "seconds_remaining": 552,
-    "value": "9:12"
-   }
-  },
-  {
-   "yeas": 99,
-   "nays": 96,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "92",
-     "present": "",
-     "not_voting": "118"
-    },
-    "red": {
-     "yeas": "95",
-     "nays": "4",
-     "present": "",
-     "not_voting": "119"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "99",
-     "nays": "96",
-     "present": "",
-     "not_voting": "238"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 546,
-    "value": "9:06"
+    "seconds_remaining": 563,
+    "value": "9:23"
    }
   },
   {
@@ -2083,108 +587,6 @@
    }
   },
   {
-   "yeas": 103,
-   "nays": 101,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "97",
-     "present": "",
-     "not_voting": "113"
-    },
-    "red": {
-     "yeas": "99",
-     "nays": "4",
-     "present": "",
-     "not_voting": "115"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "103",
-     "nays": "101",
-     "present": "",
-     "not_voting": "229"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 534,
-    "value": "8:54"
-   }
-  },
-  {
-   "yeas": 105,
-   "nays": 104,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "100",
-     "present": "",
-     "not_voting": "110"
-    },
-    "red": {
-     "yeas": "101",
-     "nays": "4",
-     "present": "",
-     "not_voting": "113"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "105",
-     "nays": "104",
-     "present": "",
-     "not_voting": "224"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 528,
-    "value": "8:48"
-   }
-  },
-  {
-   "yeas": 107,
-   "nays": 107,
-   "counts": {
-    "blue": {
-     "yeas": "4",
-     "nays": "103",
-     "present": "",
-     "not_voting": "107"
-    },
-    "red": {
-     "yeas": "103",
-     "nays": "4",
-     "present": "",
-     "not_voting": "111"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "",
-     "present": "",
-     "not_voting": "1"
-    },
-    "totals": {
-     "yeas": "107",
-     "nays": "107",
-     "present": "",
-     "not_voting": "219"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 522,
-    "value": "8:42"
-   }
-  },
-  {
    "yeas": 109,
    "nays": 109,
    "counts": {
@@ -2214,196 +616,26 @@
     }
    },
    "timer": {
-    "seconds_remaining": 516,
-    "value": "8:36"
+    "seconds_remaining": 518,
+    "value": "8:38"
    }
   },
   {
-   "yeas": 111,
-   "nays": 112,
+   "yeas": 117,
+   "nays": 118,
    "counts": {
     "blue": {
      "yeas": "5",
-     "nays": "107",
-     "present": "",
-     "not_voting": "102"
-    },
-    "red": {
-     "yeas": "106",
-     "nays": "4",
-     "present": "",
-     "not_voting": "108"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "111",
-     "nays": "112",
-     "present": "",
-     "not_voting": "210"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 510,
-    "value": "8:30"
-   }
-  },
-  {
-   "yeas": 114,
-   "nays": 115,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "110",
-     "present": "",
-     "not_voting": "99"
-    },
-    "red": {
-     "yeas": "109",
-     "nays": "4",
-     "present": "",
-     "not_voting": "105"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "114",
-     "nays": "115",
-     "present": "",
-     "not_voting": "204"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 504,
-    "value": "8:24"
-   }
-  },
-  {
-   "yeas": 116,
-   "nays": 117,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "112",
-     "present": "",
-     "not_voting": "97"
-    },
-    "red": {
-     "yeas": "111",
-     "nays": "4",
-     "present": "",
-     "not_voting": "103"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "116",
-     "nays": "117",
-     "present": "",
-     "not_voting": "200"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 498,
-    "value": "8:18"
-   }
-  },
-  {
-   "yeas": 118,
-   "nays": 120,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "115",
-     "present": "",
-     "not_voting": "94"
-    },
-    "red": {
-     "yeas": "113",
-     "nays": "4",
-     "present": "",
-     "not_voting": "101"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "118",
-     "nays": "120",
-     "present": "",
-     "not_voting": "195"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 492,
-    "value": "8:12"
-   }
-  },
-  {
-   "yeas": 120,
-   "nays": 122,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "116",
-     "present": "",
-     "not_voting": "93"
-    },
-    "red": {
-     "yeas": "115",
-     "nays": "5",
-     "present": "",
-     "not_voting": "98"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "120",
-     "nays": "122",
-     "present": "",
-     "not_voting": "191"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 486,
-    "value": "8:06"
-   }
-  },
-  {
-   "yeas": 122,
-   "nays": 125,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "119",
-     "present": "",
-     "not_voting": "90"
-    },
-    "red": {
-     "yeas": "117",
-     "nays": "5",
+     "nays": "113",
      "present": "",
      "not_voting": "96"
     },
+    "red": {
+     "yeas": "112",
+     "nays": "4",
+     "present": "",
+     "not_voting": "102"
+    },
     "white": {
      "yeas": "",
      "nays": "1",
@@ -2411,15 +643,15 @@
      "not_voting": ""
     },
     "totals": {
-     "yeas": "122",
-     "nays": "125",
+     "yeas": "117",
+     "nays": "118",
      "present": "",
-     "not_voting": "186"
+     "not_voting": "198"
     }
    },
    "timer": {
-    "seconds_remaining": 480,
-    "value": "8:00"
+    "seconds_remaining": 495,
+    "value": "8:15"
    }
   },
   {
@@ -2452,110 +684,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 474,
-    "value": "7:54"
-   }
-  },
-  {
-   "yeas": 126,
-   "nays": 130,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "124",
-     "present": "",
-     "not_voting": "85"
-    },
-    "red": {
-     "yeas": "121",
-     "nays": "5",
-     "present": "",
-     "not_voting": "92"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "126",
-     "nays": "130",
-     "present": "",
-     "not_voting": "177"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 468,
-    "value": "7:48"
-   }
-  },
-  {
-   "yeas": 128,
-   "nays": 133,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "127",
-     "present": "",
-     "not_voting": "82"
-    },
-    "red": {
-     "yeas": "123",
-     "nays": "5",
-     "present": "",
-     "not_voting": "90"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "128",
-     "nays": "133",
-     "present": "",
-     "not_voting": "172"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 462,
-    "value": "7:42"
-   }
-  },
-  {
-   "yeas": 130,
-   "nays": 135,
-   "counts": {
-    "blue": {
-     "yeas": "5",
-     "nays": "129",
-     "present": "",
-     "not_voting": "80"
-    },
-    "red": {
-     "yeas": "125",
-     "nays": "5",
-     "present": "",
-     "not_voting": "88"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "130",
-     "nays": "135",
-     "present": "",
-     "not_voting": "168"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 456,
-    "value": "7:36"
+    "seconds_remaining": 473,
+    "value": "7:53"
    }
   },
   {
@@ -2593,109 +723,7 @@
    }
   },
   {
-   "yeas": 134,
-   "nays": 140,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "134",
-     "present": "",
-     "not_voting": "74"
-    },
-    "red": {
-     "yeas": "128",
-     "nays": "5",
-     "present": "",
-     "not_voting": "85"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "134",
-     "nays": "140",
-     "present": "",
-     "not_voting": "159"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 444,
-    "value": "7:24"
-   }
-  },
-  {
-   "yeas": 136,
-   "nays": 141,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "135",
-     "present": "",
-     "not_voting": "73"
-    },
-    "red": {
-     "yeas": "130",
-     "nays": "5",
-     "present": "",
-     "not_voting": "83"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "136",
-     "nays": "141",
-     "present": "",
-     "not_voting": "156"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 438,
-    "value": "7:18"
-   }
-  },
-  {
-   "yeas": 139,
-   "nays": 143,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "137",
-     "present": "",
-     "not_voting": "71"
-    },
-    "red": {
-     "yeas": "133",
-     "nays": "5",
-     "present": "",
-     "not_voting": "80"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "139",
-     "nays": "143",
-     "present": "",
-     "not_voting": "151"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 432,
-    "value": "7:12"
-   }
-  },
-  {
-   "yeas": 141,
+   "yeas": 140,
    "nays": 144,
    "counts": {
     "blue": {
@@ -2705,10 +733,10 @@
      "not_voting": "70"
     },
     "red": {
-     "yeas": "135",
+     "yeas": "134",
      "nays": "5",
      "present": "",
-     "not_voting": "78"
+     "not_voting": "79"
     },
     "white": {
      "yeas": "",
@@ -2717,66 +745,32 @@
      "not_voting": ""
     },
     "totals": {
-     "yeas": "141",
+     "yeas": "140",
      "nays": "144",
      "present": "",
-     "not_voting": "148"
+     "not_voting": "149"
     }
    },
    "timer": {
-    "seconds_remaining": 426,
-    "value": "7:06"
+    "seconds_remaining": 428,
+    "value": "7:08"
    }
   },
   {
-   "yeas": 143,
-   "nays": 146,
+   "yeas": 148,
+   "nays": 150,
    "counts": {
     "blue": {
      "yeas": "6",
-     "nays": "140",
+     "nays": "143",
      "present": "",
-     "not_voting": "68"
+     "not_voting": "65"
     },
     "red": {
-     "yeas": "137",
-     "nays": "5",
-     "present": "",
-     "not_voting": "76"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "143",
-     "nays": "146",
-     "present": "",
-     "not_voting": "144"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 420,
-    "value": "7:00"
-   }
-  },
-  {
-   "yeas": 145,
-   "nays": 148,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "141",
-     "present": "",
-     "not_voting": "67"
-    },
-    "red": {
-     "yeas": "139",
+     "yeas": "142",
      "nays": "6",
      "present": "",
-     "not_voting": "73"
+     "not_voting": "70"
     },
     "white": {
      "yeas": "",
@@ -2785,151 +779,15 @@
      "not_voting": ""
     },
     "totals": {
-     "yeas": "145",
-     "nays": "148",
-     "present": "",
-     "not_voting": "140"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 414,
-    "value": "6:54"
-   }
-  },
-  {
-   "yeas": 147,
-   "nays": 149,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "142",
-     "present": "",
-     "not_voting": "66"
-    },
-    "red": {
-     "yeas": "141",
-     "nays": "6",
-     "present": "",
-     "not_voting": "71"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "147",
-     "nays": "149",
-     "present": "",
-     "not_voting": "137"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 408,
-    "value": "6:48"
-   }
-  },
-  {
-   "yeas": 149,
-   "nays": 151,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "144",
-     "present": "",
-     "not_voting": "64"
-    },
-    "red": {
-     "yeas": "143",
-     "nays": "6",
-     "present": "",
-     "not_voting": "69"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "149",
-     "nays": "151",
-     "present": "",
-     "not_voting": "133"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 402,
-    "value": "6:42"
-   }
-  },
-  {
-   "yeas": 152,
-   "nays": 153,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "146",
-     "present": "",
-     "not_voting": "62"
-    },
-    "red": {
-     "yeas": "146",
-     "nays": "6",
-     "present": "",
-     "not_voting": "66"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "152",
-     "nays": "153",
-     "present": "",
-     "not_voting": "128"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 396,
-    "value": "6:36"
-   }
-  },
-  {
-   "yeas": 154,
-   "nays": 154,
-   "counts": {
-    "blue": {
-     "yeas": "6",
-     "nays": "147",
-     "present": "",
-     "not_voting": "61"
-    },
-    "red": {
      "yeas": "148",
-     "nays": "6",
+     "nays": "150",
      "present": "",
-     "not_voting": "64"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "154",
-     "nays": "154",
-     "present": "",
-     "not_voting": "125"
+     "not_voting": "135"
     }
    },
    "timer": {
-    "seconds_remaining": 390,
-    "value": "6:30"
+    "seconds_remaining": 405,
+    "value": "6:45"
    }
   },
   {
@@ -2962,110 +820,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 384,
-    "value": "6:24"
-   }
-  },
-  {
-   "yeas": 158,
-   "nays": 157,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "150",
-     "present": "",
-     "not_voting": "57"
-    },
-    "red": {
-     "yeas": "151",
-     "nays": "6",
-     "present": "",
-     "not_voting": "61"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "158",
-     "nays": "157",
-     "present": "",
-     "not_voting": "118"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 378,
-    "value": "6:18"
-   }
-  },
-  {
-   "yeas": 160,
-   "nays": 159,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "152",
-     "present": "",
-     "not_voting": "55"
-    },
-    "red": {
-     "yeas": "153",
-     "nays": "6",
-     "present": "",
-     "not_voting": "59"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "160",
-     "nays": "159",
-     "present": "",
-     "not_voting": "114"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 372,
-    "value": "6:12"
-   }
-  },
-  {
-   "yeas": 162,
-   "nays": 161,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "154",
-     "present": "",
-     "not_voting": "53"
-    },
-    "red": {
-     "yeas": "155",
-     "nays": "6",
-     "present": "",
-     "not_voting": "57"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "162",
-     "nays": "161",
-     "present": "",
-     "not_voting": "110"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 366,
-    "value": "6:06"
+    "seconds_remaining": 383,
+    "value": "6:23"
    }
   },
   {
@@ -3103,116 +859,14 @@
    }
   },
   {
-   "yeas": 167,
-   "nays": 164,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "157",
-     "present": "",
-     "not_voting": "50"
-    },
-    "red": {
-     "yeas": "160",
-     "nays": "6",
-     "present": "",
-     "not_voting": "52"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "167",
-     "nays": "164",
-     "present": "",
-     "not_voting": "102"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 354,
-    "value": "5:54"
-   }
-  },
-  {
-   "yeas": 169,
-   "nays": 165,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "158",
-     "present": "",
-     "not_voting": "49"
-    },
-    "red": {
-     "yeas": "162",
-     "nays": "6",
-     "present": "",
-     "not_voting": "50"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "169",
-     "nays": "165",
-     "present": "",
-     "not_voting": "99"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 348,
-    "value": "5:48"
-   }
-  },
-  {
-   "yeas": 171,
-   "nays": 167,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "160",
-     "present": "",
-     "not_voting": "47"
-    },
-    "red": {
-     "yeas": "164",
-     "nays": "6",
-     "present": "",
-     "not_voting": "48"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "171",
-     "nays": "167",
-     "present": "",
-     "not_voting": "95"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 342,
-    "value": "5:42"
-   }
-  },
-  {
    "yeas": 172,
-   "nays": 169,
+   "nays": 168,
    "counts": {
     "blue": {
      "yeas": "7",
-     "nays": "162",
+     "nays": "161",
      "present": "",
-     "not_voting": "45"
+     "not_voting": "46"
     },
     "red": {
      "yeas": "165",
@@ -3228,127 +882,25 @@
     },
     "totals": {
      "yeas": "172",
-     "nays": "169",
+     "nays": "168",
      "present": "",
-     "not_voting": "92"
+     "not_voting": "93"
     }
    },
    "timer": {
-    "seconds_remaining": 336,
-    "value": "5:36"
-   }
-  },
-  {
-   "yeas": 174,
-   "nays": 170,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "163",
-     "present": "",
-     "not_voting": "44"
-    },
-    "red": {
-     "yeas": "167",
-     "nays": "6",
-     "present": "",
-     "not_voting": "45"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "174",
-     "nays": "170",
-     "present": "",
-     "not_voting": "89"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 330,
-    "value": "5:30"
-   }
-  },
-  {
-   "yeas": 175,
-   "nays": 172,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "165",
-     "present": "",
-     "not_voting": "42"
-    },
-    "red": {
-     "yeas": "168",
-     "nays": "6",
-     "present": "",
-     "not_voting": "44"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "175",
-     "nays": "172",
-     "present": "",
-     "not_voting": "86"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 324,
-    "value": "5:24"
-   }
-  },
-  {
-   "yeas": 176,
-   "nays": 174,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "166",
-     "present": "",
-     "not_voting": "41"
-    },
-    "red": {
-     "yeas": "169",
-     "nays": "7",
-     "present": "",
-     "not_voting": "42"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "176",
-     "nays": "174",
-     "present": "",
-     "not_voting": "83"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 318,
-    "value": "5:18"
+    "seconds_remaining": 338,
+    "value": "5:38"
    }
   },
   {
    "yeas": 177,
-   "nays": 176,
+   "nays": 175,
    "counts": {
     "blue": {
      "yeas": "7",
-     "nays": "168",
+     "nays": "167",
      "present": "",
-     "not_voting": "39"
+     "not_voting": "40"
     },
     "red": {
      "yeas": "170",
@@ -3364,86 +916,18 @@
     },
     "totals": {
      "yeas": "177",
-     "nays": "176",
+     "nays": "175",
      "present": "",
-     "not_voting": "80"
+     "not_voting": "81"
     }
    },
    "timer": {
-    "seconds_remaining": 312,
-    "value": "5:12"
+    "seconds_remaining": 315,
+    "value": "5:15"
    }
   },
   {
-   "yeas": 179,
-   "nays": 177,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "169",
-     "present": "",
-     "not_voting": "38"
-    },
-    "red": {
-     "yeas": "172",
-     "nays": "7",
-     "present": "",
-     "not_voting": "39"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "179",
-     "nays": "177",
-     "present": "",
-     "not_voting": "77"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 306,
-    "value": "5:06"
-   }
-  },
-  {
-   "yeas": 180,
-   "nays": 179,
-   "counts": {
-    "blue": {
-     "yeas": "7",
-     "nays": "171",
-     "present": "",
-     "not_voting": "36"
-    },
-    "red": {
-     "yeas": "173",
-     "nays": "7",
-     "present": "",
-     "not_voting": "38"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "180",
-     "nays": "179",
-     "present": "",
-     "not_voting": "74"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 300,
-    "value": "5:00"
-   }
-  },
-  {
-   "yeas": 181,
+   "yeas": 182,
    "nays": 181,
    "counts": {
     "blue": {
@@ -3453,10 +937,10 @@
      "not_voting": "33"
     },
     "red": {
-     "yeas": "173",
+     "yeas": "174",
      "nays": "7",
      "present": "",
-     "not_voting": "38"
+     "not_voting": "37"
     },
     "white": {
      "yeas": "",
@@ -3465,117 +949,15 @@
      "not_voting": ""
     },
     "totals": {
-     "yeas": "181",
+     "yeas": "182",
      "nays": "181",
      "present": "",
-     "not_voting": "71"
+     "not_voting": "70"
     }
    },
    "timer": {
-    "seconds_remaining": 294,
-    "value": "4:54"
-   }
-  },
-  {
-   "yeas": 183,
-   "nays": 183,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "175",
-     "present": "",
-     "not_voting": "31"
-    },
-    "red": {
-     "yeas": "175",
-     "nays": "7",
-     "present": "",
-     "not_voting": "36"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "183",
-     "nays": "183",
-     "present": "",
-     "not_voting": "67"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 288,
-    "value": "4:48"
-   }
-  },
-  {
-   "yeas": 184,
-   "nays": 184,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "176",
-     "present": "",
-     "not_voting": "30"
-    },
-    "red": {
-     "yeas": "176",
-     "nays": "7",
-     "present": "",
-     "not_voting": "35"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "184",
-     "nays": "184",
-     "present": "",
-     "not_voting": "65"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 282,
-    "value": "4:42"
-   }
-  },
-  {
-   "yeas": 185,
-   "nays": 186,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "178",
-     "present": "",
-     "not_voting": "28"
-    },
-    "red": {
-     "yeas": "177",
-     "nays": "7",
-     "present": "",
-     "not_voting": "34"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "185",
-     "nays": "186",
-     "present": "",
-     "not_voting": "62"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 276,
-    "value": "4:36"
+    "seconds_remaining": 292,
+    "value": "4:52"
    }
   },
   {
@@ -3613,116 +995,14 @@
    }
   },
   {
-   "yeas": 188,
-   "nays": 189,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "181",
-     "present": "",
-     "not_voting": "25"
-    },
-    "red": {
-     "yeas": "180",
-     "nays": "7",
-     "present": "",
-     "not_voting": "31"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "188",
-     "nays": "189",
-     "present": "",
-     "not_voting": "56"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 264,
-    "value": "4:24"
-   }
-  },
-  {
-   "yeas": 189,
-   "nays": 191,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "183",
-     "present": "",
-     "not_voting": "23"
-    },
-    "red": {
-     "yeas": "181",
-     "nays": "7",
-     "present": "",
-     "not_voting": "30"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "189",
-     "nays": "191",
-     "present": "",
-     "not_voting": "53"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 258,
-    "value": "4:18"
-   }
-  },
-  {
-   "yeas": 190,
-   "nays": 193,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "185",
-     "present": "",
-     "not_voting": "21"
-    },
-    "red": {
-     "yeas": "182",
-     "nays": "7",
-     "present": "",
-     "not_voting": "29"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "190",
-     "nays": "193",
-     "present": "",
-     "not_voting": "50"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 252,
-    "value": "4:12"
-   }
-  },
-  {
    "yeas": 191,
-   "nays": 195,
+   "nays": 194,
    "counts": {
     "blue": {
      "yeas": "8",
-     "nays": "187",
+     "nays": "186",
      "present": "",
-     "not_voting": "19"
+     "not_voting": "20"
     },
     "red": {
      "yeas": "183",
@@ -3738,116 +1018,14 @@
     },
     "totals": {
      "yeas": "191",
-     "nays": "195",
+     "nays": "194",
      "present": "",
-     "not_voting": "47"
+     "not_voting": "48"
     }
    },
    "timer": {
-    "seconds_remaining": 246,
-    "value": "4:06"
-   }
-  },
-  {
-   "yeas": 193,
-   "nays": 196,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "188",
-     "present": "",
-     "not_voting": "18"
-    },
-    "red": {
-     "yeas": "185",
-     "nays": "7",
-     "present": "",
-     "not_voting": "26"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "193",
-     "nays": "196",
-     "present": "",
-     "not_voting": "44"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 240,
-    "value": "4:00"
-   }
-  },
-  {
-   "yeas": 194,
-   "nays": 198,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "190",
-     "present": "",
-     "not_voting": "16"
-    },
-    "red": {
-     "yeas": "186",
-     "nays": "7",
-     "present": "",
-     "not_voting": "25"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "194",
-     "nays": "198",
-     "present": "",
-     "not_voting": "41"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 234,
-    "value": "3:54"
-   }
-  },
-  {
-   "yeas": 195,
-   "nays": 198,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "190",
-     "present": "",
-     "not_voting": "16"
-    },
-    "red": {
-     "yeas": "187",
-     "nays": "7",
-     "present": "",
-     "not_voting": "24"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "195",
-     "nays": "198",
-     "present": "",
-     "not_voting": "40"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 228,
-    "value": "3:48"
+    "seconds_remaining": 248,
+    "value": "4:08"
    }
   },
   {
@@ -3880,76 +1058,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 222,
-    "value": "3:42"
-   }
-  },
-  {
-   "yeas": 196,
-   "nays": 199,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "191",
-     "present": "",
-     "not_voting": "15"
-    },
-    "red": {
-     "yeas": "188",
-     "nays": "7",
-     "present": "",
-     "not_voting": "23"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "196",
-     "nays": "199",
-     "present": "",
-     "not_voting": "38"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 216,
-    "value": "3:36"
-   }
-  },
-  {
-   "yeas": 197,
-   "nays": 200,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "192",
-     "present": "",
-     "not_voting": "14"
-    },
-    "red": {
-     "yeas": "189",
-     "nays": "7",
-     "present": "",
-     "not_voting": "22"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "197",
-     "nays": "200",
-     "present": "",
-     "not_voting": "36"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 210,
-    "value": "3:30"
+    "seconds_remaining": 225,
+    "value": "3:45"
    }
   },
   {
@@ -3982,110 +1092,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 204,
-    "value": "3:24"
-   }
-  },
-  {
-   "yeas": 198,
-   "nays": 200,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "192",
-     "present": "",
-     "not_voting": "14"
-    },
-    "red": {
-     "yeas": "190",
-     "nays": "7",
-     "present": "",
-     "not_voting": "21"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "198",
-     "nays": "200",
-     "present": "",
-     "not_voting": "35"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 198,
-    "value": "3:18"
-   }
-  },
-  {
-   "yeas": 199,
-   "nays": 201,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "192",
-     "present": "",
-     "not_voting": "14"
-    },
-    "red": {
-     "yeas": "191",
-     "nays": "8",
-     "present": "",
-     "not_voting": "19"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "199",
-     "nays": "201",
-     "present": "",
-     "not_voting": "33"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 192,
-    "value": "3:12"
-   }
-  },
-  {
-   "yeas": 200,
-   "nays": 201,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "192",
-     "present": "",
-     "not_voting": "14"
-    },
-    "red": {
-     "yeas": "192",
-     "nays": "8",
-     "present": "",
-     "not_voting": "18"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "200",
-     "nays": "201",
-     "present": "",
-     "not_voting": "32"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 186,
-    "value": "3:06"
+    "seconds_remaining": 202,
+    "value": "3:22"
    }
   },
   {
@@ -4123,74 +1131,6 @@
    }
   },
   {
-   "yeas": 201,
-   "nays": 202,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "193",
-     "present": "",
-     "not_voting": "13"
-    },
-    "red": {
-     "yeas": "193",
-     "nays": "8",
-     "present": "",
-     "not_voting": "17"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "201",
-     "nays": "202",
-     "present": "",
-     "not_voting": "30"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 174,
-    "value": "2:54"
-   }
-  },
-  {
-   "yeas": 202,
-   "nays": 202,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "193",
-     "present": "",
-     "not_voting": "13"
-    },
-    "red": {
-     "yeas": "194",
-     "nays": "8",
-     "present": "",
-     "not_voting": "16"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "202",
-     "nays": "202",
-     "present": "",
-     "not_voting": "29"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 168,
-    "value": "2:48"
-   }
-  },
-  {
    "yeas": 203,
    "nays": 203,
    "counts": {
@@ -4220,110 +1160,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 162,
-    "value": "2:42"
-   }
-  },
-  {
-   "yeas": 203,
-   "nays": 203,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "194",
-     "present": "",
-     "not_voting": "12"
-    },
-    "red": {
-     "yeas": "195",
-     "nays": "8",
-     "present": "",
-     "not_voting": "15"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "203",
-     "nays": "203",
-     "present": "",
-     "not_voting": "27"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 156,
-    "value": "2:36"
-   }
-  },
-  {
-   "yeas": 204,
-   "nays": 203,
-   "counts": {
-    "blue": {
-     "yeas": "8",
-     "nays": "194",
-     "present": "",
-     "not_voting": "12"
-    },
-    "red": {
-     "yeas": "196",
-     "nays": "8",
-     "present": "",
-     "not_voting": "14"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "204",
-     "nays": "203",
-     "present": "",
-     "not_voting": "26"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 150,
-    "value": "2:30"
-   }
-  },
-  {
-   "yeas": 205,
-   "nays": 204,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "195",
-     "present": "",
-     "not_voting": "10"
-    },
-    "red": {
-     "yeas": "196",
-     "nays": "8",
-     "present": "",
-     "not_voting": "14"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "205",
-     "nays": "204",
-     "present": "",
-     "not_voting": "24"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 144,
-    "value": "2:24"
+    "seconds_remaining": 158,
+    "value": "2:38"
    }
   },
   {
@@ -4356,110 +1194,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 138,
-    "value": "2:18"
-   }
-  },
-  {
-   "yeas": 206,
-   "nays": 205,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "196",
-     "present": "",
-     "not_voting": "9"
-    },
-    "red": {
-     "yeas": "197",
-     "nays": "8",
-     "present": "",
-     "not_voting": "13"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "206",
-     "nays": "205",
-     "present": "",
-     "not_voting": "22"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 132,
-    "value": "2:12"
-   }
-  },
-  {
-   "yeas": 207,
-   "nays": 205,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "196",
-     "present": "",
-     "not_voting": "9"
-    },
-    "red": {
-     "yeas": "198",
-     "nays": "8",
-     "present": "",
-     "not_voting": "12"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "207",
-     "nays": "205",
-     "present": "",
-     "not_voting": "21"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 126,
-    "value": "2:06"
-   }
-  },
-  {
-   "yeas": 207,
-   "nays": 206,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "197",
-     "present": "",
-     "not_voting": "8"
-    },
-    "red": {
-     "yeas": "198",
-     "nays": "8",
-     "present": "",
-     "not_voting": "12"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "207",
-     "nays": "206",
-     "present": "",
-     "not_voting": "20"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 120,
-    "value": "2:00"
+    "seconds_remaining": 135,
+    "value": "2:15"
    }
   },
   {
@@ -4492,110 +1228,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 114,
-    "value": "1:54"
-   }
-  },
-  {
-   "yeas": 208,
-   "nays": 207,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "198",
-     "present": "",
-     "not_voting": "7"
-    },
-    "red": {
-     "yeas": "199",
-     "nays": "8",
-     "present": "",
-     "not_voting": "11"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "208",
-     "nays": "207",
-     "present": "",
-     "not_voting": "18"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 108,
-    "value": "1:48"
-   }
-  },
-  {
-   "yeas": 209,
-   "nays": 207,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "198",
-     "present": "",
-     "not_voting": "7"
-    },
-    "red": {
-     "yeas": "200",
-     "nays": "8",
-     "present": "",
-     "not_voting": "10"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "209",
-     "nays": "207",
-     "present": "",
-     "not_voting": "17"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 102,
-    "value": "1:42"
-   }
-  },
-  {
-   "yeas": 209,
-   "nays": 208,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "199",
-     "present": "",
-     "not_voting": "6"
-    },
-    "red": {
-     "yeas": "200",
-     "nays": "8",
-     "present": "",
-     "not_voting": "10"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "209",
-     "nays": "208",
-     "present": "",
-     "not_voting": "16"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 96,
-    "value": "1:36"
+    "seconds_remaining": 113,
+    "value": "1:53"
    }
   },
   {
@@ -4633,108 +1267,6 @@
    }
   },
   {
-   "yeas": 210,
-   "nays": 209,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "200",
-     "present": "",
-     "not_voting": "5"
-    },
-    "red": {
-     "yeas": "201",
-     "nays": "8",
-     "present": "",
-     "not_voting": "9"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "210",
-     "nays": "209",
-     "present": "",
-     "not_voting": "14"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 84,
-    "value": "1:24"
-   }
-  },
-  {
-   "yeas": 210,
-   "nays": 210,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "201",
-     "present": "",
-     "not_voting": "4"
-    },
-    "red": {
-     "yeas": "201",
-     "nays": "8",
-     "present": "",
-     "not_voting": "9"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "210",
-     "nays": "210",
-     "present": "",
-     "not_voting": "13"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 78,
-    "value": "1:18"
-   }
-  },
-  {
-   "yeas": 211,
-   "nays": 210,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "201",
-     "present": "",
-     "not_voting": "4"
-    },
-    "red": {
-     "yeas": "202",
-     "nays": "8",
-     "present": "",
-     "not_voting": "8"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "211",
-     "nays": "210",
-     "present": "",
-     "not_voting": "12"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 72,
-    "value": "1:12"
-   }
-  },
-  {
    "yeas": 211,
    "nays": 211,
    "counts": {
@@ -4764,76 +1296,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 66,
-    "value": "1:06"
-   }
-  },
-  {
-   "yeas": 212,
-   "nays": 211,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "202",
-     "present": "",
-     "not_voting": "3"
-    },
-    "red": {
-     "yeas": "203",
-     "nays": "8",
-     "present": "",
-     "not_voting": "7"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "212",
-     "nays": "211",
-     "present": "",
-     "not_voting": "10"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 60,
-    "value": "1:00"
-   }
-  },
-  {
-   "yeas": 212,
-   "nays": 212,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "203",
-     "present": "",
-     "not_voting": "2"
-    },
-    "red": {
-     "yeas": "203",
-     "nays": "8",
-     "present": "",
-     "not_voting": "7"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "212",
-     "nays": "212",
-     "present": "",
-     "not_voting": "9"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 54,
-    "value": "0:54"
+    "seconds_remaining": 67,
+    "value": "1:07"
    }
   },
   {
@@ -4866,110 +1330,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 48,
-    "value": "0:48"
-   }
-  },
-  {
-   "yeas": 213,
-   "nays": 212,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "203",
-     "present": "",
-     "not_voting": "2"
-    },
-    "red": {
-     "yeas": "204",
-     "nays": "8",
-     "present": "",
-     "not_voting": "6"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "213",
-     "nays": "212",
-     "present": "",
-     "not_voting": "8"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 42,
-    "value": "0:42"
-   }
-  },
-  {
-   "yeas": 214,
-   "nays": 213,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "204",
-     "present": "",
-     "not_voting": "1"
-    },
-    "red": {
-     "yeas": "205",
-     "nays": "8",
-     "present": "",
-     "not_voting": "5"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "214",
-     "nays": "213",
-     "present": "",
-     "not_voting": "6"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 36,
-    "value": "0:36"
-   }
-  },
-  {
-   "yeas": 214,
-   "nays": 213,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "204",
-     "present": "",
-     "not_voting": "1"
-    },
-    "red": {
-     "yeas": "205",
-     "nays": "8",
-     "present": "",
-     "not_voting": "5"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "214",
-     "nays": "213",
-     "present": "",
-     "not_voting": "6"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 30,
-    "value": "0:30"
+    "seconds_remaining": 45,
+    "value": "0:45"
    }
   },
   {
@@ -5002,110 +1364,8 @@
     }
    },
    "timer": {
-    "seconds_remaining": 24,
-    "value": "0:24"
-   }
-  },
-  {
-   "yeas": 215,
-   "nays": 213,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "204",
-     "present": "",
-     "not_voting": "1"
-    },
-    "red": {
-     "yeas": "206",
-     "nays": "8",
-     "present": "",
-     "not_voting": "4"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "215",
-     "nays": "213",
-     "present": "",
-     "not_voting": "5"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 18,
-    "value": "0:18"
-   }
-  },
-  {
-   "yeas": 216,
-   "nays": 214,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "205",
-     "present": "",
-     "not_voting": ""
-    },
-    "red": {
-     "yeas": "207",
-     "nays": "8",
-     "present": "",
-     "not_voting": "3"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "216",
-     "nays": "214",
-     "present": "",
-     "not_voting": "3"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 12,
-    "value": "0:12"
-   }
-  },
-  {
-   "yeas": 216,
-   "nays": 214,
-   "counts": {
-    "blue": {
-     "yeas": "9",
-     "nays": "205",
-     "present": "",
-     "not_voting": ""
-    },
-    "red": {
-     "yeas": "207",
-     "nays": "8",
-     "present": "",
-     "not_voting": "3"
-    },
-    "white": {
-     "yeas": "",
-     "nays": "1",
-     "present": "",
-     "not_voting": ""
-    },
-    "totals": {
-     "yeas": "216",
-     "nays": "214",
-     "present": "",
-     "not_voting": "3"
-    }
-   },
-   "timer": {
-    "seconds_remaining": 6,
-    "value": "0:06"
+    "seconds_remaining": 23,
+    "value": "0:23"
    }
   },
   {
