@@ -84,7 +84,7 @@
   // Shift instead of freeze: time still advances at one second per second, so the
   // timer runs, but it reads as the session the demo is actually portraying --
   // 16 September 2026, at the moment the archived video is seeked to.
-  const DEMO_CLOCK = '2026-09-16T22:49:00Z';   // 6:49 pm ET, roll call 311
+  const DEMO_CLOCK = '2010-03-22T02:49:00Z';   // 10:49 pm ET, 21 Mar 2010: roll call 165
   if (demo && !freezeArg) {
     const target = Date.parse(DEMO_CLOCK);
     if (Number.isFinite(target)) {
@@ -102,6 +102,31 @@
     }
   }
 
+  // The board reads the chamber from the member-data fixture, which is the
+  // current roster. The demo replays March 2010, so the seat counts and the
+  // Congress number have to come from then instead -- otherwise the map seats
+  // 218 Republicans for a vote in which 178 of them voted, and the header claims
+  // the wrong Congress.
+  if (demo) {
+    const ACA_CHAMBER = { democrats: 253, republicans: 178, independents: 0, total: 431 };
+    window.addEventListener('load', () => {
+      const apply = () => {
+        try {
+          if (typeof houseMakeup !== 'undefined') {
+            houseMakeup = ACA_CHAMBER;
+            if (typeof renderArchSeats === 'function') renderArchSeats();
+            if (typeof updateFloorGrid === 'function') updateFloorGrid();
+            if (typeof updatePartyBreakdownDisplay === 'function') updatePartyBreakdownDisplay();
+          }
+        } catch { /* app not ready yet */ }
+        const el = document.querySelector('.congress-info .congress-text');
+        if (el) el.textContent = 'One Hundred Eleventh Congress - Session 2';
+      };
+      setTimeout(apply, 1200);
+      setTimeout(apply, 4000);
+    });
+  }
+
   if (!useFixtures) { wireMode(); return; }
 
   // ── Route table ────────────────────────────────────────────────────────────
@@ -115,7 +140,6 @@
     '/api/airport-delays':              'airport-delays.json',
     // Longer key than /api/congress-index, and ROUTE_KEYS is sorted longest
     // first, so the roll fetch resolves here rather than being handed the index.
-    '/api/amendments':                  'amendments.json',
     '/api/congress-index/roll/':        'roll-call.xml',
     '/api/congress-index':              'congress-index.json',
     '/api/member-data':                 'member-data.json',
@@ -136,6 +160,9 @@
   // Endpoints with no fixture: answered with an empty-but-valid shape rather
   // than a network call, so a missing fixture never turns into a CORS error.
   const STUBS = {
+    // No amendments fixture: the demo replays a finished vote, and inventing
+    // amendments for a real bill is what this rebuild removed.
+    '/api/amendments': { amendments: [] },
     'en.wikipedia.org': { query: { search: [], pages: {} } },
   };
 
