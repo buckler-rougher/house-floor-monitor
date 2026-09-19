@@ -230,6 +230,49 @@ const bills = {
 };
 writeFileSync('dev/fixtures/demo/bills.json', JSON.stringify(bills, null, 1));
 
+// ── floor proceedings ───────────────────────────────────────────────────────
+// Built from the roll calls themselves, so the times and actions are the
+// Clerk's. The panel was still showing September 2026 and H.R. 4795, because
+// the demo had no proceedings fixture and fell through to the vote mode's.
+const etStamp = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  // 21 Mar 2010 was EDT (UTC-4).
+  return new Date(Date.UTC(2010, 2, 21, h + 4, m, 0)).toUTCString().replace('GMT', 'GMT');
+};
+const proceedingItem = (time, text) => ({ title: text, link: '', description: text, pubDate: etStamp(time) });
+
+const voteProceedings = {
+  items: [
+    proceedingItem(live.time, `On motion to concur in the Senate amendments to ${billLabel(live)} the yeas and nays were ordered.`),
+    proceedingItem('20:05', `The House resolved itself into the Committee of the Whole for general debate on ${billLabel(live)}.`),
+    proceedingItem(rolls[163].time, `On agreeing to ${billLabel(rolls[163])} the resolution was agreed to by recorded vote: ${rolls[163].yeas}-${rolls[163].nays}.`),
+    proceedingItem(rolls[162].time, `On ordering the previous question on ${billLabel(rolls[162])} the previous question was ordered by recorded vote: ${rolls[162].yeas}-${rolls[162].nays}.`),
+    proceedingItem('13:02', 'The House convened, beginning a legislative day.'),
+  ],
+};
+writeFileSync('dev/fixtures/demo/proceedings.json', JSON.stringify(voteProceedings, null, 1));
+
+// ── debate mode ─────────────────────────────────────────────────────────────
+// The same afternoon, before the vote: general debate in the Committee of the
+// Whole under the rule the House had just adopted. Debate borrowed the vote's
+// state before this, so it flashed the tally on load and then emptied.
+writeFileSync('dev/fixtures/demo/debate/domewatch-floor.json', JSON.stringify({
+  now: { text: 'House in session', value: 'house_in_session' },
+  roll_call: null, timer: null, votes: null,
+  fetchedAt: 'PLACEHOLDER_PUBLISHED',
+}, null, 1));
+
+writeFileSync('dev/fixtures/demo/debate/proceedings.json', JSON.stringify({
+  items: [
+    proceedingItem('20:05', `DEBATE - The Committee of the Whole proceeded with general debate on ${billLabel(live)}.`),
+    proceedingItem('19:42', `The House resolved itself into the Committee of the Whole House on the state of the Union for consideration of ${billLabel(live)}.`),
+    proceedingItem(rolls[163].time, `On agreeing to ${billLabel(rolls[163])} the resolution was agreed to by recorded vote: ${rolls[163].yeas}-${rolls[163].nays}.`),
+    proceedingItem('13:02', 'The House convened, beginning a legislative day.'),
+  ],
+}, null, 1));
+
+console.log(`  proceedings: ${voteProceedings.items.length} items, built from the roll calls`);
+console.log(`  debate: own floor state (no vote) + general debate proceedings`);
 console.log(`  series: ${ROLLS.length} votes, live one is #${ROLLS.indexOf(LIVE) + 1}`);
 console.log(`  rollLog: ${bundle.rollLog.length} completed (162, 163, 164)`);
 console.log(`  bill: H.R. 3590, sponsor Rangel (D-NY-15), Ways and Means, no invented metadata`);
