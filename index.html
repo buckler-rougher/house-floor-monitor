@@ -39,8 +39,8 @@
          normal page views cost nothing. document.write is deliberate — the shim
          must install before hls.js and app.js run. -->
     <script>
-        if (/[?&](fixtures|mode|freeze)=?/.test(location.search)) {
-            document.write('<scr' + 'ipt src="dev/harness.js?v=20260904e"></scr' + 'ipt>');
+        if (/[?&](fixtures|mode|freeze|demo)=?/.test(location.search) || /^\/demo\/?$/.test(location.pathname)) {
+            document.write('<scr' + 'ipt src="dev/harness.js?v=20260919a"></scr' + 'ipt>');
         }
     </script>
 </head>
