@@ -141,15 +141,6 @@ console.log = (...args) => {
     }
 };
 
-// Update Footer Timestamp
-function updateFooterTimestamp() {
-    if (!elements.footerUpdated) return;
-    const now = new Date();
-    elements.footerUpdated.textContent = `Last updated: ${now.toLocaleTimeString('en-US', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    })}`;
-}
-
 // Update Today's Date
 function updateTodayDate() {
     if (elements.todayDate) {
@@ -1695,7 +1686,7 @@ function updateFloorDisplay(status = null) {
         // in overtime (becomes clock-hit-0 time) so we never read it for display.
         const openedAt = voteTimer.openedAt;
         if (openedAt) {
-            const startStr = new Date(openedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            const startStr = new Date(openedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             timerStartElement.textContent = `OPENED ${startStr}`;
             timerStartElement.hidden = false;
         } else {
@@ -1830,7 +1821,6 @@ const elements = {
     lastVoteRAbsent: document.getElementById('last-vote-r-absent'),
     lastVoteIAbsent: document.getElementById('last-vote-i-absent'),
     lastVoteLabel: document.getElementById('last-vote-label'),
-    lastUpdate: document.getElementById('last-update'),
         weatherPanel: document.getElementById('weather-panel'),
     capcamVideo: document.getElementById('capcam-video'),
     weatherTemp: document.getElementById('weather-temp'),
@@ -2010,8 +2000,6 @@ const elements = {
     sessionText: document.getElementById('session-status')?.querySelector('.session-text'),
     nextVotes: document.getElementById('next-votes'),
     floorStatus: document.getElementById('floor-status'),
-    // Footer elements
-    footerUpdated: document.getElementById('footer-updated')
 };
 
 // Debate rule tag: clicking the PURSUANT TO button opens the H.Res. modal
@@ -5527,7 +5515,7 @@ function openBillModal(billId) {
     if ((bill.actionSource === 'bluesky' || bill.actionSource === 'proceedings') && bill.latestActionDate) {
         try {
             actionTimeStr = new Date(bill.latestActionDate).toLocaleTimeString('en-US', {
-                hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+                hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
             });
         } catch (_) {}
     }
@@ -7159,7 +7147,7 @@ function updateSilenceSection(items) {
     if (elements.silenceTime && silenceItem.pubDate) {
         const date = new Date(silenceItem.pubDate);
         elements.silenceTime.textContent = date.toLocaleTimeString('en-US', {
-            hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
         });
     }
 }
@@ -10506,10 +10494,8 @@ function updateUI() {
     updateQuorumStatus();
     updateAbsenteeTracking();
     updateFloorGrid();
-    updateLastUpdate();
     fetchBillsThisWeek();
     updateTodayDate();
-    updateFooterTimestamp();
     // Ensure session status is updated after other logic
     setTimeout(() => {
         fetchVotingDays();
@@ -10804,13 +10790,6 @@ async function updateQuorumStatus() {
 
 // Update Vote Display
 
-
-// Update Last Update Time
-function updateLastUpdate() {
-    if (state.lastUpdate && elements.lastUpdate) {
-        elements.lastUpdate.textContent = `Last updated: ${state.lastUpdate.toLocaleTimeString()}`;
-    }
-}
 
 // ── HLS PiP — always-on live feed, click to expand ───────────────────────────
 (function initYouTubePip() {
