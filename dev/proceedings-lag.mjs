@@ -130,22 +130,32 @@ async function poll() {
 }
 
 function summary() {
-  console.log('\n── publication lag ──');
+  const lines = [];
+  const say = (t) => { console.log(t); lines.push(t); };
+  say('\n── publication lag ──');
   for (const source of Object.keys(SOURCES)) {
     const live = rows.filter((r) => r.source === source && !r.backfill).map((r) => r.lagMin).sort((a, b) => a - b);
-    if (!live.length) { console.log(`  ${source.padEnd(6)} no live observations yet`); continue; }
+    if (!live.length) { say(`  ${source.padEnd(6)} no live observations yet`); continue; }
     const med = live[Math.floor(live.length / 2)];
-    console.log(`  ${source.padEnd(6)} n=${String(live.length).padStart(3)}  median ${fmtLag(med)}`
-              + `  p90 ${fmtLag(live[Math.floor(live.length * 0.9)])}  max ${fmtLag(live[live.length - 1])}`);
+    say(`  ${source.padEnd(6)} n=${String(live.length).padStart(3)}  median ${fmtLag(med)}`
+      + `  p90 ${fmtLag(live[Math.floor(live.length * 0.9)])}  max ${fmtLag(live[live.length - 1])}`);
   }
   const c = rows.filter((r) => r.source === 'clerk' && !r.backfill).map((r) => r.lagMin);
   const a = rows.filter((r) => r.source === 'api' && !r.backfill).map((r) => r.lagMin);
   if (c.length && a.length) {
     const med = (x) => x.sort((p, q) => p - q)[Math.floor(x.length / 2)];
-    console.log(`\n  our added delay: ${fmtLag(med(a) - med(c))} on top of the Clerk`);
+    say(`\n  our added delay: ${fmtLag(med(a) - med(c))} on top of the Clerk`);
   }
-  console.log(`\n  log: ${OUT}`);
-  console.log('  backfill rows are items already present at startup; they carry no timing.');
+  say(`\n  log: ${OUT}`);
+  say('  backfill rows are items already present at startup; they carry no timing.');
+
+  // So an unattended run leaves its result somewhere a person will see it.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    try {
+      appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+        ['## Proceedings publication lag', '', '```', ...lines, '```', ''].join('\n'));
+    } catch {}
+  }
 }
 
 process.on('SIGINT', () => { summary(); process.exit(0); });
