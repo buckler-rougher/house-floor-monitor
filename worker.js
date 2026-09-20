@@ -1274,12 +1274,26 @@ async function fetchCongressBillStatus(billId) {
 
     let floorStatus = null;
     let committeeReport = null;
+    // A committee can appear in the action list two ways, and only one of them
+    // carries the markup vote:
+    //
+    //   "Ordered to be Reported (Amended) by the Yeas and Nays: 30 - 0."
+    //   "Reported by the Committee on Energy and Commerce. H. Rept. 119-286."
+    //
+    // Matching only the first missed every bill whose markup was not logged as a
+    // separate action -- H.R. 9615 was reported and still showed no committee
+    // vote and no Rice index. Prefer the ordered-to-be-reported action, because
+    // it is the one with the tally, but fall back to the formal report action so
+    // the bill at least reads as reported.
+    let committeeReportFallback = null;
 
     for (const action of (data.actions || [])) {
-      // Committee: "Ordered to be Reported" — pick the first (most recent) match
       if (!committeeReport && action.type === 'Committee') {
-        if (/ordered to be reported/i.test(action.text || '')) {
-          committeeReport = { text: formatCommitteeReport(action.text), date: action.actionDate };
+        const text = action.text || '';
+        if (/ordered to be reported/i.test(text)) {
+          committeeReport = { text: formatCommitteeReport(text), date: action.actionDate };
+        } else if (!committeeReportFallback && /reported\s+(?:\([^)]*\)\s+)?by\s+the\s+committee/i.test(text)) {
+          committeeReportFallback = { text: formatCommitteeReport(text), date: action.actionDate };
         }
       }
 
@@ -1320,6 +1334,9 @@ async function fetchCongressBillStatus(billId) {
 
       if (floorStatus && committeeReport) break;
     }
+
+    // No markup action in the list, but the committee did report it.
+    if (!committeeReport && committeeReportFallback) committeeReport = committeeReportFallback;
 
     // Always return an object (even if both are null) as a sentinel that the API was checked.
     // null return is reserved for transient errors (don't cache).
@@ -1442,16 +1459,18 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
 }
 
 // ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
-// v4: the actions fetch went from limit=20 to 250, so every bill cached under v3
-// may be missing a committee vote that was simply out of the old window. Bumping
-// the key re-enriches rather than waiting 30 days for the entries to expire.
+// v5: the committee scan now also accepts "Reported by the Committee on X",
+// not just "Ordered to be Reported", so bills whose markup was never logged as
+// its own action stop showing as unreported. v4 widened the actions window from
+// 20 to 250 for the same panel. Both bumps exist so cached entries re-enrich
+// rather than sitting out their 30-day TTL.
 // Summaries and sponsors are permanent once published; status is covered by the proceedings ratchet.
 // Physical KV TTL = KV_STORAGE_TTL (30 days). Write-on-change: only writes when enrichment data
 // actually differs from what is already in KV (e.g. newly published CRS summary, updated status).
 const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
 
 async function getCachedBillEnrichment(env, billId) {
-  const key = `bill-enrich-v4:${billId}`;
+  const key = `bill-enrich-v5:${billId}`;
   const mem = _mGet(key);
   if (mem) return JSON.parse(mem);
   if (!env?.HLS_CACHE) return null;
@@ -1463,7 +1482,7 @@ async function getCachedBillEnrichment(env, billId) {
 }
 
 async function setCachedBillEnrichment(env, billId, data) {
-  const key = `bill-enrich-v4:${billId}`;
+  const key = `bill-enrich-v5:${billId}`;
   const body = JSON.stringify(data);
   _mSet(key, body, BILL_ENRICH_TTL * 1000);
   if (!env?.HLS_CACHE) return;
