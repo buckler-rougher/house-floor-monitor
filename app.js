@@ -5935,11 +5935,13 @@ function renderAmendmentsTable({ amendments }, body) {
                 </span>
             </div>`;
         });
-        // The party swatch follows the sponsors rather than leading them, so this
-        // cell reads photo > name > party like every other member chip on the
-        // board. It is still the row's party filter; only its position moved.
-        return `<div class="amdt-sponsor-list">${chips.join('')}</div>
-                <button class="amdt-party ${dotParty}" type="button" data-filter-party="${dotParty}" title="Filter by party" aria-label="Filter by ${dotParty}"></button>`;
+        // The dot leads the cell on purpose: it is the AMENDMENT's party (and the
+        // row's filter), not the sponsor's. The letter badge inside each chip is
+        // the member's. Two different facts, so the cell reads
+        // dot > photo > name > party, and the chip itself still matches every
+        // other member chip on the board.
+        return `<button class="amdt-party ${dotParty}" type="button" data-filter-party="${dotParty}" title="Filter by party" aria-label="Filter by ${dotParty}"></button>
+                <div class="amdt-sponsor-list">${chips.join('')}</div>`;
     };
 
     body.innerHTML = display.length ? `
