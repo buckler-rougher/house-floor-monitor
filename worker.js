@@ -1459,18 +1459,24 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
 }
 
 // ── KV cache for per-bill Congress.gov enrichment (summary, sponsor, committees, status).
-// v5: the committee scan now also accepts "Reported by the Committee on X",
-// not just "Ordered to be Reported", so bills whose markup was never logged as
-// its own action stop showing as unreported. v4 widened the actions window from
-// 20 to 250 for the same panel. Both bumps exist so cached entries re-enrich
-// rather than sitting out their 30-day TTL.
+// Back on v3 deliberately. Two bumps (v4 for the wider actions window, v5 for
+// the committee-report fallback) each invalidated all 78 bills at once, and the
+// stampede outran Congress.gov's hourly quota: a failed fetch returns null so it
+// is not cached, so every page load retried every uncached bill and kept the
+// quota exhausted. Committee coverage fell 63/78 -> 13/78 -> 7/78 rather than
+// recovering.
+//
+// The code improvements stand; they simply do not need a forced global refresh.
+// Reading v3 restores the entries already written, and the better parsing
+// applies to each bill as its 30-day entry expires. Do not bump this key to
+// deploy a parsing change -- let it roll over, or refresh a single bill.
 // Summaries and sponsors are permanent once published; status is covered by the proceedings ratchet.
 // Physical KV TTL = KV_STORAGE_TTL (30 days). Write-on-change: only writes when enrichment data
 // actually differs from what is already in KV (e.g. newly published CRS summary, updated status).
 const BILL_ENRICH_TTL = 6 * 60 * 60; // in-memory freshness window (6 hours)
 
 async function getCachedBillEnrichment(env, billId) {
-  const key = `bill-enrich-v5:${billId}`;
+  const key = `bill-enrich-v3:${billId}`;
   const mem = _mGet(key);
   if (mem) return JSON.parse(mem);
   if (!env?.HLS_CACHE) return null;
@@ -1482,7 +1488,7 @@ async function getCachedBillEnrichment(env, billId) {
 }
 
 async function setCachedBillEnrichment(env, billId, data) {
-  const key = `bill-enrich-v5:${billId}`;
+  const key = `bill-enrich-v3:${billId}`;
   const body = JSON.stringify(data);
   _mSet(key, body, BILL_ENRICH_TTL * 1000);
   if (!env?.HLS_CACHE) return;
