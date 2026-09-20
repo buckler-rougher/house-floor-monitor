@@ -5554,8 +5554,8 @@ function openBillModal(billId) {
                         <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
                     </div>
                     <div class="absentee-meta">
-                        <span class="absentee-party-tag ${pClass}">${pLetter}</span>
                         <span class="absentee-name">${name}</span>
+                        <span class="absentee-party-tag ${pClass}">${pLetter}</span>
                         <span class="absentee-state">${loc}</span>
                     </div>
                 </div>
@@ -5928,14 +5928,18 @@ function renderAmendmentsTable({ amendments }, body) {
             return `<div class="amdt-sponsor-chip">
                 ${photoHtml}
                 <span class="amdt-sponsor-name">
+                    <button class="amdt-member-btn${isActive ? ' active' : ''}" type="button" data-member-name="${safeAttr}" title="Filter to ${s.name}'s amendments">${s.name}
+</button>
                     <span class="amdt-sponsor-party-tag ${s.party}">${s.letter}</span>
-                    <button class="amdt-member-btn${isActive ? ' active' : ''}" type="button" data-member-name="${safeAttr}" title="Filter to ${s.name}'s amendments">${s.name}</button>
                     ${s.distLabel ? `<span class="amdt-sponsor-dist"> ${s.distLabel}</span>` : ''}
                 </span>
             </div>`;
         });
-        return `<button class="amdt-party ${dotParty}" type="button" data-filter-party="${dotParty}" title="Filter by party" aria-label="Filter by ${dotParty}"></button>
-                <div class="amdt-sponsor-list">${chips.join('')}</div>`;
+        // The party swatch follows the sponsors rather than leading them, so this
+        // cell reads photo > name > party like every other member chip on the
+        // board. It is still the row's party filter; only its position moved.
+        return `<div class="amdt-sponsor-list">${chips.join('')}</div>
+                <button class="amdt-party ${dotParty}" type="button" data-filter-party="${dotParty}" title="Filter by party" aria-label="Filter by ${dotParty}"></button>`;
     };
 
     body.innerHTML = display.length ? `
@@ -6962,8 +6966,8 @@ function updateDebateSection(items) {
                             <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
                         </div>
                         <div class="absentee-meta">
-                            <span class="absentee-party-tag ${pClass}">${pLetter}</span>
                             <span class="absentee-name">${name}</span>
+                            <span class="absentee-party-tag ${pClass}">${pLetter}</span>
                             <span class="absentee-state">${loc}</span>
                         </div>
                     </div>`);
@@ -10468,8 +10472,8 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
                     ${photoUrl ? `<img class="absentee-photo" src="${photoUrl}" alt="${displayName}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />` : ''}
                 </div>
                 <div class="absentee-meta">
-                    <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
                     <span class="absentee-name">${displayName}</span>
+                    <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
                     <span class="absentee-state">${displayState}</span>
                     ${casualtyStatus ? `<span class="absentee-casualty-status">${casualtyStatus}</span>` : ''}
                 </div>
