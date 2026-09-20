@@ -3431,14 +3431,19 @@ function getVoteTlAbsences(billId, status, action = null) {
 }
 
 // Build colored HTML for the absences badge. Safe — content is numbers only.
-function buildAbsenceHtml(absences) {
+// `status` matters because not_voting means two different things. On a closed
+// vote it is the absence count. On one still open it is everyone who has not
+// reached the floor yet -- two minutes into a fifteen-minute vote that is most
+// of the chamber, and labelling 304 members "absent" reads as a quorum failure
+// rather than a vote in progress. Same number either way; only the word changes.
+function buildAbsenceHtml(absences, status = null) {
     if (!absences) return '';
     const { d, r, i: rawI = 0 } = absences;
     const i = rawI;
     const total = (typeof d === 'number' && typeof r === 'number') ? d + r + i : null;
     let html = `<span class="absent-d">D ${d}</span> · <span class="absent-r">R ${r}</span>`;
     if (i > 0) html += ` · <span class="absent-i">I ${i}</span>`;
-    if (total !== null) html += ` · ${total} absent`;
+    if (total !== null) html += ` · ${total} ${status === 'active' ? 'not yet voted' : 'absent'}`;
     return html;
 }
 
@@ -3499,7 +3504,7 @@ function updateVoteTimelineStatus() {
         }
         // Update absences badge
         const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status, action);
-        const absHtml = buildAbsenceHtml(absences);
+        const absHtml = buildAbsenceHtml(absences, status);
         const absEl = item.querySelector('.vote-tl-absences');
         if (absEl) {
             absEl.innerHTML = absHtml;
@@ -3826,7 +3831,7 @@ function renderVoteTimeline(items) {
         // (matched to the amendment's own rollLog entry by sponsor+number).
         const resultText = amdtVoteText ? `${status.toUpperCase()} ${amdtVoteText.replace('-', '–')}` : voteTlResultText(billId, status, action);
         const absences = amdtVoteText ? amdtAbsences : getVoteTlAbsences(billId, status, action);
-        const absHtml = buildAbsenceHtml(absences);
+        const absHtml = buildAbsenceHtml(absences, status);
         const { label: billLabel, desc } = voteTlLabelAndDesc(billId, text, action);
         const billAttr = billId ? ` data-bill-id="${escapeHtml(billId)}"` : '';
         const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : '';
