@@ -65,6 +65,17 @@
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
 
+    /* Party identity. Deliberately not the accents: --accent-red also means
+       "failed" and --accent-blue means "link", and a party is neither. Values
+       are the plurality of what was already in use; five different reds had
+       accumulated for Republican alone. */
+    --party-d:           #58a6ff;
+    --party-r:           #ff4d4f;
+    --party-i:           #a371f7;
+    --party-d-tint:      rgba(88, 166, 255, 0.1);
+    --party-r-tint:      rgba(255, 77, 79, 0.1);
+    --party-i-tint:      rgba(163, 113, 247, 0.1);
+
 
     /* ── Motion ───────────────────────────────────────────────────────────────
        Durations named by millisecond value, same convention as --sp-* / --fs-*.
@@ -950,11 +961,11 @@ body.tellers-mode .tellers-column { display: flex; }
     letter-spacing: 0.02em;
 }
 .count-party-breakdown .cpb-d {
-    color: #58a6ff;
+    color: var(--party-d);
     padding-right: 8px;
 }
 .count-party-breakdown .cpb-r {
-    color: #f78166;
+    color: var(--party-r);
     padding-left: 8px;
     border-left: 1px solid rgba(139, 148, 158, 0.3);
 }
@@ -1345,9 +1356,9 @@ body.tellers-mode .tellers-column { display: flex; }
   font-weight: 700;
   line-height: 1;
 }
-.threshold-metric-value.democrat { color: #4a9eff; }
-.threshold-metric-value.republican { color: #ff6b6b; }
-.threshold-metric-value.independent { color: #a371f7; }
+.threshold-metric-value.democrat { color: var(--party-d); }
+.threshold-metric-value.republican { color: var(--party-r); }
+.threshold-metric-value.independent { color: var(--party-i); }
 
 
 .last-vote-label {
@@ -2153,9 +2164,9 @@ body.tellers-mode .tellers-column { display: flex; }
   text-overflow: ellipsis;
 }
 
-.pip-speaker-meta .pip-speaker-party-r { color: var(--accent-red); }
-.pip-speaker-meta .pip-speaker-party-d { color: var(--accent-blue); }
-.pip-speaker-meta .pip-speaker-party-i { color: var(--accent-purple); }
+.pip-speaker-meta .pip-speaker-party-r { color: var(--party-r); }
+.pip-speaker-meta .pip-speaker-party-d { color: var(--party-d); }
+.pip-speaker-meta .pip-speaker-party-i { color: var(--party-i); }
 
 /* A guess the resolver itself does not trust. Never silently present these as
    fact — the whole point of the confidence score is that it reaches the page. */
@@ -2798,8 +2809,8 @@ body.tellers-mode .tellers-column { display: flex; }
   padding: 3px 8px 1px;
   border-radius: 4px;
 }
-.vote-tl-absences .absent-d { color: var(--accent-blue); }
-.vote-tl-absences .absent-r { color: var(--accent-red); }
+.vote-tl-absences .absent-d { color: var(--party-d); }
+.vote-tl-absences .absent-r { color: var(--party-r); }
 .vote-tl-absences .absent-i { color: #a371f7; }
 
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
@@ -3627,12 +3638,12 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .absentee-party.rep {
-  background: var(--accent-red);
+  background: var(--party-r);
   color: white;
 }
 
 .absentee-party.dem {
-  background: var(--accent-blue);
+  background: var(--party-d);
   color: white;
 }
 
@@ -3688,18 +3699,18 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .absentee-party-tag.republican {
-  background: rgba(249, 25, 28, 0.1);
-  color: #f9251c;
+  background: var(--party-r-tint);
+  color: var(--party-r);
 }
 
 .absentee-party-tag.democrat {
-  background: rgba(88, 166, 255, 0.1);
-  color: #58a6ff;
+  background: var(--party-d-tint);
+  color: var(--party-d);
 }
 
 .absentee-party-tag.independent {
-  background: rgba(163, 113, 247, 0.1);
-  color: #a371f7;
+  background: var(--party-i-tint);
+  color: var(--party-i);
 }
 
 .absentee-name {
@@ -5974,8 +5985,8 @@ font-family: var(--font-mono);
     transition: width var(--dur-300) ease, filter var(--dur-200) ease, box-shadow var(--dur-200) ease;
 }
 
-.bill-modal-support-fill.rep { background: var(--accent-red); }
-.bill-modal-support-fill.dem { background: var(--accent-blue); }
+.bill-modal-support-fill.rep { background: var(--party-r); }
+.bill-modal-support-fill.dem { background: var(--party-d); }
 .bill-modal-support-fill.ind { background: #a371f7; }
 
 .bill-modal-support-fill.rep:hover {
@@ -6002,8 +6013,8 @@ font-family: var(--font-mono);
     font-family: var(--font-mono);
 }
 
-.bill-modal-support-count.rep { color: var(--accent-red); }
-.bill-modal-support-count.dem { color: var(--accent-blue); }
+.bill-modal-support-count.rep { color: var(--party-r); }
+.bill-modal-support-count.dem { color: var(--party-d); }
 .bill-modal-support-count.ind { color: #a371f7; }
 
 .bill-modal-committees {
@@ -6396,8 +6407,8 @@ font-family: var(--font-mono);
     margin-right: var(--sp-4);
     vertical-align: middle;
 }
-.amdt-sponsor-party-tag.rep { background: rgba(249,25,28,0.1); color: #f9251c; }
-.amdt-sponsor-party-tag.dem { background: rgba(88,166,255,0.1); color: #58a6ff; }
+.amdt-sponsor-party-tag.rep { background: var(--party-r-tint); color: var(--party-r); }
+.amdt-sponsor-party-tag.dem { background: var(--party-d-tint); color: var(--party-d); }
 .amdt-sponsor-party-tag.ind { background: rgba(163,113,247,0.1); color: #a371f7; }
 
 
@@ -6458,8 +6469,8 @@ font-family: var(--font-mono);
     transition: opacity var(--dur-150);
 }
 .amdt-party:hover { opacity: 0.65; }
-.amdt-party.rep { background: var(--accent-red); }
-.amdt-party.dem { background: var(--accent-blue); }
+.amdt-party.rep { background: var(--party-r); }
+.amdt-party.dem { background: var(--party-d); }
 .amdt-party.ind { background: #a371f7; }
 .amdt-party.bipartisan { background: #a371f7; }
 
@@ -7980,18 +7991,18 @@ body.committee-chair-mode .committee-chair-section {
 }
 
 .pledge-party-tag.republican {
-    background: rgba(249, 25, 28, 0.1);
-    color: #f9251c;
+    background: var(--party-r-tint);
+    color: var(--party-r);
 }
 
 .pledge-party-tag.democrat {
-    background: rgba(88, 166, 255, 0.1);
-    color: #58a6ff;
+    background: var(--party-d-tint);
+    color: var(--party-d);
 }
 
 .pledge-party-tag.independent {
-    background: rgba(163, 113, 247, 0.1);
-    color: #a371f7;
+    background: var(--party-i-tint);
+    color: var(--party-i);
 }
 
 .pledge-leader-details {
@@ -8744,20 +8755,20 @@ body.house-privilege-mode .privilege-section { display: block; }
    this card is modelled on renders its party letter unstyled. Same rules, both. */
 .privilege-party-tag.republican,
 .committee-chair-party-tag.republican {
-    background: rgba(249, 25, 28, 0.1);
-    color: #f9251c;
+    background: var(--party-r-tint);
+    color: var(--party-r);
 }
 
 .privilege-party-tag.democrat,
 .committee-chair-party-tag.democrat {
-    background: rgba(88, 166, 255, 0.1);
-    color: #58a6ff;
+    background: var(--party-d-tint);
+    color: var(--party-d);
 }
 
 .privilege-party-tag.independent,
 .committee-chair-party-tag.independent {
-    background: rgba(163, 113, 247, 0.1);
-    color: #a371f7;
+    background: var(--party-i-tint);
+    color: var(--party-i);
 }
 
 .committee-chair-party-tag {
@@ -9028,18 +9039,18 @@ body.tellers-mode .tellers-section {
 }
 
 .journal-party-tag.republican {
-    background: rgba(248, 81, 73, 0.1);
-    color: #f85149;
+    background: var(--party-r-tint);
+    color: var(--party-r);
 }
 
 .journal-party-tag.democrat {
-    background: rgba(88, 166, 255, 0.1);
-    color: #58a6ff;
+    background: var(--party-d-tint);
+    color: var(--party-d);
 }
 
 .journal-party-tag.independent {
-    background: rgba(163, 113, 247, 0.1);
-    color: #a371f7;
+    background: var(--party-i-tint);
+    color: var(--party-i);
 }
 
 .journal-chair-details {
