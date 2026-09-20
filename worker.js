@@ -1733,9 +1733,19 @@ async function handleBills(request, env) {
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
   if (dateParam) return _fetchBills(request, env);
+  // v10: the same poisoning, a different cause. Bumping the per-bill enrichment
+  // key twice invalidated all 78 bills at once and the stampede exhausted the
+  // Congress.gov quota, so a payload was computed with almost no committee data
+  // and cached here for an hour -- committee coverage sat at 7/78 and would not
+  // move however many times the enrichment was fixed underneath it.
+  //
+  // Safe to recompute now: the per-bill key is back on v3, whose entries were
+  // never deleted, so this rebuild reads cached enrichment instead of calling
+  // the API.
+  //
   // v9: invalidate caches poisoned with un-enriched bills written by the Durable
   // Object isolate, which never initialised _congressApiKey / CURRENT_CONGRESS.
-  const cacheKey = quick ? 'bills-weekly-quick-v9' : 'bills-weekly-v9';
+  const cacheKey = quick ? 'bills-weekly-quick-v10' : 'bills-weekly-v10';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
