@@ -4362,7 +4362,7 @@ a.tweet-quote:hover {
     font-weight: 800;
     padding: var(--sp-4) var(--sp-10);
     border-radius: var(--radius-4);
-    letter-spacing: 0.1em;
+    letter-spacing: var(--track-wider);
     border: 1px solid transparent;
 }
 
