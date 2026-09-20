@@ -1,0 +1,71 @@
+# Measure how long a floor action takes to reach the board.
+#
+# WHY THIS RUNS UNATTENDED
+# The board picks its mode from the Clerk's proceedings feed, and that feed is
+# slow during morning business — which is also when the events are shortest. A
+# prayer and pledge are over in two minutes, so a feed that lags does not report
+# them late, it misses them, and the board sits in the wrong mode through the one
+# part of the day it could have been right.
+#
+# Nobody has measured how slow. Measuring it needs someone polling during a live
+# session, which is not a thing a person is going to sit and do, so it runs here.
+#
+# Two sources, answering different questions. clerk.house.gov is the Clerk's own
+# delay and is not ours to fix. Our /api/proceedings adds the worker's cache TTL
+# on top; that gap is the part we control, and the summary prints both.
+#
+# A run on a day with no session finds nothing new and honestly reports no live
+# observations, so this is harmless on recesses and weekends.
+name: Proceedings publication lag
+
+on:
+  schedule:
+    # 13:30 UTC — 9:30am ET, shortly after the House typically convenes, catching
+    # the prayer, pledge and one-minute speeches that the lag actually spoils.
+    # Weekdays only; the occasional Saturday sitting can be caught by hand.
+    - cron: '30 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'How long to poll for'
+        required: false
+        default: '150'
+      interval:
+        description: 'Seconds between polls'
+        required: false
+        default: '20'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proceedings-lag
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    # Generous margin over the poll window so the summary always gets written.
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Poll the proceedings feed
+        run: >-
+          node dev/proceedings-lag.mjs
+          --minutes=${{ inputs.minutes || '150' }}
+          --interval=${{ inputs.interval || '20' }}
+          --out=proceedings-lag.jsonl
+
+      - name: Keep the raw observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proceedings-lag-${{ github.run_id }}
+          path: proceedings-lag.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
