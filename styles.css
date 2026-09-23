@@ -1150,12 +1150,12 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .live-indicator.connecting {
-    background: #ffa500;
+    background: var(--accent-amber);
     animation: pulse 1.5s infinite;
 }
 
 .live-indicator.live {
-    background: #4ade80;
+    background: var(--accent-green);
     animation: pulse 2s infinite;
 }
 
@@ -1224,7 +1224,7 @@ body.tellers-mode .tellers-column { display: flex; }
     transition: background var(--dur-300);
 }
 .conn-dash-dot.state-live       { background: var(--accent-green); box-shadow: 0 0 6px rgba(63,185,80,0.6); animation: pulse 2s infinite; }
-.conn-dash-dot.state-connecting { background: #ffa500; animation: pulse 1.5s infinite; }
+.conn-dash-dot.state-connecting { background: var(--accent-amber); animation: pulse 1.5s infinite; }
 .conn-dash-dot.state-error      { background: var(--accent-red); }
 
 .conn-dash-status {
@@ -4383,14 +4383,14 @@ a.tweet-quote:hover {
 }
 
 .majority-badge.r-control {
-    background: rgba(248, 81, 73, 0.1);
-    color: var(--accent-red);
-    border-color: rgba(248, 81, 73, 0.3);
+    background: var(--party-r-tint);
+    color: var(--party-r);
+    border-color: rgba(255, 77, 79, 0.3);
 }
 
 .majority-badge.d-control {
-    background: rgba(88, 166, 255, 0.1);
-    color: var(--accent-blue);
+    background: var(--party-d-tint);
+    color: var(--party-d);
     border-color: rgba(88, 166, 255, 0.3);
 }
 
@@ -4662,8 +4662,8 @@ a.tweet-quote:hover {
     padding: 1px 6px;
     border-radius: var(--radius-3);
 }
-.this-week-day-vote   { background: rgba(63,185,80,0.15);  color: #4ade80; }
-.this-week-day-fly    { background: rgba(63,185,80,0.15);  color: #4ade80; }
+.this-week-day-vote   { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
+.this-week-day-fly    { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
 .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
 .this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); line-height: 1; }
 
@@ -5607,7 +5607,7 @@ font-family: var(--font-mono);
     overflow-wrap: anywhere;
 }
 
-.amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: #ffc107;             opacity: 0.75; }
+.amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: var(--accent-amber);             opacity: 0.75; }
 .amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: var(--accent-red);             opacity: 0.75; }
 .amdt-vote-card.amdt-vote-passed    .amdt-vote-circle { color: var(--accent-green); opacity: 0.75; }
 
@@ -7267,7 +7267,7 @@ body.one-minute-mode .one-minute-section {
     border-radius: var(--radius-12);
     background: rgba(180, 83, 9, 0.12);
     border: 1px solid rgba(180, 83, 9, 0.35);
-    color: #d97706;
+    color: var(--accent-amber);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
