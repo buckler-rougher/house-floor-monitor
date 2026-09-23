@@ -2776,9 +2776,24 @@ let whipNoticeFilter = null; // null = all; 'floor'|'daily'|'nightly'|'weekly' =
 // currentVotesList: [{billId, text, duration, action}] from latest series render
 let currentVotesList = [];
 
-// Who controls the House right now. Flip this when control changes.
-// 'R' = Republicans majority, Democrats minority; 'D' = vice versa.
-const HOUSE_MAJORITY_PARTY = 'R';
+// Who controls the House right now.
+//
+// Derived from the Clerk's MemberData <majority> element, the same source the
+// control badge reads, so a change of control needs no edit here. The constant
+// is only the value to assume before that XML has loaded; it does not need to
+// be right after a flip, it needs to be a sane default for the first second of
+// a page load.
+//
+// This used to be a hand-maintained const with "flip this when control
+// changes" on it, which meant control could change in the badge (live from the
+// Clerk) and not in the vote-recommendation presets (stale by hand), and the
+// two would quietly disagree.
+const HOUSE_MAJORITY_PARTY_FALLBACK = 'R';
+function houseMajorityParty() {
+    return (controllingParty === 'R' || controllingParty === 'D')
+        ? controllingParty
+        : HOUSE_MAJORITY_PARTY_FALLBACK;
+}
 
 // Granular auto-fill preferences (persisted to localStorage)
 let voteRecsPrefs = (() => {
@@ -3910,7 +3925,7 @@ function getWhipRecFor(billId) {
 // Return the party preset preference object for 'D' or 'R',
 // accounting for current majority/minority roles.
 function getPartyPrefs(party) {
-    const isMajority = party === HOUSE_MAJORITY_PARTY;
+    const isMajority = party === houseMajorityParty();
     if (party === 'D') {
         // Follow Dem Whip recs where available; other positions by role
         return isMajority
