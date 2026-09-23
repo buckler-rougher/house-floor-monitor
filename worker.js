@@ -1377,6 +1377,10 @@ const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, schedu
 //   Physical KV storage is always KV_STORAGE_TTL (30 days) so old values persist for comparison.
 //   A producer can set the KV_NO_STORE_HEADER response header to opt a single
 //   response out of the KV write (still served, still memoized in-isolate).
+// Origin fetches in progress, keyed by cache key. See the single-flight note in
+// kvCache below.
+const _kvInflight = new Map();
+
 async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
   const ttlMs = ttlSeconds * 1000;
   const kvFreshMs = kvFreshTtl * 1000;
@@ -1412,8 +1416,31 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
     } catch {}
   }
 
-  // 3. Origin fetch
-  const response = await fn();
+  // 3. Origin fetch, single-flight within this isolate.
+  //
+  // Requests that arrive together on an expired key would otherwise each run
+  // fn(). For the bills payload that is one Congress.gov call per
+  // terminal-status bill per pass, since needsStatusVerify re-checks every
+  // passed/failed bill by design, and a handful of concurrent passes is enough
+  // to exhaust the hourly quota. Sharing the in-flight fetch bounds a burst to
+  // one pass per isolate.
+  //
+  // Isolates do not share this map, so this narrows the stampede rather than
+  // removing it. Anything that must not be called N times at once needs its own
+  // guard, not this one.
+  let response;
+  const inflight = _kvInflight.get(key);
+  if (inflight) {
+    response = (await inflight).clone();
+  } else {
+    const started = fn();
+    _kvInflight.set(key, started);
+    try {
+      response = await started;
+    } finally {
+      _kvInflight.delete(key);
+    }
+  }
   if (response.ok) {
     try {
       const body = await response.clone().text();
@@ -1739,9 +1766,16 @@ async function handleBills(request, env) {
   // and cached here for an hour -- committee coverage sat at 7/78 and would not
   // move however many times the enrichment was fixed underneath it.
   //
-  // Safe to recompute now: the per-bill key is back on v3, whose entries were
-  // never deleted, so this rebuild reads cached enrichment instead of calling
-  // the API.
+  // Safe to recompute now only in the sense that the per-bill key is back on
+  // v3, whose entries were never deleted, so this rebuild does not re-enrich
+  // all 78 bills from scratch.
+  //
+  // It is NOT free of API calls, so do not read this as "bumping the bills key
+  // is cheap". A rebuild still calls Congress.gov once per terminal-status bill
+  // (needsStatusVerify re-verifies every passed/failed bill on purpose) and once
+  // per cached entry that predates committeeReport. Late in a week that is
+  // dozens of calls. Bump this key during session hours and you can reproduce
+  // the exhaustion described above.
   //
   // v9: invalidate caches poisoned with un-enriched bills written by the Durable
   // Object isolate, which never initialised _congressApiKey / CURRENT_CONGRESS.
@@ -2163,7 +2197,14 @@ async function _fetchBills(request, env) {
         // undefined = transient error — don't cache as null so next request retries
         summary = summaryResult ?? null;
         meta    = metaResult ?? null;
-        if (summaryResult !== undefined || metaResult !== undefined || congressStatus) {
+        // fetchCongressBillStatus reserves null for a transient failure: a bill
+        // it actually checked comes back as an object, even when both fields
+        // inside are null. So null here means the API was not reached, and
+        // persisting it would record "no floor action" for a bill that may have
+        // passed. handleBills then serves that entry for an hour, which is the
+        // shape of outage the bills cache key was bumped to clear. Skip the
+        // write entirely and let the next request retry all three.
+        if (congressStatus !== null) {
           await setCachedBillEnrichment(env, bill.id, {
             congressStatus,
             summary: summaryResult !== undefined ? summaryResult : null,
