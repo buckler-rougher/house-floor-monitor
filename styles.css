@@ -4373,7 +4373,12 @@ a.tweet-quote:hover {
     font-weight: 800;
     padding: var(--sp-4) var(--sp-10);
     border-radius: var(--radius-4);
-    letter-spacing: var(--track-wider);
+    /* em, not --track-wider, and deliberately so. The tracking tokens are px,
+       which matches this at a 16px root and stops matching as soon as the
+       reader raises their base font size: the capitals would tighten exactly as
+       the text grows. Everything else capitalized here is small and fixed;
+       this badge is the one that has to stay legible when scaled. */
+    letter-spacing: 0.1em;
     border: 1px solid transparent;
 }
 
