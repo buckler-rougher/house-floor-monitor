@@ -9957,6 +9957,7 @@ function init() {
 
     // Absentee filter toggle — handles both filter-bar buttons and metric box clicks
     const absenteePanel = document.querySelector('.absentee-panel');
+
     if (absenteePanel) {
         absenteePanel.addEventListener('click', e => {
             const btn = e.target.closest('.absentee-filter-btn');
@@ -9968,15 +9969,57 @@ function init() {
             // Clicking the already-active party filter clears back to all
             absenteeFilterMode = (newFilter !== 'all' && newFilter === absenteeFilterMode) ? 'all' : newFilter;
             if (_absenteesPayload) {
-                updateAbsenteeUI(
+                animateAbsenteeFilter(() => updateAbsenteeUI(
                     _absenteesPayload.absentees,
                     _absenteesPayload.rollNumber,
                     _absenteesPayload.rollDate,
                     _absenteesPayload.rollTime
-                );
+                ));
             }
         });
     }
+}
+
+// Re-render the absentee list with the filter animation.
+//
+// The list is replaced wholesale on every poll, so the entry animation is gated
+// behind a class that only a filter click sets: animating on every render would
+// make the panel twitch every thirty seconds for no reason.
+//
+// Height is eased separately because filtering changes the row count, and
+// without it the whole panel below jumps the instant the class list changes.
+async function animateAbsenteeFilter(render) {
+    const list = elements.absenteeList;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!list || reduce) { await render(); return; }
+
+    const before = list.getBoundingClientRect().height;
+    list.classList.remove('is-filtering');
+    // updateAbsenteeUI is async -- it awaits the Clerk member XML before it
+    // writes any rows. Measuring without awaiting reads the old list, the two
+    // heights come out equal, and the height transition never runs even though
+    // the row count is about to change.
+    await render();
+    // Read after the replace so the browser has the new row count.
+    const after = list.getBoundingClientRect().height;
+    void list.offsetWidth;            // restart the stagger from the first row
+    list.classList.add('is-filtering');
+
+    if (before > 0 && after > 0 && Math.abs(before - after) > 1) {
+        list.style.height = `${before}px`;
+        void list.offsetWidth;
+        list.style.transition = 'height var(--dur-300) var(--ease-emphasis)';
+        list.style.height = `${after}px`;
+        const settle = (e) => {
+            if (e.propertyName !== 'height') return;
+            list.style.transition = '';
+            list.style.height = '';
+            list.removeEventListener('transitionend', settle);
+        };
+        list.addEventListener('transitionend', settle);
+    }
+    clearTimeout(animateAbsenteeFilter._t);
+    animateAbsenteeFilter._t = setTimeout(() => list.classList.remove('is-filtering'), 600);
 }
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
@@ -10476,7 +10519,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             const casualtyStatus = getCasualtyStatus(match);
 
             htmlParts.push(`
-            <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
+            <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}" style="--stagger:${absenteeIndex}">
                 <div class="absentee-photo-wrap">
                     <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
                     ${photoUrl ? `<img class="absentee-photo" src="${photoUrl}" alt="${displayName}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />` : ''}

@@ -3622,6 +3622,32 @@ body.tellers-mode .tellers-column { display: flex; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Filter entry animation. Gated behind .is-filtering, which only a filter click
+   sets, because the list is replaced on every poll and animating that would
+   make the panel twitch every thirty seconds. --stagger is the row index, set
+   inline when each row is built; the cap keeps a long absence list from
+   rippling for a second and a half. */
+@keyframes absentee-filter-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.absentee-list.is-filtering .absentee-member {
+    animation: absentee-filter-in var(--dur-200) var(--ease-emphasis) both;
+    animation-delay: min(calc(var(--stagger, 0) * 20ms), 180ms);
+}
+
+.absentee-list {
+    /* height is driven inline while a filter is settling; see
+       animateAbsenteeFilter in app.js */
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .absentee-list.is-filtering .absentee-member { animation: none; }
+    .absentee-list { transition: none !important; }
+}
+
 .absentee-member:last-child {
   border-bottom: none;
 }
