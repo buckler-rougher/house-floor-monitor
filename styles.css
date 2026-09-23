@@ -970,7 +970,7 @@ body.tellers-mode .tellers-column { display: flex; }
     border-left: 1px solid rgba(139, 148, 158, 0.3);
 }
 .count-party-breakdown .cpb-i {
-    color: #a371f7;
+    color: var(--party-i);
     padding-left: 8px;
     border-left: 1px solid rgba(139, 148, 158, 0.3);
 }
@@ -1440,7 +1440,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 /* subtle muted subtitle style inside fallback */
 .video-container .video-fallback .subtitle {
-  color: #9aa6b2;
+  color: var(--text-muted);
   font-size: var(--fs-lg);
   margin-top: var(--sp-8);
 }
@@ -2811,7 +2811,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 .vote-tl-absences .absent-d { color: var(--party-d); }
 .vote-tl-absences .absent-r { color: var(--party-r); }
-.vote-tl-absences .absent-i { color: #a371f7; }
+.vote-tl-absences .absent-i { color: var(--party-i); }
 
 /* ── Vote Recs button (in panel-header) ─────────────────────────────────── */
 .vrec-open-btn {
@@ -3786,7 +3786,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .twitter-panel .panel-header {
     margin: 0;
     border-radius: var(--radius-14) var(--radius-14) 0 0;
-    background: #0b1322;
+    background: var(--bg-elevated);
     border-bottom: 1px solid rgba(52, 72, 100, 0.8);
     padding: var(--sp-16) var(--sp-24);
 }
@@ -4611,7 +4611,7 @@ a.tweet-quote:hover {
 .voting-calendar-panel .panel-header {
     margin: 0;
     border-radius: var(--radius-14) var(--radius-14) 0 0;
-    background: #0b1322;
+    background: var(--bg-elevated);
     border-bottom: 1px solid rgba(52, 72, 100, 0.8);
     padding: var(--sp-16) var(--sp-24);
 }
@@ -5416,12 +5416,12 @@ font-family: var(--font-mono);
 }
 
 .bill-rule-tag.rule-tag-passed {
-    color: #3fb950;
+    color: var(--accent-green);
     border-color: rgba(63, 185, 80, 0.4);
     background: rgba(63, 185, 80, 0.08);
 }
 .bill-rule-tag.rule-tag-reported {
-    color: #e3b341;
+    color: var(--accent-yellow);
     border-color: rgba(227, 179, 65, 0.4);
     background: rgba(227, 179, 65, 0.08);
 }
@@ -5552,7 +5552,7 @@ font-family: var(--font-mono);
 }
 
 .mtr-card.mtr-pending .mtr-circle { color: var(--accent-amber); opacity: 0.75; }
-.mtr-card.mtr-failed  .mtr-circle { color: #f85149;             opacity: 0.75; }
+.mtr-card.mtr-failed  .mtr-circle { color: var(--accent-red);             opacity: 0.75; }
 .mtr-card.mtr-passed  .mtr-circle { color: var(--accent-green); opacity: 0.75; }
 
 /* Amendment vote mini-card — same shape/behavior as .mtr-card, stacked above it */
@@ -5603,7 +5603,7 @@ font-family: var(--font-mono);
 }
 
 .amdt-vote-card.amdt-vote-requested .amdt-vote-circle { color: #ffc107;             opacity: 0.75; }
-.amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: #f85149;             opacity: 0.75; }
+.amdt-vote-card.amdt-vote-failed    .amdt-vote-circle { color: var(--accent-red);             opacity: 0.75; }
 .amdt-vote-card.amdt-vote-passed    .amdt-vote-circle { color: var(--accent-green); opacity: 0.75; }
 
 /* Hover anywhere in the slot lights up every stacked element in one colour.
@@ -5987,7 +5987,7 @@ font-family: var(--font-mono);
 
 .bill-modal-support-fill.rep { background: var(--party-r); }
 .bill-modal-support-fill.dem { background: var(--party-d); }
-.bill-modal-support-fill.ind { background: #a371f7; }
+.bill-modal-support-fill.ind { background: var(--party-i); }
 
 .bill-modal-support-fill.rep:hover {
     filter: brightness(1.3);
@@ -6015,7 +6015,7 @@ font-family: var(--font-mono);
 
 .bill-modal-support-count.rep { color: var(--party-r); }
 .bill-modal-support-count.dem { color: var(--party-d); }
-.bill-modal-support-count.ind { color: #a371f7; }
+.bill-modal-support-count.ind { color: var(--party-i); }
 
 .bill-modal-committees {
     display: flex;
@@ -6409,7 +6409,7 @@ font-family: var(--font-mono);
 }
 .amdt-sponsor-party-tag.rep { background: var(--party-r-tint); color: var(--party-r); }
 .amdt-sponsor-party-tag.dem { background: var(--party-d-tint); color: var(--party-d); }
-.amdt-sponsor-party-tag.ind { background: rgba(163,113,247,0.1); color: #a371f7; }
+.amdt-sponsor-party-tag.ind { background: rgba(163,113,247,0.1); color: var(--party-i); }
 
 
 .amdt-sponsor-dist {
@@ -6471,8 +6471,8 @@ font-family: var(--font-mono);
 .amdt-party:hover { opacity: 0.65; }
 .amdt-party.rep { background: var(--party-r); }
 .amdt-party.dem { background: var(--party-d); }
-.amdt-party.ind { background: #a371f7; }
-.amdt-party.bipartisan { background: #a371f7; }
+.amdt-party.ind { background: var(--party-i); }
+.amdt-party.bipartisan { background: var(--accent-purple); }
 
 
 .amdt-summary { line-height: 1.5; }
@@ -6489,7 +6489,7 @@ font-family: var(--font-mono);
     white-space: nowrap;
 }
 .amdt-status-badge.submitted { color: var(--text-muted); border-color: var(--border-color); }
-.amdt-status-badge.adopted { color: #3fb950; border-color: rgba(63,185,80,0.4); background: rgba(63,185,80,0.08); }
+.amdt-status-badge.adopted { color: var(--accent-green); border-color: rgba(63,185,80,0.4); background: rgba(63,185,80,0.08); }
 .amdt-status-badge.failed { color: var(--accent-red); border-color: rgba(248,81,73,0.4); background: rgba(248,81,73,0.08); }
 
 /* Congress Info Display */
@@ -7362,7 +7362,7 @@ body.special-order-mode .special-order-section {
     border-radius: var(--radius-12);
     background: rgba(30, 58, 95, 0.15);
     border: 1px solid rgba(56, 108, 176, 0.35);
-    color: #58a6ff;
+    color: var(--accent-blue);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -7455,7 +7455,7 @@ body.morning-hour-mode .morning-hour-section {
     border-radius: var(--radius-12);
     background: rgba(46, 160, 67, 0.12);
     border: 1px solid rgba(46, 160, 67, 0.35);
-    color: #3fb950;
+    color: var(--accent-green);
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -7699,7 +7699,7 @@ body.committee-chair-mode .committee-chair-section {
 .silence-tag {
     display: inline-flex;
     align-items: center;
-    background: #8b949e;
+    background: var(--text-secondary);
     color: white;
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
@@ -8073,7 +8073,7 @@ body.committee-chair-mode .committee-chair-section {
 .oath-tag {
     display: inline-flex;
     align-items: center;
-    background: #d29922;
+    background: var(--accent-amber);
     color: white;
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
@@ -8237,7 +8237,7 @@ body.committee-chair-mode .committee-chair-section {
 .speaker-tag {
     display: inline-flex;
     align-items: center;
-    background: #d29922;
+    background: var(--accent-amber);
     color: white;
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
@@ -8900,7 +8900,7 @@ body.tellers-mode .tellers-section {
     height: 104px;
     border-radius: var(--radius-10);
     overflow: hidden;
-    background: #0f1720;
+    background: var(--bg-card);
 }
 
 .teller-photo-placeholder {
@@ -9082,7 +9082,7 @@ body.tellers-mode .tellers-section {
     gap: var(--sp-8);
     background: rgba(63, 185, 80, 0.12);
     border: 1px solid rgba(63, 185, 80, 0.4);
-    color: #3fb950;
+    color: var(--accent-green);
     padding: var(--sp-6) var(--sp-14);
     border-radius: var(--radius-20);
     font-size: var(--fs-base);
@@ -9095,7 +9095,7 @@ body.tellers-mode .tellers-section {
 .journal-check-icon {
     width: 16px;
     height: 16px;
-    stroke: #3fb950;
+    stroke: var(--accent-green);
     flex-shrink: 0;
 }
 
@@ -9281,7 +9281,7 @@ body.joint-session-mode .joint-session-section {
     gap: var(--sp-8);
     background: rgba(63, 185, 80, 0.12);
     border: 1px solid rgba(63, 185, 80, 0.4);
-    color: #3fb950;
+    color: var(--accent-green);
     padding: var(--sp-6) var(--sp-14);
     border-radius: var(--radius-20);
     font-size: var(--fs-base);
@@ -9294,7 +9294,7 @@ body.joint-session-mode .joint-session-section {
 .cert-election-check-icon {
     width: 16px;
     height: 16px;
-    stroke: #3fb950;
+    stroke: var(--accent-green);
     flex-shrink: 0;
 }
 
@@ -9397,7 +9397,7 @@ body.joint-session-mode .joint-session-section {
     gap: var(--sp-8);
     background: rgba(63, 185, 80, 0.12);
     border: 1px solid rgba(63, 185, 80, 0.4);
-    color: #3fb950;
+    color: var(--accent-green);
     padding: var(--sp-6) var(--sp-14);
     border-radius: var(--radius-20);
     font-size: var(--fs-base);
@@ -9410,7 +9410,7 @@ body.joint-session-mode .joint-session-section {
 .cert-electoral-check-icon {
     width: 16px;
     height: 16px;
-    stroke: #3fb950;
+    stroke: var(--accent-green);
     flex-shrink: 0;
 }
 
