@@ -11126,11 +11126,18 @@ async function updateQuorumStatus() {
     function captureCurrentFrame(gen) {
         if (gen !== pipGen || pipFrozen || !pipSnapshot || !pipVideo.videoWidth) return;
         try {
+            // Capture at roughly twice the size it is displayed, as JPEG. At full
+            // video resolution as PNG this produced a 2.3MB data URL for a box
+            // 218px wide: all of that has to be encoded, assigned and decoded
+            // before the still appears, which is dead time on every load where
+            // the House is not sitting.
+            const CAP_W = 640;
+            const scale = pipVideo.videoWidth > CAP_W ? CAP_W / pipVideo.videoWidth : 1;
             const c = document.createElement('canvas');
-            c.width  = pipVideo.videoWidth;
-            c.height = pipVideo.videoHeight;
+            c.width  = Math.round(pipVideo.videoWidth  * scale);
+            c.height = Math.round(pipVideo.videoHeight * scale);
             c.getContext('2d').drawImage(pipVideo, 0, 0, c.width, c.height);
-            const dataUrl = c.toDataURL();
+            const dataUrl = c.toDataURL('image/jpeg', 0.82);
             if (!dataUrl || dataUrl === 'data:,') return;
             if (gen !== pipGen) return; // a live stream loaded during the draw — don't freeze it
             pipFrozen = true;
