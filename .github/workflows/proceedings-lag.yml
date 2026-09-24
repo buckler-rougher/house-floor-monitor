@@ -20,16 +20,29 @@ name: Proceedings publication lag
 
 on:
   schedule:
-    # 13:30 UTC — 9:30am ET, shortly after the House typically convenes, catching
-    # the prayer, pledge and one-minute speeches that the lag actually spoils.
-    # Weekdays only; the occasional Saturday sitting can be caught by hand.
-    - cron: '30 13 * * 1-5'
+    # 09:07 UTC, which is NOT when this is meant to run.
+    #
+    # The first three scheduled runs all reported no live observations, and the
+    # reason was not that the House was quiet. GitHub started them 4.2, 5.4 and
+    # 4.4 hours after the 13:30 cron. The 21 Sep pro forma convened at 14:29 UTC
+    # and adjourned at 14:33, four minutes; that day's run began at 18:51. The
+    # poller has never once been awake while the House was sitting.
+    #
+    # Scheduled runs queue on shared infrastructure and :00 and :30 are the worst
+    # slots to ask for. So: an odd minute, and early enough that the observed
+    # delay lands the start before the House convenes rather than after it. At
+    # 09:07 plus the 2.5-5.4h seen so far, the job begins between 11:37 and 14:31
+    # UTC and polls for four and a half hours from there.
+    #
+    # If the delay grows again this will silently stop working, which is exactly
+    # how it failed the first time, so the run now prints how late it was.
+    - cron: '7 9 * * 1-5'
   workflow_dispatch:
     inputs:
       minutes:
         description: 'How long to poll for'
         required: false
-        default: '150'
+        default: '270'
       interval:
         description: 'Seconds between polls'
         required: false
@@ -46,9 +59,16 @@ jobs:
   measure:
     runs-on: ubuntu-latest
     # Generous margin over the poll window so the summary always gets written.
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v5
+
+      - name: How late did this start?
+        run: |
+          now=$(date -u +%s)
+          want=$(date -u -d "today 09:07" +%s)
+          echo "scheduled 09:07 UTC, started $(date -u +%H:%M) UTC, late by $(( (now - want) / 60 )) min" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-node@v5
         with:
@@ -57,7 +77,7 @@ jobs:
       - name: Poll the proceedings feed
         run: >-
           node dev/proceedings-lag.mjs
-          --minutes=${{ inputs.minutes || '150' }}
+          --minutes=${{ inputs.minutes || '270' }}
           --interval=${{ inputs.interval || '20' }}
           --out=proceedings-lag.jsonl
 
