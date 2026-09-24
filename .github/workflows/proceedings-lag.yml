@@ -36,7 +36,18 @@ on:
     #
     # If the delay grows again this will silently stop working, which is exactly
     # how it failed the first time, so the run now prints how late it was.
+    #
+    # Two starts, because the House does not keep to one hour. The 21 Sep pro
+    # forma convened 14:29 UTC; the 24 Sep one is called for 18:30 UTC. A single
+    # window cannot cover both once GitHub has moved the start by an unknown
+    # four-ish hours. The morning start covers roughly 11:37-19:01 UTC and the
+    # afternoon one 14:37-22:01, so between them any convene from mid-morning to
+    # early evening ET falls inside a live poll. 12:07 rather than 13:07 because
+    # at 13:07 the worst observed delay would start the run at 18:31, one minute
+    # after tomorrow's 18:30 convene -- no margin at all for the session this was
+    # rescheduled to catch.
     - cron: '7 9 * * 1-5'
+    - cron: '7 12 * * 1-5'
   workflow_dispatch:
     inputs:
       minutes:
@@ -51,9 +62,12 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: proceedings-lag
-  cancel-in-progress: false
+# Deliberately NOT serialised. With a concurrency group the afternoon run would
+# queue behind the morning one until it finished, which on a 270-minute window
+# means it would start hours after its own delay had already been spent -- and
+# the whole point of the second start is that it is awake at a different time.
+# Overlapping pollers are harmless: they observe independently and each writes
+# its own artifact.
 
 jobs:
   measure:
