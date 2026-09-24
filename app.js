@@ -9945,67 +9945,49 @@ function hideAfterAnimation(el, fallbackMs = 320) {
     el.classList.add('is-closing');
 }
 
-// Open and close a drawer that sits in normal flow, by its own height.
+// Open and close the notice filter dropdown.
 //
-// [hidden] is display:none, so toggling it moves everything below by the
-// drawer's full height in one frame. Animating the height instead means the
-// drawer and the content beneath it move together, which is the only version
-// that reads as opening rather than as a jump plus a fade.
+// It floats: position:absolute, so opening it does not change the panel's
+// height and nothing on the page moves. That leaves opacity and transform as
+// the only animated properties, which the compositor can handle on its own.
+// Animating height instead reflowed the page below on every frame and was
+// visibly choppy on a board that is also running clocks, video and SSE.
 //
-// The height is measured rather than declared because the chip count depends on
-// which notice types are present that week. box-sizing is border-box site-wide,
-// so height:0 collapses the padding too and the drawer closes to nothing.
-const DRAWER_EASE = 'cubic-bezier(0.15, 0.83, 0.66, 1)';   // --ease-emphasis
-
-function openDrawer(el, ms = 200) {
+// `top` is measured rather than declared because the panel header wraps onto a
+// second line on narrow screens.
+function openDrawer(el) {
     if (!el) return;
-    el.hidden = false;
+    const header = el.previousElementSibling;
+    if (header) el.style.top = `${header.offsetHeight}px`;
     delete el.dataset.closing;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const target = el.scrollHeight;
-    el.style.overflow = 'hidden';
-    el.style.height = '0px';
-    void el.offsetHeight;
-    el.style.transition = `height ${ms}ms ${DRAWER_EASE}`;
-    el.style.height = `${target}px`;
-    let done = false;
-    const clear = () => {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
-        el.removeEventListener('transitionend', settle);
-        el.style.transition = el.style.height = el.style.overflow = '';
-    };
-    // Same reason as the close path: with no transitionend the drawer would be
-    // stuck at the height measured on open, and would not grow if the chips did.
-    const timer = setTimeout(clear, ms + 120);
-    const settle = (e) => { if (e.propertyName === 'height') clear(); };
-    el.addEventListener('transitionend', settle);
+    el.hidden = false;
+    void el.offsetHeight;          // let the hidden->shown state settle first
+    el.classList.add('is-open');
 }
 
-function closeDrawer(el, ms = 160) {
+function closeDrawer(el, ms = 200) {
     if (!el || el.hidden || el.dataset.closing === '1') return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { el.hidden = true; return; }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        el.classList.remove('is-open');
+        el.hidden = true;
+        return;
+    }
     el.dataset.closing = '1';
-    el.style.overflow = 'hidden';
-    el.style.height = `${el.scrollHeight}px`;
-    void el.offsetHeight;
-    el.style.transition = `height ${ms}ms ease`;
-    el.style.height = '0px';
+    el.classList.remove('is-open');
     let done = false;
     const finish = () => {
         if (done) return;
         done = true;
         clearTimeout(timer);
         el.removeEventListener('transitionend', onEnd);
-        el.style.transition = el.style.height = el.style.overflow = '';
         el.hidden = true;
         delete el.dataset.closing;
     };
     // Transitions do not run in a hidden tab, so transitionend would never
-    // arrive there and the drawer would sit open at height 0.
+    // arrive and the dropdown would stay in the DOM at opacity 0, still
+    // covering the top of the feed and still swallowing clicks.
     const timer = setTimeout(finish, ms + 120);
-    const onEnd = (e) => { if (e.propertyName === 'height') finish(); };
+    const onEnd = (e) => { if (e.propertyName === 'opacity') finish(); };
     el.addEventListener('transitionend', onEnd);
 }
 
