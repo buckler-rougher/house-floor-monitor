@@ -5677,12 +5677,6 @@ font-family: var(--font-mono);
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
 
-@media (max-width: 600px) {
-    @keyframes bill-modal-in {
-        from { opacity: 0; transform: translateY(22px); }
-        to   { opacity: 1; transform: none; }
-    }
-}
 
 @media (prefers-reduced-motion: reduce) {
     .bill-modal-overlay:not([hidden]),
@@ -5719,11 +5713,24 @@ font-family: var(--font-mono);
     animation: bill-modal-out var(--dur-200) ease both;
 }
 
-@media (max-width: 600px) {
-    @keyframes bill-modal-out {
-        from { opacity: 1; transform: none; }
-        to   { opacity: 0; transform: translateY(22px); }
-    }
+/* The bill modal turns into a bottom sheet at 640px, so below that it rises
+   like one. Scoped to .bill-modal by name rather than by redefining the shared
+   keyframes: the vote-recs sheet reuses those and is a centred dialog at every
+   width, so it was getting a bottom-sheet rise it has no business having.
+   640px is where the sheet layout actually begins; the earlier 600px did not
+   match it, so between 601 and 640 the bill modal was a sheet that moved like
+   a dialog. */
+@keyframes bill-sheet-in {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes bill-sheet-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(22px); }
+}
+@media (max-width: 640px) {
+    .bill-modal-overlay:not([hidden]) .bill-modal { animation-name: bill-sheet-in; }
+    .bill-modal-overlay.is-closing .bill-modal    { animation-name: bill-sheet-out; }
 }
 
 /* Whip notices filter drawer. */
