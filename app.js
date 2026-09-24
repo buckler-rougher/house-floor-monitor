@@ -11141,11 +11141,22 @@ async function updateQuorumStatus() {
             if (!dataUrl || dataUrl === 'data:,') return;
             if (gen !== pipGen) return; // a live stream loaded during the draw — don't freeze it
             pipFrozen = true;
-            pipSnapshot.src           = dataUrl;
-            pipSnapshot.style.display = 'block';
-            pipSnapshot.removeAttribute('hidden');
-            pipVideo.style.display    = 'none';
-            hidePipLoading();   // the still is up; nothing is being acquired now
+            // Decode before swapping. Setting src and revealing the image in the
+            // same breath left a frame where the image had nothing to paint, the
+            // loading overlay's black backing was already gone and the video was
+            // already hidden -- and .floor-feed's rounded, translateZ'd clip edge
+            // showed through it as a pale hairline. That flash and the caption
+            // disappearing were the same moment.
+            const reveal = () => {
+                if (gen !== pipGen) return;
+                pipSnapshot.style.display = 'block';
+                pipSnapshot.removeAttribute('hidden');
+                pipVideo.style.display    = 'none';
+                hidePipLoading();   // the still is up; nothing is being acquired now
+            };
+            pipSnapshot.src = dataUrl;
+            if (pipSnapshot.decode) pipSnapshot.decode().then(reveal, reveal);
+            else reveal();
         } catch {}
     }
 
