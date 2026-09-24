@@ -2930,7 +2930,7 @@ function renderWhipFilterDropdown() {
             return `<button class="whip-filter-chip whip-type-${t}${isActive ? ' active' : ''}" data-filter-type="${t}">${label}</button>`;
         }),
     ];
-    dropdown.innerHTML = chips.join('');
+    dropdown.innerHTML = `<div class="whip-filter-inner">${chips.join('')}</div>`;
     dropdown.hidden = false;
 }
 
@@ -9947,47 +9947,80 @@ function hideAfterAnimation(el, fallbackMs = 320) {
 
 // Open and close the notice filter dropdown.
 //
-// It floats: position:absolute, so opening it does not change the panel's
-// height and nothing on the page moves. That leaves opacity and transform as
-// the only animated properties, which the compositor can handle on its own.
-// Animating height instead reflowed the page below on every frame and was
-// visibly choppy on a board that is also running clocks, video and SSE.
+// It stays in normal flow, so it pushes the feed down rather than covering the
+// first notice. The cost of that is normally a page-wide reflow on every frame,
+// which was visibly choppy here. So the panel's height is pinned for as long as
+// the drawer is open: the panel is a flex column, the feed is the flexible
+// child, and the drawer's height therefore comes out of the feed rather than
+// out of the page. Nothing below the panel moves, and the reflow each frame is
+// confined to the panel's own subtree.
 //
-// `top` is measured rather than declared because the panel header wraps onto a
-// second line on narrow screens.
-function openDrawer(el) {
+// The pin is cleared only once the drawer has closed again.
+const DRAWER_EASE = 'cubic-bezier(0.15, 0.83, 0.66, 1)';   // --ease-emphasis
+
+function openDrawer(el, ms = 200) {
     if (!el) return;
-    const header = el.previousElementSibling;
-    if (header) el.style.top = `${header.offsetHeight}px`;
+    const panel = el.closest('.whip-updates-panel');
     delete el.dataset.closing;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { el.hidden = false; return; }
+
+    // Collapse the drawer first, then measure. renderWhipFilterDropdown clears
+    // [hidden] before this runs, so measuring straight away reads a panel that
+    // has ALREADY grown by the drawer's height and pins it at the wrong size.
     el.hidden = false;
-    void el.offsetHeight;          // let the hidden->shown state settle first
-    el.classList.add('is-open');
+    el.style.overflow = 'hidden';
+    el.style.height = '0px';
+    void el.offsetHeight;
+    if (panel) panel.style.height = `${panel.getBoundingClientRect().height}px`;
+
+    const target = el.scrollHeight;
+    el.style.transition = `height ${ms}ms ${DRAWER_EASE}`;
+    el.style.height = `${target}px`;
+
+    let done = false;
+    const clear = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        el.removeEventListener('transitionend', settle);
+        // Height goes back to auto so the drawer can grow if the chip set
+        // changes while it is open. The panel stays pinned until it closes.
+        el.style.transition = el.style.height = el.style.overflow = '';
+    };
+    const timer = setTimeout(clear, ms + 120);
+    const settle = (e) => { if (e.propertyName === 'height') clear(); };
+    el.addEventListener('transitionend', settle);
 }
 
-function closeDrawer(el, ms = 200) {
+function closeDrawer(el, ms = 160) {
     if (!el || el.hidden || el.dataset.closing === '1') return;
+    const panel = el.closest('.whip-updates-panel');
+    const unpin = () => { if (panel) panel.style.height = ''; };
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-        el.classList.remove('is-open');
-        el.hidden = true;
-        return;
+        el.hidden = true; unpin(); return;
     }
     el.dataset.closing = '1';
-    el.classList.remove('is-open');
+    el.style.overflow = 'hidden';
+    el.style.height = `${el.getBoundingClientRect().height}px`;
+    void el.offsetHeight;
+    el.style.transition = `height ${ms}ms ease`;
+    el.style.height = '0px';
+
     let done = false;
     const finish = () => {
         if (done) return;
         done = true;
         clearTimeout(timer);
         el.removeEventListener('transitionend', onEnd);
+        el.style.transition = el.style.height = el.style.overflow = '';
         el.hidden = true;
         delete el.dataset.closing;
+        unpin();
     };
     // Transitions do not run in a hidden tab, so transitionend would never
-    // arrive and the dropdown would stay in the DOM at opacity 0, still
-    // covering the top of the feed and still swallowing clicks.
+    // arrive and the drawer would sit open at height zero with the panel pinned.
     const timer = setTimeout(finish, ms + 120);
-    const onEnd = (e) => { if (e.propertyName === 'opacity') finish(); };
+    const onEnd = (e) => { if (e.propertyName === 'height') finish(); };
     el.addEventListener('transitionend', onEnd);
 }
 

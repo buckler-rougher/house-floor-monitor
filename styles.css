@@ -3223,7 +3223,11 @@ body.tellers-mode .tellers-column { display: flex; }
 
 /* ── Whip Notices panel ───────────────────────────────────────────────────── */
 .whip-updates-panel {
-  position: relative;          /* anchors the filter dropdown */
+  /* Column flex so that, while the panel's height is pinned during a filter
+     drawer transition, the feed absorbs the drawer's height instead of the
+     page below doing it. See openDrawer in app.js. */
+  display: flex;
+  flex-direction: column;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-12);
@@ -3239,6 +3243,8 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .whip-updates-feed {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0;
   max-height: 400px;
   overflow-y: auto;
@@ -3428,6 +3434,14 @@ body.tellers-mode .tellers-column { display: flex; }
   line-height: 1;
 }
 .whip-filter-dropdown {
+  /* A bare clipping box, nothing else. Everything with a size lives on the
+     inner element, because height:0 cannot compress padding or a border: with
+     box-sizing:border-box the drawer still occupied 21px when "collapsed", and
+     the panel grew by exactly that much. */
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.whip-filter-inner {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-8);
@@ -5735,38 +5749,22 @@ font-family: var(--font-mono);
 }
 
 /* Whip notices filter drawer.
-   Two earlier attempts were wrong. Fading it in while it sat in normal flow
-   meant the feed jumped its full height the instant [hidden] came off, before
-   anything animated. Animating its height fixed the jump but was choppy: height
-   is a layout property, so every frame reflowed the panel and the whole page
-   below it, on a board that is already running clocks, an HLS feed and an SSE
-   stream.
-   It now floats. The dropdown is taken out of flow, so the panel's height never
-   changes and nothing below it moves, which leaves only opacity and transform
-   to animate -- both of which the compositor handles without touching layout.
-   It also matches what the control is: a dropdown, with a chevron, that
-   overlays while you pick from it. `top` is set in app.js from the header's
-   measured height, because the header wraps to two lines on narrow screens. */
+   Three earlier attempts, each wrong in its own way. Fading it in while it sat
+   in normal flow meant the feed jumped its full height before anything
+   animated. Animating its height fixed the jump but was choppy, because height
+   is a layout property and every frame reflowed the whole page below a board
+   that is also running clocks, video and an SSE stream. Floating it out of flow
+   was smooth but covered the first notice.
+   This version keeps it in flow so nothing is covered, and pins the panel's
+   height for the duration of the transition so the reflow cannot escape the
+   panel: the feed shrinks by exactly what the drawer gains, the panel's own
+   height never changes, and the page below never learns anything happened. */
 .whip-filter-btn {
     transition: background var(--dur-150) ease, border-color var(--dur-150) ease,
                 color var(--dur-150) ease;
 }
 
-.whip-filter-dropdown {
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 30;              /* over the feed's sticky notice headers, which sit at 10 */
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity var(--dur-150) ease,
-                transform var(--dur-200) var(--ease-emphasis);
-}
-.whip-filter-dropdown.is-open {
-    opacity: 1;
-    transform: none;
-}
+
 
 @media (prefers-reduced-motion: reduce) {
     .vrec-overlay:not([hidden]),
