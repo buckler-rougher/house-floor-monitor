@@ -5733,29 +5733,19 @@ font-family: var(--font-mono);
     .bill-modal-overlay.is-closing .bill-modal    { animation-name: bill-sheet-out; }
 }
 
-/* Whip notices filter drawer. */
-@keyframes whip-drawer-in {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: none; }
+/* Whip notices filter drawer.
+   The first attempt faded the drawer in and slid the chips down behind it. It
+   read badly, and the reason is that the drawer sits in normal flow: the feed
+   below was shoved down the instant [hidden] came off, while the contents were
+   still arriving. Two motions disagreeing about when the drawer had opened.
+   It now opens by height, so the drawer and the feed below move as one thing
+   and the chips are simply uncovered. The height is measured in app.js
+   (openDrawer/closeDrawer) because the chip count varies with what notice
+   types are present. */
+.whip-filter-btn {
+    transition: background var(--dur-150) ease, border-color var(--dur-150) ease,
+                color var(--dur-150) ease;
 }
-@keyframes whip-drawer-out {
-    from { opacity: 1; transform: none; }
-    to   { opacity: 0; transform: translateY(-6px); }
-}
-.whip-filter-dropdown:not([hidden]) {
-    animation: whip-drawer-in var(--dur-200) var(--ease-emphasis) both;
-}
-.whip-filter-dropdown.is-closing {
-    animation: whip-drawer-out var(--dur-150) ease both;
-}
-.whip-filter-dropdown:not([hidden]):not(.is-closing) .whip-filter-chip {
-    animation: absentee-filter-in var(--dur-200) var(--ease-emphasis) both;
-}
-.whip-filter-dropdown .whip-filter-chip:nth-child(1) { animation-delay: 0ms; }
-.whip-filter-dropdown .whip-filter-chip:nth-child(2) { animation-delay: 30ms; }
-.whip-filter-dropdown .whip-filter-chip:nth-child(3) { animation-delay: 60ms; }
-.whip-filter-dropdown .whip-filter-chip:nth-child(4) { animation-delay: 90ms; }
-.whip-filter-dropdown .whip-filter-chip:nth-child(n+5) { animation-delay: 120ms; }
 
 @media (prefers-reduced-motion: reduce) {
     .vrec-overlay:not([hidden]),
@@ -5764,9 +5754,7 @@ font-family: var(--font-mono);
     .bill-modal-overlay.is-closing .bill-modal,
     .vrec-overlay.is-closing,
     .vrec-overlay.is-closing .vrec-modal,
-    .whip-filter-dropdown:not([hidden]),
-    .whip-filter-dropdown.is-closing,
-    .whip-filter-dropdown .whip-filter-chip { animation: none; }
+    .vrec-overlay.is-closing .vrec-modal { animation: none; }
 }
 
 .bill-modal-overlay[hidden] {
