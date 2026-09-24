@@ -11118,7 +11118,12 @@ async function updateQuorumStatus() {
     }
 
     function hidePipLoading() { if (pipLoading) pipLoading.style.display = 'none'; }
-    function resetPipLoading() { if (pipLoading) pipLoading.style.display = 'flex'; }
+    function resetPipLoading() {
+        if (!pipLoading) return;
+        pipLoading.style.transition = '';
+        pipLoading.style.opacity    = '';
+        pipLoading.style.display    = 'flex';
+    }
 
     // Grab the current video frame into pipSnapshot and switch to the still image.
     // `gen` is the loadPip generation this grab belongs to; if a newer stream has
@@ -11147,12 +11152,35 @@ async function updateQuorumStatus() {
             // already hidden -- and .floor-feed's rounded, translateZ'd clip edge
             // showed through it as a pale hairline. That flash and the caption
             // disappearing were the same moment.
+            // Cross-fade rather than swap. The overlay is solid black and the
+            // still is a brightly lit chamber, so exchanging one for the other in
+            // a single frame is a hard jump from dark to light -- which is what
+            // read as a flash, and why the caption looked like it dropped out
+            // rather than ended. Fading both on the same curve means no frame
+            // where the brightness changes abruptly and no frame where the
+            // rounded clip edge has nothing painted against it.
+            const FADE = 220;
             const reveal = () => {
                 if (gen !== pipGen) return;
-                pipSnapshot.style.display = 'block';
+                pipSnapshot.style.opacity    = '0';
+                pipSnapshot.style.display    = 'block';
                 pipSnapshot.removeAttribute('hidden');
-                pipVideo.style.display    = 'none';
-                hidePipLoading();   // the still is up; nothing is being acquired now
+                void pipSnapshot.offsetHeight;
+                pipSnapshot.style.transition = `opacity ${FADE}ms ease`;
+                pipSnapshot.style.opacity    = '1';
+                if (pipLoading) {
+                    pipLoading.style.transition = `opacity ${FADE}ms ease`;
+                    pipLoading.style.opacity    = '0';
+                }
+                // Settle unconditionally: transitions do not run in a hidden tab.
+                setTimeout(() => {
+                    if (gen !== pipGen) return;
+                    pipVideo.style.display = 'none';
+                    hidePipLoading();
+                    if (pipLoading) { pipLoading.style.transition = ''; pipLoading.style.opacity = ''; }
+                    pipSnapshot.style.transition = '';
+                    pipSnapshot.style.opacity    = '';
+                }, FADE + 40);
             };
             pipSnapshot.src = dataUrl;
             if (pipSnapshot.decode) pipSnapshot.decode().then(reveal, reveal);
