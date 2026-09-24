@@ -190,7 +190,6 @@ body {
 .container > .congress-info,
 .container > .main-display,
 .container > .voting-calendar-panel,
-.container > .youtube-panel,
 .container > .footer {
     margin-bottom: var(--section-gap);
 }
@@ -1996,7 +1995,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 
 /* ── Custom PIP ─────────────────────────────────── */
-.youtube-pip {
+.floor-feed {
   position: fixed;
   bottom: 16px;
   right: 16px;
@@ -2015,13 +2014,13 @@ body.tellers-mode .tellers-column { display: flex; }
   transition: opacity var(--dur-200) ease, transform var(--dur-200) ease;
 }
 
-.youtube-pip.pip-active {
+.floor-feed.pip-active {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0) scale(1);
 }
 
-.youtube-pip-header {
+.floor-feed-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2031,7 +2030,7 @@ body.tellers-mode .tellers-column { display: flex; }
   border-bottom: 1px solid var(--border-color);
 }
 
-.youtube-pip-header-left {
+.floor-feed-header-left {
   display: flex;
   align-items: center;
   gap: var(--sp-6);
@@ -2185,7 +2184,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .pip-speaker.is-stale .pip-speaker-name { color: var(--text-secondary); }
 .pip-speaker.is-stale .pip-speaker-meta { color: var(--accent-amber); opacity: 0.85; }
 
-.youtube-pip-label {
+.floor-feed-label {
   font-size: var(--fs-base);
   font-weight: 600;
   letter-spacing: var(--track-wider);
@@ -2193,7 +2192,7 @@ body.tellers-mode .tellers-column { display: flex; }
   text-transform: uppercase;
 }
 
-.youtube-pip-source {
+.floor-feed-source {
   font-size: var(--fs-2xs);
   color: var(--text-muted);
   text-transform: uppercase;
@@ -2201,14 +2200,14 @@ body.tellers-mode .tellers-column { display: flex; }
   opacity: 0.8;
 }
 
-.youtube-pip-source a {
+.floor-feed-source a {
   color: var(--accent-blue);
   text-decoration: none;
   opacity: 0.9;
   transition: opacity var(--dur-200) ease;
 }
 
-.youtube-pip-source a:hover { opacity: 1; text-decoration: underline; }
+.floor-feed-source a:hover { opacity: 1; text-decoration: underline; }
 
 .pip-live-dot {
   display: inline-block;
@@ -2250,7 +2249,7 @@ body.tellers-mode .tellers-column { display: flex; }
   gap: var(--sp-6);
 }
 
-.youtube-pip-video {
+.floor-feed-video {
   position: relative;
   width: 100%;
   aspect-ratio: 16/9;
@@ -2308,7 +2307,7 @@ body.tellers-mode .tellers-column { display: flex; }
   visibility: hidden !important;
 }
 
-.youtube-pip-iframe {
+.floor-feed-media {
   display: block;
   position: absolute;
   inset: 0;
@@ -2318,8 +2317,8 @@ body.tellers-mode .tellers-column { display: flex; }
   object-fit: cover;
 }
 
-.youtube-pip-video { cursor: pointer; }
-.youtube-pip-overlay {
+.floor-feed-video { cursor: pointer; }
+.floor-feed-overlay {
   position: absolute;
   inset: 0;
   pointer-events: auto;
@@ -2342,7 +2341,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 /* Expanded PiP — centered, large */
-.youtube-pip.pip-expanded {
+.floor-feed.pip-expanded {
   bottom: auto;
   right: auto;
   top: 50%;
@@ -2352,7 +2351,7 @@ body.tellers-mode .tellers-column { display: flex; }
   z-index: 1100;
   border-radius: var(--radius-12);
 }
-.youtube-pip.pip-expanded .youtube-pip-overlay {
+.floor-feed.pip-expanded .floor-feed-overlay {
   pointer-events: none; /* let user interact with video controls */
 }
 
@@ -2370,7 +2369,7 @@ body.tellers-mode .tellers-column { display: flex; }
   transition: opacity var(--dur-150);
 }
 .pip-close-btn:hover { opacity: 1; }
-.youtube-pip.pip-expanded .pip-close-btn { display: inline; }
+.floor-feed.pip-expanded .pip-close-btn { display: inline; }
 
 /* Mute/unmute control — always visible (collapsed + expanded). Fixed-size box
    and block icons so hover/blur and the icon swap never shift layout. */
@@ -2398,16 +2397,16 @@ body.tellers-mode .tellers-column { display: flex; }
 .pip-mute-btn.is-unmuted .pip-icon-muted { display: none; }
 .pip-mute-btn.is-unmuted .pip-icon-sound { display: block; }
 
-.youtube-pip-header-right {
+.floor-feed-header-right {
   display: flex;
   align-items: center;
   gap: var(--sp-8);
   min-width: 0;
 }
-.youtube-pip-label { white-space: nowrap; }
+.floor-feed-label { white-space: nowrap; }
 
 /* Source footer at the bottom of the PiP, with a CC toggle on the right. */
-.youtube-pip-footer {
+.floor-feed-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2417,7 +2416,7 @@ body.tellers-mode .tellers-column { display: flex; }
   border-top: 1px solid var(--border-color);
   overflow: hidden;
 }
-.youtube-pip-footer .youtube-pip-source {
+.floor-feed-footer .floor-feed-source {
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;

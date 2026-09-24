@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260923o">
+    <link rel="stylesheet" href="styles.css?v=20260923p">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1411,13 +1411,13 @@
 
         <!-- PiP — always-on live feed, click to expand -->
         <div id="pip-backdrop" class="pip-backdrop"></div>
-        <div id="youtube-pip" class="youtube-pip" aria-label="Live floor feed">
-            <div class="youtube-pip-header">
-                <div class="youtube-pip-header-left">
+        <div id="floor-feed" class="floor-feed" aria-label="Live floor feed">
+            <div class="floor-feed-header">
+                <div class="floor-feed-header-left">
                     <span class="pip-live-dot"></span>
-                    <span class="youtube-pip-label">LIVE FLOOR FEED</span>
+                    <span class="floor-feed-label">LIVE FLOOR FEED</span>
                 </div>
-                <div class="youtube-pip-header-right">
+                <div class="floor-feed-header-right">
                     <button class="pip-mute-btn" id="pip-mute-btn" aria-label="Unmute" aria-pressed="false" title="Unmute">
                         <svg class="pip-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z" opacity="0"/><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2"/></svg>
                         <svg class="pip-icon-sound" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
@@ -1425,7 +1425,7 @@
                     <button class="pip-close-btn" id="pip-close-btn" aria-label="Close">✕</button>
                 </div>
             </div>
-            <div class="youtube-pip-video">
+            <div class="floor-feed-video">
                 <div id="pip-loading" class="video-loading" aria-label="Acquiring feed">
                     <div class="video-loading-inner">
                         <div class="video-loading-bars">
@@ -1434,9 +1434,9 @@
                         <div class="video-loading-label">ACQUIRING FEED</div>
                     </div>
                 </div>
-                <video id="player-pip" class="youtube-pip-iframe" playsinline muted autoplay disablePictureInPicture></video>
-                <img id="player-pip-snapshot" class="youtube-pip-iframe" hidden alt="">
-                <div class="youtube-pip-overlay"></div>
+                <video id="player-pip" class="floor-feed-media" playsinline muted autoplay disablePictureInPicture></video>
+                <img id="player-pip-snapshot" class="floor-feed-media" hidden alt="">
+                <div class="floor-feed-overlay"></div>
             </div>
             <!-- Who is speaking, directly under the picture it describes. Populated by
                  the floor-speaker poller in app.js from /api/floor-speaker and from the
@@ -1463,8 +1463,8 @@
                     <span class="pip-speaker-meta" id="pip-speaker-meta"></span>
                 </span>
             </div>
-            <div class="youtube-pip-footer">
-                <span class="youtube-pip-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
+            <div class="floor-feed-footer">
+                <span class="floor-feed-source">Source: <a href="https://clerk.house.gov/CommitteeBroadcast/video/housefloor" target="_blank" rel="noopener">US House Clerk</a></span>
                 <button class="pip-cc-btn is-on" id="pip-cc-btn" aria-label="Toggle captions" aria-pressed="true" title="Closed captions">
                     <svg viewBox="0 0 24 24" width="20" height="15" fill="currentColor" aria-hidden="true"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H9.5v-.5h-2v3h2V13H11v1c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1zm7 0h-1.5v-.5h-2v3h2V13H18v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1z"/></svg>
                 </button>
@@ -1579,7 +1579,7 @@
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="app.js?v=20260923l"></script>
+    <script defer src="app.js?v=20260923m"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

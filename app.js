@@ -10895,11 +10895,11 @@ async function updateQuorumStatus() {
 
 
 // ── HLS PiP — always-on live feed, click to expand ───────────────────────────
-(function initYouTubePip() {
-    const pip         = document.getElementById('youtube-pip');
+(function initFloorFeedPip() {
+    const pip         = document.getElementById('floor-feed');
     const pipVideo    = document.getElementById('player-pip');
     const backdrop    = document.getElementById('pip-backdrop');
-    const pipOverlay  = pip?.querySelector('.youtube-pip-overlay');
+    const pipOverlay  = pip?.querySelector('.floor-feed-overlay');
     const closeBtn    = document.getElementById('pip-close-btn');
     if (!pip || !pipVideo) return;
 
@@ -10937,7 +10937,7 @@ async function updateQuorumStatus() {
     let pipCaptionOverlay = null;
     function captionOverlay() {
         if (pipCaptionOverlay && pipCaptionOverlay.isConnected) return pipCaptionOverlay;
-        const host = pipVideo.parentElement; // .youtube-pip-video
+        const host = pipVideo.parentElement; // .floor-feed-video
         let el = host?.querySelector('.pip-caption-overlay');
         if (!el && host) {
             el = document.createElement('div');
