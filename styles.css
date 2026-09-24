@@ -1466,51 +1466,30 @@ body.tellers-mode .tellers-column { display: flex; }
   gap: var(--sp-10);
 }
 /* Acquiring-feed indicator */
-.video-loading-bars {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 2px;
-  height: 28px;
-}
-/* The bars read as the Capitol: low wings, stepped shoulders, and a narrow
-   domed centre. Heights are the silhouette, so the animation only touches
-   opacity -- scaling them, as the old signal-bar did, flattened the building
-   into a generic equaliser twice a second. */
-.video-loading-bars span {
+.video-loading-capitol {
+  width: 74px;
+  height: auto;
   display: block;
-  width: 4px;
-  border-radius: 1px;
-  background: rgba(0, 255, 65, 0.7);
-  animation: capitol-scan 1.4s ease-in-out infinite;
+  overflow: visible;
 }
-.video-loading-bars span:nth-child(1),
-.video-loading-bars span:nth-child(9) { height: 6px; }
-.video-loading-bars span:nth-child(2),
-.video-loading-bars span:nth-child(8) { height: 7px; }
-.video-loading-bars span:nth-child(3),
-.video-loading-bars span:nth-child(7) { height: 10px; }
-/* The pair either side of the spire carry the dome's mass; without them the
-   centre reads as a single spike rather than a dome. */
-.video-loading-bars span:nth-child(4),
-.video-loading-bars span:nth-child(6) { height: 18px; }
-.video-loading-bars span:nth-child(5) {
-  height: 27px;
-  width: 3px;
-  border-radius: 2px 2px 0 0;   /* the dome and the statue on top of it */
+/* An actual silhouette. Nine bars could suggest a peak but never a dome, and
+   the version that tried read as an equaliser wearing a hat. */
+.video-loading-capitol .vlc-building,
+.video-loading-capitol .vlc-spire {
+  fill: rgba(0, 255, 65, 0.7);
+  animation: capitol-scan 1.9s ease-in-out infinite;
 }
-.video-loading-bars span:nth-child(1) { animation-delay: 0s; }
-.video-loading-bars span:nth-child(2) { animation-delay: 0.07s; }
-.video-loading-bars span:nth-child(3) { animation-delay: 0.14s; }
-.video-loading-bars span:nth-child(4) { animation-delay: 0.21s; }
-.video-loading-bars span:nth-child(5) { animation-delay: 0.28s; }
-.video-loading-bars span:nth-child(6) { animation-delay: 0.35s; }
-.video-loading-bars span:nth-child(7) { animation-delay: 0.42s; }
-.video-loading-bars span:nth-child(8) { animation-delay: 0.49s; }
-.video-loading-bars span:nth-child(9) { animation-delay: 0.56s; }
+.video-loading-capitol .vlc-beacon {
+  fill: rgba(0, 255, 65, 0.9);
+  animation: capitol-beacon 1.9s ease-in-out infinite;
+}
 @keyframes capitol-scan {
-  0%, 100% { opacity: 0.22; }
-  50%      { opacity: 1; }
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.95; }
+}
+@keyframes capitol-beacon {
+  0%, 100% { opacity: 0.15; }
+  45%      { opacity: 1; }
 }
 .video-loading-label {
   font-family: var(--font-mono);
