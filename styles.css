@@ -3813,12 +3813,6 @@ body.tellers-mode .tellers-column { display: flex; }
     color: var(--accent-blue);
     background: rgba(88, 166, 255, 0.12);
 }
-/* Party group header inside the 2-col absentee grid */
-
-
-/* Bottom Ticker */
-/* ── Committee Live Feeds ─────────────────────────────────────────── */
-
 .twitter-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -3827,6 +3821,7 @@ body.tellers-mode .tellers-column { display: flex; }
     box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.05) inset;
     margin-bottom: var(--section-gap);
 }
+
 .twitter-panel .panel-header {
     margin: 0;
     border-radius: var(--radius-14) var(--radius-14) 0 0;
@@ -4332,66 +4327,6 @@ a.tweet-quote:hover {
 }
 .tweet-quote-text a { color: var(--accent-blue); text-decoration: none; }
 .tweet-quote-text a:hover { text-decoration: underline; }
-
-.bottom-ticker {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 40px;
-    background: rgba(10, 10, 15, 0.95);
-    border-top: 2px solid var(--accent-orange);
-    z-index: 1000;
-    overflow: hidden;
-    display: none; /* Hidden — infrastructure kept for future re-enable */
-    align-items: center;
-}
-
-.bottom-ticker:hover .ticker-content {
-    animation-play-state: paused !important;
-}
-
-.ticker-content {
-    display: flex;
-    white-space: nowrap;
-    animation: scroll-left 600s linear infinite; /* Duration overridden by JS based on content width */
-    width: fit-content;
-    will-change: transform;
-}
-
-.ticker-item {
-    display: flex;
-    align-items: center;
-    padding: 0 var(--sp-40);
-    height: 100%;
-    color: var(--text-primary);
-    text-decoration: none;
-    border-right: 1px solid rgba(255, 165, 0, 0.2);
-}
-
-.ticker-source {
-    color: var(--accent-orange);
-    font-weight: 800;
-    font-size: var(--fs-md);
-    letter-spacing: var(--track-wider);
-    margin-right: 15px;
-    padding: var(--sp-2) var(--sp-6);
-    border: 1px solid var(--accent-orange);
-    line-height: 1;
-}
-
-.ticker-text {
-    font-weight: 600;
-    font-size: var(--fs-lg);
-    letter-spacing: var(--track-wide);
-}
-
-.ticker-time {
-    color: var(--text-muted);
-    font-size: var(--fs-md);
-    margin-left: 15px;
-    font-family: var(--font-mono);
-}
 
 @keyframes scroll-left {
     0% { transform: translateX(0); }
@@ -5752,6 +5687,79 @@ font-family: var(--font-mono);
 @media (prefers-reduced-motion: reduce) {
     .bill-modal-overlay:not([hidden]),
     .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
+}
+
+/* The vote-recs sheet is the same kind of thing, so it reuses the same motion. */
+.vrec-overlay:not([hidden]) {
+    animation: bill-overlay-in var(--dur-150) ease both;
+}
+.vrec-overlay:not([hidden]) .vrec-modal {
+    animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
+}
+
+/* Closing. These must follow the opening rules: :not([hidden]) counts as an
+   attribute selector, so .overlay.is-closing ties with it on specificity and
+   only wins by coming later. hideAfterAnimation holds the element open until
+   the animation ends, then sets hidden. */
+@keyframes bill-overlay-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+@keyframes bill-modal-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(6px) scale(0.99); }
+}
+
+.bill-modal-overlay.is-closing,
+.vrec-overlay.is-closing {
+    animation: bill-overlay-out var(--dur-200) ease both;
+}
+.bill-modal-overlay.is-closing .bill-modal,
+.vrec-overlay.is-closing .vrec-modal {
+    animation: bill-modal-out var(--dur-200) ease both;
+}
+
+@media (max-width: 600px) {
+    @keyframes bill-modal-out {
+        from { opacity: 1; transform: none; }
+        to   { opacity: 0; transform: translateY(22px); }
+    }
+}
+
+/* Whip notices filter drawer. */
+@keyframes whip-drawer-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes whip-drawer-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(-6px); }
+}
+.whip-filter-dropdown:not([hidden]) {
+    animation: whip-drawer-in var(--dur-200) var(--ease-emphasis) both;
+}
+.whip-filter-dropdown.is-closing {
+    animation: whip-drawer-out var(--dur-150) ease both;
+}
+.whip-filter-dropdown:not([hidden]):not(.is-closing) .whip-filter-chip {
+    animation: absentee-filter-in var(--dur-200) var(--ease-emphasis) both;
+}
+.whip-filter-dropdown .whip-filter-chip:nth-child(1) { animation-delay: 0ms; }
+.whip-filter-dropdown .whip-filter-chip:nth-child(2) { animation-delay: 30ms; }
+.whip-filter-dropdown .whip-filter-chip:nth-child(3) { animation-delay: 60ms; }
+.whip-filter-dropdown .whip-filter-chip:nth-child(4) { animation-delay: 90ms; }
+.whip-filter-dropdown .whip-filter-chip:nth-child(n+5) { animation-delay: 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    .vrec-overlay:not([hidden]),
+    .vrec-overlay:not([hidden]) .vrec-modal,
+    .bill-modal-overlay.is-closing,
+    .bill-modal-overlay.is-closing .bill-modal,
+    .vrec-overlay.is-closing,
+    .vrec-overlay.is-closing .vrec-modal,
+    .whip-filter-dropdown:not([hidden]),
+    .whip-filter-dropdown.is-closing,
+    .whip-filter-dropdown .whip-filter-chip { animation: none; }
 }
 
 .bill-modal-overlay[hidden] {
@@ -10362,10 +10370,6 @@ body.all-mode .floor-grid-panel {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
-    }
-    /* Pause the news ticker completely */
-    .ticker-content {
-        animation-play-state: paused !important;
     }
 }
 
