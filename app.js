@@ -6141,7 +6141,7 @@ let _infoPopupTrapCleanup = null;
 let _infoKeyHandler = null;
 function closeInfoPopup(trigger) {
     const overlay = document.getElementById('info-popup-overlay');
-    if (overlay) overlay.hidden = true;
+    hideAfterAnimation(overlay);
     if (_infoKeyHandler) { document.removeEventListener('keydown', _infoKeyHandler); _infoKeyHandler = null; }
     if (_infoPopupTrapCleanup) { _infoPopupTrapCleanup(); _infoPopupTrapCleanup = null; }
     if (trigger) trigger.focus();
