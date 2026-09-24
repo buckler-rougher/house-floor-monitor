@@ -3246,8 +3246,20 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .whip-update-item {
   border-bottom: 1px solid var(--border-color);
-  padding: var(--sp-16) var(--sp-24);
+  /* No bottom padding, and the meta below carries no bottom margin. A sticky
+     element is confined to its containing block's CONTENT box, so both of those
+     used to end the header's sticky range 26px early: the header unpinned and
+     rode up with the item while the next item's header had not yet reached the
+     top, leaving a band of the previous notice's tail visible above it. The
+     spacing moved onto the siblings instead, which restores the same layout and
+     lets each header stay pinned until its item genuinely ends. */
+  padding: var(--sp-16) var(--sp-24) 0;
 }
+/* The spacing the sticky header and the item padding used to provide. */
+.whip-update-meta + * { margin-top: var(--sp-10); }
+.whip-update-item > *:last-child:not(.whip-update-meta) { margin-bottom: var(--sp-16); }
+.whip-update-item > .whip-update-meta:last-child { margin-bottom: var(--sp-16); }
+
 .whip-update-item:last-child {
   border-bottom: none;
 }
@@ -3270,7 +3282,6 @@ body.tellers-mode .tellers-column { display: flex; }
   height: 44px;
   box-sizing: border-box;
   padding: 0 var(--sp-24);
-  margin-bottom: var(--sp-10);
   border-bottom: 1px solid var(--border-color);
 }
 

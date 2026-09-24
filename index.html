@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260923e">
+    <link rel="stylesheet" href="styles.css?v=20260923f">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1523,12 +1523,11 @@
                         <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a>
                         <a href="https://github.com/lxndrblz/Airports" target="_blank" rel="noopener">Airport Reference Data (lxndrblz/Airports)</a>
                     </div>
-                    <div class="source-group">
-                        <span class="source-category">News:</span>
-                        <a href="https://www.rollcall.com/feed/" target="_blank" rel="noopener">Roll Call</a>
-                        <a href="https://www.politico.com/rss/playbook.xml" target="_blank" rel="noopener">Politico Playbook</a>
-                        <a href="https://thehill.com/homenews/feed/" target="_blank" rel="noopener">The Hill</a>
-                    </div>
+                    <!-- No News group: the ticker is display:none, so none of those
+                         outlets reach the page and none should be credited. The worker
+                         still fetches all three (RSS_FEEDS.news, read in handleNews) and
+                         app.js still renders them into the hidden element, which is worth
+                         cutting. -->
                     <div class="source-group">
                         <span class="source-category">Miscellaneous:</span>
                         <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">Reporters (Twitter via Nitter)</a>
