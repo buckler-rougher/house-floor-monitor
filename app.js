@@ -11138,6 +11138,7 @@ async function updateQuorumStatus() {
             pipSnapshot.style.display = 'block';
             pipSnapshot.removeAttribute('hidden');
             pipVideo.style.display    = 'none';
+            hidePipLoading();   // the still is up; nothing is being acquired now
         } catch {}
     }
 
@@ -11469,9 +11470,17 @@ async function updateQuorumStatus() {
                 pipWaitTimer = null;
                 if (d?.url && d.isLive) {
                     loadPip(d.url);
+                } else if (d?.url && !pipFrozen) {
+                    // Leave "acquiring feed" up. loadPipSnapshot has to fetch the
+                    // manifest, seek to the end and decode a frame before there is
+                    // anything to display; hiding the indicator first left the panel
+                    // blank for those few seconds, which reads as the feed being
+                    // broken rather than loading. captureCurrentFrame hides it once
+                    // the still is actually on screen.
+                    loadPipSnapshot(d.url);
+                    scheduleFetchAndLoad();
                 } else {
                     hidePipLoading();
-                    if (d?.url && !pipFrozen) loadPipSnapshot(d.url);
                     scheduleFetchAndLoad();
                 }
             })
