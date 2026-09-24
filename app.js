@@ -1839,7 +1839,6 @@ const elements = {
     absenteeIndMetric: document.getElementById('absentee-ind-metric'),
     absenteeTotal: document.getElementById('absentee-total'),
     absenteeList: document.getElementById('absentee-list'),
-    tickerContent: document.getElementById('ticker-content'),
     partyRep: document.getElementById('party-rep'),
     partyDem: document.getElementById('party-dem'),
     partyTotal: document.getElementById('party-total'),
@@ -2028,11 +2027,6 @@ const RSS_CONFIG = {
 let proceedingsDateOverride = null;
 
 // News Ticker Configuration
-const NEWS_CONFIG = {
-    workerUrl: 'https://api.evanhollander.org/house-floor/api/news',
-    refreshInterval: 300000 // 5 minutes
-};
-
 // DomeWatch API Configuration
 const DOMEWATCH_CONFIG = {
     baseUrl: 'https://data.domewatch.us/v1',
@@ -4186,8 +4180,8 @@ function openVoteRecsModal() {
 
 function closeVoteRecsModal() {
     const overlay = document.getElementById('vrec-overlay');
-    if (!overlay || overlay.hasAttribute('hidden')) return;
-    overlay.setAttribute('hidden', '');
+    if (!overlay || overlay.hasAttribute('hidden') || overlay.classList.contains('is-closing')) return;
+    hideAfterAnimation(overlay);
     document.removeEventListener('keydown', _vrecEscHandler);
     // Remove hash when modal is closed
     if (location.hash === '#build-vote-recs') {
@@ -4303,11 +4297,6 @@ let billsData = {
     rawHeaders: null,
     lastUpdated: null
 };
-const BLUESKY_CONFIG = {
-    workerUrl: 'https://api.evanhollander.org/house-floor/api/bluesky',
-    refreshInterval: 180000 // 3 minutes — KV-cached at 2 min; Cloakroom posts don't arrive faster than this
-};
-
 
 // Bills This Week Functions
 // True after the first successful full fetch (with Congress.gov enrichment).
@@ -6021,7 +6010,7 @@ let _billModalTrapCleanup = null;
 
 function closeBillModal() {
     const overlay = document.getElementById('bill-modal-overlay');
-    if (overlay) overlay.hidden = true;
+    hideAfterAnimation(overlay);
     document.removeEventListener('keydown', onBillModalKey);
     if (_billModalTrapCleanup) { _billModalTrapCleanup(); _billModalTrapCleanup = null; }
     if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
@@ -9513,55 +9502,7 @@ function initReporterCards() {
 }
 
 // Bluesky Functions
-async function fetchBlueskyFeed(preData = null) {
-    try {
-        let jsonData;
-        if (preData) {
-            jsonData = preData;
-        } else {
-            const response = await fetch(BLUESKY_CONFIG.workerUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            jsonData = await response.json();
-        }
-        if (jsonData.error) {
-            throw new Error(jsonData.error);
-        }
-        
-        // Handle new posts-based response
-        if (jsonData.posts && jsonData.posts.length > 0) {
-            blueskyData = jsonData.posts.slice(0, 10).map(post => ({
-                text: post.content || post.title || '',
-                author: post.author || 'Bluesky User',
-                timestamp: post.updated || new Date().toISOString()
-            }));
-            
-            updateTicker();
-        }
-        
-    } catch (error) {
-        console.error('Bluesky fetch error:', error);
-        // Fallback to mock data
-        blueskyData = [
-            { text: "Monitoring House floor activity...", author: "System", timestamp: new Date().toISOString() },
-            { text: "Vote tracking active", author: "System", timestamp: new Date().toISOString() },
-            { text: "Live feed status: STANDBY", author: "System", timestamp: new Date().toISOString() }
-        ];
-        updateTicker();
-    }
-}
 
-function updateTicker() {
-    if (!elements.tickerContent) return;
-    
-    // Duplicate data for seamless scrolling if needed
-    const displayData = [...blueskyData, ...blueskyData];
-    
-    const html = displayData.map(item => 
-        `<span class="ticker-item">[${escapeHtml(item.author)}] ${escapeHtml(item.text)}</span>`
-    ).join('');
-    
-    setIfChanged(elements.tickerContent, html);
-}
 
 // Weather Data
 const WEATHER_COORDS = {
@@ -9793,9 +9734,9 @@ function init() {
             e.stopPropagation();
             const dropdown = document.getElementById('whip-filter-dropdown');
             if (!dropdown) return;
-            if (!dropdown.hidden) {
+            if (!dropdown.hidden && !dropdown.classList.contains('is-closing')) {
                 // Close — keep button active only if a filter is still selected
-                dropdown.hidden = true;
+                hideAfterAnimation(dropdown, 220);
                 whipFilterBtn.classList.toggle('active', whipNoticeFilter !== null);
             } else {
                 renderWhipFilterDropdown();
@@ -9858,8 +9799,6 @@ function init() {
     // Fetch initial data
     updateProceedingsFeed();
     fetchHouseMakeup();
-    fetchBlueskyFeed();
-    fetchNewsTicker();
     fetchTweets();
     initReporterCards();
 
@@ -9980,6 +9919,31 @@ function init() {
     }
 }
 
+// Play a panel's closing animation, then actually hide it.
+//
+// [hidden] is display:none, so setting it is instantaneous and there is nothing
+// to ease. This adds a class the CSS animates out, waits for that animation, and
+// only then hides. The timeout is not belt-and-braces: animations do not run in
+// a hidden tab, so animationend would never fire there and the panel would stay
+// open until the tab was looked at again.
+function hideAfterAnimation(el, fallbackMs = 320) {
+    if (!el || el.hidden) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { el.hidden = true; return; }
+    let done = false;
+    const finish = (e) => {
+        if (e && e.target !== el) return;   // a child's animation bubbling
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        el.removeEventListener('animationend', finish);
+        el.classList.remove('is-closing');
+        el.hidden = true;
+    };
+    const timer = setTimeout(finish, fallbackMs);
+    el.addEventListener('animationend', finish);
+    el.classList.add('is-closing');
+}
+
 // Re-sort the bills lists without the cards teleporting.
 //
 // Sorting rebuilds both lists with innerHTML, so the same bill is a brand new
@@ -10077,59 +10041,6 @@ async function animateAbsenteeFilter(render) {
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
 
-// Fetch news ticker from RSS feeds
-async function fetchNewsTicker() {
-    try {
-        if (!elements.tickerContent) return;
-        
-        const response = await fetch(NEWS_CONFIG.workerUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        if (!data.items || data.items.length === 0) {
-            setIfChanged(elements.tickerContent, '<div class="ticker-item">No news available</div>');
-            return;
-        }
-        
-        // Randomize news items and create tactical ticker content
-        const shuffledItems = [...data.items].sort(() => Math.random() - 0.5);
-        
-        // Quintuple the items to ensure the ticker is full from the start on all screen sizes
-        const displayItems = [...shuffledItems, ...shuffledItems, ...shuffledItems, ...shuffledItems, ...shuffledItems];
-        
-        const continuousContent = displayItems.map(item => {
-            const href = safeUrl(item.link);
-            return `<a ${href ? `href="${escapeHtml(href)}"` : ''} target="_blank" rel="noopener noreferrer" class="ticker-item">
-                <span class="ticker-source">${escapeHtml(item.source || '')}</span>
-                <span class="ticker-text">${escapeHtml(item.title || '')}</span>
-                <span class="ticker-time">${escapeHtml(item.relativeTime || '')}</span>
-            </a>`;
-        }).join('');
-        
-        // Update ticker display
-        setIfChanged(elements.tickerContent, continuousContent);
-        elements.tickerContent.style.paddingLeft = '0';
-        // Force a reflow so Safari restarts the CSS animation after innerHTML change.
-        // Without this, Safari freezes the ticker until a hover/blur triggers a repaint.
-        elements.tickerContent.style.animation = 'none';
-        void elements.tickerContent.offsetWidth; // flush layout — also lets us measure natural width
-        // Constant ~80px/s regardless of item count
-        const tickerDuration = Math.round(elements.tickerContent.scrollWidth / 80);
-        elements.tickerContent.style.animation = '';
-        elements.tickerContent.style.animationDuration = `${tickerDuration}s`;
-        
-    } catch (error) {
-        console.error('News ticker fetch error:', error);
-        setIfChanged(elements.tickerContent, '<div class="ticker-item">Unable to fetch news</div>');
-    }
-}
 
 // Helper function to get source name from URL
 

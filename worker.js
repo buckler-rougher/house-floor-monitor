@@ -131,19 +131,11 @@ const JOURNALIST_FEEDS = [
 
 const RSS_FEEDS = {
   proceedings: 'https://clerk.house.gov/Home/Feed',
-  news: [
-    'https://www.politico.com/rss/playbook.xml',
-    'https://thehill.com/homenews/feed/',
-    'https://www.rollcall.com/feed/',
-    // Twitter feeds are fetched dynamically in handleNews via TWITTER_FEEDS + NITTER_INSTANCES
-  ],
-  uscp: 'https://www.uscp.gov/daily-arrests',
   bills: 'https://docs.house.gov/BillsThisWeek-RSS.xml',
   votingDays: 'https://votingdays.house.gov/voting-days.ics',
   airportDelays: 'https://nasstatus.faa.gov/api/airport-status-information',
   memberData: 'https://clerk.house.gov/xml/lists/MemberData.xml',
   congressIndex: 'https://clerk.house.gov/evs/2026/index.asp',
-  bluesky: 'https://bskyrss.com/did:plc:sqqvdfeilp5ozvkq3ullwtqo.xml'
 };
 
 // DomeWatch API configuration
@@ -692,117 +684,8 @@ async function handleImageProxy(request) {
   } catch (e) { return new Response('Failed', { status: 502, headers: CORS_HEADERS }); }
 }
 
-// Fetch one nitter account — tries instances in parallel with a short per-instance
-// timeout and returns the first batch of items that comes back non-empty.
-async function fetchNitterFeed(handle) {
-  const results = await Promise.allSettled(
-    NITTER_INSTANCES.map(async instance => {
-      const url = `https://${instance}/${handle}/rss`;
-      const xml = await fetchRSSFeed(url, 5000);
-      const parsed = parseRSSFeed(xml, url);
-      if (parsed.error || !parsed.items.length) throw new Error('empty');
-      return parsed.items;
-    })
-  );
-  for (const r of results) {
-    if (r.status === 'fulfilled') return r.value;
-  }
-  return [];
-}
 
-async function handleNews(env) {
-  // In-memory TTL 5 min; KV TTL 30 min — news items are hours old, cross-PoP staleness is imperceptible.
-  return kvCache(env, 'news-feed', 300, async () => {
-  const errors = [];
 
-  // All independent fetches run in parallel
-  const [stdResults, uscpResult, journalistResults] = await Promise.all([
-    // Standard RSS feeds (Politico, Hill, Roll Call)
-    Promise.allSettled(RSS_FEEDS.news.map(async feedUrl => {
-      const xml = await fetchRSSFeed(feedUrl);
-      return parseRSSFeed(xml, feedUrl);
-    })),
-    // USCP daily arrests
-    fetchRSSFeed(RSS_FEEDS.uscp).then(html => ({ arrests: parseUSCPArrests(html) })).catch(() => ({ arrests: [] })),
-    // Journalist feeds (Bluesky + nitter) — each account in parallel
-    Promise.allSettled(JOURNALIST_FEEDS.map(async account => {
-      if (account.blueskyDid) {
-        const url = `https://bskyrss.com/${account.blueskyDid}.xml`;
-        const xml = await fetchRSSFeed(url, 5000);
-        const parsed = parseRSSFeed(xml, url);
-        if (!parsed.error && parsed.items.length) return parsed.items;
-      }
-      if (account.twitter) return fetchNitterFeed(account.twitter);
-      return [];
-    })),
-  ]);
-
-  const allItems = [];
-  for (const r of stdResults) {
-    if (r.status === 'fulfilled') {
-      allItems.push(...r.value.items);
-      if (r.value.error) errors.push(r.value.error);
-    } else {
-      errors.push(r.reason?.message ?? String(r.reason));
-    }
-  }
-  allItems.push(...uscpResult.arrests);
-
-  const journalistItems = journalistResults.flatMap(r => r.status === 'fulfilled' ? (r.value ?? []) : []);
-
-  const cutoff = Date.now() - NEWS_MAX_AGE_HOURS * 3600_000;
-  const filteredItems = [...allItems, ...journalistItems]
-    .filter(item => item.timestamp > cutoff)
-    .sort((a, b) => b.timestamp - a.timestamp);
-
-  return new Response(JSON.stringify({ items: filteredItems, errors }), {
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
-  });
-  }, 1800); // kvFreshTtl=1800s — re-check KV every 30 min; in-memory TTL is 5 min
-}
-
-function parseUSCPArrests(html) {
-  const items = [];
-  try {
-    // Locate the table body content
-    const tbodyMatch = html.match(/<tbody>([\s\S]*?)<\/tbody>/);
-    if (!tbodyMatch) return [];
-
-    const rows = tbodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g);
-    if (!rows) return [];
-
-    for (const row of rows) {
-      const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/g);
-      if (cells && cells.length >= 5) {
-        // Clean cell content: remove tags, decode entities, trim
-        const clean = (cell) => cell.replace(/<[^>]*>/g, '').replace(/&quot;/g, '"').replace(/&#039;/g, "'").trim();
-        
-        const charge = clean(cells[0]);
-        const dateStr = clean(cells[1]);
-        const summary = clean(cells[4]);
-        
-        // Extract only the first part of the summary for the ticker (e.g., first sentence or up to 150 chars)
-        const brief = summary.length > 150 ? summary.substring(0, 150) + "..." : summary;
-        
-        // Parse date for timestamp
-        const timestamp = new Date(dateStr).getTime() || Date.now();
-        
-        items.push({
-          title: `ARREST: ${charge} - ${brief}`,
-          link: 'https://www.uscp.gov/daily-arrests',
-          description: summary,
-          pubDate: dateStr,
-          timestamp: timestamp,
-          relativeTime: getTimeAgo(new Date(timestamp)),
-          source: 'USCP'
-        });
-      }
-    }
-  } catch (e) {
-    console.error('USCP parse error:', e);
-  }
-  return items;
-}
 
 // Helper function to get current week range through Friday
 const W_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -2488,100 +2371,6 @@ async function handleCongressIndex() {
   }
 }
 
-async function handleBlueskyFeed(env) {
-  // In-memory TTL 2 min (same isolate); KV TTL 30 min — Bluesky posts don't update second-to-second.
-  return kvCache(env, 'bluesky-ticker', 120, async () => {
-  try {
-    const xmlText = await fetchRSSFeed(RSS_FEEDS.bluesky);
-    
-    // Parse Bluesky posts for bill status updates
-    const billUpdates = [];
-    const entryMatches = xmlText.match(/<entry>[\s\S]*?<\/entry>/gs);
-    
-    if (entryMatches) {
-      for (const entryMatch of entryMatches) {
-        const entryXml = entryMatch;
-
-        const titleMatch = entryXml.match(/<title[^>]*>([^<]*)<\/title>/);
-        const updatedMatch = entryXml.match(/<updated[^>]*>([^<]*)<\/updated>/);
-        const contentMatch = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/);
-        const authorMatch = entryXml.match(/<author>[\s\S]*?<name[^>]*>([^<]*)<\/name>/);
-        
-        if (titleMatch && updatedMatch && contentMatch) {
-          const title = titleMatch[1];
-          const content = contentMatch[1];
-          const author = authorMatch ? authorMatch[1] : 'Unknown';
-          
-          // Clean up content - remove HTML tags
-          const cleanContent = content.replace(/<[^>]*>/g, '').trim();
-          
-          // Extract bill information from content
-          const billIdMatch = cleanContent.match(/H\.?[Rr]\.? (\d+)/i);
-          const billId = billIdMatch ? `H.R. ${billIdMatch[1]}` : null;
-          
-          // Extract bill status
-          let status = 'pending';
-          let statusText = 'Scheduled for consideration';
-          
-          if (cleanContent.includes('passed') || cleanContent.includes('agreed to')) {
-            status = 'passed';
-            statusText = 'Passed';
-          } else if (cleanContent.includes('failed') || cleanContent.includes('rejected')) {
-            status = 'failed';
-            statusText = 'Failed';
-          } else if (cleanContent.includes('postponed')) {
-            status = 'postponed';
-            statusText = 'Postponed';
-          } else if (cleanContent.includes('amended')) {
-            status = 'amended';
-            statusText = 'Amended';
-          }
-          
-          if (billId) {
-            billUpdates.push({
-              id: billId,
-              title: cleanContent.substring(0, 200),
-              content: cleanContent,
-              author: author,
-              status: status,
-              statusText: statusText,
-              updated: updatedMatch[1],
-              timestamp: new Date(updatedMatch[1]).getTime()
-            });
-          }
-        }
-      }
-    }
-    
-    // Sort by most recent first
-    billUpdates.sort((a, b) => b.timestamp - a.timestamp);
-    
-    const weekDate = wFmtDate(new Date());
-    
-    return new Response(JSON.stringify({
-      billUpdates: billUpdates,
-      weekDate: weekDate,
-      lastUpdated: new Date().toISOString()
-    }), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=60' // 1 minute
-      }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({
-      error: `Failed to fetch bluesky feed: ${error.message}`
-    }), {
-      status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
-      }
-    });
-  }
-  }, 1800); // kvFreshTtl=1800s — re-check KV every 30 min; in-memory TTL is 2 min
-}
 
 async function handleRollCall(rollNumber) {
   try {
@@ -4265,8 +4054,6 @@ async function handleRequest(request, env) {
   // Route handling
   if (path === '/api/proceedings' && request.method === 'GET') {
     return await handleProceedings(request, env);
-  } else if (path === '/api/news' && request.method === 'GET') {
-    return await handleNews(env);
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
@@ -4283,8 +4070,6 @@ async function handleRequest(request, env) {
     return await handleTweets(env);
   } else if (path === '/api/img-proxy' && request.method === 'GET') {
     return await handleImageProxy(request);
-  } else if (path === '/api/bluesky' && request.method === 'GET') {
-    return await handleBlueskyFeed(env);
   } else if (path === '/api/casualty-list' && request.method === 'GET') {
     return await handleCasualtyList(env);
   } else if (path === '/api/rules' && request.method === 'GET') {

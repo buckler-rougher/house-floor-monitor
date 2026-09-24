@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260923g">
+    <link rel="stylesheet" href="styles.css?v=20260923h">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1311,13 +1311,6 @@
             </div>
         </div>
 
-        <!-- Bottom Ticker -->
-        <div class="bottom-ticker" id="bottom-ticker">
-            <div class="ticker-content" id="ticker-content">
-                <!-- Bluesky content will scroll here -->
-            </div>
-        </div>
-
         <!-- Voting Days Calendar -->
         <div class="voting-calendar-panel" id="voting-calendar">
             <div class="panel-header">
@@ -1523,17 +1516,15 @@
                         <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a>
                         <a href="https://github.com/lxndrblz/Airports" target="_blank" rel="noopener">Airport Reference Data (lxndrblz/Airports)</a>
                     </div>
-                    <!-- No News group: the ticker is display:none, so none of those
-                         outlets reach the page and none should be credited. The worker
-                         still fetches all three (RSS_FEEDS.news, read in handleNews) and
-                         app.js still renders them into the hidden element, which is worth
-                         cutting. -->
+                    <!-- No News group. The ticker was display:none and has been
+                         removed outright, along with the /api/news and /api/bluesky
+                         endpoints that fed it, so Politico, The Hill, Roll Call, the
+                         Capitol Police arrests feed and bskyrss are no longer fetched
+                         at all and none of them belong here. -->
                     <div class="source-group">
                         <span class="source-category">Miscellaneous:</span>
                         <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">Reporters (Twitter via Nitter)</a>
                         <a href="https://www.whitehouse.gov/briefing-room/statements-and-releases/" target="_blank" rel="noopener">Statements of Administration Policy (White House)</a>
-                        <a href="https://bsky.app" target="_blank" rel="noopener">Floor Posts (Bluesky via bskyrss.com)</a>
-                        <a href="https://www.uscp.gov/daily-arrests" target="_blank" rel="noopener">Daily Arrests (U.S. Capitol Police)</a>
                     </div>
                     <div class="source-group">
                         <span class="source-category">Images:</span>
@@ -1605,7 +1596,7 @@
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="app.js?v=20260923e"></script>
+    <script defer src="app.js?v=20260923f"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
