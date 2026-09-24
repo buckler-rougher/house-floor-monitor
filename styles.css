@@ -3223,6 +3223,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 /* ── Whip Notices panel ───────────────────────────────────────────────────── */
 .whip-updates-panel {
+  position: relative;          /* anchors the filter dropdown */
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-12);
@@ -5734,17 +5735,37 @@ font-family: var(--font-mono);
 }
 
 /* Whip notices filter drawer.
-   The first attempt faded the drawer in and slid the chips down behind it. It
-   read badly, and the reason is that the drawer sits in normal flow: the feed
-   below was shoved down the instant [hidden] came off, while the contents were
-   still arriving. Two motions disagreeing about when the drawer had opened.
-   It now opens by height, so the drawer and the feed below move as one thing
-   and the chips are simply uncovered. The height is measured in app.js
-   (openDrawer/closeDrawer) because the chip count varies with what notice
-   types are present. */
+   Two earlier attempts were wrong. Fading it in while it sat in normal flow
+   meant the feed jumped its full height the instant [hidden] came off, before
+   anything animated. Animating its height fixed the jump but was choppy: height
+   is a layout property, so every frame reflowed the panel and the whole page
+   below it, on a board that is already running clocks, an HLS feed and an SSE
+   stream.
+   It now floats. The dropdown is taken out of flow, so the panel's height never
+   changes and nothing below it moves, which leaves only opacity and transform
+   to animate -- both of which the compositor handles without touching layout.
+   It also matches what the control is: a dropdown, with a chevron, that
+   overlays while you pick from it. `top` is set in app.js from the header's
+   measured height, because the header wraps to two lines on narrow screens. */
 .whip-filter-btn {
     transition: background var(--dur-150) ease, border-color var(--dur-150) ease,
                 color var(--dur-150) ease;
+}
+
+.whip-filter-dropdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 30;              /* over the feed's sticky notice headers, which sit at 10 */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity var(--dur-150) ease,
+                transform var(--dur-200) var(--ease-emphasis);
+}
+.whip-filter-dropdown.is-open {
+    opacity: 1;
+    transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
