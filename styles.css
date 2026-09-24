@@ -5722,6 +5722,38 @@ font-family: var(--font-mono);
     backdrop-filter: blur(2px);
 }
 
+/* Modal entrance. No JS: removing the [hidden] attribute flips the overlay to
+   display:flex, and an animation runs when an element becomes displayed. The
+   overlay just fades; the panel rises a little and settles, slightly further on
+   the mobile layout where it is a bottom sheet rather than a centred dialog. */
+@keyframes bill-overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes bill-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+.bill-modal-overlay:not([hidden]) {
+    animation: bill-overlay-in var(--dur-150) ease both;
+}
+.bill-modal-overlay:not([hidden]) .bill-modal {
+    animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
+}
+
+@media (max-width: 600px) {
+    @keyframes bill-modal-in {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: none; }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bill-modal-overlay:not([hidden]),
+    .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
+}
+
 .bill-modal-overlay[hidden] {
     display: none;
 }
