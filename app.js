@@ -9935,9 +9935,9 @@ function init() {
             const alertsBtn = e.target.closest('#bills-alerts-btn');
             if (alertsBtn) { toggleNotificationsEnabled(); return; }
             const trackFilterBtn = e.target.closest('.bills-tracked-filter-btn');
-            if (trackFilterBtn) { billsTrackedFilterOn = !billsTrackedFilterOn; updateBillsDisplay(); return; }
+            if (trackFilterBtn) { billsTrackedFilterOn = !billsTrackedFilterOn; animateBillsReorder(updateBillsDisplay); return; }
             const sortBtn = e.target.closest('.bills-sort-btn');
-            if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; updateBillsDisplay(); return; }
+            if (sortBtn && !sortBtn.classList.contains('amdt-sort-btn')) { billsSortMode = sortBtn.dataset.sort; animateBillsReorder(updateBillsDisplay); return; }
             const trackBtn = e.target.closest('.bill-track-btn');
             if (trackBtn) { toggleBillTracked(trackBtn.dataset.billId); return; }
             const amdtCard = e.target.closest('.amdt-vote-card');
@@ -9978,6 +9978,46 @@ function init() {
             }
         });
     }
+}
+
+// Re-sort the bills lists without the cards teleporting.
+//
+// Sorting rebuilds both lists with innerHTML, so the same bill is a brand new
+// element at a new position and the whole panel jumps. This measures every card
+// before the rebuild, measures again after, and plays each one from where it
+// used to be to where it now is. Cards that were not on screen before simply
+// fade in, which is what a tracked-filter toggle does.
+//
+// The wrapper is the thing that moves when there is one: a card can sit inside
+// .bill-card-wrap alongside its track button and any motion-to-recommit rows,
+// and animating the card alone would tear it away from them.
+function animateBillsReorder(render) {
+    const lists = [elements.ruleBillsList, elements.suspensionBillsList].filter(Boolean);
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!lists.length || reduce) { render(); return; }
+
+    const EASE = 'cubic-bezier(0.15, 0.83, 0.66, 1)';   // --ease-emphasis
+    const movers = () => lists.flatMap(l => [...l.querySelectorAll('.bill-card[data-bill-id]')]
+        .map(card => ({ id: card.dataset.billId, el: card.closest('.bill-card-wrap') || card })));
+
+    const before = new Map();
+    movers().forEach(({ id, el }) => before.set(id, el.getBoundingClientRect()));
+
+    render();
+
+    movers().forEach(({ id, el }) => {
+        const prev = before.get(id);
+        const now = el.getBoundingClientRect();
+        if (!prev) {
+            el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }],
+                       { duration: 200, easing: EASE });
+            return;
+        }
+        const dx = prev.left - now.left, dy = prev.top - now.top;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+                   { duration: 320, easing: EASE });
+    });
 }
 
 // Re-render the absentee list with the filter animation.
