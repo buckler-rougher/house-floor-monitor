@@ -5698,11 +5698,16 @@ font-family: var(--font-mono);
     .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
 }
 
-/* The vote-recs sheet is the same kind of thing, so it reuses the same motion. */
-.vrec-overlay:not([hidden]) {
+/* The vote-recs sheet and the info popups are the same kind of thing, so they
+   reuse the same motion. The info popups are what the "?" buttons open,
+   including the ones explaining what "under a rule" and "under suspension"
+   mean. */
+.vrec-overlay:not([hidden]),
+.info-popup-overlay:not([hidden]) {
     animation: bill-overlay-in var(--dur-150) ease both;
 }
-.vrec-overlay:not([hidden]) .vrec-modal {
+.vrec-overlay:not([hidden]) .vrec-modal,
+.info-popup-overlay:not([hidden]) .info-popup {
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
 
@@ -5720,11 +5725,13 @@ font-family: var(--font-mono);
 }
 
 .bill-modal-overlay.is-closing,
-.vrec-overlay.is-closing {
+.vrec-overlay.is-closing,
+.info-popup-overlay.is-closing {
     animation: bill-overlay-out var(--dur-200) ease both;
 }
 .bill-modal-overlay.is-closing .bill-modal,
-.vrec-overlay.is-closing .vrec-modal {
+.vrec-overlay.is-closing .vrec-modal,
+.info-popup-overlay.is-closing .info-popup {
     animation: bill-modal-out var(--dur-200) ease both;
 }
 
