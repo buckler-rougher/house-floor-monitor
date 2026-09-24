@@ -9993,17 +9993,28 @@ async function animateAbsenteeFilter(render) {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (!list || reduce) { await render(); return; }
 
+    const visible = () => [...list.querySelectorAll('.absentee-member')]
+        .filter(el => el.offsetParent !== null);
+
     const before = list.getBoundingClientRect().height;
-    list.classList.remove('is-filtering');
+    const wasVisible = new Set(visible());
+    list.querySelectorAll('.is-entering').forEach(el => el.classList.remove('is-entering'));
     // updateAbsenteeUI is async -- it awaits the Clerk member XML before it
     // writes any rows. Measuring without awaiting reads the old list, the two
     // heights come out equal, and the height transition never runs even though
     // the row count is about to change.
     await render();
-    // Read after the replace so the browser has the new row count.
     const after = list.getBoundingClientRect().height;
-    void list.offsetWidth;            // restart the stagger from the first row
-    list.classList.add('is-filtering');
+
+    // Only rows that just appeared animate. A row that was already on screen
+    // stays put: re-animating it was the thing that made switching filters feel
+    // like the whole panel was redrawing.
+    void list.offsetWidth;
+    visible().forEach((el, i) => {
+        if (wasVisible.has(el)) return;
+        el.style.setProperty('--stagger', i);
+        el.classList.add('is-entering');
+    });
 
     if (before > 0 && after > 0 && Math.abs(before - after) > 1) {
         list.style.height = `${before}px`;
@@ -10019,7 +10030,9 @@ async function animateAbsenteeFilter(render) {
         list.addEventListener('transitionend', settle);
     }
     clearTimeout(animateAbsenteeFilter._t);
-    animateAbsenteeFilter._t = setTimeout(() => list.classList.remove('is-filtering'), 600);
+    animateAbsenteeFilter._t = setTimeout(() => {
+        list.querySelectorAll('.is-entering').forEach(el => el.classList.remove('is-entering'));
+    }, 600);
 }
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
@@ -10487,6 +10500,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             b.classList.toggle('active', b.dataset.filter === absenteeFilterMode);
         });
     }
+    if (elements.absenteeList) elements.absenteeList.dataset.filter = absenteeFilterMode;
 
     // Update absentee list
     if (absentees.length > 0) {
@@ -10498,13 +10512,13 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             console.error('Failed to load member XML for absentees:', error);
         }
 
-        // Filter by party when not 'all'
-        let displayAbsentees = absentees;
-        if (absenteeFilterMode === 'rep') {
-            displayAbsentees = absentees.filter(a => a.party === 'rep');
-        } else if (absenteeFilterMode === 'dem') {
-            displayAbsentees = absentees.filter(a => a.party === 'dem');
-        }
+        // Every member is rendered whatever the filter says; hiding is done in
+        // CSS off .absentee-list[data-filter]. Filtering used to rebuild the
+        // list, which destroyed and recreated every surviving row: the photos
+        // refetched and flashed, and how the transition looked depended on how
+        // many rows happened to survive, so D and R animated differently for no
+        // reason anyone could see.
+        const displayAbsentees = absentees;
 
         const htmlParts = [];
         displayAbsentees.forEach((absentee, absenteeIndex) => {
@@ -10519,7 +10533,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             const casualtyStatus = getCasualtyStatus(match);
 
             htmlParts.push(`
-            <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}" style="--stagger:${absenteeIndex}">
+            <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
                 <div class="absentee-photo-wrap">
                     <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
                     ${photoUrl ? `<img class="absentee-photo" src="${photoUrl}" alt="${displayName}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />` : ''}

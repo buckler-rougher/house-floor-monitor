@@ -3622,17 +3622,24 @@ body.tellers-mode .tellers-column { display: flex; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Filter entry animation. Gated behind .is-filtering, which only a filter click
-   sets, because the list is replaced on every poll and animating that would
-   make the panel twitch every thirty seconds. --stagger is the row index, set
-   inline when each row is built; the cap keeps a long absence list from
-   rippling for a second and a half. */
+/* Party filter. Every member is in the DOM whatever the filter says, so that
+   switching filters neither rebuilds the list nor refetches the photographs. */
+.absentee-list[data-filter="rep"] .absentee-member:not(.rep),
+.absentee-list[data-filter="dem"] .absentee-member:not(.dem),
+.absentee-list[data-filter="ind"] .absentee-member:not(.ind) {
+    display: none;
+}
+
+/* Only rows that just appeared animate; animateAbsenteeFilter adds the class
+   to those and sets --stagger to their index among the visible rows, so the
+   ripple starts at the top whichever filter is chosen. The cap keeps a long
+   absence list from rippling for a second and a half. */
 @keyframes absentee-filter-in {
     from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: none; }
 }
 
-.absentee-list.is-filtering .absentee-member {
+.absentee-list .absentee-member.is-entering {
     animation: absentee-filter-in var(--dur-200) var(--ease-emphasis) both;
     animation-delay: min(calc(var(--stagger, 0) * 20ms), 180ms);
 }
@@ -3644,7 +3651,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .absentee-list.is-filtering .absentee-member { animation: none; }
+    .absentee-list .absentee-member.is-entering { animation: none; }
     .absentee-list { transition: none !important; }
 }
 
