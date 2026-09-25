@@ -10894,6 +10894,95 @@ async function updateQuorumStatus() {
 // Update Vote Display
 
 
+// ── Morning business from the live captions ──────────────────────────────────
+//
+// The board takes these four events from the Clerk's proceedings feed, which
+// publishes about 2.5 minutes after the fact (measured by dev/proceedings-lag.mjs
+// against a live sitting). Prayer and pledge last 60-90 seconds, so by the time
+// the feed reports them they are over: the board announces morning business in
+// the past tense on every sitting day.
+//
+// The captions are already on the page, buffered by the PiP. They see these
+// events about half a minute BEFORE the Clerk's own recorded action time, so
+// roughly three minutes before the board currently learns of them.
+//
+// Validated over 29 sitting days in dev/caption-lead.mjs -- 15 full legislative
+// days and 14 pro formas:
+//
+//   prayer           28 hit,  1 miss,  0 false positives
+//   pledge           28 hit,  1 miss,  0 false positives
+//   speaker pro tem  26 hit,  1 miss,  0 false positives
+//   one-minute       15 hit,  0 miss,  0 false positives  (full days only)
+//
+// Journal approval is deliberately absent: 15/15 on full days but 0/14 on pro
+// formas, whose caption tracks are too sparse to carry the Chair's formula --
+// and a pro forma is almost entirely morning business, so it would fail exactly
+// where it was needed. Moment of silence is absent too: it was the only event
+// that ever produced a false positive.
+//
+// The asymmetry is what makes this safe. Every failure seen was a miss, never a
+// fabrication, and a miss costs nothing: the section simply fills from the feed
+// 2.5 minutes later, exactly as it does today. Captions only ever bring a
+// section forward; they never assert anything the Clerk then contradicts.
+(function initMorningBusinessFromCaptions() {
+    // Anchored phrases, not keywords: "prayer" alone shows up in debate. These
+    // are the same patterns dev/caption-lead.mjs was scored on.
+    const EVENTS = [
+        { key: 'prayer',
+          re: /prayer will be\s+offered|offered the following prayer|offered by (?:the )?chaplain|chaplain[^.]{0,30}offered/i },
+        { key: 'pledge',
+          re: /pledge of allegiance/i },
+        { key: 'speaker',
+          re: /hereby appoint the honorable|to act as speaker pro tempore/i },
+        { key: 'one-minute',
+          re: /recognized for one minute|one[- ]minute speech/i },
+    ];
+
+    // A marker is shown for at most this long. On 15 Sep the prayer phrase
+    // matched 13.9 minutes before the Clerk's time for it -- the words appearing
+    // in unrelated speech -- so an early fire has to expire on its own rather
+    // than sit there claiming the prayer is in progress.
+    const MAX_VISIBLE_MS = 5 * 60 * 1000;
+    const POLL_MS = 2000;
+
+    const state = new Map();   // key -> { firedAt }
+    let day = '';
+
+    const el = (key) => document.getElementById(`${key}-live`);
+    const clerkReported = (key) => {
+        // The -time span stays empty until the feed carries the event. Once it
+        // does, the Clerk is the record and the marker steps aside.
+        const t = document.getElementById(key === 'speaker' ? 'speaker-time' : `${key}-time`);
+        return !!(t && t.textContent.trim());
+    };
+
+    function tick() {
+        const today = new Date().toDateString();
+        if (today !== day) { day = today; state.clear(); EVENTS.forEach(e => { const n = el(e.key); if (n) n.hidden = true; }); }
+
+        const text = typeof window.__liveCaptionText === 'function' ? window.__liveCaptionText() : '';
+        const now = Date.now();
+
+        for (const ev of EVENTS) {
+            const node = el(ev.key);
+            if (!node) continue;
+            const seen = state.get(ev.key);
+
+            if (!seen && text && ev.re.test(text)) {
+                state.set(ev.key, { firedAt: now });
+                node.hidden = false;
+                continue;
+            }
+            if (seen && !node.hidden) {
+                if (clerkReported(ev.key) || now - seen.firedAt > MAX_VISIBLE_MS) node.hidden = true;
+            }
+        }
+    }
+
+    setInterval(tick, POLL_MS);
+    tick();
+})();
+
 // ── HLS PiP — always-on live feed, click to expand ───────────────────────────
 (function initFloorFeedPip() {
     const pip         = document.getElementById('floor-feed');
