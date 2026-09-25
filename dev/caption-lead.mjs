@@ -29,13 +29,26 @@ import '../lib/floor-speaker.js';
 const H = globalThis.HouseFloorSpeaker;
 const BROADCAST = 'https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents';
 
-const get = async (url, label, timeoutMs = 25_000) => {
-  const r = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' },
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
-  return r.text();
+// Retries once on a timeout. A caption track for a full session day is tens of
+// thousands of cues, so the busiest days -- the ones worth measuring -- are the
+// ones most likely to time out, and a skipped day silently shrinks the sample
+// toward quiet ones. That is how a five-day run became a three-day result.
+const get = async (url, label, timeoutMs = 25_000, tries = 2) => {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' },
+        signal: AbortSignal.timeout(timeoutMs * (i + 1)),
+      });
+      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
+      return r.text();
+    } catch (e) {
+      last = e;
+      if (!/abort|timeout/i.test(String(e.message))) throw e;
+    }
+  }
+  throw last;
 };
 
 // Anchored phrases, not keywords. "prayer" alone appears in debate; the Chair's
@@ -126,10 +139,18 @@ for (const date of targets) {
   try {
     meta = await captionsFor(date);
     if (!meta) { if (dates.length) console.log(`  ${date}  no broadcast / no captions`); continue; }
-    cues = H.parseCaptionCues(await get(meta.url, 'captions', 40_000));
+    cues = H.parseCaptionCues(await get(meta.url, 'captions', 60_000));
     actions = await clerkActions(date);
   } catch (e) {
-    console.log(`  ${date}  skipped: ${String(e.message).slice(0, 60)}`);
+    // The broadcast API does not answer "no event today" -- it hangs. A session
+    // day returns in under half a second, so a timeout here means there was no
+    // broadcast, not that the fetch was unlucky. Say which, or every recess day
+    // looks like data that went missing. It cost a re-run of eleven days to
+    // discover that none of them had anything to recover.
+    const noBroadcast = /abort|timeout/i.test(String(e.message));
+    console.log(noBroadcast
+      ? `  ${date}  no broadcast (endpoint hung; session days answer in <1s)`
+      : `  ${date}  skipped: ${String(e.message).slice(0, 60)}`);
     continue;
   }
   if (!cues.length) { console.log(`  ${date}  captions empty`); continue; }
