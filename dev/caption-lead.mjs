@@ -53,6 +53,17 @@ const EVENTS = [
   { key: 'one-minute',
     caption: /recognized for one minute|one[- ]minute speech/i,
     clerk:   /one[- ]minute speech/i },
+  // The Chair's formula is fixed: "The Chair has examined the Journal of the
+  // last day's proceedings and announces to the House his approval thereof.
+  // Pursuant to clause 1, rule I, the Journal stands approved."
+  { key: 'journal',
+    caption: /journal stands approved|announces to the house (?:his|her) approval|examined the journal/i,
+    clerk:   /approval of the journal|journal.{0,24}approved/i },
+  // The Clerk reads the Speaker's letter appointing a Speaker pro tempore for
+  // the day, which is what the board's SPEAKER PRO TEMPORE section reports.
+  { key: 'speaker-pro-tem',
+    caption: /hereby appoint the honorable|to act as speaker pro tempore/i,
+    clerk:   /designated the honorable|act as speaker pro tempore/i },
 ];
 
 async function captionsFor(date) {
