@@ -78,11 +78,23 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: How late did this start?
+        # Reads the cron that actually fired. Hardcoding 09:07 made the
+        # afternoon run report itself 477 minutes late when it was 297 late
+        # against its own 12:07 schedule.
+        env:
+          SCHED: ${{ github.event.schedule }}
         run: |
           now=$(date -u +%s)
-          want=$(date -u -d "today 09:07" +%s)
-          echo "scheduled 09:07 UTC, started $(date -u +%H:%M) UTC, late by $(( (now - want) / 60 )) min" \
-            | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -n "$SCHED" ]; then
+            m=$(echo "$SCHED" | awk '{print $1}')
+            h=$(echo "$SCHED" | awk '{print $2}')
+            want=$(date -u -d "today ${h}:${m}" +%s)
+            printf 'cron %s: due %02d:%02d UTC, started %s UTC, late by %d min\n' \
+              "$SCHED" "$h" "$m" "$(date -u +%H:%M)" "$(( (now - want) / 60 ))" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "manual run, started $(date -u +%H:%M) UTC" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/setup-node@v5
         with:
