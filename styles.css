@@ -1465,6 +1465,29 @@ body.tellers-mode .tellers-column { display: flex; }
   align-items: center;
   gap: var(--sp-10);
 }
+/* Caption-driven "happening now" marker.
+   The captions see morning business about three minutes before the Clerk's
+   proceedings feed publishes it (measured: captions lead the Clerk's own action
+   time by ~0.5 min, and the feed lags that time by ~2.5 min). This marks the
+   section live in the gap. It is a separate element from the -tag-time span so
+   that the Clerk's timestamp, when it arrives, does not fight with it. */
+.section-live {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: var(--track-wider);
+  color: var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 14%, transparent);
+  border-radius: var(--radius-3);
+  padding: var(--sp-2) var(--sp-6);
+  margin-left: var(--sp-6);
+  animation: section-live-pulse 1.8s ease-in-out infinite;
+}
+@keyframes section-live-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
 /* five signal bars that wave up in sequence */
 .video-loading-bars {
   display: flex;

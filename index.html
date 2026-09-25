@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260923t">
+    <link rel="stylesheet" href="styles.css?v=20260924a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -303,6 +303,7 @@
                     <div class="one-minute-tag">
                         <span class="one-minute-tag-text">ONE MINUTE SPEECHES</span>
                         <span class="one-minute-tag-time" id="one-minute-time"></span>
+                            <span class="section-live" id="one-minute-live" hidden>NOW</span>
                     </div>
                     <div class="one-minute-header-right">
                         <span class="one-minute-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -385,6 +386,7 @@
                         <div class="prayer-tag">
                             <span class="prayer-tag-text">MORNING PRAYER</span>
                             <span class="prayer-tag-time" id="prayer-time"></span>
+                            <span class="section-live" id="prayer-live" hidden>NOW</span>
                         </div>
                         <button class="info-btn" data-info="prayer" aria-label="About the opening prayer">?</button>
                     </div>
@@ -479,6 +481,7 @@
                         <div class="speaker-tag">
                             <span class="speaker-tag-text">SPEAKER PRO TEMPORE</span>
                             <span class="speaker-tag-time" id="speaker-time"></span>
+                            <span class="section-live" id="speaker-live" hidden>NOW</span>
                         </div>
                         <button class="info-btn" data-info="speaker-pro-tempore" aria-label="About the Speaker pro tempore">?</button>
                     </div>
@@ -547,6 +550,7 @@
                     <div class="pledge-tag">
                         <span class="pledge-tag-text">PLEDGE OF ALLEGIANCE</span>
                         <span class="pledge-tag-time" id="pledge-time"></span>
+                            <span class="section-live" id="pledge-live" hidden>NOW</span>
                     </div>
                     <div class="pledge-header-right">
                         <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -1579,7 +1583,7 @@
          loaded before app.js so it is a simple synchronous global. -->
     <script defer src="lib/bill-id.js?v=20260905a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="app.js?v=20260923q"></script>
+    <script defer src="app.js?v=20260924a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
