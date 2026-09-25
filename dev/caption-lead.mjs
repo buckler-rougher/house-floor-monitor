@@ -80,7 +80,10 @@ const EVENTS = [
 ];
 
 async function captionsFor(date) {
-  const raw = await get(`${BROADCAST}/${date}`, 'broadcast events');
+  // No retry: this endpoint hangs rather than answering for a date with no
+  // event, so a timeout is the answer, and retrying only doubles the wait on
+  // every recess day in a long scan.
+  const raw = await get(`${BROADCAST}/${date}`, 'broadcast events', 25_000, 1);
   if (!raw.trim()) return null;
   const data = JSON.parse(raw);
   const event = Array.isArray(data) ? data[0] : null;
