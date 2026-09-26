@@ -342,12 +342,47 @@ async function loadSchedule() {
     try {
         const r = await fetch(`${API}/senate/schedule`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderSchedule(await r.json());
+        const data = await r.json();
+        renderSchedule(data);
+        globalThis.VotingCalendar?.setData(scheduleToCalendarItems(data));
     } catch (e) {
         const line = el('session-text');
         if (line) line.textContent = 'SESSION STATUS UNAVAILABLE';
         console.error('Schedule fetch failed:', e);
     }
+}
+
+// ── Calendar ─────────────────────────────────────────────────────────────────
+//
+// The same grid the House board draws, fed from Senate session days instead of
+// a House voting-days ICS. Every day the Senate actually convened is a sitting
+// day; the tentative annual schedule's non-legislative periods are drawn as
+// cancelled, which is the module's grey, because "planned recess" is what they
+// are and a colour claiming otherwise would overstate a tentative document.
+function scheduleToCalendarItems(data) {
+    const items = [];
+    const ymd = (iso) => (iso || '').slice(0, 10);
+
+    for (const d of data?.recent || []) {
+        const date = ymd(d.convene);
+        if (!date) continue;
+        items.push({ date, type: 'vote-day', summary: 'Senate in session' });
+    }
+
+    // Recess windows are inclusive ranges, so walk them day by day. Guarded at
+    // 400 days so a malformed or open-ended range cannot spin.
+    for (const r of data?.recesses || []) {
+        if (!r.begin || !r.end) continue;
+        const start = new Date(`${r.begin}T12:00:00Z`);
+        const end = new Date(`${r.end}T12:00:00Z`);
+        if (isNaN(start) || isNaN(end) || end < start) continue;
+        for (let t = start, n = 0; t <= end && n < 400; t = new Date(t.getTime() + 86400000), n++) {
+            const date = t.toISOString().slice(0, 10);
+            if (items.some((i) => i.date === date)) continue;
+            items.push({ date, type: 'cancelled', summary: r.note || 'Non-legislative period' });
+        }
+    }
+    return items;
 }
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
