@@ -4044,7 +4044,15 @@ async function handleRequest(request, env) {
   }
 
   const url = new URL(request.url);
-  const path = url.pathname.replace(/^\/house-floor/, '');
+  // The prefix names the board, not the route: /house-floor/api/x and
+  // /senate-floor/api/x reach the same handlers. Anything chamber-dependent
+  // downstream reads `chamber`, and must fold it into its own cache key --
+  // kvCache keys are shared across both boards, so a handler that returns
+  // different data per chamber and forgets this will serve one board's payload
+  // to the other.
+  const prefix = url.pathname.match(/^\/(house|senate)-floor(?=\/|$)/);
+  const chamber = prefix ? prefix[1] : 'house';
+  const path = prefix ? url.pathname.slice(prefix[0].length) : url.pathname;
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
@@ -4244,9 +4252,36 @@ async function handleRequest(request, env) {
   }
 }
 
+// The board's origin is pinned rather than wildcarded, and there are two boards
+// now. Swapping the header once at the entry point beats threading an origin
+// through every response in the file: CORS_HEADERS stays the House default, and
+// this substitutes the Senate origin only when the request actually carries it.
+//
+// Nothing else is allowed. An unknown Origin falls through untouched and gets
+// the House header, which is a mismatch and so is blocked by the browser -- the
+// same answer it gets today.
+const ALLOWED_ORIGINS = new Set([
+  'https://house-floor.evanhollander.org',
+  'https://senate-floor.evanhollander.org',
+]);
+
 export default {
   async fetch(request, env) {
-    return handleRequest(request, env);
+    const res = await handleRequest(request, env);
+    const origin = request.headers.get('Origin');
+    // The House path returns the identical object it always did.
+    if (!origin || !ALLOWED_ORIGINS.has(origin)) return res;
+    if (res.headers.get('Access-Control-Allow-Origin') === origin) return res;
+    // A WebSocket upgrade cannot be rebuilt, and has no body to pass through.
+    if (res.status === 101 || res.webSocket) return res;
+    // Headers on a constructed Response are immutable, so rebuild. Passing
+    // res.body through rather than reading it keeps SSE streaming.
+    const headers = new Headers(res.headers);
+    headers.set('Access-Control-Allow-Origin', origin);
+    const vary = headers.get('Vary');
+    if (!vary) headers.set('Vary', 'Origin');
+    else if (!/\bOrigin\b/i.test(vary)) headers.set('Vary', `${vary}, Origin`);
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
   }
 };
 
