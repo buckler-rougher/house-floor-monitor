@@ -2370,6 +2370,97 @@ function senateSession() {
 // schedule lists the NON-legislative periods, the planned recesses. Together
 // they cover what happened and what is planned. It is tentative by its own
 // title, so it is reported as planned rather than as fact.
+// Who missed the last roll call.
+//
+// The Senate's per-vote file carries all 100 members with a vote_cast of Yea,
+// Nay or Not Voting, which is the whole panel. What it does not carry is a
+// bioguide id -- only lis_member_id, an internal key like "S428" -- so the
+// roster is joined in for photos.
+//
+// That join is on last name and state, not on any id. The chamber seating XML
+// makes the case for why: its bioguide for Ossoff reads P000612, which is not
+// his and not in the roster at all. Names and states have matched 100 of 100
+// every time they have been checked; the ids have not.
+async function handleSenateAbsences(env) {
+  const congress = CURRENT_CONGRESS;
+  const session = senateSession();
+  return kvCache(env, `senate-absences-${congress}-${session}-v1`, 600, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const get = async (url, label) => {
+      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
+      const ct = r.headers.get('Content-Type') || '';
+      if (!/xml/i.test(ct)) throw new Error(`${label}: expected XML, got ${ct}`);
+      return r.text();
+    };
+    const pick = (b, t) => {
+      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
+      return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+    };
+
+    // The menu is newest-first, so the head of it is the latest roll call.
+    const menu = await get(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`, 'vote menu');
+    const first = menu.match(/<vote>([\s\S]*?)<\/vote>/);
+    if (!first) throw new Error('vote menu: no votes yet this session');
+    const number = pick(first[1], 'vote_number');
+    const padded = String(number).padStart(5, '0');
+
+    const detail = await get(
+      `https://www.senate.gov/legislative/LIS/roll_call_votes/vote${congress}${session}/vote_${congress}_${session}_${padded}.xml`,
+      `vote ${padded}`);
+
+    const members = [];
+    for (const m of detail.matchAll(/<member>([\s\S]*?)<\/member>/g)) {
+      const b = m[1];
+      members.push({
+        last: pick(b, 'last_name'), first: pick(b, 'first_name'),
+        party: pick(b, 'party'), state: pick(b, 'state'),
+        cast: pick(b, 'vote_cast'),
+      });
+    }
+    if (!members.length) throw new Error(`vote ${padded}: parsed zero members`);
+
+    // The two files disagree on diacritics: the vote file writes Lujan and the
+    // roster writes Luján, which is one senator lost from a plain string match.
+    // Strip the marks on both sides rather than special-case the name.
+    const key = (last, state) =>
+      `${last.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()}|${state}`;
+
+    // Photos come from the roster's bioguide. A roster that will not load costs
+    // the pictures, not the panel.
+    const byName = new Map();
+    try {
+      const roster = await get('https://www.senate.gov/general/contact_information/senators_cfm.xml', 'roster');
+      for (const m of roster.matchAll(/<member>([\s\S]*?)<\/member>/g)) {
+        const b = m[1];
+        byName.set(key(pick(b, 'last_name'), pick(b, 'state')), pick(b, 'bioguide_id'));
+      }
+    } catch (e) {
+      console.warn(`[house-floor] senate roster unavailable for absence photos: ${e.message}`);
+    }
+
+    const absent = members
+      .filter((m) => /not voting/i.test(m.cast))
+      .map((m) => ({ ...m, bioguide: byName.get(key(m.last, m.state)) || null }));
+
+    const tally = { yea: 0, nay: 0, notVoting: 0 };
+    for (const m of members) {
+      if (/^yea$/i.test(m.cast)) tally.yea++;
+      else if (/^nay$/i.test(m.cast)) tally.nay++;
+      else tally.notVoting++;
+    }
+
+    return new Response(JSON.stringify({
+      congress, session, rollCall: Number(number),
+      question: pick(first[1], 'question'), issue: pick(first[1], 'issue'),
+      date: pick(first[1], 'vote_date'), result: pick(first[1], 'result'),
+      tally, absent,
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+    });
+  });
+}
+
 async function handleSenateSchedule(env) {
   return kvCache(env, 'senate-schedule-v1', 900, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
@@ -4283,6 +4374,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/absences' && request.method === 'GET') {
+    return handleSenateAbsences(env);
   } else if (path === '/api/senate/schedule' && request.method === 'GET') {
     return handleSenateSchedule(env);
   } else if (path === '/api/senate/roster' && request.method === 'GET') {
