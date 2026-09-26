@@ -6179,6 +6179,19 @@ function autoSwitchModeFromProceedings(items) {
 
     const latest = items[0].description.toLowerCase();
 
+    // A mode asserted from the captions holds until the feed catches up.
+    //
+    // Without this the caption lead is worth nothing: the watcher reveals the
+    // prayer section, and 5 seconds later this function runs with a `latest`
+    // that still predates the prayer and switches straight back out of it. The
+    // section only stayed visible once the Clerk published, which is the very
+    // delay the captions exist to beat.
+    //
+    // Placed after the vote-mode guard above on purpose: an active vote always
+    // wins over a caption assertion.
+    const cm = window.__captionMode;
+    if (cm && cm.until > Date.now() && !cm.needles.some(n => latest.includes(n))) return;
+
     // If the most recent proceeding is a recess or adjournment, stay in recess.
     if (latest.includes('adjourn') ||
         latest.includes('do now recess') ||
@@ -10928,15 +10941,37 @@ async function updateQuorumStatus() {
     // Anchored phrases, not keywords: "prayer" alone shows up in debate. These
     // are the same patterns dev/caption-lead.mjs was scored on.
     const EVENTS = [
-        { key: 'prayer',
-          re: /prayer will be\s+offered|offered the following prayer|offered by (?:the )?chaplain|chaplain[^.]{0,30}offered/i },
-        { key: 'pledge',
-          re: /pledge of allegiance/i },
-        { key: 'speaker',
-          re: /hereby appoint the honorable|to act as speaker pro tempore/i },
-        { key: 'one-minute',
-          re: /recognized for one minute|one[- ]minute speech/i },
+        { key: 'prayer',   mode: 'prayer',
+          re: /prayer will be\s+offered|offered the following prayer|offered by (?:the )?chaplain|chaplain[^.]{0,30}offered/i,
+          needles: ['prayer', 'chaplain'] },
+        { key: 'pledge',   mode: 'pledge',
+          re: /pledge of allegiance/i,
+          needles: ['pledge', 'allegiance'] },
+        { key: 'speaker',  mode: 'speaker',
+          re: /hereby appoint the honorable|to act as speaker pro tempore/i,
+          needles: ['pro tempore'] },
+        { key: 'one-minute', mode: 'one-minute',
+          re: /recognized for one minute|one[- ]minute speech/i,
+          needles: ['one-minute speech', 'one minute speech'] },
     ];
+
+    // Showing the marker is not enough. Each of these sections lives in a
+    // .mode-column that is display:none unless the body carries its mode class,
+    // and that class is set by autoSwitchModeFromProceedings -- from the feed. So
+    // a marker on its own is invisible until the Clerk publishes, and then hides
+    // immediately because the Clerk has now reported. Net effect was a two-second
+    // NOW flash at the moment the section appeared: worse than not shipping it.
+    // A caption match has to reveal the section too.
+    const revealSection = (ev) => {
+        if (window._modeLocked) return;
+        // Never interrupt a vote. Same test the proceedings switcher uses.
+        const liveStatus = floorData.currentStatus?.value;
+        const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
+        if (document.body.classList.contains('vote-mode') ||
+            liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive) return;
+        window.__captionMode = { needles: ev.needles, until: Date.now() + MAX_VISIBLE_MS };
+        try { window.setMode(ev.mode); } catch (_) {}
+    };
 
     // A marker is shown for at most this long. On 15 Sep the prayer phrase
     // matched 13.9 minutes before the Clerk's time for it -- the words appearing
@@ -10952,7 +10987,7 @@ async function updateQuorumStatus() {
     const clerkReported = (key) => {
         // The -time span stays empty until the feed carries the event. Once it
         // does, the Clerk is the record and the marker steps aside.
-        const t = document.getElementById(key === 'speaker' ? 'speaker-time' : `${key}-time`);
+        const t = document.getElementById(`${key}-time`);
         return !!(t && t.textContent.trim());
     };
 
@@ -10969,8 +11004,13 @@ async function updateQuorumStatus() {
             const seen = state.get(ev.key);
 
             if (!seen && text && ev.re.test(text)) {
+                // Already in the feed? Then there is nothing to be early about,
+                // and lighting the marker would flash NOW over an event the
+                // Clerk has already timestamped.
+                if (clerkReported(ev.key)) { state.set(ev.key, { firedAt: now }); continue; }
                 state.set(ev.key, { firedAt: now });
                 node.hidden = false;
+                revealSection(ev);
                 continue;
             }
             if (seen && !node.hidden) {
