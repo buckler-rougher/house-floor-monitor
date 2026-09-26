@@ -1886,6 +1886,10 @@ const elements = {
     prayerLeaderTitle: document.getElementById('prayer-leader-title'),
     prayerLeaderName: document.getElementById('prayer-leader-name'),
     prayerLeaderDescription: document.getElementById('prayer-leader-description'),
+    // Three call sites in updatePrayerSection guard on this and have never
+    // found it, so the link has always stayed on the static href in the
+    // markup -- pointing at the House Chaplain's page on guest chaplain days.
+    prayerLeaderWebsite: document.getElementById('prayer-leader-website'),
     prayerTime: document.getElementById('prayer-time'),
     pledgeSection: document.getElementById('pledge-section'),
     pledgeImage: document.getElementById('pledge-image'),
@@ -2422,6 +2426,16 @@ function toTitleCase(str) {
     return str.toLowerCase().replace(/\b\w+/g, (word, offset) =>
         (offset === 0 || !minors.has(word)) ? word.charAt(0).toUpperCase() + word.slice(1) : word
     );
+}
+
+// Captions arrive capitalized throughout. A name read out of them sits next to
+// names the Clerk publishes in mixed case, so it is normalised to match -- but
+// only when it really is all caps, because lowercasing first would turn an
+// already-published "McGovern" into "Mcgovern".
+function spokenNameCase(str) {
+    const name = String(str || '').trim().replace(/\s+/g, ' ');
+    return /[a-z]/.test(name) ? name
+        : name.toLowerCase().replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
 }
 
 // Parse a debate length phrase like "forty minutes" or "one hour" into "40 MIN" / "1 HR"
@@ -7180,6 +7194,52 @@ function updatePrayerSection(items) {
 
     if (!prayerItem) {
         const live = window.__captionLive?.('prayer');
+        // The Clerk reads the name aloud, so during the caption lead it is
+        // already in the text that just matched. Four real wordings, taken from
+        // the caption tracks of 16 Sep, 8 Sep, 10 Sep and 3 Sep 2026:
+        //
+        //   THE PRAYER WILL BE OFFERED BY CHAPLAIN KIBBEN.
+        //   THE PRAYER WILL BE OFFERED BY CHAPLAIN GIBBONS.
+        //   ...BY THE GUEST CHAPLAIN, REVEREND JOHN KELLOGG. CHRIST CHURCH,...
+        //   ...BY GUEST CHAPLAIN CANTOR DOCTOR JOEL GLUCK, UNITED BROTHERS...
+        //
+        // So: the comma after GUEST CHAPLAIN is optional, the affiliation that
+        // follows is cut off by either a period or a comma, and the House
+        // Chaplain is announced by surname alone. GIBBONS and KIBBEN are the
+        // same person on different days -- the captioner's own drift -- so a
+        // surname is only ever shown as spoken, never matched to a roster.
+        const capText = live && typeof window.__liveCaptionText === 'function'
+            ? window.__liveCaptionText() : '';
+        const guest = capText && (
+            capText.match(/offered\s+by\s+(?:the\s+)?guest\s+chaplain,?\s+([^.,]{2,60})/i) ||
+            // The Clerk's published form drops the words "guest chaplain" and
+            // leads with the honorific, so captions sometimes do too.
+            capText.match(/offered\s+by\s+((?:most\s+reverend|reverend|rev|father|rabbi|imam|pastor|cantor|doctor|dr|bishop|monsignor|sister|brother|elder)\.?\s+[^.,]{2,50})/i));
+        const house = !guest && capText &&
+            capText.match(/offered\s+by\s+(?:the\s+)?(?:house\s+)?chaplain,?\s+(?:chaplain\s+)?([^.,]{2,60})/i);
+        if (guest || house) {
+            const spoken = spokenNameCase((guest || house)[1]);
+            // A surname the Clerk has already published is the better rendering
+            // of the same person: captions say KIBBEN, the Clerk says Margaret
+            // Grun Kibben. Only an exact surname match upgrades, so a drifted
+            // GIBBONS stays GIBBONS rather than being "corrected" onto someone.
+            const surname = (n) => n.trim().split(/\s+/).pop().toLowerCase();
+            const named = (house && _lastChaplainName &&
+                           surname(_lastChaplainName) === surname(spoken))
+                ? _lastChaplainName : spoken;
+            elements.prayerLeaderTitle.textContent = guest ? 'Guest Chaplain' : 'House Chaplain';
+            elements.prayerLeaderName.textContent = named;
+            elements.prayerLeaderDescription.textContent =
+                'Announced on the floor. The Clerk\'s record follows in a few minutes.';
+            elements.prayerTime.textContent = '';
+            if (elements.prayerLeaderWebsite) {
+                elements.prayerLeaderWebsite.href = guest
+                    ? 'https://chaplain.house.gov/chaplaincy/guest_chaplains.html'
+                    : 'https://chaplain.house.gov/chaplaincy/index.html';
+                elements.prayerLeaderWebsite.textContent = 'https://chaplain.house.gov';
+            }
+            return;
+        }
         elements.prayerLeaderTitle.textContent = live
             ? 'Prayer under way' : 'No Prayer Information';
         elements.prayerLeaderName.textContent = '--';
@@ -7681,10 +7741,7 @@ function updateSpeakerSection(items) {
             capText.match(/appoint\s+the\s+honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i) ||
             capText.match(/honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i));
         if (capName) {
-            const spoken = capName[1].trim().replace(/\s+/g, ' ');
-            const named = /[a-z]/.test(spoken) ? spoken : spoken
-                .toLowerCase()
-                .replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+            const named = spokenNameCase(capName[1]);
             elements.speakerMemberTitle.textContent = 'Speaker Pro Tempore';
             elements.speakerMemberName.textContent = named;
             elements.speakerPartyTag.textContent = '';
