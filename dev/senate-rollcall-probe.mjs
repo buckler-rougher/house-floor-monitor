@@ -48,6 +48,10 @@ const LIVE_VIEW = 16;
 const MINUTES  = Number(arg('minutes', 240));
 const INTERVAL = Number(arg('interval', 20)) * 1000;
 const REPLAY   = arg('clip', '');
+// The first run wants the whole session, not just one vote: whether the feed is
+// live at all, and how far behind it runs, matter more than the roll call and
+// are only answerable by watching it advance.
+const STOP_AT_VOTE = process.argv.includes('--stop-after-vote');
 const OUT      = arg('out', 'senate-rollcall.jsonl');
 
 const log = [];
@@ -150,6 +154,35 @@ function scoreTrack(lines) {
   return rows;
 }
 
+// The events a Senate board would drive sections from, in the Chair's own
+// formulas. Detection only: this records whether the phrase is in the live
+// caption text and when, so the wording can be read before anything is built on
+// it. The House equivalents took a 29-day backtest before they were trusted.
+const RITUAL = [
+  // Written against the Senate's own wording on 22 Dec 2022, not the House's.
+  // The Senate opens "THE SENATE WILL COME TO ORDER. THE CHAPLAIN, BARRY C.
+  // BLACK, WILL NOW LEAD THE SENATE IN PRAYER." then "THE CHAPLAIN: LET US PRAY."
+  //
+  // The pledge pattern carries slack on purpose. That day the captioner typed
+  // "PLEAE JOIN ME IN RECITING THE PLEDGE F ALLEGIANCE" -- a dropped O -- so an
+  // exact "pledge of allegiance" finds nothing on a day the pledge was said.
+  // Same class of drift as KIBBEN being typed GIBBONS in the House track.
+  ['convene',      /senate will come to order|called the senate to order/i],
+  ['prayer',       /will now lead the senate in prayer|the chaplain:\s*let us pray|offered the following prayer/i],
+  ['pledge',       /pledge\b[^.]{0,12}allegiance/i],
+  ['journal',      /journal of proceedings be approved|journal[^.]{0,30}approved|approval of the journal/i],
+  ['morning-hour', /morning business|morning hour/i],
+  // "CALL THE ROLL" is a vote, not a quorum call, and had been matching here.
+  ['quorum',       /suggest the absence of a quorum|absence of a quorum/i],
+  // Unvalidated: the 22 Dec 2022 track contains no instance of the word.
+  ['cloture',      /cloture motion|invoke cloture/i],
+];
+
+// The Chaplain is named in the same shape the House uses, so the same idea
+// works: the name is in the sentence that announces the prayer.
+const CHAPLAIN_NAME = /the chaplain,\s+([^,]{3,40}),\s+will now lead/i;
+
+
 const hms = (s) => `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 function report(rows) {
@@ -176,6 +209,14 @@ if (REPLAY) {
   if (!lines) { say('  no caption data for that clip'); process.exit(0); }
   say(`  ${lines.length} caption lines`);
   report(scoreTrack(lines));
+  say('');
+  say('  ritual phrases, first hit each:');
+  for (const [key, re] of RITUAL) {
+    const hit = lines.find((l) => re.test(l.text));
+    say(`    ${key.padEnd(12)} ${hit ? hms(hit.t) + '  ' + hit.text.slice(-62) : '(not found)'}`);
+  }
+  const named = lines.map((l) => l.text.match(CHAPLAIN_NAME)).find(Boolean);
+  say(`    ${'chaplain'.padEnd(12)} ${named ? named[1].trim() : '(name not announced in this track)'}`);
   const probe = await probeMedia(REPLAY);
   record({ kind: 'media-probe', ...probe });
   say('');
@@ -197,6 +238,11 @@ say('');
 
 const deadline = Date.now() + MINUTES * 60_000;
 let clip = null, seen = 0, probed = false, sawRoll = false;
+// Freshness: how far the transcript's own clock advances per second of real
+// time. A completed archive never moves, so a ratio near zero means JSON.php is
+// serving a finished file rather than a live one, and nothing can be built on it.
+let firstSample = null, lastSample = null;
+const ritualSeen = new Map();
 
 while (Date.now() < deadline) {
   try {
@@ -209,10 +255,22 @@ while (Date.now() < deadline) {
     }
 
     const lines = await captionLines(clip);
+    if (lines && lines.length) {
+      const maxCue = lines[lines.length - 1].t;
+      const sample = { wall: Date.now(), maxCue, lines: lines.length };
+      if (!firstSample) firstSample = sample;
+      lastSample = sample;
+      record({ kind: 'freshness', ...sample });
+    }
     if (lines && lines.length > seen) {
       for (const l of lines.slice(seen)) {
         record({ kind: 'caption', clip, t: l.t, text: l.text });
         if (ROLL_START.test(l.text) && !sawRoll) { sawRoll = true; say(`  ${hms(l.t)}  ROLL CALL BEGINS`); }
+        for (const [key, re] of RITUAL) {
+          if (ritualSeen.has(key) || !re.test(l.text)) continue;
+          ritualSeen.set(key, { t: l.t, text: l.text });
+          say(`  ${hms(l.t)}  ${key.toUpperCase().padEnd(12)} ${l.text.slice(-70)}`);
+        }
       }
       seen = lines.length;
     }
@@ -225,16 +283,34 @@ while (Date.now() < deadline) {
       say(`  media host answered ${probe.mediaStatus ?? probe.mediaError ?? 'n/a'} to this runner${probe.mediaOk ? '  <-- REACHABLE' : ''}`);
     }
 
-    // Stop as soon as one roll call has run start to finish.
     const rows = lines ? scoreTrack(lines) : [];
-    if (rows.length) { say(''); say('Captured a vote result.'); report(rows); break; }
+    if (STOP_AT_VOTE && rows.length) { say(''); say('Captured a vote result.'); break; }
   } catch (e) {
     record({ kind: 'error', message: String(e.message) });
   }
   await new Promise((r) => setTimeout(r, INTERVAL));
 }
 
-if (!sawRoll) { say(''); say('Window closed with no roll call seen. Either the Senate did not vote, or it never convened.'); }
+say('');
+say('── Can this drive a board? ───────────────────────────────────────────');
+if (!clip) {
+  say('  NO CLIP. The live publisher never showed an event. Either the Senate');
+  say('  did not convene in this window, or the job ran outside it.');
+} else {
+  const lines = await captionLines(clip);
+  const elapsed = lastSample && firstSample ? (lastSample.wall - firstSample.wall) / 1000 : 0;
+  const advanced = lastSample && firstSample ? lastSample.maxCue - firstSample.maxCue : 0;
+  const ratio = elapsed > 60 ? advanced / elapsed : null;
+  say(`  clip                ${clip}`);
+  say(`  caption lines       ${lines ? lines.length : 'n/a'}`);
+  say(`  watched for         ${Math.round(elapsed)}s of real time`);
+  say(`  transcript advanced ${Math.round(advanced)}s of its own clock`);
+  say(`  ratio               ${ratio == null ? '(too short to judge)' : ratio.toFixed(2) + (ratio > 0.5 ? '   <-- LIVE, keeps pace' : '   <-- NOT advancing; served as a finished file')}`);
+  say('');
+  say(`  ritual phrases seen: ${ritualSeen.size ? [...ritualSeen.keys()].join(', ') : 'none'}`);
+  if (lines) { say(''); report(scoreTrack(lines)); }
+}
+if (!sawRoll) { say(''); say('No roll call seen in this window.'); }
 
 if (process.env.GITHUB_STEP_SUMMARY) {
   const fs = await import('node:fs');
