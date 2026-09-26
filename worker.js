@@ -2358,6 +2358,81 @@ function senateSession() {
 // whichever party the independents sit with and not by the larger bloc. The
 // roster records a party and says nothing about caucusing, so this reports an
 // outright majority when one exists and declines to guess when one does not.
+// The Senate's own session-day record.
+//
+// floor_schedule.xml is one row per day the Senate actually convened, with the
+// convene and adjourn times, what kind of adjournment it was, when it next
+// convenes and whether that next sitting is a pro forma. That last flag matters:
+// a pro forma day is gavel in, gavel out, and calling it "in session" would be
+// true but useless.
+//
+// 2026_schedule.xml is the other half and the inverse: the tentative annual
+// schedule lists the NON-legislative periods, the planned recesses. Together
+// they cover what happened and what is planned. It is tentative by its own
+// title, so it is reported as planned rather than as fact.
+async function handleSenateSchedule(env) {
+  return kvCache(env, 'senate-schedule-v1', 900, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const year = new Date().getFullYear();
+    const get = async (url, label) => {
+      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
+      // senate.gov answers 200 with its own HTML page for a path that does not
+      // exist, so the status alone proves nothing about what came back.
+      const ct = r.headers.get('Content-Type') || '';
+      if (!/xml/i.test(ct)) throw new Error(`${label}: expected XML, got ${ct}`);
+      return r.text();
+    };
+
+    const sched = await get('https://www.senate.gov/legislative/schedule/floor_schedule.xml', 'floor schedule');
+    const pick = (b, t) => {
+      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
+      return m ? m[1].trim() : '';
+    };
+    const days = [];
+    for (const m of sched.matchAll(/<SessionDay>([\s\S]*?)<\/SessionDay>/g)) {
+      const b = m[1];
+      days.push({
+        convene: pick(b, 'ConveneDate') || null,
+        adjourn: pick(b, 'AdjournDate') || null,
+        adjournType: pick(b, 'AdjournType') || null,
+        nextConvene: pick(b, 'NextConveneDate') || null,
+        nextIsProForma: pick(b, 'IsNextConveneProforma') === 'Y',
+        legislativeDay: pick(b, 'LegislativeDay') || null,
+        updated: pick(b, 'LastUpdateDate') || null,
+      });
+    }
+    if (!days.length) throw new Error('floor schedule: parsed zero session days');
+    days.sort((a, b) => String(a.convene).localeCompare(String(b.convene)));
+    const latest = days[days.length - 1];
+
+    // Recesses are best-effort: the annual file is tentative and may not exist
+    // for a given year yet, and its absence should not take the panel down.
+    let recesses = [];
+    try {
+      const annual = await get(`https://www.senate.gov/legislative/${year}_schedule.xml`, 'annual schedule');
+      for (const m of annual.matchAll(/<date>([\s\S]*?)<\/date>/g)) {
+        const b = m[1];
+        recesses.push({
+          begin: pick(b, 'beginDate') || null,
+          end: pick(b, 'endDate') || null,
+          note: (pick(b, 'note') || pick(b, 'action') || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || null,
+        });
+      }
+    } catch (e) {
+      console.warn(`[house-floor] senate annual schedule unavailable: ${e.message}`);
+    }
+
+    return new Response(JSON.stringify({
+      year, sessionDays: days.length, latest, recesses,
+      // Only the tail is sent: the calendar wants a window, not 138 rows.
+      recent: days.slice(-30),
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
+    });
+  });
+}
+
 async function handleSenateRoster(env) {
   return kvCache(env, 'senate-roster-v1', 3600, async () => {
     const r = await fetch('https://www.senate.gov/general/contact_information/senators_cfm.xml', {
@@ -4205,6 +4280,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/schedule' && request.method === 'GET') {
+    return handleSenateSchedule(env);
   } else if (path === '/api/senate/roster' && request.method === 'GET') {
     return handleSenateRoster(env);
   } else if (path === '/api/senate/votes' && request.method === 'GET') {

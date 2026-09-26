@@ -298,15 +298,65 @@ function initAirportDelays() {
     setInterval(() => mod.fetchAirportDelays(), mod.FAA_CONFIG.refreshInterval);
 }
 
+// ── Session status ───────────────────────────────────────────────────────────
+//
+// From the Senate's own session-day record, which carries the convene and
+// adjourn times and, for the next sitting, whether it is a pro forma. That flag
+// is the point: a pro forma is gavel in, gavel out, so calling it "in session"
+// would be true and misleading at once.
+function renderSchedule(data) {
+    const line = el('session-text');
+    const next = el('next-votes');
+    const latest = data?.latest;
+    if (!line || !latest) return;
+
+    const now = Date.now();
+    const convened = latest.convene ? new Date(latest.convene) : null;
+    const adjourned = latest.adjourn ? new Date(latest.adjourn) : null;
+    const sitting = convened && convened.getTime() <= now && (!adjourned || adjourned.getTime() > now);
+
+    if (sitting) {
+        line.textContent = 'IN SESSION';
+        document.body.classList.remove('recess-mode');
+    } else {
+        line.textContent = 'ADJOURNED';
+        document.body.classList.add('recess-mode');
+    }
+
+    if (next) {
+        const nc = latest.nextConvene ? new Date(latest.nextConvene) : null;
+        if (nc && !isNaN(nc)) {
+            const when = nc.toLocaleString('en-US', {
+                weekday: 'short', day: '2-digit', month: 'short',
+                hour: '2-digit', minute: '2-digit', hour12: true,
+                timeZone: 'America/New_York', timeZoneName: 'short',
+            });
+            next.textContent = `NEXT CONVENES ${when}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}`;
+        } else {
+            next.textContent = '\u00a0';
+        }
+    }
+}
+
+async function loadSchedule() {
+    try {
+        const r = await fetch(`${API}/senate/schedule`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderSchedule(await r.json());
+    } catch (e) {
+        const line = el('session-text');
+        if (line) line.textContent = 'SESSION STATUS UNAVAILABLE';
+        console.error('Schedule fetch failed:', e);
+    }
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
 
-// Not wired yet, and saying so beats "Checking session..." forever. The Senate
-// publishes its schedule, but as a next-morning record rather than a feed; see
-// the FLOOR ACTIVITY panel.
-const sessionEl = el('session-text');
-if (sessionEl) sessionEl.textContent = 'SESSION STATUS NOT WIRED';
+loadSchedule();
+// Convene and adjourn times move over minutes, not seconds.
+setInterval(loadSchedule, 5 * 60 * 1000);
 
 initAnalogClocks();
 initAirportDelays();
