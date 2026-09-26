@@ -2425,8 +2425,11 @@ async function handleSenateSchedule(env) {
 
     return new Response(JSON.stringify({
       year, sessionDays: days.length, latest, recesses,
-      // Only the tail is sent: the calendar wants a window, not 138 rows.
-      recent: days.slice(-30),
+      // The whole year, not a tail. A 30-day slice left every earlier month with
+      // no sitting days to outrank the tentative recesses drawn over them, so
+      // spring and early summer rendered as though the Senate never met. 138
+      // rows is a few KB.
+      days,
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
     });
