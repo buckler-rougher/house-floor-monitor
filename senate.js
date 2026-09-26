@@ -371,29 +371,55 @@ async function loadSchedule() {
 // outside a recess is a fair guess, and a guess is not what this board does.
 function scheduleToCalendarItems(data) {
     const items = [];
-    const ymd = (iso) => (iso || '').slice(0, 10);
+    const seen = new Set();
+    const add = (date, label) => {
+        if (!date || seen.has(date)) return;
+        seen.add(date);
+        items.push({ date, type: 'vote-day', label });
+    };
 
-    // Accept either field name. The Worker and the page deploy separately, and
-    // renaming `recent` to `days` meant that between the two deploys the page
-    // read a key the Worker was not sending yet and drew no sitting days at all.
-    // The 900s cache on that endpoint stretches the gap well past the deploy.
+    // Days the Senate actually convened. Recorded fact.
+    const sat = [];
     for (const d of data?.days || data?.recent || []) {
-        const date = ymd(d.convene);
+        const date = (d.convene || '').slice(0, 10);
         if (!date) continue;
-        items.push({ date, type: 'vote-day', summary: 'Senate in session' });
+        sat.push(date);
+        add(date, 'SESSION');
     }
 
-    // Recess windows are inclusive ranges, so walk them day by day. Guarded at
-    // 400 days so a malformed or open-ended range cannot spin.
+    // Planned sittings, for the part of the calendar the record cannot reach:
+    // floor_schedule.xml is retrospective and stops at the last day the Senate
+    // sat. The tentative annual schedule names the NON-legislative periods, so
+    // a weekday outside one is a planned sitting day. That is a plan and it
+    // moves, exactly as the House voting-days feed moves when votes are added
+    // or cancelled; the calendar shows the plan as it currently stands.
+    //
+    // Recesses are drawn as nothing at all. No votes planned is the same
+    // statement as a blank day on the House board, and the earlier version
+    // greyed them as "Cancelled", which is a different and wrong claim.
+    const recess = new Set();
     for (const r of data?.recesses || []) {
         if (!r.begin || !r.end) continue;
         const start = new Date(`${r.begin}T12:00:00Z`);
         const end = new Date(`${r.end}T12:00:00Z`);
         if (isNaN(start) || isNaN(end) || end < start) continue;
         for (let t = start, n = 0; t <= end && n < 400; t = new Date(t.getTime() + 86400000), n++) {
+            recess.add(t.toISOString().slice(0, 10));
+        }
+    }
+
+    const lastSat = sat.sort().pop();
+    if (lastSat) {
+        // Out to a year, which covers the three months the grid can show plus
+        // whatever the month navigation reaches.
+        let t = new Date(`${lastSat}T12:00:00Z`);
+        for (let n = 0; n < 366; n++) {
+            t = new Date(t.getTime() + 86400000);
             const date = t.toISOString().slice(0, 10);
-            if (items.some((i) => i.date === date)) continue;
-            items.push({ date, type: 'cancelled', summary: r.note || 'Non-legislative period' });
+            const dow = t.getUTCDay();
+            if (dow === 0 || dow === 6) continue;
+            if (recess.has(date)) continue;
+            add(date, 'PLANNED');
         }
     }
     return items;
