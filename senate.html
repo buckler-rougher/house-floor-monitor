@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONITORING THE SENATE FLOOR</title>
+    <meta name="description" content="U.S. Senate floor monitoring: roll call votes, floor activity and the legislative calendar.">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://senate-floor.evanhollander.org">
+    <!-- Same two faces as the House board, preloaded for the same reason: almost
+         every label uses the mono face, so finding it after styles.css parses
+         costs a visible reflow. -->
+    <link rel="preconnect" href="https://cdn.evanhollander.org" crossorigin>
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
+    <!-- One stylesheet, both boards. The 99 House-only rules (.whip-*,
+         .one-minute-*) never match here because this document never emits those
+         class names, so there is nothing to scope or fork. -->
+    <link rel="stylesheet" href="styles.css?v=20260924a">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+</head>
+<body class="recess-mode" data-chamber="senate">
+    <noscript><div style="padding:2rem;text-align:center;color:#e6edf3;background:#0d1117;font-family:system-ui,sans-serif">JavaScript is required to use Senate Floor Monitor.</div></noscript>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <header class="main-header">
+        <div class="header-left">
+            <div class="brand-tooltip-anchor">
+                <div class="brand">
+                    <div class="live-indicator" aria-hidden="true"></div>
+                    <h1 class="brand-text">MONITORING <span class="brand-nl"><br></span>THE SENATE <span class="brand-nl"><br></span>FLOOR</h1>
+                </div>
+            </div>
+            <div class="date-info">
+                <span class="today-date" id="today-date">--</span>
+                <div class="session-status" id="session-status">
+                    <span class="session-text" id="session-text">Checking session...</span>
+                </div>
+                <div class="next-votes" id="next-votes">&nbsp;</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="clock-group" aria-label="Current times">
+                <div class="clock">
+                    <span class="clock-label">LOCAL</span>
+                    <span class="clock-time" id="clock-local">--:--:--</span>
+                </div>
+                <div class="clock">
+                    <span class="clock-label">DC</span>
+                    <span class="clock-time" id="clock-dc">--:--:--</span>
+                </div>
+                <div class="clock">
+                    <span class="clock-label">UTC</span>
+                    <span class="clock-time" id="clock-utc">--:--:--</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" id="main">
+        <div class="main-display">
+
+            <div class="proceedings-panel" id="senate-votes">
+                <div class="panel-header">
+                    <span class="panel-label">RECENT ROLL CALL VOTES</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu.htm" target="_blank" rel="noopener">Roll Call Tables (Senate)</a></span>
+                        <span class="proceedings-time" id="senate-votes-updated"></span>
+                    </div>
+                </div>
+                <div class="proceedings-feed" id="senate-votes-feed">
+                    <div class="proceedings-item">Loading...</div>
+                </div>
+            </div>
+
+            <div class="proceedings-panel" id="senate-floor-activity">
+                <div class="panel-header">
+                    <span class="panel-label">FLOOR ACTIVITY</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm" target="_blank" rel="noopener">Daily Digest (Senate)</a></span>
+                    </div>
+                </div>
+                <div class="proceedings-feed" id="senate-floor-activity-feed">
+                    <div class="proceedings-item">
+                        Not wired up. The Senate publishes this per sitting day as
+                        structured XML, but the file for a day appears the following
+                        morning: Thursday 24 September adjourned at 4:05 p.m. and its
+                        file was last written 09:32 the next day. It is a record, not
+                        a feed, and the panel will say so rather than imply otherwise.
+                    </div>
+                </div>
+            </div>
+
+            <div class="proceedings-panel" id="senate-live">
+                <div class="panel-header">
+                    <span class="panel-label">LIVE PROCEEDINGS</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: pending</span>
+                    </div>
+                </div>
+                <div class="proceedings-feed" id="senate-live-feed">
+                    <div class="proceedings-item">
+                        Blocked on a measurement, not on work. Everything the House
+                        board does live comes from its caption track; the Senate's
+                        equivalent went silent through 12 of the 15 roll calls on
+                        22 December 2022, and no newer sample exists to check because
+                        both public archives stop in early 2023. The probe in
+                        dev/senate-rollcall-probe.mjs watches a live session and
+                        settles it. Nothing is built here until it reports.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script defer src="senate.js?v=20260926a"></script>
+</body>
+</html>
