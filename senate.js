@@ -373,7 +373,11 @@ function scheduleToCalendarItems(data) {
     const items = [];
     const ymd = (iso) => (iso || '').slice(0, 10);
 
-    for (const d of data?.days || []) {
+    // Accept either field name. The Worker and the page deploy separately, and
+    // renaming `recent` to `days` meant that between the two deploys the page
+    // read a key the Worker was not sending yet and drew no sitting days at all.
+    // The 900s cache on that endpoint stretches the gap well past the deploy.
+    for (const d of data?.days || data?.recent || []) {
         const date = ymd(d.convene);
         if (!date) continue;
         items.push({ date, type: 'vote-day', summary: 'Senate in session' });
