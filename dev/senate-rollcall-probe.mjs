@@ -80,12 +80,21 @@ function collapse(raw) {
   return out;
 }
 
+// Everything this script knows about the caption format comes from a clip from
+// 22 Dec 2022, and the Senate changed video infrastructure at some point after
+// January 2023. If the shape moved, collapse() returns nothing and the run would
+// report "no captions" when the truth is "the format is different now". So the
+// raw response is kept whenever it parses but yields no lines.
+let lastRawSample = null;
 async function captionLines(clipId) {
   const r = await get(`${HOST}/JSON.php?clip_id=${clipId}`, 90_000);
-  if (!r.ok) return null;
+  if (!r.ok) { lastRawSample = `HTTP ${r.status}`; return null; }
   let parsed;
-  try { parsed = JSON.parse(r.text); } catch { return null; }
-  return collapse(parsed?.[0] || []);
+  try { parsed = JSON.parse(r.text); }
+  catch { lastRawSample = 'not JSON: ' + r.text.slice(0, 300); return null; }
+  const lines = collapse(parsed?.[0] || []);
+  if (!lines.length) lastRawSample = 'parsed, no lines: ' + r.text.slice(0, 300);
+  return lines;
 }
 
 // The live publisher shows a holding graphic when nothing is playing, and embeds
@@ -308,6 +317,20 @@ if (!clip) {
   say(`  ratio               ${ratio == null ? '(too short to judge)' : ratio.toFixed(2) + (ratio > 0.5 ? '   <-- LIVE, keeps pace' : '   <-- NOT advancing; served as a finished file')}`);
   say('');
   say(`  ritual phrases seen: ${ritualSeen.size ? [...ritualSeen.keys()].join(', ') : 'none'}`);
+  if (lastRawSample) say(`  raw response note:  ${lastRawSample.slice(0, 200)}`);
+  // The wording itself is the finding on a first live run: every pattern here
+  // was written against a 2022 clip, so a clean miss is as likely to mean the
+  // format moved as that the event did not happen. Print the text either way.
+  if (lines && lines.length) {
+    say('');
+    say('  first caption lines as served, verbatim:');
+    for (const l of lines.slice(0, 12)) say(`    ${hms(l.t)}  ${l.text.slice(-78)}`);
+    if (lines.length > 12) {
+      say(`    ... ${lines.length - 12} more, all in the artifact`);
+      say('  last lines:');
+      for (const l of lines.slice(-4)) say(`    ${hms(l.t)}  ${l.text.slice(-78)}`);
+    }
+  }
   if (lines) { say(''); report(scoreTrack(lines)); }
 }
 if (!sawRoll) { say(''); say('No roll call seen in this window.'); }
