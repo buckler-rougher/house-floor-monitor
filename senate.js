@@ -355,15 +355,25 @@ async function loadSchedule() {
 // ── Calendar ─────────────────────────────────────────────────────────────────
 //
 // The same grid the House board draws, fed from Senate session days instead of
-// a House voting-days ICS. Every day the Senate actually convened is a sitting
-// day; the tentative annual schedule's non-legislative periods are drawn as
-// cancelled, which is the module's grey, because "planned recess" is what they
-// are and a colour claiming otherwise would overstate a tentative document.
+// a House voting-days ICS.
+//
+// Two sources, and they disagree. floor_schedule.xml records the days the
+// Senate actually convened; 2026_schedule.xml plans the non-legislative
+// periods. 27 of this year's 138 sittings fall inside a planned recess, so the
+// record has to outrank the plan wherever both speak -- which is why sittings
+// are added first and a recess day is skipped if one already claims that date.
+//
+// The plan is still worth drawing for dates the record cannot reach, because
+// floor_schedule.xml is retrospective: it ends at the last day the Senate sat
+// and says nothing about next month. Those days are drawn in the module's grey
+// rather than a colour of their own, since a tentative document should not be
+// dressed as fact. No sitting days are invented for future dates: a weekday
+// outside a recess is a fair guess, and a guess is not what this board does.
 function scheduleToCalendarItems(data) {
     const items = [];
     const ymd = (iso) => (iso || '').slice(0, 10);
 
-    for (const d of data?.recent || []) {
+    for (const d of data?.days || []) {
         const date = ymd(d.convene);
         if (!date) continue;
         items.push({ date, type: 'vote-day', summary: 'Senate in session' });
