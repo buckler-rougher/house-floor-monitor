@@ -9,7 +9,12 @@
 // requests for House data and populate sections with the wrong chamber's facts.
 // The stylesheet is the layer that should be identical. The behaviour is not.
 
-const API = 'https://api.evanhollander.org/senate-floor/api';
+// api.evanhollander.org routes /house-floor/* to the Worker and nothing else.
+// /senate-floor/* answers 522, meaning the request never reaches it, because the
+// route list lives in the Cloudflare dashboard rather than wrangler.toml and has
+// no entry for it. The Worker itself already accepts either prefix and derives
+// `chamber` from it, so this is a one-word change once that route is added.
+const API = 'https://api.evanhollander.org/house-floor/api';
 
 const MONTH_NAMES = [
     'January','February','March','April','May','June',
@@ -28,6 +33,26 @@ const el = (id) => document.getElementById(id);
 // ── Clocks ───────────────────────────────────────────────────────────────────
 // Same options object the House board uses: 24-hour, seconds, en-US pinned so
 // the shape cannot change with the viewer's machine.
+function updateAnalogClock(clockElement, time) {
+    if (!clockElement) return;
+    const hourDeg = ((time.hours % 12) * 30) + (time.minutes * 0.5);
+    const minuteDeg = (time.minutes * 6) + (time.seconds * 0.1);
+    const secondDeg = time.seconds * 6;
+    clockElement.querySelector('.hour-hand')?.setAttribute('transform', `rotate(${hourDeg.toFixed(2)},50,50)`);
+    clockElement.querySelector('.minute-hand')?.setAttribute('transform', `rotate(${minuteDeg.toFixed(2)},50,50)`);
+    clockElement.querySelector('.second-hand')?.setAttribute('transform', `rotate(${secondDeg.toFixed(2)},50,50)`);
+}
+
+// Read the hour/minute/second a zone is actually showing, rather than offsetting
+// by hand. Intl knows about DST; arithmetic on a UTC offset does not.
+function getTimeParts(date, timeZone) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone, hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false,
+    }).formatToParts(date);
+    const v = (t) => Number(parts.find((p) => p.type === t).value);
+    return { hours: v('hour'), minutes: v('minute'), seconds: v('second') };
+}
+
 function updateTimestamp() {
     const now = new Date();
     const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
@@ -35,6 +60,14 @@ function updateTimestamp() {
     set('local-time', opts);
     set('dc-time',  { ...opts, timeZone: 'America/New_York' });
     set('utc-time', { ...opts, timeZone: 'UTC' });
+
+    // The header carries three clock faces as well as three readouts; only the
+    // readouts were being driven, so the hands sat wherever the markup left them.
+    updateAnalogClock(el('local-analog'), {
+        hours: now.getHours(), minutes: now.getMinutes(), seconds: now.getSeconds(),
+    });
+    updateAnalogClock(el('dc-analog'),  getTimeParts(now, 'America/New_York'));
+    updateAnalogClock(el('utc-analog'), getTimeParts(now, 'UTC'));
 }
 
 // ── Weather and the Capitol camera ───────────────────────────────────────────
@@ -81,11 +114,21 @@ function initCapcam() {
 // data", not "the floor is live". Same meaning kept here, driven by whether the
 // roll call source answers. It is never set to live on a timer, because a light
 // that is green regardless of the data would be decoration.
+// Two states, never none.
+//
+// @keyframes pulse is not defined in the stylesheet, so .connecting and .live
+// both name an animation that does not exist and render as static dots, amber
+// and green. The BARE .live-indicator is the one that animates: it runs
+// live-pulse, which cycles opacity to 0.6 and scale to 0.9. So stripping both
+// classes does not mean "no state", it means the dot starts flashing and
+// growing -- which is why this looked wrong next to the House board, where
+// app.js always leaves .live on.
 function setConnection(state) {
     const dot = document.querySelector('.live-indicator');
     if (!dot) return;
-    dot.classList.toggle('connecting', state === 'connecting');
-    dot.classList.toggle('live', state === 'live');
+    const live = state === 'live';
+    dot.classList.toggle('live', live);
+    dot.classList.toggle('connecting', !live);
 }
 
 // ── Roll call votes ──────────────────────────────────────────────────────────
@@ -140,7 +183,7 @@ async function loadVotes() {
         renderVotes(await r.json());
         setConnection('live');
     } catch (e) {
-        setConnection('down');
+        setConnection('connecting');
         const feed = el('senate-votes-feed');
         if (!feed) return;
         feed.innerHTML = '';
