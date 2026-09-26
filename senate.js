@@ -154,6 +154,88 @@ async function loadVotes() {
     }
 }
 
+// ── Balance of power ─────────────────────────────────────────────────────────
+//
+// 100 seats, fixed, so "whole number" is always 100 and a vacancy is a seat the
+// roster does not fill. That is the Senate's own phrasing and the reason the
+// threshold shown is 51: a majority of the whole number, not of those seated.
+//
+// Control is deliberately not "whoever has the most". Both independents caucus
+// with the Democrats and the Vice President breaks ties, so a 50-48-2 Senate is
+// run by the smaller bloc. The roster records a party and says nothing about
+// caucusing, so the badge appears only when a party holds 51 outright and the
+// panel says why when it does not.
+function renderBalance(data) {
+    const set = (id, v) => { const n = el(id); if (n) n.textContent = v; };
+    const c = data.counts || {};
+    set('party-dem', c.D ?? '--');
+    set('party-rep', c.R ?? '--');
+    set('party-ind', c.I ?? '--');
+    set('party-total', data.seats ?? '--');
+
+    const badge = el('majority-control-badge');
+    if (badge) {
+        if (data.control) {
+            badge.textContent = `${data.control === 'R' ? 'REPUBLICAN' : 'DEMOCRATIC'} CONTROL`;
+            badge.className = `majority-badge ${data.control.toLowerCase()}-control`;
+        } else {
+            badge.className = 'majority-badge hidden';
+        }
+    }
+
+    const seats = data.seats || 100;
+    const pct = (n) => `${((n || 0) / seats) * 100}%`;
+    const fills = { 'rep-fill': c.R, 'dem-fill': c.D, 'ind-fill': c.I, 'vac-fill': data.vacancies };
+    for (const [id, n] of Object.entries(fills)) { const node = el(id); if (node) node.style.width = pct(n); }
+
+    // Majority on the left, as on the House board. appendChild moves existing
+    // nodes, so re-appending in order is the reorder.
+    const bar = el('rep-fill')?.parentElement;
+    if (bar) {
+        const order = (c.D || 0) > (c.R || 0)
+            ? ['dem-fill', 'rep-fill', 'ind-fill', 'vac-fill']
+            : ['rep-fill', 'dem-fill', 'ind-fill', 'vac-fill'];
+        for (const id of order) { const node = el(id); if (node) bar.appendChild(node); }
+    }
+
+    // Vacancies: the Senate fills them by appointment in most states, so this is
+    // usually 0 and the section would otherwise sit empty asserting nothing.
+    const vacSection = el('vacancies-section');
+    const vacList = el('vacancies-list');
+    set('vacancies-count', data.vacancies ?? '--');
+    if (vacList) {
+        vacList.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'vacancy-item';
+        // Short on purpose: this sits in a narrow column and a sentence wraps to
+        // three lines there.
+        row.textContent = data.vacancies
+            ? `${data.vacancies} seat${data.vacancies === 1 ? '' : 's'} unfilled`
+            : `All ${data.seats || 100} seats filled`;
+        vacList.appendChild(row);
+    }
+    if (vacSection) vacSection.classList.remove('hidden');
+
+    const stamp = el('party-breakdown-last-update');
+    if (stamp) stamp.textContent = new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+
+    if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
+}
+
+async function loadBalance() {
+    try {
+        const r = await fetch(`${API}/senate/roster`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderBalance(await r.json());
+    } catch (e) {
+        const stamp = el('party-breakdown-last-update');
+        if (stamp) stamp.textContent = 'unavailable';
+        console.error('Roster fetch failed:', e);
+    }
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
@@ -170,5 +252,8 @@ fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
 initCapcam();
 loadVotes();
+loadBalance();
+// The roster changes on a timescale of months. Hourly is already generous.
+setInterval(loadBalance, 60 * 60 * 1000);
 // The record moves in minutes to hours, never seconds. Slow poll on purpose.
 setInterval(loadVotes, 5 * 60 * 1000);

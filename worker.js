@@ -2347,6 +2347,72 @@ function senateSession() {
   return new Date().getFullYear() > startYear ? 2 : 1;
 }
 
+// The Senate roster, which is also the balance of power.
+//
+// 100 seats, fixed. Unlike the House there is no apportionment to track, so a
+// vacancy is simply 100 minus the members the roster carries, and the roster is
+// the only thing that has to be fetched.
+//
+// Control is NOT just "most seats". Both independents currently caucus with the
+// Democrats, and the Vice President breaks ties, so a 50-48-2 Senate is run by
+// whichever party the independents sit with and not by the larger bloc. The
+// roster records a party and says nothing about caucusing, so this reports an
+// outright majority when one exists and declines to guess when one does not.
+async function handleSenateRoster(env) {
+  return kvCache(env, 'senate-roster-v1', 3600, async () => {
+    const r = await fetch('https://www.senate.gov/general/contact_information/senators_cfm.xml', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!r.ok) throw new Error(`senate roster: HTTP ${r.status}`);
+    // This corner of senate.gov answers 200 with the surrounding HTML page for a
+    // path that does not exist, so the status alone proves nothing.
+    const ct = r.headers.get('Content-Type') || '';
+    if (!/xml/i.test(ct)) throw new Error(`senate roster: expected XML, got ${ct}`);
+    const xml = await r.text();
+
+    const pick = (b, t) => {
+      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
+      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]*>/g, ' ')
+                     .replace(/\s+/g, ' ').trim() : '';
+    };
+    const members = [];
+    for (const m of xml.matchAll(/<member>([\s\S]*?)<\/member>/g)) {
+      const b = m[1];
+      members.push({
+        last: pick(b, 'last_name'), first: pick(b, 'first_name'),
+        party: pick(b, 'party'), state: pick(b, 'state'),
+        bioguide: pick(b, 'bioguide_id'), klass: pick(b, 'class'),
+        website: pick(b, 'website'),
+      });
+    }
+    if (!members.length) throw new Error('senate roster: parsed zero members');
+
+    const SEATS = 100;
+    const counts = { D: 0, R: 0, I: 0 };
+    for (const m of members) if (counts[m.party] !== undefined) counts[m.party]++;
+    const vacancies = SEATS - members.length;
+
+    // A majority of the whole number, the Senate's own phrasing.
+    const needed = Math.floor(SEATS / 2) + 1;
+    let control = null;
+    if (counts.R >= needed) control = 'R';
+    else if (counts.D >= needed) control = 'D';
+
+    return new Response(JSON.stringify({
+      seats: SEATS, counts, vacancies, needed, control,
+      // Named so the board can say why control is unresolved rather than
+      // silently showing nothing.
+      controlNote: control ? null : 'No party holds an outright majority; control turns on how the independents caucus and on the Vice President\'s tie-breaking vote.',
+      independents: members.filter((m) => m.party !== 'D' && m.party !== 'R')
+                           .map((m) => `${m.last} (${m.state})`),
+      members,
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+    });
+  });
+}
+
 async function handleSenateVotes(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
@@ -4135,6 +4201,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/roster' && request.method === 'GET') {
+    return handleSenateRoster(env);
   } else if (path === '/api/senate/votes' && request.method === 'GET') {
     return handleSenateVotes(env);
   } else if (path === '/api/congress-index' && request.method === 'GET') {
