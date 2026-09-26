@@ -53,8 +53,13 @@ jobs:
           node-version: '22'
 
       - name: Grade against the Congressional Record
-        run: >-
-          node dev/grade.mjs
-          ${{ inputs.date }}
-          --summary
-          --min-precision ${{ inputs.min_precision || '90' }}
+        # Dispatch inputs go through env, not straight into the run block. An
+        # expression pasted into a script is substituted before bash sees it,
+        # so the value becomes part of the command; through env it stays a
+        # value. ${DATE:+...} keeps the scheduled run's empty date passing no
+        # argument at all, the way the bare expression did.
+        env:
+          DATE: ${{ inputs.date }}
+          MIN_PRECISION: ${{ inputs.min_precision || '90' }}
+        run: |
+          node dev/grade.mjs ${DATE:+"$DATE"} --summary --min-precision "$MIN_PRECISION"

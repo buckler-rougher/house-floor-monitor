@@ -101,10 +101,17 @@ jobs:
           node-version: '22'
 
       - name: Poll the proceedings feed
+        # Dispatch inputs go through env, not straight into the run block. An
+        # expression pasted into a script is substituted before bash sees it,
+        # so the value becomes part of the command; through env it stays a
+        # value. Both are numbers here, but the shape is the point.
+        env:
+          MINUTES: ${{ inputs.minutes || '270' }}
+          INTERVAL: ${{ inputs.interval || '20' }}
         run: >-
           node dev/proceedings-lag.mjs
-          --minutes=${{ inputs.minutes || '270' }}
-          --interval=${{ inputs.interval || '20' }}
+          "--minutes=$MINUTES"
+          "--interval=$INTERVAL"
           --out=proceedings-lag.jsonl
 
       - name: Keep the raw observations
