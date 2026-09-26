@@ -160,6 +160,19 @@
 
 /* Anchor rem to the browser default (16px) so the type scale math holds and
    user font-size preferences are respected. */
+/* Tell the browser the page is dark BEFORE any of it paints.
+ *
+ * Without color-scheme the default canvas is white, and a tab being restored
+ * can show it for a frame before the body's background composites: a white
+ * flash on tab switch. The background on html is the belt to that brace --
+ * body's background does propagate to the canvas, but only once body is
+ * painted, and the canvas is what shows in the gap.
+ *
+ * It also makes form controls, scrollbars and the overscroll area dark, which
+ * on this board they should be. */
+:root { color-scheme: dark; }
+html { background-color: var(--bg-dark); }
+
 html { font-size: 100%; }
 
 body {

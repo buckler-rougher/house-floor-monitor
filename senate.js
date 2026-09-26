@@ -425,6 +425,99 @@ function scheduleToCalendarItems(data) {
     return items;
 }
 
+// ── Missing members ──────────────────────────────────────────────────────────
+//
+// The Senate's per-vote file lists all 100 members with a vote_cast of Yea, Nay
+// or Not Voting, so the last roll call is the whole panel. It carries no
+// bioguide id, only an internal lis_member_id, so the Worker joins the roster
+// for photos -- on last name and state, with diacritics stripped, because the
+// two files disagree about Lujan and Luján.
+//
+// Filtering is CSS off .absentee-list[data-filter], the way the House board
+// does it. Rebuilding the list per filter destroyed and recreated every
+// surviving row, which refetched and flashed the photos.
+const PHOTO_PLACEHOLDER = `<svg viewBox="0 0 28 28" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="4" fill="#b22234"/><rect x="0" y="4" width="10" height="4" fill="#dde"/><rect x="0" y="8" width="10" height="4" fill="#b22234"/><rect x="0" y="12" width="10" height="4" fill="#dde"/><rect x="0" y="16" width="10" height="4" fill="#b22234"/><rect x="0" y="20" width="10" height="4" fill="#dde"/><rect x="0" y="24" width="10" height="4" fill="#b22234"/><rect x="0" y="0" width="4" height="8" fill="#3c3b6e"/><rect x="8" y="0" width="20" height="28" fill="#161b22" opacity="0.75"/><circle cx="17" cy="11" r="5" fill="#5e7080"/><path d="M6 28 C6 20 11 17 17 17 C23 17 28 20 28 28 Z" fill="#5e7080"/></svg>`;
+
+const photoUrlFor = (bioguide) => bioguide
+    ? `https://bioguide.congress.gov/bioguide/photo/${bioguide.charAt(0)}/${bioguide}.jpg`
+    : '';
+
+function renderAbsences(data) {
+    const list = el('absentee-list');
+    const info = el('absentee-roll-info');
+    if (!list) return;
+
+    const absent = data?.absent || [];
+    const partyKey = (p) => (p === 'R' ? 'rep' : p === 'D' ? 'dem' : 'ind');
+    const counts = { dem: 0, rep: 0, ind: 0 };
+    for (const m of absent) counts[partyKey(m.party)]++;
+
+    const set = (id, v) => { const n = el(id); if (n) n.textContent = v; };
+    set('absentee-dem', counts.dem);
+    set('absentee-rep', counts.rep);
+    set('absentee-ind', counts.ind);
+    set('absentee-total', absent.length);
+    const indMetric = el('absentee-ind-metric');
+    if (indMetric) indMetric.style.display = counts.ind ? '' : 'none';
+
+    if (info && data?.rollCall) {
+        const bits = [`Roll call ${data.rollCall}`];
+        if (data.issue) bits.push(data.issue);
+        if (data.date) bits.push(data.date);
+        info.textContent = bits.join(' · ');
+    }
+
+    if (!absent.length) {
+        setIfChanged(list, '<div class="absentee-member">ALL SENATORS VOTED</div>');
+        return;
+    }
+
+    const parts = absent.map((m, i) => {
+        const cls = partyKey(m.party);
+        const partyClass = cls === 'rep' ? 'republican' : cls === 'dem' ? 'democrat' : 'independent';
+        const name = escapeHtml(`${m.first} ${m.last}`.trim());
+        const photo = photoUrlFor(m.bioguide);
+        return `
+        <div class="absentee-member ${cls}" data-absentee-index="${i}">
+            <div class="absentee-photo-wrap">
+                <div class="absentee-photo-placeholder">${PHOTO_PLACEHOLDER}</div>
+                ${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="${name}" loading="lazy" onload="this.style.opacity='1'" onerror="this.remove()">` : ''}
+            </div>
+            <div class="absentee-meta">
+                <span class="absentee-name">${name}</span>
+                <span class="absentee-party-tag ${partyClass}">${escapeHtml(m.party)}</span>
+                <span class="absentee-state">${escapeHtml(m.state)}</span>
+            </div>
+        </div>`;
+    });
+    setIfChanged(list, parts.join(''));
+}
+
+function initAbsenceFilters() {
+    const panel = el('absentee');
+    const list = el('absentee-list');
+    if (!panel || !list) return;
+    panel.addEventListener('click', (e) => {
+        const btn = e.target.closest('.absentee-filter-btn');
+        if (!btn) return;
+        panel.querySelectorAll('.absentee-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        const f = btn.dataset.filter;
+        if (f && f !== 'all') list.dataset.filter = f; else delete list.dataset.filter;
+    });
+}
+
+async function loadAbsences() {
+    try {
+        const r = await fetch(`${API}/senate/absences`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderAbsences(await r.json());
+    } catch (e) {
+        const info = el('absentee-roll-info');
+        if (info) info.textContent = 'unavailable';
+        console.error('Absences fetch failed:', e);
+    }
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
@@ -441,6 +534,9 @@ fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
 initCapcam();
 loadVotes();
+initAbsenceFilters();
+loadAbsences();
+setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.
 setInterval(loadBalance, 60 * 60 * 1000);
