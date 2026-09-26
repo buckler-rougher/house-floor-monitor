@@ -14,6 +14,7 @@ import './lib/floor-status.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
+  'https://senate-floor.evanhollander.org',
   'https://monitor-a6i.pages.dev',
 ]);
 // Module-level CORS headers — used by all route handler functions.
@@ -4252,19 +4253,11 @@ async function handleRequest(request, env) {
   }
 }
 
-// The board's origin is pinned rather than wildcarded, and there are two boards
-// now. Swapping the header once at the entry point beats threading an origin
-// through every response in the file: CORS_HEADERS stays the House default, and
-// this substitutes the Senate origin only when the request actually carries it.
-//
-// Nothing else is allowed. An unknown Origin falls through untouched and gets
-// the House header, which is a mismatch and so is blocked by the browser -- the
-// same answer it gets today.
-const ALLOWED_ORIGINS = new Set([
-  'https://house-floor.evanhollander.org',
-  'https://senate-floor.evanhollander.org',
-]);
-
+// corsForRequest() already echoes an allowed origin back, but only three call
+// sites use it; everything else spreads the static CORS_HEADERS, which is pinned
+// to the House. Rather than convert every handler, the entry point substitutes
+// the header on the way out, against the same ALLOWED_ORIGINS list declared
+// above. One allowlist, two consumers.
 export default {
   async fetch(request, env) {
     const res = await handleRequest(request, env);
