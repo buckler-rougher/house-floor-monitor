@@ -7179,9 +7179,13 @@ function updatePrayerSection(items) {
     });
 
     if (!prayerItem) {
-        elements.prayerLeaderTitle.textContent = 'No Prayer Information';
+        const live = window.__captionLive?.('prayer');
+        elements.prayerLeaderTitle.textContent = live
+            ? 'Prayer under way' : 'No Prayer Information';
         elements.prayerLeaderName.textContent = '--';
-        elements.prayerLeaderDescription.textContent = 'No prayer information available in current proceedings.';
+        elements.prayerLeaderDescription.textContent = live
+            ? 'Heard in the live captions. The Clerk\'s record follows in a few minutes.'
+            : 'No prayer information available in current proceedings.';
         elements.prayerTime.textContent = '';
         if (elements.prayerLeaderWebsite) {
             elements.prayerLeaderWebsite.href = 'https://chaplain.house.gov/chaplaincy/index.html';
@@ -7323,7 +7327,9 @@ function updatePledgeSection(items) {
     });
 
     if (!pledgeItem) {
-        elements.pledgeLeaderTitle.textContent = 'No Pledge Information';
+        const live = window.__captionLive?.('pledge');
+        elements.pledgeLeaderTitle.textContent = live
+            ? 'Pledge under way' : 'No Pledge Information';
         elements.pledgeLeaderName.textContent = '--';
         elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
@@ -7658,7 +7664,36 @@ function updateSpeakerSection(items) {
     });
 
     if (!speakerItem) {
-        elements.speakerMemberTitle.textContent = 'No Speaker Pro Tempore Information';
+        // Captions revealed this section ahead of the feed. Saying there is no
+        // information would be false: it has been announced on the floor, the
+        // Clerk simply has not published it yet.
+        // The Clerk READS THE NAME ALOUD -- "I hereby appoint the Honorable
+        // <name> to act as Speaker pro tempore" -- so during the caption lead
+        // the name is already in the text we matched on. Saying "no
+        // information" while holding the name would be a worse answer than the
+        // feed's, not an earlier one. Same extraction the published path uses
+        // below; captions arrive upper-case, so the name is normalised for
+        // display and for the roster lookup.
+        const capLive = window.__captionLive?.('speaker');
+        const capText = capLive && typeof window.__liveCaptionText === 'function'
+            ? window.__liveCaptionText() : '';
+        const capName = capText && (
+            capText.match(/appoint\s+the\s+honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i) ||
+            capText.match(/honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i));
+        if (capName) {
+            const spoken = capName[1].trim().replace(/\s+/g, ' ');
+            const named = /[a-z]/.test(spoken) ? spoken : spoken
+                .toLowerCase()
+                .replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+            elements.speakerMemberTitle.textContent = 'Speaker Pro Tempore';
+            elements.speakerMemberName.textContent = named;
+            elements.speakerPartyTag.textContent = '';
+            elements.speakerTime.textContent = '';
+            fetchSpeakerMemberInfo(named);
+            return;
+        }
+        elements.speakerMemberTitle.textContent = capLive
+            ? 'Announced on the floor' : 'No Speaker Pro Tempore Information';
         elements.speakerMemberName.textContent = '--';
         elements.speakerPartyTag.textContent = '';
         elements.speakerMemberDetails.textContent = '';
@@ -10971,6 +11006,16 @@ async function updateQuorumStatus() {
             liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive) return;
         window.__captionMode = { needles: ev.needles, until: Date.now() + MAX_VISIBLE_MS };
         try { window.setMode(ev.mode); } catch (_) {}
+        // Render immediately rather than waiting on the next proceedings poll.
+        // The renderers read the caption text themselves for what the Clerk has
+        // not published yet -- the Speaker pro tempore's name is read aloud, so
+        // it is already in the text that just matched.
+        try {
+            const render = { speaker: typeof updateSpeakerSection === 'function' ? updateSpeakerSection : null,
+                             prayer:  typeof updatePrayerSection  === 'function' ? updatePrayerSection  : null,
+                             pledge:  typeof updatePledgeSection  === 'function' ? updatePledgeSection  : null }[ev.key];
+            if (render && typeof proceedingsData !== 'undefined' && proceedingsData?.length) render(proceedingsData);
+        } catch (_) {}
     };
 
     // A marker is shown for at most this long. On 15 Sep the prayer phrase
@@ -11018,6 +11063,14 @@ async function updateQuorumStatus() {
             }
         }
     }
+
+    // The section renderers need this: while captions have revealed a section
+    // and the feed has not caught up, they must not claim there is no
+    // information. There is -- it just has not been published yet.
+    window.__captionLive = (key) => {
+        const node = el(key);
+        return !!(state.get(key) && node && !node.hidden);
+    };
 
     setInterval(tick, POLL_MS);
     tick();
