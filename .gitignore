@@ -22,3 +22,8 @@ dev/proceedings-lag.jsonl
 # served publicly — house-floor was exposing its deploy rules at /CLAUDE.md.
 CLAUDE.md
 AGENTS.md
+
+# Agent instructions. Cloudflare Pages serves .claude/ publicly (verified:
+# /.claude/launch.json returns 200), and these describe how to drive the app
+# and name internals. Same reason AGENTS.md is ignored.
+.claude/skills/
