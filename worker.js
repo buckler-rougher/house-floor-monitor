@@ -2329,6 +2329,70 @@ async function handleMemberData(env) {
   });
 }
 
+// ── Senate ───────────────────────────────────────────────────────────────────
+//
+// The Senate publishes completed roll calls as XML. Nothing here is live: the
+// summary list carries a day and no time ("24-Sep"), and each vote's own file
+// shows the lag -- vote 244 of 24 Sep is stamped 13:45 and was last modified at
+// 15:05. Treat it as the record catching up.
+//
+// The Senate has no electronic voting, so a running tally does not exist to be
+// published: members vote orally and the tally clerk marks a sheet. Anything
+// that wants a live Senate vote count has to come from somewhere else, and
+// whether that somewhere exists is what dev/senate-rollcall-probe.mjs measures.
+function senateSession() {
+  // A Congress runs two sessions, one per calendar year, starting in the odd
+  // year. The 119th began in 2025, so 2026 is session 2.
+  const startYear = 2025 + (CURRENT_CONGRESS - 119) * 2;
+  return new Date().getFullYear() > startYear ? 2 : 1;
+}
+
+async function handleSenateVotes(env) {
+  const congress = CURRENT_CONGRESS;
+  const session = senateSession();
+  // The chamber is in the key on purpose. kvCache is shared across both boards,
+  // so a key that only said "votes" would serve one chamber's payload to the
+  // other the moment the House grew an endpoint by that name.
+  const key = `senate-votes-${congress}-${session}-v1`;
+  return kvCache(env, key, 300, async () => {
+    const url = `https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`;
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!r.ok) throw new Error(`senate vote menu: HTTP ${r.status}`);
+    const xml = await r.text();
+
+    // Regex rather than a parser, as everywhere else in this file: Workers have
+    // no DOMParser and the shape here is flat and stable.
+    // Some fields nest a child element -- vote 242 of the 119th/2nd has
+    // "On the Amendment <measure>S.Amdt. 6776</measure>" -- so tags are stripped
+    // rather than shipped into the page as literal angle brackets.
+    const pick = (block, tag) => {
+      const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
+      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]*>/g, ' ')
+                     .replace(/\s+/g, ' ').trim() : '';
+    };
+    const votes = [];
+    for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
+      const b = m[1];
+      const yeas = pick(b, 'yeas'), nays = pick(b, 'nays');
+      votes.push({
+        number:   pick(b, 'vote_number').replace(/^0+/, '') || pick(b, 'vote_number'),
+        date:     pick(b, 'vote_date'),
+        issue:    pick(b, 'issue'),
+        question: pick(b, 'question'),
+        result:   pick(b, 'result'),
+        yeas: yeas === '' ? null : Number(yeas),
+        nays: nays === '' ? null : Number(nays),
+      });
+    }
+    return new Response(JSON.stringify({ congress, session, count: votes.length, votes }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+    });
+  });
+}
+
 async function handleCongressIndex() {
   try {
     const htmlText = await fetchRSSFeed(RSS_FEEDS.congressIndex);
@@ -4071,6 +4135,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/votes' && request.method === 'GET') {
+    return handleSenateVotes(env);
   } else if (path === '/api/congress-index' && request.method === 'GET') {
     return await handleCongressIndex();
   } else if (path === '/api/tweets' && request.method === 'GET') {
