@@ -460,11 +460,19 @@ function renderAbsences(data) {
     const indMetric = el('absentee-ind-metric');
     if (indMetric) indMetric.style.display = counts.ind ? '' : 'none';
 
+    // Same line the House board writes: "Roll 314 • 16 September 2026 7:05 PM".
+    // The vote's own file stamps it "September 24, 2026,  01:45 PM", so it is
+    // reordered day-first to match the board's date format.
     if (info && data?.rollCall) {
-        const bits = [`Roll call ${data.rollCall}`];
-        if (data.issue) bits.push(data.issue);
-        if (data.date) bits.push(data.date);
-        info.textContent = bits.join(' · ');
+        let when = '';
+        const m = (data.voteDate || '').match(/^(\w+)\s+(\d{1,2}),\s*(\d{4}),?\s*(.*)$/);
+        if (m) {
+            const time = m[4].trim().replace(/^0/, '');
+            when = `${parseInt(m[2], 10)} ${m[1]} ${m[3]}${time ? ' ' + time : ''}`;
+        } else if (data.date) {
+            when = data.date;
+        }
+        info.textContent = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
     }
 
     if (!absent.length) {
