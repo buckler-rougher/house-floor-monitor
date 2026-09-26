@@ -1,0 +1,107 @@
+# Does the Senate caption its roll call votes, or go silent through them?
+#
+# WHY THIS RUNS UNATTENDED
+# On 22 Dec 2022 the Senate's caption track carried nothing at all through 12 of
+# its 15 roll calls: the Chair's formula going in, the tally coming out, and
+# silence between, the longest gap being 1,010 seconds. If that still holds, a
+# live Senate vote board cannot be built from captions and would need speech
+# recognition on the floor audio. If it no longer holds, the captions are enough
+# and none of that is necessary.
+#
+# The question cannot be answered after the fact. Both public Granicus archives
+# stop in early 2023 -- view_id=2 ends 30 Dec 2022, view_id=12 ends 31 Jan 2023 --
+# and senate.gov now sends the public to C-SPAN for past proceedings. Nobody is
+# going to sit and watch a live session waiting for a vote, so it runs here.
+#
+# THE MEDIA PROBE, which is free with every run. archive-stream.granicus.com
+# answers 403 "Request blocked" to a laptop, on the playlist, a bogus path and
+# the host root alike, which is a WAF rule about the caller rather than the file.
+# A runner leaves from a different address, so each run records what the media
+# host says to it. If a runner gets through, the 2022 archive turns into a
+# labelled backtest set: 16 roll calls with official member-level XML to score
+# speech recognition against, with no waiting for another session.
+name: Senate roll call caption probe
+
+on:
+  schedule:
+    # 15:07 UTC, which is NOT when this is meant to run.
+    #
+    # Scheduled runs queue on shared infrastructure, and this repo has measured
+    # GitHub starting them 2.5 to 5.4 hours late, worst on :00 and :30. So: an
+    # odd minute, and early enough that the delay lands the start inside the
+    # afternoon session rather than after it. At 15:07 plus the delays seen so
+    # far the job begins between 17:37 and 20:30 UTC, and polls for four hours
+    # from there, which covers a 3 p.m. Eastern convene and the evening votes
+    # that follow it.
+    #
+    # The run prints how late it was, because the poller failing silently is
+    # exactly how the proceedings-lag job failed the first time.
+    - cron: '7 15 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'How long to watch for, in minutes'
+        required: false
+        default: '240'
+      interval:
+        description: 'Seconds between polls'
+        required: false
+        default: '20'
+      clip:
+        description: 'Replay an archived Granicus clip id instead of watching live (e.g. 4948)'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    # Generous margin over the poll window so the summary always gets written.
+    timeout-minutes: 275
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: How late did this start?
+        env:
+          SCHED: ${{ github.event.schedule }}
+        run: |
+          now=$(date -u +%s)
+          if [ -n "$SCHED" ]; then
+            m=$(echo "$SCHED" | awk '{print $1}')
+            h=$(echo "$SCHED" | awk '{print $2}')
+            want=$(date -u -d "today ${h}:${m}" +%s)
+            printf 'cron %s: due %02d:%02d UTC, started %s UTC, late by %d min\n' \
+              "$SCHED" "$h" "$m" "$(date -u +%H:%M)" "$(( (now - want) / 60 ))" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "manual run, started $(date -u +%H:%M) UTC" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Watch for a roll call
+        # Dispatch inputs go through env, not straight into the run block: an
+        # expression is substituted before bash sees the line, so the value
+        # becomes part of the command. ${CLIP:+...} keeps a scheduled run, which
+        # has no clip, passing no argument at all.
+        env:
+          MINUTES: ${{ inputs.minutes || '240' }}
+          INTERVAL: ${{ inputs.interval || '20' }}
+          CLIP: ${{ inputs.clip }}
+        run: |
+          node dev/senate-rollcall-probe.mjs \
+            "--minutes=$MINUTES" \
+            "--interval=$INTERVAL" \
+            ${CLIP:+"--clip=$CLIP"} \
+            --out=senate-rollcall.jsonl
+
+      - name: Keep the raw observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: senate-rollcall-${{ github.run_id }}
+          path: senate-rollcall.jsonl
+          if-no-files-found: ignore
