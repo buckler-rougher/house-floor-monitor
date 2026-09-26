@@ -2399,8 +2399,12 @@ async function handleSenateRoster(env) {
     if (counts.R >= needed) control = 'R';
     else if (counts.D >= needed) control = 'D';
 
+    // The roster stamps itself, which beats the time we happened to fetch it:
+    // this changes when a seat changes, not every time the cache expires.
+    const lastUpdated = (xml.match(/<last_updated>([^<]+)<\/last_updated>/) || [])[1] || null;
+
     return new Response(JSON.stringify({
-      seats: SEATS, counts, vacancies, needed, control,
+      seats: SEATS, counts, vacancies, needed, control, lastUpdated,
       // Named so the board can say why control is unresolved rather than
       // silently showing nothing.
       controlNote: control ? null : 'No party holds an outright majority; control turns on how the independents caucus and on the Vice President\'s tie-breaking vote.',

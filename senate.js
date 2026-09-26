@@ -25,33 +25,33 @@ const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','
 // Day-first, matching the House board. fmtDateLong there gives
 // "Saturday, 26 September 2026"; month-first would be a different house style on
 // a page that is otherwise the same page.
-const fmtDateLong = (d) =>
-    `${DAY_NAMES[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+const fmtDate = (d) =>
+    `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+const fmtDateLong = (d) => `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
+
+// The module takes these as dependencies rather than reaching for a board's
+// globals, so each board supplies its own.
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const _htmlCache = new WeakMap();
+function setIfChanged(node, html) {
+    if (!node) return;
+    if (_htmlCache.get(node) === html) return;
+    _htmlCache.set(node, html);
+    node.innerHTML = html;
+}
 
 const el = (id) => document.getElementById(id);
 
 // ── Clocks ───────────────────────────────────────────────────────────────────
 // Same options object the House board uses: 24-hour, seconds, en-US pinned so
 // the shape cannot change with the viewer's machine.
-function updateAnalogClock(clockElement, time) {
-    if (!clockElement) return;
-    const hourDeg = ((time.hours % 12) * 30) + (time.minutes * 0.5);
-    const minuteDeg = (time.minutes * 6) + (time.seconds * 0.1);
-    const secondDeg = time.seconds * 6;
-    clockElement.querySelector('.hour-hand')?.setAttribute('transform', `rotate(${hourDeg.toFixed(2)},50,50)`);
-    clockElement.querySelector('.minute-hand')?.setAttribute('transform', `rotate(${minuteDeg.toFixed(2)},50,50)`);
-    clockElement.querySelector('.second-hand')?.setAttribute('transform', `rotate(${secondDeg.toFixed(2)},50,50)`);
-}
-
-// Read the hour/minute/second a zone is actually showing, rather than offsetting
-// by hand. Intl knows about DST; arithmetic on a UTC offset does not.
-function getTimeParts(date, timeZone) {
-    const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone, hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false,
-    }).formatToParts(date);
-    const v = (t) => Number(parts.find((p) => p.type === t).value);
-    return { hours: v('hour'), minutes: v('minute'), seconds: v('second') };
-}
+// Same faces as the House board, from the same file. The tick marks are drawn
+// by initAnalogClocks(); without it the faces are bare circles, which is what
+// this board showed when these functions were hand-ported and that one was
+// missed.
+const { initAnalogClocks, updateAnalogClock, getTimeParts } = globalThis.BoardClocks;
 
 function updateTimestamp() {
     const now = new Date();
@@ -259,10 +259,14 @@ function renderBalance(data) {
     }
     if (vacSection) vacSection.classList.remove('hidden');
 
+    // A date, not a clock time. This panel changes when a seat changes, which is
+    // a matter of months, so a time of day would imply a freshness the data does
+    // not have. The roster stamps itself; the fetch time is only a fallback.
     const stamp = el('party-breakdown-last-update');
-    if (stamp) stamp.textContent = new Date().toLocaleTimeString('en-US', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-    });
+    if (stamp) {
+        const d = data.lastUpdated ? new Date(data.lastUpdated) : null;
+        stamp.textContent = fmtDate(d && !isNaN(d) ? d : new Date());
+    }
 
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }
@@ -279,6 +283,21 @@ async function loadBalance() {
     }
 }
 
+// ── Airport delays ───────────────────────────────────────────────────────────
+// The same module the House board uses, given this page's panel. The airports
+// are the Washington ones either way: this is the building's weather problem,
+// not a chamber's.
+function initAirportDelays() {
+    const mod = globalThis.AirportDelays;
+    const listEl = el('airport-delays-list');
+    if (!mod || !listEl) return;
+    mod.init({ listEl, escapeHtml, setIfChanged });
+    mod.fetchAirportNames()
+       .then(() => mod.fetchAirportDelays())
+       .catch((e) => console.error('Airport delays failed:', e));
+    setInterval(() => mod.fetchAirportDelays(), mod.FAA_CONFIG.refreshInterval);
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
@@ -289,6 +308,8 @@ if (todayEl) todayEl.textContent = fmtDateLong(new Date());
 const sessionEl = el('session-text');
 if (sessionEl) sessionEl.textContent = 'SESSION STATUS NOT WIRED';
 
+initAnalogClocks();
+initAirportDelays();
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 fetchWeather();
