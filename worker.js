@@ -2453,7 +2453,11 @@ async function handleSenateAbsences(env) {
     return new Response(JSON.stringify({
       congress, session, rollCall: Number(number),
       question: pick(first[1], 'question'), issue: pick(first[1], 'issue'),
-      date: pick(first[1], 'vote_date'), result: pick(first[1], 'result'),
+      // The menu carries a day and no time ("24-Sep"); the vote's own file
+      // carries both ("September 24, 2026,  01:45 PM"), which is what the roll
+      // line wants.
+      date: pick(first[1], 'vote_date'), voteDate: pick(detail, 'vote_date'),
+      result: pick(first[1], 'result'),
       tally, absent,
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
