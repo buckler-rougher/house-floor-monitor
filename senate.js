@@ -1315,10 +1315,20 @@ function renderProceedings(data) {
         setIfChanged(feed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
         return;
     }
-    setIfChanged(feed, sections.map((sec) => {
+    // Newest first, which is how the House board's feed reads and how every
+    // other list on this board is sorted. The source publishes a day forwards,
+    // from the prayer to the adjournment, so the sections are reversed and the
+    // measures inside a section with them: the last thing the Senate did is the
+    // thing worth seeing without scrolling.
+    //
+    // A measure's own status lines are NOT reversed. Those are one measure's
+    // history and they read as cause and effect -- laid before the Senate, then
+    // cloture invoked, then passed -- so flipping them would say the Senate
+    // passed a bill and then took it up.
+    setIfChanged(feed, [...sections].reverse().map((sec) => {
         const head = sec.heading
             ? `<div class="proceedings-section-label">${escapeHtml(sec.heading)}</div>` : '';
-        if (sec.measures) return head + sec.measures.map(proceedingsMeasure).join('');
+        if (sec.measures) return head + [...sec.measures].reverse().map(proceedingsMeasure).join('');
         return `${head}<div class="proceedings-item"><div class="proceedings-text">${escapeHtml(sec.text || '')}</div></div>`;
     }).join(''));
     watchListScroll(feed);
