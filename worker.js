@@ -2670,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v12', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v13', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2886,6 +2886,11 @@ async function handleSenateFloorSchedule(env) {
             date: g(b, 'vote_date'),
             measure: g(b, 'issue') || null,
             question,
+            // The menu's title carries the subject as well as the motion:
+            // "Motion to Invoke Cloture: S. 4668, as Amended; A bill to protect
+            // the name..." for a bill, and the nominee and post for a PN. That
+            // is the only place the name of the thing appears.
+            title: g(b, 'title') || null,
             result,
             invoked: /agreed to/i.test(result),
             yeas: Number(g(b, 'yeas')), nays: Number(g(b, 'nays')),

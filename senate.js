@@ -858,7 +858,7 @@ function nominationCard(n) {
 
 // Drop the fade once a list is scrolled to its end: with nothing below it, a
 // fade suggests more that is not there.
-function watchNomScroll(node) {
+function watchListScroll(node) {
     if (!node || node.dataset.watched) return;
     node.dataset.watched = '1';
     const check = () => node.classList.toggle('is-at-end',
@@ -880,7 +880,7 @@ function renderNominations() {
         setIfChanged(list, rows.length
             ? rows.slice(0, 30).map(nominationCard).join('')
             : '<div class="whip-updates-loading">None at this stage.</div>');
-        watchNomScroll(list);
+        watchListScroll(list);
     }
 }
 
@@ -1090,12 +1090,24 @@ function renderCloture(items, scheduled) {
     const shown = new Set((scheduled || []).map((m) => (m.measure || '').replace(/\s+/g, '').toUpperCase()));
     items = (items || []).filter((c) => !shown.has((c.measure || '').replace(/\s+/g, '').toUpperCase()));
     if (!items?.length) {
-        setIfChanged(list, '<div class="whip-updates-loading">No cloture motions in the recent notices.</div>');
+        setIfChanged(list, '<div class="whip-updates-loading">No cloture motions recorded.</div>');
         return;
     }
     setIfChanged(list, items.map((c) => {
         const status = c.invoked === null ? 'scheduled' : c.invoked ? 'passed' : 'failed';
         const label = c.invoked === null ? 'FILED' : c.invoked ? 'INVOKED' : 'NOT INVOKED';
+
+        // The name of the thing goes on its own line, not the motion.
+        //
+        // "Motion to Invoke Cloture: S. 4668, as Amended; A bill to protect the
+        // name, image, and likeness rights..." splits at the semicolon into the
+        // motion and the bill's own title. A nomination has no semicolon and the
+        // whole remainder is the nominee and the post, which is exactly what a
+        // PN number alone fails to say.
+        const bare = (c.title || '').replace(/^Motion to Invoke Cloture:\s*/i, '').trim();
+        const semi = bare.indexOf(';');
+        const motion = semi >= 0 ? bare.slice(0, semi).trim() : '';
+        const subject = (semi >= 0 ? bare.slice(semi + 1).trim() : bare) || c.question || '';
         return `
         <div class="bill-card-wrap">
             <div class="bill-card" data-status="${status}">
@@ -1106,15 +1118,16 @@ function renderCloture(items, scheduled) {
                         <span class="bill-calendar-no">${escapeHtml(label)}</span>
                         ${c.yeas != null ? `<span class="wrapup-result ${c.invoked ? 'carried' : 'failed'}">${c.yeas}-${c.nays}</span>` : ''}
                     </div>
-                    <div class="bill-title">${escapeHtml(c.question || '')}</div>
+                    <div class="bill-title">${escapeHtml(subject)}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml(c.rollCall ? `Roll call ${c.rollCall}` : 'Announced in the schedule')}</div>
+                        <div class="bill-action">${escapeHtml([motion, c.rollCall ? `Roll call ${c.rollCall}` : 'Announced in the schedule'].filter(Boolean).join(' \u00b7 '))}</div>
                         <div class="bill-date">${escapeHtml(boardDate(c.date))}</div>
                     </div>
                 </div>
             </div>
         </div>`;
     }).join(''));
+    watchListScroll(list);
 }
 
 // ── On the floor ─────────────────────────────────────────────────────────────
@@ -1189,6 +1202,7 @@ function renderFloorSchedule(data) {
             </div>
         </div>`);
     setIfChanged(list, cards.concat(noms).join(''));
+    watchListScroll(list);
 }
 
 
