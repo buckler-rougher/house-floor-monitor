@@ -2471,6 +2471,74 @@ function parseGeneralOrders(html) {
 //
 // There is no feed: no RSS is advertised and the obvious paths 404, so the
 // listing page is read and the newest post followed.
+// Everything the Senate bill modal shows, in one call.
+//
+// Congress.gov splits a bill across several endpoints -- the record, its
+// summaries, its cosponsors, its committees -- so the page would need four
+// round trips and its own API key to build this. The Worker already has the
+// key, so it does the fan-out and returns one object.
+async function handleSenateBill(env, billId) {
+  const parsed = billIdToCongressType(billId || '');
+  if (!parsed) {
+    return new Response(JSON.stringify({ error: 'unrecognised measure id' }), {
+      status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
+  const { type, number } = parsed;
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v1`, 3600, async () => {
+    if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
+    const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
+    const call = async (path) => {
+      const r = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`,
+        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+      // 429 and 5xx are transient; throwing keeps kvCache from storing a hole.
+      if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) return null;
+      return r.json();
+    };
+
+    const [record, summaries, cosponsors, committees] = await Promise.all([
+      call(''), call('/summaries?limit=5'), call('/cosponsors?limit=1'), call('/committees'),
+    ]);
+    const bill = record?.bill;
+    if (!bill) throw new Error(`bill detail: no record for ${billId}`);
+
+    // The first summary with real prose. Stubs shorter than a sentence are
+    // skipped, same rule the House modal uses.
+    let summary = null;
+    for (const s2 of (summaries?.summaries || [])) {
+      const t = (s2.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        .replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+[^a-zA-Z]{0,12}/i, '');
+      if (t.length > 20) { summary = t; break; }
+    }
+
+    const sp = (bill.sponsors || [])[0] || null;
+    const webType = type === 'hr' ? 'house-bill' : type === 's' ? 'senate-bill'
+      : type === 'sres' ? 'senate-resolution' : type === 'hres' ? 'house-resolution'
+      : type === 'sjres' ? 'senate-joint-resolution' : type === 'hjres' ? 'house-joint-resolution'
+      : type === 'sconres' ? 'senate-concurrent-resolution' : type === 'hconres' ? 'house-concurrent-resolution' : type;
+    const congressUrl = `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/${webType}/${number}`;
+
+    return new Response(JSON.stringify({
+      id: billId,
+      title: bill.title || null,
+      introduced: bill.introducedDate || null,
+      policyArea: bill.policyArea?.name || null,
+      sponsor: sp ? { name: sp.fullName, party: sp.party, state: sp.state, bioguide: sp.bioguideId } : null,
+      cosponsorCount: cosponsors?.pagination?.count ?? null,
+      committees: (committees?.committees || []).map((c) => c.name).filter(Boolean).slice(0, 4),
+      summary,
+      latestAction: bill.latestAction?.text || null,
+      latestActionDate: bill.latestAction?.actionDate || null,
+      congressUrl,
+      textUrl: `${congressUrl}/text`,
+      govinfoPdf: `https://www.govinfo.gov/link/bills/${CURRENT_CONGRESS}/${type}/${number}?link-type=pdf`,
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+    });
+  });
+}
+
 async function handleSenateFloorSchedule(env) {
   // BUMP THIS WHENEVER THE PAYLOAD SHAPE CHANGES.
   //
@@ -4686,6 +4754,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/bill' && request.method === 'GET') {
+    return handleSenateBill(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/floor-schedule' && request.method === 'GET') {
     return handleSenateFloorSchedule(env);
   } else if (path === '/api/senate/calendar' && request.method === 'GET') {
