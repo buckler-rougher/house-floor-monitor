@@ -1,0 +1,13 @@
+{
+  "name": "Monitoring the Senate Floor",
+  "short_name": "Senate Monitor",
+  "description": "U.S. Senate floor monitoring: roll call votes, floor activity and the legislative calendar.",
+  "icons": [
+    { "src": "senate-favicon.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "senate-apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "theme_color": "#0d1117",
+  "background_color": "#0d1117",
+  "display": "standalone",
+  "start_url": "/"
+}
