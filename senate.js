@@ -712,7 +712,12 @@ function renderNotices() {
                     <span class="whip-update-title">${escapeHtml(n.title)}</span>
                     <span class="whip-update-time">${escapeHtml(noticeDate(n.published))}</span>
                 </div>
-                <div class="whip-update-body">${escapeHtml(n.body || n.excerpt || '')}</div>
+                <div class="whip-update-body">${
+                    // The caucus writes these as paragraphs; the Worker keeps the
+                    // breaks as blank lines and each becomes its own <p>.
+                    (n.body || n.excerpt || '').split(/\n{2,}/).filter((x) => x.trim())
+                        .map((para) => `<p>${escapeHtml(para.trim())}</p>`).join('')
+                }</div>
             </div>`;
     }).join('');
     setIfChanged(feed, html);
@@ -788,25 +793,53 @@ function billModalSkeleton(id) {
 }
 
 function billModalContent(b) {
-    const sponsor = b.sponsor ? `
+    // Sponsor as a member card with a photo, the way the House modal shows it.
+    // A bare name line was the thing that made this look like a different modal.
+    const sp = b.sponsor;
+    const pClass = sp?.party === 'R' ? 'republican' : sp?.party === 'D' ? 'democrat' : 'independent';
+    const pLetter = sp?.party === 'R' ? 'R' : sp?.party === 'D' ? 'D' : 'I';
+    const photo = sp?.bioguide ? photoUrlFor(sp.bioguide) : '';
+    const sponsor = sp ? `
         <div class="bill-modal-section">
             <div class="bill-modal-section-label">SPONSOR</div>
-            <div class="bill-modal-action">${escapeHtml(b.sponsor.name)}</div>
+            <div class="absentee-member" style="padding:0;border:none;">
+                <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
+                    <div class="absentee-photo-placeholder">${PHOTO_PLACEHOLDER}</div>
+                    ${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(sp.name)}" onload="this.style.opacity='1'" onerror="this.remove()">` : ''}
+                </div>
+                <div class="absentee-meta">
+                    <span class="absentee-name">${escapeHtml(sp.name)}</span>
+                    <span class="absentee-party-tag ${pClass}">${pLetter}</span>
+                    <span class="absentee-state">${escapeHtml(sp.state || '')}</span>
+                </div>
+            </div>
         </div>` : '';
-    const cosponsors = b.cosponsorCount != null ? `
+
+    // Party-split support bar, sponsor included in the count.
+    const su = b.support;
+    const pct = (n) => su.total ? (n / su.total * 100).toFixed(1) : 0;
+    const coLabel = b.cosponsorCount
+        ? `${b.cosponsorCount} COSPONSOR${b.cosponsorCount !== 1 ? 'S' : ''}`
+        : 'NO COSPONSORS';
+    const support = su ? `
         <div class="bill-modal-section">
-            <div class="bill-modal-section-label">COSPONSORS</div>
-            <div class="bill-modal-action">${b.cosponsorCount}</div>
+            <div class="bill-modal-section-label">SUPPORT — ${coLabel}</div>
+            <div class="bill-modal-support-bar">
+                ${su.D ? `<div class="bill-modal-support-fill dem" style="width:${pct(su.D)}%" title="${su.D} Democrat${su.D !== 1 ? 's' : ''}"></div>` : ''}
+                ${su.R ? `<div class="bill-modal-support-fill rep" style="width:${pct(su.R)}%" title="${su.R} Republican${su.R !== 1 ? 's' : ''}"></div>` : ''}
+                ${su.I ? `<div class="bill-modal-support-fill ind" style="width:${pct(su.I)}%" title="${su.I} Independent${su.I !== 1 ? 's' : ''}"></div>` : ''}
+            </div>
+            <div class="bill-modal-support-labels">
+                ${su.D ? `<span class="bill-modal-support-count dem">${su.D}D</span>` : ''}
+                ${su.R ? `<span class="bill-modal-support-count rep">${su.R}R</span>` : ''}
+                ${su.I ? `<span class="bill-modal-support-count ind">${su.I}I</span>` : ''}
+            </div>
         </div>` : '';
+
     const committees = b.committees?.length ? `
         <div class="bill-modal-section">
             <div class="bill-modal-section-label">COMMITTEE${b.committees.length > 1 ? 'S' : ''}</div>
             <div class="bill-modal-action">${b.committees.map(escapeHtml).join(' · ')}</div>
-        </div>` : '';
-    const policy = b.policyArea ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">POLICY AREA</div>
-            <div class="bill-modal-action">${escapeHtml(b.policyArea)}</div>
         </div>` : '';
 
     return `
@@ -816,10 +849,11 @@ function billModalContent(b) {
                 <div class="bill-modal-top">
                     <div class="bill-modal-header">
                         <span class="bill-modal-id">${escapeHtml(b.id)}</span>
+                        ${b.policyArea ? `<span class="bill-modal-badge">${escapeHtml(b.policyArea)}</span>` : ''}
                     </div>
                     <h2 class="bill-modal-title">${escapeHtml(b.title || '')}</h2>
                 </div>
-                <div class="bill-modal-sections">${sponsor}${cosponsors}${committees}${policy}</div>
+                <div class="bill-modal-sections">${sponsor}${support}${committees}</div>
                 ${b.summary ? `
                 <div class="bill-modal-body">
                     <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
@@ -899,24 +933,11 @@ function initBillModal() {
 // question anyone asks; this answers "what is up next", which is usually one
 // measure.
 //
-// The backlog is kept as a single count beside it, because "528 pending" is a
-// useful fact and 528 cards are not.
-let _generalOrdersTotal = null;
-
 function renderFloorSchedule(data) {
     const list = el('senate-floor-measures');
-    const summary = el('senate-floor-summary');
     const when = el('senate-floor-when');
     if (!list) return;
 
-    // The prose moved to CAUCUS FLOOR NOTICES: at full length it overflowed
-    // this panel and ran over the cards. What belongs here is the one line a
-    // reader needs.
-    if (summary) {
-        summary.textContent = data?.conveneTime && data?.conveneDate
-            ? `Convenes ${data.conveneTime}, ${data.conveneDate}`
-            : (data ? 'Next sitting day not yet posted.' : 'Loading...');
-    }
     if (when) when.textContent = data?.heading || '';
 
     const measures = data?.measures || [];
@@ -956,12 +977,6 @@ function renderFloorSchedule(data) {
     setIfChanged(list, cards.join(''));
 }
 
-function renderBacklog() {
-    const node = el('senate-floor-backlog');
-    if (node && _generalOrdersTotal != null) {
-        node.textContent = `${_generalOrdersTotal} measures on the calendar`;
-    }
-}
 
 async function loadFloorSchedule() {
     try {
@@ -980,14 +995,6 @@ async function loadFloorSchedule() {
 }
 
 // The backlog count only. See above for why the rows are not listed.
-async function loadCalendarCount() {
-    try {
-        const r = await fetch(`${API}/senate/calendar`);
-        if (!r.ok) return;
-        _generalOrdersTotal = (await r.json())?.total ?? null;
-        renderBacklog();
-    } catch (_) { /* the count is a nicety, not the panel */ }
-}
 
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -1011,10 +1018,8 @@ loadAbsences();
 initNoticeFilter();
 initBillModal();
 loadFloorSchedule();
-loadCalendarCount();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);
-setInterval(loadCalendarCount, 6 * 60 * 60 * 1000);
 setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.
