@@ -2670,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v10', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v11', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2858,9 +2858,51 @@ async function handleSenateFloorSchedule(env) {
       n.sections = sections;
     }
 
+    // Cloture, pulled out of both feeds.
+    //
+    // It is the only forward signal the Senate has that is rule-driven: once a
+    // motion is filed the vote happens on a fixed clock, so a measure with
+    // cloture pending is one that WILL be voted on. The schedule posts announce
+    // the motions and the wrap-ups record how they went, so both are read and
+    // the newest state per measure wins.
+    const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
+    const cloture = new Map();
+    for (const n of notices) {
+      if (!n.body) continue;
+      for (const sent of n.body.split(/(?<=\.)\s+|\n+/)) {
+        if (!/cloture/i.test(sent)) continue;
+        const meas = (sent.match(new RegExp(MEAS)) || [])[0];
+        const cal = (sent.match(/Cal\.\s*#?\s*(\d+)/i) || [])[1];
+        const exec = (sent.match(/Executive Calendar #\s*(\d+)/i) || [])[1];
+        const key = meas || (exec && `exec-${exec}`) || (cal && `cal-${cal}`);
+        if (!key) continue;
+        const tally = sent.match(/(invoked|not invoked|rejected|agreed to|not agreed to):\s*(\d+)\s*-\s*(\d+)/i);
+        const status = tally ? tally[1].toLowerCase()
+          : /post-cloture/i.test(sent) ? 'post-cloture'
+          : /motion to invoke cloture|cloture motion/i.test(sent) ? 'filed'
+          : 'mentioned';
+        const rank = { invoked: 4, 'not invoked': 4, rejected: 4, 'post-cloture': 3, filed: 2, mentioned: 1 };
+        const prev = cloture.get(key);
+        // Newest notice wins, and a resolved state beats a mention of one.
+        if (prev && (rank[prev.status] || 0) >= (rank[status] || 0) && prev.published >= n.published) continue;
+        cloture.set(key, {
+          key, measure: meas || null,
+          calendarNo: cal ? Number(cal) : null,
+          execCalendarNo: exec ? Number(exec) : null,
+          status,
+          yeas: tally ? Number(tally[2]) : null,
+          nays: tally ? Number(tally[3]) : null,
+          published: n.published,
+          source: n.type,
+          text: sent.replace(/\s+/g, ' ').trim().slice(0, 240),
+        });
+      }
+    }
+
     return new Response(JSON.stringify({
       source: 'Senate Democratic Caucus',
       notices: notices.slice(0, 30),
+      cloture: [...cloture.values()],
       agenda,
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
