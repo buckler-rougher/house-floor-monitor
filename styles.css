@@ -160,6 +160,19 @@
 
 /* Anchor rem to the browser default (16px) so the type scale math holds and
    user font-size preferences are respected. */
+/* Calendar number on a Senate General Orders card. The measure keeps .bill-id;
+ * this is the order it sits at on the Calendar of Business, which is how the
+ * Senate refers to a pending measure ("Calendar No. 684"). Mono because it is a
+ * number that changes in place, and muted because the measure is the heading. */
+.bill-calendar-no {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
 /* Tell the browser the page is dark BEFORE any of it paints.
  *
  * Without color-scheme the default canvas is white, and a tab being restored

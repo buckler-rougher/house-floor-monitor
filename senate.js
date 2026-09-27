@@ -612,45 +612,49 @@ async function loadAbsences() {
 // nowhere. This is the backlog, and its newest entries are the closest thing
 // to a forward signal that exists in public.
 function renderCalendar(data) {
-    const feed = el('senate-calendar-feed');
+    const list = el('senate-calendar-list');
     const info = el('senate-calendar-info');
-    if (!feed) return;
-    const orders = data?.orders || [];
-    feed.innerHTML = '';
+    if (!list) return;
 
+    const orders = data?.orders || [];
     if (!orders.length) {
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
-        row.textContent = 'No measures on the calendar.';
-        feed.appendChild(row);
+        setIfChanged(list, '<div class="bill-card-wrap">No measures on the calendar.</div>');
         return;
     }
 
-    for (const o of orders.slice(0, 25)) {
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
+    const cards = orders.slice(0, 25).map((o) => {
+        // The action reads "Sept. 24, 2026.--Read the second time and placed on
+        // the calendar." Split on the "--" so the date sits in its own column
+        // the way the House cards do.
+        const m = (o.action || '').match(/^(.*?\.)\s*--\s*(.*)$/);
+        const date = m ? m[1].replace(/\.$/, '') : '';
+        const action = m ? m[2] : (o.action || '');
+        return `
+        <div class="bill-card-wrap">
+            <button class="bill-card" data-bill-id="${escapeHtml(o.measure)}" data-status="scheduled" type="button">
+                <div class="bill-status scheduled" aria-hidden="true"></div>
+                <div class="bill-info">
+                    <div class="bill-id-row">
+                        <span class="bill-id">${escapeHtml(o.measure)}</span>
+                        <span class="bill-calendar-no">No. ${escapeHtml(String(o.order))}</span>
+                    </div>
+                    <div class="bill-title">${escapeHtml(o.title || '')}</div>
+                    <div class="bill-meta">
+                        <div class="bill-action">${escapeHtml(o.author ? `${o.author} \u00b7 ${action}` : action)}</div>
+                        <div class="bill-date">${escapeHtml(date)}</div>
+                    </div>
+                </div>
+            </button>
+        </div>`;
+    });
+    setIfChanged(list, cards.join(''));
 
-        const num = document.createElement('span');
-        num.className = 'proceedings-time';
-        // Trailing space: adjacent spans would otherwise run together.
-        num.textContent = `No. ${o.order} \u00b7 ${o.measure} `;
-
-        // textContent throughout: this is remote text from GPO.
-        const body = document.createElement('span');
-        body.className = 'proceedings-text';
-        const bits = [o.title];
-        if (o.author) bits.push(`(${o.author})`);
-        body.textContent = bits.filter(Boolean).join(' ');
-
-        row.append(num, body);
-        feed.appendChild(row);
-    }
+    // Say how many are NOT shown. 25 rows off a backlog of 528 would otherwise
+    // read as the whole calendar.
     if (info) {
-        // Say how many are NOT shown. A list of 25 off a backlog of 528 would
-        // otherwise read as the whole calendar.
         info.textContent = data.issued
-            ? `${data.total} on the calendar \u00b7 issued ${data.issued}`
-            : `${data.total} on the calendar`;
+            ? `${data.total} pending \u00b7 issued ${data.issued}`
+            : `${data.total} pending`;
     }
 }
 

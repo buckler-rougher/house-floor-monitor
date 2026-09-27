@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260926a">
+    <link rel="stylesheet" href="styles.css?v=20260926b">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1213,16 +1213,37 @@
                  awaiting floor action, hundreds of them, some sitting since
                  January. Sorted newest-placed first, which is the live edge of
                  it and the part worth looking at. -->
-            <div class="proceedings-panel" id="senate-calendar">
+            <!-- Pending on the Calendar.
+                 NOT "bills this week". The Senate publishes no weekly agenda:
+                 General Orders is every measure reported out of committee and
+                 awaiting floor action, hundreds of them, some sitting since
+                 January. Sorted newest-placed first, which is the live edge of
+                 it and the part worth looking at.
+
+                 Same .bill-card markup the House board uses, because a measure
+                 with an id, a title and an action reads the same either way.
+                 What does NOT carry over is the House's column split -- SPECIAL
+                 RULE(S), UNDER RULE, MAY BE CONSIDERED are House procedure -- so
+                 there is one column here. -->
+            <div class="bills-section" id="senate-calendar">
                 <div class="panel-header">
                     <span class="panel-label">PENDING ON THE CALENDAR</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.govinfo.gov/app/collection/ccal" target="_blank" rel="noopener">Calendar of Business, General Orders (GPO govinfo)</a></span>
-                        <span class="proceedings-time" id="senate-calendar-info"></span>
+                        <span class="bills-last-update" id="senate-calendar-info">--</span>
                     </div>
                 </div>
-                <div class="proceedings-feed" id="senate-calendar-feed">
-                    <div class="proceedings-item">Loading...</div>
+                <div class="bills-columns">
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">GENERAL ORDERS</span>
+                            </div>
+                        </div>
+                        <div class="bills-list" id="senate-calendar-list">
+                            <!-- Cards rendered by senate.js -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1494,7 +1515,7 @@
     <script defer src="lib/airport-delays.js?v=20260926b"></script>
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260926m"></script>
+    <script defer src="senate.js?v=20260926n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
