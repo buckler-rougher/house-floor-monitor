@@ -642,6 +642,71 @@ async function loadAbsences() {
 // unanimous consent is cleared on an internal hotline that is published
 // nowhere. This is the backlog, and its newest entries are the closest thing
 // to a forward signal that exists in public.
+// ── Caucus floor notices ─────────────────────────────────────────────────────
+//
+// Both Democratic Caucus feeds in one list: SCHEDULE for the next sitting day
+// and WRAP UP for the one just finished. Same markup as the House board's whip
+// notices, including the type filter.
+//
+// The types are the caucus's own, with their own badge classes in styles.css.
+// Borrowing the House board's whip-type-floor and whip-type-nightly would have
+// left a badge whose class said one thing and whose text said another.
+const NOTICE_TYPES = {
+    'schedule': { label: 'SCHEDULE' },
+    'wrap-up':  { label: 'WRAP UP' },
+};
+let _notices = [];
+let _noticeFilter = 'all';
+
+function renderNotices() {
+    const feed = el('caucus-notices-feed');
+    if (!feed) return;
+    const shown = _noticeFilter === 'all' ? _notices : _notices.filter((n) => n.type === _noticeFilter);
+    if (!shown.length) {
+        setIfChanged(feed, '<div class="whip-updates-loading">No floor notices.</div>');
+        return;
+    }
+    const html = shown.slice(0, 20).map((n) => {
+        const t = NOTICE_TYPES[n.type] || { label: n.type.toUpperCase() };
+        return `
+            <div class="whip-update-item">
+                <div class="whip-update-meta">
+                    <span class="whip-type-badge whip-type-${escapeHtml(n.type)}" data-filter-type="${escapeHtml(n.type)}">${escapeHtml(t.label)}</span>
+                    <span class="whip-update-title">${escapeHtml(n.title)}</span>
+                    <span class="whip-update-time">${escapeHtml(boardDate(n.published))}</span>
+                </div>
+                <div class="whip-update-body">${escapeHtml(n.excerpt || '')}</div>
+            </div>`;
+    }).join('');
+    setIfChanged(feed, html);
+}
+
+function renderNoticeFilter() {
+    const dd = el('notice-filter-dropdown');
+    if (!dd) return;
+    const counts = { all: _notices.length };
+    for (const n of _notices) counts[n.type] = (counts[n.type] || 0) + 1;
+    // whip-type-${key} carries the chip's colour, matching its badge in the feed.
+    const chip = (key, label) => `<button class="whip-filter-chip whip-type-${key}${_noticeFilter === key ? ' active' : ''}" data-notice-filter="${key}">${label}${counts[key] ? ` (${counts[key]})` : ''}</button>`;
+    dd.innerHTML = `<div class="whip-filter-inner">${
+        [chip('all', 'ALL'), ...Object.entries(NOTICE_TYPES).map(([k, v]) => chip(k, v.label))].join('')
+    }</div>`;
+}
+
+function initNoticeFilter() {
+    const btn = el('notice-filter-btn');
+    const dd = el('notice-filter-dropdown');
+    if (!btn || !dd) return;
+    btn.addEventListener('click', () => { dd.hidden = !dd.hidden; });
+    dd.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-notice-filter]');
+        if (!chip) return;
+        _noticeFilter = chip.dataset.noticeFilter;
+        renderNoticeFilter();
+        renderNotices();
+    });
+}
+
 // ── On the floor ─────────────────────────────────────────────────────────────
 //
 // The Democratic Caucus's nightly schedule for the next sitting day. General
@@ -659,10 +724,13 @@ function renderFloorSchedule(data) {
     const when = el('senate-floor-when');
     if (!list) return;
 
+    // The prose moved to CAUCUS FLOOR NOTICES: at full length it overflowed
+    // this panel and ran over the cards. What belongs here is the one line a
+    // reader needs.
     if (summary) {
-        summary.textContent = data?.text
-            ? data.text
-            : 'No schedule posted for the next sitting day.';
+        summary.textContent = data?.conveneTime && data?.conveneDate
+            ? `Convenes ${data.conveneTime}, ${data.conveneDate}`
+            : (data ? 'Next sitting day not yet posted.' : 'Loading...');
     }
     if (when) when.textContent = data?.heading || '';
 
@@ -710,7 +778,11 @@ async function loadFloorSchedule() {
     try {
         const r = await fetch(`${API}/senate/floor-schedule`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderFloorSchedule(await r.json());
+        const data = await r.json();
+        renderFloorSchedule(data.agenda);
+        _notices = data.notices || [];
+        renderNoticeFilter();
+        renderNotices();
     } catch (e) {
         const summary = el('senate-floor-summary');
         if (summary) summary.textContent = `Floor schedule unavailable (${e.message}).`;
@@ -747,6 +819,7 @@ initCapcam();
 loadVotes();
 initAbsenceFilters();
 loadAbsences();
+initNoticeFilter();
 loadFloorSchedule();
 loadCalendarCount();
 // The caucus posts the next day's schedule each evening.

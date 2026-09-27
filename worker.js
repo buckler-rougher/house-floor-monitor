@@ -2472,61 +2472,94 @@ function parseGeneralOrders(html) {
 // There is no feed: no RSS is advertised and the obvious paths 404, so the
 // listing page is read and the newest post followed.
 async function handleSenateFloorSchedule(env) {
-  return kvCache(env, 'senate-floor-schedule-v1', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v2', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
       if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
       return r.text();
     };
-
-    const listing = await get('https://www.democrats.senate.gov/floor/senate-schedule', 'schedule listing');
-    // Newest first on the page. Take the first post link and its printed date.
-    const first = listing.match(/<p class="Heading Heading--time[^"]*">([^<]+)<\/p>[\s\S]{0,400}?<a class="ArticleTitle"[^>]+href="([^"]+)"[\s\S]{0,200}?<h2>([^<]+)<\/h2>/);
-    if (!first) throw new Error('schedule listing: no post found');
-    const published = first[1].trim();
-    const url = first[2].trim();
-    const heading = first[3].trim();
-
-    const post = await get(url, 'schedule post');
-    let text = post.replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    const strip = (html) => html
+      .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
       .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-      .replace(/&#8217;|&rsquo;/g, "'").replace(/&quot;/g, '"')
+      .replace(/&#8217;|&rsquo;/g, "'").replace(/&quot;|&#8220;|&#8221;/g, '"')
       .replace(/\s+/g, ' ').trim();
-    // The post body starts at the standing-adjourned sentence; everything before
-    // it is site chrome and everything after "Print Email Share" is the footer.
-    const start = text.search(/The Senate (?:stands|will|convenes|reconvenes)/i);
-    if (start >= 0) text = text.slice(start);
-    text = text.split(/\s*Print Email Share/)[0].trim();
 
-    const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
-    const measures = [];
-    const seen = new Set();
-    for (const m of text.matchAll(new RegExp(String.raw`Cal\.\s*#?\s*(\d+)\s*(${MEAS})\s*,?\s*([^,.]{0,70})`, 'g'))) {
-      const measure = m[2].replace(/\s+/g, '');
-      const key = `${m[1]}|${measure}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      measures.push({ calendarNo: Number(m[1]), measure, title: m[3].trim() || null });
+    // Two feeds. /floor is just these two interleaved, so it adds nothing.
+    const FEEDS = [
+      { type: 'schedule', label: 'SCHEDULE', url: 'https://www.democrats.senate.gov/floor/senate-schedule' },
+      { type: 'wrap-up',  label: 'WRAP UP',  url: 'https://www.democrats.senate.gov/floor/wrap-up' },
+    ];
+    const ROW = /<p class="Heading Heading--time[^"]*">([^<]+)<\/p>[\s\S]{0,400}?<a class="ArticleTitle"[^>]+href="([^"]+)"[\s\S]{0,200}?<h2>([^<]+)<\/h2>[\s\S]{0,400}?<div class="ArticleBlock__excerpt">([\s\S]*?)<\/div>/g;
+
+    const notices = [];
+    for (const feed of FEEDS) {
+      let html;
+      try { html = await get(feed.url, feed.type); }
+      catch (e) { console.warn(`[house-floor] caucus feed ${feed.type}: ${e.message}`); continue; }
+      for (const m of html.matchAll(ROW)) {
+        notices.push({
+          type: feed.type, typeLabel: feed.label,
+          // "09.24.2026" as published; the board reformats it.
+          published: m[1].trim(),
+          url: m[2].trim(),
+          title: m[3].trim(),
+          excerpt: strip(m[4]),
+        });
+      }
+    }
+    if (!notices.length) throw new Error('caucus notices: nothing parsed from either feed');
+
+    // Newest first across both feeds. The printed date is MM.DD.YYYY.
+    const key = (n) => {
+      const d = n.published.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      return d ? `${d[3]}${d[1]}${d[2]}` : '0';
+    };
+    notices.sort((a, b) => (key(b).localeCompare(key(a))) || a.type.localeCompare(b.type));
+
+    // The newest schedule post is also the floor agenda, so it is parsed out
+    // here rather than making the page do it twice.
+    const latest = notices.find((n) => n.type === 'schedule') || null;
+    let agenda = null;
+    if (latest) {
+      let text = '';
+      try {
+        text = strip(await get(latest.url, 'schedule post'));
+        const start = text.search(/The Senate (?:stands|will|convenes|reconvenes)/i);
+        if (start >= 0) text = text.slice(start);
+        text = text.split(/\s*Print Email Share/)[0].trim();
+      } catch (e) {
+        console.warn(`[house-floor] caucus schedule post: ${e.message}`);
+      }
+      if (text) {
+        const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
+        const measures = [], seen = new Set();
+        for (const m of text.matchAll(new RegExp(String.raw`Cal\.\s*#?\s*(\d+)\s*(${MEAS})\s*,?\s*([^,.]{0,70})`, 'g'))) {
+          const measure = m[2].replace(/\s+/g, '');
+          const k = `${m[1]}|${measure}`;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          measures.push({ calendarNo: Number(m[1]), measure, title: m[3].trim() || null });
+        }
+        // Not delimited on a period: the text is full of abbreviations, and
+        // "Cal." truncated this to "Passage of Cal".
+        const votes = [...text.matchAll(/roll call vote[s]?:\s*(.{0,170}?)(?=\s*(?:$|Monday|Tuesday|Wednesday|Thursday|Friday|At approximately|Following Leader|Upon disposition))/gi)]
+          .map((m) => m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, '').trim()).filter(Boolean);
+        const convene = text.match(/(?:stands adjourned until|convenes? at|will convene at)\s+([0-9:]+\s*[ap]\.?m\.?)\s+on\s+([A-Za-z]+,\s*[A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
+        agenda = {
+          heading: latest.title, url: latest.url, text,
+          conveneTime: convene ? convene[1] : null,
+          conveneDate: convene ? convene[2] : null,
+          postCloture: /post-cloture/i.test(text),
+          measures, votes,
+        };
+      }
     }
 
-    // "roll call vote: Passage of Cal. #449 ..." — the votes actually scheduled.
-    // Not delimited on a period: the text is full of abbreviations, and "Cal."
-    // truncated this to "Passage of Cal". Run to the next scheduling clause or
-    // the end instead.
-    const votes = [...text.matchAll(/roll call vote[s]?:\s*(.{0,170}?)(?=\s*(?:$|Monday|Tuesday|Wednesday|Thursday|Friday|At approximately|Following Leader|Upon disposition))/gi)]
-      .map((m) => m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, '').trim())
-      .filter(Boolean);
-
-    const convene = text.match(/(?:stands adjourned until|convenes? at|will convene at)\s+([0-9:]+\s*[ap]\.?m\.?)\s+on\s+([A-Za-z]+,\s*[A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
-
     return new Response(JSON.stringify({
-      published, heading, url, text,
-      conveneTime: convene ? convene[1] : null,
-      conveneDate: convene ? convene[2] : null,
-      postCloture: /post-cloture/i.test(text),
-      measures, votes,
       source: 'Senate Democratic Caucus',
+      notices: notices.slice(0, 30),
+      agenda,
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
