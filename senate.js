@@ -695,6 +695,29 @@ const NOTICE_TYPES = {
 let _notices = [];
 let _noticeFilter = 'all';
 
+// The Worker returns blocks separated by blank lines, with list items prefixed
+// \u0001. Consecutive items become one <ul>, everything else a <p>. The
+// stylesheet already styles both inside .whip-update-body.
+const LI_MARK = '\u0001';
+
+function noticeBodyHtml(text) {
+    const blocks = String(text || '').split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+    const out = [];
+    let list = [];
+    const flush = () => {
+        if (!list.length) return;
+        out.push(`<ul>${list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`);
+        list = [];
+    };
+    for (const b of blocks) {
+        if (b.startsWith(LI_MARK)) { list.push(b.slice(1)); continue; }
+        flush();
+        out.push(`<p>${escapeHtml(b)}</p>`);
+    }
+    flush();
+    return out.join('');
+}
+
 function renderNotices() {
     const feed = el('caucus-notices-feed');
     if (!feed) return;
@@ -712,12 +735,7 @@ function renderNotices() {
                     <span class="whip-update-title">${escapeHtml(n.title)}</span>
                     <span class="whip-update-time">${escapeHtml(noticeDate(n.published))}</span>
                 </div>
-                <div class="whip-update-body">${
-                    // The caucus writes these as paragraphs; the Worker keeps the
-                    // breaks as blank lines and each becomes its own <p>.
-                    (n.body || n.excerpt || '').split(/\n{2,}/).filter((x) => x.trim())
-                        .map((para) => `<p>${escapeHtml(para.trim())}</p>`).join('')
-                }</div>
+                <div class="whip-update-body">${noticeBodyHtml(n.body || n.excerpt || '')}</div>
             </div>`;
     }).join('');
     setIfChanged(feed, html);
