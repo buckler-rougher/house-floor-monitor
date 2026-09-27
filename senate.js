@@ -871,9 +871,9 @@ function billModalContent(b) {
                     <div class="bill-modal-section">
                         <div class="bill-modal-section-label">LINKS</div>
                         <div class="bill-doc-links">
-                            <a href="${escapeHtml(b.textUrl)}" class="bill-modal-link" target="_blank" rel="noopener">Bill text</a>
-                            <a href="${escapeHtml(b.govinfoPdf)}" class="bill-modal-link" target="_blank" rel="noopener">PDF (govinfo)</a>
-                            <a href="${escapeHtml(b.congressUrl)}" class="bill-modal-link" target="_blank" rel="noopener">Congress.gov</a>
+                            <a href="${escapeHtml(b.textUrl)}" class="bill-modal-link senate" target="_blank" rel="noopener">Bill text</a>
+                            <a href="${escapeHtml(b.govinfoPdf)}" class="bill-modal-link senate" target="_blank" rel="noopener">PDF (govinfo)</a>
+                            <a href="${escapeHtml(b.congressUrl)}" class="bill-modal-link senate" target="_blank" rel="noopener">Congress.gov</a>
                         </div>
                     </div>
                 </div>
