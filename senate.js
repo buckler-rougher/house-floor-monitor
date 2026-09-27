@@ -698,19 +698,30 @@ let _noticeFilter = 'all';
 // The Worker returns blocks separated by blank lines, with list items prefixed
 // \u0001. Consecutive items become one <ul>, everything else a <p>. The
 // stylesheet already styles both inside .whip-update-body.
-const LI_MARK = '\u0001';
+const LI_MARK = '\u0001';    // unordered item
+const OLI_MARK = '\u0002';   // ordered item
 
 function noticeBodyHtml(text) {
     const blocks = String(text || '').split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
     const out = [];
     let list = [];
+    let ordered = false;
     const flush = () => {
         if (!list.length) return;
-        out.push(`<ul>${list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`);
+        const tag = ordered ? 'ol' : 'ul';
+        out.push(`<${tag}>${list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</${tag}>`);
         list = [];
     };
     for (const b of blocks) {
-        if (b.startsWith(LI_MARK)) { list.push(b.slice(1)); continue; }
+        const isOl = b.startsWith(OLI_MARK);
+        const isUl = b.startsWith(LI_MARK);
+        if (isOl || isUl) {
+            // A run only groups while the list type holds.
+            if (list.length && ordered !== isOl) flush();
+            ordered = isOl;
+            list.push(b.slice(1));
+            continue;
+        }
         flush();
         out.push(`<p>${escapeHtml(b)}</p>`);
     }
@@ -783,6 +794,7 @@ function initNoticeFilter() {
 // The overlay is built on demand rather than living in the markup, which is how
 // the House one works too, so senate.html needs nothing added to it.
 let _billModalTrigger = null;
+let _nominations = [];
 
 function closeSenateBillModal() {
     const overlay = el('bill-modal-overlay');
@@ -992,7 +1004,30 @@ function renderFloorSchedule(data) {
             </${tag}>
         </div>`;
     });
-    setIfChanged(list, cards.join(''));
+    // Nominations named by the schedule, matched to the Executive Calendar XML.
+    // The Senate spends much of its floor time on these and none of them are
+    // bills, so the measures feed alone would show an empty panel on a
+    // nominations day.
+    const noms = (data.execCals || [])
+        .map((n) => _nominations.find((x) => x.calendarNo === n) || { calendarNo: n })
+        .map((n) => `
+        <div class="bill-card-wrap">
+            <div class="bill-card" data-status="scheduled">
+                <div class="bill-status scheduled" aria-hidden="true"></div>
+                <div class="bill-info">
+                    <div class="bill-id-row">
+                        <span class="bill-id">${escapeHtml(n.pn || 'NOMINATION')}</span>
+                        <span class="bill-calendar-no">Exec. Cal. No. ${escapeHtml(String(n.calendarNo))}</span>
+                    </div>
+                    <div class="bill-title">${escapeHtml(n.description || 'Nomination pending on the Executive Calendar')}</div>
+                    <div class="bill-meta">
+                        <div class="bill-action">${escapeHtml([n.organization, n.committee].filter(Boolean).join(' \u00b7 '))}</div>
+                        <div class="bill-date">${escapeHtml(n.reported ? boardDate(n.reported) : '')}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    setIfChanged(list, cards.concat(noms).join(''));
 }
 
 
@@ -1001,6 +1036,12 @@ async function loadFloorSchedule() {
         const r = await fetch(`${API}/senate/floor-schedule`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
+        // Nominations first: the agenda names them by calendar number and needs
+        // the XML to say who they are.
+        try {
+            const nr = await fetch(`${API}/senate/nominations`);
+            if (nr.ok) _nominations = (await nr.json())?.nominations || [];
+        } catch (_) { /* the agenda still renders, just without descriptions */ }
         renderFloorSchedule(data.agenda);
         _notices = data.notices || [];
         renderNoticeFilter();
