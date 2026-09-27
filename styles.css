@@ -164,6 +164,31 @@
  * this is the order it sits at on the Calendar of Business, which is how the
  * Senate refers to a pending measure ("Calendar No. 684"). Mono because it is a
  * number that changes in place, and muted because the measure is the heading. */
+/* A nomination stage list scrolls inside its own section.
+ *
+ * Six stages on one board and some of them run to hundreds, so each gets a
+ * window rather than the panel growing without bound. The mask fades the last
+ * rows out instead of cutting them at a hard edge, which is what tells a reader
+ * there is more below: a clean cut reads as the end of the list. */
+.nom-scroll {
+    max-height: 260px;
+    overflow-y: auto;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
+}
+/* Scrolled to the end there is nothing more to hint at, so the fade goes. */
+.nom-scroll.is-at-end {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
+.nom-count {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    margin-left: var(--sp-6);
+}
+
 .bill-calendar-no {
     font-family: var(--font-mono);
     font-size: var(--fs-xs);

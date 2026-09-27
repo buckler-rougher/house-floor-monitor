@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260926e">
+    <link rel="stylesheet" href="styles.css?v=20260927a">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1268,25 +1268,73 @@
                  them. Four stages, from the Senate's own XML: on the Executive
                  Calendar (can reach the floor), privileged, in committee, and
                  recently confirmed. -->
-            <div class="whip-updates-panel" id="nominations">
+            <!-- Nominations.
+                 Sub-sections rather than a filter, matching the House bills
+                 panel: each stage is a heading with its own list, so all six are
+                 visible at once instead of one behind a drawer.
+
+                 Each list scrolls within itself and fades at the bottom to show
+                 there is more. Only calendar and privileged can reach the floor;
+                 the rest are upstream or finished. -->
+            <div class="bills-section" id="nominations">
                 <div class="panel-header">
-                    <div class="whip-label-group">
-                        <span class="panel-label">NOMINATIONS</span>
-                        <span class="whip-info-tip" data-tooltip="Only nominations with an Executive Calendar number can reach the floor. A nomination in committee has no number yet, and DESK means it sits on the Secretary of the Senate's desk.">?</span>
-                    </div>
+                    <span class="panel-label">NOMINATIONS</span>
                     <div class="panel-header-right">
-                        <button class="whip-filter-btn" id="nom-filter-btn" aria-label="Filter by stage"><svg class="whip-filter-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 2h10L7 6.5V10.5L5 9.5V6.5L1 2Z" fill="currentColor"/></svg> Filter</button>
                         <span class="panel-source">Source: <a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                     </div>
                 </div>
-                <div class="whip-filter-dropdown" id="nom-filter-dropdown" hidden></div>
-                <div class="whip-updates-feed">
-                    <div class="bills-columns">
-                        <div class="bills-column">
-                            <div class="bills-list" id="nominations-feed">
-                                <div class="whip-updates-loading">Loading nominations…</div>
+                <div class="bills-columns">
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">ON THE EXECUTIVE CALENDAR</span>
+                                <span class="nom-count" id="nom-count-calendar"></span>
                             </div>
+                            <span class="whip-info-tip" data-tooltip="Reported out of committee and awaiting floor action. Only these carry a calendar number.">?</span>
                         </div>
+                        <div class="bills-list nom-scroll" id="nom-list-calendar"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">PRIVILEGED</span>
+                                <span class="nom-count" id="nom-count-privileged"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="May be taken up without being placed on the Executive Calendar first.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="nom-list-privileged"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">IN COMMITTEE</span>
+                                <span class="nom-count" id="nom-count-committee"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Referred and not yet reported. No calendar number yet.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="nom-list-committee"></div>
+                    </div>
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">CONFIRMED</span>
+                                <span class="nom-count" id="nom-count-confirmed"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Confirmed by the Senate this Congress.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="nom-list-confirmed"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">WITHDRAWN</span>
+                                <span class="nom-count" id="nom-count-withdrawn"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Withdrawn by the President.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="nom-list-withdrawn"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">FAILED OR RETURNED</span>
+                                <span class="nom-count" id="nom-count-failed"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="nom-list-failed"></div>
                     </div>
                 </div>
             </div>
@@ -1586,7 +1634,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927a"></script>
+    <script defer src="senate.js?v=20260927b"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
