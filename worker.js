@@ -2510,6 +2510,24 @@ async function handleSenateFloorSchedule(env) {
     }
     if (!notices.length) throw new Error('caucus notices: nothing parsed from either feed');
 
+    // The listing prints a truncated excerpt ending in "...", which cuts off
+    // mid-sentence and is worse than showing nothing. Fetch the real body for
+    // the ones the board displays; the rest keep the excerpt and are never shown
+    // unless a filter reaches them.
+    const bodyOf = (html) => {
+      let t = strip(html);
+      const start = t.search(/The Senate (?:stands|will|convenes|reconvenes)|Roll Call Vote/i);
+      if (start >= 0) t = t.slice(start);
+      return t.split(/\s*Print Email Share/)[0].trim();
+    };
+    const head = notices.slice(0, 12);
+    for (let i = 0; i < head.length; i += 4) {
+      await Promise.all(head.slice(i, i + 4).map(async (n) => {
+        try { n.body = bodyOf(await get(n.url, n.type)); }
+        catch (_) { n.body = null; }
+      }));
+    }
+
     // Newest first across both feeds. The printed date is MM.DD.YYYY.
     const key = (n) => {
       const d = n.published.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
@@ -2546,12 +2564,21 @@ async function handleSenateFloorSchedule(env) {
         const votes = [...text.matchAll(/roll call vote[s]?:\s*(.{0,170}?)(?=\s*(?:$|Monday|Tuesday|Wednesday|Thursday|Friday|At approximately|Following Leader|Upon disposition))/gi)]
           .map((m) => m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, '').trim()).filter(Boolean);
         const convene = text.match(/(?:stands adjourned until|convenes? at|will convene at)\s+([0-9:]+\s*[ap]\.?m\.?)\s+on\s+([A-Za-z]+,\s*[A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
+        // "At approximately 5:30pm, absent further agreement, the Senate will
+        // vote on passage" — the convene time is when the chamber opens, not
+        // when the vote happens, and putting 3:00pm on a bill card said the
+        // wrong thing.
+        const voteAt = text.match(/(?:at\s+)?approximately\s+([0-9:]+\s*[ap]\.?m\.?)[^.]{0,80}?(?:vote|roll call)/i)
+                    || text.match(/(?:vote|roll call)[^.]{0,80}?at\s+approximately\s+([0-9:]+\s*[ap]\.?m\.?)/i);
         agenda = {
           heading: latest.title, url: latest.url, text,
           conveneTime: convene ? convene[1] : null,
           conveneDate: convene ? convene[2] : null,
+          voteTime: voteAt ? voteAt[1].replace(/\s+/g, '') : null,
           postCloture: /post-cloture/i.test(text),
-          measures, votes,
+          measures: await enrichSenateOrders(
+            measures.map((m) => ({ ...m, order: m.calendarNo })), 8),
+          votes,
         };
       }
     }
