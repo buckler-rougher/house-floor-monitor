@@ -149,6 +149,22 @@ single-mode re-check settles it in under a minute:
 | `snapshot.js` | computed-style snapshotter (runs in the page) |
 | `save-snapshot.mjs` / `compare.mjs` | file and diff snapshot sets |
 
+### Probes and one-offs
+
+Not part of the harness. Each answers one question about a source and is run by
+hand; none are asserted and none run in CI. Every one carries its own usage line
+at the top of the file.
+
+| | |
+|---|---|
+| `caption-lead.mjs` | does the caption stream see morning business before the Clerk records it? |
+| `proceedings-lag.mjs` | how long after a floor action does it reach the board? |
+| `senate-rollcall-probe.mjs` | does the Senate caption track carry a roll call vote, or go silent through it? |
+| `grade.mjs` | grades caption-derived speaker attribution against the Congressional Record (the only consumer of `lib/crec.js` outside its test) |
+| `make-demo-aca.mjs` | builds the demo from the real 21 March 2010 session |
+| `make-demo-debate.mjs` | builds the demo's debate mode from H.R. 3684 (117th) |
+| `make-tally-replay.mjs` | builds the tally sequence the demo replays over SSE |
+
 ## Known limitations
 
 - **`screens.html` is local-only.** Production sends `X-Frame-Options: DENY`

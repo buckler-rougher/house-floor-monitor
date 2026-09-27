@@ -181,36 +181,65 @@ Tested on:
 
 ## File Structure
 
+Four directories that are easy to confuse, told apart by **where the code runs**:
+
+| | Runs | |
+|---|---|---|
+| `lib/` | the browser, and the Worker | Shared modules. Loaded by both boards with `<script defer>`, and three of them (`bill-id`, `floor-speaker`, `floor-status`) are also `import`ed by `worker.js`, so the same rules apply on the page and at the edge. They assign to `globalThis` rather than exporting, which is what lets one file do both. |
+| `functions/` | Cloudflare Pages, at the edge | Pages Functions. One file: `_middleware.js`, which rewrites `senate-floor.evanhollander.org/` to `/senate.html` so both boards live in one Pages project. A rewrite, not a redirect, because the hostname has to stay in the address bar. Load-bearing, despite being 30 lines. |
+| `test/` | your machine, on demand | Automated and asserted. `npm test` runs all five, no network and no dependencies. The large files beside them are fixtures, deliberately verbatim. |
+| `dev/` | your machine, by hand | Investigation tooling. Nothing here is asserted and nothing runs in CI. The exception is `harness.js`, which the page itself loads in dev mode. See `dev/README.md`. |
+
+`worker.js` is a separate Cloudflare Worker on `api.evanhollander.org`, not a
+Pages Function; `functions/` and `worker.js` are two different runtimes.
+
+`lib/crec.js` has no production consumer. It grades speaker attribution against
+the Congressional Record and is reached only by `test/crec.test.js` and
+`dev/grade.mjs`.
+
 ```
 house-floor-monitor/
-├── index.html           # Main HTML structure
-├── app.js              # Core JavaScript application logic
-├── styles.css          # Comprehensive styling and layouts
-├── worker.js           # Cloudflare Worker for server-side processing
-├── wrangler.toml       # Cloudflare Worker configuration
-├── package.json        # Dependencies and scripts
-├── cors-proxy.js       # CORS proxy utility
-├── proxy.html          # Proxy endpoint handler
-└── README.md           # This file
+├── index.html           # House board
+├── senate.html          # Senate board, served at senate-floor.* by functions/
+├── app.js               # House board logic
+├── senate.js            # Senate board logic — deliberately not app.js
+├── styles.css           # Both boards; ~6% is House-specific
+├── worker.js            # The API Worker (api.evanhollander.org)
+├── lib/                 # Shared modules (browser + Worker)
+├── functions/           # Pages middleware
+├── test/                # npm test
+├── dev/                 # Off-network harness and probes
+├── committees/          # Committee seals
+├── wrangler.toml        # Worker configuration
+└── README.md            # This file
 ```
 
 ## Development
 
-### Local Development Server
+### Local development server
 
 ```bash
 npm run dev
 ```
 
-This starts a local server on port 8080 for development and testing.
-
-### Deploy Worker
+Serves the repo on port 3456. API calls from `localhost` fail CORS against the
+production Worker, so use the dev harness to render off-network:
 
 ```bash
-npm run deploy-worker
+npm run dev          # then open http://localhost:3456/?fixtures
 ```
 
-Deploys the Cloudflare Worker for production RSS feed processing.
+### Tests
+
+```bash
+npm test
+```
+
+### Deploying
+
+Push to `main`. Cloudflare's Git integration deploys the Pages site and the
+Worker together; there is no deploy command to run, and `wrangler deploy` is not
+the path this project uses.
 
 ## License
 

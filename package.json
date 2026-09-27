@@ -5,7 +5,6 @@
   "main": "index.html",
   "scripts": {
     "dev": "npx serve . -p 3456",
-    "deploy-worker": "wrangler deploy",
     "test": "node test/bill-id.test.js && node test/parse-notices.test.js && node test/floor-speaker.test.js && node test/floor-status.test.js && node test/crec.test.js",
     "fixtures": "./dev/capture-fixtures.sh",
     "check-modes": "node dev/check-modes.mjs"
