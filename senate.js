@@ -33,6 +33,37 @@ const fmtDate = (d) =>
     `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
 const fmtDateLong = (d) => `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
 
+// Every date on this board goes through here.
+//
+// The sources each write dates their own way and none of them match the board:
+// GPO says "Sept. 24, 2026", the vote menu says "24-Sep", the schedule says
+// "2026-09-28". Rendering any of those as-is puts three formats on one page,
+// which is what kept happening. The board's format is day-first, full month.
+function boardDate(value) {
+    if (!value) return '';
+    const v = String(value).trim();
+
+    // "2026-09-28"
+    let m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return fmtDate(new Date(+m[1], +m[2] - 1, +m[3]));
+
+    // "Sept. 24, 2026" or "September 24, 2026"
+    m = v.match(/^([A-Za-z]{3,})\.?\s+(\d{1,2}),\s*(\d{4})/);
+    if (m) {
+        const i = MONTH_NAMES.findIndex((n) => n.toLowerCase().startsWith(m[1].toLowerCase().slice(0, 3)));
+        if (i >= 0) return fmtDate(new Date(+m[3], i, +m[2]));
+    }
+
+    // "24-Sep": the vote menu carries no year, so none is invented.
+    m = v.match(/^(\d{1,2})-([A-Za-z]{3,})$/);
+    if (m) {
+        const i = MONTH_NAMES.findIndex((n) => n.toLowerCase().startsWith(m[2].toLowerCase().slice(0, 3)));
+        if (i >= 0) return `${String(+m[1]).padStart(2, '0')} ${MONTH_NAMES[i]}`;
+    }
+
+    return v;   // Unrecognised: show the source's own string rather than a wrong one.
+}
+
 // The module takes these as dependencies rather than reaching for a board's
 // globals, so each board supplies its own.
 const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
@@ -160,7 +191,7 @@ function renderVotes(payload) {
         num.className = 'proceedings-time';
         // Trailing space: the spans are adjacent, so without it the roll number
         // runs into the measure -- "244H.Con.Res. 89".
-        num.textContent = `${v.date} · ${v.number} `;
+        num.textContent = `${boardDate(v.date)} · ${v.number} `;
 
         // textContent throughout: every field is remote text from senate.gov.
         const body = document.createElement('span');
@@ -612,22 +643,25 @@ async function loadAbsences() {
 // nowhere. This is the backlog, and its newest entries are the closest thing
 // to a forward signal that exists in public.
 function renderCalendar(data) {
-    const list = el('senate-calendar-list');
+    const listA = el('senate-calendar-list-a');
+    const listB = el('senate-calendar-list-b');
     const info = el('senate-calendar-info');
-    if (!list) return;
+    if (!listA || !listB) return;
 
     const orders = data?.orders || [];
     if (!orders.length) {
-        setIfChanged(list, '<div class="bill-card-wrap">No measures on the calendar.</div>');
+        setIfChanged(listA, '<div class="bill-card-wrap">No measures on the calendar.</div>');
+        setIfChanged(listB, '');
         return;
     }
 
-    const cards = orders.slice(0, 25).map((o) => {
+    const shown = orders.slice(0, 24);
+    const cards = shown.map((o) => {
         // The action reads "Sept. 24, 2026.--Read the second time and placed on
         // the calendar." Split on the "--" so the date sits in its own column
         // the way the House cards do.
         const m = (o.action || '').match(/^(.*?\.)\s*--\s*(.*)$/);
-        const date = m ? m[1].replace(/\.$/, '') : '';
+        const date = boardDate(m ? m[1].replace(/\.$/, '') : '');
         const action = m ? m[2] : (o.action || '');
         return `
         <div class="bill-card-wrap">
@@ -647,13 +681,17 @@ function renderCalendar(data) {
             </button>
         </div>`;
     });
-    setIfChanged(list, cards.join(''));
+    // Split down the middle so the columns read top-to-bottom in order rather
+    // than zig-zagging left-right.
+    const half = Math.ceil(cards.length / 2);
+    setIfChanged(listA, cards.slice(0, half).join(''));
+    setIfChanged(listB, cards.slice(half).join(''));
 
     // Say how many are NOT shown. 25 rows off a backlog of 528 would otherwise
     // read as the whole calendar.
     if (info) {
         info.textContent = data.issued
-            ? `${data.total} pending \u00b7 issued ${data.issued}`
+            ? `${data.total} pending \u00b7 issued ${boardDate(data.issued)}`
             : `${data.total} pending`;
     }
 }

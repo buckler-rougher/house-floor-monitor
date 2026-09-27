@@ -1225,24 +1225,29 @@
                  What does NOT carry over is the House's column split -- SPECIAL
                  RULE(S), UNDER RULE, MAY BE CONSIDERED are House procedure -- so
                  there is one column here. -->
+            <!-- General Orders.
+                 Every measure reported out of committee and awaiting floor
+                 action: hundreds of them, some sitting since January. Sorted
+                 newest-placed first, which is the live edge of it.
+
+                 Same .bill-card markup the House board uses. What does NOT
+                 carry over is the House's column split by procedure -- SPECIAL
+                 RULE(S), UNDER RULE, MAY BE CONSIDERED -- so the two columns
+                 here just divide one list in half. -->
             <div class="bills-section" id="senate-calendar">
                 <div class="panel-header">
-                    <span class="panel-label">PENDING ON THE CALENDAR</span>
+                    <span class="panel-label">GENERAL ORDERS</span>
                     <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://www.govinfo.gov/app/collection/ccal" target="_blank" rel="noopener">Calendar of Business, General Orders (GPO govinfo)</a></span>
+                        <span class="panel-source">Source: <a href="https://www.govinfo.gov/app/collection/ccal" target="_blank" rel="noopener">Calendar of Business (GPO govinfo)</a></span>
                         <span class="bills-last-update" id="senate-calendar-info">--</span>
                     </div>
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
-                                <span class="bills-column-title">GENERAL ORDERS</span>
-                            </div>
-                        </div>
-                        <div class="bills-list" id="senate-calendar-list">
-                            <!-- Cards rendered by senate.js -->
-                        </div>
+                        <div class="bills-list" id="senate-calendar-list-a"></div>
+                    </div>
+                    <div class="bills-column">
+                        <div class="bills-list" id="senate-calendar-list-b"></div>
                     </div>
                 </div>
             </div>
@@ -1515,7 +1520,7 @@
     <script defer src="lib/airport-delays.js?v=20260926b"></script>
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260926n"></script>
+    <script defer src="senate.js?v=20260926o"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
