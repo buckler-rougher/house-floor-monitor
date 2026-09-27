@@ -10817,22 +10817,135 @@ body.all-mode .floor-grid-panel {
     margin: 0;
 }
 
-/* PROCEDURAL STAGES — a card plus the votes stacked above it is one unit.
+/* PROCEDURAL STAGES
+ *
+ * Not .bills-columns. That is a two-column grid of two independent stacks, so
+ * a section's height is whatever its content happens to be and the two columns
+ * only line up by luck. A row here is a real grid row holding both of its
+ * sections, which is what lets the arrow between them mean anything.
+ *
+ * Header row on top, list row beneath, and the middle column is the width of
+ * the connector. Children are placed by position, in the order the markup has
+ * them: left header, connector, right header, left list, right list. */
+.stage-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-32);
+    padding: var(--sp-10) var(--sp-24) var(--sp-20);
+}
+
+.stage-row {
+    display: grid;
+    grid-template-columns: 1fr 64px 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: var(--sp-16);
+}
+.stage-row > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.stage-row > :nth-child(2) { grid-column: 2; grid-row: 1; }
+.stage-row > :nth-child(3) { grid-column: 3; grid-row: 1; }
+.stage-row > :nth-child(4) { grid-column: 1; grid-row: 2; }
+.stage-row > :nth-child(5) { grid-column: 3; grid-row: 2; }
+
+/* The step number, which is what actually carries the order.
+ *
+ * The panel reads backwards -- a final vote is the most interesting thing on
+ * it, so it goes top left -- and an arrow alone cannot say that. Numbered 1 to
+ * 6 in the order a measure travels, the grid explains itself: 1 and 2 are the
+ * bottom row, 6 is where everything is trying to get to. */
+.stage-step {
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* The connector, sitting in the header row so it points from one heading to
+ * the other. Cloture is the only thing that guarantees the next vote happens,
+ * so the arrow runs right to left across every row and nowhere else. */
+.stage-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    /* --border-color is #233044, which on this background is invisible at one
+       and a half pixels. The connector is structure, not a divider, so it takes
+       a text colour held back by opacity instead. */
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+.stage-link svg {
+    width: 100%;
+    height: 10px;
+    overflow: visible;
+}
+.stage-link path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+.stage-link .stage-link-head {
+    fill: currentColor;
+    stroke: none;
+}
+
+/* Both halves of a row are always the same height.
+ *
+ * A section sized to its own content made the two halves of a pair drift apart,
+ * so the arrow between them pointed at nothing and it stopped being obvious
+ * that one unlocks the other. They are grid items in one row now, so stretch
+ * gives them a shared height for free, whether one holds twenty measures and
+ * the other none.
+ *
+ * Bounded rather than pinned. A flat 320px was stable but spent a third of the
+ * panel on the AMENDMENTS row, which is empty most of the time by the nature of
+ * the thing. The floor keeps an empty row from collapsing to nothing and the
+ * cap keeps a full one from running off the screen; within those, a row is the
+ * size of its own content and its two halves still match exactly. */
+.stage-row .list-scroll {
+    min-height: 140px;
+    max-height: 320px;
+}
+
+/* A card plus the votes stacked above it is one unit.
  *
  * The .bill-slot stack separates a chip from its card by an 8px connector, and
  * .bills-list separates one slot from the next by an 8px gap. Identical, so a
- * chip read as belonging to the card above it rather than the one below. The
- * House board never hits this because its slots sit in a two-column grid with
- * its own wider gutter.
- *
- * Only the eight stage lists, because ON THE FLOOR and NOMINATIONS render bare
- * cards with nothing stacked on them and would just get airier. */
+ * chip read as belonging to the card above it rather than the one below. */
 #senate-stages .bills-list {
     gap: var(--sp-20);
 }
 
-/* A stage list is taller than the others: a slot can be a card plus six chips,
- * and at the shared 260px two of them do not fit. */
-#senate-stages .list-scroll {
-    max-height: 340px;
+/* Nothing at this stage: centred, so an empty box reads as deliberate rather
+ * than as a list that failed to load. */
+.stage-row .list-scroll:has(> .whip-updates-loading:only-child) {
+    justify-content: center;
 }
+
+/* The result mark on a stage card: a tick when it carried, a cross when it did
+ * not, an open circle when the vote has not happened. Same shape and the same
+ * three colours as the chips stacked above it, so a card and its chain read as
+ * one sequence rather than two notations. */
+.bill-result-mark {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.bill-result-mark.carried { color: var(--accent-green); }
+.bill-result-mark.failed  { color: var(--accent-red); }
+.bill-result-mark.pending { color: var(--accent-amber); }
