@@ -3338,6 +3338,23 @@ body.tellers-mode .tellers-column { display: flex; }
   color: var(--accent-amber);
   background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
 }
+/* Senate Democratic Caucus notice types.
+ *
+ * Their own classes rather than borrowed House ones. A schedule post is not a
+ * "floor" notice and a wrap-up is not a "nightly" one, and a badge whose class
+ * says one thing while its text says another is a mapping nobody remembers a
+ * week later.
+ *
+ * Schedule looks forward and takes blue, which the base badge already uses for
+ * what is planned. Wrap-up looks back, and green is this board's "done". */
+.whip-type-badge.whip-type-schedule {
+  color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+}
+.whip-type-badge.whip-type-wrap-up {
+  color: var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+}
 
 .whip-update-time {
   font-family: var(--font-mono);
@@ -3486,6 +3503,8 @@ body.tellers-mode .tellers-column { display: flex; }
 .whip-filter-chip.whip-type-daily   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
 .whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 .whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
+.whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
+.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
 
 /* (?) hover tooltip */
 .whip-label-group {
