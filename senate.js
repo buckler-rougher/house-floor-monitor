@@ -657,15 +657,27 @@ function renderCalendar(data) {
 
     const shown = orders.slice(0, 24);
     const cards = shown.map((o) => {
-        // The action reads "Sept. 24, 2026.--Read the second time and placed on
-        // the calendar." Split on the "--" so the date sits in its own column
-        // the way the House cards do.
+        // The calendar's own action reads "Sept. 24, 2026.--Read the second time
+        // and placed on the calendar." Split on the "--" so the date sits in its
+        // own column the way the House cards do.
         const m = (o.action || '').match(/^(.*?\.)\s*--\s*(.*)$/);
-        const date = boardDate(m ? m[1].replace(/\.$/, '') : '');
-        const action = m ? m[2] : (o.action || '');
+        // Congress.gov's latest action is preferred when it is NEWER than the
+        // placement. A measure can be placed on the calendar in January and
+        // amended in August; the calendar still prints January, because that is
+        // when it was placed, not when it last moved.
+        const placedDate = m ? m[1].replace(/\.$/, '') : '';
+        const placed = m ? m[2] : (o.action || '');
+        const newer = o.latestActionDate && placedDate &&
+            new Date(o.latestActionDate) > new Date(placedDate);
+        const date = boardDate(newer ? o.latestActionDate : placedDate);
+        const action = newer ? o.latestAction : placed;
+        const tag = o.congressUrl ? 'a' : 'button';
+        const attrs = o.congressUrl
+            ? `href="${escapeHtml(o.congressUrl)}" target="_blank" rel="noopener"`
+            : 'type="button"';
         return `
         <div class="bill-card-wrap">
-            <button class="bill-card" data-bill-id="${escapeHtml(o.measure)}" data-status="scheduled" type="button">
+            <${tag} class="bill-card" data-bill-id="${escapeHtml(o.measure)}" data-status="scheduled" ${attrs}>
                 <div class="bill-status scheduled" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
@@ -678,7 +690,7 @@ function renderCalendar(data) {
                         <div class="bill-date">${escapeHtml(date)}</div>
                     </div>
                 </div>
-            </button>
+            </${tag}>
         </div>`;
     });
     // Split down the middle so the columns read top-to-bottom in order rather

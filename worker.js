@@ -2442,6 +2442,57 @@ function parseGeneralOrders(html) {
   return out;
 }
 
+// Fill in what the printed calendar cannot hold.
+//
+// Its columns are 26 characters wide and the text wraps inside them, so the
+// author arrives cut mid-word -- "Senator Tuberville and o" -- and the title is
+// whatever fits. Congress.gov has the real sponsor, the full title and the
+// latest action, which is usually newer than "placed on the calendar".
+//
+// Only the measures the board actually shows are looked up. At 24 per six-hour
+// cache window that is nowhere near the 1,000/hour the free tier allows, and
+// there is no reason to spend requests on the 500 rows nobody sees.
+//
+// A failed lookup keeps the calendar's own values rather than blanking the row:
+// the printed calendar is the authority for what is pending, and Congress.gov
+// is only decoration on top of it.
+async function enrichSenateOrders(orders, limit = 24) {
+  if (!_congressApiKey) return orders;
+  const head = orders.slice(0, limit);
+
+  const one = async (o) => {
+    const parsed = billIdToCongressType(o.measure);
+    if (!parsed) return o;
+    try {
+      const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}?format=json&api_key=${_congressApiKey}`;
+      const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return o;
+      const bill = (await r.json())?.bill;
+      if (!bill) return o;
+      const sp = (bill.sponsors || [])[0];
+      return {
+        ...o,
+        title: bill.title || o.title,
+        // "Sen. Tuberville, Tommy [R-AL]" reads better than a truncation, and
+        // it is the same shape the House board's sponsor line uses.
+        author: sp?.fullName || o.author,
+        latestAction: bill.latestAction?.text || null,
+        latestActionDate: bill.latestAction?.actionDate || null,
+        congressUrl: `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/${parsed.type === 'hr' ? 'house-bill' : parsed.type === 's' ? 'senate-bill' : parsed.type}/${parsed.number}`,
+      };
+    } catch (_) {
+      return o;   // transient: keep the calendar's own row
+    }
+  };
+
+  // Small batches. The point is not to go faster than the API is happy with.
+  const out = [];
+  for (let i = 0; i < head.length; i += 6) {
+    out.push(...await Promise.all(head.slice(i, i + 6).map(one)));
+  }
+  return [...out, ...orders.slice(limit)];
+}
+
 async function handleSenateCalendar(env) {
   const congress = CURRENT_CONGRESS;
   return kvCache(env, `senate-gen-orders-${congress}-v1`, 6 * 3600, async () => {
@@ -2486,8 +2537,9 @@ async function handleSenateCalendar(env) {
     // Newest first: the calendar is ordered oldest-first and the tail is what
     // has just been placed.
     orders.sort((a, b) => b.order - a.order);
+    const enriched = await enrichSenateOrders(orders, 24);
     return new Response(JSON.stringify({
-      congress, issued, total: orders.length, orders: orders.slice(0, 40),
+      congress, issued, total: orders.length, orders: enriched.slice(0, 24),
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=21600' },
     });
