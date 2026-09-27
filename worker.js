@@ -2843,7 +2843,19 @@ async function handleSenateBill(env, billId) {
     });
   }
   const { type, number } = parsed;
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v3`, 3600, async () => {
+  // A day, not the House's hour.
+  //
+  // The House caches one week of floor business, where latestAction moves
+  // during a vote and an hour-old record is genuinely wrong. PROCEDURAL STAGES
+  // reaches back months, so most of what gets asked for here is a bill whose
+  // last action was in July and will never change again. Everything the modal
+  // actually draws -- sponsor, the cosponsor party split, committees, the CRS
+  // summary -- is fixed at introduction.
+  //
+  // The one live measure is the pending one, and what it is doing next comes
+  // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
+  // This endpoint is not where the board learns that.
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v3`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {

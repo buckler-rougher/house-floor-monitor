@@ -872,11 +872,17 @@ function nominationCard(n) {
 // Drop the fade once a list is scrolled to its end: with nothing below it, a
 // fade suggests more that is not there.
 function watchListScroll(node) {
-    if (!node || node.dataset.watched) return;
-    node.dataset.watched = '1';
+    if (!node) return;
     const check = () => node.classList.toggle('is-at-end',
         node.scrollTop + node.clientHeight >= node.scrollHeight - 2);
-    node.addEventListener('scroll', check, { passive: true });
+    // Listener once, check every time. It used to return early on an already
+    // watched list, so the class was decided by whatever the list held on its
+    // first render and never revisited: a section that later held one card kept
+    // a fade over empty space, and one that grew lost the fade it needed.
+    if (!node.dataset.watched) {
+        node.dataset.watched = '1';
+        node.addEventListener('scroll', check, { passive: true });
+    }
     check();
 }
 
@@ -1053,6 +1059,77 @@ function billModalContent(b) {
         </div>`;
 }
 
+// Bill details, warmed rather than fetched on click.
+//
+// The House modal is synchronous: openBillModal reads billDataMap, which one
+// bulk /api/bills call fills for the week's floor business, so a click paints
+// immediately. This board has no bulk endpoint -- the Senate publishes no
+// weekly bill list to build one from -- so it reaches the same place by asking
+// for each measure once, in the background, and keeping the answers.
+//
+// Worth more here than on the House board, not less: PROCEDURAL STAGES reaches
+// back months rather than one week, so the same bill is on screen for far
+// longer and a click on it is far more likely to be a repeat.
+const _billCache = new Map();     // id -> { at, bill } | { at, error }
+const _billInflight = new Map();  // id -> Promise, so a prefetch and a click share one request
+// Long, because none of what the modal draws changes: sponsor, the cosponsor
+// split, committees and the CRS summary are fixed at introduction. The Worker
+// holds the same record for a day for the same reason.
+const BILL_CACHE_MS = 6 * 60 * 60 * 1000;
+
+function cachedBill(id) {
+    const hit = _billCache.get(id);
+    return hit && Date.now() - hit.at <= BILL_CACHE_MS ? hit : null;
+}
+
+function fetchSenateBill(id) {
+    const hit = cachedBill(id);
+    if (hit) return Promise.resolve(hit);
+    if (_billInflight.has(id)) return _billInflight.get(id);
+    const p = (async () => {
+        try {
+            const r = await fetch(`${API}/senate/bill?id=${encodeURIComponent(id)}`);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const bill = await r.json();
+            if (bill.error) throw new Error(bill.error);
+            const entry = { at: Date.now(), bill };
+            _billCache.set(id, entry);
+            return entry;
+        } catch (e) {
+            // Cached too. A measure with no Congress.gov record fails the same
+            // way every time, and retrying it on every click spends the quota
+            // to arrive at the same message.
+            const entry = { at: Date.now(), error: e.message };
+            _billCache.set(id, entry);
+            return entry;
+        } finally {
+            _billInflight.delete(id);
+        }
+    })();
+    _billInflight.set(id, p);
+    return p;
+}
+
+// Every bill-shaped measure currently drawn, warmed two at a time so the board
+// does not open twenty sockets at once on a panel nobody has clicked yet.
+let _prefetched = new Set();
+function prefetchBills() {
+    const ids = new Set();
+    for (const card of document.querySelectorAll('#senate-stages [data-bill-id], #senate-floor-measures [data-bill-id]')) {
+        const id = card.dataset.billId;
+        if (id && !_prefetched.has(id) && !cachedBill(id)) ids.add(id);
+    }
+    if (!ids.size) return;
+    const queue = [...ids];
+    queue.forEach((id) => _prefetched.add(id));
+    const worker = async () => {
+        while (queue.length) await fetchSenateBill(queue.shift());
+    };
+    const start = () => { worker(); worker(); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(start, { timeout: 4000 });
+    else setTimeout(start, 1200);
+}
+
 async function openSenateBillModal(billId, trigger) {
     if (!billId) return;
     _billModalTrigger = trigger || null;
@@ -1068,24 +1145,24 @@ async function openSenateBillModal(billId, trigger) {
     }
     overlay.hidden = false;
     delete overlay.dataset.closing;
-    overlay.innerHTML = billModalSkeleton(billId);
-    overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
-    document.addEventListener('keydown', onSenateBillModalKey);
 
-    try {
-        const r = await fetch(`${API}/senate/bill?id=${encodeURIComponent(billId)}`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const b = await r.json();
-        if (b.error) throw new Error(b.error);
-        // The overlay may have been closed while this was in flight.
+    // Warmed: paint the real thing, with no skeleton in between. This is the
+    // path almost every click takes.
+    const hit = cachedBill(billId);
+    const paint = (entry) => {
         if (overlay.hidden || overlay.dataset.closing) return;
-        overlay.innerHTML = billModalContent(b);
-    } catch (e) {
-        if (overlay.hidden) return;
-        const title = overlay.querySelector('.bill-modal-title');
-        if (title) title.textContent = `Details unavailable (${e.message})`;
+        overlay.innerHTML = entry.error
+            ? billModalSkeleton(billId).replace('Loading…', `Details unavailable (${escapeHtml(entry.error)})`)
+            : billModalContent(entry.bill);
+        overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
+    };
+    if (hit) paint(hit);
+    else {
+        overlay.innerHTML = billModalSkeleton(billId);
+        overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
     }
-    overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
+    document.addEventListener('keydown', onSenateBillModalKey);
+    if (!hit) paint(await fetchSenateBill(billId));
 }
 
 // ── Nomination modal ─────────────────────────────────────────────────────────
@@ -1290,6 +1367,38 @@ const CHIP_TICK = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:
 const CHIP_CROSS = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>';
 
 let _stages = {};
+let _stagesData = null;
+// The caucus schedule, kept so a pending stage card can say when its vote is.
+let _agenda = null;
+
+// The two feeds spell a measure differently: the roll call record says
+// "S. 4668", the caucus schedule says "S.4668".
+const measureKey = (m) => String(m || '').replace(/\s+/g, '').toUpperCase();
+
+// When the schedule names a pending measure, the board says when the vote is
+// rather than only that one is coming.
+//
+// Read from the schedule, never computed. Rule XXII would let a filed cloture
+// motion's ripening be worked out -- it lies over to the second calendar day of
+// session -- but that needs the forward list of sitting days, and this board
+// infers those at 86.9%, so the date would be wrong about one day in seven. The
+// Senate also overrides the rule by unanimous consent most of the time, which
+// is exactly what these posts report.
+//
+// Predicting the post-cloture interval would be no better and no use: of the 51
+// clotures invoked this session, 19 reached the final vote the same day and 22
+// the next, and every slow one straddles a recess.
+function scheduledVote(measure) {
+    if (!_agenda?.voteTime) return null;
+    const key = measureKey(measure);
+    const named = (_agenda.measures || []).some((m) => measureKey(m.measure) === key)
+        || (_agenda.votes || []).some((v) => measureKey(v).includes(key));
+    if (!named) return null;
+    // "Monday, September 28, 2026" -> the board's own date format. The time is
+    // reproduced as the caucus wrote it, the way every quoted source is.
+    const day = String(_agenda.conveneDate || '').replace(/^[A-Za-z]+,\s*/, '');
+    return { time: _agenda.voteTime, date: boardDate(day) };
+}
 
 // Which modal a card opens, decided by the shape of what it names. The roll
 // call record gives a measure id or a PN; the caucus prose, which is the only
@@ -1361,13 +1470,25 @@ function stageCard(m, key, i) {
     // A pending card has no result of its own. Its last vote is already the top
     // chip, so repeating that vote's tally here would say the measure had just
     // done the thing it is in fact waiting to do.
+    // Ticked off, the same way the chips above it are. The status bar down the
+    // left edge says the same thing in colour alone, which is a poor way to say
+    // "this one actually passed" on a board read across a room. An open circle
+    // is the third state: nothing has happened here yet.
+    const mark = m.pending
+        ? `<span class="bill-result-mark pending" aria-hidden="true"></span>`
+        : `<span class="bill-result-mark ${v.carried ? 'carried' : 'failed'}" aria-hidden="true">${v.carried ? CHIP_TICK : CHIP_CROSS}</span>`;
     const idRow = m.pending
-        ? `<span class="bill-calendar-no">Pending</span>`
-        : `<span class="bill-calendar-no">${escapeHtml(v.result)}</span>
+        ? `${mark}<span class="bill-calendar-no">Pending</span>`
+        : `${mark}<span class="bill-calendar-no">${escapeHtml(v.result)}</span>
            <span class="wrapup-result ${v.carried ? 'carried' : 'failed'}">${v.yeas}-${v.nays}</span>`;
+    const due = m.pending ? scheduledVote(m.measure) : null;
+    const awaiting = STAGE_AWAITING[m.stage] || 'Awaiting a vote';
     const action = m.pending
-        ? `${STAGE_AWAITING[m.stage] || 'Awaiting a vote'} · cloture invoked`
+        ? `${awaiting} · ${due ? due.time : 'cloture invoked'}`
         : `${STAGE_CHIP[v.stage] || v.stage} · Roll call ${v.rollCall}`;
+    // A scheduled card is dated by when its vote is, not by when the cloture
+    // that got it there was.
+    const when = due ? due.date : boardDate(v.date);
 
     return `
     <div class="bill-slot">
@@ -1383,7 +1504,7 @@ function stageCard(m, key, i) {
                     <div class="bill-title">${escapeHtml(m.subject)}</div>
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml(action)}</div>
-                        <div class="bill-date">${escapeHtml(boardDate(v.date))}</div>
+                        <div class="bill-date">${escapeHtml(when)}</div>
                     </div>
                 </div>
             </button>
@@ -1392,6 +1513,8 @@ function stageCard(m, key, i) {
 }
 
 function renderStages(data) {
+    _stagesData = data || _stagesData;
+    data = _stagesData;
     _stages = data?.stages || {};
     for (const key of STAGE_KEYS) {
         const list = el(`stage-list-${key}`);
@@ -1406,6 +1529,7 @@ function renderStages(data) {
     }
     // Say what the window reached, rather than showing a slice and letting it
     // look like the whole record.
+    prefetchBills();
     const when = el('senate-stages-when');
     if (when && data?.kept != null) {
         when.textContent = data.since
@@ -1528,6 +1652,7 @@ function renderFloorSchedule(data, cloture) {
     });
     setIfChanged(list, cards.concat(noms, filed).join(''));
     watchListScroll(list);
+    prefetchBills();
 }
 
 
@@ -1539,7 +1664,11 @@ async function loadFloorSchedule() {
         // Nominations first: the agenda names them by calendar number and needs
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
+        _agenda = data.agenda || null;
         renderFloorSchedule(data.agenda, data.cloture);
+        // The two feeds land in whichever order the network gives them, and a
+        // pending card cannot say when its vote is until the schedule is in.
+        if (_stagesData) renderStages(null);
         _notices = data.notices || [];
         renderNoticeFilter();
         renderNotices();

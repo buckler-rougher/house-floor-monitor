@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260927d">
+    <link rel="stylesheet" href="styles.css?v=20260927e">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1305,57 +1305,83 @@
                         <span class="bills-last-update" id="senate-stages-when">--</span>
                     </div>
                 </div>
-                <div class="bills-columns">
-                    <div class="bills-column">
+                <div class="stage-grid">
+                    <div class="stage-row">
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
+                                <span class="stage-step">6</span>
                                 <span class="bills-column-title">PASSAGE AND CONFIRMATION</span>
                                 <span class="nom-count" id="stage-count-final"></span>
                             </div>
-                            <span class="whip-info-tip" data-tooltip="The last vote on a measure: passage of a bill or resolution, or confirmation of a nomination. A card here has finished.">?</span>
+                            <span class="whip-info-tip" data-tooltip="The last vote on a measure: passage of a bill or resolution, or confirmation of a nomination. A measure arrives here the moment cloture is invoked on it, and waits.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-final"></div>
+                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                            <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
+                                <path d="M39 5 H7" />
+                                <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
+                            </svg>
+                        </div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
+                                <span class="stage-step">5</span>
+                                <span class="bills-column-title">CLOTURE ON THE MEASURE</span>
+                                <span class="nom-count" id="stage-count-cloture"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Cloture on the measure itself. Invoking it ends debate and puts the final vote on a fixed clock, which is why a measure that carries it moves straight to step 6.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-final"></div>
+                        <div class="bills-list list-scroll" id="stage-list-cloture"></div>
+                    </div>
+                    <div class="stage-row">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="stage-step">4</span>
                                 <span class="bills-column-title">AMENDMENTS</span>
                                 <span class="nom-count" id="stage-count-amendment"></span>
                             </div>
                             <span class="whip-info-tip" data-tooltip="A vote to adopt, table or waive a budget point of order against an amendment. Usually empty, because an amendment vote is rarely the last thing to happen to a measure.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-amendment"></div>
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
-                                <span class="bills-column-title">MOTION TO PROCEED</span>
-                                <span class="nom-count" id="stage-count-mtp"></span>
-                            </div>
-                            <span class="whip-info-tip" data-tooltip="The vote to take the measure up at all. Agreeing to it opens debate; it is not a vote on the measure itself.">?</span>
+                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                            <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
+                                <path d="M39 5 H7" />
+                                <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
+                            </svg>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-mtp"></div>
-                    </div>
-                    <div class="bills-column">
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">CLOTURE ON THE MEASURE</span>
-                                <span class="nom-count" id="stage-count-cloture"></span>
-                            </div>
-                            <span class="whip-info-tip" data-tooltip="Cloture on the measure itself, which ends debate and puts a final vote on a fixed clock. The last obstacle before passage.">?</span>
-                        </div>
-                        <div class="bills-list list-scroll" id="stage-list-cloture"></div>
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
+                                <span class="stage-step">3</span>
                                 <span class="bills-column-title">CLOTURE ON AN AMENDMENT</span>
                                 <span class="nom-count" id="stage-count-cloture-amdt"></span>
                             </div>
                             <span class="whip-info-tip" data-tooltip="Cloture on a pending amendment, usually a substitute. It clears the amendment out of the way so cloture can be filed on the measure.">?</span>
                         </div>
+                        <div class="bills-list list-scroll" id="stage-list-amendment"></div>
                         <div class="bills-list list-scroll" id="stage-list-cloture-amdt"></div>
+                    </div>
+                    <div class="stage-row">
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
+                                <span class="stage-step">2</span>
+                                <span class="bills-column-title">MOTION TO PROCEED</span>
+                                <span class="nom-count" id="stage-count-mtp"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="The vote to take the measure up at all. Agreeing to it opens debate; it is not a vote on the measure itself.">?</span>
+                        </div>
+                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                            <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
+                                <path d="M39 5 H7" />
+                                <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
+                            </svg>
+                        </div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="stage-step">1</span>
                                 <span class="bills-column-title">CLOTURE ON THE MOTION TO PROCEED</span>
                                 <span class="nom-count" id="stage-count-cloture-mtp"></span>
                             </div>
                             <span class="whip-info-tip" data-tooltip="Cloture on the motion to proceed, which is where a measure stalls when it cannot get 60 votes to be taken up. Failing it neither kills the measure nor moves it: H.R. 7147 failed this seven times between 12 February and 26 March.">?</span>
                         </div>
+                        <div class="bills-list list-scroll" id="stage-list-mtp"></div>
                         <div class="bills-list list-scroll" id="stage-list-cloture-mtp"></div>
                     </div>
                 </div>
@@ -1733,7 +1759,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927k"></script>
+    <script defer src="senate.js?v=20260927l"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
