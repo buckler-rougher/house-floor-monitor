@@ -4577,15 +4577,29 @@ export default {
   async fetch(request, env) {
     const res = await handleRequest(request, env);
     const origin = request.headers.get('Origin');
-    // The House path returns the identical object it always did.
-    if (!origin || !ALLOWED_ORIGINS.has(origin)) return res;
-    if (res.headers.get('Access-Control-Allow-Origin') === origin) return res;
-    // A WebSocket upgrade cannot be rebuilt, and has no body to pass through.
+    // A WebSocket upgrade cannot be rebuilt and has no body to pass through.
     if (res.status === 101 || res.webSocket) return res;
+
+    const allowed = origin && ALLOWED_ORIGINS.has(origin);
+    const current = res.headers.get('Access-Control-Allow-Origin');
+    const needsOrigin = allowed && current !== origin;
+    // Vary goes on EVERY response that could differ by origin, not only the
+    // ones rewritten here.
+    //
+    // Without it the House response -- which is already correct and so used to
+    // be returned untouched -- carried no Vary at all, so a shared cache was
+    // free to hand that House-pinned header to a Senate request. The Senate
+    // board's airport panel failed intermittently for exactly that reason: it
+    // calls the /house-floor/ endpoint, and whether it worked depended on who
+    // had warmed the cache. The responses set Cache-Control: public, so this is
+    // not hypothetical.
+    const needsVary = !/\bOrigin\b/i.test(res.headers.get('Vary') || '');
+    if (!needsOrigin && !needsVary) return res;
+
     // Headers on a constructed Response are immutable, so rebuild. Passing
     // res.body through rather than reading it keeps SSE streaming.
     const headers = new Headers(res.headers);
-    headers.set('Access-Control-Allow-Origin', origin);
+    if (needsOrigin) headers.set('Access-Control-Allow-Origin', origin);
     const vary = headers.get('Vary');
     if (!vary) headers.set('Vary', 'Origin');
     else if (!/\bOrigin\b/i.test(vary)) headers.set('Vary', `${vary}, Origin`);
