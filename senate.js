@@ -750,6 +750,148 @@ function initNoticeFilter() {
     });
 }
 
+// ── Bill modal ───────────────────────────────────────────────────────────────
+//
+// Same markup and classes as the House modal, so it looks and animates the
+// same, but not the same function: openBillModal in app.js is 324 lines with
+// eleven dependencies, several of them House procedure -- whip recommendation
+// tags, Rules Committee slugs, the amendments panel. None of that exists here.
+//
+// The overlay is built on demand rather than living in the markup, which is how
+// the House one works too, so senate.html needs nothing added to it.
+let _billModalTrigger = null;
+
+function closeSenateBillModal() {
+    const overlay = el('bill-modal-overlay');
+    globalThis.BoardAnimations?.hideAfterAnimation?.(overlay);
+    document.removeEventListener('keydown', onSenateBillModalKey);
+    if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
+}
+
+function onSenateBillModalKey(e) {
+    if (e.key === 'Escape') closeSenateBillModal();
+}
+
+function billModalSkeleton(id) {
+    return `
+        <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(id)}">
+            <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
+            <div class="bill-modal-scroll">
+                <div class="bill-modal-top">
+                    <div class="bill-modal-header">
+                        <span class="bill-modal-id">${escapeHtml(id)}</span>
+                    </div>
+                    <h2 class="bill-modal-title">Loading…</h2>
+                </div>
+            </div>
+        </div>`;
+}
+
+function billModalContent(b) {
+    const sponsor = b.sponsor ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">SPONSOR</div>
+            <div class="bill-modal-action">${escapeHtml(b.sponsor.name)}</div>
+        </div>` : '';
+    const cosponsors = b.cosponsorCount != null ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">COSPONSORS</div>
+            <div class="bill-modal-action">${b.cosponsorCount}</div>
+        </div>` : '';
+    const committees = b.committees?.length ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">COMMITTEE${b.committees.length > 1 ? 'S' : ''}</div>
+            <div class="bill-modal-action">${b.committees.map(escapeHtml).join(' · ')}</div>
+        </div>` : '';
+    const policy = b.policyArea ? `
+        <div class="bill-modal-section">
+            <div class="bill-modal-section-label">POLICY AREA</div>
+            <div class="bill-modal-action">${escapeHtml(b.policyArea)}</div>
+        </div>` : '';
+
+    return `
+        <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true">
+            <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
+            <div class="bill-modal-scroll">
+                <div class="bill-modal-top">
+                    <div class="bill-modal-header">
+                        <span class="bill-modal-id">${escapeHtml(b.id)}</span>
+                    </div>
+                    <h2 class="bill-modal-title">${escapeHtml(b.title || '')}</h2>
+                </div>
+                <div class="bill-modal-sections">${sponsor}${cosponsors}${committees}${policy}</div>
+                ${b.summary ? `
+                <div class="bill-modal-body">
+                    <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
+                    <p class="bill-modal-summary">${escapeHtml(b.summary)}</p>
+                </div>` : ''}
+                <div class="bill-modal-foot">
+                    ${b.latestAction ? `
+                    <div class="bill-modal-section" style="margin-bottom:12px;">
+                        <div class="bill-modal-section-label">LATEST ACTION</div>
+                        <div class="bill-modal-action bill-modal-action-row">
+                            <span class="bill-modal-action-text">${escapeHtml(b.latestAction)}</span>
+                            ${b.latestActionDate ? `<span class="bill-modal-date">${escapeHtml(boardDate(b.latestActionDate))}</span>` : ''}
+                        </div>
+                    </div>` : ''}
+                    <div class="bill-modal-section">
+                        <div class="bill-modal-section-label">LINKS</div>
+                        <div class="bill-doc-links">
+                            <a href="${escapeHtml(b.textUrl)}" class="bill-modal-link" target="_blank" rel="noopener">Bill text</a>
+                            <a href="${escapeHtml(b.govinfoPdf)}" class="bill-modal-link" target="_blank" rel="noopener">PDF (govinfo)</a>
+                            <a href="${escapeHtml(b.congressUrl)}" class="bill-modal-link" target="_blank" rel="noopener">Congress.gov</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function openSenateBillModal(billId, trigger) {
+    if (!billId) return;
+    _billModalTrigger = trigger || null;
+
+    let overlay = el('bill-modal-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'bill-modal-overlay';
+        overlay.className = 'bill-modal-overlay';
+        document.body.appendChild(overlay);
+        // Only a click on the backdrop itself closes; clicks inside must not.
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSenateBillModal(); });
+    }
+    overlay.hidden = false;
+    delete overlay.dataset.closing;
+    overlay.innerHTML = billModalSkeleton(billId);
+    overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
+    document.addEventListener('keydown', onSenateBillModalKey);
+
+    try {
+        const r = await fetch(`${API}/senate/bill?id=${encodeURIComponent(billId)}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const b = await r.json();
+        if (b.error) throw new Error(b.error);
+        // The overlay may have been closed while this was in flight.
+        if (overlay.hidden || overlay.dataset.closing) return;
+        overlay.innerHTML = billModalContent(b);
+    } catch (e) {
+        if (overlay.hidden) return;
+        const title = overlay.querySelector('.bill-modal-title');
+        if (title) title.textContent = `Details unavailable (${e.message})`;
+    }
+    overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
+}
+
+// Delegated so it survives every re-render of the cards.
+function initBillModal() {
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('#senate-floor-measures [data-bill-id]');
+        if (!card) return;
+        e.preventDefault();
+        openSenateBillModal(card.dataset.billId, card);
+    });
+}
+
 // ── On the floor ─────────────────────────────────────────────────────────────
 //
 // The Democratic Caucus's nightly schedule for the next sitting day. General
@@ -788,8 +930,10 @@ function renderFloorSchedule(data) {
         // so it goes on the card rather than being left in the prose.
         const vote = (data.votes || []).find((v) => v.includes(m.measure)) || '';
         const status = vote ? 'pending' : 'scheduled';
-        const tag = m.congressUrl ? 'a' : 'div';
-        const attrs = m.congressUrl ? `href="${escapeHtml(m.congressUrl)}" target="_blank" rel="noopener"` : '';
+        // A button, not a link: it opens the modal. The congress.gov link lives
+        // inside the modal with the rest of them.
+        const tag = 'button';
+        const attrs = 'type="button"';
         return `
         <div class="bill-card-wrap">
             <${tag} class="bill-card" data-bill-id="${escapeHtml(m.measure)}" data-status="${status}" ${attrs}>
@@ -865,6 +1009,7 @@ loadVotes();
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
+initBillModal();
 loadFloorSchedule();
 loadCalendarCount();
 // The caucus posts the next day's schedule each evening.
