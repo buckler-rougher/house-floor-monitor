@@ -2670,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v13', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v14', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2881,9 +2881,16 @@ async function handleSenateFloorSchedule(env) {
           const question = g(b, 'question');
           if (!/cloture/i.test(question)) continue;
           const result = g(b, 'result');
+          const num = Number(g(b, 'vote_number'));
           cloture.push({
-            rollCall: Number(g(b, 'vote_number')),
+            rollCall: num,
             date: g(b, 'vote_date'),
+            // The menu carries no link, but the detail page is derivable and
+            // the pattern discriminates: a real vote answers 200 with the roll
+            // call page and a number that does not exist 301s away. Built here
+            // rather than on the board so the congress and session come from
+            // the same place the menu itself was fetched with.
+            url: `https://www.senate.gov/legislative/LIS/roll_call_votes/vote${congress}${session}/vote_${congress}_${session}_${String(num).padStart(5, '0')}.htm`,
             measure: g(b, 'issue') || null,
             question,
             // The menu's title carries the subject as well as the motion:
