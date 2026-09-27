@@ -628,16 +628,31 @@ function initAbsenceFilters() {
     const panel = el('absentee');
     const list = el('absentee-list');
     if (!panel || !list) return;
+
+    let mode = 'all';
     panel.addEventListener('click', (e) => {
+        // Both the filter bar and the metric boxes, the way the House board does
+        // it. Matching only the buttons meant clicking DEMOCRATS did nothing,
+        // which is most of the panel's surface.
         const btn = e.target.closest('.absentee-filter-btn');
-        if (!btn) return;
-        panel.querySelectorAll('.absentee-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
-        const f = btn.dataset.filter;
-        // It takes a render callback and measures around it: the filter is a CSS
-        // attribute, so "rendering" here is just setting it. See
-        // lib/animations.js for why the rows are not rebuilt.
+        const metric = e.target.closest('.party-metric[data-filter]');
+        const target = btn || metric;
+        if (!target) return;
+        const next = target.dataset.filter;
+        if (!next) return;
+
+        // Clicking the active party filter clears back to all.
+        mode = (next !== 'all' && next === mode) ? 'all' : next;
+
+        panel.querySelectorAll('.absentee-filter-btn').forEach((b) =>
+            b.classList.toggle('active', b.dataset.filter === mode));
+
+        // The rows are never rebuilt: the filter is a CSS attribute, and
+        // animateAbsenteeFilter measures the list around the change. See
+        // lib/animations.js for why rebuilding was wrong.
         const apply = () => {
-            if (f && f !== 'all') list.dataset.filter = f; else delete list.dataset.filter;
+            if (mode === 'all') delete list.dataset.filter;
+            else list.dataset.filter = mode;
         };
         const anim = globalThis.BoardAnimations;
         if (anim?.animateAbsenteeFilter) anim.animateAbsenteeFilter(apply);
