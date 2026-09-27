@@ -701,6 +701,27 @@ let _noticeFilter = 'all';
 const LI_MARK = '\u0001';    // unordered item
 const OLI_MARK = '\u0002';   // ordered item
 
+// A wrap-up renders as its headed blocks with the tallies pulled out, rather
+// than as a paragraph that happens to end in "; adopted: 77-23.". The Worker
+// splits it; this draws it.
+function wrapUpHtml(sections) {
+    return sections.map((sec) => {
+        const head = sec.heading
+            ? `<div class="bill-modal-section-label">${escapeHtml(sec.heading)}</div>` : '';
+        const items = sec.items.map((it) => {
+            if (it.yeas == null) return `<p>${escapeHtml(it.text)}</p>`;
+            // Green when it carried, red when it did not. "adopted", "invoked",
+            // "agreed to" and "confirmed" all mean it carried; "not agreed to"
+            // and "rejected" do not, and the word "not" is the whole difference.
+            const carried = /^(?!not\b)(adopted|invoked|agreed to|confirmed|passed)/i.test(it.result);
+            return `<p><span class="wrapup-result ${carried ? 'carried' : 'failed'}">${
+                escapeHtml(`${it.result} ${it.yeas}-${it.nays}`)
+            }</span>${escapeHtml(it.text)}</p>`;
+        }).join('');
+        return head + items;
+    }).join('');
+}
+
 function noticeBodyHtml(text) {
     const blocks = String(text || '').split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
     const out = [];
@@ -746,7 +767,9 @@ function renderNotices() {
                     <span class="whip-update-title">${escapeHtml(n.title)}</span>
                     <span class="whip-update-time">${escapeHtml(noticeDate(n.published))}</span>
                 </div>
-                <div class="whip-update-body">${noticeBodyHtml(n.body || n.excerpt || '')}</div>
+                <div class="whip-update-body">${
+                    n.sections?.length ? wrapUpHtml(n.sections) : noticeBodyHtml(n.body || n.excerpt || '')
+                }</div>
             </div>`;
     }).join('');
     setIfChanged(feed, html);

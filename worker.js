@@ -2505,7 +2505,7 @@ const NOMINATION_FEEDS = [
 ];
 
 async function handleSenateNominations(env) {
-  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v5`, 3600, async () => {
+  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v6`, 3600, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const pick = (b, t) => {
       // The tag may carry attributes: NominationDisplayNumber has DocumentType
@@ -2568,17 +2568,9 @@ async function handleSenateNominations(env) {
       // The calendar stage is the one that can reach the floor, so it is sent
       // whole. The others are capped: "in committee" alone runs to hundreds and
       // the panel shows a window, not an archive.
-      // Calendar and privileged are sent whole: those are the two that can
-      // reach the floor. The rest are a window, not an archive -- confirmed
-      // alone runs to 1,600.
-      nominations: [
-        ...by('calendar'),
-        ...by('privileged'),
-        ...by('committee').slice(0, 60),
-        ...by('confirmed').slice(0, 40),
-        ...by('withdrawn').slice(0, 25),
-        ...by('failed').slice(0, 25),
-      ],
+      // All of them. Each section scrolls on its own, so a slice would have
+      // meant a list that stops short of its own heading count.
+      nominations: out,
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
     });
@@ -2678,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v8', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v9', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2837,6 +2829,33 @@ async function handleSenateFloorSchedule(env) {
           votes,
         };
       }
+    }
+
+    // A wrap-up is not prose. It is headed blocks -- Roll Call Votes,
+    // Legislative Business, Executive Business -- and the vote lines carry the
+    // tally. Parsed here so the page can show a result rather than a sentence.
+    const HEADING = /^(Roll Call Votes?|Legislative Business|Executive Business|No Executive Business|Morning Business)\b/i;
+    const TALLY = /;\s*([a-z ]+?):\s*(\d+)\s*-\s*(\d+)\s*\.?$/i;
+    for (const n of notices) {
+      if (n.type !== 'wrap-up' || !n.body) continue;
+      const sections = [];
+      let cur = null;
+      for (const raw of n.body.split(/\n{2,}/)) {
+        const isItem = raw.startsWith('\u0001') || raw.startsWith('\u0002');
+        const text = isItem ? raw.slice(1) : raw;
+        if (!isItem && HEADING.test(text)) {
+          cur = { heading: text.replace(/:$/, ''), items: [] };
+          sections.push(cur);
+          continue;
+        }
+        if (!cur) { cur = { heading: null, items: [] }; sections.push(cur); }
+        const t = text.match(TALLY);
+        cur.items.push(t
+          ? { text: text.slice(0, t.index).replace(/[;,]\s*$/, '').trim(),
+              result: t[1].trim(), yeas: Number(t[2]), nays: Number(t[3]), list: isItem }
+          : { text, list: isItem });
+      }
+      n.sections = sections;
     }
 
     return new Response(JSON.stringify({
