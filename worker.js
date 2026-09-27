@@ -2500,11 +2500,14 @@ const NOMINATION_FEEDS = [
 ];
 
 async function handleSenateNominations(env) {
-  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v2`, 3600, async () => {
+  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v4`, 3600, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const pick = (b, t) => {
-      const m = b.match(new RegExp(`<${t}>([\\\\s\\\\S]*?)</${t}>`));
-      return m ? m[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, '').replace(/\\s+/g, ' ').trim() : '';
+      // The tag may carry attributes: NominationDisplayNumber has DocumentType
+      // and NominationNumber on it, and a bare <tag> match returned nothing for
+      // it, so every card read "Nomination" instead of its PN number.
+      const m = b.match(new RegExp(`<${t}(?:\\s[^>]*)?>([\\s\\S]*?)</${t}>`));
+      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/\s+/g, ' ').trim() : '';
     };
 
     const out = [];
