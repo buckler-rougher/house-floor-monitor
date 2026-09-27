@@ -1082,30 +1082,34 @@ const CLOTURE_STATUS = {
     'mentioned':     { label: 'NOTED',        status: 'scheduled' },
 };
 
-function renderCloture(items) {
+function renderCloture(items, scheduled) {
     const list = el('senate-cloture');
     if (!list) return;
+    // A measure already shown under SCHEDULED does not repeat here. Its cloture
+    // is why it is scheduled, so the same card twice says nothing new.
+    const shown = new Set((scheduled || []).map((m) => (m.measure || '').replace(/\s+/g, '').toUpperCase()));
+    items = (items || []).filter((c) => !shown.has((c.measure || '').replace(/\s+/g, '').toUpperCase()));
     if (!items?.length) {
         setIfChanged(list, '<div class="whip-updates-loading">No cloture motions in the recent notices.</div>');
         return;
     }
     setIfChanged(list, items.map((c) => {
-        const st = CLOTURE_STATUS[c.status] || CLOTURE_STATUS.mentioned;
-        const id = c.measure || (c.execCalendarNo ? `Exec. Cal. ${c.execCalendarNo}` : `Cal. ${c.calendarNo}`);
+        const status = c.invoked === null ? 'scheduled' : c.invoked ? 'passed' : 'failed';
+        const label = c.invoked === null ? 'FILED' : c.invoked ? 'INVOKED' : 'NOT INVOKED';
         return `
         <div class="bill-card-wrap">
-            <div class="bill-card" data-status="${st.status}">
-                <div class="bill-status ${st.status}" aria-hidden="true"></div>
+            <div class="bill-card" data-status="${status}">
+                <div class="bill-status ${status}" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
-                        <span class="bill-id">${escapeHtml(id)}</span>
-                        <span class="bill-calendar-no">${escapeHtml(st.label)}</span>
-                        ${c.yeas != null ? `<span class="wrapup-result ${/^invoked$/i.test(c.status) ? 'carried' : 'failed'}">${c.yeas}-${c.nays}</span>` : ''}
+                        <span class="bill-id">${escapeHtml(c.measure || 'Cloture')}</span>
+                        <span class="bill-calendar-no">${escapeHtml(label)}</span>
+                        ${c.yeas != null ? `<span class="wrapup-result ${c.invoked ? 'carried' : 'failed'}">${c.yeas}-${c.nays}</span>` : ''}
                     </div>
-                    <div class="bill-title">${escapeHtml(c.text || '')}</div>
+                    <div class="bill-title">${escapeHtml(c.question || '')}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml(c.source === 'wrap-up' ? 'From the wrap-up' : 'From the schedule')}</div>
-                        <div class="bill-date">${escapeHtml(noticeDate(c.published))}</div>
+                        <div class="bill-action">${escapeHtml(c.rollCall ? `Roll call ${c.rollCall}` : 'Announced in the schedule')}</div>
+                        <div class="bill-date">${escapeHtml(boardDate(c.date))}</div>
                     </div>
                 </div>
             </div>
@@ -1197,7 +1201,7 @@ async function loadFloorSchedule() {
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
         renderFloorSchedule(data.agenda);
-        renderCloture(data.cloture);
+        renderCloture(data.cloture, data.agenda?.measures);
         _notices = data.notices || [];
         renderNoticeFilter();
         renderNotices();

@@ -2670,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v11', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v12', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2858,43 +2858,63 @@ async function handleSenateFloorSchedule(env) {
       n.sections = sections;
     }
 
-    // Cloture, pulled out of both feeds.
+    // Cloture, from the roll call record first.
     //
-    // It is the only forward signal the Senate has that is rule-driven: once a
-    // motion is filed the vote happens on a fixed clock, so a measure with
-    // cloture pending is one that WILL be voted on. The schedule posts announce
-    // the motions and the wrap-ups record how they went, so both are read and
-    // the newest state per measure wins.
+    // Scraping it out of the caucus prose found 3; the Senate's own roll call
+    // menu carries 77 of this session's 244 votes as cloture, with the measure,
+    // the result and the tally already structured. The notices are only worth
+    // reading for a motion that has been FILED and not yet voted, which is the
+    // one thing the roll call record cannot know about.
+    const cloture = [];
+    try {
+      const congress = CURRENT_CONGRESS, session = senateSession();
+      const r = await fetch(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`,
+        { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (r.ok && /xml/i.test(r.headers.get('Content-Type') || '')) {
+        const xml = await r.text();
+        const g = (b, t) => {
+          const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
+          return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+        };
+        for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
+          const b = m[1];
+          const question = g(b, 'question');
+          if (!/cloture/i.test(question)) continue;
+          const result = g(b, 'result');
+          cloture.push({
+            rollCall: Number(g(b, 'vote_number')),
+            date: g(b, 'vote_date'),
+            measure: g(b, 'issue') || null,
+            question,
+            result,
+            invoked: /agreed to/i.test(result),
+            yeas: Number(g(b, 'yeas')), nays: Number(g(b, 'nays')),
+            source: 'roll-call',
+          });
+          if (cloture.length >= 40) break;   // newest-first already
+        }
+      }
+    } catch (e) {
+      console.warn(`[house-floor] cloture from roll calls: ${e.message}`);
+    }
+
+    // Motions filed but not yet voted only exist in the caucus prose.
+    const voted = new Set(cloture.map((c) => (c.measure || '').replace(/\s+/g, '').toUpperCase()));
     const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
-    const cloture = new Map();
     for (const n of notices) {
-      if (!n.body) continue;
+      if (n.type !== 'schedule' || !n.body) continue;
       for (const sent of n.body.split(/(?<=\.)\s+|\n+/)) {
-        if (!/cloture/i.test(sent)) continue;
+        if (!/motion to invoke cloture|cloture motion/i.test(sent)) continue;
         const meas = (sent.match(new RegExp(MEAS)) || [])[0];
-        const cal = (sent.match(/Cal\.\s*#?\s*(\d+)/i) || [])[1];
         const exec = (sent.match(/Executive Calendar #\s*(\d+)/i) || [])[1];
-        const key = meas || (exec && `exec-${exec}`) || (cal && `cal-${cal}`);
-        if (!key) continue;
-        const tally = sent.match(/(invoked|not invoked|rejected|agreed to|not agreed to):\s*(\d+)\s*-\s*(\d+)/i);
-        const status = tally ? tally[1].toLowerCase()
-          : /post-cloture/i.test(sent) ? 'post-cloture'
-          : /motion to invoke cloture|cloture motion/i.test(sent) ? 'filed'
-          : 'mentioned';
-        const rank = { invoked: 4, 'not invoked': 4, rejected: 4, 'post-cloture': 3, filed: 2, mentioned: 1 };
-        const prev = cloture.get(key);
-        // Newest notice wins, and a resolved state beats a mention of one.
-        if (prev && (rank[prev.status] || 0) >= (rank[status] || 0) && prev.published >= n.published) continue;
-        cloture.set(key, {
-          key, measure: meas || null,
-          calendarNo: cal ? Number(cal) : null,
-          execCalendarNo: exec ? Number(exec) : null,
-          status,
-          yeas: tally ? Number(tally[2]) : null,
-          nays: tally ? Number(tally[3]) : null,
-          published: n.published,
-          source: n.type,
-          text: sent.replace(/\s+/g, ' ').trim().slice(0, 240),
+        const key = (meas || (exec && `PN-EC${exec}`) || '').replace(/\s+/g, '').toUpperCase();
+        if (!key || voted.has(key)) continue;
+        voted.add(key);
+        cloture.unshift({
+          rollCall: null, date: n.published, measure: meas || `Exec. Cal. ${exec}`,
+          question: 'Cloture motion filed', result: 'Pending', invoked: null,
+          yeas: null, nays: null, source: 'notice',
+          text: sent.replace(/\s+/g, ' ').trim().slice(0, 200),
         });
       }
     }
