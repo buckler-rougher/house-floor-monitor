@@ -2485,7 +2485,7 @@ async function handleSenateBill(env, billId) {
     });
   }
   const { type, number } = parsed;
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v2`, 3600, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v3`, 3600, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -2534,7 +2534,13 @@ async function handleSenateBill(env, billId) {
       title: bill.title || null,
       introduced: bill.introducedDate || null,
       policyArea: bill.policyArea?.name || null,
-      sponsor: sp ? { name: sp.fullName, party: sp.party, state: sp.state, bioguide: sp.bioguideId } : null,
+      // firstName/lastName, not fullName: Congress.gov's fullName is already
+      // "Sen. Cruz, Ted [R-TX]", and the card puts the party tag and state
+      // beside the name itself, so fullName printed both twice.
+      sponsor: sp ? {
+        name: [sp.firstName, sp.lastName].filter(Boolean).join(' ') || sp.fullName,
+        party: sp.party, state: sp.state, bioguide: sp.bioguideId,
+      } : null,
       cosponsorCount: cosponsors?.pagination?.count ?? null,
       // Party split for the support bar, sponsor included the way the House
       // modal counts it.
@@ -2564,30 +2570,44 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v5', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v6', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
       if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
       return r.text();
     };
-    // Paragraph breaks survive. The caucus writes these as several paragraphs
-    // and a list of votes; flattening them to one blob is why the panel read as
-    // a wall of text next to the site it came from. \n\n marks a break and the
-    // page renders each as its own paragraph.
+    // Decode once, and keep only REAL paragraph breaks.
+    //
+    // The source wraps its HTML at column width, so the raw text is full of
+    // newlines mid-sentence ("Roll Call\nVotes"). Block ends become a sentinel
+    // first, then every remaining run of whitespace collapses to a single space,
+    // then the sentinels come back as blank lines.
+    const SPLIT = '\u0000';
     const strip = (html) => html
       .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<\/(p|li|h[1-6]|div)>/gi, '\n\n')
-      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|li|h[1-6]|tr|div)>/gi, SPLIT)
+      .replace(/<br\s*\/?>/gi, SPLIT)
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
       .replace(/&#8217;|&rsquo;/g, "'").replace(/&quot;|&#8220;|&#8221;/g, '"')
-      .replace(/&mdash;/g, ' - ').replace(/&ndash;/g, '-')
+      .replace(/&mdash;/g, ' - ').replace(/&ndash;/g, '-').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
       .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
-      .replace(/[ \t]+/g, ' ')
-      .replace(/ *\n */g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
+      .split(SPLIT)
+      .map((part) => part.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .join('\n\n')
       .trim();
+
+    // The post body is one container. Anchoring on a phrase instead is what put
+    // the site's nav ("Skip to content", "Website Search Open", "Published:") at
+    // the top of every wrap-up: when the phrase did not match the whole page was
+    // kept, and when it matched mid-sentence the text began lower-case.
+    const bodyOf = (html) => {
+      const m = html.match(/<div class="js-press-release[^"]*">([\s\S]*?)<!--stopindex-->/)
+             || html.match(/<div class="js-press-release[^"]*">([\s\S]*)$/);
+      return m ? strip(m[1]) : '';
+    };
 
     // Two feeds. /floor is just these two interleaved, so it adds nothing.
     const FEEDS = [
@@ -2629,12 +2649,6 @@ async function handleSenateFloorSchedule(env) {
     // all 15 schedules, then all 15 wrap-ups -- so slice(0, 12) took twelve
     // schedules and no wrap-ups at all. The sort then interleaved them and every
     // wrap-up on screen showed the truncated excerpt.
-    const bodyOf = (html) => {
-      let t = strip(html);
-      const start = t.search(/The Senate (?:stands|will|convenes|reconvenes)|Roll Call Vote/i);
-      if (start >= 0) t = t.slice(start);
-      return t.split(/\s*Print\s+Email\s+Share/)[0].trim();
-    };
     const head = notices.slice(0, 12);
     for (let i = 0; i < head.length; i += 4) {
       await Promise.all(head.slice(i, i + 4).map(async (n) => {
@@ -2651,10 +2665,7 @@ async function handleSenateFloorSchedule(env) {
     if (latest) {
       let text = '';
       try {
-        text = strip(await get(latest.url, 'schedule post'));
-        const start = text.search(/The Senate (?:stands|will|convenes|reconvenes)/i);
-        if (start >= 0) text = text.slice(start);
-        text = text.split(/\s*Print Email Share/)[0].trim();
+        text = latest.body || bodyOf(await get(latest.url, 'schedule post'));
       } catch (e) {
         console.warn(`[house-floor] caucus schedule post: ${e.message}`);
       }

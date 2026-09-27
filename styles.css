@@ -6118,6 +6118,13 @@ font-family: var(--font-mono);
     border-color: var(--text-secondary);
 }
 
+/* Senate modal links. .bill-modal-link supplies only layout; the colour and
+ * border come from a variant, and a link with no variant renders as bare text.
+ * The House variants are named for House procedure -- rule, suspension, maybe --
+ * none of which applies here, so this is its own rather than a borrowed one. */
+.bill-modal-link.senate { color: var(--accent-blue); border: 1px solid color-mix(in srgb, var(--accent-blue) 30%, transparent); }
+.bill-modal-link.senate:hover { background: color-mix(in srgb, var(--accent-blue) 10%, transparent); border-color: var(--accent-blue); }
+
 .bill-modal-support-bar {
     height: 8px;
     border-radius: var(--radius-4);
