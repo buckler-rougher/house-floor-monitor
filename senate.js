@@ -1070,6 +1070,49 @@ function initBillModal() {
     });
 }
 
+// Cloture, the Senate's only rule-driven forward signal: once a motion is filed
+// the vote happens on a fixed clock, so a measure with cloture pending is one
+// that will be voted on.
+const CLOTURE_STATUS = {
+    'invoked':       { label: 'INVOKED',      status: 'passed' },
+    'not invoked':   { label: 'NOT INVOKED',  status: 'failed' },
+    'rejected':      { label: 'REJECTED',     status: 'failed' },
+    'post-cloture':  { label: 'POST-CLOTURE', status: 'pending' },
+    'filed':         { label: 'FILED',        status: 'scheduled' },
+    'mentioned':     { label: 'NOTED',        status: 'scheduled' },
+};
+
+function renderCloture(items) {
+    const list = el('senate-cloture');
+    if (!list) return;
+    if (!items?.length) {
+        setIfChanged(list, '<div class="whip-updates-loading">No cloture motions in the recent notices.</div>');
+        return;
+    }
+    setIfChanged(list, items.map((c) => {
+        const st = CLOTURE_STATUS[c.status] || CLOTURE_STATUS.mentioned;
+        const id = c.measure || (c.execCalendarNo ? `Exec. Cal. ${c.execCalendarNo}` : `Cal. ${c.calendarNo}`);
+        return `
+        <div class="bill-card-wrap">
+            <div class="bill-card" data-status="${st.status}">
+                <div class="bill-status ${st.status}" aria-hidden="true"></div>
+                <div class="bill-info">
+                    <div class="bill-id-row">
+                        <span class="bill-id">${escapeHtml(id)}</span>
+                        <span class="bill-calendar-no">${escapeHtml(st.label)}</span>
+                        ${c.yeas != null ? `<span class="wrapup-result ${/^invoked$/i.test(c.status) ? 'carried' : 'failed'}">${c.yeas}-${c.nays}</span>` : ''}
+                    </div>
+                    <div class="bill-title">${escapeHtml(c.text || '')}</div>
+                    <div class="bill-meta">
+                        <div class="bill-action">${escapeHtml(c.source === 'wrap-up' ? 'From the wrap-up' : 'From the schedule')}</div>
+                        <div class="bill-date">${escapeHtml(noticeDate(c.published))}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join(''));
+}
+
 // ── On the floor ─────────────────────────────────────────────────────────────
 //
 // The Democratic Caucus's nightly schedule for the next sitting day. General
@@ -1154,6 +1197,7 @@ async function loadFloorSchedule() {
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
         renderFloorSchedule(data.agenda);
+        renderCloture(data.cloture);
         _notices = data.notices || [];
         renderNoticeFilter();
         renderNotices();

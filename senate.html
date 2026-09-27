@@ -1257,7 +1257,21 @@
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">SCHEDULED</span>
+                            </div>
+                        </div>
                         <div class="bills-list" id="senate-floor-measures"></div>
+                    </div>
+                    <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">CLOTURE</span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Once a cloture motion is filed the vote happens on a fixed clock, so a measure with cloture pending is one that will be voted on. Post-cloture means cloture was already invoked and the measure is in its remaining debate time.">?</span>
+                        </div>
+                        <div class="bills-list nom-scroll" id="senate-cloture"></div>
                     </div>
                 </div>
             </div>
@@ -1634,7 +1648,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927d"></script>
+    <script defer src="senate.js?v=20260927e"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
