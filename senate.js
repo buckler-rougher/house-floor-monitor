@@ -33,6 +33,17 @@ const fmtDate = (d) =>
     `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
 const fmtDateLong = (d) => `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
 
+// Notice timestamps use the House whip panel's format, which is day-first with
+// a SHORT month: app.js builds "24 Sep at 3:45 PM ET" there. These posts carry
+// a date and no time, so it stops at "24 Sep".
+const fmtDateNotice = (d) =>
+    `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`;
+
+function noticeDate(value) {
+    const m = String(value || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    return m ? fmtDateNotice(new Date(+m[3], +m[1] - 1, +m[2])) : String(value || '');
+}
+
 // Every date on this board goes through here.
 //
 // The sources each write dates their own way and none of them match the board:
@@ -78,6 +89,9 @@ function setIfChanged(node, html) {
 }
 
 const el = (id) => document.getElementById(id);
+
+// The animation module needs this board's nodes; ids differ per page.
+globalThis.BoardAnimations?.init?.({ absenteeList: document.getElementById('absentee-list') });
 
 // ── Clocks ───────────────────────────────────────────────────────────────────
 // Same options object the House board uses: 24-hour, seconds, en-US pinned so
@@ -619,7 +633,15 @@ function initAbsenceFilters() {
         if (!btn) return;
         panel.querySelectorAll('.absentee-filter-btn').forEach((b) => b.classList.toggle('active', b === btn));
         const f = btn.dataset.filter;
-        if (f && f !== 'all') list.dataset.filter = f; else delete list.dataset.filter;
+        // It takes a render callback and measures around it: the filter is a CSS
+        // attribute, so "rendering" here is just setting it. See
+        // lib/animations.js for why the rows are not rebuilt.
+        const apply = () => {
+            if (f && f !== 'all') list.dataset.filter = f; else delete list.dataset.filter;
+        };
+        const anim = globalThis.BoardAnimations;
+        if (anim?.animateAbsenteeFilter) anim.animateAbsenteeFilter(apply);
+        else apply();
     });
 }
 
@@ -673,9 +695,9 @@ function renderNotices() {
                 <div class="whip-update-meta">
                     <span class="whip-type-badge whip-type-${escapeHtml(n.type)}" data-filter-type="${escapeHtml(n.type)}">${escapeHtml(t.label)}</span>
                     <span class="whip-update-title">${escapeHtml(n.title)}</span>
-                    <span class="whip-update-time">${escapeHtml(boardDate(n.published))}</span>
+                    <span class="whip-update-time">${escapeHtml(noticeDate(n.published))}</span>
                 </div>
-                <div class="whip-update-body">${escapeHtml(n.excerpt || '')}</div>
+                <div class="whip-update-body">${escapeHtml(n.body || n.excerpt || '')}</div>
             </div>`;
     }).join('');
     setIfChanged(feed, html);
@@ -697,7 +719,13 @@ function initNoticeFilter() {
     const btn = el('notice-filter-btn');
     const dd = el('notice-filter-dropdown');
     if (!btn || !dd) return;
-    btn.addEventListener('click', () => { dd.hidden = !dd.hidden; });
+    const anim = globalThis.BoardAnimations;
+    btn.addEventListener('click', () => {
+        // Same drawer the House board uses: in flow, with the panel height
+        // pinned so opening it does not reflow the page every frame.
+        if (dd.hidden) anim.openDrawer(dd);
+        else anim.closeDrawer(dd);
+    });
     dd.addEventListener('click', (e) => {
         const chip = e.target.closest('[data-notice-filter]');
         if (!chip) return;
@@ -745,9 +773,11 @@ function renderFloorSchedule(data) {
         // so it goes on the card rather than being left in the prose.
         const vote = (data.votes || []).find((v) => v.includes(m.measure)) || '';
         const status = vote ? 'pending' : 'scheduled';
+        const tag = m.congressUrl ? 'a' : 'div';
+        const attrs = m.congressUrl ? `href="${escapeHtml(m.congressUrl)}" target="_blank" rel="noopener"` : '';
         return `
         <div class="bill-card-wrap">
-            <div class="bill-card" data-bill-id="${escapeHtml(m.measure)}" data-status="${status}">
+            <${tag} class="bill-card" data-bill-id="${escapeHtml(m.measure)}" data-status="${status}" ${attrs}>
                 <div class="bill-status ${status}" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
@@ -757,11 +787,11 @@ function renderFloorSchedule(data) {
                     </div>
                     <div class="bill-title">${escapeHtml(m.title || '')}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml(vote ? `Scheduled: ${vote}` : 'Pending consideration')}</div>
-                        <div class="bill-date">${escapeHtml(data.conveneTime ? `${data.conveneTime}` : '')}</div>
+                        <div class="bill-action">${escapeHtml([m.author, vote ? `Scheduled: ${vote}` : 'Pending consideration'].filter(Boolean).join(' \u00b7 '))}</div>
+                        <div class="bill-date">${escapeHtml(data.voteTime || '')}</div>
                     </div>
                 </div>
-            </div>
+            </${tag}>
         </div>`;
     });
     setIfChanged(list, cards.join(''));
