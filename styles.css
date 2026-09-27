@@ -3391,14 +3391,17 @@ body.tellers-mode .tellers-column { display: flex; }
  * week later.
  *
  * Schedule looks forward and takes blue, which the base badge already uses for
- * what is planned. Wrap-up looks back, and green is this board's "done". */
+ * what is planned. Wrap-up takes purple, which is already this board's colour
+ * for a nightly notice on the House side, and which green was competing with:
+ * green is the broad one here, carrying yeas, live, healthy and done all at
+ * once, so a green badge on a post full of green vote results said nothing. */
 .whip-type-badge.whip-type-schedule {
   color: var(--accent-blue);
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
 .whip-type-badge.whip-type-wrap-up {
-  color: var(--accent-green);
-  background: color-mix(in srgb, var(--accent-green) 12%, transparent);
+  color: var(--accent-purple);
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
 }
 
 .whip-update-time {
@@ -3549,7 +3552,7 @@ body.tellers-mode .tellers-column { display: flex; }
 .whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 .whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
 .whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
-.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
+.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 
 /* (?) hover tooltip */
 .whip-label-group {
@@ -10990,4 +10993,94 @@ body.all-mode .floor-grid-panel {
     --bg-dark:   #0f1720;
     --bg-card:   #0d1117;
     --bg-header: rgba(15, 23, 32, 0.92);
+}
+
+/* Senate floor proceedings.
+ *
+ * The House feed is a run of timestamped one-liners, so .proceedings-item and
+ * .proceedings-text carry it. The Senate publishes a narrative of a day instead:
+ * headed sections, and inside Legislative Business a measure with its own run of
+ * status lines. These are the parts that shape has and the House one does not. */
+.proceedings-section-label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: var(--track-wider);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: var(--sp-14) 0 var(--sp-6);
+}
+.proceedings-section-label:first-child {
+    margin-top: 0;
+}
+
+/* A button when Congress.gov has a record to open, a plain div when it does
+   not, so it has to reset the button's own styling either way. */
+.proceedings-measure {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+}
+button.proceedings-measure {
+    cursor: pointer;
+}
+button.proceedings-measure:hover .proceedings-measure-id {
+    color: var(--accent-blue-hover);
+}
+
+.proceedings-measure-id {
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-blue);
+    transition: color var(--dur-150) ease;
+}
+
+.proceedings-sponsor {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.proceedings-measure-title {
+    font-size: var(--fs-md);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: var(--sp-2);
+}
+
+/* Indented under the measure it belongs to, with a rule down the left so a run
+   of them reads as one measure's history rather than as loose lines. */
+.proceedings-status {
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    color: var(--text-primary);
+    line-height: 1.5;
+    padding-left: var(--sp-12);
+    border-left: 1px solid var(--border-color);
+    margin-left: var(--sp-2);
+}
+
+.proceedings-roll {
+    color: var(--accent-blue);
+    font-variant-numeric: tabular-nums;
+}
+
+.proceedings-amendment {
+    margin: var(--sp-6) 0 var(--sp-6) var(--sp-20);
+}
+
+/* The House feed is a run of one-liners and 200px holds a useful number of
+   them. The Senate publishes a whole day at once -- the narrative, every
+   measure and each measure's status lines, 1776px of it on an ordinary
+   Thursday -- so 200px showed the prayer and nothing else. It scrolls with the
+   same fade every other list on this board uses. */
+:root[data-chamber="senate"] .proceedings-feed {
+    max-height: 420px;
 }
