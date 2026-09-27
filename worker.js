@@ -2488,13 +2488,19 @@ function parseGeneralOrders(html) {
 // the nomination is on the Secretary's desk and has not reached the calendar
 // yet; taking the file at face value would have shown seven times more than is
 // actually pending, nearly all of it routine military promotions.
+const NOM_BASE = 'https://www.senate.gov/legislative/LIS/nominations';
 const NOMINATION_FEEDS = [
-  { kind: 'civilian', url: 'https://www.senate.gov/legislative/LIS/nominations/NomCivilianPendingCalendar.xml' },
-  { kind: 'military', url: 'https://www.senate.gov/legislative/LIS/nominations/NomNonCivilianPendingCalendar.xml' },
+  { stage: 'calendar',  kind: 'civilian', file: 'NomCivilianPendingCalendar' },
+  { stage: 'calendar',  kind: 'military', file: 'NomNonCivilianPendingCalendar' },
+  { stage: 'committee', kind: 'civilian', file: 'NomCivilianPendingCommittee' },
+  { stage: 'committee', kind: 'military', file: 'NomNonCivilianPendingCommittee' },
+  { stage: 'privileged', kind: 'civilian', file: 'NomPrivileged' },
+  { stage: 'confirmed', kind: 'civilian', file: 'NomCivilianConfirmed' },
+  { stage: 'confirmed', kind: 'military', file: 'NomNonCivilianConfirmed' },
 ];
 
 async function handleSenateNominations(env) {
-  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v1`, 3600, async () => {
+  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v2`, 3600, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const pick = (b, t) => {
       const m = b.match(new RegExp(`<${t}>([\\\\s\\\\S]*?)</${t}>`));
@@ -2505,7 +2511,7 @@ async function handleSenateNominations(env) {
     for (const feed of NOMINATION_FEEDS) {
       let xml;
       try {
-        const r = await fetch(feed.url, { headers: UA, signal: AbortSignal.timeout(25_000) });
+        const r = await fetch(`${NOM_BASE}/${feed.file}.xml`, { headers: UA, signal: AbortSignal.timeout(25_000) });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         // senate.gov answers 200 with its own HTML for a path that does not exist.
         if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('not XML');
@@ -2517,10 +2523,14 @@ async function handleSenateNominations(env) {
       for (const m of xml.matchAll(/<Nomination [^>]*>([\s\S]*?)<\/Nomination>/g)) {
         const b = m[1];
         const cal = pick(b, 'ExecutiveCalendarNumber');
-        if (!/^\d+$/.test(cal)) continue;   // DESK and the like are not on the calendar
+        // Only the calendar stage requires a number. In committee a nomination
+        // has none yet, and "DESK" means it sits on the Secretary's desk rather
+        // than on the calendar -- 166 of the 193 non-civilian records say that.
+        if (feed.stage === 'calendar' && !/^\d+$/.test(cal)) continue;
         out.push({
+          stage: feed.stage,
           kind: feed.kind,
-          calendarNo: Number(cal),
+          calendarNo: /^\d+$/.test(cal) ? Number(cal) : null,
           pn: pick(b, 'NominationDisplayNumber'),
           description: pick(b, 'ReportingDescription'),
           organization: pick(b, 'Organization'),
@@ -2533,13 +2543,27 @@ async function handleSenateNominations(env) {
     if (!out.length) throw new Error('nominations: nothing pending parsed from either file');
 
     // Newest calendar number first, which is the end that moves.
-    out.sort((a, b) => b.calendarNo - a.calendarNo);
+    out.sort((a, b) => (b.calendarNo ?? -1) - (a.calendarNo ?? -1)
+                   || String(b.reported).localeCompare(String(a.reported)));
+    const by = (st) => out.filter((n) => n.stage === st);
     return new Response(JSON.stringify({
       congress: CURRENT_CONGRESS,
       total: out.length,
-      civilian: out.filter((n) => n.kind === 'civilian').length,
-      military: out.filter((n) => n.kind === 'military').length,
-      nominations: out,
+      counts: {
+        calendar: by('calendar').length,
+        committee: by('committee').length,
+        privileged: by('privileged').length,
+        confirmed: by('confirmed').length,
+      },
+      // The calendar stage is the one that can reach the floor, so it is sent
+      // whole. The others are capped: "in committee" alone runs to hundreds and
+      // the panel shows a window, not an archive.
+      nominations: [
+        ...by('calendar'),
+        ...by('privileged').slice(0, 40),
+        ...by('committee').slice(0, 60),
+        ...by('confirmed').slice(0, 40),
+      ],
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
     });

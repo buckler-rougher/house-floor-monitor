@@ -784,6 +784,91 @@ function initNoticeFilter() {
     });
 }
 
+// ── Nominations ──────────────────────────────────────────────────────────────
+//
+// Four stages from the Senate's own XML. Only the calendar stage can reach the
+// floor; committee and privileged are upstream of it, and confirmed is done.
+const NOM_STAGES = {
+    calendar:   { label: 'ON CALENDAR', badge: 'schedule' },
+    privileged: { label: 'PRIVILEGED',  badge: 'schedule' },
+    committee:  { label: 'IN COMMITTEE', badge: 'wrap-up' },
+    confirmed:  { label: 'CONFIRMED',   badge: 'wrap-up' },
+};
+let _nomFilter = 'calendar';
+let _nomCounts = {};
+
+function renderNominations() {
+    const feed = el('nominations-feed');
+    if (!feed) return;
+    const shown = _nominations.filter((n) => n.stage === _nomFilter);
+    if (!shown.length) {
+        setIfChanged(feed, '<div class="whip-updates-loading">None at this stage.</div>');
+        return;
+    }
+    setIfChanged(feed, shown.slice(0, 30).map((n) => {
+        const st = NOM_STAGES[n.stage] || { label: n.stage.toUpperCase(), badge: 'schedule' };
+        return `
+            <div class="whip-update-item">
+                <div class="whip-update-meta">
+                    <span class="whip-type-badge whip-type-${st.badge}">${escapeHtml(st.label)}</span>
+                    <span class="whip-update-title">${escapeHtml(n.calendarNo ? `Exec. Cal. No. ${n.calendarNo}` : (n.pn || 'Nomination'))}</span>
+                    <span class="whip-update-time">${escapeHtml(n.reported ? noticeDate2(n.reported) : '')}</span>
+                </div>
+                <div class="whip-update-body"><p>${escapeHtml(n.description || '')}</p>${
+                    [n.organization, n.committee].filter(Boolean).length
+                        ? `<p>${escapeHtml([n.organization, n.committee].filter(Boolean).join(' \u00b7 '))}</p>` : ''
+                }</div>
+            </div>`;
+    }).join(''));
+}
+
+// The XML dates are ISO; the notice format is day-first with a short month.
+function noticeDate2(iso) {
+    const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? fmtDateNotice(new Date(+m[1], +m[2] - 1, +m[3])) : '';
+}
+
+function renderNomFilter() {
+    const dd = el('nom-filter-dropdown');
+    if (!dd) return;
+    const chip = (key, label) => `<button class="whip-filter-chip whip-type-${NOM_STAGES[key].badge}${_nomFilter === key ? ' active' : ''}" data-nom-filter="${key}">${label}${_nomCounts[key] ? ` (${_nomCounts[key]})` : ''}</button>`;
+    dd.innerHTML = `<div class="whip-filter-inner">${
+        Object.entries(NOM_STAGES).map(([k, v]) => chip(k, v.label)).join('')
+    }</div>`;
+}
+
+function initNomFilter() {
+    const btn = el('nom-filter-btn');
+    const dd = el('nom-filter-dropdown');
+    if (!btn || !dd) return;
+    const anim = globalThis.BoardAnimations;
+    btn.addEventListener('click', () => {
+        if (dd.hidden) anim.openDrawer(dd); else anim.closeDrawer(dd);
+    });
+    dd.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-nom-filter]');
+        if (!chip) return;
+        _nomFilter = chip.dataset.nomFilter;
+        renderNomFilter();
+        renderNominations();
+    });
+}
+
+async function loadNominations() {
+    try {
+        const r = await fetch(`${API}/senate/nominations`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        _nominations = d.nominations || [];
+        _nomCounts = d.counts || {};
+        renderNomFilter();
+        renderNominations();
+    } catch (e) {
+        const feed = el('nominations-feed');
+        if (feed) setIfChanged(feed, `<div class="whip-updates-loading">Nominations unavailable (${escapeHtml(e.message)}).</div>`);
+    }
+}
+
 // ── Bill modal ───────────────────────────────────────────────────────────────
 //
 // Same markup and classes as the House modal, so it looks and animates the
@@ -1038,10 +1123,7 @@ async function loadFloorSchedule() {
         const data = await r.json();
         // Nominations first: the agenda names them by calendar number and needs
         // the XML to say who they are.
-        try {
-            const nr = await fetch(`${API}/senate/nominations`);
-            if (nr.ok) _nominations = (await nr.json())?.nominations || [];
-        } catch (_) { /* the agenda still renders, just without descriptions */ }
+        if (!_nominations.length) await loadNominations();
         renderFloorSchedule(data.agenda);
         _notices = data.notices || [];
         renderNoticeFilter();
@@ -1075,7 +1157,9 @@ loadVotes();
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
+initNomFilter();
 initBillModal();
+loadNominations();
 loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);

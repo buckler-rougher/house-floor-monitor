@@ -3576,6 +3576,16 @@ body.tellers-mode .tellers-column { display: flex; }
 .whip-update-body p:last-child {
   margin-bottom: 0;
 }
+/* Whatever ends the body carries no bottom margin.
+ *
+ * p:last-child already did, but ol and ul did not, and a Senate notice that
+ * ends in a numbered vote list therefore kept 8px inside the body. A sticky
+ * element is confined to its containing block's CONTENT box, so that margin
+ * ended the header's sticky range early and the previous notice's tail showed
+ * as a band above it -- the same sliver the House board was fixed for, let back
+ * in by adding lists. */
+.whip-update-body > :last-child { margin-bottom: 0; }
+
 .whip-update-body ol,
 .whip-update-body ul {
   margin: 0 0 var(--sp-8);
