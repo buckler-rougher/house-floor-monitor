@@ -2489,18 +2489,23 @@ function parseGeneralOrders(html) {
 // yet; taking the file at face value would have shown seven times more than is
 // actually pending, nearly all of it routine military promotions.
 const NOM_BASE = 'https://www.senate.gov/legislative/LIS/nominations';
+// Every file the Senate publishes, not just the calendar ones. A privileged
+// nomination can reach the floor without sitting on the Executive Calendar, and
+// withdrawn and returned ones explain why something that was pending is gone.
 const NOMINATION_FEEDS = [
-  { stage: 'calendar',  kind: 'civilian', file: 'NomCivilianPendingCalendar' },
-  { stage: 'calendar',  kind: 'military', file: 'NomNonCivilianPendingCalendar' },
-  { stage: 'committee', kind: 'civilian', file: 'NomCivilianPendingCommittee' },
-  { stage: 'committee', kind: 'military', file: 'NomNonCivilianPendingCommittee' },
+  { stage: 'calendar',   kind: 'civilian', file: 'NomCivilianPendingCalendar' },
+  { stage: 'calendar',   kind: 'military', file: 'NomNonCivilianPendingCalendar' },
   { stage: 'privileged', kind: 'civilian', file: 'NomPrivileged' },
-  { stage: 'confirmed', kind: 'civilian', file: 'NomCivilianConfirmed' },
-  { stage: 'confirmed', kind: 'military', file: 'NomNonCivilianConfirmed' },
+  { stage: 'committee',  kind: 'civilian', file: 'NomCivilianPendingCommittee' },
+  { stage: 'committee',  kind: 'military', file: 'NomNonCivilianPendingCommittee' },
+  { stage: 'confirmed',  kind: 'civilian', file: 'NomCivilianConfirmed' },
+  { stage: 'confirmed',  kind: 'military', file: 'NomNonCivilianConfirmed' },
+  { stage: 'withdrawn',  kind: 'civilian', file: 'NomWithdrawn' },
+  { stage: 'failed',     kind: 'civilian', file: 'NomFailedOrReturned' },
 ];
 
 async function handleSenateNominations(env) {
-  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v4`, 3600, async () => {
+  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v5`, 3600, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const pick = (b, t) => {
       // The tag may carry attributes: NominationDisplayNumber has DocumentType
@@ -2554,18 +2559,25 @@ async function handleSenateNominations(env) {
       total: out.length,
       counts: {
         calendar: by('calendar').length,
-        committee: by('committee').length,
         privileged: by('privileged').length,
+        committee: by('committee').length,
         confirmed: by('confirmed').length,
+        withdrawn: by('withdrawn').length,
+        failed: by('failed').length,
       },
       // The calendar stage is the one that can reach the floor, so it is sent
       // whole. The others are capped: "in committee" alone runs to hundreds and
       // the panel shows a window, not an archive.
+      // Calendar and privileged are sent whole: those are the two that can
+      // reach the floor. The rest are a window, not an archive -- confirmed
+      // alone runs to 1,600.
       nominations: [
         ...by('calendar'),
-        ...by('privileged').slice(0, 40),
+        ...by('privileged'),
         ...by('committee').slice(0, 60),
         ...by('confirmed').slice(0, 40),
+        ...by('withdrawn').slice(0, 25),
+        ...by('failed').slice(0, 25),
       ],
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },

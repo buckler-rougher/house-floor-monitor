@@ -788,11 +788,16 @@ function initNoticeFilter() {
 //
 // Four stages from the Senate's own XML. Only the calendar stage can reach the
 // floor; committee and privileged are upstream of it, and confirmed is done.
+// Every stage the Senate publishes. Calendar and privileged are the two that can
+// reach the floor -- a privileged nomination does not have to sit on the
+// Executive Calendar first -- so those lead.
 const NOM_STAGES = {
-    calendar:   { label: 'ON CALENDAR', badge: 'schedule' },
-    privileged: { label: 'PRIVILEGED',  badge: 'schedule' },
-    committee:  { label: 'IN COMMITTEE', badge: 'wrap-up' },
-    confirmed:  { label: 'CONFIRMED',   badge: 'wrap-up' },
+    calendar:   { label: 'ON CALENDAR',  badge: 'schedule', status: 'scheduled' },
+    privileged: { label: 'PRIVILEGED',   badge: 'schedule', status: 'scheduled' },
+    committee:  { label: 'IN COMMITTEE', badge: 'wrap-up',  status: 'pending' },
+    confirmed:  { label: 'CONFIRMED',    badge: 'wrap-up',  status: 'passed' },
+    withdrawn:  { label: 'WITHDRAWN',    badge: 'wrap-up',  status: 'failed' },
+    failed:     { label: 'RETURNED',     badge: 'wrap-up',  status: 'failed' },
 };
 let _nomFilter = 'calendar';
 let _nomCounts = {};
@@ -805,20 +810,28 @@ function renderNominations() {
         setIfChanged(feed, '<div class="whip-updates-loading">None at this stage.</div>');
         return;
     }
+    // Cards, like the bills. A nomination has an id, a title and a date, which
+    // is the same shape .bill-card was built for.
     setIfChanged(feed, shown.slice(0, 30).map((n) => {
-        const st = NOM_STAGES[n.stage] || { label: n.stage.toUpperCase(), badge: 'schedule' };
+        const st = NOM_STAGES[n.stage] || { label: n.stage.toUpperCase(), status: 'scheduled' };
         return `
-            <div class="whip-update-item">
-                <div class="whip-update-meta">
-                    <span class="whip-type-badge whip-type-${st.badge}">${escapeHtml(st.label)}</span>
-                    <span class="whip-update-title">${escapeHtml(n.calendarNo ? `Exec. Cal. No. ${n.calendarNo}` : (n.pn || 'Nomination'))}</span>
-                    <span class="whip-update-time">${escapeHtml(n.reported ? noticeDate2(n.reported) : '')}</span>
+        <div class="bill-card-wrap">
+            <div class="bill-card" data-status="${st.status}">
+                <div class="bill-status ${st.status}" aria-hidden="true"></div>
+                <div class="bill-info">
+                    <div class="bill-id-row">
+                        <span class="bill-id">${escapeHtml(n.pn || 'PN')}</span>
+                        ${n.calendarNo ? `<span class="bill-calendar-no">Exec. Cal. No. ${escapeHtml(String(n.calendarNo))}</span>` : ''}
+                        <span class="bill-calendar-no">${escapeHtml(st.label)}</span>
+                    </div>
+                    <div class="bill-title">${escapeHtml(n.description || '')}</div>
+                    <div class="bill-meta">
+                        <div class="bill-action">${escapeHtml([n.organization, n.committee].filter(Boolean).join(' \u00b7 '))}</div>
+                        <div class="bill-date">${escapeHtml(n.reported ? noticeDate2(n.reported) : '')}</div>
+                    </div>
                 </div>
-                <div class="whip-update-body"><p>${escapeHtml(n.description || '')}</p>${
-                    [n.organization, n.committee].filter(Boolean).length
-                        ? `<p>${escapeHtml([n.organization, n.committee].filter(Boolean).join(' \u00b7 '))}</p>` : ''
-                }</div>
-            </div>`;
+            </div>
+        </div>`;
     }).join(''));
 }
 
