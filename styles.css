@@ -170,6 +170,26 @@
  * window rather than the panel growing without bound. The mask fades the last
  * rows out instead of cutting them at a hard edge, which is what tells a reader
  * there is more below: a clean cut reads as the end of the list. */
+/* A wrap-up vote result. Green carried, red did not.
+ *
+ * NOT the party colours: .bill-modal-support-count dem/rep are blue and red,
+ * and dressing "adopted 77-23" in blue says a party carried it, which the
+ * tally does not say. Green is this board's affirmative and red its failure. */
+.wrapup-result {
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    padding: 1px var(--sp-6);
+    border-radius: var(--radius-4);
+    margin-right: var(--sp-6);
+    white-space: nowrap;
+}
+.wrapup-result.carried { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
+.wrapup-result.failed  { color: var(--accent-red);   background: color-mix(in srgb, var(--accent-red)   12%, transparent); }
+
 .nom-scroll {
     max-height: 260px;
     overflow-y: auto;
