@@ -10971,3 +10971,23 @@ body.all-mode .floor-grid-panel {
 .stage-row .list-scroll:has(> .whip-updates-loading:only-child) {
     justify-content: center;
 }
+
+/* Senate palette trial.
+ *
+ * Scoped to the Senate board so the House keeps the palette it has. On <html>
+ * rather than <body>, because the page background is set on html and a body
+ * override would never reach it.
+ *
+ * Not --bg-dark against --bg-header, which is what it looks like it should be:
+ * --bg-header is rgba(13, 17, 23, 0.92), which is --bg-dark at 92% alpha, so
+ * swapping those two is a no-op on screen. The pair that actually carries the
+ * board's character is the page behind everything against the surface the
+ * panels sit on, and trading them inverts figure and ground: panels go darker
+ * than the page instead of lighter.
+ *
+ * A trial. Delete this block to put it back. */
+:root[data-chamber="senate"] {
+    --bg-dark:   #0f1720;
+    --bg-card:   #0d1117;
+    --bg-header: rgba(15, 23, 32, 0.92);
+}
