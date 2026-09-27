@@ -2670,7 +2670,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v9', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v10', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -3064,9 +3064,20 @@ async function handleSenateSchedule(env) {
     const days = [];
     for (const m of sched.matchAll(/<SessionDay>([\s\S]*?)<\/SessionDay>/g)) {
       const b = m[1];
+      const convene = pick(b, 'ConveneDate') || null;
+      const adjourn = pick(b, 'AdjournDate') || null;
+      // A pro forma is gavel in, gavel out. The record does not flag the day
+      // itself -- IsNextConveneProforma only describes the NEXT sitting -- but
+      // the duration separates them cleanly: this year 32 sittings ran 0.3 to
+      // 0.5 minutes, then nothing at all until 2.0, then 100 ran over an hour.
+      // Two minutes sits in that gap.
+      const mins = (convene && adjourn)
+        ? (new Date(adjourn) - new Date(convene)) / 60000 : null;
       days.push({
-        convene: pick(b, 'ConveneDate') || null,
-        adjourn: pick(b, 'AdjournDate') || null,
+        convene,
+        adjourn,
+        proForma: mins != null && mins < 2,
+        minutes: mins != null ? Math.round(mins) : null,
         adjournType: pick(b, 'AdjournType') || null,
         nextConvene: pick(b, 'NextConveneDate') || null,
         nextIsProForma: pick(b, 'IsNextConveneProforma') === 'Y',
