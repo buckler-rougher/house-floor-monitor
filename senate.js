@@ -799,30 +799,24 @@ const NOM_STAGES = {
     withdrawn:  { label: 'WITHDRAWN',    badge: 'wrap-up',  status: 'failed' },
     failed:     { label: 'RETURNED',     badge: 'wrap-up',  status: 'failed' },
 };
-let _nomFilter = 'calendar';
 let _nomCounts = {};
 
-function renderNominations() {
-    const feed = el('nominations-feed');
-    if (!feed) return;
-    const shown = _nominations.filter((n) => n.stage === _nomFilter);
-    if (!shown.length) {
-        setIfChanged(feed, '<div class="whip-updates-loading">None at this stage.</div>');
-        return;
-    }
-    // Cards, like the bills. A nomination has an id, a title and a date, which
-    // is the same shape .bill-card was built for.
-    setIfChanged(feed, shown.slice(0, 30).map((n) => {
-        const st = NOM_STAGES[n.stage] || { label: n.stage.toUpperCase(), status: 'scheduled' };
-        return `
+// The XML dates are ISO; the card format is day-first with a short month.
+function noticeDate2(iso) {
+    const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? fmtDateNotice(new Date(+m[1], +m[2] - 1, +m[3])) : '';
+}
+
+function nominationCard(n) {
+    const st = NOM_STAGES[n.stage] || { label: n.stage.toUpperCase(), status: 'scheduled' };
+    return `
         <div class="bill-card-wrap">
             <div class="bill-card" data-status="${st.status}">
                 <div class="bill-status ${st.status}" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(n.pn || 'PN')}</span>
-                        ${n.calendarNo ? `<span class="bill-calendar-no">Exec. Cal. No. ${escapeHtml(String(n.calendarNo))}</span>` : ''}
-                        <span class="bill-calendar-no">${escapeHtml(st.label)}</span>
+                        ${n.calendarNo ? `<span class="bill-calendar-no">Cal. No. ${escapeHtml(String(n.calendarNo))}</span>` : ''}
                     </div>
                     <div class="bill-title">${escapeHtml(n.description || '')}</div>
                     <div class="bill-meta">
@@ -832,39 +826,34 @@ function renderNominations() {
                 </div>
             </div>
         </div>`;
-    }).join(''));
 }
 
-// The XML dates are ISO; the notice format is day-first with a short month.
-function noticeDate2(iso) {
-    const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return m ? fmtDateNotice(new Date(+m[1], +m[2] - 1, +m[3])) : '';
+// Drop the fade once a list is scrolled to its end: with nothing below it, a
+// fade suggests more that is not there.
+function watchNomScroll(node) {
+    if (!node || node.dataset.watched) return;
+    node.dataset.watched = '1';
+    const check = () => node.classList.toggle('is-at-end',
+        node.scrollTop + node.clientHeight >= node.scrollHeight - 2);
+    node.addEventListener('scroll', check, { passive: true });
+    check();
 }
 
-function renderNomFilter() {
-    const dd = el('nom-filter-dropdown');
-    if (!dd) return;
-    const chip = (key, label) => `<button class="whip-filter-chip whip-type-${NOM_STAGES[key].badge}${_nomFilter === key ? ' active' : ''}" data-nom-filter="${key}">${label}${_nomCounts[key] ? ` (${_nomCounts[key]})` : ''}</button>`;
-    dd.innerHTML = `<div class="whip-filter-inner">${
-        Object.entries(NOM_STAGES).map(([k, v]) => chip(k, v.label)).join('')
-    }</div>`;
-}
-
-function initNomFilter() {
-    const btn = el('nom-filter-btn');
-    const dd = el('nom-filter-dropdown');
-    if (!btn || !dd) return;
-    const anim = globalThis.BoardAnimations;
-    btn.addEventListener('click', () => {
-        if (dd.hidden) anim.openDrawer(dd); else anim.closeDrawer(dd);
-    });
-    dd.addEventListener('click', (e) => {
-        const chip = e.target.closest('[data-nom-filter]');
-        if (!chip) return;
-        _nomFilter = chip.dataset.nomFilter;
-        renderNomFilter();
-        renderNominations();
-    });
+function renderNominations() {
+    for (const stage of Object.keys(NOM_STAGES)) {
+        const list = el(`nom-list-${stage}`);
+        const count = el(`nom-count-${stage}`);
+        if (count) {
+            const total = _nomCounts[stage];
+            count.textContent = total == null ? '' : String(total);
+        }
+        if (!list) continue;
+        const rows = _nominations.filter((n) => n.stage === stage);
+        setIfChanged(list, rows.length
+            ? rows.slice(0, 30).map(nominationCard).join('')
+            : '<div class="whip-updates-loading">None at this stage.</div>');
+        watchNomScroll(list);
+    }
 }
 
 async function loadNominations() {
@@ -874,7 +863,6 @@ async function loadNominations() {
         const d = await r.json();
         _nominations = d.nominations || [];
         _nomCounts = d.counts || {};
-        renderNomFilter();
         renderNominations();
     } catch (e) {
         const feed = el('nominations-feed');
@@ -1170,7 +1158,6 @@ loadVotes();
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
-initNomFilter();
 initBillModal();
 loadNominations();
 loadFloorSchedule();
