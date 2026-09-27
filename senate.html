@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260927c">
+    <link rel="stylesheet" href="styles.css?v=20260927d">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1257,21 +1257,111 @@
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
+                        <div class="bills-list list-scroll" id="senate-floor-measures"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Procedural stages.
+                 A Senate measure does not get one vote, it gets a chain of
+                 them, and the roll call record names every link. S. 4668 took
+                 five over thirteen days: cloture on the motion to proceed, the
+                 motion to proceed, cloture on a substitute amendment, the
+                 amendment, then cloture on the measure. Listed flat that is
+                 five unrelated rows; grouped by measure it is one bill most of
+                 the way to passage.
+
+                 So each card is a measure, filed under the stage of its most
+                 recent vote, with every earlier vote stacked above it as a
+                 chip. The same .bill-slot stack the House board uses for
+                 amendment and recommit votes, which is the same relationship.
+
+                 The left column is the substantive vote and the right is the
+                 cloture that had to be invoked before it could happen. Read in
+                 reverse: the top row is a final vote and what unlocked it, and
+                 each row down is a step further back. The bottom row is the two
+                 routes that sit off the chain entirely.
+
+                 A stage with nothing in it renders empty rather than being
+                 hidden, or the grid would reshape itself daily. AMENDMENTS is
+                 usually the empty one: an amendment vote is almost never the
+                 last thing to happen to a measure. -->
+            <div class="bills-section" id="senate-stages">
+                <div class="panel-header">
+                    <span class="panel-label">PROCEDURAL STAGES</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/votes_new.htm" target="_blank" rel="noopener">Roll Call Tables (Senate)</a></span>
+                        <span class="bills-last-update" id="senate-stages-when">--</span>
+                    </div>
+                </div>
+                <div class="bills-columns">
+                    <div class="bills-column">
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">SCHEDULED</span>
+                                <span class="bills-column-title">PASSAGE AND CONFIRMATION</span>
+                                <span class="nom-count" id="stage-count-final"></span>
                             </div>
+                            <span class="whip-info-tip" data-tooltip="The last vote on a measure: passage of a bill or resolution, or confirmation of a nomination. A card here has finished.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="senate-floor-measures"></div>
+                        <div class="bills-list list-scroll" id="stage-list-final"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">AMENDMENTS</span>
+                                <span class="nom-count" id="stage-count-amendment"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="A vote to adopt, table or waive a budget point of order against an amendment. Usually empty, because an amendment vote is rarely the last thing to happen to a measure.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-amendment"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">MOTION TO PROCEED</span>
+                                <span class="nom-count" id="stage-count-mtp"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="The vote to take the measure up at all. Agreeing to it opens debate; it is not a vote on the measure itself.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-mtp"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">DISCHARGED FROM COMMITTEE</span>
+                                <span class="nom-count" id="stage-count-discharge"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="A vote to pull a measure out of a committee that has not reported it. The war powers and arms sale resolutions reach the floor this way.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-discharge"></div>
                     </div>
                     <div class="bills-column">
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">CLOTURE</span>
+                                <span class="bills-column-title">CLOTURE ON THE MEASURE</span>
+                                <span class="nom-count" id="stage-count-cloture"></span>
                             </div>
-                            <span class="whip-info-tip" data-tooltip="Once a cloture motion is filed the vote happens on a fixed clock, so a measure with cloture pending is one that will be voted on. Post-cloture means cloture was already invoked and the measure is in its remaining debate time.">?</span>
+                            <span class="whip-info-tip" data-tooltip="Cloture on the measure itself, which ends debate and puts a final vote on a fixed clock. The last obstacle before passage.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="senate-cloture"></div>
+                        <div class="bills-list list-scroll" id="stage-list-cloture"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">CLOTURE ON AN AMENDMENT</span>
+                                <span class="nom-count" id="stage-count-cloture-amdt"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Cloture on a pending amendment, usually a substitute. It clears the amendment out of the way so cloture can be filed on the measure.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-cloture-amdt"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">CLOTURE ON THE MOTION TO PROCEED</span>
+                                <span class="nom-count" id="stage-count-cloture-mtp"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Cloture on the motion to proceed, which is where a measure stalls when it cannot get 60 votes to be taken up. Failing it neither kills the measure nor moves it: H.R. 7147 failed this seven times between 12 February and 26 March.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-cloture-mtp"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">OTHER MOTIONS</span>
+                                <span class="nom-count" id="stage-count-other"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Points of order, motions to table and motions to commit. They are recorded votes about a measure that do not move it to a new stage.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="stage-list-other"></div>
                     </div>
                 </div>
             </div>
@@ -1648,7 +1738,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927i"></script>
+    <script defer src="senate.js?v=20260927j"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

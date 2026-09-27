@@ -2577,6 +2577,179 @@ async function handleSenateNominations(env) {
   });
 }
 
+// ── Procedural stages ────────────────────────────────────────────────────────
+//
+// A Senate measure does not get one vote, it gets a chain of them, and the roll
+// call record names every link. S. 4668 over thirteen days:
+//
+//   235  15-Sep  On Cloture on the Motion to Proceed   Agreed to  74-24
+//   236  17-Sep  On the Motion to Proceed              Agreed to  77-22
+//   240  22-Sep  On the Cloture Motion S.Amdt. 6776    Agreed to  70-21
+//   242  24-Sep  On the Amendment S.Amdt. 6776         Agreed to  77-23
+//   243  24-Sep  On the Cloture Motion                 Agreed to  74-25
+//
+// Listed flat that is five unrelated rows. Grouped by measure it is one bill
+// most of the way to passage, which is the thing worth showing.
+//
+// The stage names are stable and countable, so the buckets are derived from
+// `question` rather than guessed: across this session, On the Cloture Motion 54,
+// On the Nomination 52, On the Motion to Proceed 29, On Cloture on the Motion to
+// Proceed 18, On the Motion to Discharge 15, On Passage of the Bill 6. Of 244
+// votes, 234 classify; the other 10 are points of order, motions to table and
+// motions to commit, which do not advance a measure and are kept as such.
+
+// Classification order is not display order and must not be sorted.
+// "On the Cloture Motion S.Amdt. 6776" matches three of these patterns, and
+// only the first match is right.
+const SENATE_VOTE_STAGES = [
+  { key: 'discharge',    re: /^On the Motion to Discharge/i },
+  { key: 'cloture-mtp',  re: /^On Cloture on the Motion to Proceed/i },
+  { key: 'mtp',          re: /^On the Motion to Proceed/i },
+  { key: 'cloture-amdt', re: /^On the Cloture Motion\s+\S*Amdt\./i },
+  { key: 'cloture',      re: /^On the Cloture Motion/i },
+  { key: 'amendment',    re: /Amdt\./i },
+  { key: 'final',        re: /^On (?:Passage|the Nomination|the Concurrent Resolution|the Resolution|the Joint Resolution)/i },
+];
+
+// How far along the chain each stage sits, which is the order the board reads
+// them in reverse. Amendments are disposed of before cloture is invoked on the
+// measure itself, which is the order the record shows (S. 4668: amendment at
+// roll 242, cloture at 243), not the order the names suggest.
+const SENATE_STAGE_RANK = {
+  discharge: 0, 'cloture-mtp': 1, mtp: 2, 'cloture-amdt': 3, amendment: 4, cloture: 5, final: 6,
+};
+
+function senateVoteStage(question) {
+  for (const s of SENATE_VOTE_STAGES) if (s.re.test(question)) return s.key;
+  return 'other';
+}
+
+// "Agreed to", "Confirmed", "Passed" and "Well Taken" carry; "Rejected" does
+// not. Those five are the whole vocabulary of the result field this session.
+function senateVoteCarried(result) {
+  return /^(agreed to|confirmed|passed|well taken)$/i.test(String(result || '').trim());
+}
+
+// What the measure is, as opposed to what the motion was.
+//
+// Every title puts the motion first and the measure's own description after a
+// semicolon: "Motion to Proceed to S. 4668; A bill to protect the name, image,
+// and likeness rights...". An amendment vote is the exception -- its title
+// describes the amendment ("Amdt. No. 6776; In the nature of a substitute") --
+// so those are skipped unless nothing else is left. A confirmation has no
+// semicolon at all and the whole remainder is the nominee and the post.
+function senateVoteSubject(title) {
+  const bare = String(title || '')
+    .replace(/^(?:Motion to Invoke Cloture|Confirmation|Motion to Discharge|Motion to Table)\s*:?\s*/i, '')
+    .trim();
+  const semi = bare.indexOf(';');
+  return (semi >= 0 ? bare.slice(semi + 1) : bare).trim();
+}
+
+function buildSenateStages(xml, congress, session) {
+  const g = (b, t) => {
+    const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
+    return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+  };
+
+  const byMeasure = new Map();
+  for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
+    const b = m[1];
+    const measure = g(b, 'issue');
+    if (!measure) continue;
+    const num = Number(g(b, 'vote_number'));
+    const question = g(b, 'question');
+    const result = g(b, 'result');
+    const vote = {
+      rollCall: num,
+      date: g(b, 'vote_date'),
+      question,
+      result,
+      carried: senateVoteCarried(result),
+      yeas: Number(g(b, 'yeas')) || 0,
+      nays: Number(g(b, 'nays')) || 0,
+      stage: senateVoteStage(question),
+      title: g(b, 'title'),
+      url: `https://www.senate.gov/legislative/LIS/roll_call_votes/vote${congress}${session}/vote_${congress}_${session}_${String(num).padStart(5, '0')}.htm`,
+    };
+    if (!byMeasure.has(measure)) byMeasure.set(measure, []);
+    byMeasure.get(measure).push(vote);
+  }
+
+  const measures = [];
+  for (const [measure, votes] of byMeasure) {
+    votes.sort((a, b) => a.rollCall - b.rollCall);   // chronological: the chain reads down
+
+    // The bucket is where the measure stands now, which is the stage of its most
+    // recent vote, not the furthest stage it has ever reached. A measure can go
+    // backwards: S. 1383 failed cloture on 21 March and was back taking cloture
+    // on a fresh amendment on the 26th, so ranking by furthest would have filed
+    // it under a stage it had already lost.
+    //
+    // It also means repeated attempts at one stage are one card, not many.
+    // H.R. 7147 failed cloture on the motion to proceed seven times between
+    // 12 February and 26 March: a failed cloture neither kills a measure nor
+    // moves it, it accumulates attempts at the same stage, and the card shows
+    // the seventh with the other six stacked above it.
+    const head = votes[votes.length - 1];
+    const stage = head.stage;
+
+    // The description comes from a vote about the measure, not about one of its
+    // amendments, so those are only read when there is nothing else.
+    let subject = '';
+    for (const v of [...votes].reverse()) {
+      if (v.stage === 'amendment' || v.stage === 'cloture-amdt') continue;
+      subject = senateVoteSubject(v.title);
+      if (subject) break;
+    }
+    if (!subject) for (const v of [...votes].reverse()) {
+      subject = senateVoteSubject(v.title);
+      if (subject) break;
+    }
+
+    measures.push({
+      measure,
+      subject,
+      stage,
+      status: head.carried ? 'passed' : 'failed',
+      latest: head,
+      // Everything below the card, oldest first, which is the order it happened.
+      chain: votes.filter((v) => v !== head),
+      votes: votes.length,
+      date: head.date,
+      rollCall: head.rollCall,
+    });
+  }
+
+  // Newest first inside each bucket, by the roll call that defines the card.
+  measures.sort((a, b) => b.rollCall - a.rollCall);
+  const stages = {};
+  for (const key of [...Object.keys(SENATE_STAGE_RANK), 'other']) {
+    stages[key] = measures.filter((m) => m.stage === key);
+  }
+  return stages;
+}
+
+async function handleSenateStages(env) {
+  // BUMP THIS WHENEVER THE PAYLOAD SHAPE CHANGES. See the floor-schedule
+  // handler for what a stale key costs.
+  return kvCache(env, `senate-stages-${CURRENT_CONGRESS}-v1`, 1800, async () => {
+    const congress = CURRENT_CONGRESS, session = senateSession();
+    const r = await fetch(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
+        signal: AbortSignal.timeout(20_000) });
+    if (!r.ok) throw new Error(`vote menu: HTTP ${r.status}`);
+    // senate.gov answers a path that does not exist with 200 and its own HTML.
+    if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('vote menu: not XML');
+    const stages = buildSenateStages(await r.text(), congress, session);
+    const counts = {};
+    for (const [k, v] of Object.entries(stages)) counts[k] = v.length;
+    return new Response(JSON.stringify({ congress, session, counts, stages }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
+    });
+  });
+}
+
 async function handleSenateBill(env, billId) {
   const parsed = billIdToCongressType(billId || '');
   if (!parsed) {
@@ -5042,6 +5215,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/senate/nominations' && request.method === 'GET') {
     return handleSenateNominations(env);
+  } else if (path === '/api/senate/stages' && request.method === 'GET') {
+    return handleSenateStages(env);
   } else if (path === '/api/senate/bill' && request.method === 'GET') {
     return handleSenateBill(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/floor-schedule' && request.method === 'GET') {
