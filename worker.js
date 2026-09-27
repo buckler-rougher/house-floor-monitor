@@ -2456,6 +2456,83 @@ function parseGeneralOrders(html) {
 // A failed lookup keeps the calendar's own values rather than blanking the row:
 // the printed calendar is the authority for what is pending, and Congress.gov
 // is only decoration on top of it.
+// What is actually on the Senate floor next.
+//
+// This is the answer to the question General Orders cannot answer. That is a
+// 528-row backlog of everything reported out of committee; this is the agenda.
+// The Senate itself publishes no such thing -- the Leader announces the day
+// aloud -- but the Democratic Caucus writes it up each evening for the next
+// sitting day, naming the measure, its calendar number and the vote times.
+//
+// PARTISAN SOURCE, LABELLED AS ONE. It is a caucus publication, not a Senate
+// record, and the board says so on the panel the way it credits the Democratic
+// Whip on the House side. The schedule it describes is the chamber's, and the
+// cloakrooms agree about it, but the attribution belongs on screen.
+//
+// There is no feed: no RSS is advertised and the obvious paths 404, so the
+// listing page is read and the newest post followed.
+async function handleSenateFloorSchedule(env) {
+  return kvCache(env, 'senate-floor-schedule-v1', 1800, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const get = async (url, label) => {
+      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
+      return r.text();
+    };
+
+    const listing = await get('https://www.democrats.senate.gov/floor/senate-schedule', 'schedule listing');
+    // Newest first on the page. Take the first post link and its printed date.
+    const first = listing.match(/<p class="Heading Heading--time[^"]*">([^<]+)<\/p>[\s\S]{0,400}?<a class="ArticleTitle"[^>]+href="([^"]+)"[\s\S]{0,200}?<h2>([^<]+)<\/h2>/);
+    if (!first) throw new Error('schedule listing: no post found');
+    const published = first[1].trim();
+    const url = first[2].trim();
+    const heading = first[3].trim();
+
+    const post = await get(url, 'schedule post');
+    let text = post.replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
+      .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+      .replace(/&#8217;|&rsquo;/g, "'").replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ').trim();
+    // The post body starts at the standing-adjourned sentence; everything before
+    // it is site chrome and everything after "Print Email Share" is the footer.
+    const start = text.search(/The Senate (?:stands|will|convenes|reconvenes)/i);
+    if (start >= 0) text = text.slice(start);
+    text = text.split(/\s*Print Email Share/)[0].trim();
+
+    const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
+    const measures = [];
+    const seen = new Set();
+    for (const m of text.matchAll(new RegExp(String.raw`Cal\.\s*#?\s*(\d+)\s*(${MEAS})\s*,?\s*([^,.]{0,70})`, 'g'))) {
+      const measure = m[2].replace(/\s+/g, '');
+      const key = `${m[1]}|${measure}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      measures.push({ calendarNo: Number(m[1]), measure, title: m[3].trim() || null });
+    }
+
+    // "roll call vote: Passage of Cal. #449 ..." — the votes actually scheduled.
+    // Not delimited on a period: the text is full of abbreviations, and "Cal."
+    // truncated this to "Passage of Cal". Run to the next scheduling clause or
+    // the end instead.
+    const votes = [...text.matchAll(/roll call vote[s]?:\s*(.{0,170}?)(?=\s*(?:$|Monday|Tuesday|Wednesday|Thursday|Friday|At approximately|Following Leader|Upon disposition))/gi)]
+      .map((m) => m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, '').trim())
+      .filter(Boolean);
+
+    const convene = text.match(/(?:stands adjourned until|convenes? at|will convene at)\s+([0-9:]+\s*[ap]\.?m\.?)\s+on\s+([A-Za-z]+,\s*[A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
+
+    return new Response(JSON.stringify({
+      published, heading, url, text,
+      conveneTime: convene ? convene[1] : null,
+      conveneDate: convene ? convene[2] : null,
+      postCloture: /post-cloture/i.test(text),
+      measures, votes,
+      source: 'Senate Democratic Caucus',
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
+    });
+  });
+}
+
 async function enrichSenateOrders(orders, limit = 24) {
   if (!_congressApiKey) return orders;
   const head = orders.slice(0, limit);
@@ -4543,6 +4620,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/floor-schedule' && request.method === 'GET') {
+    return handleSenateFloorSchedule(env);
   } else if (path === '/api/senate/calendar' && request.method === 'GET') {
     return handleSenateCalendar(env);
   } else if (path === '/api/senate/absences' && request.method === 'GET') {
