@@ -16,6 +16,10 @@
 // `chamber` from it, so this is a one-word change once that route is added.
 const API = 'https://api.evanhollander.org/house-floor/api';
 
+// Only used if the payload omits it: a Congress starts in each odd year, and
+// the 119th began in 2025.
+const CONGRESS_FALLBACK = 119 + Math.floor((new Date().getFullYear() - 2025) / 2);
+
 const MONTH_NAMES = [
     'January','February','March','April','May','June',
     'July','August','September','October','November','December'
@@ -68,6 +72,7 @@ function updateTimestamp() {
     });
     updateAnalogClock(el('dc-analog'),  getTimeParts(now, 'America/New_York'));
     updateAnalogClock(el('utc-analog'), getTimeParts(now, 'UTC'));
+    updateNextSessionCountdown();
 }
 
 // ── Weather and the Capitol camera ───────────────────────────────────────────
@@ -298,6 +303,78 @@ function initAirportDelays() {
     setInterval(() => mod.fetchAirportDelays(), mod.FAA_CONFIG.refreshInterval);
 }
 
+// ── Congress banner and next-session countdown ───────────────────────────────
+//
+// The House board reads its congress line out of an XML feed that has no Senate
+// equivalent, so it is spelled out here. "One hundred nineteenth", not "119th":
+// that is how the chamber writes its own name.
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+    'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const ONES_ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth',
+    'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth',
+    'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth'];
+const TENS_ORD = ['', '', 'twentieth', 'thirtieth', 'fortieth', 'fiftieth', 'sixtieth',
+    'seventieth', 'eightieth', 'ninetieth'];
+
+function ordinalWords(n) {
+    if (!Number.isInteger(n) || n <= 0 || n >= 1000) return `${n}th`;
+    const hundreds = Math.floor(n / 100);
+    const rest = n % 100;
+    const head = hundreds ? `${ONES[hundreds]} hundred` : '';
+    if (!rest) return `${ONES[hundreds]} hundredth`;
+    let tail;
+    if (rest < 20) tail = ONES_ORD[rest];
+    else if (rest % 10 === 0) tail = TENS_ORD[Math.floor(rest / 10)];
+    else tail = `${TENS[Math.floor(rest / 10)]}-${ONES_ORD[rest % 10]}`;
+    return [head, tail].filter(Boolean).join(' ');
+}
+
+// Ticks every second, so it is driven from the clock loop rather than its own.
+let nextSessionAt = null;
+
+function formatNextSessionCountdown(target) {
+    if (!(target instanceof Date) || Number.isNaN(target.getTime())) return '';
+    const diffMs = target.getTime() - Date.now();
+    if (diffMs <= 0) return 'NEXT SESSION: NOW';
+    const total = Math.floor(diffMs / 1000);
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    const parts = [];
+    if (days) parts.push(`${days}D`);
+    if (hours) parts.push(`${hours}H`);
+    if (mins || days || hours) parts.push(`${mins}M`);
+    parts.push(`${String(secs).padStart(2, '0')}S`);
+    return `NEXT SESSION IN ${parts.join(' ')}`;
+}
+
+function updateNextSessionCountdown() {
+    const node = el('next-session-countdown');
+    if (!node) return;
+    if (!nextSessionAt) { node.style.display = 'none'; return; }
+    node.style.display = 'inline-flex';
+    node.textContent = formatNextSessionCountdown(nextSessionAt);
+}
+
+function renderCongressBanner(data) {
+    const text = document.querySelector('.congress-text');
+    if (text && data?.latest) {
+        const congress = data.congress || CONGRESS_FALLBACK;
+        const session = data.session || '';
+        text.textContent = `${ordinalWords(congress)} Congress${session ? ` - Session ${session}` : ''}`.toUpperCase();
+    }
+    const status = el('floor-status');
+    if (status) status.textContent = document.body.classList.contains('recess-mode')
+        ? 'Senate adjourned' : 'Senate in session';
+
+    const nc = data?.latest?.nextConvene ? new Date(data.latest.nextConvene) : null;
+    nextSessionAt = nc && !isNaN(nc) && nc.getTime() > Date.now() ? nc : null;
+    updateNextSessionCountdown();
+}
+
 // ── Session status ───────────────────────────────────────────────────────────
 //
 // From the Senate's own session-day record, which carries the convene and
@@ -344,6 +421,7 @@ async function loadSchedule() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
         renderSchedule(data);
+        renderCongressBanner(data);
         globalThis.VotingCalendar?.setData(scheduleToCalendarItems(data));
     } catch (e) {
         const line = el('session-text');
