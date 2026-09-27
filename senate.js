@@ -194,71 +194,6 @@ function setConnection(state) {
     dot.classList.toggle('connecting', !live);
 }
 
-// ── Roll call votes ──────────────────────────────────────────────────────────
-function renderVotes(payload) {
-    const feed = el('senate-votes-feed');
-    const stamp = el('senate-votes-updated');
-    if (!feed) return;
-    feed.innerHTML = '';
-
-    const votes = payload?.votes || [];
-    if (!votes.length) {
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
-        row.textContent = 'No roll call votes recorded for this session yet.';
-        feed.appendChild(row);
-        return;
-    }
-
-    for (const v of votes.slice(0, 25)) {
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
-
-        const num = document.createElement('span');
-        num.className = 'proceedings-time';
-        // Trailing space: the spans are adjacent, so without it the roll number
-        // runs into the measure -- "244H.Con.Res. 89".
-        num.textContent = `${boardDate(v.date)} · ${v.number} `;
-
-        // textContent throughout: every field is remote text from senate.gov.
-        const body = document.createElement('span');
-        body.className = 'proceedings-text';
-        const bits = [];
-        if (v.issue) bits.push(`${v.issue}:`);
-        if (v.question) bits.push(v.question);
-        if (v.yeas != null && v.nays != null) bits.push(`${v.yeas}-${v.nays}`);
-        if (v.result) bits.push(`(${v.result})`);
-        body.textContent = bits.join(' ');
-
-        row.append(num, body);
-        feed.appendChild(row);
-    }
-    if (stamp && payload?.congress) {
-        stamp.textContent = `${payload.congress}th Congress, session ${payload.session}`;
-    }
-}
-
-async function loadVotes() {
-    setConnection('connecting');
-    try {
-        const r = await fetch(`${API}/senate/votes`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderVotes(await r.json());
-        setConnection('live');
-    } catch (e) {
-        setConnection('connecting');
-        const feed = el('senate-votes-feed');
-        if (!feed) return;
-        feed.innerHTML = '';
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
-        // Name the source that failed. This board has more than one upstream and
-        // they fail differently; a bare "unavailable" sends the reader looking in
-        // the wrong place.
-        row.textContent = `Roll call list unavailable (${e.message}).`;
-        feed.appendChild(row);
-    }
-}
 
 // ── Balance of power ─────────────────────────────────────────────────────────
 //
@@ -837,8 +772,8 @@ const NOM_STAGES = {
     privileged: { label: 'PRIVILEGED',   badge: 'schedule', status: 'scheduled' },
     committee:  { label: 'IN COMMITTEE', badge: 'wrap-up',  status: 'pending' },
     confirmed:  { label: 'CONFIRMED',    badge: 'wrap-up',  status: 'passed' },
-    withdrawn:  { label: 'WITHDRAWN',    badge: 'wrap-up',  status: 'failed' },
     failed:     { label: 'RETURNED',     badge: 'wrap-up',  status: 'failed' },
+    withdrawn:  { label: 'WITHDRAWN',    badge: 'wrap-up',  status: 'failed' },
 };
 let _nomCounts = {};
 
@@ -853,7 +788,7 @@ function nominationCard(n) {
     return `
         <div class="bill-card-wrap">
             <button class="bill-card" data-pn="${escapeHtml(n.pn || '')}" data-status="${st.status}" type="button">
-                <div class="bill-status ${st.status}" aria-hidden="true"></div>
+                <div class="bill-status ${st.status}" aria-hidden="true">${STATUS_MARK[st.status] || ''}</div>
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(n.pn || 'PN')}</span>
@@ -1457,6 +1392,10 @@ function stageChip(item) {
 // What a card is waiting for, once cloture has put it there. Phrased as the
 // thing that has not happened yet, because that is the whole difference between
 // this card and the one next to it that has a tally on it.
+// The glyphs the House board puts in .bill-status. Same two characters, so a
+// card means the same thing on either board.
+const STATUS_MARK = { passed: '\u2713', failed: '\u2715' };
+
 const STAGE_AWAITING = {
     final:     'Awaiting a final vote',
     amendment: 'Awaiting a vote on the amendment',
@@ -1470,16 +1409,13 @@ function stageCard(m, key, i) {
     // A pending card has no result of its own. Its last vote is already the top
     // chip, so repeating that vote's tally here would say the measure had just
     // done the thing it is in fact waiting to do.
-    // Ticked off, the same way the chips above it are. The status bar down the
-    // left edge says the same thing in colour alone, which is a poor way to say
-    // "this one actually passed" on a board read across a room. An open circle
-    // is the third state: nothing has happened here yet.
-    const mark = m.pending
-        ? `<span class="bill-result-mark pending" aria-hidden="true"></span>`
-        : `<span class="bill-result-mark ${v.carried ? 'carried' : 'failed'}" aria-hidden="true">${v.carried ? CHIP_TICK : CHIP_CROSS}</span>`;
+    // The tick goes in .bill-status, which is what that circle has always been
+    // for: the House board centres a glyph in it and this one was drawing it
+    // empty. A pending card leaves it blank, and .bill-status.pending is
+    // already the muted open circle that says nothing has happened yet.
     const idRow = m.pending
-        ? `${mark}<span class="bill-calendar-no">Pending</span>`
-        : `${mark}<span class="bill-calendar-no">${escapeHtml(v.result)}</span>
+        ? `<span class="bill-calendar-no">Pending</span>`
+        : `<span class="bill-calendar-no">${escapeHtml(v.result)}</span>
            <span class="wrapup-result ${v.carried ? 'carried' : 'failed'}">${v.yeas}-${v.nays}</span>`;
     const due = m.pending ? scheduledVote(m.measure) : null;
     const awaiting = STAGE_AWAITING[m.stage] || 'Awaiting a vote';
@@ -1495,7 +1431,7 @@ function stageCard(m, key, i) {
         ${chips}
         <div class="bill-card-wrap">
             <button class="bill-card" ${measureTarget(m.measure, ` data-stage-key="${key}" data-stage-idx="${i}"`)} data-status="${m.status}" type="button">
-                <div class="bill-status ${m.status}" aria-hidden="true"></div>
+                <div class="bill-status ${m.status}" aria-hidden="true">${STATUS_MARK[m.status] || ''}</div>
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(m.measure)}</span>
@@ -1539,10 +1475,15 @@ function renderStages(data) {
 }
 
 async function loadStages() {
+    // This carries the live indicator now. It used to hang off loadVotes, which
+    // fed the ROLL CALL VOTES panel; that panel is gone and this reads the same
+    // upstream, the Senate's own roll call menu, so it is the same signal.
+    setConnection('connecting');
     try {
         const r = await fetch(`${API}/senate/stages`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         renderStages(await r.json());
+        setConnection('live');
     } catch (e) {
         for (const key of STAGE_KEYS) {
             const list = el(`stage-list-${key}`);
@@ -1571,7 +1512,27 @@ function renderFloorSchedule(data, cloture) {
     // exists only in the caucus's own prose, so it belongs here with the rest
     // of what is coming rather than in PROCEDURAL STAGES, which is built
     // entirely from votes that have happened.
-    const pending = (cloture || []).filter((c) => c.invoked === null);
+    // A filed motion is only news while it is still filed.
+    //
+    // The Worker drops one once the roll call record shows a vote on the same
+    // measure, which works for a bill because both sources call it "S. 4668".
+    // It does not work for a nomination: the caucus prose says "Exec. Cal. 830"
+    // and the roll call record says "PN999-4", so nothing matched and two dead
+    // motions sat on the panel for eleven days after both nominees were
+    // confirmed. Worse, they could never be matched later, because a confirmed
+    // nomination leaves the calendar file and takes its calendar number with it
+    // -- 0 of 1,629 confirmed records carry one.
+    //
+    // Which is exactly the test. If the number is still on the Executive
+    // Calendar the motion is still live; if it is gone, so is the motion.
+    const onCalendar = new Set(_nominations.filter((n) => n.stage === 'calendar').map((n) => n.calendarNo));
+    const pending = (cloture || []).filter((c) => {
+        if (c.invoked !== null) return false;
+        const cal = (c.measure || '').match(/^Exec\. Cal\.\s*(\d+)/i);
+        // Only judged when the calendar is loaded; an empty roster would
+        // otherwise drop every one of them.
+        return !cal || !onCalendar.size || onCalendar.has(Number(cal[1]));
+    });
 
     const measures = data?.measures || [];
     if (!measures.length && !pending.length) {
@@ -1697,7 +1658,6 @@ setInterval(updateTimestamp, 1000);
 fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
 initCapcam();
-loadVotes();
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
@@ -1707,12 +1667,12 @@ loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);
 loadStages();
-// The vote menu gains a row only when the Senate votes, which is a handful of
-// times on a sitting day.
-setInterval(loadStages, 30 * 60 * 1000);
+// The vote menu gains a row only when the Senate votes, a handful of times on a
+// sitting day, and the Worker holds it for 30 minutes anyway. Ten rather than
+// thirty because this is also what tells the header whether the board can still
+// reach its API, and half an hour is a long time to sit on a stale light.
+setInterval(loadStages, 10 * 60 * 1000);
 setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.
 setInterval(loadBalance, 60 * 60 * 1000);
-// The record moves in minutes to hours, never seconds. Slow poll on purpose.
-setInterval(loadVotes, 5 * 60 * 1000);

@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260927e">
+    <link rel="stylesheet" href="styles.css?v=20260927f">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1144,22 +1144,29 @@
             <!-- Vote Series Timeline -->
 
             <!-- Whip Notices -->
-            <!-- Roll call votes.
-                 Not a live tally and deliberately not presented as one. The
-                 Senate has no electronic voting: members vote orally and the
-                 tally clerk marks a sheet, so no running count exists anywhere
-                 to stream. The published record also lags -- vote 244 of 24 Sep
-                 is stamped 13:45 and was last modified at 15:05. -->
-            <div class="proceedings-panel" id="senate-votes">
+            <!-- Caucus floor notices.
+                 The Senate Democratic Caucus posts twice a day: a SCHEDULE for
+                 the next sitting day and a WRAP UP of what just happened. The
+                 schedule post is also what drives ON THE FLOOR above; the prose
+                 lives here rather than in that panel, where it overflowed.
+
+                 Republican Cloakroom equivalents are not published, which is
+                 the same asymmetry the House board carries, so the tooltip says
+                 so rather than leaving it to be inferred. -->
+            <div class="whip-updates-panel" id="caucus-notices">
                 <div class="panel-header">
-                    <span class="panel-label">ROLL CALL VOTES</span>
+                    <div class="whip-label-group">
+                        <span class="panel-label">DEM CAUCUS NOTICES</span>
+                        <span class="whip-info-tip" data-tooltip="We republish Senate Democratic Caucus floor notices for informational purposes only. Republican Cloakroom notices are not publicly available.">?</span>
+                    </div>
                     <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/votes_new.htm" target="_blank" rel="noopener">Roll Call Tables (Senate)</a></span>
-                        <span class="proceedings-time" id="senate-votes-updated"></span>
+                        <button class="whip-filter-btn" id="notice-filter-btn" aria-label="Filter by notice type"><svg class="whip-filter-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 2h10L7 6.5V10.5L5 9.5V6.5L1 2Z" fill="currentColor"/></svg> Filter</button>
+                        <span class="panel-source">Source: <a href="https://www.democrats.senate.gov/floor" target="_blank" rel="noopener">The Floor (Senate Democratic Caucus)</a></span>
                     </div>
                 </div>
-                <div class="proceedings-feed" id="senate-votes-feed">
-                    <div class="proceedings-item">Loading...</div>
+                <div class="whip-filter-dropdown" id="notice-filter-dropdown" hidden></div>
+                <div class="whip-updates-feed" id="caucus-notices-feed">
+                    <div class="whip-updates-loading">Loading floor notices…</div>
                 </div>
             </div>
 
@@ -1307,7 +1314,7 @@
                 </div>
                 <div class="stage-grid">
                     <div class="stage-row">
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-left">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">6</span>
                                 <span class="bills-column-title">PASSAGE AND CONFIRMATION</span>
@@ -1315,13 +1322,13 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="The last vote on a measure: passage of a bill or resolution, or confirmation of a nomination. A measure arrives here the moment cloture is invoked on it, and waits.">?</span>
                         </div>
-                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                        <div class="stage-cx stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
                             <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
                                 <path d="M39 5 H7" />
                                 <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
                             </svg>
                         </div>
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-right">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">5</span>
                                 <span class="bills-column-title">CLOTURE ON THE MEASURE</span>
@@ -1329,11 +1336,12 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Cloture on the measure itself. Invoking it ends debate and puts the final vote on a fixed clock, which is why a measure that carries it moves straight to step 6.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-final"></div>
-                        <div class="bills-list list-scroll" id="stage-list-cloture"></div>
+                                                <div class="stage-cx stage-riser" aria-hidden="true" title="Cleared here, the measure takes cloture at the next step up"></div>
+                        <div class="bills-list list-scroll stage-list-left" id="stage-list-final"></div>
+                        <div class="bills-list list-scroll stage-list-right" id="stage-list-cloture"></div>
                     </div>
                     <div class="stage-row">
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-left">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">4</span>
                                 <span class="bills-column-title">AMENDMENTS</span>
@@ -1341,13 +1349,13 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="A vote to adopt, table or waive a budget point of order against an amendment. Usually empty, because an amendment vote is rarely the last thing to happen to a measure.">?</span>
                         </div>
-                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                        <div class="stage-cx stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
                             <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
                                 <path d="M39 5 H7" />
                                 <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
                             </svg>
                         </div>
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-right">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">3</span>
                                 <span class="bills-column-title">CLOTURE ON AN AMENDMENT</span>
@@ -1355,11 +1363,12 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Cloture on a pending amendment, usually a substitute. It clears the amendment out of the way so cloture can be filed on the measure.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-amendment"></div>
-                        <div class="bills-list list-scroll" id="stage-list-cloture-amdt"></div>
+                                                <div class="stage-cx stage-riser" aria-hidden="true" title="Cleared here, the measure takes cloture at the next step up"></div>
+                        <div class="bills-list list-scroll stage-list-left" id="stage-list-amendment"></div>
+                        <div class="bills-list list-scroll stage-list-right" id="stage-list-cloture-amdt"></div>
                     </div>
                     <div class="stage-row">
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-left">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">2</span>
                                 <span class="bills-column-title">MOTION TO PROCEED</span>
@@ -1367,13 +1376,13 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="The vote to take the measure up at all. Agreeing to it opens debate; it is not a vote on the measure itself.">?</span>
                         </div>
-                        <div class="stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
+                        <div class="stage-cx stage-link" aria-hidden="true" title="Invoking cloture unlocks the vote on the left">
                             <svg viewBox="0 0 40 10" preserveAspectRatio="none" focusable="false">
                                 <path d="M39 5 H7" />
                                 <path d="M1 5 L8 1.5 L8 8.5 Z" class="stage-link-head" />
                             </svg>
                         </div>
-                        <div class="bills-column-header">
+                        <div class="bills-column-header stage-head-right">
                             <div class="bills-column-header-left">
                                 <span class="stage-step">1</span>
                                 <span class="bills-column-title">CLOTURE ON THE MOTION TO PROCEED</span>
@@ -1381,8 +1390,8 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Cloture on the motion to proceed, which is where a measure stalls when it cannot get 60 votes to be taken up. Failing it neither kills the measure nor moves it: H.R. 7147 failed this seven times between 12 February and 26 March.">?</span>
                         </div>
-                        <div class="bills-list list-scroll" id="stage-list-mtp"></div>
-                        <div class="bills-list list-scroll" id="stage-list-cloture-mtp"></div>
+                        <div class="bills-list list-scroll stage-list-left" id="stage-list-mtp"></div>
+                        <div class="bills-list list-scroll stage-list-right" id="stage-list-cloture-mtp"></div>
                     </div>
                 </div>
             </div>
@@ -1446,48 +1455,24 @@
                         <div class="bills-list list-scroll" id="nom-list-confirmed"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">WITHDRAWN</span>
-                                <span class="nom-count" id="nom-count-withdrawn"></span>
-                            </div>
-                            <span class="whip-info-tip" data-tooltip="Withdrawn by the President.">?</span>
-                        </div>
-                        <div class="bills-list list-scroll" id="nom-list-withdrawn"></div>
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
                                 <span class="bills-column-title">FAILED OR RETURNED</span>
                                 <span class="nom-count" id="nom-count-failed"></span>
                             </div>
                             <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-failed"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">WITHDRAWN</span>
+                                <span class="nom-count" id="nom-count-withdrawn"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Withdrawn by the President.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="nom-list-withdrawn"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Caucus floor notices.
-                 The Senate Democratic Caucus posts twice a day: a SCHEDULE for
-                 the next sitting day and a WRAP UP of what just happened. The
-                 schedule post is also what drives ON THE FLOOR above; the prose
-                 lives here rather than in that panel, where it overflowed.
-
-                 Republican Cloakroom equivalents are not published, which is
-                 the same asymmetry the House board carries, so the tooltip says
-                 so rather than leaving it to be inferred. -->
-            <div class="whip-updates-panel" id="caucus-notices">
-                <div class="panel-header">
-                    <div class="whip-label-group">
-                        <span class="panel-label">DEM CAUCUS NOTICES</span>
-                        <span class="whip-info-tip" data-tooltip="We republish Senate Democratic Caucus floor notices for informational purposes only. Republican Cloakroom notices are not publicly available.">?</span>
-                    </div>
-                    <div class="panel-header-right">
-                        <button class="whip-filter-btn" id="notice-filter-btn" aria-label="Filter by notice type"><svg class="whip-filter-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 2h10L7 6.5V10.5L5 9.5V6.5L1 2Z" fill="currentColor"/></svg> Filter</button>
-                        <span class="panel-source">Source: <a href="https://www.democrats.senate.gov/floor" target="_blank" rel="noopener">The Floor (Senate Democratic Caucus)</a></span>
-                    </div>
-                </div>
-                <div class="whip-filter-dropdown" id="notice-filter-dropdown" hidden></div>
-                <div class="whip-updates-feed" id="caucus-notices-feed">
-                    <div class="whip-updates-loading">Loading floor notices…</div>
-                </div>
             </div>
 
 
@@ -1759,7 +1744,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927l"></script>
+    <script defer src="senate.js?v=20260927m"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
