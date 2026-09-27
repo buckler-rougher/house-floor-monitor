@@ -2611,13 +2611,60 @@ const SENATE_VOTE_STAGES = [
   { key: 'final',        re: /^On (?:Passage|the Nomination|the Concurrent Resolution|the Resolution|the Joint Resolution)/i },
 ];
 
-// How far along the chain each stage sits, which is the order the board reads
-// them in reverse. Amendments are disposed of before cloture is invoked on the
+// The chain a measure actually travels, in order, which is the order the board
+// reads in reverse. Amendments are disposed of before cloture is invoked on the
 // measure itself, which is the order the record shows (S. 4668: amendment at
 // roll 242, cloture at 243), not the order the names suggest.
-const SENATE_STAGE_RANK = {
-  discharge: 0, 'cloture-mtp': 1, mtp: 2, 'cloture-amdt': 3, amendment: 4, cloture: 5, final: 6,
-};
+//
+// Discharge is deliberately not on it. A motion to discharge carried twice in
+// 15 attempts this session, and both times the measure died at the very next
+// step: S.J.Res. 185 was discharged on 19 May and its motion to proceed was
+// rejected on 24 June, S.J.Res. 98 was discharged on 8 January and lost a
+// point of order on the 14th. Not one discharged measure has reached a final
+// vote, so it is a stage that leads nowhere and does not deserve a column.
+// The same goes for points of order, motions to table and motions to commit.
+//
+// They are still votes, so they still hang off a measure as chips. What they
+// no longer do is decide which column it sits in.
+const SENATE_STAGE_CHAIN = ['cloture-mtp', 'mtp', 'cloture-amdt', 'amendment', 'cloture', 'final'];
+
+// Invoking cloture is the one thing that guarantees the next vote happens. That
+// is what cloture is for: it ends debate and puts the vote it unlocked on a
+// fixed clock. So a measure that has just carried one of these has cleared that
+// step and is waiting at the next, and filing it under the cloture it already
+// won would show it a column behind where it stands.
+//
+// Measured across this session, after a CARRIED vote the next on-chain vote was:
+//
+//   cloture       -> final       51 of 51    determined
+//   cloture-amdt  -> amendment    3 of  3    determined
+//   cloture-mtp   -> mtp          3 of  5    determined (the other two cleared
+//                                            the motion to proceed by consent,
+//                                            with no roll call to record)
+//   mtp           -> cloture-amdt 3, amendment 3, cloture 2, final 2
+//   amendment     -> amendment 4, cloture 2, final 1
+//
+// Only the three cloture rows are determined, and they are determined by the
+// rule rather than by the record. The two substantive rows depend on whether
+// anyone offers an amendment, so a measure that has carried its motion to
+// proceed stays filed under the motion to proceed: the board does not know
+// what comes next and will not guess.
+//
+// This is also what the two columns have been claiming all along. The right
+// column is the cloture that unlocks the vote on its left, so clearing a cell
+// on the right moves the measure to the cell on its left.
+const SENATE_CLOTURE_UNLOCKS = { 'cloture-mtp': 'mtp', 'cloture-amdt': 'amendment', cloture: 'final' };
+
+// How far back the board looks, counted in roll calls rather than days.
+//
+// Days do not survive a recess. Measured on 27 September, nothing at all had
+// happened in the previous 45 days and then ten measures appeared at once,
+// because the Senate was out for August: a 30-day window would have emptied
+// the panel for six weeks and then overflowed it. Roll call numbers only
+// advance when the Senate votes, so this shows the same amount of business
+// whatever the calendar is doing. Fifty reaches back to mid-July from the end
+// of September, which spans the recess and still only keeps 24 measures.
+const SENATE_STAGE_WINDOW = 50;
 
 function senateVoteStage(question) {
   for (const s of SENATE_VOTE_STAGES) if (s.re.test(question)) return s.key;
@@ -2681,18 +2728,37 @@ function buildSenateStages(xml, congress, session) {
     votes.sort((a, b) => a.rollCall - b.rollCall);   // chronological: the chain reads down
 
     // The bucket is where the measure stands now, which is the stage of its most
-    // recent vote, not the furthest stage it has ever reached. A measure can go
-    // backwards: S. 1383 failed cloture on 21 March and was back taking cloture
-    // on a fresh amendment on the 26th, so ranking by furthest would have filed
-    // it under a stage it had already lost.
+    // recent vote ON THE CHAIN, not the furthest stage it has ever reached. A
+    // measure can go backwards: S. 1383 failed cloture on 21 March and was back
+    // taking cloture on a fresh amendment on the 26th, so ranking by furthest
+    // would have filed it under a stage it had already lost.
+    //
+    // Reading past the off-chain votes is what lets a discharge stop being a
+    // column without the measure disappearing. S.J.Res. 185 was discharged and
+    // then lost its motion to proceed, so it belongs under MOTION TO PROCEED
+    // with the discharge hanging off it, which is both truer and more useful
+    // than a DISCHARGED column it would have sat in forever.
+    //
+    // A measure with no on-chain vote at all never got out of the procedural
+    // anteroom and is dropped. Fifteen did that this session, all of them war
+    // powers or arms sale resolutions blocked at the door.
     //
     // It also means repeated attempts at one stage are one card, not many.
     // H.R. 7147 failed cloture on the motion to proceed seven times between
     // 12 February and 26 March: a failed cloture neither kills a measure nor
     // moves it, it accumulates attempts at the same stage, and the card shows
     // the seventh with the other six stacked above it.
-    const head = votes[votes.length - 1];
-    const stage = head.stage;
+    const onChain = votes.filter((v) => SENATE_STAGE_CHAIN.includes(v.stage));
+    if (!onChain.length) continue;
+    const head = onChain[onChain.length - 1];
+
+    // A carried cloture advances the measure to the stage it unlocked, where it
+    // waits with no vote of its own yet. S. 4668 invoked cloture on the measure
+    // on 24 September and is down for passage on the 28th: it belongs under
+    // PASSAGE AND CONFIRMATION as pending, not under CLOTURE ON THE MEASURE as
+    // though the cloture vote were still the news.
+    const unlocked = head.carried ? SENATE_CLOTURE_UNLOCKS[head.stage] : null;
+    const stage = unlocked || head.stage;
 
     // The description comes from a vote about the measure, not about one of its
     // amendments, so those are only read when there is nothing else.
@@ -2711,29 +2777,48 @@ function buildSenateStages(xml, congress, session) {
       measure,
       subject,
       stage,
-      status: head.carried ? 'passed' : 'failed',
+      // Three states, and the card draws each differently. `pending` has no
+      // result of its own yet, so the vote that got it there becomes the top
+      // chip instead of the card's own tally.
+      status: unlocked ? 'pending' : head.carried ? 'passed' : 'failed',
+      pending: Boolean(unlocked),
       latest: head,
-      // Everything below the card, oldest first, which is the order it happened.
-      chain: votes.filter((v) => v !== head),
+      // Everything below the card, oldest first, which is the order it
+      // happened. A pending card keeps its own last vote in here, because that
+      // vote is finished business and the card is about what comes next.
+      chain: unlocked ? votes : votes.filter((v) => v !== head),
       votes: votes.length,
       date: head.date,
       rollCall: head.rollCall,
     });
   }
 
-  // Newest first inside each bucket, by the roll call that defines the card.
-  measures.sort((a, b) => b.rollCall - a.rollCall);
+  // Pending first, then newest. A bucket holds one measure that is waiting for
+  // a vote and a run of others that already had theirs, and the waiting one is
+  // the only thing on the card that has not happened yet. Sorting it purely by
+  // roll call buried S. 4668, which is down for passage on Monday, under a
+  // concurrent resolution that was rejected on Wednesday.
+  measures.sort((a, b) => (b.pending - a.pending) || (b.rollCall - a.rollCall));
+  const latest = measures.length ? measures[0].rollCall : 0;
+  const cutoff = latest - SENATE_STAGE_WINDOW;
+  const recent = measures.filter((m) => m.rollCall > cutoff);
   const stages = {};
-  for (const key of [...Object.keys(SENATE_STAGE_RANK), 'other']) {
-    stages[key] = measures.filter((m) => m.stage === key);
-  }
-  return stages;
+  for (const key of SENATE_STAGE_CHAIN) stages[key] = recent.filter((m) => m.stage === key);
+  return {
+    stages,
+    latest,
+    // What the window actually reached back to, so the panel can say so rather
+    // than silently showing a slice.
+    since: recent.length ? recent[recent.length - 1].date : null,
+    kept: recent.length,
+    total: measures.length,
+  };
 }
 
 async function handleSenateStages(env) {
   // BUMP THIS WHENEVER THE PAYLOAD SHAPE CHANGES. See the floor-schedule
   // handler for what a stale key costs.
-  return kvCache(env, `senate-stages-${CURRENT_CONGRESS}-v1`, 1800, async () => {
+  return kvCache(env, `senate-stages-${CURRENT_CONGRESS}-v4`, 1800, async () => {
     const congress = CURRENT_CONGRESS, session = senateSession();
     const r = await fetch(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
@@ -2741,10 +2826,10 @@ async function handleSenateStages(env) {
     if (!r.ok) throw new Error(`vote menu: HTTP ${r.status}`);
     // senate.gov answers a path that does not exist with 200 and its own HTML.
     if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('vote menu: not XML');
-    const stages = buildSenateStages(await r.text(), congress, session);
+    const built = buildSenateStages(await r.text(), congress, session);
     const counts = {};
-    for (const [k, v] of Object.entries(stages)) counts[k] = v.length;
-    return new Response(JSON.stringify({ congress, session, counts, stages }), {
+    for (const [k, v] of Object.entries(built.stages)) counts[k] = v.length;
+    return new Response(JSON.stringify({ congress, session, counts, ...built }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
   });
