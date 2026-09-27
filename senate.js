@@ -788,7 +788,7 @@ function nominationCard(n) {
     return `
         <div class="bill-card-wrap">
             <button class="bill-card" data-pn="${escapeHtml(n.pn || '')}" data-status="${st.status}" type="button">
-                <div class="bill-status ${st.status}" aria-hidden="true">${STATUS_MARK[st.status] || ''}</div>
+                <div class="bill-status ${st.status}" aria-hidden="true">${StatusMarks.card(st.status)}</div>
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(n.pn || 'PN')}</span>
@@ -1296,11 +1296,6 @@ const STAGE_CHIP = {
     'other':        'Procedural motion',
 };
 
-// The House board's chips, reused rather than redrawn: a tick for carried, a
-// cross for not.
-const CHIP_TICK = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M1.3,4.8 L3.6,7.1 L7.7,1.6"/></svg>';
-const CHIP_CROSS = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>';
-
 let _stages = {};
 let _stagesData = null;
 // The caucus schedule, kept so a pending stage card can say when its vote is.
@@ -1369,7 +1364,7 @@ function stageChip(item) {
         const label = `${STAGE_CHIP[v.stage] || v.stage} · ${v.result} ${v.yeas}-${v.nays}`;
         return `
         <div class="amdt-vote-card amdt-vote-${cls}" title="${escapeHtml(`Roll call ${v.rollCall}, ${boardDate(v.date)}`)}">
-            <span class="amdt-vote-circle" aria-hidden="true">${v.carried ? CHIP_TICK : CHIP_CROSS}</span>
+            <span class="amdt-vote-circle" aria-hidden="true">${StatusMarks.chip(v.carried ? 'passed' : 'failed')}</span>
             <span class="amdt-vote-label">${escapeHtml(label)}</span>
         </div>
         <div class="amdt-vote-connector" aria-hidden="true"></div>`;
@@ -1383,7 +1378,7 @@ function stageChip(item) {
     const label = `${votes.length} × ${STAGE_CHIP[stage] || stage} · ${tail}`;
     return `
     <div class="amdt-vote-card amdt-vote-${cls}" title="${escapeHtml(`Roll calls ${votes[0].rollCall}–${votes[votes.length - 1].rollCall}`)}">
-        <span class="amdt-vote-circle" aria-hidden="true">${won === votes.length ? CHIP_TICK : won === 0 ? CHIP_CROSS : ''}</span>
+        <span class="amdt-vote-circle" aria-hidden="true">${StatusMarks.chip(won === votes.length ? 'passed' : won === 0 ? 'failed' : '')}</span>
         <span class="amdt-vote-label">${escapeHtml(label)}</span>
     </div>
     <div class="amdt-vote-connector" aria-hidden="true"></div>`;
@@ -1392,10 +1387,6 @@ function stageChip(item) {
 // What a card is waiting for, once cloture has put it there. Phrased as the
 // thing that has not happened yet, because that is the whole difference between
 // this card and the one next to it that has a tally on it.
-// The glyphs the House board puts in .bill-status. Same two characters, so a
-// card means the same thing on either board.
-const STATUS_MARK = { passed: '\u2713', failed: '\u2715' };
-
 const STAGE_AWAITING = {
     final:     'Awaiting a final vote',
     amendment: 'Awaiting a vote on the amendment',
@@ -1431,7 +1422,7 @@ function stageCard(m, key, i) {
         ${chips}
         <div class="bill-card-wrap">
             <button class="bill-card" ${measureTarget(m.measure, ` data-stage-key="${key}" data-stage-idx="${i}"`)} data-status="${m.status}" type="button">
-                <div class="bill-status ${m.status}" aria-hidden="true">${STATUS_MARK[m.status] || ''}</div>
+                <div class="bill-status ${m.status}" aria-hidden="true">${StatusMarks.card(m.status)}</div>
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(m.measure)}</span>

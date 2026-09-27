@@ -4722,7 +4722,7 @@ function updateBillsDisplay() {
                 const statusClass = rule.ruleStatus === 'passed' ? 'passed'
                     : rule.ruleStatus === 'reported' ? 'scheduled'
                     : 'scheduled';
-                const statusSymbol = rule.ruleStatus === 'passed' ? '✓' : '';
+                const statusSymbol = StatusMarks.card(rule.ruleStatus);
                 // Same shape as every other card's status line: "Passed (Roll Call
                 // 311): 214-208". The rule used to read "Passed 214-208" while the
                 // measures it governed read the full form.
@@ -4810,7 +4810,7 @@ function updateBillsDisplay() {
 function createBillCard(bill, procedure) {
     billDataMap.set(bill.id, { ...bill, procedure });
     const statusClass = bill.status || 'scheduled';
-    const statusSymbol = bill.status === 'passed' ? '✓' : bill.status === 'failed' ? '✕' : '';
+    const statusSymbol = StatusMarks.card(bill.status);
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
@@ -4870,10 +4870,7 @@ function createBillCard(bill, procedure) {
         const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                        : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                        : `${mtrTypeName} · Vote Pending`;
-        const mtrIcon  = mtr.status === 'failed'
-                       ? `<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
-                       : mtr.status === 'passed' ? `<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M1.3,4.8 L3.6,7.1 L7.7,1.6"/></svg>`
-                       : '';
+        const mtrIcon = StatusMarks.chip(mtr.status);
         mtrBlockHtml = `
         <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
@@ -4889,10 +4886,7 @@ function createBillCard(bill, procedure) {
         const statusText = v.status === 'passed' ? `Passed${v.voteText ? ' · ' + v.voteText : ''}`
                           : v.status === 'failed' ? `Failed${v.voteText ? ' · ' + v.voteText : ''}`
                           : 'Recorded Vote Requested';
-        const icon = v.status === 'failed'
-                   ? `<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>`
-                   : v.status === 'passed' ? `<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M1.3,4.8 L3.6,7.1 L7.7,1.6"/></svg>`
-                   : '';
+        const icon = StatusMarks.chip(v.status);
         const numAttr = v.num != null ? ` data-amdt-num="${v.num}"` : '';
         const enBlocAttr = v.enBlocNums && v.enBlocNums.length ? ` data-amdt-enbloc-nums="${v.enBlocNums.join(',')}"` : '';
         return `
