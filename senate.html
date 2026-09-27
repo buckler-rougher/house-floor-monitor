@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260927b">
+    <link rel="stylesheet" href="styles.css?v=20260927c">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1262,7 +1262,7 @@
                                 <span class="bills-column-title">SCHEDULED</span>
                             </div>
                         </div>
-                        <div class="bills-list" id="senate-floor-measures"></div>
+                        <div class="bills-list list-scroll" id="senate-floor-measures"></div>
                     </div>
                     <div class="bills-column">
                         <div class="bills-column-header">
@@ -1271,7 +1271,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Once a cloture motion is filed the vote happens on a fixed clock, so a measure with cloture pending is one that will be voted on. Post-cloture means cloture was already invoked and the measure is in its remaining debate time.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="senate-cloture"></div>
+                        <div class="bills-list list-scroll" id="senate-cloture"></div>
                     </div>
                 </div>
             </div>
@@ -1306,7 +1306,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Reported out of committee and awaiting floor action. Only these carry a calendar number.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-calendar"></div>
+                        <div class="bills-list list-scroll" id="nom-list-calendar"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title">PRIVILEGED</span>
@@ -1314,7 +1314,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="May be taken up without being placed on the Executive Calendar first.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-privileged"></div>
+                        <div class="bills-list list-scroll" id="nom-list-privileged"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title">IN COMMITTEE</span>
@@ -1322,7 +1322,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Referred and not yet reported. No calendar number yet.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-committee"></div>
+                        <div class="bills-list list-scroll" id="nom-list-committee"></div>
                     </div>
                     <div class="bills-column">
                         <div class="bills-column-header">
@@ -1332,7 +1332,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Confirmed by the Senate this Congress.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-confirmed"></div>
+                        <div class="bills-list list-scroll" id="nom-list-confirmed"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title">WITHDRAWN</span>
@@ -1340,7 +1340,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Withdrawn by the President.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-withdrawn"></div>
+                        <div class="bills-list list-scroll" id="nom-list-withdrawn"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title">FAILED OR RETURNED</span>
@@ -1348,7 +1348,7 @@
                             </div>
                             <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
                         </div>
-                        <div class="bills-list nom-scroll" id="nom-list-failed"></div>
+                        <div class="bills-list list-scroll" id="nom-list-failed"></div>
                     </div>
                 </div>
             </div>
@@ -1648,7 +1648,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927f"></script>
+    <script defer src="senate.js?v=20260927h"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

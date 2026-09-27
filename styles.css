@@ -190,14 +190,14 @@
 .wrapup-result.carried { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
 .wrapup-result.failed  { color: var(--accent-red);   background: color-mix(in srgb, var(--accent-red)   12%, transparent); }
 
-.nom-scroll {
+.list-scroll {
     max-height: 260px;
     overflow-y: auto;
     -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
     mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
 }
 /* Scrolled to the end there is nothing more to hint at, so the fade goes. */
-.nom-scroll.is-at-end {
+.list-scroll.is-at-end {
     -webkit-mask-image: none;
     mask-image: none;
 }
