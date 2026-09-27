@@ -1234,20 +1234,34 @@
                  carry over is the House's column split by procedure -- SPECIAL
                  RULE(S), UNDER RULE, MAY BE CONSIDERED -- so the two columns
                  here just divide one list in half. -->
-            <div class="bills-section" id="senate-calendar">
+            <!-- On the floor.
+                 The answer General Orders could not give. That is a backlog of
+                 every measure reported out of committee, hundreds of them, and
+                 "what is on the floor this week" is not a question it answers.
+                 The Senate publishes no agenda of its own -- the Leader
+                 announces the day aloud -- so this comes from the Democratic
+                 Caucus's nightly write-up, which names the measure, its
+                 calendar number and the vote times.
+
+                 A caucus publication, not a Senate record, and credited as one
+                 on the panel the way the House board credits the Democratic
+                 Whip. The backlog is kept as a single count rather than a list
+                 of cards nobody can use. -->
+            <div class="bills-section" id="senate-floor-schedule">
                 <div class="panel-header">
-                    <span class="panel-label">GENERAL ORDERS</span>
+                    <span class="panel-label">ON THE FLOOR</span>
                     <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://www.govinfo.gov/app/collection/ccal" target="_blank" rel="noopener">Calendar of Business (GPO govinfo)</a></span>
-                        <span class="bills-last-update" id="senate-calendar-info">--</span>
+                        <span class="panel-source">Source: <a href="https://www.democrats.senate.gov/floor/senate-schedule" target="_blank" rel="noopener">Senate Schedule (Senate Democratic Caucus)</a></span>
+                        <span class="bills-last-update" id="senate-floor-when">--</span>
                     </div>
+                </div>
+                <div class="absentee-info">
+                    <span class="absentee-explainer" id="senate-floor-summary">Loading...</span>
+                    <span class="absentee-roll-info" id="senate-floor-backlog"></span>
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
-                        <div class="bills-list" id="senate-calendar-list-a"></div>
-                    </div>
-                    <div class="bills-column">
-                        <div class="bills-list" id="senate-calendar-list-b"></div>
+                        <div class="bills-list" id="senate-floor-measures"></div>
                     </div>
                 </div>
             </div>
@@ -1520,7 +1534,7 @@
     <script defer src="lib/airport-delays.js?v=20260926b"></script>
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260926p"></script>
+    <script defer src="senate.js?v=20260926q"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

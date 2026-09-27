@@ -642,87 +642,92 @@ async function loadAbsences() {
 // unanimous consent is cleared on an internal hotline that is published
 // nowhere. This is the backlog, and its newest entries are the closest thing
 // to a forward signal that exists in public.
-function renderCalendar(data) {
-    const listA = el('senate-calendar-list-a');
-    const listB = el('senate-calendar-list-b');
-    const info = el('senate-calendar-info');
-    if (!listA || !listB) return;
+// ── On the floor ─────────────────────────────────────────────────────────────
+//
+// The Democratic Caucus's nightly schedule for the next sitting day. General
+// Orders answers "what could come up eventually", which is 528 rows and not a
+// question anyone asks; this answers "what is up next", which is usually one
+// measure.
+//
+// The backlog is kept as a single count beside it, because "528 pending" is a
+// useful fact and 528 cards are not.
+let _generalOrdersTotal = null;
 
-    const orders = data?.orders || [];
-    if (!orders.length) {
-        setIfChanged(listA, '<div class="bill-card-wrap">No measures on the calendar.</div>');
-        setIfChanged(listB, '');
+function renderFloorSchedule(data) {
+    const list = el('senate-floor-measures');
+    const summary = el('senate-floor-summary');
+    const when = el('senate-floor-when');
+    if (!list) return;
+
+    if (summary) {
+        summary.textContent = data?.text
+            ? data.text
+            : 'No schedule posted for the next sitting day.';
+    }
+    if (when) when.textContent = data?.heading || '';
+
+    const measures = data?.measures || [];
+    if (!measures.length) {
+        setIfChanged(list, '');
         return;
     }
 
-    const shown = orders.slice(0, 24);
-    const cards = shown.map((o) => {
-        // The calendar's own action reads "Sept. 24, 2026.--Read the second time
-        // and placed on the calendar." Split on the "--" so the date sits in its
-        // own column the way the House cards do.
-        const m = (o.action || '').match(/^(.*?\.)\s*--\s*(.*)$/);
-        // Congress.gov's latest action is preferred when it is NEWER than the
-        // placement. A measure can be placed on the calendar in January and
-        // amended in August; the calendar still prints January, because that is
-        // when it was placed, not when it last moved.
-        const placedDate = m ? m[1].replace(/\.$/, '') : '';
-        const placed = m ? m[2] : (o.action || '');
-        const newer = o.latestActionDate && placedDate &&
-            new Date(o.latestActionDate) > new Date(placedDate);
-        const date = boardDate(newer ? o.latestActionDate : placedDate);
-        const action = newer ? o.latestAction : placed;
-        const tag = o.congressUrl ? 'a' : 'button';
-        const attrs = o.congressUrl
-            ? `href="${escapeHtml(o.congressUrl)}" target="_blank" rel="noopener"`
-            : 'type="button"';
+    const cards = measures.map((m) => {
+        // A scheduled vote naming this measure is the whole point of the panel,
+        // so it goes on the card rather than being left in the prose.
+        const vote = (data.votes || []).find((v) => v.includes(m.measure)) || '';
+        const status = vote ? 'pending' : 'scheduled';
         return `
         <div class="bill-card-wrap">
-            <${tag} class="bill-card" data-bill-id="${escapeHtml(o.measure)}" data-status="scheduled" ${attrs}>
-                <div class="bill-status scheduled" aria-hidden="true"></div>
+            <div class="bill-card" data-bill-id="${escapeHtml(m.measure)}" data-status="${status}">
+                <div class="bill-status ${status}" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
-                        <span class="bill-id">${escapeHtml(o.measure)}</span>
-                        <span class="bill-calendar-no">No. ${escapeHtml(String(o.order))}</span>
+                        <span class="bill-id">${escapeHtml(m.measure)}</span>
+                        <span class="bill-calendar-no">Cal. No. ${escapeHtml(String(m.calendarNo))}</span>
+                        ${data.postCloture ? '<span class="bill-calendar-no">Post-cloture</span>' : ''}
                     </div>
-                    <div class="bill-title">${escapeHtml(o.title || '')}</div>
+                    <div class="bill-title">${escapeHtml(m.title || '')}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml(o.author ? `${o.author} \u00b7 ${action}` : action)}</div>
-                        <div class="bill-date">${escapeHtml(date)}</div>
+                        <div class="bill-action">${escapeHtml(vote ? `Scheduled: ${vote}` : 'Pending consideration')}</div>
+                        <div class="bill-date">${escapeHtml(data.conveneTime ? `${data.conveneTime}` : '')}</div>
                     </div>
                 </div>
-            </${tag}>
+            </div>
         </div>`;
     });
-    // Split down the middle so the columns read top-to-bottom in order rather
-    // than zig-zagging left-right.
-    const half = Math.ceil(cards.length / 2);
-    setIfChanged(listA, cards.slice(0, half).join(''));
-    setIfChanged(listB, cards.slice(half).join(''));
+    setIfChanged(list, cards.join(''));
+}
 
-    // Say how many are NOT shown. 25 rows off a backlog of 528 would otherwise
-    // read as the whole calendar.
-    if (info) {
-        info.textContent = data.issued
-            ? `${data.total} pending \u00b7 issued ${boardDate(data.issued)}`
-            : `${data.total} pending`;
+function renderBacklog() {
+    const node = el('senate-floor-backlog');
+    if (node && _generalOrdersTotal != null) {
+        node.textContent = `${_generalOrdersTotal} measures on the calendar`;
     }
 }
 
-async function loadCalendar() {
+async function loadFloorSchedule() {
+    try {
+        const r = await fetch(`${API}/senate/floor-schedule`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderFloorSchedule(await r.json());
+    } catch (e) {
+        const summary = el('senate-floor-summary');
+        if (summary) summary.textContent = `Floor schedule unavailable (${e.message}).`;
+        console.error('Floor schedule fetch failed:', e);
+    }
+}
+
+// The backlog count only. See above for why the rows are not listed.
+async function loadCalendarCount() {
     try {
         const r = await fetch(`${API}/senate/calendar`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderCalendar(await r.json());
-    } catch (e) {
-        const feed = el('senate-calendar-feed');
-        if (!feed) return;
-        feed.innerHTML = '';
-        const row = document.createElement('div');
-        row.className = 'proceedings-item';
-        row.textContent = `Calendar of Business unavailable (${e.message}).`;
-        feed.appendChild(row);
-    }
+        if (!r.ok) return;
+        _generalOrdersTotal = (await r.json())?.total ?? null;
+        renderBacklog();
+    } catch (_) { /* the count is a nicety, not the panel */ }
 }
+
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
@@ -742,9 +747,11 @@ initCapcam();
 loadVotes();
 initAbsenceFilters();
 loadAbsences();
-loadCalendar();
-// The calendar is reissued once per sitting day.
-setInterval(loadCalendar, 6 * 60 * 60 * 1000);
+loadFloorSchedule();
+loadCalendarCount();
+// The caucus posts the next day's schedule each evening.
+setInterval(loadFloorSchedule, 30 * 60 * 1000);
+setInterval(loadCalendarCount, 6 * 60 * 60 * 1000);
 setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.
