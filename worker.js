@@ -2477,6 +2477,75 @@ function parseGeneralOrders(html) {
 // summaries, its cosponsors, its committees -- so the page would need four
 // round trips and its own API key to build this. The Worker already has the
 // key, so it does the fan-out and returns one object.
+// Nominations pending on the Executive Calendar.
+//
+// The Senate spends a large share of its floor time on nominations and none of
+// them are bills, so the measures feed misses them entirely. These are the two
+// files the Senate publishes for it, civilian and non-civilian.
+//
+// Only records with a NUMERIC ExecutiveCalendarNumber are on the calendar. The
+// non-civilian file carries 193 records but 166 of them read "DESK", meaning
+// the nomination is on the Secretary's desk and has not reached the calendar
+// yet; taking the file at face value would have shown seven times more than is
+// actually pending, nearly all of it routine military promotions.
+const NOMINATION_FEEDS = [
+  { kind: 'civilian', url: 'https://www.senate.gov/legislative/LIS/nominations/NomCivilianPendingCalendar.xml' },
+  { kind: 'military', url: 'https://www.senate.gov/legislative/LIS/nominations/NomNonCivilianPendingCalendar.xml' },
+];
+
+async function handleSenateNominations(env) {
+  return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v1`, 3600, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const pick = (b, t) => {
+      const m = b.match(new RegExp(`<${t}>([\\\\s\\\\S]*?)</${t}>`));
+      return m ? m[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, '').replace(/\\s+/g, ' ').trim() : '';
+    };
+
+    const out = [];
+    for (const feed of NOMINATION_FEEDS) {
+      let xml;
+      try {
+        const r = await fetch(feed.url, { headers: UA, signal: AbortSignal.timeout(25_000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        // senate.gov answers 200 with its own HTML for a path that does not exist.
+        if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('not XML');
+        xml = await r.text();
+      } catch (e) {
+        console.warn(`[house-floor] nominations ${feed.kind}: ${e.message}`);
+        continue;
+      }
+      for (const m of xml.matchAll(/<Nomination [^>]*>([\s\S]*?)<\/Nomination>/g)) {
+        const b = m[1];
+        const cal = pick(b, 'ExecutiveCalendarNumber');
+        if (!/^\d+$/.test(cal)) continue;   // DESK and the like are not on the calendar
+        out.push({
+          kind: feed.kind,
+          calendarNo: Number(cal),
+          pn: pick(b, 'NominationDisplayNumber'),
+          description: pick(b, 'ReportingDescription'),
+          organization: pick(b, 'Organization'),
+          committee: pick(b, 'CommitteeFullName'),
+          received: pick(b, 'ReceivedDate') || null,
+          reported: pick(b, 'ReportingStageDate') || null,
+        });
+      }
+    }
+    if (!out.length) throw new Error('nominations: nothing pending parsed from either file');
+
+    // Newest calendar number first, which is the end that moves.
+    out.sort((a, b) => b.calendarNo - a.calendarNo);
+    return new Response(JSON.stringify({
+      congress: CURRENT_CONGRESS,
+      total: out.length,
+      civilian: out.filter((n) => n.kind === 'civilian').length,
+      military: out.filter((n) => n.kind === 'military').length,
+      nominations: out,
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+    });
+  });
+}
+
 async function handleSenateBill(env, billId) {
   const parsed = billIdToCongressType(billId || '');
   if (!parsed) {
@@ -2570,7 +2639,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v7', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v8', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2584,7 +2653,8 @@ async function handleSenateFloorSchedule(env) {
     // first, then every remaining run of whitespace collapses to a single space,
     // then the sentinels come back as blank lines.
     const SPLIT = '\u0000';   // block boundary
-    const LI = '\u0001';      // marks a block that was a list item
+    const LI = '\u0001';      // block was an unordered list item
+    const OLI = '\u0002';     // block was an ORDERED list item
 
     // Decode once, keeping real block breaks and list membership.
     //
@@ -2599,6 +2669,10 @@ async function handleSenateFloorSchedule(env) {
     // unreadable.
     const strip = (html) => html
       .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
+      // <ol> items are marked apart from <ul> items: the caucus numbers its vote
+      // lists ("1. Motion to proceed to...") and rendering those as bullets
+      // loses the ordering the post is actually asserting.
+      .replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_, inner) => inner.replace(/<li[^>]*>/gi, SPLIT + OLI))
       .replace(/<li[^>]*>/gi, SPLIT + LI)
       .replace(/<\/(p|li|h[1-6]|tr|div|ol|ul)>/gi, SPLIT)
       .replace(/<br\s*\/?>/gi, SPLIT)
@@ -2609,9 +2683,9 @@ async function handleSenateFloorSchedule(env) {
       .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
       .split(SPLIT)
       .map((part) => {
-        const li = part.startsWith(LI);
-        const t = part.slice(li ? 1 : 0).replace(/\s+/g, ' ').trim();
-        return t ? (li ? LI + t : t) : '';
+        const mark = (part.startsWith(OLI) || part.startsWith(LI)) ? part[0] : '';
+        const t = part.slice(mark ? 1 : 0).replace(/\s+/g, ' ').trim();
+        return t ? mark + t : '';
       })
       .filter(Boolean)
       .join('\n\n')
@@ -2709,8 +2783,12 @@ async function handleSenateFloorSchedule(env) {
         // wrong thing.
         const voteAt = text.match(/(?:at\s+)?approximately\s+([0-9:]+\s*[ap]\.?m\.?)[^.]{0,80}?(?:vote|roll call)/i)
                     || text.match(/(?:vote|roll call)[^.]{0,80}?at\s+approximately\s+([0-9:]+\s*[ap]\.?m\.?)/i);
+        // "cloture on Executive Calendar #830 Kasdin Miller Mitchell, of Texas,
+        // to be United States District Judge..." -- the schedule names
+        // nominations by calendar number, which is what the XML keys on.
+        const execCals = [...new Set([...text.matchAll(/Executive Calendar #\s*(\d+)/gi)].map((m) => Number(m[1])))];
         agenda = {
-          heading: latest.title, url: latest.url, text,
+          heading: latest.title, url: latest.url, text, execCals,
           conveneTime: convene ? convene[1] : null,
           conveneDate: convene ? convene[2] : null,
           voteTime: voteAt ? voteAt[1].replace(/\s+/g, '') : null,
@@ -4819,6 +4897,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/nominations' && request.method === 'GET') {
+    return handleSenateNominations(env);
   } else if (path === '/api/senate/bill' && request.method === 'GET') {
     return handleSenateBill(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/floor-schedule' && request.method === 'GET') {
