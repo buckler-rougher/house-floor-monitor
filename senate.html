@@ -1429,22 +1429,30 @@
                         <div class="bills-list list-scroll" id="nom-list-calendar"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">PRIVILEGED</span>
-                                <span class="nom-count" id="nom-count-privileged"></span>
-                            </div>
-                            <span class="whip-info-tip" data-tooltip="May be taken up without being placed on the Executive Calendar first.">?</span>
-                        </div>
-                        <div class="bills-list list-scroll" id="nom-list-privileged"></div>
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
                                 <span class="bills-column-title">IN COMMITTEE</span>
                                 <span class="nom-count" id="nom-count-committee"></span>
                             </div>
                             <span class="whip-info-tip" data-tooltip="Referred and not yet reported. No calendar number yet.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-committee"></div>
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">FAILED OR RETURNED</span>
+                                <span class="nom-count" id="nom-count-failed"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="nom-list-failed"></div>
                     </div>
                     <div class="bills-column">
+                        <div class="bills-column-header">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">PRIVILEGED</span>
+                                <span class="nom-count" id="nom-count-privileged"></span>
+                            </div>
+                            <span class="whip-info-tip" data-tooltip="May be taken up without being placed on the Executive Calendar first.">?</span>
+                        </div>
+                        <div class="bills-list list-scroll" id="nom-list-privileged"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
                                 <span class="bills-column-title">CONFIRMED</span>
@@ -1455,14 +1463,6 @@
                         <div class="bills-list list-scroll" id="nom-list-confirmed"></div>
                         <div class="bills-column-header">
                             <div class="bills-column-header-left">
-                                <span class="bills-column-title">FAILED OR RETURNED</span>
-                                <span class="nom-count" id="nom-count-failed"></span>
-                            </div>
-                            <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
-                        </div>
-                        <div class="bills-list list-scroll" id="nom-list-failed"></div>
-                        <div class="bills-column-header">
-                            <div class="bills-column-header-left">
                                 <span class="bills-column-title">WITHDRAWN</span>
                                 <span class="nom-count" id="nom-count-withdrawn"></span>
                             </div>
@@ -1471,8 +1471,6 @@
                         <div class="bills-list list-scroll" id="nom-list-withdrawn"></div>
                     </div>
                 </div>
-            </div>
-
             </div>
 
 
@@ -1738,13 +1736,14 @@
 
     <!-- Shared bill-id rules, used by app.js and worker.js alike. Plain script,
          loaded before app.js so it is a simple synchronous global. -->
+    <script defer src="lib/status-marks.js?v=20260927a"></script>
     <script defer src="lib/bill-id.js?v=20260905a"></script>
     <script defer src="lib/clocks.js?v=20260926a"></script>
     <script defer src="lib/airport-delays.js?v=20260926b"></script>
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260927m"></script>
+    <script defer src="senate.js?v=20260927n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
