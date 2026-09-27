@@ -604,6 +604,72 @@ async function loadAbsences() {
     }
 }
 
+// ── Pending on the calendar ──────────────────────────────────────────────────
+//
+// General Orders, newest-placed first. See the Worker for why this is not
+// "bills this week": the Senate publishes no weekly agenda, and what goes by
+// unanimous consent is cleared on an internal hotline that is published
+// nowhere. This is the backlog, and its newest entries are the closest thing
+// to a forward signal that exists in public.
+function renderCalendar(data) {
+    const feed = el('senate-calendar-feed');
+    const info = el('senate-calendar-info');
+    if (!feed) return;
+    const orders = data?.orders || [];
+    feed.innerHTML = '';
+
+    if (!orders.length) {
+        const row = document.createElement('div');
+        row.className = 'proceedings-item';
+        row.textContent = 'No measures on the calendar.';
+        feed.appendChild(row);
+        return;
+    }
+
+    for (const o of orders.slice(0, 25)) {
+        const row = document.createElement('div');
+        row.className = 'proceedings-item';
+
+        const num = document.createElement('span');
+        num.className = 'proceedings-time';
+        // Trailing space: adjacent spans would otherwise run together.
+        num.textContent = `No. ${o.order} \u00b7 ${o.measure} `;
+
+        // textContent throughout: this is remote text from GPO.
+        const body = document.createElement('span');
+        body.className = 'proceedings-text';
+        const bits = [o.title];
+        if (o.author) bits.push(`(${o.author})`);
+        body.textContent = bits.filter(Boolean).join(' ');
+
+        row.append(num, body);
+        feed.appendChild(row);
+    }
+    if (info) {
+        // Say how many are NOT shown. A list of 25 off a backlog of 528 would
+        // otherwise read as the whole calendar.
+        info.textContent = data.issued
+            ? `${data.total} on the calendar \u00b7 issued ${data.issued}`
+            : `${data.total} on the calendar`;
+    }
+}
+
+async function loadCalendar() {
+    try {
+        const r = await fetch(`${API}/senate/calendar`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderCalendar(await r.json());
+    } catch (e) {
+        const feed = el('senate-calendar-feed');
+        if (!feed) return;
+        feed.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'proceedings-item';
+        row.textContent = `Calendar of Business unavailable (${e.message}).`;
+        feed.appendChild(row);
+    }
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
@@ -622,6 +688,9 @@ initCapcam();
 loadVotes();
 initAbsenceFilters();
 loadAbsences();
+loadCalendar();
+// The calendar is reissued once per sitting day.
+setInterval(loadCalendar, 6 * 60 * 60 * 1000);
 setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.
