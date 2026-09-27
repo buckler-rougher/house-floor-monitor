@@ -2842,10 +2842,30 @@ function senateProceedingsText(html) {
     .trim();
 }
 
+// Where the record stops and the website starts.
+//
+// The last section is always Adjournment and its chunk runs to the end of the
+// document, so it swallowed the whole page: "...until 3 p.m. on Monday,
+// September 28, 2026. Bills, Acts, & Laws Nominations Treaties Votes Floor
+// Proceedings ... Contact | Content Responsibility | Usage Policy ...".
+//
+// The page marks its own region with comments, which is the boundary to trust
+// over any phrase in the prose. Two fallbacks behind it: the sidebar column
+// that follows the region, and failing that the whole document, because a
+// parser that returns the footer is better than one that returns nothing.
+function senateProceedingsRegion(html) {
+  const begin = html.search(/<!--\s*BEGIN MAIN\s*-->/i);
+  const end = html.search(/<!--\s*END MAIN\s*-->/i);
+  if (begin >= 0 && end > begin) return html.slice(begin, end);
+  const side = html.search(/<div[^>]+id="secondary_col1"/i);
+  if (side > 0) return html.slice(0, side);
+  return html;
+}
+
 function parseSenateProceedings(html) {
   // The page's own style block sits between the h1 and the first heading and
   // would otherwise be swept into the opening narrative.
-  const body = html.replace(/<style[\s\S]*?<\/style>/gi, '');
+  const body = senateProceedingsRegion(html).replace(/<style[\s\S]*?<\/style>/gi, '');
 
   const heads = [...body.matchAll(/<h2 class="headings"[^>]*>([\s\S]*?)<\/h2>/gi)];
   if (!heads.length) throw new Error('floor activity: no headings found');
@@ -2914,7 +2934,7 @@ async function handleSenateProceedings(env) {
   // Five minutes, not the hour most of this board uses. The page is rewritten
   // as the day goes on, so this is the one Senate source where a short window
   // buys something: it is how the board shows a sitting day moving.
-  return kvCache(env, 'senate-proceedings-v1', 300, async () => {
+  return kvCache(env, 'senate-proceedings-v2', 300, async () => {
     const r = await fetch('https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
         signal: AbortSignal.timeout(20_000) });
