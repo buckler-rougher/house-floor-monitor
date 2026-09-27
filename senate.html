@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260926d">
+    <link rel="stylesheet" href="styles.css?v=20260926e">
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -1262,6 +1262,29 @@
                 </div>
             </div>
 
+            <!-- Pending nominations.
+                 The Senate spends much of its floor time on nominations and
+                 none of them are bills, so every measure-shaped panel misses
+                 them. Four stages, from the Senate's own XML: on the Executive
+                 Calendar (can reach the floor), privileged, in committee, and
+                 recently confirmed. -->
+            <div class="whip-updates-panel" id="nominations">
+                <div class="panel-header">
+                    <div class="whip-label-group">
+                        <span class="panel-label">NOMINATIONS</span>
+                        <span class="whip-info-tip" data-tooltip="Only nominations with an Executive Calendar number can reach the floor. A nomination in committee has no number yet, and DESK means it sits on the Secretary of the Senate's desk.">?</span>
+                    </div>
+                    <div class="panel-header-right">
+                        <button class="whip-filter-btn" id="nom-filter-btn" aria-label="Filter by stage"><svg class="whip-filter-icon" width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 2h10L7 6.5V10.5L5 9.5V6.5L1 2Z" fill="currentColor"/></svg> Filter</button>
+                        <span class="panel-source">Source: <a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
+                    </div>
+                </div>
+                <div class="whip-filter-dropdown" id="nom-filter-dropdown" hidden></div>
+                <div class="whip-updates-feed" id="nominations-feed">
+                    <div class="whip-updates-loading">Loading nominations…</div>
+                </div>
+            </div>
+
             <!-- Caucus floor notices.
                  The Senate Democratic Caucus posts twice a day: a SCHEDULE for
                  the next sitting day and a WRAP UP of what just happened. The
@@ -1557,7 +1580,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
-    <script defer src="senate.js?v=20260926y"></script>
+    <script defer src="senate.js?v=20260926z"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
