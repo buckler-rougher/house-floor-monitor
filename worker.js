@@ -2485,7 +2485,7 @@ async function handleSenateBill(env, billId) {
     });
   }
   const { type, number } = parsed;
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v1`, 3600, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v2`, 3600, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -2497,17 +2497,27 @@ async function handleSenateBill(env, billId) {
       return r.json();
     };
 
+    // limit=250 because the support bar needs every cosponsor's party, not just
+    // a count. The House modal splits the bar D/R/I and a count cannot do that.
     const [record, summaries, cosponsors, committees] = await Promise.all([
-      call(''), call('/summaries?limit=5'), call('/cosponsors?limit=1'), call('/committees'),
+      call(''), call('/summaries?limit=5'), call('/cosponsors?limit=250'), call('/committees'),
     ]);
     const bill = record?.bill;
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
 
     // The first summary with real prose. Stubs shorter than a sentence are
     // skipped, same rule the House modal uses.
+    // Entities are decoded, not just tags stripped. CRS summaries contain
+    // &nbsp; and it rendered literally in the modal as the five characters.
+    const decode = (t) => t
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#8217;|&rsquo;/g, "'").replace(/&#8220;|&#8221;|&ldquo;|&rdquo;/g, '"')
+      .replace(/&mdash;/g, ' - ').replace(/&ndash;/g, '-').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+      .replace(/\s+/g, ' ').trim();
     let summary = null;
     for (const s2 of (summaries?.summaries || [])) {
-      const t = (s2.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      const t = decode(s2.text || '')
         .replace(/^(?:H\.R\.|S\.|H\.Res\.|S\.Res\.|H\.Con\.Res\.|S\.Con\.Res\.|H\.J\.Res\.|S\.J\.Res\.)\s*\d+[^a-zA-Z]{0,12}/i, '');
       if (t.length > 20) { summary = t; break; }
     }
@@ -2526,6 +2536,14 @@ async function handleSenateBill(env, billId) {
       policyArea: bill.policyArea?.name || null,
       sponsor: sp ? { name: sp.fullName, party: sp.party, state: sp.state, bioguide: sp.bioguideId } : null,
       cosponsorCount: cosponsors?.pagination?.count ?? null,
+      // Party split for the support bar, sponsor included the way the House
+      // modal counts it.
+      support: (() => {
+        const all = [...(sp ? [{ party: sp.party }] : []), ...(cosponsors?.cosponsors || [])];
+        if (!all.length) return null;
+        const n = (p) => all.filter((m) => m.party === p).length;
+        return { D: n('D'), R: n('R'), I: all.length - n('D') - n('R'), total: all.length };
+      })(),
       committees: (committees?.committees || []).map((c) => c.name).filter(Boolean).slice(0, 4),
       summary,
       latestAction: bill.latestAction?.text || null,
@@ -2546,18 +2564,30 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v3', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v5', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
       if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
       return r.text();
     };
+    // Paragraph breaks survive. The caucus writes these as several paragraphs
+    // and a list of votes; flattening them to one blob is why the panel read as
+    // a wall of text next to the site it came from. \n\n marks a break and the
+    // page renders each as its own paragraph.
     const strip = (html) => html
       .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+      .replace(/<\/(p|li|h[1-6]|div)>/gi, '\n\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
       .replace(/&#8217;|&rsquo;/g, "'").replace(/&quot;|&#8220;|&#8221;/g, '"')
-      .replace(/\s+/g, ' ').trim();
+      .replace(/&mdash;/g, ' - ').replace(/&ndash;/g, '-')
+      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+      .replace(/[ \t]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
 
     // Two feeds. /floor is just these two interleaved, so it adds nothing.
     const FEEDS = [
@@ -2584,15 +2614,26 @@ async function handleSenateFloorSchedule(env) {
     }
     if (!notices.length) throw new Error('caucus notices: nothing parsed from either feed');
 
+    // Newest first across both feeds. The printed date is MM.DD.YYYY.
+    const key = (n) => {
+      const d = n.published.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      return d ? `${d[3]}${d[1]}${d[2]}` : '0';
+    };
+    notices.sort((a, b) => (key(b).localeCompare(key(a))) || a.type.localeCompare(b.type));
+
     // The listing prints a truncated excerpt ending in "...", which cuts off
     // mid-sentence and is worse than showing nothing. Fetch the real body for
-    // the ones the board displays; the rest keep the excerpt and are never shown
-    // unless a filter reaches them.
+    // the ones the board displays.
+    //
+    // AFTER the sort, not before. Before it, `notices` is still in feed order --
+    // all 15 schedules, then all 15 wrap-ups -- so slice(0, 12) took twelve
+    // schedules and no wrap-ups at all. The sort then interleaved them and every
+    // wrap-up on screen showed the truncated excerpt.
     const bodyOf = (html) => {
       let t = strip(html);
       const start = t.search(/The Senate (?:stands|will|convenes|reconvenes)|Roll Call Vote/i);
       if (start >= 0) t = t.slice(start);
-      return t.split(/\s*Print Email Share/)[0].trim();
+      return t.split(/\s*Print\s+Email\s+Share/)[0].trim();
     };
     const head = notices.slice(0, 12);
     for (let i = 0; i < head.length; i += 4) {
@@ -2602,12 +2643,6 @@ async function handleSenateFloorSchedule(env) {
       }));
     }
 
-    // Newest first across both feeds. The printed date is MM.DD.YYYY.
-    const key = (n) => {
-      const d = n.published.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-      return d ? `${d[3]}${d[1]}${d[2]}` : '0';
-    };
-    notices.sort((a, b) => (key(b).localeCompare(key(a))) || a.type.localeCompare(b.type));
 
     // The newest schedule post is also the floor agenda, so it is parsed out
     // here rather than making the page do it twice.
