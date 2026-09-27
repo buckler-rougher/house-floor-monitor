@@ -2815,6 +2815,118 @@ function buildSenateStages(xml, congress, session) {
   };
 }
 
+// ── Senate floor proceedings ─────────────────────────────────────────────────
+//
+// The Senate's own narrative of a sitting day, which is the nearest thing it
+// publishes to the Clerk's proceedings feed the House board reads. It is not a
+// live feed and does not pretend to be: the page carries one day, the last one
+// the Senate sat, and gains the next day's record after that day ends.
+//
+// Structure, as published: an <h2 class="headings"> for the date, then one per
+// section -- The Journal, Certain Procedures Dispensed With, Transaction of
+// Morning Business, Legislative Business, Adjournment. Inside Legislative
+// Business each measure is a div.docnum naming it and its sponsor, followed by
+// one or more div.status lines saying what happened to it.
+//
+// An amendment is also a div.docnum, nested in a div.amendment. Rather than
+// track that nesting, they are told apart by where the link points:
+// congress.gov /amendment/ against /bill/. Same answer, no brackets to count.
+
+function senateProceedingsText(html) {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#8217;|&rsquo;/g, "'").replace(/&#8220;|&#8221;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseSenateProceedings(html) {
+  // The page's own style block sits between the h1 and the first heading and
+  // would otherwise be swept into the opening narrative.
+  const body = html.replace(/<style[\s\S]*?<\/style>/gi, '');
+
+  const heads = [...body.matchAll(/<h2 class="headings"[^>]*>([\s\S]*?)<\/h2>/gi)];
+  if (!heads.length) throw new Error('floor activity: no headings found');
+
+  const date = senateProceedingsText(heads[0][1]);
+  const sections = [];
+
+  for (let i = 1; i < heads.length; i++) {
+    const heading = senateProceedingsText(heads[i][1]);
+    const from = heads[i].index + heads[i][0].length;
+    const to = i + 1 < heads.length ? heads[i + 1].index : body.length;
+    const chunk = body.slice(from, to);
+
+    // Legislative Business is the only section built out of measures. Every
+    // other one is a paragraph.
+    const measures = [];
+    let measure = null, amendment = null;
+    for (const m of chunk.matchAll(/<div class="(docnum|status)">([\s\S]*?)<\/div>/gi)) {
+      const [kind, inner] = [m[1].toLowerCase(), m[2]];
+      if (kind === 'status') {
+        const text = senateProceedingsText(inner).replace(/^--\s*/, '');
+        if (!text) continue;
+        // The roll call number is a link, and it is the one thing here worth
+        // keeping as a link rather than as words.
+        const roll = inner.match(/roll_call_vote_cfm\.cfm\?[^"]*vote=0*(\d+)/i);
+        const row = { text, rollCall: roll ? Number(roll[1]) : null };
+        if (amendment) amendment.status.push(row);
+        else if (measure) measure.status.push(row);
+        continue;
+      }
+      const href = (inner.match(/href="([^"]+)"/i) || [])[1] || '';
+      const bolds = [...inner.matchAll(/<b>([\s\S]*?)<\/b>/gi)].map((b) => senateProceedingsText(b[1]));
+      const id = bolds[0] || '';
+      const sponsor = (bolds[1] || '').replace(/^\(|\)$/g, '');
+      // Everything after the last </b> is the description.
+      const tail = inner.slice(inner.lastIndexOf('</b>') + 4);
+      const title = senateProceedingsText(tail).replace(/^:\s*/, '');
+      const row = { id, sponsor, title, url: href || null, status: [] };
+      if (/\/amendment\//i.test(href)) {
+        amendment = { ...row };
+        if (measure) measure.amendments.push(amendment);
+      } else {
+        amendment = null;
+        measure = { ...row, amendments: [] };
+        measures.push(measure);
+      }
+    }
+
+    if (measures.length) {
+      sections.push({ heading, measures });
+    } else {
+      const text = senateProceedingsText(chunk);
+      if (text) sections.push({ heading, text });
+    }
+  }
+
+  // The opening narrative sits between the date heading and the first section
+  // heading, with no heading of its own.
+  const lead = senateProceedingsText(body.slice(heads[0].index + heads[0][0].length, heads[1] ? heads[1].index : body.length));
+  if (lead) sections.unshift({ heading: null, text: lead });
+
+  return { date, sections };
+}
+
+async function handleSenateProceedings(env) {
+  // Five minutes, not the hour most of this board uses. The page is rewritten
+  // as the day goes on, so this is the one Senate source where a short window
+  // buys something: it is how the board shows a sitting day moving.
+  return kvCache(env, 'senate-proceedings-v1', 300, async () => {
+    const r = await fetch('https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
+        signal: AbortSignal.timeout(20_000) });
+    if (!r.ok) throw new Error(`floor activity: HTTP ${r.status}`);
+    if (!/html/i.test(r.headers.get('Content-Type') || '')) throw new Error('floor activity: not HTML');
+    const out = parseSenateProceedings(await r.text());
+    return new Response(JSON.stringify(out), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+    });
+  });
+}
+
 async function handleSenateStages(env) {
   // BUMP THIS WHENEVER THE PAYLOAD SHAPE CHANGES. See the floor-schedule
   // handler for what a stale key costs.
@@ -5312,6 +5424,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/senate/nominations' && request.method === 'GET') {
     return handleSenateNominations(env);
+  } else if (path === '/api/senate/proceedings' && request.method === 'GET') {
+    return handleSenateProceedings(env);
   } else if (path === '/api/senate/stages' && request.method === 'GET') {
     return handleSenateStages(env);
   } else if (path === '/api/senate/bill' && request.method === 'GET') {

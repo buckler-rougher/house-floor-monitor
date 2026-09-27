@@ -1256,7 +1256,7 @@ async function openSenateNominationModal({ pn, calendarNo, vote }, trigger) {
 function initBillModal() {
     document.addEventListener('click', (e) => {
         const card = e.target.closest('[data-bill-id], [data-pn], [data-cal-no]');
-        if (!card || !card.closest('.bills-section')) return;
+        if (!card || !card.closest('.bills-section, .proceedings-panel')) return;
         e.preventDefault();
         // By index rather than a serialised copy on every card: the buckets are
         // already in memory and a hundred cards carrying their own JSON is a lot
@@ -1270,6 +1270,76 @@ function initBillModal() {
         if (!card.dataset.pn && !card.dataset.calNo) return;
         openSenateNominationModal({ pn: card.dataset.pn, calendarNo: card.dataset.calNo, vote }, card);
     });
+}
+
+// ── Floor proceedings ────────────────────────────────────────────────────────
+//
+// The Senate's own narrative of a sitting day, which is the nearest thing it
+// publishes to the Clerk's feed the House board reads. Not a live feed: the
+// page carries one day and gains the next after that day ends, so what shows
+// here is the last day the Senate sat, dated so it cannot be mistaken for
+// today. The Worker holds it for five minutes rather than an hour, which is
+// what will make a sitting day visibly move.
+
+function proceedingsMeasure(m) {
+    const status = m.status.map((x) => `
+        <div class="proceedings-status">${escapeHtml(x.text)}${
+            x.rollCall ? ` <span class="proceedings-roll">Roll call ${x.rollCall}</span>` : ''}</div>`).join('');
+    const amendments = (m.amendments || []).map((a) => `
+        <div class="proceedings-amendment">
+            <div class="proceedings-measure-id">${escapeHtml(a.id)}${a.sponsor ? ` <span class="proceedings-sponsor">${escapeHtml(a.sponsor)}</span>` : ''}</div>
+            <div class="proceedings-measure-title">${escapeHtml(a.title)}</div>
+            ${a.status.map((x) => `<div class="proceedings-status">${escapeHtml(x.text)}</div>`).join('')}
+        </div>`).join('');
+    // The id opens the same bill modal the rest of the board uses, when the
+    // measure is one Congress.gov has a record for.
+    const idAttr = MEASURE_ID_RE.test(m.id.trim()) ? ` data-bill-id="${escapeHtml(m.id.trim())}"` : '';
+    const tag = idAttr ? 'button' : 'div';
+    return `
+    <div class="proceedings-item">
+        <${tag} class="proceedings-measure"${idAttr}${idAttr ? ' type="button"' : ''}>
+            <div class="proceedings-measure-id">${escapeHtml(m.id)}${m.sponsor ? ` <span class="proceedings-sponsor">${escapeHtml(m.sponsor)}</span>` : ''}</div>
+            <div class="proceedings-measure-title">${escapeHtml(m.title)}</div>
+        </${tag}>
+        ${status}${amendments}
+    </div>`;
+}
+
+function renderProceedings(data) {
+    const feed = el('proceedings-feed');
+    const stamp = el('proceedings-last-update');
+    if (!feed) return;
+    if (stamp) stamp.textContent = data?.date || '';
+    const sections = data?.sections || [];
+    if (!sections.length) {
+        setIfChanged(feed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+        return;
+    }
+    setIfChanged(feed, sections.map((sec) => {
+        const head = sec.heading
+            ? `<div class="proceedings-section-label">${escapeHtml(sec.heading)}</div>` : '';
+        if (sec.measures) return head + sec.measures.map(proceedingsMeasure).join('');
+        return `${head}<div class="proceedings-item"><div class="proceedings-text">${escapeHtml(sec.text || '')}</div></div>`;
+    }).join(''));
+    watchListScroll(feed);
+}
+
+async function loadProceedings() {
+    const feed = el('proceedings-feed');
+    if (!feed) return;
+    if (!feed.querySelector('.proceedings-item')) {
+        setIfChanged(feed, '<div class="proceedings-loading">FETCHING PROCEEDINGS...</div>');
+    }
+    try {
+        const r = await fetch(`${API}/senate/proceedings`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderProceedings(await r.json());
+    } catch (e) {
+        if (!feed.querySelector('.proceedings-measure')) {
+            setIfChanged(feed, `<div class="proceedings-error">Floor activity unavailable (${escapeHtml(e.message)}).</div>`);
+        }
+        console.error('Proceedings fetch failed:', e);
+    }
 }
 
 // ── Procedural stages ────────────────────────────────────────────────────────
@@ -1657,6 +1727,10 @@ loadNominations();
 loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);
+loadProceedings();
+// The page is rewritten through a sitting day, so this is the one source here
+// worth asking again at the rate the Worker caches it.
+setInterval(loadProceedings, 5 * 60 * 1000);
 loadStages();
 // The vote menu gains a row only when the Senate votes, a handful of times on a
 // sitting day, and the Worker holds it for 30 minutes anyway. Ten rather than
