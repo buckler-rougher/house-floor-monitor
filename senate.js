@@ -880,18 +880,33 @@ function watchListScroll(node) {
     check();
 }
 
+// The three finished stages are an archive, not a list of business: CONFIRMED
+// alone runs to 1,629 and reaches back to 20 January 2025. Only the newest
+// forty are drawn, and the heading says so rather than showing a count the list
+// stops well short of. The three pending stages are drawn whole, because every
+// row in them is something that can still reach the floor.
+const NOM_FINISHED = new Set(['confirmed', 'withdrawn', 'failed']);
+const NOM_SHOWN = 40;
+
 function renderNominations() {
     for (const stage of Object.keys(NOM_STAGES)) {
         const list = el(`nom-list-${stage}`);
         const count = el(`nom-count-${stage}`);
+        const rows = _nominations.filter((n) => n.stage === stage);
+        const capped = NOM_FINISHED.has(stage) && rows.length > NOM_SHOWN;
+        const shown = capped ? rows.slice(0, NOM_SHOWN) : rows;
         if (count) {
-            const total = _nomCounts[stage];
-            count.textContent = total == null ? '' : String(total);
+            // "40 of 1,629" only where the list really was cut. Deriving it from
+            // a count-versus-length comparison instead said "0 of 151" for a
+            // stage whose rows had not arrived yet, which reads as a failure
+            // rather than as a window.
+            const total = _nomCounts[stage] ?? rows.length;
+            count.textContent = capped ? `${shown.length} of ${total.toLocaleString('en-US')}`
+                : total == null ? '' : String(total);
         }
         if (!list) continue;
-        const rows = _nominations.filter((n) => n.stage === stage);
-        setIfChanged(list, rows.length
-            ? rows.slice(0, 30).map(nominationCard).join('')
+        setIfChanged(list, shown.length
+            ? shown.map(nominationCard).join('')
             : '<div class="whip-updates-loading">None at this stage.</div>');
         watchListScroll(list);
     }
@@ -1252,7 +1267,9 @@ function initBillModal() {
 // it. See the panel's comment in senate.html for the layout and why AMENDMENTS
 // is usually empty.
 
-const STAGE_KEYS = ['final', 'amendment', 'mtp', 'discharge', 'cloture', 'cloture-amdt', 'cloture-mtp', 'other'];
+// Six, matching the panel. Discharge and the off-chain motions are still chip
+// labels below, because a measure can carry one; they are just not columns.
+const STAGE_KEYS = ['final', 'amendment', 'mtp', 'cloture', 'cloture-amdt', 'cloture-mtp'];
 
 // Short forms for the chips and the modal. The column heading above them
 // already carries the long name, so repeating it on every chip would be noise.
@@ -1328,9 +1345,30 @@ function stageChip(item) {
     <div class="amdt-vote-connector" aria-hidden="true"></div>`;
 }
 
+// What a card is waiting for, once cloture has put it there. Phrased as the
+// thing that has not happened yet, because that is the whole difference between
+// this card and the one next to it that has a tally on it.
+const STAGE_AWAITING = {
+    final:     'Awaiting a final vote',
+    amendment: 'Awaiting a vote on the amendment',
+    mtp:       'Awaiting the motion to proceed',
+};
+
 function stageCard(m, key, i) {
     const v = m.latest;
     const chips = chainRuns(m.chain).map(stageChip).join('');
+
+    // A pending card has no result of its own. Its last vote is already the top
+    // chip, so repeating that vote's tally here would say the measure had just
+    // done the thing it is in fact waiting to do.
+    const idRow = m.pending
+        ? `<span class="bill-calendar-no">Pending</span>`
+        : `<span class="bill-calendar-no">${escapeHtml(v.result)}</span>
+           <span class="wrapup-result ${v.carried ? 'carried' : 'failed'}">${v.yeas}-${v.nays}</span>`;
+    const action = m.pending
+        ? `${STAGE_AWAITING[m.stage] || 'Awaiting a vote'} · cloture invoked`
+        : `${STAGE_CHIP[v.stage] || v.stage} · Roll call ${v.rollCall}`;
+
     return `
     <div class="bill-slot">
         ${chips}
@@ -1340,12 +1378,11 @@ function stageCard(m, key, i) {
                 <div class="bill-info">
                     <div class="bill-id-row">
                         <span class="bill-id">${escapeHtml(m.measure)}</span>
-                        <span class="bill-calendar-no">${escapeHtml(v.result)}</span>
-                        <span class="wrapup-result ${v.carried ? 'carried' : 'failed'}">${v.yeas}-${v.nays}</span>
+                        ${idRow}
                     </div>
                     <div class="bill-title">${escapeHtml(m.subject)}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml(`${STAGE_CHIP[v.stage] || v.stage} · Roll call ${v.rollCall}`)}</div>
+                        <div class="bill-action">${escapeHtml(action)}</div>
                         <div class="bill-date">${escapeHtml(boardDate(v.date))}</div>
                     </div>
                 </div>
@@ -1367,10 +1404,13 @@ function renderStages(data) {
             : '<div class="whip-updates-loading">Nothing at this stage.</div>');
         watchListScroll(list);
     }
+    // Say what the window reached, rather than showing a slice and letting it
+    // look like the whole record.
     const when = el('senate-stages-when');
-    if (when && data?.congress) {
-        const total = STAGE_KEYS.reduce((n, k) => n + (_stages[k]?.length || 0), 0);
-        when.textContent = `${total} measures, session ${data.session}`;
+    if (when && data?.kept != null) {
+        when.textContent = data.since
+            ? `${data.kept} measures since ${boardDate(data.since)}`
+            : `${data.kept} measures`;
     }
 }
 
