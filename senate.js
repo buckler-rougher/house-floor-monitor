@@ -9,12 +9,12 @@
 // requests for House data and populate sections with the wrong chamber's facts.
 // The stylesheet is the layer that should be identical. The behaviour is not.
 
-// api.evanhollander.org routes /house-floor/* to the Worker and nothing else.
-// /senate-floor/* answers 522, meaning the request never reaches it, because the
-// route list lives in the Cloudflare dashboard rather than wrangler.toml and has
-// no entry for it. The Worker itself already accepts either prefix and derives
-// `chamber` from it, so this is a one-word change once that route is added.
-const API = 'https://api.evanhollander.org/house-floor/api';
+// The Worker accepts either prefix and strips it, so both boards reach the same
+// handlers under the same cache keys. This board asked through /house-floor/ for
+// a while because api.evanhollander.org had no route for /senate-floor/* and it
+// answered 522; that route exists now and returns 200 with this origin echoed
+// back, so it asks under its own name.
+const API = 'https://api.evanhollander.org/senate-floor/api';
 
 // Only used if the payload omits it: a Congress starts in each odd year, and
 // the 119th began in 2025.
@@ -289,7 +289,7 @@ function initAirportDelays() {
     const mod = globalThis.AirportDelays;
     const listEl = el('airport-delays-list');
     if (!mod || !listEl) return;
-    mod.init({ listEl, escapeHtml, setIfChanged });
+    mod.init({ listEl, escapeHtml, setIfChanged, workerUrl: `${API}/airport-delays` });
     mod.fetchAirportNames()
        .then(() => mod.fetchAirportDelays())
        .catch((e) => console.error('Airport delays failed:', e));
