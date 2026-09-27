@@ -1729,6 +1729,17 @@ setInterval(updateTimestamp, 1000);
 fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
 initCapcam();
+// The floor feed PiP is built and loaded (lib/floor-feed.js), and the markup for
+// it is already in senate.html. It stays dark because the Senate publishes no
+// floor video source we have found: `.floor-feed` is opacity:0 until init adds
+// `pip-active`, so the panel is invisible rather than broken.
+//
+// One line turns it on, once there is an endpoint answering { url, isLive }:
+//
+//   FloorFeed.init({ hlsUrl: `${API}/hls-url` });
+//
+// The Worker would need that route for the Senate, and the panel's source line
+// in senate.html would need to name whatever the feed is.
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
