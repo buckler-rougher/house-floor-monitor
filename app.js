@@ -4159,7 +4159,7 @@ function notifyOnce(eventKey, title, body, billId = null) {
     rememberNotifiedKey(eventKey);
     if (!canNotify()) return;
     try {
-        const n = new Notification(title, { body, tag: eventKey, icon: '/favicon.png' });
+        const n = new Notification(title, { body, tag: eventKey, icon: '/house-favicon.png' });
         n.onclick = () => {
             window.focus();
             if (billId) openBillModal(billId);
@@ -10649,7 +10649,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
                 lastPhotoId = want;
                 photo.innerHTML = inCommittee
                     ? `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>`
-                    : '<img class="pip-speaker-seal" src="speaker-seal.svg" alt="">';
+                    : '<img class="pip-speaker-seal" src="house-speaker-seal.svg" alt="">';
             }
             row.title = inCommittee
                 ? 'the Chair of the Committee of the Whole is presiding'
