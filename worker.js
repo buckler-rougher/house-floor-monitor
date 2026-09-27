@@ -2570,7 +2570,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v6', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v7', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
@@ -2583,10 +2583,24 @@ async function handleSenateFloorSchedule(env) {
     // newlines mid-sentence ("Roll Call\nVotes"). Block ends become a sentinel
     // first, then every remaining run of whitespace collapses to a single space,
     // then the sentinels come back as blank lines.
-    const SPLIT = '\u0000';
+    const SPLIT = '\u0000';   // block boundary
+    const LI = '\u0001';      // marks a block that was a list item
+
+    // Decode once, keeping real block breaks and list membership.
+    //
+    // The source wraps its HTML at column width, so raw text has newlines inside
+    // sentences ("Roll Call\nVotes"). Block ends become a sentinel first, then
+    // every remaining run of whitespace collapses, then the sentinels come back
+    // as blank lines. Collapsing after the split is what stops paragraphs
+    // arriving pre-broken.
+    //
+    // <li> is marked rather than flattened: these posts list the roll call votes
+    // and the bills passed as ordered lists, and run together as prose they are
+    // unreadable.
     const strip = (html) => html
       .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<\/(p|li|h[1-6]|tr|div)>/gi, SPLIT)
+      .replace(/<li[^>]*>/gi, SPLIT + LI)
+      .replace(/<\/(p|li|h[1-6]|tr|div|ol|ul)>/gi, SPLIT)
       .replace(/<br\s*\/?>/gi, SPLIT)
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
@@ -2594,18 +2608,23 @@ async function handleSenateFloorSchedule(env) {
       .replace(/&mdash;/g, ' - ').replace(/&ndash;/g, '-').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
       .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
       .split(SPLIT)
-      .map((part) => part.replace(/\s+/g, ' ').trim())
+      .map((part) => {
+        const li = part.startsWith(LI);
+        const t = part.slice(li ? 1 : 0).replace(/\s+/g, ' ').trim();
+        return t ? (li ? LI + t : t) : '';
+      })
       .filter(Boolean)
       .join('\n\n')
       .trim();
 
-    // The post body is one container. Anchoring on a phrase instead is what put
-    // the site's nav ("Skip to content", "Website Search Open", "Published:") at
-    // the top of every wrap-up: when the phrase did not match the whole page was
-    // kept, and when it matched mid-sentence the text began lower-case.
+    // The post body is one container, and it ends where the share buttons begin.
+    //
+    // Anchoring on a phrase instead put the site nav ("Skip to content",
+    // "Website Search Open", "Published:") at the top of every wrap-up, and
+    // running to the end of the document left "Print Email Share Tweet
+    // Previous" at the bottom of every one.
     const bodyOf = (html) => {
-      const m = html.match(/<div class="js-press-release[^"]*">([\s\S]*?)<!--stopindex-->/)
-             || html.match(/<div class="js-press-release[^"]*">([\s\S]*)$/);
+      const m = html.match(/<div class="js-press-release[^"]*">([\s\S]*?)(?:<div class="ShareButtons|<!--stopindex-->)/);
       return m ? strip(m[1]) : '';
     };
 
