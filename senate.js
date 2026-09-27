@@ -506,7 +506,12 @@ function scheduleToCalendarItems(data) {
     for (const d of data?.days || data?.recent || []) {
         const date = (d.convene || '').slice(0, 10);
         if (!date) continue;
+        // A pro forma still counts as a day the Senate sat, so it anchors the
+        // forecast below, but it does not go on the calendar: gavel in and gavel
+        // out is not a session day and drawing it as one is what the House board
+        // avoids.
         sat.push(date);
+        if (d.proForma) continue;
         add(date, 'SESSION');
     }
 
