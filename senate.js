@@ -84,6 +84,12 @@ function boardDate(value) {
 
 // The module takes these as dependencies rather than reaching for a board's
 // globals, so each board supplies its own.
+// The Worker marks block boundaries and list membership in the notice text with
+// control characters, so any string lifted out of a notice still carries them.
+// They are invisible in the DOM but they are there, and they break a leading
+// capital: "\u0002Passage of Cal. #449" rendered with a stray glyph in front of it.
+const stripMarks = (t) => String(t ?? '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim();
+
 const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -1103,16 +1109,15 @@ function findNomination({ pn, calendarNo }) {
 // calendar file and takes its Executive Calendar number with it, so an
 // "Exec. Cal. 830" card from the prose can find nothing to join once the vote
 // has happened. That is the case this ladder exists for.
-function nominationSubject(n, cloture, id) {
+function nominationSubject(n, vote, id) {
     const raw = n?.description
-        || (cloture?.title || '').replace(/^Motion to Invoke Cloture:\s*/i, '')
-        || cloture?.text
+        || (vote?.title || '').replace(/^(?:Motion to Invoke Cloture|Confirmation)\s*:?\s*/i, '')
+        || vote?.text
         || '';
-    const clean = raw.replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim();
-    return clean || id;
+    return stripMarks(raw) || id;
 }
 
-function nominationModalContent(n, id, cloture) {
+function nominationModalContent(n, id, vote) {
     const st = NOM_STAGES[n?.stage] || null;
 
     const field = (label, value) => value ? `
@@ -1121,25 +1126,27 @@ function nominationModalContent(n, id, cloture) {
             <div class="bill-modal-action">${escapeHtml(value)}</div>
         </div>` : '';
 
-    // The cloture vote that opened this modal, when that is where the click
-    // came from. It is the reason the nomination is interesting today, so it
-    // outranks the standing detail and sits first.
-    const clo = cloture ? `
+    // The vote that opened this modal, when that is where the click came from.
+    // It is the reason the nomination is interesting today, so it outranks the
+    // standing detail and sits first. Labelled by its own stage rather than
+    // always saying CLOTURE, because a card in PASSAGE AND CONFIRMATION is a
+    // confirmation and calling that cloture would be wrong.
+    const clo = vote ? `
         <div class="bill-modal-section">
-            <div class="bill-modal-section-label">CLOTURE</div>
+            <div class="bill-modal-section-label">${escapeHtml(STAGE_CHIP[vote.stage] || 'Cloture')}</div>
             <div class="bill-modal-action bill-modal-action-row">
-                <span class="bill-modal-action-text">${escapeHtml(cloture.result || (cloture.invoked === null ? 'Filed, not yet voted' : ''))}${
-                    cloture.yeas != null ? ` · ${cloture.yeas}-${cloture.nays}` : ''}${
-                    cloture.rollCall ? ` · Roll call ${cloture.rollCall}` : ''}</span>
-                ${cloture.date ? `<span class="bill-modal-date">${escapeHtml(boardDate(cloture.date))}</span>` : ''}
+                <span class="bill-modal-action-text">${escapeHtml(vote.result || 'Filed, not yet voted')}${
+                    vote.yeas != null ? ` · ${vote.yeas}-${vote.nays}` : ''}${
+                    vote.rollCall ? ` · Roll call ${vote.rollCall}` : ''}</span>
+                ${vote.date ? `<span class="bill-modal-date">${escapeHtml(boardDate(vote.date))}</span>` : ''}
             </div>
         </div>` : '';
 
     // Received, reported, and where it sits now. A nomination with no reporting
     // date is still in committee, and saying so beats an empty row.
     // noticeDate2, not boardDate: these are the nomination's own ISO dates and
-    // the card that opens this modal already draws them that way. The cloture
-    // row above uses boardDate for the same reason, because the cloture card
+    // the card that opens this modal already draws them that way. The vote row
+    // above uses boardDate for the same reason, because the card it came from
     // does.
     const dates = [
         n?.received ? ['Received', noticeDate2(n.received)] : null,
@@ -1156,7 +1163,7 @@ function nominationModalContent(n, id, cloture) {
         </div>` : '';
 
     const links = [
-        cloture?.url ? `<a href="${escapeHtml(cloture.url)}" class="bill-modal-link senate" target="_blank" rel="noopener">Roll call vote</a>` : '',
+        vote?.url ? `<a href="${escapeHtml(vote.url)}" class="bill-modal-link senate" target="_blank" rel="noopener">Roll call vote</a>` : '',
         `<a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" class="bill-modal-link senate" target="_blank" rel="noopener">Nominations XML</a>`,
     ].filter(Boolean).join('');
 
@@ -1170,7 +1177,7 @@ function nominationModalContent(n, id, cloture) {
                         ${st ? `<span class="bill-modal-badge">${escapeHtml(st.label)}</span>` : ''}
                         ${n?.calendarNo ? `<span class="bill-modal-badge">Exec. Cal. No. ${escapeHtml(String(n.calendarNo))}</span>` : ''}
                     </div>
-                    <h2 class="bill-modal-title">${escapeHtml(nominationSubject(n, cloture, id))}</h2>
+                    <h2 class="bill-modal-title">${escapeHtml(nominationSubject(n, vote, id))}</h2>
                 </div>
                 <div class="bill-modal-sections">
                     ${clo}
@@ -1188,7 +1195,7 @@ function nominationModalContent(n, id, cloture) {
         </div>`;
 }
 
-async function openSenateNominationModal({ pn, calendarNo, cloture }, trigger) {
+async function openSenateNominationModal({ pn, calendarNo, vote }, trigger) {
     const id = pn || (calendarNo != null ? `Exec. Cal. ${calendarNo}` : 'Nomination');
     _billModalTrigger = trigger || null;
 
@@ -1206,111 +1213,179 @@ async function openSenateNominationModal({ pn, calendarNo, cloture }, trigger) {
     overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
     document.addEventListener('keydown', onSenateBillModalKey);
 
-    // The panel usually has them already; a cloture card can be clicked before
+    // The panel usually has them already; a stage card can be clicked before
     // the nominations request has landed.
-    if (!_nominations.length) { try { await loadNominations(); } catch { /* falls back to the cloture title */ } }
+    if (!_nominations.length) { try { await loadNominations(); } catch { /* falls back to the vote's own title */ } }
     if (overlay.hidden || overlay.dataset.closing) return;
 
-    overlay.innerHTML = nominationModalContent(findNomination({ pn, calendarNo }), id, cloture);
+    overlay.innerHTML = nominationModalContent(findNomination({ pn, calendarNo }), id, vote);
     overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
 }
 
 // Delegated so it survives every re-render of the cards, and not scoped to one
-// panel: the same card markup is rendered by ON THE FLOOR, the cloture list and
-// all six nomination sections, and each one routes by what the card carries
-// rather than by where it sits.
+// panel: the same card markup is rendered by ON THE FLOOR, all eight stage
+// sections and all six nomination sections, and each one routes by what the
+// card carries rather than by where it sits.
 function initBillModal() {
     document.addEventListener('click', (e) => {
         const card = e.target.closest('[data-bill-id], [data-pn], [data-cal-no]');
         if (!card || !card.closest('.bills-section')) return;
         e.preventDefault();
-        // By index rather than a serialised copy on every card: the list is
-        // already in memory and forty cards carrying their own JSON is a lot of
-        // markup to re-render for something only one click will ever read.
-        const cloture = card.dataset.clotureIdx ? _cloture[+card.dataset.clotureIdx] : null;
+        // By index rather than a serialised copy on every card: the buckets are
+        // already in memory and a hundred cards carrying their own JSON is a lot
+        // of markup to re-render for something only one click will ever read.
+        const bucket = _stages[card.dataset.stageKey];
+        const vote = bucket ? bucket[+card.dataset.stageIdx]?.latest : null;
         if (card.dataset.billId) { openSenateBillModal(card.dataset.billId, card); return; }
         // A card can carry an empty pn when the Executive Calendar number did
         // not join the XML. With no calendar number either there is nothing to
         // look up, so the click does nothing rather than opening a blank modal.
         if (!card.dataset.pn && !card.dataset.calNo) return;
-        openSenateNominationModal({ pn: card.dataset.pn, calendarNo: card.dataset.calNo, cloture }, card);
+        openSenateNominationModal({ pn: card.dataset.pn, calendarNo: card.dataset.calNo, vote }, card);
     });
 }
 
-// Cloture, the Senate's only rule-driven forward signal: once a motion is filed
-// the vote happens on a fixed clock, so a measure with cloture pending is one
-// that will be voted on.
-const CLOTURE_STATUS = {
-    'invoked':       { label: 'INVOKED',      status: 'passed' },
-    'not invoked':   { label: 'NOT INVOKED',  status: 'failed' },
-    'rejected':      { label: 'REJECTED',     status: 'failed' },
-    'post-cloture':  { label: 'POST-CLOTURE', status: 'pending' },
-    'filed':         { label: 'FILED',        status: 'scheduled' },
-    'mentioned':     { label: 'NOTED',        status: 'scheduled' },
+// ── Procedural stages ────────────────────────────────────────────────────────
+//
+// One card per measure, filed under the stage of its most recent vote, with
+// every earlier vote stacked above it. The Worker does the grouping; this draws
+// it. See the panel's comment in senate.html for the layout and why AMENDMENTS
+// is usually empty.
+
+const STAGE_KEYS = ['final', 'amendment', 'mtp', 'discharge', 'cloture', 'cloture-amdt', 'cloture-mtp', 'other'];
+
+// Short forms for the chips and the modal. The column heading above them
+// already carries the long name, so repeating it on every chip would be noise.
+const STAGE_CHIP = {
+    'final':        'Final vote',
+    'amendment':    'Amendment',
+    'mtp':          'Motion to proceed',
+    'discharge':    'Discharge',
+    'cloture':      'Cloture',
+    'cloture-amdt': 'Cloture on an amendment',
+    'cloture-mtp':  'Cloture on the motion to proceed',
+    'other':        'Procedural motion',
 };
 
-let _cloture = [];
+// The House board's chips, reused rather than redrawn: a tick for carried, a
+// cross for not.
+const CHIP_TICK = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M1.3,4.8 L3.6,7.1 L7.7,1.6"/></svg>';
+const CHIP_CROSS = '<svg width="11" height="11" viewBox="0 0 9 9" style="display:block"><path fill="currentColor" d="M1.5,0 L4.5,3 L7.5,0 L9,1.5 L6,4.5 L9,7.5 L7.5,9 L4.5,6 L1.5,9 L0,7.5 L3,4.5 L0,1.5 Z"/></svg>';
 
-function renderCloture(items, scheduled) {
-    const list = el('senate-cloture');
-    if (!list) return;
-    // A measure already shown under SCHEDULED does not repeat here. Its cloture
-    // is why it is scheduled, so the same card twice says nothing new.
-    const shown = new Set((scheduled || []).map((m) => (m.measure || '').replace(/\s+/g, '').toUpperCase()));
-    items = (items || []).filter((c) => !shown.has((c.measure || '').replace(/\s+/g, '').toUpperCase()));
-    _cloture = items;
-    if (!items?.length) {
-        setIfChanged(list, '<div class="whip-updates-loading">No cloture motions recorded.</div>');
-        return;
+let _stages = {};
+
+// Which modal a card opens, decided by the shape of what it names. The roll
+// call record gives a measure id or a PN; the caucus prose, which is the only
+// place a cloture motion filed and not yet voted appears, gives "Exec. Cal. 830".
+function measureTarget(measure, extra = '') {
+    const m = (measure || '').trim();
+    if (MEASURE_ID_RE.test(m)) return `data-bill-id="${escapeHtml(m)}"${extra}`;
+    if (/^PN/i.test(m)) return `data-pn="${escapeHtml(m)}"${extra}`;
+    const cal = m.match(/(\d+)\s*$/);
+    if (cal) return `data-cal-no="${cal[1]}"${extra}`;
+    return extra;
+}
+
+// Consecutive votes at one stage collapse once there are more than three of
+// them. S. 2 took 27 amendment votes in two days and S.Con.Res. 33 took 17;
+// drawn one chip each they would bury the card they belong to. Three or fewer
+// stay separate, because "failed cloture twice" is the kind of thing the board
+// exists to show.
+function chainRuns(chain) {
+    const runs = [];
+    for (const v of chain || []) {
+        const last = runs[runs.length - 1];
+        if (last && last.stage === v.stage) last.votes.push(v);
+        else runs.push({ stage: v.stage, votes: [v] });
     }
-    setIfChanged(list, items.map((c, i) => {
-        const status = c.invoked === null ? 'scheduled' : c.invoked ? 'passed' : 'failed';
-        const label = c.invoked === null ? 'FILED' : c.invoked ? 'INVOKED' : 'NOT INVOKED';
+    return runs.flatMap((r) => r.votes.length <= 3 ? r.votes.map((v) => ({ single: v })) : [{ run: r }]);
+}
 
-        // The name of the thing goes on its own line, not the motion.
-        //
-        // "Motion to Invoke Cloture: S. 4668, as Amended; A bill to protect the
-        // name, image, and likeness rights..." splits at the semicolon into the
-        // motion and the bill's own title. A nomination has no semicolon and the
-        // whole remainder is the nominee and the post, which is exactly what a
-        // PN number alone fails to say.
-        const bare = (c.title || '').replace(/^Motion to Invoke Cloture:\s*/i, '').trim();
-        const semi = bare.indexOf(';');
-        const motion = semi >= 0 ? bare.slice(0, semi).trim() : '';
-        const subject = (semi >= 0 ? bare.slice(semi + 1).trim() : bare) || c.question || '';
+function stageChip(item) {
+    if (item.single) {
+        const v = item.single;
+        const cls = v.carried ? 'passed' : 'failed';
+        const label = `${STAGE_CHIP[v.stage] || v.stage} · ${v.result} ${v.yeas}-${v.nays}`;
         return `
+        <div class="amdt-vote-card amdt-vote-${cls}" title="${escapeHtml(`Roll call ${v.rollCall}, ${boardDate(v.date)}`)}">
+            <span class="amdt-vote-circle" aria-hidden="true">${v.carried ? CHIP_TICK : CHIP_CROSS}</span>
+            <span class="amdt-vote-label">${escapeHtml(label)}</span>
+        </div>
+        <div class="amdt-vote-connector" aria-hidden="true"></div>`;
+    }
+    const { stage, votes } = item.run;
+    const won = votes.filter((v) => v.carried).length;
+    // Amber is the House board's third chip state. A run that went both ways is
+    // neither a pass nor a fail, and this is the slot that says so.
+    const cls = won === votes.length ? 'passed' : won === 0 ? 'failed' : 'requested';
+    const tail = won === votes.length ? 'all agreed to' : won === 0 ? 'all rejected' : `${won} agreed to, ${votes.length - won} rejected`;
+    const label = `${votes.length} × ${STAGE_CHIP[stage] || stage} · ${tail}`;
+    return `
+    <div class="amdt-vote-card amdt-vote-${cls}" title="${escapeHtml(`Roll calls ${votes[0].rollCall}–${votes[votes.length - 1].rollCall}`)}">
+        <span class="amdt-vote-circle" aria-hidden="true">${won === votes.length ? CHIP_TICK : won === 0 ? CHIP_CROSS : ''}</span>
+        <span class="amdt-vote-label">${escapeHtml(label)}</span>
+    </div>
+    <div class="amdt-vote-connector" aria-hidden="true"></div>`;
+}
+
+function stageCard(m, key, i) {
+    const v = m.latest;
+    const chips = chainRuns(m.chain).map(stageChip).join('');
+    return `
+    <div class="bill-slot">
+        ${chips}
         <div class="bill-card-wrap">
-            <button class="bill-card" ${clotureTarget(c, i)} data-status="${status}" type="button">
-                <div class="bill-status ${status}" aria-hidden="true"></div>
+            <button class="bill-card" ${measureTarget(m.measure, ` data-stage-key="${key}" data-stage-idx="${i}"`)} data-status="${m.status}" type="button">
+                <div class="bill-status ${m.status}" aria-hidden="true"></div>
                 <div class="bill-info">
                     <div class="bill-id-row">
-                        <span class="bill-id">${escapeHtml(c.measure || 'Cloture')}</span>
-                        <span class="bill-calendar-no">${escapeHtml(label)}</span>
-                        ${c.yeas != null ? `<span class="wrapup-result ${c.invoked ? 'carried' : 'failed'}">${c.yeas}-${c.nays}</span>` : ''}
+                        <span class="bill-id">${escapeHtml(m.measure)}</span>
+                        <span class="bill-calendar-no">${escapeHtml(v.result)}</span>
+                        <span class="wrapup-result ${v.carried ? 'carried' : 'failed'}">${v.yeas}-${v.nays}</span>
                     </div>
-                    <div class="bill-title">${escapeHtml(subject)}</div>
+                    <div class="bill-title">${escapeHtml(m.subject)}</div>
                     <div class="bill-meta">
-                        <div class="bill-action">${escapeHtml([motion, c.rollCall ? `Roll call ${c.rollCall}` : 'Announced in the schedule'].filter(Boolean).join(' · '))}</div>
-                        <div class="bill-date">${escapeHtml(boardDate(c.date))}</div>
+                        <div class="bill-action">${escapeHtml(`${STAGE_CHIP[v.stage] || v.stage} · Roll call ${v.rollCall}`)}</div>
+                        <div class="bill-date">${escapeHtml(boardDate(v.date))}</div>
                     </div>
                 </div>
             </button>
-        </div>`;
-    }).join(''));
-    watchListScroll(list);
+        </div>
+    </div>`;
 }
 
-// Which modal a cloture card opens, decided by the shape of what it names.
-// The roll call menu gives a measure id or a PN; the caucus prose, which is the
-// only place a filed-but-unvoted motion appears, gives "Exec. Cal. 830".
-function clotureTarget(c, i) {
-    const idx = ` data-cloture-idx="${i}"`;
-    const m = (c.measure || '').trim();
-    if (MEASURE_ID_RE.test(m)) return `data-bill-id="${escapeHtml(m)}"${idx}`;
-    if (/^PN/i.test(m)) return `data-pn="${escapeHtml(m)}"${idx}`;
-    const cal = m.match(/(\d+)\s*$/);
-    if (cal) return `data-cal-no="${cal[1]}"${idx}`;
-    return `data-pn=""${idx}`;
+function renderStages(data) {
+    _stages = data?.stages || {};
+    for (const key of STAGE_KEYS) {
+        const list = el(`stage-list-${key}`);
+        const count = el(`stage-count-${key}`);
+        const rows = _stages[key] || [];
+        if (count) count.textContent = rows.length ? String(rows.length) : '';
+        if (!list) continue;
+        setIfChanged(list, rows.length
+            ? rows.map((m, i) => stageCard(m, key, i)).join('')
+            : '<div class="whip-updates-loading">Nothing at this stage.</div>');
+        watchListScroll(list);
+    }
+    const when = el('senate-stages-when');
+    if (when && data?.congress) {
+        const total = STAGE_KEYS.reduce((n, k) => n + (_stages[k]?.length || 0), 0);
+        when.textContent = `${total} measures, session ${data.session}`;
+    }
+}
+
+async function loadStages() {
+    try {
+        const r = await fetch(`${API}/senate/stages`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        renderStages(await r.json());
+    } catch (e) {
+        for (const key of STAGE_KEYS) {
+            const list = el(`stage-list-${key}`);
+            if (list) setIfChanged(list, `<div class="whip-updates-loading">Stages unavailable (${escapeHtml(e.message)}).</div>`);
+        }
+        console.error('Stages fetch failed:', e);
+    }
 }
 
 // ── On the floor ─────────────────────────────────────────────────────────────
@@ -1320,15 +1395,22 @@ function clotureTarget(c, i) {
 // question anyone asks; this answers "what is up next", which is usually one
 // measure.
 //
-function renderFloorSchedule(data) {
+function renderFloorSchedule(data, cloture) {
     const list = el('senate-floor-measures');
     const when = el('senate-floor-when');
     if (!list) return;
 
     if (when) when.textContent = data?.heading || '';
 
+    // A cloture motion filed and not yet voted is the one forward signal the
+    // roll call record cannot carry, because there is no roll call yet. It
+    // exists only in the caucus's own prose, so it belongs here with the rest
+    // of what is coming rather than in PROCEDURAL STAGES, which is built
+    // entirely from votes that have happened.
+    const pending = (cloture || []).filter((c) => c.invoked === null);
+
     const measures = data?.measures || [];
-    if (!measures.length) {
+    if (!measures.length && !pending.length) {
         setIfChanged(list, '');
         return;
     }
@@ -1336,7 +1418,7 @@ function renderFloorSchedule(data) {
     const cards = measures.map((m) => {
         // A scheduled vote naming this measure is the whole point of the panel,
         // so it goes on the card rather than being left in the prose.
-        const vote = (data.votes || []).find((v) => v.includes(m.measure)) || '';
+        const vote = stripMarks((data.votes || []).find((v) => v.includes(m.measure)) || '');
         const status = vote ? 'pending' : 'scheduled';
         // A button, not a link: it opens the modal. The congress.gov link lives
         // inside the modal with the rest of them.
@@ -1384,7 +1466,27 @@ function renderFloorSchedule(data) {
                 </div>
             </button>
         </div>`);
-    setIfChanged(list, cards.concat(noms).join(''));
+    const filed = pending.map((c) => {
+        const subject = stripMarks(c.text || c.title).replace(/^Motion to Invoke Cloture:\s*/i, '').trim();
+        return `
+        <div class="bill-card-wrap">
+            <button class="bill-card" ${measureTarget(c.measure)} data-status="scheduled" type="button">
+                <div class="bill-status scheduled" aria-hidden="true"></div>
+                <div class="bill-info">
+                    <div class="bill-id-row">
+                        <span class="bill-id">${escapeHtml(c.measure || 'Cloture')}</span>
+                        <span class="bill-calendar-no">Cloture filed</span>
+                    </div>
+                    <div class="bill-title">${escapeHtml(subject)}</div>
+                    <div class="bill-meta">
+                        <div class="bill-action">Not yet voted</div>
+                        <div class="bill-date">${escapeHtml(boardDate(c.date))}</div>
+                    </div>
+                </div>
+            </button>
+        </div>`;
+    });
+    setIfChanged(list, cards.concat(noms, filed).join(''));
     watchListScroll(list);
 }
 
@@ -1397,8 +1499,7 @@ async function loadFloorSchedule() {
         // Nominations first: the agenda names them by calendar number and needs
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
-        renderFloorSchedule(data.agenda);
-        renderCloture(data.cloture, data.agenda?.measures);
+        renderFloorSchedule(data.agenda, data.cloture);
         _notices = data.notices || [];
         renderNoticeFilter();
         renderNotices();
@@ -1436,6 +1537,10 @@ loadNominations();
 loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);
+loadStages();
+// The vote menu gains a row only when the Senate votes, which is a handful of
+// times on a sitting day.
+setInterval(loadStages, 30 * 60 * 1000);
 setInterval(loadAbsences, 10 * 60 * 1000);
 loadBalance();
 // The roster changes on a timescale of months. Hourly is already generous.

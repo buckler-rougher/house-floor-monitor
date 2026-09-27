@@ -10816,3 +10816,23 @@ body.all-mode .floor-grid-panel {
 .tellers-section-header {
     margin: 0;
 }
+
+/* PROCEDURAL STAGES — a card plus the votes stacked above it is one unit.
+ *
+ * The .bill-slot stack separates a chip from its card by an 8px connector, and
+ * .bills-list separates one slot from the next by an 8px gap. Identical, so a
+ * chip read as belonging to the card above it rather than the one below. The
+ * House board never hits this because its slots sit in a two-column grid with
+ * its own wider gutter.
+ *
+ * Only the eight stage lists, because ON THE FLOOR and NOMINATIONS render bare
+ * cards with nothing stacked on them and would just get airier. */
+#senate-stages .bills-list {
+    gap: var(--sp-20);
+}
+
+/* A stage list is taller than the others: a slot can be a card plus six chips,
+ * and at the shared 260px two of them do not fit. */
+#senate-stages .list-scroll {
+    max-height: 340px;
+}
