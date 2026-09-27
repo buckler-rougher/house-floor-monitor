@@ -2472,7 +2472,13 @@ function parseGeneralOrders(html) {
 // There is no feed: no RSS is advertised and the obvious paths 404, so the
 // listing page is read and the newest post followed.
 async function handleSenateFloorSchedule(env) {
-  return kvCache(env, 'senate-caucus-notices-v2', 1800, async () => {
+  // BUMP THIS WHENEVER THE PAYLOAD SHAPE CHANGES.
+  //
+  // v2 shipped without bodies or voteTime and then the handler gained both,
+  // with the key left alone: KV happily served the old shape for its whole TTL,
+  // so the notices stayed truncated and the card kept showing no vote time long
+  // after the fix was deployed. A stale key looks exactly like a broken fix.
+  return kvCache(env, 'senate-caucus-notices-v3', 1800, async () => {
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (url, label) => {
       const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
