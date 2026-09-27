@@ -2381,6 +2381,119 @@ function senateSession() {
 // makes the case for why: its bioguide for Ossoff reads P000612, which is not
 // his and not in the roster at all. Names and states have matched 100 of 100
 // every time they have been checked; the ids have not.
+// What is pending on the Senate floor: the Calendar of Business, General Orders.
+//
+// There is no Senate equivalent of docs.house.gov's BillsThisWeek. The Majority
+// Leader announces the week aloud and it moves, and what passes by unanimous
+// consent is cleared through the cloakrooms' hotline, which is internal to
+// Senate offices and published nowhere. General Orders is the nearest published
+// thing: every measure reported out of committee and awaiting floor action.
+//
+// It is a BACKLOG, not an agenda -- 528 measures as of this writing, some sitting
+// since January -- so the board sorts by calendar number descending and shows the
+// most recently placed. That is the live edge of it, and closest in spirit to
+// what the House panel shows.
+//
+// govinfo publishes it per sitting day as CCAL-{congress}scal-{date}, part 6.
+// The /content/pkg/ path needs no API key; only api.govinfo.gov does.
+const GEN_ORDERS_ACT_COL = 47;   // where the "Reported or Placed on" column starts
+const GEN_ORDERS_MEAS_COL = 21;  // where the title column starts
+
+function parseGeneralOrders(html) {
+  const TYPE = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?`;
+  const text = html.replace(/<[^>]+>/g, '').replace(/\[\[Page[^\]]*\]\]/g, '');
+  const out = [];
+  // Records are separated by blank lines. The columns are fixed width and the
+  // text wraps within them, so a record is several lines wide, not one.
+  for (const block of text.split(/\n\s*\n/)) {
+    const lines = block.split('\n').map((l) => l.replace(/\s+$/, ''))
+      .filter((l) => l.trim() && !l.includes('____'));
+    if (!lines.length) continue;
+    const left = lines.map((l) => l.slice(0, GEN_ORDERS_ACT_COL));
+    const right = lines.map((l) => l.slice(GEN_ORDERS_ACT_COL).trim());
+    const m = left[0].match(new RegExp(String.raw`^\s*(\d{1,4})\s+(${TYPE})\s*(\d+)?\s*(.*)$`));
+    if (!m) continue;
+    const mtype = m[2].trim();
+    let mnum = m[3];
+    let body = left.slice(1);
+    if (!mnum) {
+      // A concurrent resolution wraps: "S. Con. Res." on the first line and its
+      // number alone on the next. Five of the 528 do this, and dropping them
+      // was the difference between 523 and a clean parse.
+      for (let i = 0; i < body.length; i++) {
+        const n = body[i].slice(0, GEN_ORDERS_MEAS_COL).match(/^\s*(\d+)\s*$/);
+        if (!n) continue;
+        mnum = n[1];
+        body = [...body.slice(0, i),
+                ' '.repeat(GEN_ORDERS_MEAS_COL) + body[i].slice(GEN_ORDERS_MEAS_COL),
+                ...body.slice(i + 1)];
+        break;
+      }
+    }
+    if (!mnum) continue;
+    out.push({
+      order: Number(m[1]),
+      measure: `${mtype} ${mnum}`.replace(/\s+/g, ' ').trim(),
+      author: body.map((l) => l.slice(0, GEN_ORDERS_MEAS_COL).trim()).filter(Boolean).join(' ').trim(),
+      title: [m[4].trim(), ...body.map((l) => l.slice(GEN_ORDERS_MEAS_COL).trim())].filter(Boolean).join(' ').trim(),
+      action: right.filter(Boolean).join(' '),
+    });
+  }
+  return out;
+}
+
+async function handleSenateCalendar(env) {
+  const congress = CURRENT_CONGRESS;
+  return kvCache(env, `senate-gen-orders-${congress}-v1`, 6 * 3600, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+
+    // The calendar is issued for a sitting day, so the date to ask for is the
+    // next one. Reading it from the schedule beats guessing at dates.
+    let dates = [];
+    try {
+      const sched = await fetch('https://www.senate.gov/legislative/schedule/floor_schedule.xml',
+        { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (sched.ok && /xml/i.test(sched.headers.get('Content-Type') || '')) {
+        const xml = await sched.text();
+        const all = [...xml.matchAll(/<NextConveneDate>([^<]+)<\/NextConveneDate>/g)].map((m) => m[1].slice(0, 10));
+        const conv = [...xml.matchAll(/<ConveneDate>([^<]+)<\/ConveneDate>/g)].map((m) => m[1].slice(0, 10));
+        dates = [...new Set([all[all.length - 1], ...conv.slice(-6).reverse()])].filter(Boolean);
+      }
+    } catch (e) {
+      console.warn(`[house-floor] senate calendar: schedule lookup failed: ${e.message}`);
+    }
+    if (!dates.length) {
+      const d = new Date();
+      for (let i = -3; i <= 7; i++) {
+        const t = new Date(d.getTime() + i * 86400000);
+        dates.push(t.toISOString().slice(0, 10));
+      }
+    }
+
+    let orders = null, issued = null;
+    for (const date of dates.slice(0, 8)) {
+      const url = `https://www.govinfo.gov/content/pkg/CCAL-${congress}scal-${date}/html/CCAL-${congress}scal-${date}-pt6.htm`;
+      try {
+        const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(25_000) });
+        if (!r.ok) continue;
+        const html = await r.text();
+        const parsed = parseGeneralOrders(html);
+        if (parsed.length) { orders = parsed; issued = date; break; }
+      } catch (_) { /* try the next date */ }
+    }
+    if (!orders) throw new Error('senate calendar: no General Orders found for any candidate date');
+
+    // Newest first: the calendar is ordered oldest-first and the tail is what
+    // has just been placed.
+    orders.sort((a, b) => b.order - a.order);
+    return new Response(JSON.stringify({
+      congress, issued, total: orders.length, orders: orders.slice(0, 40),
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=21600' },
+    });
+  });
+}
+
 async function handleSenateAbsences(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
@@ -4378,6 +4491,8 @@ async function handleRequest(request, env) {
     return await handleAirportDelays();
   } else if (path === '/api/member-data' && request.method === 'GET') {
     return await handleMemberData(env);
+  } else if (path === '/api/senate/calendar' && request.method === 'GET') {
+    return handleSenateCalendar(env);
   } else if (path === '/api/senate/absences' && request.method === 'GET') {
     return handleSenateAbsences(env);
   } else if (path === '/api/senate/schedule' && request.method === 'GET') {
