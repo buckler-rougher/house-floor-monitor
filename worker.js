@@ -4107,6 +4107,55 @@ async function handleHlsUrl(env) {
   }
 }
 
+// ── Senate floor video ───────────────────────────────────────────────────────
+// senate.gov/isvp/stv.html (the Senate's own player) builds the live URL as
+//
+//   https://www-senate-gov-media-srs.akamaized.net/hls/live/{streamID}/{comm}/{filename}/master.m3u8
+//
+// with { streamID: 2096634, comm: 'stv' } hard-coded in its stream table, and
+// the filename ("stv" + MMDDYY, one per calendar day) taken from
+// /legislative/schedule/floor_schedule.json (convenedSessionStream), which is
+// published the evening before. So the day's name is read from the schedule
+// and, if that is unreadable, computed from the Eastern date.
+//
+// The playlist is #EXT-X-PLAYLIST-TYPE:EVENT: it 404s until the chamber goes
+// live, grows from segment 1, and gets #EXT-X-ENDLIST when the day ends, so
+// "does it resolve, and is there no ENDLIST" is the whole liveness test.
+const SENATE_HLS_BASE = 'https://www-senate-gov-media-srs.akamaized.net/hls/live/2096634/stv/';
+
+async function senateStvFilename() {
+  try {
+    const r = await fetch('https://www.senate.gov/legislative/schedule/floor_schedule.json',
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }, signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const m = (await r.text()).match(/filename=(stv\d{6})/);
+      if (m) return m[1];
+    }
+  } catch { /* fall through to the computed name */ }
+  const d = getTodayDateET(); // YYYYMMDD
+  return `stv${d.slice(4, 6)}${d.slice(6, 8)}${d.slice(2, 4)}`;
+}
+
+async function handleSenateHlsUrl() {
+  const MEM_KEY = 'senate-hls-url';
+  const hdrs = (maxAge) => ({ ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` });
+  const memHit = _mGet(MEM_KEY);
+  if (memHit) return new Response(memHit, { headers: hdrs(20) });
+  try {
+    const filename = await senateStvFilename();
+    const url = `${SENATE_HLS_BASE}${filename}/master.m3u8`;
+    // null: the playlist does not exist yet (or the fetch failed) -- no session.
+    const live = await checkManifestLiveness(url);
+    const body = JSON.stringify(live === null ? { url: null, isLive: false } : { url, isLive: live });
+    _mSet(MEM_KEY, body, live ? 20_000 : 60_000);
+    return new Response(body, { headers: hdrs(live ? 20 : 60) });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    });
+  }
+}
+
 // Build a roll-log entry from raw DomeWatch floor data (server-side equivalent of
 // the client-side rollLogEntry() that was previously sent via POST).
 function buildRollLogEntry(data) {
@@ -5444,6 +5493,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/senate/nominations' && request.method === 'GET') {
     return handleSenateNominations(env);
+  } else if (path === '/api/senate/hls-url' && request.method === 'GET') {
+    return await handleSenateHlsUrl();
   } else if (path === '/api/senate/proceedings' && request.method === 'GET') {
     return handleSenateProceedings(env);
   } else if (path === '/api/senate/stages' && request.method === 'GET') {
