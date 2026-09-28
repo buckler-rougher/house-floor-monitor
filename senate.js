@@ -277,8 +277,13 @@ async function loadBalance() {
         renderBalance(roster);
         // The caption track names a senator by surname; this is what turns that
         // into a face, a party and a state.
-        globalThis.SenateSpeaker?.setSeats?.(roster.seats || []);
-        globalThis.SenateQuorum?.build?.(roster.seats || []);
+        // roster.members, not roster.seats. `seats` is the chamber size, the
+        // number 100; the members are under `members`. Reading the count as an
+        // array left the quorum board empty and the speaker row unable to
+        // resolve a surname.
+        const members = roster.members || [];
+        globalThis.SenateSpeaker?.setSeats?.(members);
+        globalThis.SenateQuorum?.build?.(members);
     } catch (e) {
         const stamp = el('party-breakdown-last-update');
         if (stamp) stamp.textContent = 'unavailable';
