@@ -11177,9 +11177,16 @@ button.proceedings-measure:hover .proceedings-measure-id {
  * call's. A quorum call has no yeas and no nays, so showing that legend beside
  * a board of names being read states something untrue. It comes back when
  * there is a vote to draw on it. */
-:root[data-chamber="senate"] .vote-display,
 :root[data-chamber="senate"] .quorum-panel {
     display: block;
+}
+/* HAPPENING NOW and QUORUM CALL were two panels joined by the column's
+   connector line, which said the same thing twice: the quorum call IS what is
+   happening now. One panel, labelled HAPPENING NOW and tagged QUORUM CALL.
+   The vote-display panel it used to occupy stays hidden -- everything in it
+   was the yea/nay machinery, and the timer is relocated out of it. */
+:root[data-chamber="senate"] .vote-display {
+    display: none;
 }
 :root[data-chamber="senate"] .threshold-panel,
 :root[data-chamber="senate"] .floor-grid-panel {
