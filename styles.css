@@ -11065,3 +11065,115 @@ button.proceedings-measure:hover .proceedings-measure-id {
 :root[data-chamber="senate"] .proceedings-feed {
     max-height: 420px;
 }
+
+/* Quorum board — one box per senator, dark until the clerk calls the name. */
+.quorum-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+    gap: var(--sp-6);
+    padding: var(--sp-12) 0 var(--sp-16);
+}
+
+.qb-member {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+    padding: var(--sp-4) var(--sp-6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-6);
+    background: var(--bg-elevated);
+    min-width: 0;
+    /* Unlit. Not display:none and not a placeholder: the whole board is legible
+       from the start, so a name lighting up reads as that member answering
+       rather than as a row appearing from nowhere. */
+    opacity: 0.28;
+    filter: grayscale(1);
+    transition: opacity var(--dur-300) ease, filter var(--dur-300) ease,
+                border-color var(--dur-300) ease, box-shadow var(--dur-300) ease;
+}
+
+.qb-photo {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    display: block;
+}
+.qb-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.qb-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+
+.qb-name {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qb-meta {
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: var(--track-wide);
+    color: var(--text-muted);
+    display: flex;
+    gap: 3px;
+}
+.qb-party.democrat    { color: var(--party-d); }
+.qb-party.republican  { color: var(--party-r); }
+.qb-party.independent { color: var(--party-i); }
+
+.qb-member.is-called {
+    opacity: 1;
+    filter: none;
+    border-color: rgba(63, 185, 80, 0.5);
+    box-shadow: 0 0 10px rgba(63, 185, 80, 0.18);
+}
+
+/* The warm-up.
+ *
+ * A filament does not come up cleanly: it catches, drops back, catches again
+ * and then holds. The steps are uneven on purpose -- evenly spaced ones read as
+ * a blink, which looks like a rendering fault rather than a light. Runs once,
+ * on the way up, because a board of a hundred permanently twitching boxes would
+ * be unreadable. */
+@keyframes qb-warm {
+      0% { opacity: 0.28; filter: grayscale(1); }
+     12% { opacity: 1;    filter: none; }
+     18% { opacity: 0.35; filter: grayscale(0.8); }
+     26% { opacity: 0.95; filter: none; }
+     34% { opacity: 0.45; filter: grayscale(0.5); }
+     44% { opacity: 1;    filter: none; }
+     52% { opacity: 0.7;  filter: none; }
+    100% { opacity: 1;    filter: none; }
+}
+.qb-member.is-warming { animation: qb-warm 900ms steps(1, end) 1; }
+
+/* Someone who asked not to be flashed at gets the state without the theatre. */
+@media (prefers-reduced-motion: reduce) {
+    .qb-member.is-warming { animation: none; }
+}
+
+.quorum-call-tag {
+    color: var(--accent-amber);
+    background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
+}
+
+/* A Senate quorum call overrides the House mode gating.
+ *
+ * The board inherits the House's mode system, which hides the vote column in
+ * every non-voting mode, and senate.js never sets a mode -- so the body stays
+ * recess-mode and the quorum panel is display:none. That is right when nothing
+ * is happening: a hundred dark boxes permanently on the page is a lot of room
+ * to spend on nothing.
+ *
+ * lib/senate-quorum.js adds this class when the clerk starts reading and drops
+ * it on reset, so the panel appears for the call and goes away after. Specific
+ * enough to beat the :is() list that hides it, without !important. */
+body.senate-quorum-active .vote-display,
+body.senate-quorum-active .quorum-panel {
+    display: block;
+}

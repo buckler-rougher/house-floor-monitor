@@ -278,6 +278,7 @@ async function loadBalance() {
         // The caption track names a senator by surname; this is what turns that
         // into a face, a party and a state.
         globalThis.SenateSpeaker?.setSeats?.(roster.seats || []);
+        globalThis.SenateQuorum?.build?.(roster.seats || []);
     } catch (e) {
         const stamp = el('party-breakdown-last-update');
         if (stamp) stamp.textContent = 'unavailable';
@@ -1740,6 +1741,8 @@ FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
 // moment they are recognised and never again, so the module latches the label
 // rather than reading whatever is on screen. loadBalance hands it the roster.
 SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
+// The quorum board listens for the roll names the speaker module broadcasts.
+SenateQuorum.init({ photoUrlFor });
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
