@@ -4136,6 +4136,96 @@ async function senateStvFilename() {
   return `stv${d.slice(4, 6)}${d.slice(6, 8)}${d.slice(2, 4)}`;
 }
 
+// ── Senate quorum roll ───────────────────────────────────────────────────────
+//
+// The called-names set, kept here rather than in each browser.
+//
+// localStorage cannot serve a viewer who opens the page mid-call: the caption
+// window holds about three lines, so everything read before they arrived is
+// gone. This reads the same captions the browser does and accumulates them, so
+// any client joining at any point gets the whole call.
+//
+// It reads them directly rather than accepting them from the page. The stream
+// carries a SEPARATE WebVTT subtitle playlist -- not only embedded CEA-608 --
+// so this is plain text over HTTP with no video decoding:
+//
+//   master.m3u8 -> #EXT-X-MEDIA:TYPE=SUBTITLES,...,URI="master/text_1.m3u8"
+//   master/text_1.m3u8      -> rolling list of 12-second segments
+//   master/text_1_NNNNN.vtt -> WEBVTT
+//
+// A browser POSTing names would have been an unauthenticated write path for
+// anyone who found it, and is unnecessary when the source is readable here.
+
+// Same rule the board uses: a name being CALLED ends in a period, a member
+// taking the floor ends in a colon.
+const SENATE_ROLL_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*\./g;
+
+async function handleSenateQuorum(env) {
+  const hdrs = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=5' };
+  try {
+    const filename = await senateStvFilename();
+    const master = `${SENATE_HLS_BASE}${filename}/master.m3u8`;
+
+    // Scoped to the stream, not the day. The filename is date-stamped, so a new
+    // day's stream starts a new set on its own without a reset rule.
+    const key = `senate-quorum-${filename}`;
+    let state = { names: [], lastSeg: null, updated: null };
+    if (env?.HLS_CACHE) {
+      try { state = JSON.parse(await env.HLS_CACHE.get(key)) || state; } catch {}
+    }
+
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const get = async (u) => {
+      const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(10_000) });
+      return r.ok ? r.text() : null;
+    };
+
+    const m3u = await get(master);
+    const subUri = m3u && (m3u.match(/TYPE=SUBTITLES[^\n]*URI="([^"]+)"/) || [])[1];
+    if (!subUri) {
+      return new Response(JSON.stringify({ names: state.names, live: false, reason: 'no subtitle track' }), { headers: hdrs });
+    }
+    const base = master.replace(/master\.m3u8$/, '');
+    const list = await get(base + subUri);
+    if (!list) {
+      return new Response(JSON.stringify({ names: state.names, live: false, reason: 'no subtitle playlist' }), { headers: hdrs });
+    }
+
+    const segs = list.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+    // Only what has appeared since the last pass. On a cold start take the tail
+    // rather than the whole window, so one request does not fetch sixty files.
+    const from = state.lastSeg ? segs.indexOf(state.lastSeg) + 1 : Math.max(0, segs.length - 6);
+    const fresh = from > 0 ? segs.slice(from) : segs.slice(Math.max(0, segs.length - 6));
+
+    const dir = (base + subUri).replace(/[^/]+$/, '');
+    const found = new Set(state.names);
+    for (const seg of fresh.slice(0, 12)) {
+      const vtt = await get(dir + seg);
+      if (!vtt) continue;
+      const flat = vtt.replace(/\r/g, '').replace(/\n/g, ' ');
+      SENATE_ROLL_RE.lastIndex = 0;
+      let m;
+      while ((m = SENATE_ROLL_RE.exec(flat))) found.add(m[1].replace(/\s+/g, ' ').trim().toUpperCase());
+    }
+
+    state = { names: [...found], lastSeg: segs[segs.length - 1] || state.lastSeg, updated: new Date().toISOString() };
+    if (env?.HLS_CACHE) {
+      // Two days: long enough to survive a call, short enough that a stream id
+      // nobody asks for again does not sit in KV forever.
+      try { await env.HLS_CACHE.put(key, JSON.stringify(state), { expirationTtl: 172_800 }); } catch {}
+    }
+
+    return new Response(JSON.stringify({
+      stream: filename, names: state.names, count: state.names.length,
+      updated: state.updated, live: true,
+    }), { headers: hdrs });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+}
+
 async function handleSenateHlsUrl() {
   const MEM_KEY = 'senate-hls-url';
   const hdrs = (maxAge) => ({ ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` });
@@ -5493,6 +5583,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/senate/nominations' && request.method === 'GET') {
     return handleSenateNominations(env);
+  } else if (path === '/api/senate/quorum' && request.method === 'GET') {
+    return handleSenateQuorum(env);
   } else if (path === '/api/senate/hls-url' && request.method === 'GET') {
     return await handleSenateHlsUrl();
   } else if (path === '/api/senate/proceedings' && request.method === 'GET') {
