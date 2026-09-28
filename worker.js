@@ -4163,6 +4163,9 @@ async function senateStvFilename() {
 // called list and inflated the count by one before anyone was reached.
 const SENATE_NOT_A_MEMBER = new Set(['PRESIDENT', 'SPEAKER', 'CHAIRMAN', 'CHAIRWOMAN', 'CHAIR', 'CLERK', 'LEADER', 'SECRETARY', 'PARLIAMENTARIAN']);
 
+const SENATE_VOTE_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*,\s*(AYE|YEA|NO|NAY|PRESENT)\b/g;
+const SENATE_HEAD_RE = /\bSENATORS?\s+VOTING\s+(?:IN\s+THE\s+)?(AFFIRMATIVE|NEGATIVE|AYE|YEA|NAY|NO|PRESENT)\b/g;
+
 const SENATE_ROLL_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*\./g;
 
 async function handleSenateQuorum(env) {
@@ -4174,7 +4177,7 @@ async function handleSenateQuorum(env) {
     // Scoped to the stream, not the day. The filename is date-stamped, so a new
     // day's stream starts a new set on its own without a reset rule.
     const key = `senate-quorum-${filename}`;
-    let state = { names: [], lastSeg: null, updated: null };
+    let state = { names: [], votes: {}, lastSeg: null, updated: null };
     if (env?.HLS_CACHE) {
       try { state = JSON.parse(await env.HLS_CACHE.get(key)) || state; } catch {}
     }
@@ -4204,6 +4207,7 @@ async function handleSenateQuorum(env) {
 
     const dir = (base + subUri).replace(/[^/]+$/, '');
     const found = new Set(state.names);
+    const votes = { ...(state.votes || {}) };
     for (const seg of fresh.slice(0, 12)) {
       const vtt = await get(dir + seg);
       if (!vtt) continue;
@@ -4214,9 +4218,27 @@ async function handleSenateQuorum(env) {
         const name = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
         if (!SENATE_NOT_A_MEMBER.has(name)) found.add(name);
       }
+      // Votes, in both shapes the floor uses: inline after a comma, and bare
+      // names under a "SENATORS VOTING ..." heading. Same rules as the board.
+      const put = (raw, v) => {
+        const n = String(raw).replace(/\s+/g, ' ').trim().toUpperCase();
+        if (!SENATE_NOT_A_MEMBER.has(n)) votes[n] = v;
+      };
+      SENATE_VOTE_RE.lastIndex = 0;
+      while ((m = SENATE_VOTE_RE.exec(flat))) put(m[1], m[2] === 'YEA' ? 'AYE' : m[2] === 'NAY' ? 'NO' : m[2]);
+      const marks = [...flat.matchAll(SENATE_HEAD_RE)].map((h) => ({
+        at: h.index + h[0].length,
+        vote: /AFFIRM|AYE|YEA/.test(h[1]) ? 'AYE' : /NEGATIVE|NAY|NO/.test(h[1]) ? 'NO' : 'PRESENT',
+      }));
+      for (let i = 0; i < marks.length; i++) {
+        const chunk = flat.slice(marks[i].at, i + 1 < marks.length ? marks[i + 1].at : flat.length);
+        SENATE_ROLL_RE.lastIndex = 0;
+        let r;
+        while ((r = SENATE_ROLL_RE.exec(chunk))) put(r[1], marks[i].vote);
+      }
     }
 
-    state = { names: [...found], lastSeg: segs[segs.length - 1] || state.lastSeg, updated: new Date().toISOString() };
+    state = { names: [...found], votes, lastSeg: segs[segs.length - 1] || state.lastSeg, updated: new Date().toISOString() };
     if (env?.HLS_CACHE) {
       // Two days: long enough to survive a call, short enough that a stream id
       // nobody asks for again does not sit in KV forever.
@@ -4225,6 +4247,7 @@ async function handleSenateQuorum(env) {
 
     return new Response(JSON.stringify({
       stream: filename, names: state.names, count: state.names.length,
+      votes: state.votes, voteCount: Object.keys(state.votes).length,
       updated: state.updated, live: true,
     }), { headers: hdrs });
   } catch (e) {
