@@ -11162,18 +11162,45 @@ button.proceedings-measure:hover .proceedings-measure-id {
     background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
 }
 
-/* A Senate quorum call overrides the House mode gating.
+/* The Senate vote column: Happening Now and the quorum board, always on.
  *
- * The board inherits the House's mode system, which hides the vote column in
- * every non-voting mode, and senate.js never sets a mode -- so the body stays
- * recess-mode and the quorum panel is display:none. That is right when nothing
- * is happening: a hundred dark boxes permanently on the page is a lot of room
- * to spend on nothing.
+ * These inherit the House mode gating, which hides the whole vote column in
+ * every non-voting mode, and senate.js sets no mode -- so they were
+ * display:none and the board could not be seen at all. Shown unconditionally
+ * here, which also means .vote-column's 1px centre line connects them the way
+ * it does on the House side, because that line is drawn by the column and only
+ * shows in the gaps between visible panels.
  *
- * lib/senate-quorum.js adds this class when the clerk starts reading and drops
- * it on reset, so the panel appears for the call and goes away after. Specific
- * enough to beat the :is() list that hides it, without !important. */
-body.senate-quorum-active .vote-display,
-body.senate-quorum-active .quorum-panel {
+ * The other two panels in that column stay hidden. THRESHOLD ANALYSIS is about
+ * a vote in progress, and CHAMBER VOTE MAP carries a YEA / NAY / PRESENT /
+ * NOT VOTING legend -- which is a roll call vote's vocabulary, not a quorum
+ * call's. A quorum call has no yeas and no nays, so showing that legend beside
+ * a board of names being read states something untrue. It comes back when
+ * there is a vote to draw on it. */
+:root[data-chamber="senate"] .vote-display,
+:root[data-chamber="senate"] .quorum-panel {
     display: block;
+}
+:root[data-chamber="senate"] .threshold-panel,
+:root[data-chamber="senate"] .floor-grid-panel {
+    display: none;
+}
+
+/* Inside HAPPENING NOW, the yea/nay machinery goes and the clock stays.
+ *
+ * A quorum call has no yeas, no nays and no threshold, so the tallies, the
+ * party splits and the progress bar were stating a vote that is not happening.
+ * It does have a duration, so .vote-timer is kept -- and moved below the
+ * quorum board rather than sitting where the tallies were, since it is timing
+ * the call the board is showing. */
+:root[data-chamber="senate"] .vote-display .vote-counts-row,
+:root[data-chamber="senate"] .vote-display .progress-section,
+:root[data-chamber="senate"] .vote-display .vote-header,
+:root[data-chamber="senate"] .vote-display .vote-not-yet {
+    display: none;
+}
+:root[data-chamber="senate"] .quorum-panel .vote-timer {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--sp-12);
 }
