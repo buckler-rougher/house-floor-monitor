@@ -393,7 +393,20 @@ function renderSchedule(data) {
     const now = Date.now();
     const convened = latest.convene ? new Date(latest.convene) : null;
     const adjourned = latest.adjourn ? new Date(latest.adjourn) : null;
-    const sitting = convened && convened.getTime() <= now && (!adjourned || adjourned.getTime() > now);
+    let sitting = convened && convened.getTime() <= now && (!adjourned || adjourned.getTime() > now);
+
+    // The feed publishes a sitting only once it has ENDED, so on a day the
+    // Senate is actually in it still describes the last completed one. Read
+    // literally that says ADJOURNED all afternoon: on 28 September the latest
+    // row was 24 September, adjourned 16:05, while the chamber was in a quorum
+    // call.
+    //
+    // nextConvene is the tell. Once that time has passed the Senate has come
+    // in and the feed is simply behind. Bounded to 18 hours, because a
+    // nextConvene days in the past means the feed is stale in a way this
+    // cannot reason about, and guessing would be worse than saying adjourned.
+    const nextIn = latest.nextConvene ? new Date(latest.nextConvene).getTime() : NaN;
+    if (!sitting && !isNaN(nextIn) && nextIn <= now && now - nextIn < 18 * 3600 * 1000) sitting = true;
 
     if (sitting) {
         line.textContent = 'IN SESSION';
