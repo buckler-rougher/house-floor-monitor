@@ -1748,6 +1748,9 @@ FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
 SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
+// The Worker holds the whole call; the local caption reader is just faster.
+SenateQuorum.syncFromWorker(API);
+setInterval(() => SenateQuorum.syncFromWorker(API), 15000);
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
