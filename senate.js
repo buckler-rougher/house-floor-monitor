@@ -273,7 +273,11 @@ async function loadBalance() {
     try {
         const r = await fetch(`${API}/senate/roster`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderBalance(await r.json());
+        const roster = await r.json();
+        renderBalance(roster);
+        // The caption track names a senator by surname; this is what turns that
+        // into a face, a party and a state.
+        globalThis.SenateSpeaker?.setSeats?.(roster.seats || []);
     } catch (e) {
         const stamp = el('party-breakdown-last-update');
         if (stamp) stamp.textContent = 'unavailable';
@@ -1732,6 +1736,10 @@ initCapcam();
 // Floor feed PiP (lib/floor-feed.js). The Worker resolves the Senate's own
 // stream -- see handleSenateHlsUrl in worker.js for how the URL is built.
 FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
+// Reads the floor feed's own caption track. Senate TV names the member at the
+// moment they are recognised and never again, so the module latches the label
+// rather than reading whatever is on screen. loadBalance hands it the roster.
+SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
