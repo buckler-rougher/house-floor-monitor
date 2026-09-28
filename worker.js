@@ -4158,6 +4158,11 @@ async function senateStvFilename() {
 
 // Same rule the board uses: a name being CALLED ends in a period, a member
 // taking the floor ends in a colon.
+// Forms of address that are not members. "MR. PRESIDENT" opens half the
+// speeches on the floor and parses as a surname, which put PRESIDENT in the
+// called list and inflated the count by one before anyone was reached.
+const SENATE_NOT_A_MEMBER = new Set(['PRESIDENT', 'SPEAKER', 'CHAIRMAN', 'CHAIRWOMAN', 'CHAIR', 'CLERK', 'LEADER', 'SECRETARY', 'PARLIAMENTARIAN']);
+
 const SENATE_ROLL_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*\./g;
 
 async function handleSenateQuorum(env) {
@@ -4205,7 +4210,10 @@ async function handleSenateQuorum(env) {
       const flat = vtt.replace(/\r/g, '').replace(/\n/g, ' ');
       SENATE_ROLL_RE.lastIndex = 0;
       let m;
-      while ((m = SENATE_ROLL_RE.exec(flat))) found.add(m[1].replace(/\s+/g, ' ').trim().toUpperCase());
+      while ((m = SENATE_ROLL_RE.exec(flat))) {
+        const name = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
+        if (!SENATE_NOT_A_MEMBER.has(name)) found.add(name);
+      }
     }
 
     state = { names: [...found], lastSeg: segs[segs.length - 1] || state.lastSeg, updated: new Date().toISOString() };
