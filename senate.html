@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20260928c">
+    <link rel="stylesheet" href="styles.css?v=20260928d">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -942,7 +942,7 @@
             <div class="vote-display">
                 <div class="panel-header">
                     <span class="panel-label">Happening Now</span>
-                    <span id="vote-type-tag" class="vote-type-tag"></span>
+                    <span class="vote-type-tag"></span>
                     <span class="vote-id" id="vote-id">--</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/floor_activity_pail.htm" target="_blank" rel="noopener">Senate Floor Webcast captions</a></span>
@@ -1065,7 +1065,8 @@
             <!-- Quorum Status -->
             <div class="quorum-panel" id="quorum">
                 <div class="panel-header">
-                    <span class="panel-label">QUORUM CALL</span>
+                    <span class="panel-label">HAPPENING NOW</span>
+                    <span class="vote-type-tag quorum-call-tag" id="vote-type-tag">QUORUM CALL</span>
                     <span class="quorum-indicator" id="quorum-indicator">
                         <span class="indicator-dot"></span>
                         <span class="indicator-text">CALCULATING</span>
@@ -1747,7 +1748,7 @@
     <script defer src="lib/voting-calendar.js?v=20260926b"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/suggest-box.js?v=20260927a"></script>
-    <script defer src="lib/senate-quorum.js?v=20260928e"></script>
+    <script defer src="lib/senate-quorum.js?v=20260928f"></script>
     <script defer src="lib/senate-speaker.js?v=20260928e"></script>
     <script defer src="lib/floor-feed.js?v=20260928e"></script>
     <script defer src="lib/floor-speaker.js?v=20260917i"></script>
