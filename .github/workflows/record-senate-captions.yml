@@ -1,0 +1,51 @@
+# Record the Senate floor's captions while the Senate is in session, so there is
+# something to test against when it is not.
+#
+# WHY IT RUNS TWICE A DAY, AND WHY LATE IS FINE
+# The day's caption playlist exists only while that day's stream does, and it is
+# an EVENT playlist: every segment from number 1 stays listed until the day ends.
+# A recorder that starts hours into a session still saves the whole day, so what
+# matters is only that one of them is running when the session finishes. Yesterday
+# it finished at 03:01 UTC. Scheduled runs here start 4 to 6 hours late (see
+# senate-rollcall-probe.yml), so:
+#   17:07 UTC  ->  starts about 21:20 to 23:00 and runs to about 03:00 to 04:40
+#   21:07 UTC  ->  starts about 01:20 to 03:00 and runs on past the finish
+# The script stops itself when the stream ends, so an early finish costs nothing.
+#
+# Output: the senate-captions-<run id> artifact, one folder per day (stvMMDDYY).
+name: Record Senate captions
+
+on:
+  schedule:
+    - cron: '7 17 * * 1-5'
+    - cron: '7 21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'How long to wait for, and record, in minutes'
+        required: false
+        default: '340'
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Record
+        env:
+          MINUTES: ${{ inputs.minutes || '340' }}
+        run: node dev/record-senate-captions.mjs "--minutes=$MINUTES" --out=senate-captions
+      - name: Keep the recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: senate-captions-${{ github.run_id }}
+          path: senate-captions
+          if-no-files-found: ignore
