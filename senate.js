@@ -273,7 +273,17 @@ async function loadBalance() {
     try {
         const r = await fetch(`${API}/senate/roster`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderBalance(await r.json());
+        const roster = await r.json();
+        renderBalance(roster);
+        // The caption track names a senator by surname; this is what turns that
+        // into a face, a party and a state.
+        // roster.members, not roster.seats. `seats` is the chamber size, the
+        // number 100; the members are under `members`. Reading the count as an
+        // array left the quorum board empty and the speaker row unable to
+        // resolve a surname.
+        const members = roster.members || [];
+        globalThis.SenateSpeaker?.setSeats?.(members);
+        globalThis.SenateQuorum?.build?.(members);
     } catch (e) {
         const stamp = el('party-breakdown-last-update');
         if (stamp) stamp.textContent = 'unavailable';
@@ -383,7 +393,20 @@ function renderSchedule(data) {
     const now = Date.now();
     const convened = latest.convene ? new Date(latest.convene) : null;
     const adjourned = latest.adjourn ? new Date(latest.adjourn) : null;
-    const sitting = convened && convened.getTime() <= now && (!adjourned || adjourned.getTime() > now);
+    let sitting = convened && convened.getTime() <= now && (!adjourned || adjourned.getTime() > now);
+
+    // The feed publishes a sitting only once it has ENDED, so on a day the
+    // Senate is actually in it still describes the last completed one. Read
+    // literally that says ADJOURNED all afternoon: on 28 September the latest
+    // row was 24 September, adjourned 16:05, while the chamber was in a quorum
+    // call.
+    //
+    // nextConvene is the tell. Once that time has passed the Senate has come
+    // in and the feed is simply behind. Bounded to 18 hours, because a
+    // nextConvene days in the past means the feed is stale in a way this
+    // cannot reason about, and guessing would be worse than saying adjourned.
+    const nextIn = latest.nextConvene ? new Date(latest.nextConvene).getTime() : NaN;
+    if (!sitting && !isNaN(nextIn) && nextIn <= now && now - nextIn < 18 * 3600 * 1000) sitting = true;
 
     if (sitting) {
         line.textContent = 'IN SESSION';
@@ -1732,6 +1755,15 @@ initCapcam();
 // Floor feed PiP (lib/floor-feed.js). The Worker resolves the Senate's own
 // stream -- see handleSenateHlsUrl in worker.js for how the URL is built.
 FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
+// Reads the floor feed's own caption track. Senate TV names the member at the
+// moment they are recognised and never again, so the module latches the label
+// rather than reading whatever is on screen. loadBalance hands it the roster.
+SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
+// The quorum board listens for the roll names the speaker module broadcasts.
+SenateQuorum.init({ photoUrlFor });
+// The Worker holds the whole call; the local caption reader is just faster.
+SenateQuorum.syncFromWorker(API);
+setInterval(() => SenateQuorum.syncFromWorker(API), 15000);
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
