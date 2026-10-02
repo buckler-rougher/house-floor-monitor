@@ -11180,36 +11180,71 @@ button.proceedings-measure:hover .proceedings-measure-id {
 :root[data-chamber="senate"] .quorum-panel {
     display: block;
 }
-/* HAPPENING NOW and QUORUM CALL were two panels joined by the column's
-   connector line, which said the same thing twice: the quorum call IS what is
-   happening now. One panel, labelled HAPPENING NOW and tagged QUORUM CALL.
-   The vote-display panel it used to occupy stays hidden -- everything in it
-   was the yea/nay machinery, and the timer is relocated out of it. */
-:root[data-chamber="senate"] .vote-display {
+/* HAPPENING NOW is one thing, drawn two ways.
+ *
+ * A QUORUM CALL is the senator grid alone, under its own HAPPENING NOW header;
+ * the House's vote panel is hidden because everything in it is yea/nay
+ * machinery. A ROLL CALL VOTE is the House's vote panel -- the question, the
+ * YEA / PRESENT / NAY tallies with their party splits, the progress bar and the
+ * clock -- with the same grid attached directly beneath it, header and metrics
+ * dropped because the panel above says it already. lib/senate-quorum.js sets
+ * body.senate-call-vote / .senate-call-quorum from the call it is holding. */
+:root[data-chamber="senate"] body:not(.senate-call-vote) .vote-display {
     display: none;
 }
 :root[data-chamber="senate"] .threshold-panel,
 :root[data-chamber="senate"] .floor-grid-panel {
     display: none;
 }
-
-/* Inside HAPPENING NOW, the yea/nay machinery goes and the clock stays.
- *
- * A quorum call has no yeas, no nays and no threshold, so the tallies, the
- * party splits and the progress bar were stating a vote that is not happening.
- * It does have a duration, so .vote-timer is kept -- and moved below the
- * quorum board rather than sitting where the tallies were, since it is timing
- * the call the board is showing. */
-:root[data-chamber="senate"] .vote-display .vote-counts-row,
-:root[data-chamber="senate"] .vote-display .progress-section,
-:root[data-chamber="senate"] .vote-display .vote-header,
-:root[data-chamber="senate"] .vote-display .vote-not-yet {
+:root[data-chamber="senate"] body:not(.senate-call-vote) .vote-display .vote-counts-row,
+:root[data-chamber="senate"] body:not(.senate-call-vote) .vote-display .progress-section,
+:root[data-chamber="senate"] body:not(.senate-call-vote) .vote-display .vote-header,
+:root[data-chamber="senate"] body:not(.senate-call-vote) .vote-display .vote-not-yet {
     display: none;
 }
 :root[data-chamber="senate"] .quorum-panel .vote-timer {
     display: flex;
     justify-content: center;
     margin-top: var(--sp-12);
+}
+
+/* The vote: panel and grid joined. The grid pulls up over the column gap and
+   squares the shared corners, so the pair reads as one card. */
+/* body:is(.recess-mode ...) .vote-display { display: none } gates these for the
+   House at (0,2,1), and senate.js sets no mode, so the Senate sits in recess-mode
+   and the base `display` values lose. Restated here, at higher specificity. */
+:root[data-chamber="senate"] body.senate-call-vote .vote-display {
+    display: flex;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+:root[data-chamber="senate"] body.senate-call-vote .vote-display .vote-header {
+    display: flex;
+}
+:root[data-chamber="senate"] body.senate-call-vote .vote-display .progress-section {
+    display: block;
+}
+:root[data-chamber="senate"] body.senate-call-vote .quorum-panel {
+    margin-top: calc(-1 * var(--section-gap));
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+:root[data-chamber="senate"] body.senate-call-vote .quorum-panel > .panel-header,
+:root[data-chamber="senate"] body.senate-call-vote .quorum-panel .quorum-metrics,
+:root[data-chamber="senate"] body.senate-call-vote .quorum-panel .quorum-visual {
+    display: none;
+}
+/* The outcome goes in the header's id slot once the tally is read; empty before
+   that, and an empty span would draw its border as a stray pill. */
+:root[data-chamber="senate"] .vote-display .vote-id:empty {
+    display: none;
+}
+/* The question is the chair's own words, in capitals as captioned, and can run
+   to a sentence or two. The House title is a bill's short name. */
+:root[data-chamber="senate"] body.senate-call-vote .vote-display .vote-title {
+    font-size: var(--fs-3xl);
+    line-height: 1.25;
+    text-align: center;
 }
 
 /* A recorded vote, which outranks a name merely read. Same two accents the
