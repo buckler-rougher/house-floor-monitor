@@ -15,7 +15,7 @@
 // Where the URL comes from: see handleSenateHlsUrl in worker.js.
 //
 // WHAT IT WRITES to --out
-//   <stvMMDDYY>/text_NNNNN.vtt  each 12-second caption segment, byte for byte
+//   <stvMMDDYY>/text_1_NNNNN.vtt  each 12-second caption segment, byte for byte
 //   <day>/text_1.m3u8   the caption playlist as last seen
 //   <day>/index_1.m3u8  the video playlist as last seen (segment N starts at
 //                       12*(N-1) seconds into the stream)
@@ -71,11 +71,19 @@ async function candidateNames() {
 
 // Everything in captions.txt comes from the saved segments, so it can be
 // rebuilt at any time and never depends on this run having seen them live.
+//
+// The segments are named text_1_00001.vtt: the rendition number, then the
+// sequence. This used to look for text_00001.vtt, a name guessed before anyone
+// had seen the real one, so every run from 29 September on listed a full day's
+// playlist, matched none of it, saved nothing, and reported "0 segments" as if
+// that were a quiet day. The playlists it kept showed about 3,100 segments each.
+const SEGMENT = /^text_\d+_(\d+)\.vtt$/;
+
 function buildTranscript(out) {
-  const files = readdirSync(out).filter((f) => /^text_\d+\.vtt$/.test(f)).sort();
+  const files = readdirSync(out).filter((f) => SEGMENT.test(f)).sort();
   const lines = [];
   for (const f of files) {
-    const n = Number(f.match(/\d+/)[0]);
+    const n = Number(f.match(SEGMENT)[1]);
     let inCue = false;
     for (const line of readFileSync(join(out, f), 'utf8').split(/\r?\n/)) {
       if (line.includes('-->')) { inCue = true; continue; }
@@ -102,7 +110,13 @@ async function poll(name) {
     if (!st.seen) { say(`${name}: stream is live; playlist found`); mkdirSync(out, { recursive: true }); }
     st.seen = true;
     writeFileSync(join(out, 'text_1.m3u8'), pl.text);
-    const segs = pl.text.split('\n').map((l) => l.trim()).filter((l) => /^text_\d+\.vtt$/.test(l));
+    const segs = pl.text.split('\n').map((l) => l.trim()).filter((l) => SEGMENT.test(l));
+    // A playlist that lists lines but matches none of them is the parser being
+    // wrong, not a quiet day. Said loudly, once.
+    if (!st.warned && !segs.length && /\.vtt/.test(pl.text)) {
+      st.warned = true;
+      say(`${name}: the playlist lists .vtt files and none match the expected name; the pattern is out of date`);
+    }
     const fresh = segs.filter((f) => !existsSync(join(out, f)));
     for (let i = 0; i < fresh.length; i += 8) {
       await Promise.all(fresh.slice(i, i + 8).map(async (f) => {
