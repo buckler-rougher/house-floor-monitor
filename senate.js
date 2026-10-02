@@ -418,13 +418,20 @@ function renderSchedule(data) {
 
     if (next) {
         const nc = latest.nextConvene ? new Date(latest.nextConvene) : null;
-        if (nc && !isNaN(nc)) {
+        if (nc && !isNaN(nc) && nc.getTime() > now) {
             const when = nc.toLocaleString('en-US', {
                 weekday: 'short', day: '2-digit', month: 'short',
                 hour: '2-digit', minute: '2-digit', hour12: true,
                 timeZone: 'America/New_York', timeZoneName: 'short',
             });
             next.textContent = `NEXT CONVENES ${when}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}`;
+        } else if (nc && !isNaN(nc)) {
+            // The feed publishes a sitting only once it has ended, so after the
+            // time it last named has passed it still names that time. Showing it
+            // read "NEXT CONVENES MON, SEP 28" on 2 October. The Senate has come
+            // in since and the feed is behind, so what is next is not known here,
+            // and saying so beats asserting a date that is already gone.
+            next.textContent = 'NEXT CONVENING NOT YET PUBLISHED';
         } else {
             next.textContent = '\u00a0';
         }
@@ -732,6 +739,7 @@ function renderNotices() {
     const shown = _noticeFilter === 'all' ? _notices : _notices.filter((n) => n.type === _noticeFilter);
     if (!shown.length) {
         setIfChanged(feed, '<div class="whip-updates-loading">No floor notices.</div>');
+        watchListScroll(feed);
         return;
     }
     const html = shown.slice(0, 20).map((n) => {
@@ -749,6 +757,7 @@ function renderNotices() {
             </div>`;
     }).join('');
     setIfChanged(feed, html);
+    watchListScroll(feed);
 }
 
 function renderNoticeFilter() {
@@ -1759,6 +1768,8 @@ FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
 // moment they are recognised and never again, so the module latches the label
 // rather than reading whatever is on screen. loadBalance hands it the roster.
 SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
+// The bars beside the speaker. The signals come from the floor feed; this draws them.
+SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
 // The Worker holds the whole call; the local caption reader is just faster.

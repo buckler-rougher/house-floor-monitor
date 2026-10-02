@@ -11180,6 +11180,18 @@ button.proceedings-measure:hover .proceedings-measure-id {
 :root[data-chamber="senate"] .quorum-panel {
     display: block;
 }
+/* The quorum panel's header has four children and inherits space-between, which
+   spread the badge into the middle of the bar. The House pins HAPPENING NOW and
+   its badge to the left with a gap and pushes the rest right
+   (.vote-display > .panel-header); this is the same arrangement. */
+:root[data-chamber="senate"] .quorum-panel > .panel-header {
+    justify-content: flex-start;
+    gap: var(--sp-12);
+}
+:root[data-chamber="senate"] .quorum-panel > .panel-header .quorum-indicator {
+    margin-left: auto;
+}
+
 /* HAPPENING NOW is one thing, drawn two ways.
  *
  * A QUORUM CALL is the senator grid alone, under its own HAPPENING NOW header;
