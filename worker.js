@@ -4158,7 +4158,7 @@ const SENATE_CALL_KV_REFRESH_MS = 5 * 60 * 1000;
 // What counts as a change worth a KV write. lastAt and lastRoll move whenever
 // the rolling caption window repeats a name, which is not news.
 function senateCallSignature(call) {
-  return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended]);
+  return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended, call.speaker && call.speaker.label]);
 }
 
 async function handleSenateQuorum(env) {
@@ -4216,10 +4216,15 @@ async function handleSenateQuorum(env) {
     const fresh = from > 0 ? segs.slice(from) : segs.slice(Math.max(0, segs.length - 6));
 
     const dir = (base + subUri).replace(/[^/]+$/, '');
+    // A segment is up to 12 seconds old by the time it is polled. Stamping what
+    // it holds with the poll time would make this reader's call start, and its
+    // speaker, look later than a tab that heard the same words live, so the
+    // merge would prefer the older label. Backdated by about one segment.
+    const heard = now - 12_000;
     for (const seg of fresh.slice(0, 12)) {
       const vtt = await get(dir + seg);
       if (!vtt) continue;
-      state.call = SC.feed(state.call, vtt.replace(/\r/g, '').replace(/\n/g, ' '), now);
+      state.call = SC.feed(state.call, vtt.replace(/\r/g, '').replace(/\n/g, ' '), heard);
     }
 
     state.lastSeg = segs[segs.length - 1] || state.lastSeg;
