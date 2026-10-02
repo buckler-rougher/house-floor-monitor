@@ -281,4 +281,60 @@ test('summarize counts what the board shows', () => {
   assert.deepStrictEqual([v.kind, v.count, v.ayes, v.nos], ['vote', 2, 1, 1]);
 });
 
+test('a member taking the floor is latched as the speaker', () => {
+  const s = run([['MS. CANTWELL: THANK YOU. I RISE TODAY', T0]]);
+  assert.deepStrictEqual(s.speaker, { label: 'CANTWELL', kind: 'member', at: T0 });
+});
+
+test('the speaker holds until the next label, and a repeat is not a change', () => {
+  const s = run([
+    ['MS. CANTWELL: I RISE TODAY', T0],
+    ['I RISE TODAY TO TALK ABOUT', T0 + 5000],
+    ['MS. CANTWELL: I RISE TODAY', T0 + 9000],
+  ]);
+  assert.strictEqual(s.speaker.label, 'CANTWELL');
+  assert.strictEqual(s.speaker.at, T0);
+});
+
+test('a handoff inside one cue takes the last label', () => {
+  const s = run([['MS. CANTWELL: I YIELD. MR. LEE: I THANK THE SENATOR', T0]]);
+  assert.strictEqual(s.speaker.label, 'LEE');
+});
+
+test('the chair and the clerk are offices, not members', () => {
+  const s = run([['THE PRESIDING OFFICER: WITHOUT OBJECTION', T0]]);
+  assert.strictEqual(s.speaker.kind, 'office');
+  assert.strictEqual(s.speaker.label, 'THE PRESIDING OFFICER');
+});
+
+test('MR. PRESIDENT: is a form of address and does not take the floor', () => {
+  const s = run([['MS. CANTWELL: MR. PRESIDENT: I RISE', T0]]);
+  assert.strictEqual(s.speaker.label, 'CANTWELL');
+});
+
+test('a name being read is not a speaker', () => {
+  const s = run([['MS. ALSOBROOKS. MR. ARMSTRONG.', T0]]);
+  assert.strictEqual(s.speaker, null);
+});
+
+test('the speaker survives a call ending and the idle expiry', () => {
+  let s = run([['MS. ALSOBROOKS.', T0], ['MS. CANTWELL: I RISE', T0 + 1000]]);
+  s = C.expire(s, T0 + 60 * MIN);
+  assert.strictEqual(s.callId, null);
+  assert.strictEqual(s.speaker.label, 'CANTWELL');
+});
+
+test('merge: the later label wins, whichever reader heard it', () => {
+  const tab = run([['MS. CANTWELL: I RISE', T0 + 8000]]);
+  const worker = run([['MR. LEE: I RISE', T0]]);
+  assert.strictEqual(C.merge(tab, worker).speaker.label, 'CANTWELL');
+  assert.strictEqual(C.merge(worker, tab).speaker.label, 'CANTWELL');
+});
+
+test('merge: a speaker comes through even when the other side has no call', () => {
+  const worker = run([['MS. CANTWELL: I RISE', T0]]);
+  const tab = C.emptyCall();
+  assert.strictEqual(C.merge(tab, worker).speaker.label, 'CANTWELL');
+});
+
 console.log(`\n${n} passed`);
