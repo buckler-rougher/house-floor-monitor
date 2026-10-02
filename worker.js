@@ -4158,7 +4158,7 @@ const SENATE_CALL_KV_REFRESH_MS = 5 * 60 * 1000;
 // What counts as a change worth a KV write. lastAt and lastRoll move whenever
 // the rolling caption window repeats a name, which is not news.
 function senateCallSignature(call) {
-  return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended, call.speaker && call.speaker.label]);
+  return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended, call.speaker && call.speaker.label, call.question]);
 }
 
 async function handleSenateQuorum(env) {

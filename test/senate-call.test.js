@@ -379,4 +379,56 @@ test('a two-word state is matched whole', () => {
   assert.strictEqual(s.speaker.state, 'WV');
 });
 
+test('the question stated before the roll attaches to the vote', () => {
+  const s = run([
+    ['THE QUESTION IS ON AGREEING TO THE MOTION TO PROCEED TO CALENDAR NO. 213, S. 1234. THE YEAS AND NAYS ARE ORDERED. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. ALSOBROOKS. MR. ARMSTRONG.', T0 + 4000],
+    ['MS. DUCKWORTH, AYE.', T0 + 9000],
+  ]);
+  assert.strictEqual(s.kind, 'vote');
+  assert.strictEqual(s.question, 'ON AGREEING TO THE MOTION TO PROCEED TO CALENDAR NO. 213, S. 1234. THE YEAS AND NAYS ARE ORDERED'.replace(/\. THE YEAS.*/, ''));
+});
+
+test('a quorum call has no question, even with one waiting', () => {
+  const s = run([
+    ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. ALSOBROOKS. MR. ARMSTRONG.', T0 + 4000],
+  ]);
+  assert.strictEqual(s.kind, 'quorum');
+  assert.strictEqual(s.question, null);
+});
+
+test('a question cut off by the window is extended when more arrives', () => {
+  const s = run([
+    ['THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE ON THE NOM', T0],
+    ['MS. DUCKWORTH, AYE.', T0 + 3000],
+    ['THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE ON THE NOMINATION OF JANE DOE. THE CLERK WILL CALL THE ROLL.', T0 + 6000],
+  ]);
+  assert.strictEqual(s.question, 'ON THE MOTION TO INVOKE CLOTURE ON THE NOMINATION OF JANE DOE');
+});
+
+test('a question from half an hour ago is not claimed by a later vote', () => {
+  const s = run([
+    ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. DUCKWORTH, AYE.', T0 + 30 * MIN],
+  ]);
+  assert.strictEqual(s.question, null);
+});
+
+test('a new call forgets the last call\'s question', () => {
+  let s = run([
+    ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. DUCKWORTH, AYE. THE YEAS ARE 74, THE NAYS ARE 25.', T0 + 3000],
+  ]);
+  assert.ok(s.question);
+  s = C.feed(s, 'MS. ALSOBROOKS. MR. ARMSTRONG.', T0 + 40 * MIN);
+  assert.strictEqual(s.question, null);
+});
+
+test('merge: the longer question wins', () => {
+  const a = run([['THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE ON THE NOM', T0], ['MS. DUCKWORTH, AYE.', T0 + 1000]]);
+  const b = run([['THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE ON THE NOMINATION OF JANE DOE. THE CLERK WILL CALL', T0], ['MS. DUCKWORTH, AYE.', T0 + 1000]]);
+  assert.strictEqual(C.merge(a, b).question, 'ON THE MOTION TO INVOKE CLOTURE ON THE NOMINATION OF JANE DOE');
+});
+
 console.log(`\n${n} passed`);
