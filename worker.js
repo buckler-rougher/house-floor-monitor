@@ -11,6 +11,10 @@ import './lib/floor-speaker.js';
 // two different wordings the Chair uses to postpone a vote, only one of which this
 // file used to recognise. Side-effect import: assigns globalThis.FloorStatus.
 import './lib/floor-status.js';
+// What the Senate clerk is doing -- a quorum call or a roll call vote -- read off
+// the caption text. The same module runs in the browser. Side-effect import:
+// assigns globalThis.SenateCall.
+import './lib/senate-call.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -4136,51 +4140,54 @@ async function senateStvFilename() {
   return `stv${d.slice(4, 6)}${d.slice(6, 8)}${d.slice(2, 4)}`;
 }
 
-// ── Senate quorum roll ───────────────────────────────────────────────────────
+// ── Senate quorum call and roll call vote ────────────────────────────────────
 //
-// The called-names set, kept here rather than in each browser.
+// Kept here rather than in each browser: localStorage cannot serve a viewer who
+// opens the page mid-call, because the caption window holds about three lines.
 //
-// localStorage cannot serve a viewer who opens the page mid-call: the caption
-// window holds about three lines, so everything read before they arrived is
-// gone. This reads the same captions the browser does and accumulates them, so
-// any client joining at any point gets the whole call.
+// The clerk is read by lib/senate-call.js, the same module the browser runs, so the Worker and a tab cannot disagree about what a caption means. What
+// is kept here is one CALL -- a quorum call or a roll call vote -- not one set
+// per stream, so a second call on the same day starts clean instead of merging.
 //
-// It reads them directly rather than accepting them from the page. The stream
-// carries a SEPARATE WebVTT subtitle playlist -- not only embedded CEA-608 --
-// so this is plain text over HTTP with no video decoding:
-//
-//   master.m3u8 -> #EXT-X-MEDIA:TYPE=SUBTITLES,...,URI="master/text_1.m3u8"
-//   master/text_1.m3u8      -> rolling list of 12-second segments
-//   master/text_1_NNNNN.vtt -> WEBVTT
-//
-// A browser POSTing names would have been an unauthenticated write path for
-// anyone who found it, and is unnecessary when the source is readable here.
+// KV writes follow the House's rule (see setCachedBillEnrichment): hold the
+// state in memory, and write only when the content changed. This used to put on
+// every request, which is what burned through the free tier.
+const _senateCallMem = new Map();
+const SENATE_CALL_KV_REFRESH_MS = 5 * 60 * 1000;
 
-// Same rule the board uses: a name being CALLED ends in a period, a member
-// taking the floor ends in a colon.
-// Forms of address that are not members. "MR. PRESIDENT" opens half the
-// speeches on the floor and parses as a surname, which put PRESIDENT in the
-// called list and inflated the count by one before anyone was reached.
-const SENATE_NOT_A_MEMBER = new Set(['PRESIDENT', 'SPEAKER', 'CHAIRMAN', 'CHAIRWOMAN', 'CHAIR', 'CLERK', 'LEADER', 'SECRETARY', 'PARLIAMENTARIAN']);
-
-const SENATE_VOTE_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*,\s*(AYE|YEA|NO|NAY|PRESENT)\b/g;
-const SENATE_HEAD_RE = /\bSENATORS?\s+VOTING\s+(?:IN\s+THE\s+)?(AFFIRMATIVE|NEGATIVE|AYE|YEA|NAY|NO|PRESENT)\b/g;
-
-const SENATE_ROLL_RE = /\b(?:MR|MRS|MS)\.\s+([A-Z][A-Z'’-]{1,24}(?:\s+[A-Z][A-Z'’-]{1,24})?)\s*\./g;
+// What counts as a change worth a KV write. lastAt and lastRoll move whenever
+// the rolling caption window repeats a name, which is not news.
+function senateCallSignature(call) {
+  return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended]);
+}
 
 async function handleSenateQuorum(env) {
   const hdrs = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=5' };
+  const SC = globalThis.SenateCall;
   try {
     const filename = await senateStvFilename();
     const master = `${SENATE_HLS_BASE}${filename}/master.m3u8`;
 
-    // Scoped to the stream, not the day. The filename is date-stamped, so a new
-    // day's stream starts a new set on its own without a reset rule.
-    const key = `senate-quorum-${filename}`;
-    let state = { names: [], votes: {}, lastSeg: null, updated: null };
-    if (env?.HLS_CACHE) {
-      try { state = JSON.parse(await env.HLS_CACHE.get(key)) || state; } catch {}
+    // Scoped to the stream so a new day starts empty on its own; WITHIN the day
+    // the call inside is replaced when the next one begins.
+    const key = `senate-call-${filename}`;
+    let state = _senateCallMem.get(key) || null;
+    if (!state && env?.HLS_CACHE) {
+      try { state = JSON.parse(await env.HLS_CACHE.get(key)); } catch {}
     }
+    state = state || { call: SC.emptyCall(), lastSeg: null, updated: null, stored: null };
+    const startedWith = senateCallSignature(state.call);
+    const now = Date.now();
+    state.call = SC.expire(state.call, now);
+
+    const answer = (extra) => {
+      const call = state.call;
+      return new Response(JSON.stringify({
+        stream: filename, call, summary: SC.summarize(call), updated: state.updated,
+        // The shape before the call was a thing, for a tab that has not reloaded.
+        names: call.names, votes: call.votes, ...extra,
+      }), { headers: hdrs });
+    };
 
     const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
     const get = async (u) => {
@@ -4188,16 +4195,19 @@ async function handleSenateQuorum(env) {
       return r.ok ? r.text() : null;
     };
 
+    // The stream carries a SEPARATE WebVTT subtitle playlist, not only embedded
+    // CEA-608, so this is plain text over HTTP with no video decoding:
+    //   master.m3u8 -> #EXT-X-MEDIA:TYPE=SUBTITLES,...,URI="master/text_1.m3u8"
+    //   master/text_1.m3u8      -> rolling list of 12-second segments
+    //   master/text_1_NNNNN.vtt -> WEBVTT
+    // Read here rather than accepted from a browser: a POST of names would be an
+    // unauthenticated write path for anyone who found it.
     const m3u = await get(master);
     const subUri = m3u && (m3u.match(/TYPE=SUBTITLES[^\n]*URI="([^"]+)"/) || [])[1];
-    if (!subUri) {
-      return new Response(JSON.stringify({ names: state.names, live: false, reason: 'no subtitle track' }), { headers: hdrs });
-    }
+    if (!subUri) return answer({ live: false, reason: 'no subtitle track' });
     const base = master.replace(/master\.m3u8$/, '');
     const list = await get(base + subUri);
-    if (!list) {
-      return new Response(JSON.stringify({ names: state.names, live: false, reason: 'no subtitle playlist' }), { headers: hdrs });
-    }
+    if (!list) return answer({ live: false, reason: 'no subtitle playlist' });
 
     const segs = list.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
     // Only what has appeared since the last pass. On a cold start take the tail
@@ -4206,50 +4216,29 @@ async function handleSenateQuorum(env) {
     const fresh = from > 0 ? segs.slice(from) : segs.slice(Math.max(0, segs.length - 6));
 
     const dir = (base + subUri).replace(/[^/]+$/, '');
-    const found = new Set(state.names);
-    const votes = { ...(state.votes || {}) };
     for (const seg of fresh.slice(0, 12)) {
       const vtt = await get(dir + seg);
       if (!vtt) continue;
-      const flat = vtt.replace(/\r/g, '').replace(/\n/g, ' ');
-      SENATE_ROLL_RE.lastIndex = 0;
-      let m;
-      while ((m = SENATE_ROLL_RE.exec(flat))) {
-        const name = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
-        if (!SENATE_NOT_A_MEMBER.has(name)) found.add(name);
-      }
-      // Votes, in both shapes the floor uses: inline after a comma, and bare
-      // names under a "SENATORS VOTING ..." heading. Same rules as the board.
-      const put = (raw, v) => {
-        const n = String(raw).replace(/\s+/g, ' ').trim().toUpperCase();
-        if (!SENATE_NOT_A_MEMBER.has(n)) votes[n] = v;
-      };
-      SENATE_VOTE_RE.lastIndex = 0;
-      while ((m = SENATE_VOTE_RE.exec(flat))) put(m[1], m[2] === 'YEA' ? 'AYE' : m[2] === 'NAY' ? 'NO' : m[2]);
-      const marks = [...flat.matchAll(SENATE_HEAD_RE)].map((h) => ({
-        at: h.index + h[0].length,
-        vote: /AFFIRM|AYE|YEA/.test(h[1]) ? 'AYE' : /NEGATIVE|NAY|NO/.test(h[1]) ? 'NO' : 'PRESENT',
-      }));
-      for (let i = 0; i < marks.length; i++) {
-        const chunk = flat.slice(marks[i].at, i + 1 < marks.length ? marks[i + 1].at : flat.length);
-        SENATE_ROLL_RE.lastIndex = 0;
-        let r;
-        while ((r = SENATE_ROLL_RE.exec(chunk))) put(r[1], marks[i].vote);
-      }
+      state.call = SC.feed(state.call, vtt.replace(/\r/g, '').replace(/\n/g, ' '), now);
     }
 
-    state = { names: [...found], votes, lastSeg: segs[segs.length - 1] || state.lastSeg, updated: new Date().toISOString() };
+    state.lastSeg = segs[segs.length - 1] || state.lastSeg;
+    state.updated = new Date().toISOString();
+    _senateCallMem.set(key, state);
+
     if (env?.HLS_CACHE) {
-      // Two days: long enough to survive a call, short enough that a stream id
-      // nobody asks for again does not sit in KV forever.
-      try { await env.HLS_CACHE.put(key, JSON.stringify(state), { expirationTtl: 172_800 }); } catch {}
+      const changed = senateCallSignature(state.call) !== startedWith;
+      const stale = !state.stored || now - state.stored > SENATE_CALL_KV_REFRESH_MS;
+      // The cursor moves every 12 seconds and is not worth a write on its own;
+      // the periodic refresh keeps it from being lost for long. Two days: long
+      // enough to survive a call, short enough that a stream id nobody asks for
+      // again does not sit in KV forever.
+      if (changed || stale) {
+        state.stored = now;
+        try { await env.HLS_CACHE.put(key, JSON.stringify(state), { expirationTtl: 172_800 }); } catch {}
+      }
     }
-
-    return new Response(JSON.stringify({
-      stream: filename, names: state.names, count: state.names.length,
-      votes: state.votes, voteCount: Object.keys(state.votes).length,
-      updated: state.updated, live: true,
-    }), { headers: hdrs });
+    return answer({ live: true });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
