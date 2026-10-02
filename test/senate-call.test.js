@@ -337,4 +337,46 @@ test('merge: a speaker comes through even when the other side has no call', () =
   assert.strictEqual(C.merge(tab, worker).speaker.label, 'CANTWELL');
 });
 
+test('the chair recognising by state before the label names the state', () => {
+  const s = run([['THE PRESIDING OFFICER: THE SENATOR FROM FLORIDA. MR. SCOTT: THANK YOU', T0]]);
+  assert.strictEqual(s.speaker.label, 'SCOTT');
+  assert.strictEqual(s.speaker.state, 'FL');
+});
+
+test('a recognition in an earlier cue still names the state', () => {
+  const s = run([
+    ['THE SENATOR FROM SOUTH CAROLINA IS RECOGNIZED.', T0],
+    ['MR. SCOTT: I RISE', T0 + 4000],
+  ]);
+  assert.strictEqual(s.speaker.state, 'SC');
+});
+
+test('a state named a minute ago does not name this speaker', () => {
+  const s = run([
+    ['THE SENATOR FROM SOUTH CAROLINA IS RECOGNIZED.', T0],
+    ['MR. SCOTT: I RISE', T0 + 60 * 1000],
+  ]);
+  assert.strictEqual(s.speaker.state, undefined);
+});
+
+test('one recognition names one speaker, not the next Scott as well', () => {
+  const s = run([
+    ['THE SENATOR FROM FLORIDA. MR. SCOTT: I RISE', T0],
+    ['MR. LEE: I THANK THE SENATOR', T0 + 5000],
+    ['MR. SCOTT: I RISE AGAIN', T0 + 10000],
+  ]);
+  assert.strictEqual(s.speaker.label, 'SCOTT');
+  assert.strictEqual(s.speaker.state, undefined, 'the Florida recognition was spent on the first label');
+});
+
+test('no state said, none claimed', () => {
+  const s = run([['MR. SCOTT: I RISE', T0]]);
+  assert.strictEqual(s.speaker.state, undefined);
+});
+
+test('a two-word state is matched whole', () => {
+  const s = run([['THE SENATOR FROM WEST VIRGINIA. MR. JUSTICE: I RISE', T0]]);
+  assert.strictEqual(s.speaker.state, 'WV');
+});
+
 console.log(`\n${n} passed`);
