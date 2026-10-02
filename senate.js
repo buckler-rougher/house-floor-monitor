@@ -1761,6 +1761,18 @@ setInterval(updateTimestamp, 1000);
 fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
 initCapcam();
+// The Twitter list is one list and its handles cover both chambers, so the feed is
+// the House's (lib/reporters.js); only the cards in the row differ. These are
+// reporters on the Senate beat. Search reaches every handle the list carries.
+Reporters.init({
+    api: `${API}/tweets`,
+    cards: [
+        { handle: '@burgessev',       name: 'Burgess Everett' },
+        { handle: '@mkraju',          name: 'Manu Raju' },
+        { handle: '@AndrewDesiderio', name: 'Andrew Desiderio' },
+        { handle: '@seungminkim',     name: 'Seung Min Kim' },
+    ],
+});
 // Floor feed PiP (lib/floor-feed.js). The Worker resolves the Senate's own
 // stream -- see handleSenateHlsUrl in worker.js for how the URL is built.
 FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
