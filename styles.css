@@ -11281,6 +11281,78 @@ button.proceedings-measure:hover .proceedings-measure-id {
 .qb-member.is-no  { border-color: rgba(248, 81, 73, 0.75); box-shadow: 0 0 10px rgba(248, 81, 73, 0.22); }
 .qb-member.is-present { border-color: rgba(210, 153, 34, 0.75); box-shadow: 0 0 10px rgba(210, 153, 34, 0.22); }
 
+/* The tap-to-identify line. On a phone the tiles drop the photo, state and party to
+   fit, so this says who a tapped tile is. Hidden everywhere else, where the tiles
+   already say it. */
+.qb-detail { display: none; }
+
+/* PHONES. At 640px and under the grid is the smallest it can be and still be read.
+ *
+ * At full size it is two columns of photo tiles and about 1,960px tall, two and a half
+ * screens of scrolling to see a hundred senators. Here it is four columns of surnames,
+ * about a quarter of that, and shown through a short scrolling window: no photo, no state or party text, the party carried by the
+ * tile's left edge, and a long name (Blunt Rochester) wrapping to two lines rather than
+ * being cut. A vote is a fill tint, because a glow has no room in a grid this tight.
+ * Tapping a tile names the senator in full (state, party, and how they voted), which is
+ * also how the two Scotts are told apart. The chamber map above shows the same marks
+ * spatially, which a phone has room for. */
+@media (max-width: 640px) {
+    .quorum-board {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 3px;
+        padding: var(--sp-8) 0 var(--sp-12);
+        /* A short window, not the whole roll. The default order on a phone is "recent",
+           so whoever just answered is at the top and the rest are a scroll away. The
+           fade says there is more, and goes at the end (watchEnd in senate-quorum.js). */
+        max-height: 176px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+    }
+    .quorum-board.is-at-end { -webkit-mask-image: none; mask-image: none; }
+    .qb-member {
+        padding: 3px 4px;
+        gap: 0;
+        border-radius: 4px;
+        border-left-width: 3px;
+        min-height: 20px;
+        cursor: pointer;
+    }
+    .qb-photo, .qb-meta { display: none; }
+    .qb-name {
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.1;
+    }
+    /* The party, as the tile's left edge. Declared after the lit states so it keeps its
+       colour when they recolour the rest of the border. */
+    .qb-member[data-party="D"] { border-left-color: var(--party-d); }
+    .qb-member[data-party="R"] { border-left-color: var(--party-r); }
+    .qb-member[data-party="I"] { border-left-color: var(--party-i); }
+    .qb-member.is-called { box-shadow: none; background: color-mix(in srgb, var(--accent-green) 12%, var(--bg-elevated)); }
+    .qb-member.is-aye     { box-shadow: none; background: color-mix(in srgb, var(--accent-green) 30%, var(--bg-elevated)); }
+    .qb-member.is-no      { box-shadow: none; background: color-mix(in srgb, var(--accent-red) 30%, var(--bg-elevated)); }
+    .qb-member.is-present { box-shadow: none; background: color-mix(in srgb, var(--accent-amber) 28%, var(--bg-elevated)); }
+    .qb-member.is-picked  { outline: 1px solid var(--text-secondary); outline-offset: 1px; }
+
+    .qb-detail:not([hidden]) {
+        display: block;
+        padding: var(--sp-6) var(--sp-8);
+        margin-top: var(--sp-8);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-6);
+        background: var(--bg-elevated);
+        font-size: var(--fs-md);
+        color: var(--text-primary);
+    }
+
+    /* Five sort buttons do not fit on one line at this width; let them wrap. */
+    .qb-controls .bills-sort-switcher { flex-wrap: wrap; }
+}
+
 /* Senate chamber desks. Real assignments, so a desk is a member and the
    tooltip names them -- unlike the House map, which says in its own note that
    members have no assigned seats. */
