@@ -1094,9 +1094,10 @@
                     <div class="qb-controls" id="qb-controls">
                         <div class="bills-sort-switcher" id="qb-sort" role="group" aria-label="Order the board">
                             <button class="bills-sort-btn active" type="button" data-sort="alpha" title="A to Z by surname, the order the clerk reads">A&ndash;Z</button>
-                            <button class="bills-sort-btn" type="button" data-sort="state" title="Grouped by state, states A to Z">State</button>
-                            <button class="bills-sort-btn" type="button" data-sort="admission" title="Grouped by state, in the order the states joined the Union">Admitted</button>
                             <button class="bills-sort-btn" type="button" data-sort="recent" title="The last senator heard first">Recent</button>
+                            <button class="bills-sort-btn" type="button" data-sort="state" title="Grouped by state, states A to Z">State (A&ndash;Z)</button>
+                            <button class="bills-sort-btn" type="button" data-sort="admission" title="Grouped by state, in the order the states joined the Union">State (admission)</button>
+                            <button class="bills-sort-btn" type="button" data-sort="seniority" title="By Senate seniority, most senior first (Wikipedia)" hidden>Seniority</button>
                         </div>
                         <div class="bills-sort-switcher" id="qb-party" role="group" aria-label="Filter by party">
                             <button class="bills-sort-btn active" type="button" data-party="all">All</button>
@@ -1718,6 +1719,7 @@
                         <span class="source-category">Miscellaneous:</span>
                         <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">Reporters (Twitter via Nitter)</a>
                         <a href="https://www.whitehouse.gov/briefing-room/statements-and-releases/" target="_blank" rel="noopener">Statements of Administration Policy (White House)</a>
+                        <a href="https://en.wikipedia.org/wiki/Seniority_in_the_United_States_Senate" target="_blank" rel="noopener">Senate Seniority Order (Wikipedia, CC BY-SA)</a>
                     </div>
                     <div class="source-group">
                         <span class="source-category">Images:</span>
@@ -1795,7 +1797,8 @@
     <script defer src="lib/suggest-box.js?v=20260927a"></script>
     <script defer src="lib/senate-call.js?v=20261002f"></script>
     <script defer src="lib/senate-sort.js?v=20261003a"></script>
-    <script defer src="lib/senate-quorum.js?v=20261003b"></script>
+    <script defer src="lib/senate-seniority.js?v=20261003a"></script>
+    <script defer src="lib/senate-quorum.js?v=20261003c"></script>
     <script defer src="lib/senate-speaker.js?v=20261002f"></script>
     <script defer src="lib/floor-feed.js?v=20260928e"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
@@ -1804,7 +1807,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261003a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="senate.js?v=20261003c"></script>
+    <script defer src="senate.js?v=20261003d"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

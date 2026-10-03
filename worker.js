@@ -15,6 +15,9 @@ import './lib/floor-status.js';
 // the caption text. The same module runs in the browser. Side-effect import:
 // assigns globalThis.SenateCall.
 import './lib/senate-call.js';
+// Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
+// for why Wikipedia and how it is refused when it does not parse cleanly).
+import './lib/senate-seniority.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -3658,6 +3661,33 @@ async function handleSenateRoster(env) {
   });
 }
 
+// The Senate's seniority order, from Wikipedia's "Seniority in the United States
+// Senate". Nothing the Senate publishes carries it; see lib/senate-seniority.js.
+//
+// Six hours, because it changes only when a seat changes hands. A page that does not
+// parse to a whole, contiguous 1-to-100 ranking THROWS, so kvCache serves the last
+// good copy (or nothing) and never stores a half-read table: the board then just has
+// no seniority order, which is what it had before.
+async function handleSenateSeniority(env) {
+  return kvCache(env, 'senate-seniority-v1', 21_600, async () => {
+    const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/html/Seniority_in_the_United_States_Senate', {
+      // Wikimedia asks automated readers to identify themselves.
+      headers: { 'User-Agent': 'house-floor-monitor/1.0 (https://house-floor.evanhollander.org)', Accept: 'text/html' },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!r.ok) throw new Error(`senate seniority: HTTP ${r.status}`);
+    if (!/html/i.test(r.headers.get('Content-Type') || '')) throw new Error('senate seniority: not HTML');
+    const SS = globalThis.SenateSeniority;
+    const rows = SS.parse(await r.text());
+    if (!SS.valid(rows)) throw new Error(`senate seniority: the table did not parse cleanly (${rows.length} rows)`);
+    return new Response(JSON.stringify({
+      source: 'Wikipedia, "Seniority in the United States Senate"',
+      fetched: new Date().toISOString(),
+      rows,
+    }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=21600' } });
+  });
+}
+
 async function handleSenateVotes(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
@@ -5628,6 +5658,8 @@ async function handleRequest(request, env) {
     return handleSenateSchedule(env);
   } else if (path === '/api/senate/roster' && request.method === 'GET') {
     return handleSenateRoster(env);
+  } else if (path === '/api/senate/seniority' && request.method === 'GET') {
+    return handleSenateSeniority(env);
   } else if (path === '/api/senate/votes' && request.method === 'GET') {
     return handleSenateVotes(env);
   } else if (path === '/api/congress-index' && request.method === 'GET') {
