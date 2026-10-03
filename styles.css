@@ -11236,15 +11236,18 @@ button.proceedings-measure:hover .proceedings-measure-id {
     margin-top: var(--sp-12);
 }
 
-/* The vote: panel and grid joined. The grid pulls up over the column gap and
-   squares the shared corners, so the pair reads as one card. */
-/* body:is(.recess-mode ...) .vote-display { display: none } gates these for the
-   House at (0,2,1), and senate.js sets no mode, so the Senate sits in recess-mode
-   and the base `display` values lose. Restated here, at higher specificity. */
+/* During a vote the column is the House's: HAPPENING NOW (the question, the tallies, the
+   clock), then THRESHOLD ANALYSIS, then the QUORUM panel (members present against the 51
+   a quorum needs, with the senator grid), then the chamber map, joined by the column's
+   connector line. The threshold panel is hidden the rest of the time, since it is about a
+   vote in progress. (An earlier version joined the vote panel and the grid into one card and
+   hid the threshold and the quorum metrics; both are the House's and belong back.) */
+/* body:is(.recess-mode ...) gates .vote-display, .vote-header, .progress-section and the
+   threshold panel for the House at (0,2,1), and senate.js sets no mode, so the Senate sits
+   in recess-mode and their base `display` values lose. Restated here at higher
+   specificity. */
 :root[data-chamber="senate"] body.senate-call-vote .vote-display {
     display: flex;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
 }
 :root[data-chamber="senate"] body.senate-call-vote .vote-display .vote-header {
     display: flex;
@@ -11252,14 +11255,22 @@ button.proceedings-measure:hover .proceedings-measure-id {
 :root[data-chamber="senate"] body.senate-call-vote .vote-display .progress-section {
     display: block;
 }
-:root[data-chamber="senate"] body.senate-call-vote .quorum-panel {
-    margin-top: calc(-1 * var(--section-gap));
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+:root[data-chamber="senate"] body.senate-call-vote .threshold-panel {
+    display: block;
 }
-:root[data-chamber="senate"] body.senate-call-vote .quorum-panel > .panel-header,
-:root[data-chamber="senate"] body.senate-call-vote .quorum-panel .quorum-metrics,
-:root[data-chamber="senate"] body.senate-call-vote .quorum-panel .quorum-visual {
+/* What the vote needs, and whether that is known or only assumed. */
+.threshold-basis {
+    padding: var(--sp-8) var(--sp-32) 0;
+    font-size: var(--fs-md);
+    color: var(--text-muted);
+}
+@media (max-width: 640px) {
+    .threshold-basis { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+}
+/* The map's key in a QUORUM CALL says one thing, PRESENT, because that is all a quorum call
+   records: a name read, a senator present. YEA, NAY and NOT VOTING are a vote's vocabulary,
+   and the desks light yellow only (lib/senate-chamber.js). */
+body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     display: none;
 }
 /* The outcome goes in the header's id slot once the tally is read; empty before
