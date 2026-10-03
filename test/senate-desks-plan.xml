@@ -1,0 +1,1125 @@
+<?xml version="1.0" encoding="UTF-8"?><seating>
+
+<detailsPage>deskdetails.cfm</detailsPage>
+<sides>
+<side name="left">
+<sections>
+<section>
+<rows>
+
+<!--DEMOCRAT LEFT SECTION ROW 1-->
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="10" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Schumer, Charles E.</sName>
+<sState>NY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S000148</sLink>
+</seat>
+
+<seat id="64" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Durbin, Richard J.</sName>
+<sState>IL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=D000563</sLink>
+</seat>
+
+</row>
+
+
+<!--DEMOCRAT LEFT SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+
+<seat id="20" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Murray, Patty</sName>
+<sState>WA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001111</sLink>
+</seat>
+
+<seat id="84" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Reed, Jack</sName>
+<sState>RI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=R000122</sLink>
+</seat>
+
+
+<seat id="44" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Wyden, Ron</sName>
+<sState>OR</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000779</sLink>
+</seat>
+
+</row>
+
+
+<!--DEMOCRAT LEFT SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="39" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Cantwell, Maria</sName>
+<sState>WA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C000127</sLink>
+</seat>
+
+<seat id="29" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Shaheen, Jeanne</sName>
+<sState>NH</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001181</sLink>
+</seat>
+
+<seat id="31" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Merkley, Jeff</sName>
+<sState>OR</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001176</sLink>
+</seat>
+
+<seat id="91" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Coons, Christopher A.</sName>
+<sState>DE</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001088</sLink>
+</seat>
+
+</row>
+
+
+<!--DEMOCRAT LEFT SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="66" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Heinrich, Martin</sName>
+<sState>NM</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001046</sLink>
+</seat>
+
+<seat id="5" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Van Hollen, Chris</sName>
+<sState>MD</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=V000128</sLink>
+</seat>
+
+<seat id="62" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Cortez Masto, Catherine</sName>
+<sState>NV</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001113</sLink>
+</seat>
+
+<seat id="18" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Warner, Mark R.</sName>
+<sState>VA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000805</sLink>
+</seat>
+
+<seat id="90" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Bennet, Michael F.</sName>
+<sState>CO</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001267</sLink>
+</seat>
+
+</row>
+</rows>
+</section>
+
+
+
+<section>
+<rows>
+
+<!--DEMOCRAT CENTER SECTION ROW 1-->
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="11" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Klobuchar, Amy</sName>
+<sState>MN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000367</sLink>
+</seat>
+
+<seat id="87" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Gillibrand, Kirsten E.</sName>
+<sState>NY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=G000555</sLink>
+</seat>
+
+<seat id="33" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Schatz, Brian</sName>
+<sState>HI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001194</sLink>
+</seat>
+
+</row>
+
+<!--DEMOCRAT CENTER SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+
+<seat id="43" type="1">
+<dName/>
+<dDesc/>
+<politics>I</politics>
+<sName>Sanders, Bernard</sName>
+<sState>VT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S000033</sLink>
+</seat>
+
+<seat id="83" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Warren, Elizabeth</sName>
+<sState>MA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000817</sLink>
+</seat> 
+
+<seat id="97" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Padilla, Alex</sName>
+<sState>CA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=P000145</sLink>
+</seat>
+
+<seat id="14" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Peters, Gary C.</sName>
+<sState>MI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=P000595</sLink>
+</seat>
+
+</row>
+
+<!--DEMOCRAT CENTER SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="88" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Blumenthal, Richard</sName>
+<sState>CT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001277</sLink>
+</seat>
+
+<seat id="68" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Schiff, Adam B.</sName>
+<sState>CA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001150</sLink>
+
+</seat>
+<seat id="35" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Warnock, Raphael G.</sName>
+<sState>GA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000790</sLink>
+</seat>
+
+<seat id="67" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Welch, Peter</sName>
+<sState>VT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000800</sLink>
+</seat>
+
+<seat id="71" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Hirono, Mazie K.</sName>
+<sState>HI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001042</sLink>
+</seat>
+
+</row>
+
+
+<!--DEMOCRAT CENTER SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="46" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Markey, Edward J.</sName>
+<sState>MA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M000133</sLink>
+</seat>
+
+<seat id="69" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Luján, Ben Ray</sName>
+<sState>NM</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=L000570</sLink>
+</seat>
+
+<seat id="24" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Duckworth, Tammy</sName>
+<sState>IL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=D000622</sLink>
+</seat>
+
+<seat id="16" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Baldwin, Tammy</sName>
+<sState>WI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001230</sLink>
+</seat>
+
+<seat id="15" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Whitehouse, Sheldon</sName>
+<sState>RI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000802</sLink>
+</seat>
+
+<seat id="75" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Hickenlooper, John W.</sName>
+<sState>CO</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=O000174</sLink>
+</seat>
+
+</row>
+</rows>
+
+</section>
+
+
+
+<!--DEMOCRAT RIGHT SECTION ROW 1-->
+<section>
+<rows>
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="56" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Murphy, Christopher</sName>
+<sState>CT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001169</sLink>
+</seat>
+
+<seat id="19" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Kim, Andy</sName>
+<sState>NJ</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000394</sLink>
+</seat>
+
+<seat id="63" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Gallego, Ruben</sName>
+<sState>AZ</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=G000574</sLink>
+</seat>
+
+</row>
+
+
+<!--DEMOCRAT RIGHT SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+
+<seat id="96" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Kaine, Tim</sName>
+<sState>VA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000384</sLink>
+</seat>
+
+<seat id="57" type="1">
+<dName/>
+<dDesc/>
+<politics>I</politics>
+<sName>King, Angus S., Jr.</sName>
+<sState>ME</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000383</sLink>
+</seat>
+
+<seat id="13" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Hassan, Margaret Wood</sName>
+<sState>NH</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001076</sLink>
+</seat>
+
+<seat id="12" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Smith, Tina</sName>
+<sState>MN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001203</sLink>
+</seat>
+
+</row>
+
+
+
+<!--DEMOCRAT RIGHT SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="32" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Ossoff, Jon</sName>
+<sState>GA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=P000612</sLink>
+</seat>
+
+<seat id="36" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Alsobrooks, Angela D.</sName>
+<sState>MD</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=A000382</sLink>
+</seat>
+
+<seat id="21" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Slotkin, Elissa</sName>
+<sState>MI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001208</sLink>
+</seat>
+
+<seat id="93" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Blunt Rochester, Lisa</sName>
+<sState>DE</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001303</sLink>
+</seat>
+
+</row>
+
+<!--DEMOCRAT RIGHT SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="3" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Booker, Cory A.</sName>
+<sState>NJ</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001288</sLink>
+</seat>
+
+<seat id="94" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Rosen, Jacky</sName>
+<sState>NV</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=R000608</sLink>
+</seat>
+
+<seat id="99" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Kelly, Mark</sName>
+<sState>AZ</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000377</sLink>
+</seat>
+
+<seat id="80" type="1">
+<dName/>
+<dDesc/>
+<politics>D</politics>
+<sName>Fetterman, John</sName>
+<sState>PA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=F000479</sLink>
+</seat>
+
+
+</row>
+
+</rows>
+</section>
+</sections>
+
+</side>
+
+<side name="right">
+<sections>
+
+<!--REPUBLICAN SIDE-->
+<section>
+<rows>
+
+
+<!--REPUBLICAN RIGHT SECTION ROW 1-->
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="9" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Thune, John</sName>
+<sState>SD</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=T000250</sLink>
+</seat>
+
+<seat id="28" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Barrasso, John</sName>
+<sState>WY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001261</sLink>
+</seat>
+
+</row>
+
+
+
+<!--REPUBLICAN RIGHT SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+
+<seat id="27" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Collins, Susan M.</sName>
+<sState>ME</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001035</sLink>
+</seat>
+
+<seat id="60" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Wicker, Roger F.</sName>
+<sState>MS</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=W000437</sLink>
+</seat> 
+
+<seat id="38" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Murkowski, Lisa</sName>
+<sState>AK</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001153</sLink>
+</seat>
+
+<seat id="41" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Cornyn, John</sName>
+<sState>TX</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001056</sLink>
+</seat>
+
+
+</row>
+
+
+
+<!--REPUBLICAN RIGHT SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="100" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Moran, Jerry</sName>
+<sState>KS</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M000934</sLink>
+</seat>
+
+<seat id="23" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Boozman, John</sName>
+<sState>AR</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001236</sLink>
+</seat>
+
+<seat id="45" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Hoeven, John</sName>
+<sState>ND</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001061</sLink>
+</seat>
+
+<seat id="50" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Risch, James E.</sName>
+<sState>ID</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=R000584</sLink>
+</seat>
+
+<seat id="74" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Crapo, Mike</sName>
+<sState>ID</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C000880</sLink>
+</seat>
+
+</row>
+
+
+
+<!--REPUBLICAN RIGHT SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="77" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Moreno, Bernie</sName>
+<sState>OH</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001242</sLink></seat>
+
+<seat id="72" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Sheehy, Tim</sName>
+<sState>MT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001232</sLink>
+</seat>
+
+<seat id="22" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Young, Todd</sName>
+<sState>IN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=Y000064</sLink>
+</seat>
+
+<seat id="98" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>McCormick, David</sName>
+<sState>PA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001243</sLink>
+</seat> 
+
+
+<seat id="76" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Blackburn, Marsha</sName>
+<sState>TN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001243</sLink>
+</seat>
+
+<seat id="54" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Scott, Tim</sName>
+<sState>SC</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001184</sLink>
+</seat>
+
+</row>
+
+</rows>
+</section>
+
+
+
+<!--REPUBLICAN CENTER SECTION-->
+<section>
+<rows>
+
+
+<!--REPUBLICAN CENTER SECTION ROW 1-->
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="86" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Grassley, Chuck</sName>
+<sState>IA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=G000386</sLink>
+</seat>
+
+
+<seat id="58" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>McConnell, Mitch</sName>
+<sState>KY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M000355</sLink>
+</seat>
+
+</row>
+
+
+<!--REPUBLICAN CENTER SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+<seat id="70" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Cruz, Ted</sName>
+<sState>TX</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001098</sLink>
+</seat>
+
+<seat id="79" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Paul, Rand</sName>
+<sState>KY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=P000603</sLink>
+</seat> 
+
+<seat id="6" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Rounds, Mike</sName>
+<sState>SD</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=R000605</sLink>
+</seat> 
+
+<seat id="59" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Graham, Darline</sName>
+<sState>SC</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=G000608</sLink>
+</seat>
+
+
+</row>
+
+
+
+<!--REPUBLICAN CENTER SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="81" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Fischer, Deb</sName>
+<sState>NE</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=F000463</sLink>
+</seat>
+
+<seat id="1" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Capito, Shelley Moore</sName>
+<sState>WV</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001047</sLink>
+</seat>
+
+<seat id="48" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Cotton, Tom</sName>
+<sState>AR</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001095</sLink>
+</seat>
+
+<seat id="52" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Daines, Steve</sName>
+<sState>MT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=D000618</sLink>
+</seat> 
+
+<seat id="55" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Lankford, James</sName>
+<sState>OK</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=L000575</sLink>
+</seat>
+
+</row>
+
+
+
+<!--REPUBLICAN CENTER SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="17" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Tillis, Thom</sName>
+<sState>NC</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=T000476</sLink>
+</seat>
+
+<seat id="7" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Lummis, Cynthia M.</sName>
+<sState>WY</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=L000571</sLink>
+</seat>
+
+<seat id="26" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Cassidy, Bill</sName>
+<sState>LA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001075</sLink>
+</seat>
+
+<seat id="42" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Lee, Mike</sName>
+<sState>UT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=L000577</sLink>
+</seat> 
+
+<seat id="89" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Hawley, Josh</sName>
+<sState>MO</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001089</sLink>
+</seat>
+
+
+<seat id="4" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Cramer, Kevin</sName>
+<sState>ND</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001096</sLink>
+</seat>
+
+
+</row>
+
+</rows>
+</section>
+
+
+
+<!--REPUBLICAN LEFT SECTION-->
+<section>
+<rows>
+
+<!--REPUBLICAN LEFT SECTION ROW 1-->
+<row innerOffSet="0" outerOffSet="0" rownum="1">
+
+<seat id="92" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Ernst, Joni</sName>
+<sState>IA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=E000295</sLink>
+</seat>
+
+<seat id="53" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Scott, Rick</sName>
+<sState>FL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001217</sLink>
+</seat>
+
+<seat id="30" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Hagerty, Bill</sName>
+<sState>TN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H000601</sLink>
+</seat> 
+
+<seat id="65" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Justice, James C.</sName>
+<sState>WV</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=J000312</sLink>
+</seat>
+
+</row>
+
+
+<!--REPUBLICAN LEFT SECTION ROW 2-->
+<row innerOffSet="0" outerOffSet="0" rownum="2">
+
+<seat id="34" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Kennedy, John</sName>
+<sState>LA</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=K000393</sLink>
+</seat> 
+
+<seat id="61" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Marshall, Roger, M.D.</sName>
+<sState>KS</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001198</sLink>
+</seat> 
+
+<seat id="37" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Curtis, John R.</sName>
+<sState>UT</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=C001114</sLink>
+</seat>
+
+<seat id="8" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Hyde-Smith, Cindy</sName>
+<sState>MS</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001079</sLink>
+</seat>
+
+</row>
+
+
+
+<!--REPUBLICAN LEFT SECTION ROW 3-->
+<row innerOffSet="0" outerOffSet="0" rownum="3">
+
+<seat id="47" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Budd, Ted</sName>
+<sState>NC</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001305</sLink>
+</seat>
+
+<seat id="2" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Schmitt, Eric</sName>
+<sState>MO</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001227</sLink>
+</seat>
+
+<seat id="40" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Britt, Katie Boyd</sName>
+<sState>AL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001319</sLink>
+</seat>
+
+<seat id="85" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Ricketts, Pete</sName>
+<sState>NE</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=R000618</sLink>
+</seat>
+
+
+<seat id="25" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Banks, Jim</sName>
+<sState>IN</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=B001299</sLink>
+</seat> 
+ 
+
+
+</row>
+
+
+
+<!--REPUBLICAN LEFT SECTION ROW 4-->
+<row innerOffSet="0" outerOffSet="0" rownum="4">
+
+<seat id="49" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Armstrong, Alan</sName>
+<sState>OK</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=A000383</sLink>
+</seat>
+
+<seat id="78" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Tuberville, Tommy</sName>
+<sState>AL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=T000278</sLink>
+</seat>
+
+<seat id="82" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Johnson, Ron</sName>
+<sState>WI</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=J000293</sLink>
+</seat>
+
+<seat id="73" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Sullivan, Dan</sName>
+<sState>AK</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=S001198</sLink>
+</seat>
+
+<seat id="95" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Moody, Ashley</sName>
+<sState>FL</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=M001244</sLink>
+</seat>
+
+<seat id="51" type="1">
+<dName/>
+<dDesc/>
+<politics>R</politics>
+<sName>Husted, Jon</sName>
+<sState>OH</sState>
+<sLink>http://bioguide.congress.gov/scripts/biodisplay.pl?index=H001104</sLink></seat>
+
+
+</row>
+
+</rows>
+</section>
+
+
+</sections>
+</side>
+<side name="center">
+<sections>
+<section>
+<rows>
+<row rownum="1" startSpacer="10"/>
+</rows>
+</section>
+</sections>
+</side>
+</sides>
+</seating>
