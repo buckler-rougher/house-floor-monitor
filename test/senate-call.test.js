@@ -389,6 +389,12 @@ test('the question stated before the roll attaches to the vote', () => {
   assert.strictEqual(s.question, 'ON AGREEING TO THE MOTION TO PROCEED TO CALENDAR NO. 213, S. 1234. THE YEAS AND NAYS ARE ORDERED'.replace(/\. THE YEAS.*/, ''));
 });
 
+test('a question cut off before any announcement stops at the first senator named', () => {
+  const s = run([['THE QUESTION IS ON PASSAGE OF THE BILL MR. SCHUMER, AYE. MR. THUNE, NAY.', T0]]);
+  assert.strictEqual(s.question, 'ON PASSAGE OF THE BILL');
+  assert.deepStrictEqual(s.votes, { SCHUMER: 'AYE', THUNE: 'NO' });
+});
+
 test('a quorum call has no question, even with one waiting', () => {
   const s = run([
     ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
