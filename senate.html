@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20261003e">
+    <link rel="stylesheet" href="styles.css?v=20261003g">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1093,8 +1093,8 @@
                          call lib/senate-call.js reads off the captions. -->
                     <div class="qb-controls" id="qb-controls">
                         <div class="bills-sort-switcher" id="qb-sort" role="group" aria-label="Order the board">
-                            <button class="bills-sort-btn active" type="button" data-sort="alpha" title="A to Z by surname, the order the clerk reads">A&ndash;Z</button>
-                            <button class="bills-sort-btn" type="button" data-sort="recent" title="The last senator heard first">Recent</button>
+                            <button class="bills-sort-btn" type="button" data-sort="alpha" title="A to Z by surname, the order the clerk reads">A&ndash;Z</button>
+                            <button class="bills-sort-btn active" type="button" data-sort="recent" title="The last senator heard first">Recent</button>
                             <button class="bills-sort-btn" type="button" data-sort="state" title="Grouped by state, states A to Z">State (A&ndash;Z)</button>
                             <button class="bills-sort-btn" type="button" data-sort="admission" title="Grouped by state, in the order the states joined the Union">State (admission)</button>
                             <button class="bills-sort-btn" type="button" data-sort="seniority" title="By Senate seniority, most senior first (Wikipedia)" hidden>Seniority</button>
@@ -1106,6 +1106,7 @@
                             <button class="bills-sort-btn" type="button" data-party="I">I</button>
                         </div>
                     </div>
+                    <div class="qb-detail" id="qb-detail" hidden aria-live="polite"></div>
                     <div class="quorum-board" id="quorum-board"></div>
                     <div class="quorum-visual">
                         <div class="quorum-bar" id="quorum-progress-bar" role="progressbar" aria-label="Members present" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -1796,7 +1797,7 @@
     <script defer src="lib/senate-sort.js?v=20261003a"></script>
     <script defer src="lib/senate-seniority.js?v=20261003a"></script>
     <script defer src="lib/senate-chamber.js?v=20261003f"></script>
-    <script defer src="lib/senate-quorum.js?v=20261003d"></script>
+    <script defer src="lib/senate-quorum.js?v=20261003g"></script>
     <script defer src="lib/senate-speaker.js?v=20261002f"></script>
     <script defer src="lib/floor-feed.js?v=20260928e"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
