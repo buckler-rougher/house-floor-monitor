@@ -6990,19 +6990,18 @@ async function fetchLastSessionDate() {
 
 async function fetchJournalChairInfo(name) {
     try {
-        const clean = name.replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.|the\s+Honorable)\s+/i, '').trim();
-        const lastName = clean.split(/\s+/).pop();
-        const xml = await getMemberXml();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xml, 'text/xml');
-        const members = xmlDoc.querySelectorAll('member');
-        let best = null, bestScore = 0;
-        for (const m of members) {
-            const ln = m.querySelector('lastname')?.textContent.trim() || '';
-            const score = calculateNameSimilarity(lastName, ln);
-            if (score > bestScore && score > 0.5) { bestScore = score; best = m; }
+        const resolved = await resolveClerkMember(name);
+        if (resolved.candidates) {
+            // Several members fit and the Clerk's text does not say which.
+            if (elements.journalChairName) elements.journalChairName.textContent = name.replace(/^the\s+honorable\s+/i, '').trim();
+            if (elements.journalPartyTag) elements.journalPartyTag.textContent = '';
+            if (elements.journalChairDetails) elements.journalChairDetails.textContent = ambiguousStates(resolved.candidates);
+            if (elements.journalChairAdditional) elements.journalChairAdditional.textContent = AMBIGUOUS_NOTE;
+            if (elements.journalImage) { elements.journalImage.removeAttribute('src'); delete elements.journalImage.dataset.photo; elements.journalImage.style.opacity = '0'; }
+            setMemberProfileLink(elements.journalChairWebsite, null);
+            return;
         }
-        if (best) populateJournalChair(best);
+        if (resolved.match) populateJournalChair(resolved.match);
     } catch (e) {
         console.error('fetchJournalChairInfo failed:', e);
     }
@@ -7020,7 +7019,7 @@ async function fetchJournalSpeakerInfo() {
         const members = xmlDoc.querySelectorAll('member');
         for (const m of members) {
             if (m.querySelector('bioguideID')?.textContent.trim() === data.bioguideId) {
-                populateJournalChair(m, data.bioguideId);
+                populateJournalChair(memberMatchFromElement(m), data.bioguideId);
                 break;
             }
         }
@@ -7030,14 +7029,9 @@ async function fetchJournalSpeakerInfo() {
     }
 }
 
-function populateJournalChair(memberEl, bioguideIdOverride) {
-    const bioguideId = bioguideIdOverride || memberEl.querySelector('bioguideID')?.textContent.trim() || '';
-    const firstName = memberEl.querySelector('firstname')?.textContent.trim() || '';
-    const lastName = memberEl.querySelector('lastname')?.textContent.trim() || '';
-    const party = memberEl.querySelector('party')?.textContent.trim() || '';
-    const state = memberEl.querySelector('state')?.getAttribute('postal-code') || '';
-    const district = memberEl.querySelector('district')?.textContent.trim() || '';
-    const town = memberEl.querySelector('townname')?.textContent.trim() || '';
+function populateJournalChair(match, bioguideIdOverride) {
+    const bioguideId = bioguideIdOverride || match.bioguideId || '';
+    const { firstName, lastName, party, state, district, town } = match;
 
     if (elements.journalChairName) elements.journalChairName.textContent = `${firstName} ${lastName}`;
     if (elements.journalPartyTag) {
@@ -7106,63 +7100,23 @@ async function fetchSpeakerAsChair() {
 async function fetchSpeakerMemberInfo(leaderName) {
     try {
         const normalizedName = leaderName.replace(/\s+/g, ' ').trim();
-        const stateMatch = normalizedName.match(/(?:of|from)\s+([A-Z]{2})\b/i);
-        const state = stateMatch ? stateMatch[1].toUpperCase() : '';
-        const nameOnly = normalizedName
-            .replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '')
-            .replace(/\s+(?:of|from)\s+[A-Z]{2}\b/i, '')
-            .trim();
+        if (!normalizedName) return;
 
-        if (!nameOnly) return;
-
-        const rawLastName = nameOnly.split(/\s+/).slice(-1)[0];
-        const xmlText = await getMemberDataXml();
-        const xmlDoc = parseMemberDataXml(xmlText);
-        const members = xmlDoc.querySelectorAll('member');
-        let bestMatch = null;
-        let bestScore = 0;
-
-        for (const member of members) {
-            const stateElement = member.querySelector('state');
-            const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
-            if (state && memberState.toUpperCase() !== state.toUpperCase()) continue;
-
-            const lastNameElement = member.querySelector('lastname');
-            const firstNameElement = member.querySelector('firstname');
-            const bioguideElement = member.querySelector('bioguideID');
-            const partyElement = member.querySelector('party');
-            const districtElement = member.querySelector('district');
-            const townElement = member.querySelector('townname');
-            const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
-
-            if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
-
-            const memberLastName = lastNameElement.textContent.trim();
-            const memberFirstName = firstNameElement.textContent.trim();
-            const bioguideId = bioguideElement.textContent.trim();
-            const party = partyElement ? partyElement.textContent.trim() : '';
-            const district = districtElement ? districtElement.textContent.trim() : '';
-            const town = townElement ? townElement.textContent.trim() : '';
-            const website = websiteElement ? websiteElement.textContent.trim() : '';
-            const score = calculateNameSimilarity(rawLastName, memberLastName);
-
-            if (score > bestScore && score >= NAME_MATCH_MIN) {
-                bestScore = score;
-                bestMatch = {
-                    lastName: memberLastName,
-                    firstName: memberFirstName,
-                    fullName: `${memberFirstName} ${memberLastName}`,
-                    bioguideId,
-                    party,
-                    district,
-                    state: memberState,
-                    town,
-                    website
-                };
+        const resolved = await resolveClerkMember(normalizedName);
+        if (resolved.candidates) {
+            elements.speakerMemberName.textContent = normalizedName;
+            elements.speakerMemberDetails.textContent = ambiguousStates(resolved.candidates);
+            elements.speakerMemberAdditional.textContent = AMBIGUOUS_NOTE;
+            elements.speakerPartyTag.textContent = '';
+            setMemberProfileLink(elements.speakerMemberWebsite, null);
+            if (elements.speakerImage) {
+                elements.speakerImage.removeAttribute('src');
+                delete elements.speakerImage.dataset.photo;
+                elements.speakerImage.style.opacity = '0';
             }
+            return;
         }
-
-        const match = bestMatch;
+        const match = resolved.match;
         if (!match || !match.bioguideId) return;
 
         elements.speakerMemberName.textContent = match.fullName;
@@ -7484,48 +7438,23 @@ function updateCommitteeChairSection(items) {
 async function fetchCommitteeChairMemberInfo(leaderName) {
     try {
         const normalizedName = leaderName.replace(/\s+/g, ' ').trim();
-        const stateMatch = normalizedName.match(/(?:of|from)\s+([A-Z]{2})\b/i);
-        const state = stateMatch ? stateMatch[1].toUpperCase() : '';
-        const nameOnly = normalizedName
-            .replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '')
-            .replace(/\s+(?:of|from)\s+[A-Z]{2}\b/i, '')
-            .trim();
+        if (!normalizedName) return;
 
-        if (!nameOnly) return;
-
-        const rawLastName = nameOnly.split(/\s+/).slice(-1)[0];
-        const xmlText = await getMemberDataXml();
-        const xmlDoc = parseMemberDataXml(xmlText);
-        const members = xmlDoc.querySelectorAll('member');
-        let bestMatch = null, bestScore = 0;
-
-        for (const member of members) {
-            const stateElement = member.querySelector('state');
-            const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
-            if (state && memberState.toUpperCase() !== state.toUpperCase()) continue;
-
-            const lastNameEl = member.querySelector('lastname');
-            const firstNameEl = member.querySelector('firstname');
-            const bioguideEl = member.querySelector('bioguideID');
-            const partyEl = member.querySelector('party');
-            const districtEl = member.querySelector('district');
-            const townEl = member.querySelector('townname');
-            if (!lastNameEl || !firstNameEl || !bioguideEl) continue;
-
-            const score = calculateNameSimilarity(rawLastName, lastNameEl.textContent.trim());
-            if (score > bestScore && score >= NAME_MATCH_MIN) {
-                bestScore = score;
-                bestMatch = {
-                    fullName: `${firstNameEl.textContent.trim()} ${lastNameEl.textContent.trim()}`,
-                    bioguideId: bioguideEl.textContent.trim(),
-                    party: partyEl ? partyEl.textContent.trim() : '',
-                    district: districtEl ? districtEl.textContent.trim() : '',
-                    state: memberState,
-                    town: townEl ? townEl.textContent.trim() : ''
-                };
+        const resolved = await resolveClerkMember(normalizedName);
+        if (resolved.candidates) {
+            elements.committeeChairMemberName.textContent = normalizedName;
+            elements.committeeChairMemberDetails.textContent = ambiguousStates(resolved.candidates);
+            elements.committeeChairMemberAdditional.textContent = AMBIGUOUS_NOTE;
+            if (elements.committeeChairPartyTag) elements.committeeChairPartyTag.textContent = '';
+            setMemberProfileLink(elements.committeeChairMemberWebsite, null);
+            if (elements.committeeChairImage) {
+                elements.committeeChairImage.removeAttribute('src');
+                delete elements.committeeChairImage.dataset.photo;
+                elements.committeeChairImage.style.opacity = '0';
             }
+            return;
         }
-
+        const bestMatch = resolved.match;
         if (!bestMatch) return;
 
         elements.committeeChairMemberName.textContent = bestMatch.fullName;
@@ -7629,6 +7558,7 @@ function updateOathSection(items) {
     const singleMatch = afterDash.match(/^(?:Representative|Delegate|Resident\s+Commissioner)-elect\s+([^,]+),/i);
     let memberName = '';
     let districtFormatted = '';
+    let oathStateName = '';
 
     if (singleMatch) {
         memberName = singleMatch[1].trim();
@@ -7636,6 +7566,7 @@ function updateOathSection(items) {
         const districtMatch = afterName.match(/^([^,]+(?:,\s*State\s+of\s+[^,]+)?)(?:,\s*presented|,\s*[a-z]|$)/i);
         if (districtMatch) {
             districtFormatted = formatOathDistrict(districtMatch[1].trim());
+            oathStateName = (districtMatch[1].match(/State\s+of\s+([A-Za-z ]+)/i) || [])[1] || '';
         }
     }
 
@@ -7650,21 +7581,14 @@ function updateOathSection(items) {
         delete elements.oathImage.dataset.photo;
     }
     if (memberName) {
-        const _oathLastName = memberName.trim().split(/\s+/).pop();
         (async () => {
             try {
-                const xmlText = await getMemberDataXml();
-                const xmlDoc = parseMemberDataXml(xmlText);
-                let bestId = null, bestScore = 0;
-                for (const m of xmlDoc.querySelectorAll('member')) {
-                    const ln = m.querySelector('lastname')?.textContent.trim() || '';
-                    const bg = m.querySelector('bioguideID')?.textContent.trim() || '';
-                    if (!ln || !bg) continue;
-                    const s = calculateNameSimilarity(_oathLastName, ln);
-                    if (s > bestScore && s > 0.7) { bestScore = s; bestId = bg; }
-                }
-                if (bestId && elements.oathImage) {
-                    setMemberPhoto(elements.oathImage, buildBioguidePhotoUrl(bestId), memberName);
+                // The name and the state the Clerk gave. A new member is often not
+                // the only one of their surname, and the surname alone used to
+                // take the first of them.
+                const resolved = await resolveClerkMember(oathStateName ? `${memberName} of ${oathStateName.trim()}` : memberName);
+                if (resolved.match && elements.oathImage) {
+                    setMemberPhoto(elements.oathImage, buildBioguidePhotoUrl(resolved.match.bioguideId), memberName);
                 }
             } catch (_e) { /* photo is optional */ }
         })();
@@ -7851,26 +7775,24 @@ function extractTellerNames(text) {
     }).filter(Boolean);
 }
 
-function parseTellerName(nameStr) {
-    const normalized = nameStr.replace(/\s+/g, ' ').trim();
-    const stateMatch = normalized.match(/\bof\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)\s*$/);
-    const stateName = stateMatch ? stateMatch[1] : '';
-    const state = stateName ? (STATE_NAME_TO_ABBR[stateName] || stateName.toUpperCase().slice(0, 2)) : '';
-    const nameOnly = normalized
-        .replace(/^(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+/i, '')
-        .replace(/\s+of\s+[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*\s*$/i, '')
-        .trim();
-    return { rawName: normalized, nameOnly, state };
-}
-
 async function fetchTellerInfo(nameStr, cardEl) {
     try {
-        const { nameOnly, state } = parseTellerName(nameStr);
-        const rawLastName = nameOnly.split(/\s+/).pop() || nameOnly;
-
-        const xmlText = await getMemberDataXml();
-        const xmlDoc = parseMemberDataXml(xmlText);
-        const bestMatch = findBestMemberMatchByName(xmlDoc, rawLastName, state);
+        const resolved = await resolveClerkMember(nameStr);
+        if (resolved.candidates) {
+            // Two members fit and the Clerk's text does not say which: the name as
+            // given and the states it could be, with no face, party or link.
+            if (cardEl) {
+                cardEl.querySelector('.teller-name').textContent = nameStr.replace(/\s+/g, ' ').trim();
+                const partyTag = cardEl.querySelector('.teller-party-tag');
+                partyTag.textContent = '';
+                partyTag.className = 'speaker-party-tag teller-party-tag';
+                cardEl.querySelector('.teller-state').textContent = ambiguousStates(resolved.candidates);
+                cardEl.querySelector('.teller-meta-line').textContent = AMBIGUOUS_NOTE;
+                setMemberProfileLink(cardEl.querySelector('.teller-link'), null);
+            }
+            return;
+        }
+        const bestMatch = resolved.match;
 
         if (!bestMatch) return;
 
@@ -7909,62 +7831,18 @@ function showTellersEmptyState(message) {
 // Fetch member data from House Clerk and get photo
 async function fetchMemberPhotoFromClerkData(leaderName) {
     try {
-        let clerkDataText;
-        try {
-            clerkDataText = await getMemberXml();
-        } catch (workerError) {
-            console.error('Member XML fetch failed:', workerError);
-            showPledgePlaceholder();
-            return;
-        }
-
-        // Who the Clerk's sentence means. Names here come as "Ms. Dean of PA", "Mr.
-        // Smith of Nebraska" or a bare "Mr. Thompson", and two members can share a
-        // surname. The shared resolver (lib/floor-speaker.js) uses the state, the
-        // first name and the honorific, and reports a tie as a tie: this used to
-        // take the first of the tied Smiths, which put Jason Smith of Missouri on
-        // a pledge led by Adrian Smith of Nebraska.
-        const H = globalThis.HouseFloorSpeaker;
-        const resolved = H.resolveNamed(leaderName, H.buildRoster(clerkDataText));
+        const resolved = await resolveClerkMember(leaderName);
 
         if (resolved.candidates) {
-            // Several members fit and the text does not say which. Show what the
-            // Clerk said and the states it could be, with no face, party or link:
-            // naming one would be a guess presented as a fact.
             elements.pledgeLeaderName.textContent = leaderName;
             setMemberProfileLink(elements.pledgeLeaderWebsite, null);
             showPledgePlaceholder();   // clears party, details and the face
-            elements.pledgeLeaderDetails.textContent = resolved.candidates.map((c) => c.postal).sort().join(' or ');
-            elements.pledgeLeaderAdditional.textContent = 'The Clerk did not say which member';
+            elements.pledgeLeaderDetails.textContent = ambiguousStates(resolved.candidates);
+            elements.pledgeLeaderAdditional.textContent = AMBIGUOUS_NOTE;
             return;
         }
 
-        // The roster carries identity; district, hometown and website are only in
-        // the Clerk's XML, so they are read from the matching element.
-        let bestMatch = null;
-        if (resolved.member) {
-            const xmlDoc = new DOMParser().parseFromString(clerkDataText, 'text/xml');
-            for (const member of xmlDoc.querySelectorAll('member')) {
-                const bioguide = member.querySelector('bioguideID');
-                if (!bioguide || bioguide.textContent.trim() !== resolved.member.bioguideId) continue;
-                const text = (sel) => { const n = member.querySelector(sel); return n ? n.textContent.trim() : ''; };
-                const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
-                const stateElement = member.querySelector('state');
-                const middle = text('middlename');
-                bestMatch = {
-                    lastName: text('lastname'),
-                    firstName: text('firstname'),
-                    fullName: [text('firstname'), middle, text('lastname')].filter(Boolean).join(' '),
-                    bioguideId: resolved.member.bioguideId,
-                    party: text('party'),
-                    district: text('district'),
-                    state: stateElement ? stateElement.getAttribute('postal-code') : '',
-                    town: text('townname'),
-                    website: websiteElement ? websiteElement.textContent.trim() : '',
-                };
-                break;
-            }
-        }
+        const bestMatch = resolved.match || null;
 
         if (bestMatch && bestMatch.bioguideId) {
             // Update the display with member information
@@ -8045,6 +7923,63 @@ async function getMemberDataXml() {
 
 const getMemberXml = getMemberDataXml; // alias used throughout
 
+// One member, from the way the Clerk's proceedings text names one.
+//
+// Everything on the board that names a member out of a sentence ("designated Mr.
+// Smith of NE to lead", "the Honorable Ms. Dean of PA to act") goes through here.
+// It used to be eight copies of "highest name similarity wins, first on a tie",
+// which for two members called Smith meant whichever came first in the Clerk's
+// file: the wrong face and party on the panel. The match itself is
+// HouseFloorSpeaker.resolveNamed (lib/floor-speaker.js), which narrows by state,
+// first name and honorific and reports a tie as a tie.
+//
+// Returns { match }, { candidates } or {}:
+//   match       one member, in the shape the panels already read
+//   candidates  several fit and the text does not say which (never guess)
+//   (empty)     nobody fits
+let _clerkXml = null, _clerkRoster = null, _clerkDoc = null;
+
+function memberMatchFromElement(member) {
+    const text = (sel) => { const n = member.querySelector(sel); return n ? n.textContent.trim() : ''; };
+    const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
+    const stateElement = member.querySelector('state');
+    return {
+        lastName: text('lastname'),
+        firstName: text('firstname'),
+        fullName: [text('firstname'), text('middlename'), text('lastname')].filter(Boolean).join(' '),
+        bioguideId: text('bioguideID'),
+        party: text('party'),
+        district: text('district'),
+        state: stateElement ? stateElement.getAttribute('postal-code') : '',
+        town: text('townname'),
+        website: websiteElement ? websiteElement.textContent.trim() : '',
+    };
+}
+
+async function resolveClerkMember(text) {
+    const xml = await getMemberXml();
+    if (_clerkXml !== xml) {
+        _clerkRoster = globalThis.HouseFloorSpeaker.buildRoster(xml);
+        _clerkDoc = new DOMParser().parseFromString(xml, 'text/xml');
+        _clerkXml = xml;
+    }
+    const res = globalThis.HouseFloorSpeaker.resolveNamed(text, _clerkRoster);
+    if (res.candidates) return { candidates: res.candidates };
+    if (!res.member) return {};
+    for (const el of _clerkDoc.querySelectorAll('member')) {
+        if (el.querySelector('bioguideID')?.textContent.trim() === res.member.bioguideId) {
+            return { match: memberMatchFromElement(el) };
+        }
+    }
+    return {};
+}
+
+// What a panel shows when several members fit and the text does not say which: what
+// the Clerk said and the states it could be, with no face, party or link. Naming
+// one would be a guess presented as a fact.
+const ambiguousStates = (candidates) => candidates.map((c) => c.postal).sort().join(' or ');
+const AMBIGUOUS_NOTE = 'The Clerk did not say which member';
+
 function parseMemberDataXml(xmlText) {
     const parser = new DOMParser();
     return parser.parseFromString(xmlText, 'text/xml');
@@ -8054,6 +7989,7 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
     const members = xmlDoc.querySelectorAll('member');
     let bestMatch = null;
     let bestScore = 0;
+    let tied = false;
 
     for (const member of members) {
         const stateElement = member.querySelector('state');
@@ -8080,8 +8016,12 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
         const town = townElement ? townElement.textContent.trim() : '';
         const score = calculateNameSimilarity(lastName, memberLastName);
 
+        if (score >= NAME_MATCH_MIN && score === bestScore && bestMatch && bestMatch.bioguideId !== bioguideId) {
+            tied = true;
+        }
         if (score > bestScore && score >= NAME_MATCH_MIN) {
             bestScore = score;
+            tied = false;
             bestMatch = {
                 lastName: memberLastName,
                 firstName: memberFirstName,
@@ -8095,7 +8035,11 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
         }
     }
 
-    return bestMatch;
+    // Two members of one state who match equally (Garcia and Garcia of California,
+    // Gonzalez and Gonzalez of Texas) are a tie, and a tie is not a match: the
+    // first in the Clerk's file used to win, which put the wrong member's face on
+    // the row. No match leaves the Clerk's own name and no photo.
+    return tied ? null : bestMatch;
 }
 
 function buildBioguidePhotoUrl(bioguideId) {
