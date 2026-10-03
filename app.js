@@ -7909,14 +7909,6 @@ function showTellersEmptyState(message) {
 // Fetch member data from House Clerk and get photo
 async function fetchMemberPhotoFromClerkData(leaderName) {
     try {
-        // Parse member name - handle "Mr. Thompson of PA", "Mr. McGarvey", or "Morgan McGarvey"
-        const withStateMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)?\s*(\w+)\s+of\s+(\w+)/i);
-        const prefixMatch = leaderName.match(/(?:Mr\.|Ms\.|Mrs\.|Dr\.)\s+([\w]+(?:\s+[\w]+)*)/i);
-        const lastName = withStateMatch ? withStateMatch[1]
-            : prefixMatch ? prefixMatch[1].split(/\s+/).pop()
-            : leaderName.split(/\s+/).pop();
-        const state = withStateMatch ? withStateMatch[2] : null;
-
         let clerkDataText;
         try {
             clerkDataText = await getMemberXml();
@@ -7926,59 +7918,51 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             return;
         }
 
-        // Parse the XML data
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(clerkDataText, 'text/xml');
+        // Who the Clerk's sentence means. Names here come as "Ms. Dean of PA", "Mr.
+        // Smith of Nebraska" or a bare "Mr. Thompson", and two members can share a
+        // surname. The shared resolver (lib/floor-speaker.js) uses the state, the
+        // first name and the honorific, and reports a tie as a tie: this used to
+        // take the first of the tied Smiths, which put Jason Smith of Missouri on
+        // a pledge led by Adrian Smith of Nebraska.
+        const H = globalThis.HouseFloorSpeaker;
+        const resolved = H.resolveNamed(leaderName, H.buildRoster(clerkDataText));
 
-        // Get all member elements
-        const members = xmlDoc.querySelectorAll('member');
+        if (resolved.candidates) {
+            // Several members fit and the text does not say which. Show what the
+            // Clerk said and the states it could be, with no face, party or link:
+            // naming one would be a guess presented as a fact.
+            elements.pledgeLeaderName.textContent = leaderName;
+            setMemberProfileLink(elements.pledgeLeaderWebsite, null);
+            showPledgePlaceholder();   // clears party, details and the face
+            elements.pledgeLeaderDetails.textContent = resolved.candidates.map((c) => c.postal).sort().join(' or ');
+            elements.pledgeLeaderAdditional.textContent = 'The Clerk did not say which member';
+            return;
+        }
+
+        // The roster carries identity; district, hometown and website are only in
+        // the Clerk's XML, so they are read from the matching element.
         let bestMatch = null;
-        let bestScore = 0;
-
-        // Find matching members — filter by state only when we have one
-        for (const member of members) {
-            const stateElement = member.querySelector('state');
-            const memberState = stateElement ? stateElement.getAttribute('postal-code') : '';
-
-            if (state && memberState.toUpperCase() !== state.toUpperCase()) {
-                continue;
-            }
-            
-            const lastNameElement = member.querySelector('lastname');
-            const firstNameElement = member.querySelector('firstname');
-            const middleNameElement = member.querySelector('middlename');
-            const bioguideElement = member.querySelector('bioguideID');
-            const partyElement = member.querySelector('party');
-            const districtElement = member.querySelector('district');
-            const townElement = member.querySelector('townname');
-            const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
-
-            if (!lastNameElement || !firstNameElement || !bioguideElement) continue;
-
-            const memberLastName = lastNameElement.textContent.trim();
-            const memberFirstName = firstNameElement.textContent.trim();
-            const memberMiddleName = middleNameElement ? middleNameElement.textContent.trim() : '';
-            const bioguideId = bioguideElement.textContent.trim();
-            const party = partyElement ? partyElement.textContent.trim() : '';
-            const district = districtElement ? districtElement.textContent.trim() : '';
-            const town = townElement ? townElement.textContent.trim() : '';
-            const website = websiteElement ? websiteElement.textContent.trim() : '';
-            
-            // Score based on last name similarity
-            const score = calculateNameSimilarity(lastName, memberLastName);
-            if (score > bestScore && score >= NAME_MATCH_MIN) {
-                bestScore = score;
+        if (resolved.member) {
+            const xmlDoc = new DOMParser().parseFromString(clerkDataText, 'text/xml');
+            for (const member of xmlDoc.querySelectorAll('member')) {
+                const bioguide = member.querySelector('bioguideID');
+                if (!bioguide || bioguide.textContent.trim() !== resolved.member.bioguideId) continue;
+                const text = (sel) => { const n = member.querySelector(sel); return n ? n.textContent.trim() : ''; };
+                const websiteElement = member.querySelector('website') || member.querySelector('member-website') || member.querySelector('home-page');
+                const stateElement = member.querySelector('state');
+                const middle = text('middlename');
                 bestMatch = {
-                    lastName: memberLastName,
-                    firstName: memberFirstName,
-                    fullName: [memberFirstName, memberMiddleName, memberLastName].filter(Boolean).join(' '),
-                    bioguideId: bioguideId,
-                    party: party,
-                    district: district,
-                    state: memberState,
-                    town: town,
-                    website: website
+                    lastName: text('lastname'),
+                    firstName: text('firstname'),
+                    fullName: [text('firstname'), middle, text('lastname')].filter(Boolean).join(' '),
+                    bioguideId: resolved.member.bioguideId,
+                    party: text('party'),
+                    district: text('district'),
+                    state: stateElement ? stateElement.getAttribute('postal-code') : '',
+                    town: text('townname'),
+                    website: websiteElement ? websiteElement.textContent.trim() : '',
                 };
+                break;
             }
         }
 
