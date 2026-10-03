@@ -777,6 +777,43 @@ check('and two-thirds having voted in the affirmative',
 check('a member arguing is still the member',
   chairNow('MR. SPEAKER, I RISE IN SUPPORT. THE REAL QUESTION FOR THIS BODY IS WHETHER WE ACT.') === 'chair', false);
 
+// ── Named members: the Clerk's own wording, and surnames two members share ────
+// The pledge leader resolved to Jason Smith of Missouri when the Clerk's text meant
+// Adrian Smith of Nebraska, because the old matcher took the first of the tied
+// Smiths. These are synthetic rows in the Clerk's real shape (the subset file has
+// no shared surname), because what is being tested is the tie.
+const member = (id, first, last, postal, stateName, courtesy) =>
+  `<member><bioguideID>${id}</bioguideID><firstname>${first}</firstname><lastname>${last}</lastname><courtesy>${courtesy}</courtesy>` +
+  `<state postal-code="${postal}"><state-fullname>${stateName}</state-fullname></state><caucus>R</caucus></member>`;
+const shared = H.buildRoster('<members>' + [
+  member('S1', 'Jason', 'Smith', 'MO', 'Missouri', 'Mr.'),
+  member('S2', 'Adrian', 'Smith', 'NE', 'Nebraska', 'Mr.'),
+  member('S3', 'Christopher', 'Smith', 'NJ', 'New Jersey', 'Mr.'),
+  member('S4', 'Adam', 'Smith', 'WA', 'Washington', 'Mr.'),
+  member('W1', 'Joe', 'Wilson', 'SC', 'South Carolina', 'Mr.'),
+  member('W2', 'Frederica', 'Wilson', 'FL', 'Florida', 'Ms.'),
+  member('D1', 'Madeleine', 'Dean', 'PA', 'Pennsylvania', 'Ms.'),
+  member('T1', 'Glenn', 'Thompson', 'PA', 'Pennsylvania', 'Mr.'),
+].join('') + '</members>');
+const named = (text) => {
+  const r = H.resolveNamed(text, shared);
+  return r.member ? r.member.bioguideId : r.candidates ? r.candidates.map((c) => c.postal).sort().join('/') : null;
+};
+check('a postal code picks the right Smith',                  named('Mr. Smith of NE'), 'S2');
+check('a full state name picks the right Smith',              named('Mr. Smith of New Jersey'), 'S3');
+check('a state with a two-word name',                         named('Mr. Smith of Washington'), 'S4');
+check('a first name picks the right Smith',                   named('Adrian Smith'), 'S2');
+check('a first name and a state agree',                       named('Mr. Adrian Smith of NE'), 'S2');
+check('a bare shared surname is a tie, not the first Smith',  named('Mr. Smith'), 'MO/NE/NJ/WA');
+check('and says WHICH states it could be',                    H.resolveNamed('Mr. Smith', shared).member, undefined);
+check('an honorific separates the two Wilsons',               named('Ms. Wilson'), 'W2');
+check('and the other',                                        named('Mr. Wilson'), 'W1');
+check('a unique surname needs nothing else',                  named('Ms. Dean of PA'), 'D1');
+check('the Honorable is ignored',                             named('the Honorable Mr. Thompson of PA'), 'T1');
+check('a wrong state does not fall through to another member', named('Mr. Smith of Texas'), 'MO/NE/NJ/WA');
+check('an unknown surname resolves to nobody',                named('Mr. Zzyzx'), null);
+check('empty text resolves to nobody',                        named(''), null);
+
 // ── Degenerate input ────────────────────────────────────────────────────────
 for (const junk of ['', null, undefined, 'WEBVTT\n\n']) {
   check(`no crash on ${JSON.stringify(junk)}`, H.splitTurns(H.parseCaptionCues(junk)).length, 0);
