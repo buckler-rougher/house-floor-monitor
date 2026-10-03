@@ -11285,6 +11285,10 @@ button.proceedings-measure:hover .proceedings-measure-id {
    tooltip names them -- unlike the House map, which says in its own note that
    members have no assigned seats. */
 :root[data-chamber="senate"] .floor-grid-panel { display: block; }
+/* The House arch has a clear vertical aisle down the middle, drawn by this element.
+   The Senate's centre is a wedge of desks straddling that line, so there is no aisle
+   there to draw; the aisles are the gaps between wedges. */
+:root[data-chamber="senate"] .center-aisle { display: none; }
 
 .sen-desk {
     position: absolute;

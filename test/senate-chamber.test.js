@@ -120,6 +120,44 @@ test('the end desks face straight across the chamber, and the top desks straight
   assert.ok(topMean < midMean && midMean < lowMean, `${topMean.toFixed(0)} < ${midMean.toFixed(0)} < ${lowMean.toFixed(0)}`);
 });
 
+test('there is no aisle down the middle: the centre wedge straddles the centre line', () => {
+  const w = 760, h = 380;
+  const placed = C.place(seats, w, h);
+  const px = (p) => [p.x * w / 100, p.y * h / 100];
+  for (let row = 1; row <= 4; row++) {
+    // The innermost desk of each party in this row (section 0), and the spacing of
+    // desks within the left party's section 0 in the same row.
+    const left = placed.filter((p) => p.side === 'left' && p.section === 0 && p.row === row).sort((a, b) => a.order - b.order);
+    const right = placed.filter((p) => p.side === 'right' && p.section === 0 && p.row === row).sort((a, b) => a.order - b.order);
+    const across = Math.hypot(...px(left[0]).map((v, i) => v - px(right[0])[i]));
+    const within = left.slice(1).map((p, i) => Math.hypot(...px(p).map((v, k) => v - px(left[i])[k])));
+    const gapInside = within.length ? Math.min(...within) : across;
+    // Across the centre line the neighbours are about as far apart as neighbours
+    // within a wedge, not an aisle's width further.
+    assert.ok(across < gapInside * 1.6, `row ${row}: ${across.toFixed(1)}px across the middle vs ${gapInside.toFixed(1)}px within a wedge`);
+  }
+});
+
+test('the aisles are the gaps BETWEEN wedges, wider than the gap between neighbours', () => {
+  const w = 760, h = 380;
+  const placed = C.place(seats, w, h);
+  const dist = (a, b) => Math.hypot((a.x - b.x) * w / 100, (a.y - b.y) * h / 100);
+  const row = (side, sec, r) => placed.filter((p) => p.side === side && p.section === sec && p.row === r).sort((a, b) => a.order - b.order);
+  const r = 4;
+  const within = (l) => Math.min(...l.slice(1).map((p, i) => dist(p, l[i])));
+  for (const side of ['left', 'right']) {
+    const a = row(side, 0, r), b = row(side, 1, r);
+    const between = dist(a[a.length - 1], b[0]);
+    assert.ok(between > within(a) * 1.1, `${side}: ${between.toFixed(1)}px between wedges vs ${within(a).toFixed(1)}px within one`);
+  }
+});
+
+test('the party leaders sit in the front row of the centre wedge, either side of the middle', () => {
+  const front = C.place(seats, 760, 380).filter((p) => p.section === 0 && p.row === 1);
+  assert.deepStrictEqual(front.map((p) => p.last).sort(), ['Barrasso', 'Durbin', 'Schumer', 'Thune']);
+  for (const p of front) assert.ok(Math.abs(p.x - 50) < 12, `${p.last} at ${p.x.toFixed(1)}%`);
+});
+
 test('the two sides mirror: a desk and its twin turn by opposite amounts', () => {
   const placed = C.place(seats, 760, 380);
   const left = placed.filter((p) => p.side === 'left'), right = placed.filter((p) => p.side === 'right');
