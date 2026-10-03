@@ -1817,8 +1817,7 @@ let proceedingsData = [];
 let nextSessionAt = null;
 
 // Absentee filter state
-let absenteeFilterMode = 'all'; // 'all' | 'rep' | 'dem'
-let _absenteesPayload = null; // { absentees, rollNumber, rollDate, rollTime }
+let _absenteePanel = null; // lib/missing-members.js, made in initEventListeners
 
 // State for House makeup
 let houseMakeup = null;
@@ -8101,41 +8100,6 @@ function parseAbsenteeRollName(name) {
     };
 }
 
-async function decorateAbsenteePhotos(absentees) {
-    const list = elements.absenteeList;
-    if (!list || !absentees || absentees.length === 0) return;
-
-    try {
-        const xmlText = await getMemberDataXml();
-        const xmlDoc = parseMemberDataXml(xmlText);
-
-        absentees.forEach((absentee, index) => {
-            const memberEl = list.querySelector(`[data-absentee-index="${index}"]`);
-            if (!memberEl) return;
-
-            const match = findBestMemberMatchByName(xmlDoc, absentee.name, absentee.state);
-            if (!match || !match.bioguideId) return;
-
-            const img = memberEl.querySelector('.absentee-photo');
-            if (!img) return;
-
-            img.alt = match.fullName;
-            img.src = buildBioguidePhotoUrl(match.bioguideId);
-            img.style.display = 'block';
-            img.onerror = () => {
-                img.style.display = 'none';
-                const placeholder = memberEl.querySelector('.absentee-photo-placeholder');
-                if (placeholder) placeholder.style.display = 'flex';
-            };
-
-            const placeholder = memberEl.querySelector('.absentee-photo-placeholder');
-            if (placeholder) placeholder.style.display = 'none';
-        });
-    } catch (error) {
-        console.error('Failed to decorate absentee photos:', error);
-    }
-}
-
 // Calculate similarity between two names using Sørensen–Dice coefficient on bigrams.
 // This correctly penalises mismatched characters, unlike the prior character-presence
 // approach which scored "Doe" highly against "Rodriguez" (d, o, e all appear).
@@ -8519,45 +8483,10 @@ async function fetchWeather() {
     }
 }
 
-// Weather Panel Video
-let capcamHls = null;
-const CAPCAM_URL = 'https://www-senate-gov-media-srs.akamaized.net/hls/live/2036784/capcam/capcam/master.m3u8';
-let videoLoaded = false;
-
+// The Capitol camera behind the weather readout: lib/capcam.js, shared with the
+// Senate board.
 function initWeatherPanel() {
-    const panel = elements.weatherPanel;
-    const video = elements.capcamVideo;
-
-    video.muted = true;
-    const isLocalFile = window.location.protocol === 'file:';
-
-    function startCapcam() {
-        if (videoLoaded || capcamHls) return;
-        if (window.Hls && Hls.isSupported()) {
-            capcamHls = new Hls({ maxBufferLength: 4, maxMaxBufferLength: 8, enableWorker: !isLocalFile });
-            capcamHls.loadSource(CAPCAM_URL);
-            capcamHls.attachMedia(video);
-            capcamHls.on(Hls.Events.MANIFEST_PARSED, () => { videoLoaded = true; video.play().catch(() => {}); });
-            capcamHls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) { capcamHls.destroy(); capcamHls = null; videoLoaded = false; }
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = CAPCAM_URL;
-            video.addEventListener('canplay', () => { videoLoaded = true; video.play().catch(() => {}); }, { once: true });
-            video.addEventListener('error', () => { videoLoaded = false; });
-            video.load();
-        }
-    }
-
-    // Load on first hover only — avoids buffering live video nobody is watching
-    panel.addEventListener('mouseenter', () => {
-        startCapcam();
-        if (videoLoaded) video.play().catch(() => {});
-    });
-
-    panel.addEventListener('mouseleave', () => {
-        video.pause();
-    });
+    CapCam.init(elements.weatherPanel, elements.capcamVideo);
 }
 
 // Console API: setDate('mm/dd/yyyy') / clearDate()
@@ -8893,29 +8822,22 @@ function init() {
         });
     }
 
-    // Absentee filter toggle — handles both filter-bar buttons and metric box clicks
-    const absenteePanel = document.querySelector('.absentee-panel');
+    // MISSING MEMBERS: the panel, its party filter and its rows are lib/missing-members.js,
+    // shared with the Senate board. This only maps the Clerk's roll call into rows.
+    absenteePanel();
+}
 
-    if (absenteePanel) {
-        absenteePanel.addEventListener('click', e => {
-            const btn = e.target.closest('.absentee-filter-btn');
-            const metric = e.target.closest('.party-metric[data-filter]');
-            const target = btn || metric;
-            if (!target) return;
-            const newFilter = target.dataset.filter;
-            if (!newFilter) return;
-            // Clicking the already-active party filter clears back to all
-            absenteeFilterMode = (newFilter !== 'all' && newFilter === absenteeFilterMode) ? 'all' : newFilter;
-            if (_absenteesPayload) {
-                animateAbsenteeFilter(() => updateAbsenteeUI(
-                    _absenteesPayload.absentees,
-                    _absenteesPayload.rollNumber,
-                    _absenteesPayload.rollDate,
-                    _absenteesPayload.rollTime
-                ));
-            }
+// Made on first use, so it does not matter whether the listeners or the first roll
+// call arrive first.
+function absenteePanel() {
+    if (!_absenteePanel) {
+        _absenteePanel = MissingMembers.init({
+            panel: document.querySelector('.absentee-panel'),
+            list: elements.absenteeList,
+            placeholder: MEMBER_PHOTO_PLACEHOLDER,
         });
     }
+    return _absenteePanel;
 }
 
 // Play a panel's closing animation, then actually hide it.
@@ -8927,7 +8849,7 @@ function init() {
 // open until the tab was looked at again.
 // Animations live in lib/animations.js so the Senate board moves the same way.
 // Each one carries a reason not to do the obvious thing; see that file.
-const { hideAfterAnimation, openDrawer, closeDrawer, animateBillsReorder, animateAbsenteeFilter } = globalThis.BoardAnimations;
+const { hideAfterAnimation, openDrawer, closeDrawer, animateBillsReorder } = globalThis.BoardAnimations;
 
 // ── Committee Live Feeds ─────────────────────────────────────────────────────
 
@@ -9249,107 +9171,49 @@ async function _doAbsenteeTracking() {
 
 // Update absentee UI with data from roll call
 async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
-    if (!elements.absenteeList) return;
+    if (!elements.absenteeList || !absenteePanel()) return;
 
-    // Update counts
-    const totalAbsentees = absentees.length;
-    const repAbsentees = absentees.filter(a => a.party === 'rep').length;
-    const demAbsentees = absentees.filter(a => a.party === 'dem').length;
-    const indAbsentees = absentees.filter(a => a.party === 'ind').length;
-
-    if (elements.absenteeRep) elements.absenteeRep.textContent = repAbsentees;
-    if (elements.absenteeDem) elements.absenteeDem.textContent = demAbsentees;
-    if (elements.absenteeTotal) elements.absenteeTotal.textContent = totalAbsentees;
-    if (elements.absenteeInd) elements.absenteeInd.textContent = indAbsentees;
-    if (elements.absenteeIndMetric) {
-        elements.absenteeIndMetric.style.display = indAbsentees > 0 ? '' : 'none';
-    }
-
-    // Update roll call info with date/time from XML
-    if (elements.absenteeRollInfo) {
-        let dateTimeStr = '';
-        if (rollDate) {
-            // rollDate format from Clerk XML: "15-May-2026"
-            const parts = rollDate.split('-');
-            if (parts.length === 3) {
-                // parts[0]=day, parts[1]=month name, parts[2]=year
-                const monthIdx = MONTH_NAMES.findIndex(m => m.toLowerCase().startsWith(parts[1].toLowerCase().slice(0, 3)));
-                const mon = monthIdx >= 0 ? MONTH_NAMES[monthIdx] : parts[1];
-                dateTimeStr = `${parseInt(parts[0])} ${mon} ${parts[2]}`;
-            } else {
-                dateTimeStr = formatDate(rollDate);
-            }
+    // The roll line, "Roll 314 • 16 September 2026 7:05 PM".
+    let dateTimeStr = '';
+    if (rollDate) {
+        // rollDate format from Clerk XML: "15-May-2026"
+        const parts = rollDate.split('-');
+        if (parts.length === 3) {
+            // parts[0]=day, parts[1]=month name, parts[2]=year
+            const monthIdx = MONTH_NAMES.findIndex(m => m.toLowerCase().startsWith(parts[1].toLowerCase().slice(0, 3)));
+            const mon = monthIdx >= 0 ? MONTH_NAMES[monthIdx] : parts[1];
+            dateTimeStr = `${parseInt(parts[0])} ${mon} ${parts[2]}`;
+        } else {
+            dateTimeStr = formatDate(rollDate);
         }
-        if (rollTime) dateTimeStr += ` ${rollTime}`;
-        elements.absenteeRollInfo.textContent = `Roll ${rollNumber}${dateTimeStr ? ' • ' + dateTimeStr : ''}`;
     }
-    
-    // Cache payload so the filter can re-render without a refetch
-    _absenteesPayload = { absentees, rollNumber, rollDate, rollTime };
+    if (rollTime) dateTimeStr += ` ${rollTime}`;
+    const info = `Roll ${rollNumber}${dateTimeStr ? ' • ' + dateTimeStr : ''}`;
 
-    // Apply dim/active state to metric boxes and sync filter buttons
-    const absenteePanel = document.querySelector('.absentee-panel');
-    if (absenteePanel) {
-        absenteePanel.querySelectorAll('.party-metric[data-filter]').forEach(m => {
-            const mFilter = m.dataset.filter;
-            // Dim all metrics except the selected one (total dims too when a party is active)
-            const isActive = absenteeFilterMode === 'all' || mFilter === absenteeFilterMode;
-            m.classList.toggle('dim', !isActive);
-        });
-        absenteePanel.querySelectorAll('.absentee-filter-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.filter === absenteeFilterMode);
-        });
-    }
-    if (elements.absenteeList) elements.absenteeList.dataset.filter = absenteeFilterMode;
-
-    // Update absentee list
+    // Names, districts and photos come from the member XML. If it will not load the
+    // rows still render, from the roll call's own names.
+    let xmlDoc = null;
     if (absentees.length > 0) {
-        let xmlDoc = null;
         try {
-            const xmlText = await getMemberDataXml();
-            xmlDoc = parseMemberDataXml(xmlText);
+            xmlDoc = parseMemberDataXml(await getMemberDataXml());
         } catch (error) {
             console.error('Failed to load member XML for absentees:', error);
         }
-
-        // Every member is rendered whatever the filter says; hiding is done in
-        // CSS off .absentee-list[data-filter]. Filtering used to rebuild the
-        // list, which destroyed and recreated every surviving row: the photos
-        // refetched and flashed, and how the transition looked depended on how
-        // many rows happened to survive, so D and R animated differently for no
-        // reason anyone could see.
-        const displayAbsentees = absentees;
-
-        const htmlParts = [];
-        displayAbsentees.forEach((absentee, absenteeIndex) => {
-
-            const parsedName = parseAbsenteeRollName(absentee.name);
-            const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
-            const displayName = match ? match.fullName : (parsedName.rawName || 'Unknown');
-            const nd = match ? normalizeDistrict(match.district) : '';
-            const displayState = match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state;
-            const photoUrl = match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '';
-            const partyClass = absentee.party === 'rep' ? 'republican' : absentee.party === 'dem' ? 'democrat' : 'independent';
-            const casualtyStatus = getCasualtyStatus(match);
-
-            htmlParts.push(`
-            <div class="absentee-member ${absentee.party}" data-absentee-index="${absenteeIndex}">
-                <div class="absentee-photo-wrap">
-                    <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
-                    ${photoUrl ? `<img class="absentee-photo" src="${photoUrl}" alt="${displayName}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />` : ''}
-                </div>
-                <div class="absentee-meta">
-                    <span class="absentee-name">${displayName}</span>
-                    <span class="absentee-party-tag ${partyClass}">${absentee.party === 'rep' ? 'R' : absentee.party === 'dem' ? 'D' : 'I'}</span>
-                    <span class="absentee-state">${displayState}</span>
-                    ${casualtyStatus ? `<span class="absentee-casualty-status">${casualtyStatus}</span>` : ''}
-                </div>
-            </div>`);
-        });
-        setIfChanged(elements.absenteeList, htmlParts.join(''));
-    } else {
-        setIfChanged(elements.absenteeList, '<div class="absentee-member">ALL MEMBERS VOTED</div>');
     }
+
+    const members = absentees.map((absentee) => {
+        const parsedName = parseAbsenteeRollName(absentee.name);
+        const match = xmlDoc ? findBestMemberMatchByName(xmlDoc, parsedName.lastName || parsedName.rawName, absentee.state || parsedName.state) : null;
+        const nd = match ? normalizeDistrict(match.district) : '';
+        return {
+            party: absentee.party,
+            name: match ? match.fullName : (parsedName.rawName || 'Unknown'),
+            state: match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state,
+            photoUrl: match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '',
+            badge: getCasualtyStatus(match),
+        };
+    });
+    absenteePanel().render({ members, info, emptyText: 'ALL MEMBERS VOTED' });
 }
 
 // Update API Status Indicator

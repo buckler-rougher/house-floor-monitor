@@ -135,9 +135,8 @@ function updateTimestamp() {
 
 // ── Weather and the Capitol camera ───────────────────────────────────────────
 // Both are the Capitol, not a chamber, so they are the House board's sources
-// unchanged. The camera is a Senate-hosted stream even on the House board.
+// unchanged. The camera itself is lib/capcam.js, shared.
 const WEATHER_COORDS = { lat: 38.889722, lon: -77.008889 };
-const CAPCAM_URL = 'https://www-senate-gov-media-srs.akamaized.net/hls/live/2036784/capcam/capcam/master.m3u8';
 
 async function fetchWeather() {
     const temp = el('weather-temp'), cond = el('weather-condition');
@@ -154,21 +153,6 @@ async function fetchWeather() {
         console.error('Weather fetch error:', e);
         if (temp) temp.textContent = '--°';
         if (cond) cond.textContent = 'N/A';
-    }
-}
-
-function initCapcam() {
-    const video = el('capcam-video');
-    if (!video) return;
-    video.muted = true;
-    if (window.Hls && Hls.isSupported()) {
-        const hls = new Hls({ liveDurationInfinity: true });
-        hls.loadSource(CAPCAM_URL);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = CAPCAM_URL;
-        video.play().catch(() => {});
     }
 }
 
@@ -548,28 +532,33 @@ const photoUrlFor = (bioguide) => bioguide
     ? `https://bioguide.congress.gov/bioguide/photo/${bioguide.charAt(0)}/${bioguide}.jpg`
     : '';
 
+// The panel itself, its party filter and its rows are lib/missing-members.js, shared
+// with the House board. This maps the Senate's roll call into rows.
+let absencePanel = null;
+
+function initAbsenceFilters() {
+    absencePanel = MissingMembers.init({
+        panel: el('absentee'),
+        list: el('absentee-list'),
+        placeholder: PHOTO_PLACEHOLDER,
+    });
+}
+
 function renderAbsences(data) {
-    const list = el('absentee-list');
-    const info = el('absentee-roll-info');
-    if (!list) return;
-
-    const absent = data?.absent || [];
+    if (!absencePanel) return;
     const partyKey = (p) => (p === 'R' ? 'rep' : p === 'D' ? 'dem' : 'ind');
-    const counts = { dem: 0, rep: 0, ind: 0 };
-    for (const m of absent) counts[partyKey(m.party)]++;
-
-    const set = (id, v) => { const n = el(id); if (n) n.textContent = v; };
-    set('absentee-dem', counts.dem);
-    set('absentee-rep', counts.rep);
-    set('absentee-ind', counts.ind);
-    set('absentee-total', absent.length);
-    const indMetric = el('absentee-ind-metric');
-    if (indMetric) indMetric.style.display = counts.ind ? '' : 'none';
+    const members = (data?.absent || []).map((m) => ({
+        party: partyKey(m.party),
+        name: `${m.first} ${m.last}`.trim(),
+        state: m.state,
+        photoUrl: photoUrlFor(m.bioguide),
+    }));
 
     // Same line the House board writes: "Roll 314 • 16 September 2026 7:05 PM".
     // The vote's own file stamps it "September 24, 2026,  01:45 PM", so it is
     // reordered day-first to match the board's date format.
-    if (info && data?.rollCall) {
+    let info = '';
+    if (data?.rollCall) {
         let when = '';
         const m = (data.voteDate || '').match(/^(\w+)\s+(\d{1,2}),\s*(\d{4}),?\s*(.*)$/);
         if (m) {
@@ -578,69 +567,9 @@ function renderAbsences(data) {
         } else if (data.date) {
             when = data.date;
         }
-        info.textContent = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
+        info = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
     }
-
-    if (!absent.length) {
-        setIfChanged(list, '<div class="absentee-member">ALL SENATORS VOTED</div>');
-        return;
-    }
-
-    const parts = absent.map((m, i) => {
-        const cls = partyKey(m.party);
-        const partyClass = cls === 'rep' ? 'republican' : cls === 'dem' ? 'democrat' : 'independent';
-        const name = escapeHtml(`${m.first} ${m.last}`.trim());
-        const photo = photoUrlFor(m.bioguide);
-        return `
-        <div class="absentee-member ${cls}" data-absentee-index="${i}">
-            <div class="absentee-photo-wrap">
-                <div class="absentee-photo-placeholder">${PHOTO_PLACEHOLDER}</div>
-                ${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="${name}" loading="lazy" onload="this.style.opacity='1'" onerror="this.remove()">` : ''}
-            </div>
-            <div class="absentee-meta">
-                <span class="absentee-name">${name}</span>
-                <span class="absentee-party-tag ${partyClass}">${escapeHtml(m.party)}</span>
-                <span class="absentee-state">${escapeHtml(m.state)}</span>
-            </div>
-        </div>`;
-    });
-    setIfChanged(list, parts.join(''));
-}
-
-function initAbsenceFilters() {
-    const panel = el('absentee');
-    const list = el('absentee-list');
-    if (!panel || !list) return;
-
-    let mode = 'all';
-    panel.addEventListener('click', (e) => {
-        // Both the filter bar and the metric boxes, the way the House board does
-        // it. Matching only the buttons meant clicking DEMOCRATS did nothing,
-        // which is most of the panel's surface.
-        const btn = e.target.closest('.absentee-filter-btn');
-        const metric = e.target.closest('.party-metric[data-filter]');
-        const target = btn || metric;
-        if (!target) return;
-        const next = target.dataset.filter;
-        if (!next) return;
-
-        // Clicking the active party filter clears back to all.
-        mode = (next !== 'all' && next === mode) ? 'all' : next;
-
-        panel.querySelectorAll('.absentee-filter-btn').forEach((b) =>
-            b.classList.toggle('active', b.dataset.filter === mode));
-
-        // The rows are never rebuilt: the filter is a CSS attribute, and
-        // animateAbsenteeFilter measures the list around the change. See
-        // lib/animations.js for why rebuilding was wrong.
-        const apply = () => {
-            if (mode === 'all') delete list.dataset.filter;
-            else list.dataset.filter = mode;
-        };
-        const anim = globalThis.BoardAnimations;
-        if (anim?.animateAbsenteeFilter) anim.animateAbsenteeFilter(apply);
-        else apply();
-    });
+    absencePanel.render({ members, info, emptyText: 'ALL SENATORS VOTED' });
 }
 
 async function loadAbsences() {
@@ -1760,7 +1689,8 @@ updateTimestamp();
 setInterval(updateTimestamp, 1000);
 fetchWeather();
 setInterval(fetchWeather, 10 * 60 * 1000);
-initCapcam();
+// The Capitol camera, lib/capcam.js: loaded on first hover, as on the House board.
+CapCam.init(el('weather-panel'), el('capcam-video'));
 // The Twitter list is one list and its handles cover both chambers, so the feed is
 // the House's (lib/reporters.js); only the cards in the row differ. These are
 // reporters on the Senate beat. Search reaches every handle the list carries.
