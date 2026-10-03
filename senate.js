@@ -782,18 +782,8 @@ function nominationCard(n) {
 // Drop the fade once a list is scrolled to its end: with nothing below it, a
 // fade suggests more that is not there.
 function watchListScroll(node) {
-    if (!node) return;
-    const check = () => node.classList.toggle('is-at-end',
-        node.scrollTop + node.clientHeight >= node.scrollHeight - 2);
-    // Listener once, check every time. It used to return early on an already
-    // watched list, so the class was decided by whatever the list held on its
-    // first render and never revisited: a section that later held one card kept
-    // a fade over empty space, and one that grew lost the fade it needed.
-    if (!node.dataset.watched) {
-        node.dataset.watched = '1';
-        node.addEventListener('scroll', check, { passive: true });
-    }
-    check();
+    // lib/scroll-fade.js: also re-checks on scroll, on content change and on resize.
+    ScrollFade.watch(node);
 }
 
 // The three finished stages are an archive, not a list of business: CONFIRMED

@@ -201,6 +201,16 @@
     -webkit-mask-image: none;
     mask-image: none;
 }
+/* The same fade for lists whose height is set elsewhere (lib/scroll-fade.js adds this class).
+   .list-scroll also sets a max-height of its own, which these do not want. */
+.scroll-fade {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent 100%);
+}
+.scroll-fade.is-at-end {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
 .nom-count {
     font-family: var(--font-mono);
     font-size: var(--fs-xs);

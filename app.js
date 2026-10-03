@@ -8683,6 +8683,13 @@ function init() {
     // Initialize SVG analog clocks (tick marks)
     initAnalogClocks();
     
+    // The fade along the bottom edge of the three scrolling feeds (lib/scroll-fade.js), the same one
+    // the Senate board's lists have. Each of these rebuilds with innerHTML on every update, and
+    // the module watches for that itself, so nothing here has to ask again after a render.
+    for (const id of ['whip-updates-feed', 'proceedings-feed', 'tweets-feed']) {
+        ScrollFade.watch(document.getElementById(id));
+    }
+
     // Fetch initial data
     updateProceedingsFeed();
     fetchHouseMakeup();
