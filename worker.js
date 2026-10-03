@@ -18,6 +18,8 @@ import './lib/senate-call.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
+// The Senate's desk assignments (who sits where). See lib/senate-desks.js.
+import './lib/senate-desks.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -4219,55 +4221,14 @@ async function handleSenateDesks(env) {
       return r.text();
     };
 
-    const classes = await get(SENATE_DESK_BASE + 'classes.xml');
-    // The live plan is the one whose range ends in "present", not simply the
-    // first: there were three for this session alone and they are dated, so
-    // hardcoding one would silently go stale at the next reshuffle.
-    let ref = null, range = null;
-    // `<class\s`, not `<class`: the file opens with a <classes> wrapper, which
-    // the looser pattern matches as its own first block -- with no dateRange
-    // and the first real class's dataRef inside it. That picked the right plan
-    // by accident and would have picked the wrong one the moment the order
-    // changed.
-    for (const m of classes.matchAll(/<class\s([^>]*)>([\s\S]*?)<\/class>/g)) {
-      const dr = (m[1].match(/dateRange="([^"]*)"/) || [])[1] || '';
-      const dataRef = (m[2].match(/<dataRef>([^<]+)<\/dataRef>/) || [])[1];
-      if (dataRef && /present/i.test(dr)) { ref = dataRef; range = dr; break; }
-      if (dataRef && !ref) { ref = dataRef; range = dr; }   // fallback: newest listed
-    }
-    if (!ref) throw new Error('desks: no floorplan in classes.xml');
+    const SD = globalThis.SenateDesks;
+    const plan = SD.pickPlan(await get(SENATE_DESK_BASE + 'classes.xml'));
+    if (!plan) throw new Error('desks: no floorplan in classes.xml');
+    const ref = plan.ref, range = plan.range;
 
-    const plan = await get(SENATE_DESK_BASE + ref);
-    const seats = [];
-    for (const sideM of plan.matchAll(/<side name="([^"]+)">([\s\S]*?)<\/side>/g)) {
-      const side = sideM[1];
-      let sectionIdx = 0;
-      for (const secM of sideM[2].matchAll(/<section>([\s\S]*?)<\/section>/g)) {
-        let rowIdx = 0;
-        for (const rowM of secM[1].matchAll(/<row([^>]*)>([\s\S]*?)<\/row>/g)) {
-          rowIdx += 1;
-          const row = Number((rowM[1].match(/rownum="(\d+)"/) || [])[1] || rowIdx);
-          let order = 0;
-          for (const seatM of rowM[2].matchAll(/<seat id="(\d+)"[^>]*>([\s\S]*?)<\/seat>/g)) {
-            const b = seatM[2];
-            const tag = (t) => (b.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1] || '';
-            const name = tag('sName');
-            if (!name) continue;   // an empty desk is a vacancy, not a member
-            seats.push({
-              desk: Number(seatM[1]), side, section: sectionIdx, row, order: order++,
-              party: tag('politics') || null,
-              name,
-              // "Schumer, Charles E." -> the surname the captions use.
-              last: name.split(',')[0].trim(),
-              state: tag('sState') || null,
-              bioguide: (b.match(/index=([A-Z]\d{6})/) || [])[1] || null,
-            });
-          }
-        }
-        sectionIdx += 1;
-      }
-    }
-    if (seats.length < 90) throw new Error(`desks: only parsed ${seats.length} seats`);
+    const seats = SD.parseSeats(await get(SENATE_DESK_BASE + ref));
+    // Refused rather than half used: the page would draw a chamber with missing desks.
+    if (!SD.valid(seats)) throw new Error(`desks: parsed ${seats.length} seats, which is not a chamber`);
 
     const sections = {};
     for (const s2 of seats) sections[s2.side] = Math.max(sections[s2.side] || 0, s2.section + 1);
