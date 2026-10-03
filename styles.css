@@ -11074,6 +11074,22 @@ button.proceedings-measure:hover .proceedings-measure-id {
     padding: var(--sp-12) 0 var(--sp-16);
 }
 
+.qb-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-8);
+    padding-top: var(--sp-12);
+}
+/* The party filter hides rows by attribute and never rebuilds them, the way the
+   MISSING MEMBERS filter does. */
+.quorum-board[data-party="D"] .qb-member:not([data-party="D"]),
+.quorum-board[data-party="R"] .qb-member:not([data-party="R"]),
+.quorum-board[data-party="I"] .qb-member:not([data-party="I"]) {
+    display: none;
+}
+
 .qb-member {
     display: flex;
     align-items: center;
