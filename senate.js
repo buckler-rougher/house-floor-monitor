@@ -1711,6 +1711,8 @@ SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
+// The chamber floor shows the same roll as the board, on the real desks.
+SenateChamber.init({ api: API });
 // The Worker holds the whole call; the local caption reader is just faster.
 SenateQuorum.syncFromWorker(API);
 setInterval(() => SenateQuorum.syncFromWorker(API), 15000);

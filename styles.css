@@ -11280,3 +11280,39 @@ button.proceedings-measure:hover .proceedings-measure-id {
 .qb-member.is-aye { border-color: rgba(63, 185, 80, 0.75); box-shadow: 0 0 10px rgba(63, 185, 80, 0.22); }
 .qb-member.is-no  { border-color: rgba(248, 81, 73, 0.75); box-shadow: 0 0 10px rgba(248, 81, 73, 0.22); }
 .qb-member.is-present { border-color: rgba(210, 153, 34, 0.75); box-shadow: 0 0 10px rgba(210, 153, 34, 0.22); }
+
+/* Senate chamber desks. Real assignments, so a desk is a member and the
+   tooltip names them -- unlike the House map, which says in its own note that
+   members have no assigned seats. */
+:root[data-chamber="senate"] .floor-grid-panel { display: block; }
+#senate-chamber-note { color: var(--text-muted); }
+
+.sen-desk {
+    position: absolute;
+    width: 11px;
+    height: 7px;
+    margin: -4px 0 0 -6px;
+    border-radius: 2px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    opacity: 0.35;
+    transition: opacity var(--dur-300) ease, background var(--dur-300) ease,
+                border-color var(--dur-300) ease, box-shadow var(--dur-300) ease;
+}
+.sen-desk[data-party="D"] { border-color: color-mix(in srgb, var(--party-d) 45%, transparent); }
+.sen-desk[data-party="R"] { border-color: color-mix(in srgb, var(--party-r) 45%, transparent); }
+.sen-desk[data-party="I"] { border-color: color-mix(in srgb, var(--party-i) 45%, transparent); }
+
+.sen-desk.is-called   { opacity: 1; }
+.sen-desk.is-aye      { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 6px rgba(63,185,80,0.5); }
+.sen-desk.is-no       { background: var(--accent-red);   border-color: var(--accent-red);   box-shadow: 0 0 6px rgba(248,81,73,0.5); }
+.sen-desk.is-present  { background: var(--accent-amber); border-color: var(--accent-amber); }
+
+/* The Senate sits the other way round from the House board.
+ *
+ * The House has Republicans to the viewer's left; the Senate's own chamber map
+ * has Democrats there, and the published floorplan agrees -- side="left" is the
+ * Democratic side, 47 desks against 53. The labels are inherited markup, so
+ * they are swapped here rather than in the HTML, which both boards share. */
+:root[data-chamber="senate"] .rep-label { left: auto; right: 9%; }
+:root[data-chamber="senate"] .dem-label { right: auto; left: 9%; }
