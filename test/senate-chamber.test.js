@@ -85,10 +85,39 @@ test('every desk faces the rostrum', () => {
     // must point at the rostrum.
     const a = (p.angle + 90) * Math.PI / 180;
     const fx = Math.cos(a), fy = Math.sin(a);
-    const tx = (50 - p.x) * w / 100, ty = (98 - p.y) * h / 100, len = Math.hypot(tx, ty);
+    const tx = (C.ROSTRUM.x - p.x) * w / 100, ty = (C.ROSTRUM.y - p.y) * h / 100, len = Math.hypot(tx, ty);
     const dot = (fx * tx + fy * ty) / len;
     assert.ok(dot > 0.999, `${p.last} faces ${Math.acos(Math.min(1, dot)) * 180 / Math.PI} degrees off`);
   }
+});
+
+test('each side\'s arcs start level with the rostrum, their ends in a line beside it', () => {
+  const placed = C.place(seats, 760, 380);
+  for (const side of ['left', 'right']) {
+    const mine = placed.filter((p) => p.side === side);
+    // The lowest desks on a side sit at the rostrum's own level, one per row.
+    const lowest = mine.filter((p) => Math.abs(p.y - C.ROSTRUM.y) < 0.5);
+    assert.strictEqual(new Set(lowest.map((p) => p.row)).size, 4, `${side}: an end desk in every row`);
+    // ...and none dips below it.
+    assert.ok(mine.every((p) => p.y <= C.ROSTRUM.y + 0.5), `${side}: nothing below the rostrum`);
+  }
+});
+
+test('the end desks face straight across the chamber, and the top desks straight down', () => {
+  const placed = C.place(seats, 760, 380);
+  for (const p of placed.filter((q) => Math.abs(q.y - C.ROSTRUM.y) < 0.5)) {
+    // Facing right (left side) is a quarter turn one way, facing left the other.
+    const want = p.side === 'left' ? -90 : 90;
+    assert.ok(Math.abs(p.angle - want) < 1, `${p.side} ${p.last}: ${p.angle.toFixed(1)}`);
+  }
+  // Toward the top the desks face nearly straight down, and the turn grows steadily
+  // as the arc comes round to the ends: |turn| rises from the aisle to level.
+  const right = placed.filter((q) => q.side === 'right').sort((a, b) => a.y - b.y);
+  const third = Math.floor(right.length / 3);
+  const mean = (l) => l.reduce((t, q) => t + Math.abs(q.angle), 0) / l.length;
+  const topMean = mean(right.slice(0, third)), midMean = mean(right.slice(third, 2 * third)), lowMean = mean(right.slice(2 * third));
+  assert.ok(topMean < 30, `top desks turn ${topMean.toFixed(1)} degrees on average, near straight down`);
+  assert.ok(topMean < midMean && midMean < lowMean, `${topMean.toFixed(0)} < ${midMean.toFixed(0)} < ${lowMean.toFixed(0)}`);
 });
 
 test('the two sides mirror: a desk and its twin turn by opposite amounts', () => {
