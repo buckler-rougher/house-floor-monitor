@@ -4191,6 +4191,94 @@ function senateCallSignature(call) {
   return JSON.stringify([call.callId, call.kind, call.names, call.votes, call.ended, call.speaker && call.speaker.label, call.question]);
 }
 
+// ── Senate desk map ──────────────────────────────────────────────────────────
+//
+// Real desk assignments, published by the Senate Curator alongside the chamber
+// map. Not a decorative diagram: 100 seats, every one carrying a bioguide id,
+// 53 R / 45 D / 2 I, 47 on the left and 53 on the right, which is the chamber.
+//
+//   xml/classes.xml  -> dated list, newest first, current one ends "present"
+//     <dataRef>floorplans/119_2c_red.xml</dataRef>
+//   xml/floorplans/119_2c_red.xml  -> sides > sections > rows > seats
+//
+// The path is "xml/" + dataRef. The dataRef alone 302s to a not-found page.
+//
+// Seats come back with their place in the chamber rather than coordinates:
+// side (left is the Democratic side), section as an angular wedge, row as a
+// ring, and order within the row. The front row carries no rownum -- those are
+// the leaders' desks -- so it is numbered 1 here.
+const SENATE_DESK_BASE = 'https://www.senate.gov/art-artifacts/decorative-art/furniture/senate-chamber-desks/xml/';
+
+async function handleSenateDesks(env) {
+  return kvCache(env, 'senate-desks-v1', 86_400, async () => {
+    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const get = async (u) => {
+      const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new Error(`desks: HTTP ${r.status} for ${u}`);
+      if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error(`desks: not XML for ${u}`);
+      return r.text();
+    };
+
+    const classes = await get(SENATE_DESK_BASE + 'classes.xml');
+    // The live plan is the one whose range ends in "present", not simply the
+    // first: there were three for this session alone and they are dated, so
+    // hardcoding one would silently go stale at the next reshuffle.
+    let ref = null, range = null;
+    // `<class\s`, not `<class`: the file opens with a <classes> wrapper, which
+    // the looser pattern matches as its own first block -- with no dateRange
+    // and the first real class's dataRef inside it. That picked the right plan
+    // by accident and would have picked the wrong one the moment the order
+    // changed.
+    for (const m of classes.matchAll(/<class\s([^>]*)>([\s\S]*?)<\/class>/g)) {
+      const dr = (m[1].match(/dateRange="([^"]*)"/) || [])[1] || '';
+      const dataRef = (m[2].match(/<dataRef>([^<]+)<\/dataRef>/) || [])[1];
+      if (dataRef && /present/i.test(dr)) { ref = dataRef; range = dr; break; }
+      if (dataRef && !ref) { ref = dataRef; range = dr; }   // fallback: newest listed
+    }
+    if (!ref) throw new Error('desks: no floorplan in classes.xml');
+
+    const plan = await get(SENATE_DESK_BASE + ref);
+    const seats = [];
+    for (const sideM of plan.matchAll(/<side name="([^"]+)">([\s\S]*?)<\/side>/g)) {
+      const side = sideM[1];
+      let sectionIdx = 0;
+      for (const secM of sideM[2].matchAll(/<section>([\s\S]*?)<\/section>/g)) {
+        let rowIdx = 0;
+        for (const rowM of secM[1].matchAll(/<row([^>]*)>([\s\S]*?)<\/row>/g)) {
+          rowIdx += 1;
+          const row = Number((rowM[1].match(/rownum="(\d+)"/) || [])[1] || rowIdx);
+          let order = 0;
+          for (const seatM of rowM[2].matchAll(/<seat id="(\d+)"[^>]*>([\s\S]*?)<\/seat>/g)) {
+            const b = seatM[2];
+            const tag = (t) => (b.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1] || '';
+            const name = tag('sName');
+            if (!name) continue;   // an empty desk is a vacancy, not a member
+            seats.push({
+              desk: Number(seatM[1]), side, section: sectionIdx, row, order: order++,
+              party: tag('politics') || null,
+              name,
+              // "Schumer, Charles E." -> the surname the captions use.
+              last: name.split(',')[0].trim(),
+              state: tag('sState') || null,
+              bioguide: (b.match(/index=([A-Z]\d{6})/) || [])[1] || null,
+            });
+          }
+        }
+        sectionIdx += 1;
+      }
+    }
+    if (seats.length < 90) throw new Error(`desks: only parsed ${seats.length} seats`);
+
+    const sections = {};
+    for (const s2 of seats) sections[s2.side] = Math.max(sections[s2.side] || 0, s2.section + 1);
+    return new Response(JSON.stringify({
+      plan: ref, dateRange: range, count: seats.length, sections, seats,
+    }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' },
+    });
+  });
+}
+
 async function handleSenateQuorum(env) {
   const hdrs = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=5' };
   const SC = globalThis.SenateCall;
@@ -5638,6 +5726,8 @@ async function handleRequest(request, env) {
     return await handleMemberData(env);
   } else if (path === '/api/senate/nominations' && request.method === 'GET') {
     return handleSenateNominations(env);
+  } else if (path === '/api/senate/desks' && request.method === 'GET') {
+    return handleSenateDesks(env);
   } else if (path === '/api/senate/quorum' && request.method === 'GET') {
     return handleSenateQuorum(env);
   } else if (path === '/api/senate/hls-url' && request.method === 'GET') {
