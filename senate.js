@@ -234,6 +234,22 @@ function renderBalance(data) {
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }
 
+// The Senate's seniority order. Nothing the Senate publishes carries it, so the Worker
+// reads it from Wikipedia and refuses a page that does not parse cleanly (see
+// lib/senate-seniority.js). It changes only when a seat does, so it is fetched once
+// and again hourly with the roster it is matched against. If it is unavailable the
+// board just has no seniority button.
+async function loadSeniority() {
+    try {
+        const r = await fetch(`${API}/senate/seniority`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        globalThis.SenateQuorum?.setSeniority?.(data.rows || []);
+    } catch (e) {
+        console.error('Seniority fetch failed:', e);
+    }
+}
+
 async function loadBalance() {
     try {
         const r = await fetch(`${API}/senate/roster`);
@@ -249,6 +265,7 @@ async function loadBalance() {
         const members = roster.members || [];
         globalThis.SenateSpeaker?.setSeats?.(members);
         globalThis.SenateQuorum?.build?.(members);
+        loadSeniority();
     } catch (e) {
         const stamp = el('party-breakdown-last-update');
         if (stamp) stamp.textContent = 'unavailable';

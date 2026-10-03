@@ -73,6 +73,18 @@ test('recent with nobody heard is just A to Z', () => {
   assert.deepStrictEqual(names(S.sortMembers(roster, 'recent', [])), names(S.sortMembers(roster, 'alpha')));
 });
 
+test('seniority orders by rank, 1 first', () => {
+  const r = [{ ...M('C', 'AL'), rank: 3 }, { ...M('A', 'AK'), rank: 1 }, { ...M('B', 'AZ'), rank: 2 }];
+  assert.deepStrictEqual(names(S.sortMembers(r, 'seniority')), ['A', 'B', 'C']);
+});
+
+test('a senator with no rank follows the ranked ones, A to Z, and is never guessed in', () => {
+  const r = [M('Zed', 'AL'), { ...M('B', 'AK'), rank: 2 }, M('Amy', 'AZ'), { ...M('A', 'AR'), rank: 1 }];
+  assert.deepStrictEqual(names(S.sortMembers(r, 'seniority')), ['A', 'B', 'Amy', 'Zed']);
+});
+
+test('seniority is one of the modes the board accepts', () => assert.ok(S.MODES.includes('seniority')));
+
 test('an unknown state sorts last rather than throwing', () => {
   const s = S.sortMembers([M('A', 'ZZ'), M('B', 'DE')], 'admission');
   assert.deepStrictEqual(names(s), ['B', 'A']);
