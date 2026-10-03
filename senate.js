@@ -568,6 +568,22 @@ function renderAbsences(data) {
         info = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
     }
     absencePanel.render({ members, info, emptyText: 'ALL SENATORS VOTED' });
+
+    // The same numbers, as the House board's LAST VOTE ABSENCES inside THRESHOLD ANALYSIS: how
+    // many of each party missed the previous vote, which is what to weigh the one in front of
+    // you against. The previous vote, not this one: the Senate publishes a roll call's
+    // absences only after it ends.
+    const lva = el('last-vote-absences');
+    if (lva && data?.rollCall) {
+        const by = { rep: 0, dem: 0, ind: 0 };
+        for (const m of members) by[m.party]++;
+        const set = (id, v) => { const n = el(id); if (n) n.textContent = String(v); };
+        set('last-vote-label', `Roll ${data.rollCall}`);
+        set('last-vote-d-absent', by.dem);
+        set('last-vote-r-absent', by.rep);
+        set('last-vote-i-absent', by.ind);
+        lva.style.display = '';
+    }
 }
 
 async function loadAbsences() {

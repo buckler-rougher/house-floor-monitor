@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20261003g">
+    <link rel="stylesheet" href="styles.css?v=20261003h">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1018,12 +1018,16 @@
                     <span class="panel-label">THRESHOLD ANALYSIS</span>
                     <div class="panel-header-right">
                         <span class="threshold-state" id="threshold-state">CALCULATING</span>
-                        <span class="panel-source">Source: <a href="https://domewatch.us" target="_blank" rel="noopener">DomeWatch</a></span>
+                        <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/floor_activity_pail.htm" target="_blank" rel="noopener">Senate Floor Webcast captions</a></span>
                     </div>
                 </div>
+                <!-- What the vote needs, and whether that is known or assumed. The Senate's
+                     threshold depends on the question (lib/senate-threshold.js), so it is
+                     said here rather than left to be inferred from the numbers. -->
+                <div class="threshold-basis" id="threshold-basis"></div>
                 <div class="threshold-grid">
                     <div class="threshold-item">
-                        <span class="threshold-metric-label">Votes Remaining</span>
+                        <span class="threshold-metric-label">Not Yet Heard</span>
                         <span class="threshold-metric-value" id="votes-remaining">--</span>
                     </div>
                     <div class="threshold-item">
@@ -1795,9 +1799,10 @@
     <script defer src="lib/suggest-box.js?v=20260927a"></script>
     <script defer src="lib/senate-call.js?v=20261002f"></script>
     <script defer src="lib/senate-sort.js?v=20261003a"></script>
+    <script defer src="lib/senate-threshold.js?v=20261003a"></script>
     <script defer src="lib/senate-seniority.js?v=20261003a"></script>
-    <script defer src="lib/senate-chamber.js?v=20261003f"></script>
-    <script defer src="lib/senate-quorum.js?v=20261003g"></script>
+    <script defer src="lib/senate-chamber.js?v=20261003g"></script>
+    <script defer src="lib/senate-quorum.js?v=20261003i"></script>
     <script defer src="lib/senate-speaker.js?v=20261002f"></script>
     <script defer src="lib/floor-feed.js?v=20260928e"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
@@ -1806,7 +1811,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261003a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="senate.js?v=20261003e"></script>
+    <script defer src="senate.js?v=20261003f"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
