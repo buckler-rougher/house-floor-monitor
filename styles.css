@@ -11288,9 +11288,15 @@ button.proceedings-measure:hover .proceedings-measure-id {
 
 .sen-desk {
     position: absolute;
-    width: 11px;
-    height: 7px;
-    margin: -4px 0 0 -6px;
+    /* Sized and turned by lib/senate-chamber.js from the panel's real size: each desk
+       faces the rostrum, and is as large as fits without touching its neighbours. */
+    --w: var(--sen-desk-w, 11px);
+    --h: var(--sen-desk-h, 7px);
+    width: var(--w);
+    height: var(--h);
+    margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+    transform-origin: center;
+    box-sizing: border-box;
     border-radius: 2px;
     border: 1px solid var(--border-color);
     background: var(--bg-elevated);
