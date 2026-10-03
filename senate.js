@@ -134,27 +134,8 @@ function updateTimestamp() {
 }
 
 // ── Weather and the Capitol camera ───────────────────────────────────────────
-// Both are the Capitol, not a chamber, so they are the House board's sources
-// unchanged. The camera itself is lib/capcam.js, shared.
-const WEATHER_COORDS = { lat: 38.889722, lon: -77.008889 };
-
-async function fetchWeather() {
-    const temp = el('weather-temp'), cond = el('weather-condition');
-    try {
-        const points = await fetch(`https://api.weather.gov/points/${WEATHER_COORDS.lat},${WEATHER_COORDS.lon}`);
-        if (!points.ok) throw new Error('Points API failed');
-        const forecastUrl = (await points.json()).properties.forecastHourly;
-        const forecast = await fetch(forecastUrl);
-        if (!forecast.ok) throw new Error('Forecast API failed');
-        const current = (await forecast.json()).properties.periods[0];
-        if (temp) temp.textContent = `${Math.round(current.temperature)}°${current.temperatureUnit}`;
-        if (cond) cond.textContent = current.shortForecast;
-    } catch (e) {
-        console.error('Weather fetch error:', e);
-        if (temp) temp.textContent = '--°';
-        if (cond) cond.textContent = 'N/A';
-    }
-}
+// Both are the Capitol, not a chamber, so they are the House board's, unchanged:
+// lib/weather.js and lib/capcam.js, shared.
 
 // ── Connection light ─────────────────────────────────────────────────────────
 // On the House board this tracks the SSE stream, so it means "connected to the
@@ -1687,8 +1668,7 @@ initAnalogClocks();
 initAirportDelays();
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
-fetchWeather();
-setInterval(fetchWeather, 10 * 60 * 1000);
+Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });
 // The Capitol camera, lib/capcam.js: loaded on first hover, as on the House board.
 CapCam.init(el('weather-panel'), el('capcam-video'));
 // The Twitter list is one list and its handles cover both chambers, so the feed is

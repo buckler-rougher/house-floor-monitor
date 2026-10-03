@@ -8450,38 +8450,7 @@ document.addEventListener('click', e => {
 // Bluesky Functions
 
 
-// Weather Data
-const WEATHER_COORDS = {
-    lat: 38.889722,
-    lon: -77.008889
-};
-
-async function fetchWeather() {
-    try {
-        // Step 1: Get grid endpoint from points
-        const pointsUrl = `https://api.weather.gov/points/${WEATHER_COORDS.lat},${WEATHER_COORDS.lon}`;
-        const pointsResponse = await fetch(pointsUrl);
-        if (!pointsResponse.ok) throw new Error('Points API failed');
-        const pointsData = await pointsResponse.json();
-        
-        // Step 2: Get hourly forecast (more accurate for current conditions)
-        const forecastUrl = pointsData.properties.forecastHourly;
-        const forecastResponse = await fetch(forecastUrl);
-        if (!forecastResponse.ok) throw new Error('Forecast API failed');
-        const forecastData = await forecastResponse.json();
-
-        // First hourly period is the current hour
-        const current = forecastData.properties.periods[0];
-        
-        // Update DOM
-        elements.weatherTemp.textContent = `${Math.round(current.temperature)}°${current.temperatureUnit}`;
-        elements.weatherCondition.textContent = current.shortForecast;
-    } catch (error) {
-        console.error('Weather fetch error:', error);
-        elements.weatherTemp.textContent = '--°';
-        elements.weatherCondition.textContent = 'N/A';
-    }
-}
+// The weather readout is lib/weather.js, shared with the Senate board.
 
 // The Capitol camera behind the weather readout: lib/capcam.js, shared with the
 // Senate board.
@@ -8636,7 +8605,7 @@ function init() {
     // fetchBillsThisWeek() only called here for date overrides (setDate/clearDate).
     fetchVotingDays();
     fetchFloorData();
-    fetchWeather();
+    Weather.init({ temp: elements.weatherTemp, condition: elements.weatherCondition });
 
     // Whip notices filter button — toggle dropdown open/closed
     const whipFilterBtn = document.getElementById('whip-filter-btn');
@@ -8700,7 +8669,6 @@ function init() {
         const floorSseRecent = lastFloorSseAt > 0 && (Date.now() - lastFloorSseAt) < 15_000;
         if (!floorSseRecent) fetchFloorData(true);
     }, 10000);
-    setInterval(fetchWeather, 1800000); // Weather every 30 min (direct to NWS, zero Worker cost)
     // bills, tweets, bluesky, airportdelays, housemakeup are all pushed via SSE from the DO —
     // no browser polling needed; the DO fetches once for all connected users.
     // Initialize
