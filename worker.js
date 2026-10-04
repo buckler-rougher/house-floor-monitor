@@ -17,6 +17,7 @@ import './lib/floor-status.js';
 import './lib/senate-call.js';
 import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
+import './lib/clerk-votes.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -177,7 +178,6 @@ const RSS_FEEDS = {
   votingDays: 'https://votingdays.house.gov/voting-days.ics',
   airportDelays: 'https://nasstatus.faa.gov/api/airport-status-information',
   memberData: 'https://clerk.house.gov/xml/lists/MemberData.xml',
-  congressIndex: 'https://clerk.house.gov/evs/2026/index.asp',
 };
 
 // DomeWatch API configuration
@@ -3673,20 +3673,14 @@ async function handleSenateVotes(env) {
 
 async function handleCongressIndex() {
   try {
-    const htmlText = await fetchRSSFeed(RSS_FEEDS.congressIndex);
-    
-    // Extract roll call numbers from HTML using regex
-    const rollCallPattern = /rollnumber=(\d+)">(\d+)<\/A>/g;
-    const rollNumbers = [];
-    let match;
-    
-    while ((match = rollCallPattern.exec(htmlText)) !== null) {
-      rollNumbers.push({
-        rollNumber: match[1],
-        displayNumber: match[2]
-      });
-    }
-    
+    // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
+    // listing that replaced it. Nothing found is an error, not a null latest roll: the board
+    // would show an old vote as the last one.
+    const year = Number(getTodayDateET().slice(0, 4));
+    const htmlText = await fetchRSSFeed(globalThis.ClerkVotes.listUrl(year));
+    const rollNumbers = globalThis.ClerkVotes.parseRolls(htmlText, year);
+    if (!rollNumbers.length) throw new Error('the Clerk vote listing had no roll calls for ' + year + ' (has the page changed?)');
+
     // Get the most recent roll number
     const latestRoll = rollNumbers.length > 0 ? rollNumbers[0] : null;
     
@@ -5713,12 +5707,12 @@ async function handleRequest(request, env) {
       rollsToFetch = rollsParam.split(',').map(n => parseInt(n.trim(), 10)).filter(n => n > 0 && n < 10000);
     } else {
       try {
-        const idxHtml = await fetchRSSFeed(RSS_FEEDS.congressIndex);
+        const idxYear = Number(getTodayDateET().slice(0, 4));
+        const idxHtml = await fetchRSSFeed(globalThis.ClerkVotes.listUrl(idxYear));
         idxFirstLine = idxHtml.slice(0, 300); // for diagnostics
-        // Use same pattern as handleCongressIndex
-        const rollCallPattern = /rollnumber=(\d+)">(\d+)<\/A>/g;
-        const firstMatch = rollCallPattern.exec(idxHtml);
-        latestFound = firstMatch ? parseInt(firstMatch[1], 10) : null;
+        // Same reader as handleCongressIndex
+        const firstRoll = globalThis.ClerkVotes.parseRolls(idxHtml, idxYear)[0];
+        latestFound = firstRoll ? parseInt(firstRoll.rollNumber, 10) : null;
         if (latestFound) {
           for (let n = Math.max(1, latestFound - 19); n <= latestFound; n++) rollsToFetch.push(n);
         }
