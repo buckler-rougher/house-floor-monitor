@@ -11442,3 +11442,10 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
  * they are swapped here rather than in the HTML, which both boards share. */
 :root[data-chamber="senate"] .rep-label { left: auto; right: 9%; }
 :root[data-chamber="senate"] .dem-label { right: auto; left: 9%; }
+
+/* A Senate mode wins over whatever call panels are still on the board: a finished call stays
+   until the next one begins, and the prayer is not shown beneath its tallies. Last in the
+   file, at the specificity of the rules that show those panels, so it takes precedence. */
+:root[data-chamber="senate"] body:is(.prayer-mode, .pledge-mode) :is(.vote-display, .threshold-panel, .quorum-panel, .floor-grid-panel) {
+    display: none;
+}
