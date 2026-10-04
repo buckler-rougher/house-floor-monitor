@@ -3861,15 +3861,11 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
 
     updateBillsDisplay();
 
-    // Backfill MTR outcomes from past proceedings (runs once after first bills load)
-    if (!backfillMtrFromProceedings._done) {
-        backfillMtrFromProceedings._done = true;
-        backfillMtrFromProceedings();
-    }
-    // Backfill amendment vote outcomes from past proceedings (runs once after first bills load)
-    if (!backfillAmendmentVotesFromProceedings._done) {
-        backfillAmendmentVotesFromProceedings._done = true;
-        backfillAmendmentVotesFromProceedings();
+    // Backfill motion to recommit and amendment vote outcomes from past proceedings (runs once
+    // after the first bills load)
+    if (!backfillFromProceedings._done) {
+        backfillFromProceedings._done = true;
+        backfillFromProceedings();
     }
     if (proceedingsData.length) updateDebateSection(proceedingsData);
 }
@@ -4154,13 +4150,18 @@ function checkTrackedBillStatusTransitions() {
 // Populated from proceedings items; shown as an indicator above the bill card.
 const motionsToRecommit = new Map();
 
-// Fetch proceedings for the past 7 days and backfill MTR outcomes.
-// Called once after bills load so bill objects exist to stamp.
-async function backfillMtrFromProceedings() {
+// Fetch the previous two days' proceedings once and backfill, from them, both the motion to
+// recommit outcomes and the amendment vote outcomes. Called once after bills load, so bill
+// objects exist to stamp. This was two functions, identical but for which updater they
+// called, each fetching the same two days: four requests for what is two.
+//
+// Yesterday and the day before only: an MTR or an amendment vote on an older bill is no
+// longer relevant to the board.
+async function backfillFromProceedings() {
     const API = 'https://api.evanhollander.org/house-floor/api/proceedings';
     const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
     let changed = false;
-    for (let d = 1; d <= 2; d++) {  // yesterday + 2 days ago — MTRs on older bills are no longer relevant
+    for (let d = 1; d <= 2; d++) {
         const dt = new Date(nowET);
         dt.setDate(dt.getDate() - d);
         const mm = String(dt.getMonth() + 1).padStart(2, '0');
@@ -4171,7 +4172,9 @@ async function backfillMtrFromProceedings() {
             if (!resp.ok) continue;
             const data = await resp.json();
             if (data?.items?.length) {
+                // Each updater keeps its own map and says whether it changed anything.
                 if (updateMotionsToRecommit(data.items)) changed = true;
+                if (updateAmendmentVotes(data.items)) changed = true;
             }
         } catch { /* non-critical */ }
     }
@@ -4388,30 +4391,6 @@ function applyStoredAmendmentVotesToBills() {
             }
         }
     }
-}
-
-// Fetch proceedings for the past 2 days and backfill amendment vote outcomes.
-// Mirrors backfillMtrFromProceedings — called once after bills load.
-async function backfillAmendmentVotesFromProceedings() {
-    const API = 'https://api.evanhollander.org/house-floor/api/proceedings';
-    const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    let changed = false;
-    for (let d = 1; d <= 2; d++) {
-        const dt = new Date(nowET);
-        dt.setDate(dt.getDate() - d);
-        const mm = String(dt.getMonth() + 1).padStart(2, '0');
-        const dd = String(dt.getDate()).padStart(2, '0');
-        const yyyy = dt.getFullYear();
-        try {
-            const resp = await fetch(`${API}?date=${mm}/${dd}/${yyyy}`, { signal: AbortSignal.timeout(8000) });
-            if (!resp.ok) continue;
-            const data = await resp.json();
-            if (data?.items?.length) {
-                if (updateAmendmentVotes(data.items)) changed = true;
-            }
-        } catch { /* non-critical */ }
-    }
-    if (changed) updateBillsDisplay();
 }
 
 // Scan proceedings items for amendment-vote lifecycle events (en bloc composition,
