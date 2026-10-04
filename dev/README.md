@@ -194,3 +194,26 @@ branch can probably never be reached, and `body.sine-die-mode` never applies.
 
 `fixtures/modes/sine-die/` deliberately avoids the word "adjourn" so the mode is
 reachable and its CSS can still be baselined.
+
+## The Senate board, offline
+
+`/senate?fixtures&state=vote` (use the clean `/senate`: the dev server drops the query string when
+it redirects `/senate.html`). `dev/senate-harness.js` serves every API call from `dev/fixtures/senate/`
+(a point-in-time capture of the live endpoints, with the nominations list cut to 80), pins the clock
+at 2026-09-30T14:00:00Z (`?freeze=0` to unpin), clears the saved call and view from localStorage, and
+puts the board in a state: `idle` `prayer` `pledge` `morning-business` `wrap-up` `leader` `quorum`
+`vote` `ended`. The floor mode and the call go through the real code paths (`/senate/quorum` is
+stubbed; `lib/senate-call.js` builds the call from captions).
+
+`dev/css-compare.js` is the check for a stylesheet change: it digests every element's complete
+computed style under the page's stylesheet, swaps the link for another, digests again and reports
+every difference.
+
+```js
+// in the page console, or via a script tag
+await __cssCompare('/styles.senate.css')   // { elements: 5211, same: true, diffs: 0, first: [] }
+```
+
+Animations are paused at their start so a pulse caught mid-cycle is not a difference. Use a timer,
+never `requestAnimationFrame`, in anything run through the browser pane: it does not fire when the
+pane is hidden.
