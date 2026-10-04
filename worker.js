@@ -16,6 +16,7 @@ import './lib/floor-status.js';
 // assigns globalThis.SenateCall.
 import './lib/senate-call.js';
 import './lib/senate-modes.js';
+import './lib/senate-agenda.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -3191,39 +3192,18 @@ async function handleSenateFloorSchedule(env) {
         console.warn(`[house-floor] caucus schedule post: ${e.message}`);
       }
       if (text) {
-        const MEAS = String.raw`[SH]\.\s?(?:J\.\s?Res\.|Con\.\s?Res\.|Res\.|R\.)?\s?\d+`;
-        const measures = [], seen = new Set();
-        for (const m of text.matchAll(new RegExp(String.raw`Cal\.\s*#?\s*(\d+)\s*(${MEAS})\s*,?\s*([^,.]{0,70})`, 'g'))) {
-          const measure = m[2].replace(/\s+/g, '');
-          const k = `${m[1]}|${measure}`;
-          if (seen.has(k)) continue;
-          seen.add(k);
-          measures.push({ calendarNo: Number(m[1]), measure, title: m[3].trim() || null });
-        }
-        // Not delimited on a period: the text is full of abbreviations, and
-        // "Cal." truncated this to "Passage of Cal".
-        const votes = [...text.matchAll(/roll call vote[s]?:\s*(.{0,170}?)(?=\s*(?:$|Monday|Tuesday|Wednesday|Thursday|Friday|At approximately|Following Leader|Upon disposition))/gi)]
-          .map((m) => m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, '').trim()).filter(Boolean);
-        const convene = text.match(/(?:stands adjourned until|convenes? at|will convene at)\s+([0-9:]+\s*[ap]\.?m\.?)\s+on\s+([A-Za-z]+,\s*[A-Za-z]+\s+\d{1,2},\s*\d{4})/i);
-        // "At approximately 5:30pm, absent further agreement, the Senate will
-        // vote on passage" — the convene time is when the chamber opens, not
-        // when the vote happens, and putting 3:00pm on a bill card said the
-        // wrong thing.
-        const voteAt = text.match(/(?:at\s+)?approximately\s+([0-9:]+\s*[ap]\.?m\.?)[^.]{0,80}?(?:vote|roll call)/i)
-                    || text.match(/(?:vote|roll call)[^.]{0,80}?at\s+approximately\s+([0-9:]+\s*[ap]\.?m\.?)/i);
-        // "cloture on Executive Calendar #830 Kasdin Miller Mitchell, of Texas,
-        // to be United States District Judge..." -- the schedule names
-        // nominations by calendar number, which is what the XML keys on.
-        const execCals = [...new Set([...text.matchAll(/Executive Calendar #\s*(\d+)/gi)].map((m) => Number(m[1])))];
+        // Parsed in lib/senate-agenda.js, which knows the shapes the posts take and has a test on
+        // verbatim ones. What needs the network is added here.
+        const parsed = globalThis.SenateAgenda.parse(text);
         agenda = {
-          heading: latest.title, url: latest.url, text, execCals,
-          conveneTime: convene ? convene[1] : null,
-          conveneDate: convene ? convene[2] : null,
-          voteTime: voteAt ? voteAt[1].replace(/\s+/g, '') : null,
-          postCloture: /post-cloture/i.test(text),
+          heading: latest.title, url: latest.url, text, execCals: parsed.execCals,
+          conveneTime: parsed.conveneTime,
+          conveneDate: parsed.conveneDate,
+          voteTime: parsed.voteTime,
+          postCloture: parsed.postCloture,
           measures: await enrichSenateOrders(
-            measures.map((m) => ({ ...m, order: m.calendarNo })), 8),
-          votes,
+            parsed.measures.map((m) => ({ ...m, order: m.calendarNo })), 8),
+          votes: parsed.votes,
         };
       }
     }
