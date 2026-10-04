@@ -1,0 +1,93 @@
+/**
+ * Senate Floor Monitor -- development harness.  NOT loaded in normal page views.
+ *
+ * senate.html only pulls this in when the URL carries ?fixtures, ?state or ?freeze. Like
+ * dev/harness.js for the House, it exists so the page renders OFFLINE and the same way twice:
+ * the Worker's CORS allowlist rejects localhost, and most of what the Senate board shows
+ * (a quorum call, a vote, the leaders' remarks) only exists while the Senate is doing it.
+ *
+ *   ?fixtures                 serve every API call from dev/fixtures/senate/
+ *   ?fixtures&state=vote      ...and put the board in a state (below)
+ *   ?freeze=0                 do not pin the clock (default 2026-09-30T14:00:00Z)
+ *
+ * STATES  idle (default)  prayer  pledge  morning-business  wrap-up  leader  quorum  vote  ended
+ *
+ * The states go through the real code paths: the floor mode is what /senate/quorum returns
+ * (lib/senate-quorum.js hands it to senate.js, as in production), and a call is built by
+ * feeding captions to lib/senate-call.js, the same module the Worker runs.
+ */
+(function () {
+  'use strict';
+  const q = new URLSearchParams(location.search);
+  if (!(q.has('fixtures') || q.has('state') || q.has('freeze'))) return;
+
+  const BASE = new URL('dev/fixtures/senate/', new URL('.', location.href)).href;
+  const state = q.get('state') || 'idle';
+  const log = (...a) => console.info('%c[senate-harness]', 'color:#58a6ff;font-weight:bold', ...a);
+
+  // Whatever a previous visit left in this browser (a call restored by lib/senate-quorum.js, the
+  // viewer's sort and filter) would make two loads of the same state differ.
+  try { for (const k of ['senate-call', 'senate-board-view']) localStorage.removeItem(k); } catch (e) { /* storage blocked */ }
+
+  // Always refetch the stylesheet: styles.css?v=NNN is its own URL, so a cache-busted page
+  // still serves the old CSS, and a before/after comparison then compares a mix.
+  for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+    link.href = link.href.replace(/[?&]_hcb=\d+/, '') + (link.href.includes('?') ? '&' : '?') + '_hcb=' + Date.now();
+  }
+
+  const FIXED = Date.parse(q.get('freeze') && q.get('freeze') !== '1' && q.get('freeze') !== '0' ? q.get('freeze') : '2026-09-30T14:00:00Z');
+  if (q.get('freeze') !== '0') {
+    const RealDate = Date;
+    const Frozen = function (...a) { return a.length === 0 ? new RealDate(FIXED) : new RealDate(...a); };
+    Frozen.prototype = RealDate.prototype; Frozen.now = () => FIXED; Frozen.parse = RealDate.parse; Frozen.UTC = RealDate.UTC;
+    window.Date = Frozen;
+    log('clock frozen at', new RealDate(FIXED).toISOString());
+  }
+
+  // What each state says. Captions are fed to lib/senate-call.js.
+  const NAMES = ['ALLARD','BALDWIN','BARRASSO','BENNET','BLACKBURN','BOOKER','BRAUN','BRITT','BROWN','BUDD','CANTWELL','CAPITO','CARDIN','CASSIDY','COLLINS','COONS','CORNYN','COTTON','CRAMER','CRAPO'];
+  const captions = {
+    quorum: 'THE CLERK WILL CALL THE ROLL. ' + NAMES.map((n) => `MR. ${n}.`).join(' '),
+    vote: 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. ' +
+      NAMES.map((n, i) => `MR. ${n}, ${i % 3 === 1 ? 'NO' : 'AYE'}.`).join(' '),
+    ended: 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. ' +
+      NAMES.map((n, i) => `MR. ${n}, ${i % 3 === 1 ? 'NO' : 'AYE'}.`).join(' ') + ' THE YEAS ARE 53, THE NAYS ARE 47. THE MOTION IS AGREED TO.',
+  };
+  const modes = {
+    prayer: { mode: 'prayer', since: FIXED - 20000 },
+    pledge: { mode: 'pledge', since: FIXED - 5000 },
+    'morning-business': { mode: 'morning-business', since: FIXED - 600000, limit: 10 },
+    'wrap-up': { mode: 'wrap-up', since: FIXED - 60000 },
+    leader: { mode: 'leader', which: 'Majority Leader', since: FIXED - 30000, first: 'THUNE' },
+  };
+
+  const ROUTES = {
+    '/senate/absences': 'senate-absences', '/senate/floor-schedule': 'senate-floor-schedule',
+    '/senate/nominations': 'senate-nominations', '/senate/proceedings': 'senate-proceedings',
+    '/senate/roster': 'senate-roster', '/senate/schedule': 'senate-schedule',
+    '/senate/seniority': 'senate-seniority', '/senate/stages': 'senate-stages',
+    '/senate/desks': 'senate-desks', '/tweets': 'tweets', '/airport-delays': 'airport-delays',
+  };
+  const json = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  const realFetch = window.fetch.bind(window);
+
+  window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url.startsWith(BASE) || (!/^https?:/i.test(url) && !url.startsWith('//'))) return realFetch(input, init);
+    const path = (url.split('/senate-floor/api')[1] || '').split('?')[0];
+
+    if (path === '/senate/hls-url') return json({ url: null, isLive: false });
+    if (path === '/senate/quorum') {
+      const SC = globalThis.SenateCall;
+      let call = SC.emptyCall();
+      if (captions[state]) call = SC.feed(call, captions[state], FIXED - 30000);
+      return json({ stream: 'stv093026', call, summary: SC.summarize(call), updated: null, mode: modes[state] || null, live: true, names: call.names, votes: call.votes });
+    }
+    const name = ROUTES[path];
+    if (name) { try { return json(await (await realFetch(`${BASE}${name}.json`)).text()); } catch (e) { return json('{}'); } }
+    // Anything else is blocked rather than let out: a live call brings back the nondeterminism
+    // this exists to remove. (Weather, the FAA airport list and the like.)
+    return json('{}');
+  };
+  log(`fixtures on, state "${state}"`);
+})();

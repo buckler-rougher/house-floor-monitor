@@ -22,26 +22,26 @@
     <meta name="twitter:description" content="U.S. Senate floor monitoring: roll call votes, floor activity and the legislative calendar.">
     <meta name="twitter:image" content="https://senate-floor.evanhollander.org/senate-social.png">
     <!-- Preload the mono face: it is used by almost every label on the page, so
-         discovering it only after styles.css parses costs a visible reflow. -->
+         discovering it only after the stylesheet parses costs a visible reflow. -->
     <link rel="preconnect" href="https://cdn.evanhollander.org" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.css?v=20261004e">
+    <link rel="stylesheet" href="styles.senate.css?v=20261004a">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
     <link rel="icon" type="image/x-icon" href="senate-favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="senate-apple-touch-icon.png">
-    <!-- Dev harness (dev/README.md): fixtures, mode forcing and a frozen clock for
-         CSS work. Only fetched when ?fixtures / ?mode / ?freeze is present, so
+    <!-- Dev harness (dev/senate-harness.js): fixtures, scripted states and a frozen clock for
+         CSS work. Only fetched when ?fixtures / ?state / ?freeze is present, so
          normal page views cost nothing. document.write is deliberate — the shim
          must install before hls.js and app.js run. -->
     <script>
-        if (/[?&](fixtures|mode|freeze|demo)=?/.test(location.search) || /^\/demo\/?$/.test(location.pathname)) {
-            document.write('<scr' + 'ipt src="dev/harness.js?v=20260919w"></scr' + 'ipt>');
+        if (/[?&](fixtures|state|freeze)=?/.test(location.search)) {
+            document.write('<scr' + 'ipt src="dev/senate-harness.js?v=20261004a"></scr' + 'ipt>');
         }
     </script>
 </head>
