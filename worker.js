@@ -20,6 +20,36 @@ import './lib/senate-call.js';
 import './lib/senate-seniority.js';
 // The Senate's desk assignments (who sits where). See lib/senate-desks.js.
 import './lib/senate-desks.js';
+// Reading one field out of an XML block, in the four ways the handlers need. See lib/xml-fields.js.
+import './lib/xml-fields.js';
+
+// ── Shared fetch and XML helpers ─────────────────────────────────────────────
+//
+// These were written out inside the handlers, five copies of `pick` and five of `get`, and
+// they are NOT all the same: the XML field readers differ in whether they tolerate attributes
+// on the opening tag, strip CDATA markers, strip inner tags, or only trim. A single reader
+// with those as options, and a name for each combination in use, keeps the differences
+// visible instead of buried in five near-identical lambdas.
+
+// What the Worker calls itself to senate.gov, congress.gov and the like. (A shorter string
+// without the site URL is used for a few other hosts and is deliberately left as it was.)
+const BOT_UA = 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)';
+const BOT_HEADERS = { 'User-Agent': BOT_UA };
+
+const { xmlField, xmlText, xmlPlain, xmlRaw, xmlNomination } = globalThis.XmlFields;   // lib/xml-fields.js
+
+// Fetch a source and return its text. `xml` refuses a response that is not XML: senate.gov
+// answers 200 with its own HTML page for a path that does not exist, so a status alone
+// proves nothing about what came back.
+async function fetchSource(url, label, { xml = false, timeout = 20_000 } = {}) {
+  const r = await fetch(url, { headers: BOT_HEADERS, signal: AbortSignal.timeout(timeout) });
+  if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
+  if (xml) {
+    const ct = r.headers.get('Content-Type') || '';
+    if (!/xml/i.test(ct)) throw new Error(`${label}: expected XML, got ${ct}`);
+  }
+  return r.text();
+}
 
 const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
@@ -551,116 +581,84 @@ function usableFeed(xml) {
   return feedAgeMs(xml) <= MAX_FEED_AGE_MS;
 }
 
-async function handleTweets(env) {
-  return kvCache(env, 'tweets-feed-v3', 120, async () => {
-    let rawXml = null, usedInstance = null;
-    for (const instance of NITTER_INSTANCES) {
-      try {
-        const url = `https://${instance}/i/lists/${FLOOR_REPORTERS_LIST_ID}/rss`;
-        const xml = await fetchRSSFeed(url, 6000);
-        if (!usableFeed(xml)) continue;
-        rawXml = xml; usedInstance = instance; break;
-      } catch (_) { continue; }
-    }
-    if (!rawXml || !usedInstance) {
-      // Non-ok on purpose: a 200 with an empty array is indistinguishable from
-      // "the reporters have not posted", and it would let kvCache overwrite the
-      // last good feed with nothing. Failing here makes kvCache serve the
-      // previous body instead, and tells the client the feed is unavailable.
-      return new Response(
-        JSON.stringify({ tweets: [], error: 'upstream-unavailable', source: 'nitter' }),
-        { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-    }
-
-    const getTag = (tag, xml) => {
-      const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
-      return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
-    };
-
-    const tweets = (rawXml.match(/<item[^>]*>[\s\S]*?<\/item>/g) || []).slice(0, 30).map(itemXml => {
-      const creator = getTag('dc:creator', itemXml);
-      let title = getTag('title', itemXml);
-      const description = getTag('description', itemXml);
-      let link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
-      const pubDate = getTag('pubDate', itemXml);
-
-      // RT detection
-      let isRT = false, rtBy = null, isReply = false, replyTo = null;
-      const rtM = title.match(/^RT by (@\w+):\s*/);
-      if (rtM) { isRT = true; rtBy = rtM[1]; title = title.slice(rtM[0].length); }
-      const replyM = title.match(/^R to (@\w+):\s*/);
-      if (replyM) { isReply = true; replyTo = replyM[1]; title = title.slice(replyM[0].length); }
-
-      // Handle from link or dc:creator
-      const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
-      const handle = hM ? `@${hM[1]}` : (creator || '');
-
-      // Relative time
-      let relativeTime = '';
-      try {
-        const diff = Math.floor((Date.now() - new Date(pubDate).getTime()) / 60000);
-        relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff/60)}h` : `${Math.floor(diff/1440)}d`;
-      } catch (_) {}
-
-      const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl } = parseTweetDescription(description, usedInstance);
-      return { handle, relativeTime, pubDate, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
-    });
-
-    return new Response(JSON.stringify({ tweets }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
-    });
-  }, 300);
-}
-
-// Fetch a single user's Nitter profile feed — same output format as handleTweets.
-async function handleUserTweets(handle) {
-  let rawXml = null, usedInstance = null;
+// Nitter instances are tried in order and the first that answers with a usable, current feed
+// wins. `path` is what follows the instance name: a list is `i/lists/<id>`, a profile is the
+// handle.
+async function fetchNitterFeed(path) {
   for (const instance of NITTER_INSTANCES) {
     try {
-      const url = `https://${instance}/${handle}/rss`;
-      const xml = await fetchRSSFeed(url, 6000);
+      const xml = await fetchRSSFeed(`https://${instance}/${path}/rss`, 6000);
       if (!usableFeed(xml)) continue;
-      rawXml = xml; usedInstance = instance; break;
+      return { rawXml: xml, usedInstance: instance };
     } catch (_) { continue; }
   }
-  if (!rawXml || !usedInstance) {
-    // See handleTweets — signal the outage rather than reporting an empty feed.
-    return new Response(
-      JSON.stringify({ tweets: [], error: 'upstream-unavailable', source: 'nitter' }),
-      { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-  }
+  return null;
+}
 
+// Non-ok on purpose: a 200 with an empty array is indistinguishable from "the reporters have
+// not posted", and for the list it would let kvCache overwrite the last good feed with
+// nothing. Failing here makes kvCache serve the previous body instead, and tells the client
+// the feed is unavailable.
+function tweetFeedUnavailable() {
+  return new Response(
+    JSON.stringify({ tweets: [], error: 'upstream-unavailable', source: 'nitter' }),
+    { status: 503, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+}
+
+// One Nitter RSS feed, as the posts the board draws. The list and a single profile are the
+// same feed in the same shape, so one parser serves both; they differ only in what to call a
+// post whose link does not name its author (`fallbackHandle`, given the dc:creator).
+function parseTweetFeed(rawXml, usedInstance, fallbackHandle) {
   const getTag = (tag, xml) => {
     const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
     return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
   };
 
-  const tweets = (rawXml.match(/<item[^>]*>[\s\S]*?<\/item>/g) || []).slice(0, 30).map(itemXml => {
+  return (rawXml.match(/<item[^>]*>[\s\S]*?<\/item>/g) || []).slice(0, 30).map((itemXml) => {
     const creator = getTag('dc:creator', itemXml);
     let title = getTag('title', itemXml);
     const description = getTag('description', itemXml);
-    let link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
+    const link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
     const pubDate = getTag('pubDate', itemXml);
 
+    // RT and reply detection
     let isRT = false, rtBy = null, isReply = false, replyTo = null;
     const rtM = title.match(/^RT by (@\w+):\s*/);
     if (rtM) { isRT = true; rtBy = rtM[1]; title = title.slice(rtM[0].length); }
     const replyM = title.match(/^R to (@\w+):\s*/);
     if (replyM) { isReply = true; replyTo = replyM[1]; title = title.slice(replyM[0].length); }
 
+    // Handle from the link, else whatever the caller says a nameless post is
     const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
-    const tweetHandle = hM ? `@${hM[1]}` : (creator ? `@${handle}` : `@${handle}`);
+    const handle = hM ? `@${hM[1]}` : fallbackHandle(creator);
 
     let relativeTime = '';
     try {
       const diff = Math.floor((Date.now() - new Date(pubDate).getTime()) / 60000);
-      relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff/60)}h` : `${Math.floor(diff/1440)}d`;
+      relativeTime = diff < 1 ? 'now' : diff < 60 ? `${diff}m` : diff < 1440 ? `${Math.floor(diff / 60)}h` : `${Math.floor(diff / 1440)}d`;
     } catch (_) {}
 
     const { tweetHtml, tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl } = parseTweetDescription(description, usedInstance);
-    return { handle: tweetHandle, relativeTime, pubDate, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
+    return { handle, relativeTime, pubDate, link, isRT, rtBy, isReply, replyTo, title, html: tweetHtml, images: tweetImages, cardImage, quoteAuthor, quoteHtml, quoteUrl };
   });
+}
 
+async function handleTweets(env) {
+  return kvCache(env, 'tweets-feed-v3', 120, async () => {
+    const feed = await fetchNitterFeed(`i/lists/${FLOOR_REPORTERS_LIST_ID}`);
+    if (!feed) return tweetFeedUnavailable();
+    const tweets = parseTweetFeed(feed.rawXml, feed.usedInstance, (creator) => creator || '');
+    return new Response(JSON.stringify({ tweets }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' }
+    });
+  }, 300);
+}
+
+// A single user's Nitter profile feed, in the same shape as the list.
+async function handleUserTweets(handle) {
+  const feed = await fetchNitterFeed(handle);
+  if (!feed) return tweetFeedUnavailable();
+  const tweets = parseTweetFeed(feed.rawXml, feed.usedInstance, () => `@${handle}`);
   return new Response(JSON.stringify({ tweets }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' }
   });
@@ -2515,14 +2513,8 @@ const NOMINATION_FEEDS = [
 
 async function handleSenateNominations(env) {
   return kvCache(env, `senate-nominations-${CURRENT_CONGRESS}-v6`, 3600, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
-    const pick = (b, t) => {
-      // The tag may carry attributes: NominationDisplayNumber has DocumentType
-      // and NominationNumber on it, and a bare <tag> match returned nothing for
-      // it, so every card read "Nomination" instead of its PN number.
-      const m = b.match(new RegExp(`<${t}(?:\\s[^>]*)?>([\\s\\S]*?)</${t}>`));
-      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/\s+/g, ' ').trim() : '';
-    };
+    const UA = BOT_HEADERS;
+    const pick = xmlNomination;
 
     const out = [];
     for (const feed of NOMINATION_FEEDS) {
@@ -2703,10 +2695,7 @@ function senateVoteSubject(title) {
 }
 
 function buildSenateStages(xml, congress, session) {
-  const g = (b, t) => {
-    const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
-    return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-  };
+  const g = xmlPlain;
 
   const byMeasure = new Map();
   for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
@@ -3082,12 +3071,8 @@ async function handleSenateFloorSchedule(env) {
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
   return kvCache(env, 'senate-caucus-notices-v14', 1800, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
-    const get = async (url, label) => {
-      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
-      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
-      return r.text();
-    };
+    const UA = BOT_HEADERS;
+    const get = (url, label) => fetchSource(url, label);
     // Decode once, and keep only REAL paragraph breaks.
     //
     // The source wraps its HTML at column width, so the raw text is full of
@@ -3283,10 +3268,7 @@ async function handleSenateFloorSchedule(env) {
         { headers: UA, signal: AbortSignal.timeout(20_000) });
       if (r.ok && /xml/i.test(r.headers.get('Content-Type') || '')) {
         const xml = await r.text();
-        const g = (b, t) => {
-          const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
-          return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-        };
+        const g = xmlPlain;
         for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
           const b = m[1];
           const question = g(b, 'question');
@@ -3393,7 +3375,7 @@ async function enrichSenateOrders(orders, limit = 24) {
 async function handleSenateCalendar(env) {
   const congress = CURRENT_CONGRESS;
   return kvCache(env, `senate-gen-orders-${congress}-v1`, 6 * 3600, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const UA = BOT_HEADERS;
 
     // The calendar is issued for a sitting day, so the date to ask for is the
     // next one. Reading it from the schedule beats guessing at dates.
@@ -3447,18 +3429,9 @@ async function handleSenateAbsences(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
   return kvCache(env, `senate-absences-${congress}-${session}-v1`, 600, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
-    const get = async (url, label) => {
-      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
-      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
-      const ct = r.headers.get('Content-Type') || '';
-      if (!/xml/i.test(ct)) throw new Error(`${label}: expected XML, got ${ct}`);
-      return r.text();
-    };
-    const pick = (b, t) => {
-      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
-      return m ? m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-    };
+    const UA = BOT_HEADERS;
+    const get = (url, label) => fetchSource(url, label, { xml: true });
+    const pick = xmlPlain;
 
     // The menu is newest-first, so the head of it is the latest roll call.
     const menu = await get(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`, 'vote menu');
@@ -3529,23 +3502,12 @@ async function handleSenateAbsences(env) {
 
 async function handleSenateSchedule(env) {
   return kvCache(env, 'senate-schedule-v1', 900, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const UA = BOT_HEADERS;
     const year = new Date().getFullYear();
-    const get = async (url, label) => {
-      const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20_000) });
-      if (!r.ok) throw new Error(`${label}: HTTP ${r.status}`);
-      // senate.gov answers 200 with its own HTML page for a path that does not
-      // exist, so the status alone proves nothing about what came back.
-      const ct = r.headers.get('Content-Type') || '';
-      if (!/xml/i.test(ct)) throw new Error(`${label}: expected XML, got ${ct}`);
-      return r.text();
-    };
+    const get = (url, label) => fetchSource(url, label, { xml: true });
 
     const sched = await get('https://www.senate.gov/legislative/schedule/floor_schedule.xml', 'floor schedule');
-    const pick = (b, t) => {
-      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
-      return m ? m[1].trim() : '';
-    };
+    const pick = xmlRaw;
     const days = [];
     for (const m of sched.matchAll(/<SessionDay>([\s\S]*?)<\/SessionDay>/g)) {
       const b = m[1];
@@ -3617,11 +3579,7 @@ async function handleSenateRoster(env) {
     if (!/xml/i.test(ct)) throw new Error(`senate roster: expected XML, got ${ct}`);
     const xml = await r.text();
 
-    const pick = (b, t) => {
-      const m = b.match(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`));
-      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]*>/g, ' ')
-                     .replace(/\s+/g, ' ').trim() : '';
-    };
+    const pick = xmlText;
     const members = [];
     for (const m of xml.matchAll(/<member>([\s\S]*?)<\/member>/g)) {
       const b = m[1];
@@ -3711,11 +3669,7 @@ async function handleSenateVotes(env) {
     // Some fields nest a child element -- vote 242 of the 119th/2nd has
     // "On the Amendment <measure>S.Amdt. 6776</measure>" -- so tags are stripped
     // rather than shipped into the page as literal angle brackets.
-    const pick = (block, tag) => {
-      const m = block.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
-      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]*>/g, ' ')
-                     .replace(/\s+/g, ' ').trim() : '';
-    };
+    const pick = xmlText;
     const votes = [];
     for (const m of xml.matchAll(/<vote>([\s\S]*?)<\/vote>/g)) {
       const b = m[1];
@@ -4213,13 +4167,8 @@ const SENATE_DESK_BASE = 'https://www.senate.gov/art-artifacts/decorative-art/fu
 
 async function handleSenateDesks(env) {
   return kvCache(env, 'senate-desks-v1', 86_400, async () => {
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
-    const get = async (u) => {
-      const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(20_000) });
-      if (!r.ok) throw new Error(`desks: HTTP ${r.status} for ${u}`);
-      if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error(`desks: not XML for ${u}`);
-      return r.text();
-    };
+    const UA = BOT_HEADERS;
+    const get = (u) => fetchSource(u, 'desks', { xml: true });
 
     const SD = globalThis.SenateDesks;
     const plan = SD.pickPlan(await get(SENATE_DESK_BASE + 'classes.xml'));
@@ -4268,7 +4217,7 @@ async function handleSenateQuorum(env) {
       }), { headers: hdrs });
     };
 
-    const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' };
+    const UA = BOT_HEADERS;
     const get = async (u) => {
       const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(10_000) });
       return r.ok ? r.text() : null;
