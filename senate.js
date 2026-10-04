@@ -1655,7 +1655,17 @@ Reporters.init({
 });
 // Floor feed PiP (lib/floor-feed.js). The Worker resolves the Senate's own
 // stream -- see handleSenateHlsUrl in worker.js for how the URL is built.
-FloorFeed.init({ hlsUrl: `${API}/senate/hls-url` });
+// Between sittings the Senate's floor stream does not exist, and the panel would sit empty. It
+// shows the Capitol camera instead (lib/capcam.js has the stream), in the same panel with the
+// source credited, and the floor takes over by itself when it goes live. The House board passes no `idle` and keeps its
+// own behaviour: the last frame of the stream, as the House's feed does.
+FloorFeed.init({
+    hlsUrl: `${API}/senate/hls-url`,
+    idle: {
+        url: CapCam.url,
+        source: { text: 'Capitol Camera (Secretary of the Senate)', href: 'https://www.senate.gov/general/capcam.htm' },
+    },
+});
 // Reads the floor feed's own caption track. Senate TV names the member at the
 // moment they are recognised and never again, so the module latches the label
 // rather than reading whatever is on screen. loadBalance hands it the roster.

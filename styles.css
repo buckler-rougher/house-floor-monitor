@@ -2313,6 +2313,19 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .floor-feed-source a:hover { opacity: 1; text-decoration: underline; }
 
+/* The floor feed showing its idle stream (Senate: the Capitol camera between sittings). The panel
+   looks the same, deliberately; only the speaker row goes, since it names who has the floor and
+   an idle camera has none. See lib/floor-feed.js. */
+.floor-feed.is-idle .pip-speaker {
+    display: none !important;
+}
+
+.pip-live-dot {
+    background: var(--text-muted);
+    box-shadow: none;
+    animation: none;
+}
+
 .pip-live-dot {
   display: inline-block;
   width: 7px;
