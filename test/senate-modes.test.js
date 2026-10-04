@@ -27,6 +27,14 @@ ok('the prayer starts on the chair, holds, and ends on amen', () => {
   assert.strictEqual(M.current(s, 131 * S), null);
 });
 
+ok('the Chaplain line as the Congressional Record prints it (24 September 2026)', () => {
+  // Verbatim from CREC-2026-09-24 PRAYER. Dr. and C. carry periods, which an earlier
+  // pattern stopped at.
+  const s = M.feed(M.empty(), 'The Chaplain, Dr. Barry C. Black, offered the following prayer:', 0);
+  assert.strictEqual(M.current(s, 1 * S), 'prayer');
+  assert.strictEqual(M.current(M.feed(M.empty(), 'The Chaplain, Dr. Barry C. Black, ', 0), 1 * S), null, 'a name alone is not an offering');
+});
+
 ok('the pledge text is the pledge', () => {
   let s = M.feed(M.empty(), 'I PLEDGE ALLEGIANCE TO THE FLAG OF THE UNITED STATES', 0);
   assert.strictEqual(M.current(s, 2 * S), 'pledge');
