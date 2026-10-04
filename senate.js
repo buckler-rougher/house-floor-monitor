@@ -1674,6 +1674,28 @@ SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
+// The opening prayer and pledge, read off the captions (lib/senate-modes.js). They are the
+// board's headline while they last, as the House's modes are, and the call panels give way
+// to them. A call is its own thing and needs no mode.
+(() => {
+  let state = SenateModes.empty();
+  const time = (at) => new Date(at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+  const apply = () => {
+    const now = Date.now();
+    let mode = SenateModes.current(state, now);
+    if (!mode && state.mode) state = SenateModes.settle(state, now);
+    for (const k of Object.keys(SenateModes.RULES)) {
+      document.body.classList.toggle(`${k}-mode`, k === mode);
+      const at = document.getElementById(`${k}-time`);
+      if (at) at.textContent = k === mode ? time(state.since) : '';
+    }
+  };
+  document.addEventListener('senate-caption', (e) => {
+    state = SenateModes.feed(state, e.detail && e.detail.text, Date.now());
+    apply();
+  });
+  setInterval(apply, 1000);
+})();
 // The chamber floor shows the same roll as the board, on the real desks.
 SenateChamber.init({ api: API });
 // The Worker holds the whole call; the local caption reader is just faster.
