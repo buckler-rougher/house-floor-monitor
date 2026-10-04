@@ -11446,6 +11446,6 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 /* A Senate mode wins over whatever call panels are still on the board: a finished call stays
    until the next one begins, and the prayer is not shown beneath its tallies. Last in the
    file, at the specificity of the rules that show those panels, so it takes precedence. */
-:root[data-chamber="senate"] body:is(.prayer-mode, .pledge-mode) :is(.vote-display, .threshold-panel, .quorum-panel, .floor-grid-panel) {
+:root[data-chamber="senate"] body:is(.prayer-mode, .pledge-mode, .morning-hour-mode, .speaker-mode) :is(.vote-display, .threshold-panel, .quorum-panel, .floor-grid-panel) {
     display: none;
 }
