@@ -1674,13 +1674,17 @@ SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
-// The prayer, the pledge, morning business and a leader being recognized, read off the
-// captions (lib/senate-modes.js). They are the board's headline while they last, as the
-// House's modes are, and the call panels give way to them. A call is its own thing and
-// needs no mode. The body classes are the House's, so its section styling applies.
+// The floor mode: prayer, pledge, morning business, the leaders' daily remarks, wrap-up. The
+// Worker reads the captions and decides (lib/senate-modes.js), so every viewer sees the same
+// thing and one who joins mid-prayer sees it too; this only draws what it is told. The body
+// classes are the House's, so its section styling applies.
 (() => {
-  const BODY = { prayer: 'prayer-mode', pledge: 'pledge-mode', 'morning-business': 'morning-hour-mode', leader: 'speaker-mode' };
-  let state = SenateModes.empty();
+  const BODY = { prayer: 'prayer-mode', pledge: 'pledge-mode', 'morning-business': 'morning-hour-mode', 'wrap-up': 'morning-hour-mode', leader: 'speaker-mode' };
+  const ALL = [...new Set(Object.values(BODY))];
+  // The poll is every few seconds; a tab that has stopped hearing from the Worker should not
+  // hold a mode on screen on its own say-so.
+  const STALE_MS = 30 * 1000;
+  let told = { mode: null, at: 0 };
   const time = (at) => new Date(at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
   const setText = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
 
@@ -1705,11 +1709,11 @@ SenateQuorum.init({ photoUrlFor });
   function paintLeader(cur) {
     setText('leader-tag-text', cur.which.toUpperCase());
     setText('leader-title', cur.which);
-    // Whoever the speaker module has latched, but only once the first member label since the
-    // recognition has arrived: before that the latched speaker is the previous senator.
-    const sp = cur.first && SenateSpeaker.current();
-    const m = sp && sp.label === cur.first ? sp.member : null;
-    setText('leader-name', m ? `${m.first} ${m.last}` : 'Not yet identified from the captions');
+    // The label of whoever spoke right after the chair recognized the leader; the Worker says
+    // which, and null when it could not tell. Resolved here against the roster.
+    const r = cur.first && SenateSpeaker.resolve(cur.first);
+    const m = r && r.member || null;
+    setText('leader-name', m ? `${m.first} ${m.last}` : 'Not identified from the captions');
     setText('leader-details', m ? m.state : '');
     const tag = document.getElementById('leader-party-tag');
     if (tag) {
@@ -1725,27 +1729,24 @@ SenateQuorum.init({ photoUrlFor });
   }
 
   const apply = () => {
-    const now = Date.now();
-    const cur = SenateModes.current(state, now);
-    if (!cur && (state.base || state.leader)) state = SenateModes.settle(state, now);
+    const cur = told.mode && Date.now() - told.at < STALE_MS ? told.mode : null;
     const mode = cur && cur.mode;
-    for (const [k, cls] of Object.entries(BODY)) document.body.classList.toggle(cls, k === mode);
+    const cls = BODY[mode];
+    for (const c of ALL) document.body.classList.toggle(c, c === cls);
     for (const k of ['prayer', 'pledge']) setText(`${k}-time`, k === mode ? time(cur.since) : '');
-    setText('morning-business-time', mode === 'morning-business' ? time(cur.since) : '');
-    setText('morning-business-limit', mode === 'morning-business' && cur.limit
-      ? `The chair has set senators to speak for up to ${cur.limit} minutes each.` : '');
+    if (mode === 'morning-business' || mode === 'wrap-up') {
+      const wrap = mode === 'wrap-up';
+      setText('floor-note-tag', wrap ? 'WRAP-UP' : 'MORNING BUSINESS');
+      setText('floor-note-time', time(cur.since));
+      setText('floor-note-desc', wrap
+        ? "The majority leader is reading the unanimous-consent request that sets the Senate's next convening and its business."
+        : 'The Senate is in a period of morning business.');
+      setText('floor-note-limit', !wrap && cur.limit ? `The chair has set senators to speak for up to ${cur.limit} minutes each.` : '');
+    }
     if (mode === 'leader') { setText('leader-time', time(cur.since)); paintLeader(cur); }
   };
-  document.addEventListener('senate-caption', (e) => {
-    state = SenateModes.feed(state, e.detail && e.detail.text, Date.now());
-    apply();
-  });
-  // A leader is whoever speaks right after the chair recognizes them, so each new MEMBER
-  // label goes to the modes; the chair's own label says nothing about who has the floor.
-  document.addEventListener('senate-call', (e) => {
-    const sp = e.detail && e.detail.call && e.detail.call.speaker;
-    if (!sp || sp.kind !== 'member') return;
-    state = SenateModes.speaker(state, sp.label, Date.now());
+  document.addEventListener('senate-mode', (e) => {
+    told = { mode: e.detail && e.detail.mode, at: Date.now() };
     apply();
   });
   setInterval(apply, 1000);
@@ -1754,7 +1755,9 @@ SenateQuorum.init({ photoUrlFor });
 SenateChamber.init({ api: API });
 // The Worker holds the whole call; the local caption reader is just faster.
 SenateQuorum.syncFromWorker(API);
-setInterval(() => SenateQuorum.syncFromWorker(API), 15000);
+// Every five seconds, not fifteen: the pledge is under a minute, and the floor mode comes
+// from this response. The Worker answers a repeat inside four seconds from memory.
+setInterval(() => SenateQuorum.syncFromWorker(API), 5000);
 initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
