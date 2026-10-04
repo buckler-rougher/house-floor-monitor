@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "npx serve . -p 3456",
-    "test": "node test/bill-id.test.js && node test/parse-notices.test.js && node test/floor-speaker.test.js && node test/floor-status.test.js && node test/crec.test.js && node test/senate-call.test.js && node test/senate-sort.test.js && node test/senate-seniority.test.js && node test/senate-desks.test.js && node test/senate-chamber.test.js && node test/senate-threshold.test.js && node test/senate-modes.test.js && node test/senate-modes-worker.test.mjs && node test/senate-agenda.test.js && node test/util.test.js && node test/xml-fields.test.js && node test/senate-css.test.mjs",
+    "test": "node test/bill-id.test.js && node test/parse-notices.test.js && node test/floor-speaker.test.js && node test/floor-status.test.js && node test/crec.test.js && node test/senate-call.test.js && node test/senate-sort.test.js && node test/senate-seniority.test.js && node test/senate-desks.test.js && node test/senate-chamber.test.js && node test/senate-threshold.test.js && node test/senate-modes.test.js && node test/senate-modes-worker.test.mjs && node test/senate-agenda.test.js && node test/util.test.js && node test/xml-fields.test.js && node test/generated-css.test.mjs",
     "fixtures": "./dev/capture-fixtures.sh",
     "check-modes": "node dev/check-modes.mjs",
     "css": "node dev/split-css.mjs"

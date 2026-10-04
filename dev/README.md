@@ -212,8 +212,13 @@ every difference.
 ```js
 // in the page console, or via a script tag
 await __cssCompare('/styles.senate.css')   // { elements: 5211, same: true, diffs: 0, first: [] }
+await __cssCompare('/styles.house.css')    // on the House harness, /?fixtures&mode=vote
 ```
 
-Animations are paused at their start so a pulse caught mid-cycle is not a difference. Use a timer,
+Animations are paused at their start so a pulse caught mid-cycle is not a difference, and the page is
+waited for until its height and element count have been still for 3 seconds (`__cssSettle`): a page
+that is still settling changes between the two digests whatever the CSS is. If a result looks wrong,
+run the control `await __cssCompare('/styles.css')` (the page's own stylesheet against itself); it
+must be SAME, and whatever it reports is noise, not the stylesheet. Use a timer,
 never `requestAnimationFrame`, in anything run through the browser pane: it does not fire when the
 pane is hidden.

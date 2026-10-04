@@ -58,16 +58,30 @@
   window.__cssDigest = digest;
   // Two calls, for a runner that times a single call out: __cssBegin() digests the page as it is;
   // __cssFinish(href) swaps the stylesheet, digests again and compares.
-  window.__cssBegin = async function () { await new Promise((r) => setTimeout(r, 400)); window.__cssA = digest(); return window.__cssA.size; };
+  // A page that is still settling (a late data update, a list filling in) changes between the two
+  // digests whatever the CSS is, and reads as a difference. Wait until the page is still: its
+  // height and element count unchanged for `quietMs`, at most `maxMs`. (Found when a 2.2px late
+  // growth of <main> showed up as 2,610 differences, identically for styles.css against itself.)
+  window.__cssSettle = async function (quietMs = 3000, maxMs = 40000) {
+    const sig = () => `${document.documentElement.scrollHeight}|${document.body.querySelectorAll('*').length}`;
+    // performance.now(), not Date.now(): the harnesses freeze the clock.
+    let last = sig(), since = performance.now(); const t0 = since;
+    while (performance.now() - since < quietMs && performance.now() - t0 < maxMs) {
+      await new Promise((r) => setTimeout(r, 250));
+      const now = sig();
+      if (now !== last) { last = now; since = performance.now(); }
+    }
+    return performance.now() - t0 < maxMs;
+  };
+  window.__cssBegin = async function () { await window.__cssSettle(); window.__cssA = digest(); return window.__cssA.size; };
   window.__cssFinish = async function (altHref) { return compareTo(window.__cssA, altHref); };
   window.__cssCompare = async function (altHref) {
     await window.__cssBegin();
     return compareTo(window.__cssA, altHref);
   };
   async function compareTo(a, altHref) {
-    const settle = () => new Promise((r) => setTimeout(r, 400));
     await swap(altHref);
-    await settle();
+    await window.__cssSettle(1500);
     const b = digest();
     const diffs = [];
     for (const [k, va] of a) {
