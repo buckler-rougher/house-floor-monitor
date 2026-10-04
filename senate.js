@@ -9,6 +9,9 @@
 // requests for House data and populate sections with the wrong chamber's facts.
 // The stylesheet is the layer that should be identical. The behaviour is not.
 
+// Helpers both boards share (lib/util.js). Declared first so nothing can reach them early.
+const { escapeHtml, setIfChanged, MONTH_NAMES, DAY_NAMES, fmtDate, fmtDateLong } = globalThis.BoardUtil;
+
 // The Worker accepts either prefix and strips it, so both boards reach the same
 // handlers under the same cache keys. This board asked through /house-floor/ for
 // a while because api.evanhollander.org had no route for /senate-floor/* and it
@@ -20,18 +23,7 @@ const API = 'https://api.evanhollander.org/senate-floor/api';
 // the 119th began in 2025.
 const CONGRESS_FALLBACK = 119 + Math.floor((new Date().getFullYear() - 2025) / 2);
 
-const MONTH_NAMES = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-];
-const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-// Day-first, matching the House board. fmtDateLong there gives
-// "Saturday, 26 September 2026"; month-first would be a different house style on
-// a page that is otherwise the same page.
-const fmtDate = (d) =>
-    `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-const fmtDateLong = (d) => `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
+// Day-first, matching the House board: fmtDate and fmtDateLong are lib/util.js, shared.
 
 // Notice timestamps use the House whip panel's format, which is day-first with
 // a SHORT month: app.js builds "24 Sep at 3:45 PM ET" there. These posts carry
@@ -90,17 +82,6 @@ function boardDate(value) {
 // capital: "\u0002Passage of Cal. #449" rendered with a stray glyph in front of it.
 const stripMarks = (t) => String(t ?? '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim();
 
-const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-const _htmlCache = new WeakMap();
-function setIfChanged(node, html) {
-    if (!node) return;
-    if (_htmlCache.get(node) === html) return;
-    _htmlCache.set(node, html);
-    node.innerHTML = html;
-}
-
 const el = (id) => document.getElementById(id);
 
 // The animation module needs this board's nodes; ids differ per page.
@@ -115,22 +96,12 @@ globalThis.BoardAnimations?.init?.({ absenteeList: document.getElementById('abse
 // missed.
 const { initAnalogClocks, updateAnalogClock, getTimeParts } = globalThis.BoardClocks;
 
+// The header clocks (readouts and faces): lib/clocks.js, shared with the House board.
 function updateTimestamp() {
-    const now = new Date();
-    const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-    const set = (id, o) => { const n = el(id); if (n) n.textContent = now.toLocaleTimeString('en-US', o); };
-    set('local-time', opts);
-    set('dc-time',  { ...opts, timeZone: 'America/New_York' });
-    set('utc-time', { ...opts, timeZone: 'UTC' });
-
-    // The header carries three clock faces as well as three readouts; only the
-    // readouts were being driven, so the hands sat wherever the markup left them.
-    updateAnalogClock(el('local-analog'), {
-        hours: now.getHours(), minutes: now.getMinutes(), seconds: now.getSeconds(),
+    BoardClocks.tick({
+        local: el('local-time'), dc: el('dc-time'), utc: el('utc-time'),
+        localAnalog: el('local-analog'), dcAnalog: el('dc-analog'), utcAnalog: el('utc-analog'),
     });
-    updateAnalogClock(el('dc-analog'),  getTimeParts(now, 'America/New_York'));
-    updateAnalogClock(el('utc-analog'), getTimeParts(now, 'UTC'));
-    updateNextSessionCountdown();
 }
 
 // ── Weather and the Capitol camera ───────────────────────────────────────────
@@ -318,31 +289,7 @@ function ordinalWords(n) {
 
 // Ticks every second, so it is driven from the clock loop rather than its own.
 let nextSessionAt = null;
-
-function formatNextSessionCountdown(target) {
-    if (!(target instanceof Date) || Number.isNaN(target.getTime())) return '';
-    const diffMs = target.getTime() - Date.now();
-    if (diffMs <= 0) return 'NEXT SESSION: NOW';
-    const total = Math.floor(diffMs / 1000);
-    const days = Math.floor(total / 86400);
-    const hours = Math.floor((total % 86400) / 3600);
-    const mins = Math.floor((total % 3600) / 60);
-    const secs = total % 60;
-    const parts = [];
-    if (days) parts.push(`${days}D`);
-    if (hours) parts.push(`${hours}H`);
-    if (mins || days || hours) parts.push(`${mins}M`);
-    parts.push(`${String(secs).padStart(2, '0')}S`);
-    return `NEXT SESSION IN ${parts.join(' ')}`;
-}
-
-function updateNextSessionCountdown() {
-    const node = el('next-session-countdown');
-    if (!node) return;
-    if (!nextSessionAt) { node.style.display = 'none'; return; }
-    node.style.display = 'inline-flex';
-    node.textContent = formatNextSessionCountdown(nextSessionAt);
-}
+function updateNextSessionCountdown() { SessionClock.show(el('next-session-countdown'), nextSessionAt); }
 
 function renderCongressBanner(data) {
     const text = document.querySelector('.congress-text');

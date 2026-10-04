@@ -1,5 +1,8 @@
 // Dome Watch - Single Vote Tracker
 
+// Helpers both boards share (lib/util.js). Declared first so nothing can reach them early.
+const { escapeHtml, setIfChanged, MONTH_NAMES, DAY_NAMES, fmtDate, fmtDateLong } = globalThis.BoardUtil;
+
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
 // The Office of the Clerk's quill, lifted out of their wordmark where it forms
 // the K. Inline and drawn in currentColor so it takes the row's colour and dims
@@ -31,14 +34,6 @@ const CURRENT_CONGRESS_SLUG = (function(n) {
 }(CURRENT_CONGRESS));
 
 // Guard against unnecessary DOM thrashing — skip innerHTML update if content unchanged
-const _htmlCache = new WeakMap();
-function setIfChanged(el, html) {
-    if (!el) return;
-    if (_htmlCache.get(el) === html) return;
-    _htmlCache.set(el, html);
-    el.innerHTML = html;
-}
-
 // Set a member profile link, showing friendly text instead of raw URL
 // Put a photograph in a panel, and do nothing at all if it is already there.
 //
@@ -330,35 +325,6 @@ function parseNextSessionFromProceedings(items) {
     const dateText = match[2].replace(/\s+/g, ' ').trim();
     const parsed = new Date(`${dateText} ${timeText}`);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatNextSessionCountdown(target) {
-    if (!(target instanceof Date) || Number.isNaN(target.getTime())) return '';
-    const diffMs = target.getTime() - Date.now();
-    if (diffMs <= 0) return 'NEXT SESSION: NOW';
-
-    const totalSeconds = Math.floor(diffMs / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    const parts = [];
-    if (days) parts.push(`${days}D`);
-    if (hours) parts.push(`${hours}H`);
-    if (mins || days || hours) parts.push(`${mins}M`);
-    parts.push(`${String(secs).padStart(2, '0')}S`);
-    return `NEXT SESSION IN ${parts.join(' ')}`;
-}
-
-function updateNextSessionCountdown() {
-    if (!elements.nextSessionCountdown) return;
-    if (!nextSessionAt) {
-        elements.nextSessionCountdown.style.display = 'none';
-        elements.nextSessionCountdown.textContent = 'Next session: --';
-        return;
-    }
-    elements.nextSessionCountdown.style.display = 'inline-flex';
-    elements.nextSessionCountdown.textContent = formatNextSessionCountdown(nextSessionAt);
 }
 
 // API Configuration
@@ -1815,6 +1781,8 @@ const HOUSE_MAKEUP_CONFIG = {
 // State for RSS feed
 let proceedingsData = [];
 let nextSessionAt = null;
+// The countdown's text and its show-or-hide are lib/session-clock.js, shared with the Senate board.
+function updateNextSessionCountdown() { SessionClock.show(elements.nextSessionCountdown, nextSessionAt); }
 
 // Absentee filter state
 let _absenteePanel = null; // lib/missing-members.js, made in initEventListeners
@@ -1891,21 +1859,6 @@ function parseDebateLength(text) {
 }
 
 // Utility function to format dates
-const MONTH_NAMES = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December'
-];
-const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-// "02 May 2026"
-function fmtDate(d) {
-    return `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-// "Tuesday, 20 May 2026"
-function fmtDateLong(d) {
-    return `${DAY_NAMES[d.getDay()]}, ${fmtDate(d)}`;
-}
 
 // Accepts date strings in various formats (ISO, M/D/YY, M/D/YYYY) → "20 May 2026"
 function formatDate(dateStr) {
@@ -8169,12 +8122,6 @@ function decodeHtml(text) {
         .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Sanitize HTML from external sources (Firestore whip notices, etc.)
 // Allows a safe allow-list of tags/attributes; strips everything else.
 function sanitizeHtml(dirty) {
@@ -8837,49 +8784,13 @@ const { hideAfterAnimation, openDrawer, closeDrawer, animateBillsReorder } = glo
 // with nothing to catch it.
 const { initAnalogClocks, updateAnalogClock, getTimeParts } = globalThis.BoardClocks;
 
-// Update Timestamp
+// The header clocks (readouts and faces): lib/clocks.js, shared with the Senate board.
 function updateTimestamp() {
-    const now = new Date();
-    const timeOptions = {
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false 
-    };
-
-    elements.localTime.textContent = now.toLocaleTimeString('en-US', timeOptions);
-    elements.dcTime.textContent = now.toLocaleTimeString('en-US', {
-        ...timeOptions,
-        timeZone: 'America/New_York'
+    BoardClocks.tick({
+        local: elements.localTime, dc: elements.dcTime, utc: elements.utcTime,
+        localAnalog: elements.localAnalog, dcAnalog: elements.dcAnalog, utcAnalog: elements.utcAnalog,
     });
-    elements.utcTime.textContent = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'UTC'
-    });
-
-    updateAnalogClock(elements.localAnalog, {
-        hours: now.getHours(),
-        minutes: now.getMinutes(),
-        seconds: now.getSeconds()
-    });
-
-    const dcParts = getTimeParts(now, 'America/New_York');
-    updateAnalogClock(elements.dcAnalog, dcParts);
-    
-    const utcParts = getTimeParts(now, 'UTC');
-    updateAnalogClock(elements.utcAnalog, utcParts);
 }
-
-
-
-
-
-
-
-
 
 // Floor Grid Configuration
 const HOUSE_TOTAL_MEMBERS = 435;
