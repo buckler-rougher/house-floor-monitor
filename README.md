@@ -203,7 +203,9 @@ house-floor-monitor/
 ├── senate.html          # Senate board, served at senate-floor.* by functions/
 ├── app.js               # House board logic
 ├── senate.js            # Senate board logic — deliberately not app.js
-├── styles.css           # Both boards; ~6% is House-specific
+├── styles.css           # Both boards: the source. Edit this.
+├── styles.house.css     # GENERATED (npm run css): styles.css without comments; the House loads it
+├── styles.senate.css    # GENERATED (npm run css): also without the rules the Senate page cannot use
 ├── worker.js            # The API Worker (api.evanhollander.org)
 ├── lib/                 # Shared modules (browser + Worker)
 ├── functions/           # Pages middleware
