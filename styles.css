@@ -11395,6 +11395,13 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
    tooltip names them -- unlike the House map, which says in its own note that
    members have no assigned seats. */
 :root[data-chamber="senate"] .floor-grid-panel { display: block; }
+/* The Senate's modes: nothing below the header until a call starts, as the House's
+   panels wait for their mode. lib/senate-quorum.js sets the body class from the call it
+   holds, and a finished call stays until the next one begins. Last, and at higher
+   specificity than the display rules above, so it wins whatever else sets them. */
+:root[data-chamber="senate"] body:not(.senate-call-vote):not(.senate-call-quorum) :is(.quorum-panel, .floor-grid-panel) {
+    display: none;
+}
 /* The House arch has a clear vertical aisle down the middle, drawn by this element.
    The Senate's centre is a wedge of desks straddling that line, so there is no aisle
    there to draw; the aisles are the gaps between wedges. */
