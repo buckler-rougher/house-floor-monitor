@@ -15,6 +15,7 @@ import './lib/floor-status.js';
 // the caption text. The same module runs in the browser. Side-effect import:
 // assigns globalThis.SenateCall.
 import './lib/senate-call.js';
+import './lib/senate-modes.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -4204,18 +4205,29 @@ async function handleSenateQuorum(env) {
       try { state = JSON.parse(await env.HLS_CACHE.get(key)); } catch {}
     }
     state = state || { call: SC.emptyCall(), lastSeg: null, updated: null, stored: null };
-    const startedWith = senateCallSignature(state.call);
+    // The floor modes (prayer, pledge, morning business, leader remarks, wrap-up), read
+    // from the same caption segments as the call. State stored before they existed has none.
+    const SM = globalThis.SenateModes;
+    state.modes = state.modes || SM.empty();
+    const sigOf = () => senateCallSignature(state.call) + JSON.stringify([state.modes.base, state.modes.leader, state.modes.day]);
+    const startedWith = sigOf();
     const now = Date.now();
     state.call = SC.expire(state.call, now);
+    state.modes = SM.settle(state.modes, now);
 
     const answer = (extra) => {
       const call = state.call;
       return new Response(JSON.stringify({
         stream: filename, call, summary: SC.summarize(call), updated: state.updated,
+        mode: SM.current(state.modes, Date.now()),
         // The shape before the call was a thing, for a tab that has not reloaded.
         names: call.names, votes: call.votes, ...extra,
       }), { headers: hdrs });
     };
+
+    // Tabs poll every few seconds; the stream moves in 12-second segments, so a pass inside
+    // the last four seconds could only repeat the answer it already holds.
+    if (state.polledAt && now - state.polledAt < 4_000) return answer({ live: true });
 
     const UA = BOT_HEADERS;
     const get = async (u) => {
@@ -4249,18 +4261,28 @@ async function handleSenateQuorum(env) {
     // speaker, look later than a tab that heard the same words live, so the
     // merge would prefer the older label. Backdated by about one segment.
     const heard = now - 12_000;
+    let lastMember = state.call.speaker && state.call.speaker.label;
     for (const seg of fresh.slice(0, 12)) {
       const vtt = await get(dir + seg);
       if (!vtt) continue;
-      state.call = SC.feed(state.call, vtt.replace(/\r/g, '').replace(/\n/g, ' '), heard);
+      const flat = vtt.replace(/\r/g, '').replace(/\n/g, ' ');
+      // Modes first: a leader's recognition starts the overlay, and the member label the
+      // call latches from the same segment then says who it is.
+      state.modes = SM.feed(state.modes, flat, heard);
+      state.call = SC.feed(state.call, flat, heard);
+      const sp = state.call.speaker;
+      if (sp && sp.kind === 'member' && sp.label !== lastMember) state.modes = SM.speaker(state.modes, sp.label, heard);
+      if (sp) lastMember = sp.label;
     }
+    state.modes = SM.settle(state.modes, now);
 
     state.lastSeg = segs[segs.length - 1] || state.lastSeg;
     state.updated = new Date().toISOString();
+    state.polledAt = now;
     _senateCallMem.set(key, state);
 
     if (env?.HLS_CACHE) {
-      const changed = senateCallSignature(state.call) !== startedWith;
+      const changed = sigOf() !== startedWith;
       const stale = !state.stored || now - state.stored > SENATE_CALL_KV_REFRESH_MS;
       // The cursor moves every 12 seconds and is not worth a write on its own;
       // the periodic refresh keeps it from being lost for long. Two days: long

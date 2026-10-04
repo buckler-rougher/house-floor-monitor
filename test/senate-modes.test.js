@@ -109,53 +109,110 @@ ok('the wrap-up asking for morning business to be closed tomorrow does not open 
 });
 
 // ---- leader remarks ------------------------------------------------------------------
+// The daily remarks, not any leader speaking: each leader's first recognition after the day's
+// opening, once a day. `opened()` is a day that has had its pledge.
+
+const opened = () => M.feed(M.empty(), 'I PLEDGE ALLEGIANCE TO THE FLAG', 0);
+const afterOpening = 5 * MIN;
 
 ok('the chair recognizes the majority leader and the Democratic leader (Record, 30 September)', () => {
-  let s = M.feed(M.empty(), 'The majority leader is recognized.', 0);
-  assert.deepStrictEqual(M.current(s, 1 * S), { mode: 'leader', which: 'Majority Leader', since: 0, first: null });
-  s = M.feed(M.empty(), 'The Democratic leader is recognized.', 0);
-  assert.strictEqual(M.current(s, 1 * S).which, 'Democratic Leader');
-  s = M.feed(M.empty(), 'THE MINORITY LEADER IS RECOGNIZED', 0);
-  assert.strictEqual(M.current(s, 1 * S).which, 'Democratic Leader', 'minority is the same office');
+  let s = M.feed(opened(), 'The majority leader is recognized.', afterOpening);
+  assert.deepStrictEqual(M.current(s, afterOpening + S), { mode: 'leader', which: 'Majority Leader', since: afterOpening, first: null });
+  s = M.feed(opened(), 'The Democratic leader is recognized.', afterOpening);
+  assert.strictEqual(M.current(s, afterOpening + S).which, 'Democratic Leader');
+  s = M.feed(opened(), 'THE MINORITY LEADER IS RECOGNIZED', afterOpening);
+  assert.strictEqual(M.current(s, afterOpening + S).which, 'Democratic Leader', 'minority is the same office');
+});
+
+ok('a leader recognized before the day opened is not the daily remarks', () => {
+  // A cold start mid-day, or a unanimous-consent request with no opening seen: no guess.
+  const s = M.feed(M.empty(), 'The majority leader is recognized.', 0);
+  assert.strictEqual(M.current(s, 1 * S), null);
+});
+
+ok('each leader has the daily remarks once; later recognitions are ordinary speech', () => {
+  let s = M.feed(opened(), 'The majority leader is recognized.', afterOpening);
+  s = M.speaker(s, 'THUNE', afterOpening + 2 * S);
+  s = M.speaker(s, 'DURBIN', afterOpening + 600 * S);
+  assert.strictEqual(mode(s, afterOpening + 601 * S), null, 'finished');
+  s = M.feed(s, 'The majority leader is recognized.', 3 * 60 * MIN);
+  assert.strictEqual(mode(s, 3 * 60 * MIN + S), null, 'recognized again mid-afternoon for a consent request: no mode');
+  s = M.feed(s, 'The Democratic leader is recognized.', 3 * 60 * MIN + 10 * S);
+  assert.strictEqual(M.current(s, 3 * 60 * MIN + 11 * S).which, 'Democratic Leader', 'the other leader has not had theirs');
 });
 
 ok('a leader sits over morning business and gives it back', () => {
-  let s = M.feed(M.empty(), 'THE SENATE WILL BE IN A PERIOD OF MORNING BUSINESS, FOR UP TO 10 MINUTES EACH', 0);
-  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED.', 60 * S);
-  assert.strictEqual(mode(s, 61 * S), 'leader');
-  s = M.speaker(s, 'MR. THUNE', 62 * S);
-  s = M.speaker(s, 'MR. THUNE', 90 * S);
-  assert.strictEqual(mode(s, 91 * S), 'leader', 'still the same speaker');
-  s = M.feed(s, 'THE SENATOR FROM IOWA IS RECOGNIZED.', 300 * S);
-  assert.strictEqual(mode(s, 301 * S), 'morning-business');
+  let s = M.feed(opened(), 'THE SENATE WILL BE IN A PERIOD OF MORNING BUSINESS, FOR UP TO 10 MINUTES EACH', 60 * S);
+  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED.', 120 * S);
+  assert.strictEqual(mode(s, 121 * S), 'leader');
+  s = M.speaker(s, 'THUNE', 122 * S);
+  s = M.speaker(s, 'THUNE', 150 * S);
+  assert.strictEqual(mode(s, 151 * S), 'leader', 'still the same speaker');
+  s = M.feed(s, 'THE SENATOR FROM IOWA IS RECOGNIZED.', 400 * S);
+  assert.strictEqual(mode(s, 401 * S), 'morning-business');
 });
 
 ok('a different member speaking ends the leader', () => {
-  let s = M.feed(M.empty(), 'THE DEMOCRATIC LEADER IS RECOGNIZED.', 0);
-  s = M.speaker(s, 'MR. SCHUMER', 2 * S);
-  assert.strictEqual(mode(s, 3 * S), 'leader');
-  s = M.speaker(s, 'MR. DURBIN', 400 * S);
-  assert.strictEqual(mode(s, 401 * S), null);
+  let s = M.feed(opened(), 'THE DEMOCRATIC LEADER IS RECOGNIZED.', afterOpening);
+  s = M.speaker(s, 'SCHUMER', afterOpening + 2 * S);
+  assert.strictEqual(mode(s, afterOpening + 3 * S), 'leader');
+  s = M.speaker(s, 'DURBIN', afterOpening + 400 * S);
+  assert.strictEqual(mode(s, afterOpening + 401 * S), null);
+});
+
+ok('a leader whose label never changes is not mistaken for the next speaker', () => {
+  // The leader was already the latched speaker, so no label arrives at the recognition; the
+  // first label to change, a minute or more later, is somebody else's.
+  let s = M.feed(opened(), 'THE MAJORITY LEADER IS RECOGNIZED.', afterOpening);
+  s = M.speaker(s, 'CORNYN', afterOpening + 90 * S);
+  assert.strictEqual(M.current(s, afterOpening + 91 * S).first, null, 'not knowable, not guessed');
+  assert.strictEqual(mode(s, afterOpening + 91 * S), 'leader', 'and not ended by it either');
+  s = M.speaker(s, 'DURBIN', afterOpening + 200 * S);
+  assert.strictEqual(mode(s, afterOpening + 201 * S), 'leader', 'only a recognition or the ceiling ends it now');
 });
 
 ok('a recognition of someone else ends it, and the leader line still in the window does not restart it', () => {
-  let s = M.feed(M.empty(), 'THE MAJORITY LEADER IS RECOGNIZED.', 0);
-  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED. ... THE SENATOR FROM TEXAS IS RECOGNIZED.', 200 * S);
-  assert.strictEqual(mode(s, 201 * S), null, 'the later recognition wins within one cue');
-  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED. ... THE SENATOR FROM TEXAS IS RECOGNIZED.', 205 * S);
-  assert.strictEqual(mode(s, 206 * S), null);
+  let s = M.feed(opened(), 'THE MAJORITY LEADER IS RECOGNIZED.', afterOpening);
+  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED. ... THE SENATOR FROM TEXAS IS RECOGNIZED.', afterOpening + 200 * S);
+  assert.strictEqual(mode(s, afterOpening + 201 * S), null, 'the later recognition wins within one cue');
+  s = M.feed(s, 'THE MAJORITY LEADER IS RECOGNIZED. ... THE SENATOR FROM TEXAS IS RECOGNIZED.', afterOpening + 205 * S);
+  assert.strictEqual(mode(s, afterOpening + 206 * S), null);
 });
 
 ok('the second leader follows the first', () => {
-  let s = M.feed(M.empty(), 'THE MAJORITY LEADER IS RECOGNIZED.', 0);
-  s = M.feed(s, 'THE DEMOCRATIC LEADER IS RECOGNIZED.', 600 * S);
-  assert.strictEqual(M.current(s, 601 * S).which, 'Democratic Leader');
+  let s = M.feed(opened(), 'THE MAJORITY LEADER IS RECOGNIZED.', afterOpening);
+  s = M.feed(s, 'THE DEMOCRATIC LEADER IS RECOGNIZED.', afterOpening + 600 * S);
+  assert.strictEqual(M.current(s, afterOpening + 601 * S).which, 'Democratic Leader');
 });
 
 ok('a leader nobody ends cannot strand the board', () => {
-  const s = M.feed(M.empty(), 'THE MAJORITY LEADER IS RECOGNIZED.', 0);
-  assert.strictEqual(mode(s, 30 * MIN - 1), 'leader');
-  assert.strictEqual(mode(s, 30 * MIN), null);
+  const s = M.feed(opened(), 'THE MAJORITY LEADER IS RECOGNIZED.', afterOpening);
+  assert.strictEqual(mode(s, afterOpening + 30 * MIN - 1), 'leader');
+  assert.strictEqual(mode(s, afterOpening + 30 * MIN), null);
+});
+
+// ---- wrap-up -------------------------------------------------------------------------
+
+ok('the wrap-up opens on the majority leader\'s request, in the Record\'s words', () => {
+  // CREC 2026-09-30 ORDERS FOR ...: opens the same way on every full day sampled.
+  let s = M.feed(M.empty(), 'Mr. THUNE. Mr. President, I ask unanimous consent that when the Senate completes its business today, it stand adjourned, to then convene for pro forma session only', 0);
+  assert.strictEqual(mode(s, 1 * S), 'wrap-up');
+  assert.strictEqual(mode(M.feed(M.empty(), 'I ask unanimous consent that when the Senate adjourns on Thursday, September 10', 0), 1 * S), 'wrap-up');
+});
+
+ok('the wrap-up lasts until the Senate is adjourned, which can follow the Democratic leader', () => {
+  let s = M.feed(opened(), 'I ask unanimous consent that when the Senate completes its business today, it stand adjourned', 60 * MIN);
+  s = M.feed(s, 'if there is no further business, I ask that it stand adjourned under the previous order following the remarks of the Democratic leader.', 61 * MIN);
+  assert.strictEqual(mode(s, 75 * MIN), 'wrap-up', 'still going through the closing remarks');
+  s = M.feed(s, 'Under the previous order, the Senate stands adjourned until 10:30 a.m. tomorrow.', 80 * MIN);
+  assert.strictEqual(mode(s, 80 * MIN + 5 * S), 'wrap-up', 'a short hold');
+  assert.strictEqual(mode(s, 80 * MIN + 21 * S), null);
+});
+
+ok('an ordinary unanimous-consent request is not the wrap-up', () => {
+  const s = M.feed(M.empty(), 'I ask unanimous consent that the Senate be in a period of morning business', 0);
+  assert.notStrictEqual(mode(s, 1 * S), 'wrap-up');
+  assert.strictEqual(mode(M.feed(M.empty(), 'I ask unanimous consent that the committee be discharged', 0), 1 * S), null);
 });
 
 console.log(`\n${n} passed`);
