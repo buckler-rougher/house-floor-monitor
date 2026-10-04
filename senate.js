@@ -1674,24 +1674,78 @@ SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
 SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
 SenateQuorum.init({ photoUrlFor });
-// The opening prayer and pledge, read off the captions (lib/senate-modes.js). They are the
-// board's headline while they last, as the House's modes are, and the call panels give way
-// to them. A call is its own thing and needs no mode.
+// The prayer, the pledge, morning business and a leader being recognized, read off the
+// captions (lib/senate-modes.js). They are the board's headline while they last, as the
+// House's modes are, and the call panels give way to them. A call is its own thing and
+// needs no mode. The body classes are the House's, so its section styling applies.
 (() => {
+  const BODY = { prayer: 'prayer-mode', pledge: 'pledge-mode', 'morning-business': 'morning-hour-mode', leader: 'speaker-mode' };
   let state = SenateModes.empty();
   const time = (at) => new Date(at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+  const setText = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
+
+  // The Democratic Caucus posts each sitting day's schedule the evening before, and says
+  // what follows the leaders: "Following Leader remarks, the Senate will resume
+  // consideration of ...". Only today's post is used, matched on the first date in its
+  // title, since the newest post is for the next sitting, not this one.
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function followingLeaders() {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const today = `${MONTHS[now.getMonth()]} ${now.getDate()}`;
+    for (const n of _notices) {
+      if (n.type !== 'schedule') continue;
+      const m = String(n.title).match(new RegExp(`(${MONTHS.join('|')})\\s+(\\d{1,2})`));
+      if (!m || `${m[1]} ${Number(m[2])}` !== today) continue;
+      const para = String(n.body || '').split('\n').find((l) => /following leader remarks/i.test(l));
+      return para ? para.replace(/[\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim() : '';
+    }
+    return '';
+  }
+
+  function paintLeader(cur) {
+    setText('leader-tag-text', cur.which.toUpperCase());
+    setText('leader-title', cur.which);
+    // Whoever the speaker module has latched, but only once the first member label since the
+    // recognition has arrived: before that the latched speaker is the previous senator.
+    const sp = cur.first && SenateSpeaker.current();
+    const m = sp && sp.label === cur.first ? sp.member : null;
+    setText('leader-name', m ? `${m.first} ${m.last}` : 'Not yet identified from the captions');
+    setText('leader-details', m ? m.state : '');
+    const tag = document.getElementById('leader-party-tag');
+    if (tag) {
+      const cls = m ? ({ D: 'democrat', R: 'republican' }[m.party] || 'independent') : '';
+      tag.textContent = m ? m.party : '';
+      tag.className = `speaker-party-tag ${cls}`.trim();
+    }
+    const img = document.getElementById('leader-image');
+    const url = m && m.bioguide ? photoUrlFor(m.bioguide) : '';
+    if (img && (img.getAttribute('src') || '') !== url) { img.src = url; img.hidden = !url; }
+    const next = followingLeaders();
+    setText('leader-next', next ? `Democratic Caucus schedule: ${next}` : '');
+  }
+
   const apply = () => {
     const now = Date.now();
-    let mode = SenateModes.current(state, now);
-    if (!mode && state.mode) state = SenateModes.settle(state, now);
-    for (const k of Object.keys(SenateModes.RULES)) {
-      document.body.classList.toggle(`${k}-mode`, k === mode);
-      const at = document.getElementById(`${k}-time`);
-      if (at) at.textContent = k === mode ? time(state.since) : '';
-    }
+    const cur = SenateModes.current(state, now);
+    if (!cur && (state.base || state.leader)) state = SenateModes.settle(state, now);
+    const mode = cur && cur.mode;
+    for (const [k, cls] of Object.entries(BODY)) document.body.classList.toggle(cls, k === mode);
+    for (const k of ['prayer', 'pledge']) setText(`${k}-time`, k === mode ? time(cur.since) : '');
+    setText('morning-business-time', mode === 'morning-business' ? time(cur.since) : '');
+    setText('morning-business-limit', mode === 'morning-business' && cur.limit
+      ? `The chair has set senators to speak for up to ${cur.limit} minutes each.` : '');
+    if (mode === 'leader') { setText('leader-time', time(cur.since)); paintLeader(cur); }
   };
   document.addEventListener('senate-caption', (e) => {
     state = SenateModes.feed(state, e.detail && e.detail.text, Date.now());
+    apply();
+  });
+  // A leader is whoever speaks right after the chair recognizes them, so each new MEMBER
+  // label goes to the modes; the chair's own label says nothing about who has the floor.
+  document.addEventListener('senate-call', (e) => {
+    const sp = e.detail && e.detail.call && e.detail.call.speaker;
+    if (!sp || sp.kind !== 'member') return;
+    state = SenateModes.speaker(state, sp.label, Date.now());
     apply();
   });
   setInterval(apply, 1000);
