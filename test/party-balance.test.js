@@ -11,6 +11,7 @@
 // network, no dependencies.
 
 const assert = require('assert');
+require('../lib/status-marks.js');
 const PB = require('../lib/party-balance.js');
 
 // ---- a fake document: just what the module touches --------------------------------------------
@@ -19,7 +20,7 @@ function makeDoc(skip = []) {
   const bar = { children: [], appendChild(n) { this.children = this.children.filter((c) => c !== n); this.children.push(n); n.parentElement = this; } };
   for (const [k, id] of Object.entries(PB.ID)) {
     if (skip.includes(k)) continue;
-    nodes[id] = { id, textContent: '', className: '', innerHTML: '', style: {}, classList: { removed: [], remove(c) { this.removed.push(c); } }, parentElement: null };
+    nodes[id] = { id, textContent: '', className: '', innerHTML: '', style: {}, classList: { removed: [], added: [], removedClear: false, remove(c) { this.removed.push(c); }, toggle(c, on) { if (on) this.added.push(c); else if (c === 'is-clear') this.removedClear = true; } }, parentElement: null };
   }
   for (const k of ['repFill', 'demFill', 'indFill', 'vacFill']) if (nodes[PB.ID[k]]) bar.appendChild(nodes[PB.ID[k]]);
   return { getElementById: (id) => nodes[id] || null, nodes, bar, order: () => bar.children.map((c) => c.id) };
@@ -105,11 +106,39 @@ ok('the vacancy list is the board\'s own rows, and an unchanged one is not rebui
   delete globalThis.BoardUtil;
 });
 
-ok('a board that sends no vacancy rows leaves the list alone', () => {
+ok('a board that sends no vacancy rows, with seats vacant, leaves the list alone', () => {
   const d = makeDoc(); d.nodes['vacancies-list'].innerHTML = 'kept';
-  const { vacancyHtml, ...noRows } = house;
+  const { vacancyHtml, ...noRows } = house;          // house has 2 vacant
   PB.render(noRows, d);
   assert.strictEqual(d.nodes['vacancies-list'].innerHTML, 'kept');
+});
+
+ok('nothing vacant and no rows: "All N seats filled", a green tick, and a green count', () => {
+  const d = makeDoc();
+  PB.render({ counts: { R: 220, D: 213, I: 2 }, total: 435, seats: 435, control: 'R', vacancyCount: 0 }, d);
+  const html = d.nodes['vacancies-list'].innerHTML;
+  assert.ok(html.includes('vacancy-note is-clear') && html.includes('All 435 seats filled'), html);
+  assert.ok(html.includes('<svg'), 'the tick');
+  assert.ok(d.nodes['vacancies-section'].classList.added.includes('is-clear'));
+  assert.strictEqual(d.nodes['vacancies-count'].textContent, 0);
+});
+
+ok('seats vacant: the section is not clear', () => {
+  const d = makeDoc(); PB.render(house, d);
+  assert.deepStrictEqual(d.nodes['vacancies-section'].classList.removedClear, true);
+});
+
+ok('a board\'s own rows win even when nothing is vacant', () => {
+  const d = makeDoc();
+  PB.render({ ...house, vacancyCount: 0, vacancyHtml: '<div>custom</div>' }, d);
+  assert.strictEqual(d.nodes['vacancies-list'].innerHTML, '<div>custom</div>');
+});
+
+ok('the note: clear is a tick, open is a cross, and the text is escaped', () => {
+  const clear = PB.noteHtml('clear', 'All 100 seats filled'), open = PB.noteHtml('open', '1 seat <b>unfilled</b>');
+  assert.ok(clear.includes('vacancy-note is-clear') && clear.includes('M1.3,4.95'), 'a tick');
+  assert.ok(open.includes('vacancy-note is-open') && open.includes('M1.7,1.7'), 'a cross');
+  assert.ok(open.includes('1 seat &lt;b&gt;unfilled&lt;/b&gt;') && !open.includes('<b>'));
 });
 
 ok('the vacancies section is un-hidden, and a page without one is fine', () => {

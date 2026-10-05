@@ -6521,14 +6521,6 @@ font-family: var(--font-mono);
     min-width: 56px;
 }
 
-.no-vacancies {
-    font-size: var(--fs-base);
-    color: var(--text-muted);
-    font-style: italic;
-    text-align: center;
-    padding: var(--sp-10) 0;
-}
-
 .vote-counts-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;

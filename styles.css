@@ -7003,15 +7003,6 @@ font-family: var(--font-mono);
     min-width: 56px;
 }
 
-.no-vacancies {
-    font-size: var(--fs-base);
-    color: var(--text-muted);
-    font-style: italic;
-    text-align: center;
-    padding: var(--sp-10) 0;
-}
-
-
 .vote-counts-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -11498,12 +11489,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     }
 }
 
-/* The Senate's vacancies line. The House lists each vacated seat in a four-column row (tag,
-   district, name, date), which is what .vacancy-item is. The Senate has a count and, almost always,
-   nothing to list, so it said one sentence into that grid's first 92px column, where it wrapped and
-   looked unstyled. This is a status line: a mark and a sentence. All seats filled is the healthy
-   state, so the mark is the board's own tick in green and the count beside VACANCIES turns green
-   with it; unfilled seats read amber. */
+/* The vacancies status line, both boards. The House lists each vacated seat in a four-column row (tag,
+   district, name, date), which is what .vacancy-item is. When there is nothing to list, a sentence put
+   into that grid wrapped in its first 92px column and looked unstyled, and the House's own empty state
+   (.no-vacancies, now gone) was italic, which no EMH face has. So this is a status line: a mark and a
+   sentence. All seats filled is the healthy state, so the mark is the board's own tick in green and the
+   count beside VACANCIES turns green with it; unfilled seats read amber. */
 .vacancies-section.is-clear .vacancies-count {
     color: var(--accent-green);
 }
