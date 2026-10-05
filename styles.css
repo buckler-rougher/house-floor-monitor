@@ -11570,3 +11570,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .panel-header:has(> .vote-id) > .panel-label {
     align-self: center;
 }
+
+/* Phone: the header wraps to two rows (label and badges, then the source). The
+   10px padding left the first row hugging the top edge; give it room. */
+@media (max-width: 640px) {
+    .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
+        padding: var(--sp-16) var(--sp-16);
+        gap: var(--sp-8) var(--sp-8);
+    }
+}
