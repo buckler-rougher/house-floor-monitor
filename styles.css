@@ -3197,7 +3197,7 @@ body.tellers-mode .tellers-column { display: flex; }
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   font-weight: 700;
-  padding: 3px 6px 1px;
+  padding: 2px 6px;
   border-radius: var(--radius-3);
   text-transform: uppercase;
   letter-spacing: var(--track-wide);
@@ -5466,6 +5466,12 @@ font-family: var(--font-mono);
 .bill-id-row .bill-id { margin-bottom: 0; }
 .bill-id-row .whip-tag { margin-top: 2px; }
 
+/* A tag's caps used to be pushed down with uneven padding (3px above, 1px below; the rule tag 5 and 3),
+   a workaround for system fonts whose caps sit high in the line box. EMH Mono's metrics are known, and
+   measured (canvas font metrics against the element's content box) the caps sat about 0.8px BELOW centre:
+   7.4px of space above them and 5.8px below. Symmetric padding is the same size of box, and centres them.
+   Applies to the tags that share the modal's header row (.bill-modal-badge, .bill-rule-tag-modal,
+   .whip-tag) and the vote-recs chip, so the row stays aligned with itself. */
 /* ── Dem Whip recommendation tag ──────────────────────────────────────────
    Clearly attributed to the House Democratic Whip (the only whip source we
    have); the site is non-partisan. YES=green / NO=red conveys the recommended
@@ -5474,7 +5480,7 @@ font-family: var(--font-mono);
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 7px 1px;
+    padding: 2px 7px;
     border: 1px solid rgba(88, 166, 255, 0.35);
     border-radius: var(--radius-4);
     background: rgba(88, 166, 255, 0.06);
@@ -5525,7 +5531,7 @@ font-family: var(--font-mono);
 .bill-rule-tag-modal {
     font-size: var(--fs-xs);
     font-weight: 700;
-    padding: 5px 7px 3px;
+    padding: 4px 7px;
     border-radius: var(--radius-4);
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
@@ -6010,7 +6016,7 @@ font-family: var(--font-mono);
     font-size: var(--fs-xs);
     font-weight: 700;
     letter-spacing: var(--track-wide);
-    padding: 3px 7px 1px;
+    padding: 2px 7px;
     border-radius: var(--radius-4);
     font-family: var(--font-mono);
     text-transform: uppercase;
