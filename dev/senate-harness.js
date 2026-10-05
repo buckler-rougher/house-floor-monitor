@@ -9,6 +9,7 @@
  *   ?fixtures                 serve every API call from dev/fixtures/senate/
  *   ?fixtures&state=vote      ...and put the board in a state (below)
  *   ?freeze=0                 do not pin the clock (default 2026-09-30T14:00:00Z)
+ *   ?fixtures&bill=s4668      open a bill's modal (s4668, hr7008 have fixtures)
  *
  * STATES  idle (default)  prayer  pledge  morning-business  wrap-up  leader  quorum  vote  ended
  *
@@ -77,6 +78,14 @@
     const path = (url.split('/senate-floor/api')[1] || '').split('?')[0];
 
     if (path === '/senate/hls-url') return json({ url: null, isLive: false });
+    // A bill's details: dev/fixtures/senate/senate-bill-<slug>.json (s4668, hr7008). The page's own
+    // deep link opens one: /senate?fixtures&bill=s4668. Any other measure is a miss, as the
+    // Worker answers one Congress.gov has no record of.
+    if (path === '/senate/bill') {
+      const slug = (new URL(url).searchParams.get('id') || '').toLowerCase().replace(/[\s.]+/g, '');
+      try { return json(await (await realFetch(`${BASE}senate-bill-${slug}.json`)).text()); }
+      catch (e) { return json({ error: `no fixture for ${slug}` }, 404); }
+    }
     if (path === '/senate/quorum') {
       const SC = globalThis.SenateCall;
       let call = SC.emptyCall();
