@@ -1620,6 +1620,7 @@ FloorFeed.init({
     idle: {
         url: CapCam.url,
         source: { text: 'Capitol Camera (Secretary of the Senate)', href: 'https://www.senate.gov/general/capcam.htm' },
+        hls: CapCam.hlsConfig,
     },
 });
 // Reads the floor feed's own caption track. Senate TV names the member at the
