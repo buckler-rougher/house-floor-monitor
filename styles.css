@@ -11450,18 +11450,18 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     display: none;
 }
 
-/* The latest-action row on a phone, Senate only. A Congress.gov action is a long sentence, and the
-   date and its source link sit beside it in a no-wrap span as wide as the date itself, which left the
-   sentence a column about 100px wide and wrapping a word or two to a line. Stacked, the sentence gets
-   the full width. The House modal has the same rule and the same squeeze with a long action; it is
-   left as it is. */
+/* The latest-action row on a phone. An action is a long sentence, and the date, time and source link sit
+   beside it in a no-wrap span as wide as they are, so on a phone the sentence was left a column of a
+   few pixels: about 100px on the Senate board, and none at all on the House's, where the span also
+   carries a time ("16 September 2026, 07:05 PM EDT House Clerk") and the sentence ran one word to a
+   line down the whole modal. Stacked, the sentence gets the full width and the date sits under it. */
 @media (max-width: 640px) {
-    :root[data-chamber="senate"] .bill-modal-action-row {
+    .bill-modal-action-row {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--sp-6);
     }
-    :root[data-chamber="senate"] .bill-modal-action-row .bill-modal-date {
+    .bill-modal-action-row .bill-modal-date {
         text-align: left;
         white-space: normal;
     }
