@@ -11630,16 +11630,29 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 .calendar-card-count { margin-left: var(--sp-6); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .calendar-card-body {
+    position: relative;
     max-height: 6.5rem;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
-    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    transition: max-height 0.32s ease;
 }
-.calendar-card.is-open .calendar-card-body,
-.calendar-card.is-short .calendar-card-body {
-    max-height: none;
-    -webkit-mask-image: none;
-    mask-image: none;
+/* The fade is an overlay that changes opacity, not a mask: a gradient mask cannot be animated. */
+.calendar-card-body::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3.25rem;
+    background: linear-gradient(to bottom, transparent, var(--bg-card));
+    opacity: 1;
+    transition: opacity 0.32s ease;
+    pointer-events: none;
+}
+.calendar-card.is-open .calendar-card-body::after,
+.calendar-card.is-short .calendar-card-body::after { opacity: 0; }
+.calendar-card.is-short .calendar-card-body { max-height: none; }
+@media (prefers-reduced-motion: reduce) {
+    .calendar-card-body, .calendar-card-body::after { transition: none; }
 }
 .calendar-card-body p {
     margin: var(--sp-8) 0 0;
@@ -11687,6 +11700,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .calendar-card-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
 .calendar-card.is-open .calendar-card-toggle .v { display: none; }
 .calendar-card.is-short .calendar-card-toggle { display: none; }
+.calendar-card { transition: padding-bottom 0.32s ease; }
 .calendar-card.is-open { padding-bottom: calc(var(--sp-12) + 12px); }
 .calendar-card:not(.is-short) { margin-bottom: var(--sp-12); }
 .calendar-policy { margin-left: 0; margin-right: 0; max-width: none; }

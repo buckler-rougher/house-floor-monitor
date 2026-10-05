@@ -8071,14 +8071,30 @@ function wireCalendarCards() {
         if (!body || !btn || card._wired) continue;
         card._wired = true;
         const measure = () => {
-            if (card.classList.contains('is-open') || !body.clientHeight) return;
+            if (card._busy || card.classList.contains('is-open') || !body.clientHeight) return;
             card.classList.toggle('is-short', body.scrollHeight <= body.clientHeight + 1);
         };
+        // Opening animates max-height from the clamp to the text's own height, then releases it to `none`
+        // so the card follows later changes; closing sets the height back from `none` first (a transition
+        // cannot start from `none`), then lets the CSS clamp take over.
         btn.addEventListener('click', () => {
-            const open = card.classList.toggle('is-open');
+            const open = !card.classList.contains('is-open');
             btn.setAttribute('aria-expanded', String(open));
             btn.setAttribute('aria-label', open ? 'Show less' : 'Show all');
-            if (!open) measure();
+            clearTimeout(card._settle);
+            card._busy = true;   // the observer must not measure a card that is mid-transition
+            if (open) {
+                card.classList.add('is-open');
+                body.style.maxHeight = `${body.scrollHeight}px`;
+                // transitionend does not fire under reduced motion, so a timer releases it either way
+                card._settle = setTimeout(() => { body.style.maxHeight = 'none'; card._busy = false; }, 360);
+            } else {
+                body.style.maxHeight = `${body.scrollHeight}px`;
+                void body.offsetHeight;                 // commit that height before changing it
+                card.classList.remove('is-open');
+                body.style.maxHeight = '';
+                card._settle = setTimeout(() => { card._busy = false; measure(); }, 360);
+            }
         });
         if (window.ResizeObserver) new ResizeObserver(measure).observe(body);
         card._measure = measure;
