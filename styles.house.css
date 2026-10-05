@@ -10666,3 +10666,10 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .panel-header:has(> .vote-id) > .panel-label {
     align-self: center;
 }
+
+@media (max-width: 640px) {
+    .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
+        padding: var(--sp-16) var(--sp-16);
+        gap: var(--sp-8) var(--sp-8);
+    }
+}
