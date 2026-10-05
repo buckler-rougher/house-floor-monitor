@@ -8000,6 +8000,7 @@ async function fetchHouseMakeup(preData = null) {
 function updatePartyBreakdownDisplay() {
     if (!houseMakeup) return;
 
+    // Rows only when there are vacancies; with none, the shared module writes "All 435 seats filled".
     const vacancyHtml = vacancies.length > 0
         ? vacancies.map(vacancy => {
             const tagClass = vacancy.reason === 'Death' ? 'tag-death' : 'tag-resignation';
@@ -8013,7 +8014,7 @@ function updatePartyBreakdownDisplay() {
                     </div>
                 `;
         }).join('')
-        : '<div class="no-vacancies">No current vacancies</div>';
+        : undefined;
 
     PartyBalance.render({
         counts: { R: houseMakeup.republicans, D: houseMakeup.democrats, I: houseMakeup.independents },
