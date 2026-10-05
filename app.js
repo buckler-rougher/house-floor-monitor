@@ -4740,83 +4740,37 @@ function openBillModal(billId) {
         actionSourceHtml = ` <a href="${congressUrl}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">Congress.gov</a>`;
     }
 
-    // Sponsor HTML (reuse absentee-member classes)
-    let sponsorHtml = '';
-    if (bill.sponsor) {
-        const s = bill.sponsor;
-        const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
-        const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
-        const name = `${s.firstName} ${s.lastName}`;
-        const loc = s.state + (s.district != null ? `-${String(s.district).padStart(2, '0')}` : '');
-        const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
-        sponsorHtml = `
-            <div class="bill-modal-section">
-                <div class="bill-modal-section-label">SPONSOR</div>
-                <div class="absentee-member" style="padding:0;border:none;">
-                    <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
-                        <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
-                        <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
-                    </div>
-                    <div class="absentee-meta">
-                        <span class="absentee-name">${name}</span>
-                        <span class="absentee-party-tag ${pClass}">${pLetter}</span>
-                        <span class="absentee-state">${loc}</span>
-                    </div>
-                </div>
-            </div>`;
-    }
+    // The sections below are lib/bill-sections.js, shared with the Senate modal.
+    const sp = bill.sponsor;
+    const sponsorHtml = BillSections.sponsor(sp ? {
+        name: `${sp.firstName} ${sp.lastName}`,
+        party: sp.party,
+        loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
+        photoUrl: `https://bioguide.congress.gov/bioguide/photo/${sp.bioguideId.charAt(0)}/${sp.bioguideId}.jpg`,
+        placeholder: MEMBER_PHOTO_PLACEHOLDER,
+    } : {});
 
     // Cosponsors bar (includes sponsor in count)
-    let cosponsorsHtml = '';
     const allSupporters = [
         ...(bill.sponsor ? [bill.sponsor] : []),
         ...(bill.cosponsors || []),
     ];
-    if (allSupporters.length > 0) {
-        const rCount = allSupporters.filter(m => m.party === 'R').length;
-        const dCount = allSupporters.filter(m => m.party === 'D').length;
-        const iCount = allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length;
-        const total = allSupporters.length;
-        const rPct = (rCount / total * 100).toFixed(1);
-        const dPct = (dCount / total * 100).toFixed(1);
-        const iPct = (iCount / total * 100).toFixed(1);
-        const coLabel = bill.cosponsors?.length ? `${bill.cosponsors.length} COSPONSOR${bill.cosponsors.length !== 1 ? 'S' : ''}` : 'NO COSPONSORS';
-        cosponsorsHtml = `
-            <div class="bill-modal-section">
-                <div class="bill-modal-section-label">SUPPORT — ${coLabel}</div>
-                <div class="bill-modal-support-bar">
-                    ${dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : ''}
-                    ${rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : ''}
-                    ${iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : ''}
-                </div>
-                <div class="bill-modal-support-labels">
-                    ${dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : ''}
-                    ${rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : ''}
-                    ${iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : ''}
-                </div>
-            </div>`;
-    }
+    const cosponsorsHtml = BillSections.support({
+        D: allSupporters.filter(m => m.party === 'D').length,
+        R: allSupporters.filter(m => m.party === 'R').length,
+        I: allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length,
+        total: allSupporters.length,
+        cosponsorCount: bill.cosponsors?.length || 0,
+    });
 
-    // Committee — the report vote count is embedded INTO the committee tag itself
-    // as a prominent green-ayes / red-nays tally, so the committee and its vote
-    // read as one unit. Date sits to the right of the tag row.
-    const reportInner = Committees.reportChipHtml(bill.committeeReport);
-    const committeeDateHtml = (bill.committeeReport && bill.committeeReportDate)
-        ? `<span class="bill-modal-date">${formatDate(bill.committeeReportDate)}</span>` : '';
-
-    // Attach the report to the first (reporting) committee chip. If there are no
-    // named committees but a report exists, show a single "Committee" chip.
-    const committeeNames = bill.committees?.length ? bill.committees : (bill.committeeReport ? ['Committee'] : []);
-    const committeeHtml = committeeNames.length ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">COMMITTEE</div>
-            <div class="bill-modal-committee-row">
-                <div class="bill-modal-committees">
-                    ${committeeNames.map((c, i) => committeeChipHtml(c, i === 0 ? reportInner : '')).join('')}
-                </div>
-                ${committeeDateHtml}
-            </div>
-        </div>` : '';
+    // Committee — the report vote is carried on the first chip itself as a green-ayes / red-nays
+    // tally, so the committee and its vote read as one unit; the date sits to the right.
+    const committeeHtml = BillSections.committees({
+        committees: bill.committees,
+        report: bill.committeeReport,
+        reportDate: bill.committeeReportDate,
+        formatDate,
+    });
 
     // Kept for the sections list below (committee report now lives inside committeeHtml).
     const committeeReportHtml = '';
@@ -4878,30 +4832,20 @@ function openBillModal(billId) {
                 ${committeeHtml}
                 ${committeeReportHtml}
             </div>
-            ${summaryText ? `
-            <div class="bill-modal-body">
-                <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
-                <p class="bill-modal-summary">${escapeHtml(summaryText)}</p>
-            </div>` : ''}
+            ${BillSections.summary(summaryText)}
             <div class="bill-modal-foot">
-                ${actionText ? `
-                <div class="bill-modal-section" style="margin-bottom:12px;">
-                    <div class="bill-modal-section-label">LATEST ACTION</div>
-                    <div class="bill-modal-action bill-modal-action-row">
-                        <span class="bill-modal-action-text">${actionText}</span>
-                        ${actionDate ? `<span class="bill-modal-date">${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}</span>` : ''}
-                    </div>
-                </div>` : ''}
-                <div class="bill-modal-section">
-                    <div class="bill-modal-section-label">LINKS</div>
-                    <div class="bill-doc-links">
-                        ${textUrl ? `<a href="${textUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View Bill Text →</a>` : ''}
-                        ${bill.committeeReportUrl ? `<a href="${bill.committeeReportUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener" title="${bill.committeeReportCitation || 'Committee Report'}">View Committee Report →</a>` : ''}
-                        ${bill.sapUrl ? `<a href="${bill.sapUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View White House Memo →</a>` : ''}
-                        ${congressUrl ? `<a href="${congressUrl}" class="bill-modal-link ${procedureClass}" target="_blank" rel="noopener">View on Congress.gov →</a>` : ''}
-                        <button class="bill-modal-link bill-copy-link" id="bill-copy-link" type="button" aria-label="Copy link to this bill"><svg class="bill-copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="bill-copy-text">Copy link</span></button>
-                    </div>
-                </div>
+                ${BillSections.action({
+                    textHtml: actionText,
+                    dateHtml: actionDate ? `${actionDate}${actionTimeStr ? `, ${actionTimeStr}` : ''}${actionSourceHtml}` : '',
+                })}
+                ${BillSections.links({
+                    linkClass: procedureClass,
+                    text: textUrl,
+                    report: bill.committeeReportUrl,
+                    reportTitle: bill.committeeReportCitation,
+                    memo: bill.sapUrl,
+                    congress: congressUrl,
+                })}
             </div>
             </div>
         </div>
@@ -4949,19 +4893,7 @@ function openBillModal(billId) {
     if (modal) { _billModalTrapCleanup = trapFocus(overlay); closeBtn.focus(); }
 
     // Copy-link button — copies the current (deep-linked) URL.
-    const copyBtn = document.getElementById('bill-copy-link');
-    if (copyBtn) {
-        const copyLabel = copyBtn.querySelector('.bill-copy-text');
-        copyBtn.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(location.href);
-                const prev = copyLabel ? copyLabel.textContent : '';
-                if (copyLabel) copyLabel.textContent = 'Copied';
-                copyBtn.classList.add('copied');
-                setTimeout(() => { if (copyLabel) copyLabel.textContent = prev; copyBtn.classList.remove('copied'); }, 1500);
-            } catch {}
-        });
-    }
+    BillSections.wireCopyLink(overlay);
 
     // Rule-tag buttons in the modal open the modal for that H.Res.
     overlay.querySelectorAll('.bill-rule-tag-modal[data-bill-id]').forEach(btn => {
