@@ -160,11 +160,13 @@ function renderBalance(data) {
         seats,
         control: data.control,
         vacancyCount: data.vacancies,
-        vacancyHtml: `<div class="vacancy-item">${data.vacancies
-            ? `${data.vacancies} seat${data.vacancies === 1 ? '' : 's'} unfilled`
-            : `All ${seats} seats filled`}</div>`,
+        vacancyHtml: data.vacancies
+            ? `<div class="vacancy-note is-open"><span class="vacancy-note-mark" aria-hidden="true">${StatusMarks.chip('failed')}</span>${data.vacancies} seat${data.vacancies === 1 ? '' : 's'} unfilled</div>`
+            : `<div class="vacancy-note is-clear"><span class="vacancy-note-mark" aria-hidden="true">${StatusMarks.chip('passed')}</span>All ${seats} seats filled</div>`,
         stamp: fmtDate(d && !isNaN(d) ? d : new Date()),
     });
+
+    el('vacancies-section')?.classList.toggle('is-clear', data.vacancies === 0);
 
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }

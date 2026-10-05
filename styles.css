@@ -11466,3 +11466,67 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         white-space: normal;
     }
 }
+
+/* The committee chip on a phone, both boards. The chip is a mark, a name and (for the reporting
+   committee) the vote or "Reported", on one line beside the report date, so a long name such as
+   "Commerce, Science, and Transportation Committee" was squeezed to a narrow column four lines deep.
+   Here the date drops below the chip, the chip takes the row, and inside it the mark stays beside
+   the name with the tally on its own line under it. */
+@media (max-width: 640px) {
+    .bill-modal-committee-row {
+        flex-wrap: wrap;
+        gap: var(--sp-8) var(--sp-16);
+    }
+    .bill-modal-committees {
+        flex: 1 1 100%;
+    }
+    .bill-modal-committee {
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr);
+        column-gap: var(--sp-8);
+        row-gap: var(--sp-4);
+        align-items: center;
+        max-width: 100%;
+    }
+    .bill-modal-committee > .committee-chip-mark,
+    .bill-modal-committee > .committee-chip-logo {
+        align-self: start;
+    }
+    .bill-modal-committee > .committee-chip-name,
+    .bill-modal-committee > .committee-chip-tally {
+        grid-column: 2;
+    }
+}
+
+/* The Senate's vacancies line. The House lists each vacated seat in a four-column row (tag,
+   district, name, date), which is what .vacancy-item is. The Senate has a count and, almost always,
+   nothing to list, so it said one sentence into that grid's first 92px column, where it wrapped and
+   looked unstyled. This is a status line: a mark and a sentence. All seats filled is the healthy
+   state, so the mark is the board's own tick in green and the count beside VACANCIES turns green
+   with it; unfilled seats read amber. */
+.vacancies-section.is-clear .vacancies-count {
+    color: var(--accent-green);
+}
+.vacancy-note {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-6) 0;
+    font-size: var(--fs-base);
+    color: var(--text-secondary);
+}
+.vacancy-note-mark {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent-amber) 18%, transparent);
+    color: var(--accent-amber);
+}
+.vacancy-note.is-clear .vacancy-note-mark {
+    background: color-mix(in srgb, var(--accent-green) 18%, transparent);
+    color: var(--accent-green);
+}
