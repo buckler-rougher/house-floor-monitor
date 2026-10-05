@@ -760,6 +760,30 @@ function closeSenateBillModal() {
     globalThis.BoardAnimations?.hideAfterAnimation?.(overlay);
     document.removeEventListener('keydown', onSenateBillModalKey);
     if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
+    setBillUrlParam(null);   // the URL reflects the closed state
+}
+
+// A bill modal is shareable as ?bill=<slug> (e.g. ?bill=hr7008), as on the House board: opening writes
+// it, closing clears it, and on load a linked bill opens. The House looks the slug up in the week's
+// bills; here the slug IS the measure, since the modal fetches it by id anyway.
+const BILL_SLUG_TYPES = { hr: 'H.R.', hres: 'H.Res.', hjres: 'H.J.Res.', hconres: 'H.Con.Res.', s: 'S.', sres: 'S.Res.', sjres: 'S.J.Res.', sconres: 'S.Con.Res.' };
+function billSlug(id) { return String(id).toLowerCase().replace(/[\s.]+/g, ''); }
+function billIdFromSlug(slug) {
+    const m = String(slug || '').toLowerCase().match(/^(hr|hres|hjres|hconres|s|sres|sjres|sconres)(\d{1,5})$/);
+    return m ? `${BILL_SLUG_TYPES[m[1]]} ${m[2]}` : null;
+}
+function setBillUrlParam(slug) {
+    try {
+        const url = new URL(location.href);
+        if (slug) url.searchParams.set('bill', slug); else url.searchParams.delete('bill');
+        history.replaceState(history.state, '', url);
+    } catch { /* an address that cannot be rewritten: the modal still works */ }
+}
+function openDeepLinkedBill() {
+    let slug = null;
+    try { slug = new URL(location.href).searchParams.get('bill'); } catch { /* none */ }
+    const id = billIdFromSlug(slug);
+    if (id) openSenateBillModal(id);
 }
 
 function onSenateBillModalKey(e) {
@@ -782,54 +806,31 @@ function billModalSkeleton(id) {
 }
 
 function billModalContent(b) {
-    // Sponsor as a member card with a photo, the way the House modal shows it.
-    // A bare name line was the thing that made this look like a different modal.
+    // The sections are lib/bill-sections.js, the House modal's own: sponsor, support, committees, the
+    // CRS summary, latest action, and links. This function maps what the Worker sent into them.
     const sp = b.sponsor;
-    const pClass = sp?.party === 'R' ? 'republican' : sp?.party === 'D' ? 'democrat' : 'independent';
-    const pLetter = sp?.party === 'R' ? 'R' : sp?.party === 'D' ? 'D' : 'I';
-    const photo = sp?.bioguide ? photoUrlFor(sp.bioguide) : '';
-    const sponsor = sp ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">SPONSOR</div>
-            <div class="absentee-member" style="padding:0;border:none;">
-                <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
-                    <div class="absentee-photo-placeholder">${PHOTO_PLACEHOLDER}</div>
-                    ${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(sp.name)}" onload="this.style.opacity='1'" onerror="this.remove()">` : ''}
-                </div>
-                <div class="absentee-meta">
-                    <span class="absentee-name">${escapeHtml(sp.name)}</span>
-                    <span class="absentee-party-tag ${pClass}">${pLetter}</span>
-                    <span class="absentee-state">${escapeHtml(sp.state || '')}</span>
-                </div>
-            </div>
-        </div>` : '';
+    const sections = [
+        BillSections.sponsor(sp ? {
+            name: sp.name,
+            party: sp.party,
+            loc: (sp.state || '') + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
+            photoUrl: sp.bioguide ? photoUrlFor(sp.bioguide) : '',
+            placeholder: PHOTO_PLACEHOLDER,
+        } : {}),
+        BillSections.support(b.support ? { ...b.support, cosponsorCount: b.cosponsorCount } : { total: 0 }),
+        BillSections.committees({
+            committees: b.committees,
+            report: b.committeeReport,
+            reportDate: b.committeeReportDate,
+            formatDate: boardDate,
+        }),
+    ].join('');
 
-    // Party-split support bar, sponsor included in the count.
-    const su = b.support;
-    const pct = (n) => su.total ? (n / su.total * 100).toFixed(1) : 0;
-    const coLabel = b.cosponsorCount
-        ? `${b.cosponsorCount} COSPONSOR${b.cosponsorCount !== 1 ? 'S' : ''}`
-        : 'NO COSPONSORS';
-    const support = su ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">SUPPORT — ${coLabel}</div>
-            <div class="bill-modal-support-bar">
-                ${su.D ? `<div class="bill-modal-support-fill dem" style="width:${pct(su.D)}%" title="${su.D} Democrat${su.D !== 1 ? 's' : ''}"></div>` : ''}
-                ${su.R ? `<div class="bill-modal-support-fill rep" style="width:${pct(su.R)}%" title="${su.R} Republican${su.R !== 1 ? 's' : ''}"></div>` : ''}
-                ${su.I ? `<div class="bill-modal-support-fill ind" style="width:${pct(su.I)}%" title="${su.I} Independent${su.I !== 1 ? 's' : ''}"></div>` : ''}
-            </div>
-            <div class="bill-modal-support-labels">
-                ${su.D ? `<span class="bill-modal-support-count dem">${su.D}D</span>` : ''}
-                ${su.R ? `<span class="bill-modal-support-count rep">${su.R}R</span>` : ''}
-                ${su.I ? `<span class="bill-modal-support-count ind">${su.I}I</span>` : ''}
-            </div>
-        </div>` : '';
-
-    const committees = b.committees?.length ? `
-        <div class="bill-modal-section">
-            <div class="bill-modal-section-label">COMMITTEE${b.committees.length > 1 ? 'S' : ''}</div>
-            <div class="bill-modal-action">${b.committees.map(escapeHtml).join(' · ')}</div>
-        </div>` : '';
+    // Congress.gov dates an action but gives no time of day, so there is a date and where it came from.
+    const actionDate = b.latestActionDate
+        ? `${escapeHtml(boardDate(b.latestActionDate))}${b.congressUrl
+            ? ` <a href="${escapeHtml(b.congressUrl)}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">Congress.gov</a>` : ''}`
+        : '';
 
     return `
         <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true">
@@ -842,29 +843,18 @@ function billModalContent(b) {
                     </div>
                     <h2 class="bill-modal-title">${escapeHtml(b.title || '')}</h2>
                 </div>
-                <div class="bill-modal-sections">${sponsor}${support}${committees}</div>
-                ${b.summary ? `
-                <div class="bill-modal-body">
-                    <div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div>
-                    <p class="bill-modal-summary">${escapeHtml(b.summary)}</p>
-                </div>` : ''}
+                <div class="bill-modal-sections">${sections}</div>
+                ${BillSections.summary(b.summary)}
                 <div class="bill-modal-foot">
-                    ${b.latestAction ? `
-                    <div class="bill-modal-section" style="margin-bottom:12px;">
-                        <div class="bill-modal-section-label">LATEST ACTION</div>
-                        <div class="bill-modal-action bill-modal-action-row">
-                            <span class="bill-modal-action-text">${escapeHtml(b.latestAction)}</span>
-                            ${b.latestActionDate ? `<span class="bill-modal-date">${escapeHtml(boardDate(b.latestActionDate))}</span>` : ''}
-                        </div>
-                    </div>` : ''}
-                    <div class="bill-modal-section">
-                        <div class="bill-modal-section-label">LINKS</div>
-                        <div class="bill-doc-links">
-                            <a href="${escapeHtml(b.textUrl)}" class="bill-modal-link senate" target="_blank" rel="noopener">Bill text</a>
-                            <a href="${escapeHtml(b.govinfoPdf)}" class="bill-modal-link senate" target="_blank" rel="noopener">PDF (govinfo)</a>
-                            <a href="${escapeHtml(b.congressUrl)}" class="bill-modal-link senate" target="_blank" rel="noopener">Congress.gov</a>
-                        </div>
-                    </div>
+                    ${BillSections.action({ textHtml: b.latestAction ? escapeHtml(b.latestAction) : '', dateHtml: actionDate })}
+                    ${BillSections.links({
+                        linkClass: 'senate',
+                        text: b.govinfoPdf,
+                        report: b.committeeReportUrl,
+                        reportTitle: b.committeeReportCitation,
+                        memo: b.sapUrl,
+                        congress: b.congressUrl,
+                    })}
                 </div>
             </div>
         </div>`;
@@ -956,6 +946,7 @@ async function openSenateBillModal(billId, trigger) {
     }
     overlay.hidden = false;
     delete overlay.dataset.closing;
+    setBillUrlParam(billSlug(billId));
 
     // Warmed: paint the real thing, with no skeleton in between. This is the
     // path almost every click takes.
@@ -966,6 +957,7 @@ async function openSenateBillModal(billId, trigger) {
             ? billModalSkeleton(billId).replace('Loading…', `Details unavailable (${escapeHtml(entry.error)})`)
             : billModalContent(entry.bill);
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
+        BillSections.wireCopyLink(overlay);
     };
     if (hit) paint(hit);
     else {
@@ -1726,6 +1718,7 @@ initAbsenceFilters();
 loadAbsences();
 initNoticeFilter();
 initBillModal();
+openDeepLinkedBill();
 loadNominations();
 loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.

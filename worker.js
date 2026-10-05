@@ -3009,6 +3009,8 @@ async function handleSenateBill(env, billId) {
       sponsor: sp ? {
         name: [sp.firstName, sp.lastName].filter(Boolean).join(' ') || sp.fullName,
         party: sp.party, state: sp.state, bioguide: sp.bioguideId,
+        // A House sponsor of a bill the Senate is taking up has a district; a senator does not.
+        district: sp.district ?? null,
       } : null,
       cosponsorCount: cosponsors?.pagination?.count ?? null,
       // Party split for the support bar, sponsor included the way the House
