@@ -1573,18 +1573,6 @@ const elements = {
     absenteeIndMetric: document.getElementById('absentee-ind-metric'),
     absenteeTotal: document.getElementById('absentee-total'),
     absenteeList: document.getElementById('absentee-list'),
-    partyRep: document.getElementById('party-rep'),
-    partyDem: document.getElementById('party-dem'),
-    partyTotal: document.getElementById('party-total'),
-    partyInd: document.getElementById('party-ind'),
-    repFill: document.getElementById('rep-fill'),
-    demFill: document.getElementById('dem-fill'),
-    indFill: document.getElementById('ind-fill'),
-    vacFill: document.getElementById('vac-fill'),
-    partyBreakdownLastUpdate: document.getElementById('party-breakdown-last-update'),
-    majorityControlBadge: document.getElementById('majority-control-badge'),
-    vacanciesCount: document.getElementById('vacancies-count'),
-    vacanciesList: document.getElementById('vacancies-list'),
     debateSection: document.getElementById('debate-section'),
     debateLengthTag: document.getElementById('debate-length-tag'),
     debateLengthText: document.getElementById('debate-length-text'),
@@ -8277,75 +8265,17 @@ async function fetchHouseMakeup(preData = null) {
     }
 }
 
+// The panel itself is lib/party-balance.js, shared with the Senate board. What is here is only what
+// the House knows: its counts and vacancies come out of the Clerk's MemberData XML, and a vacancy is
+// worded with the former Member's name, cause and date.
 function updatePartyBreakdownDisplay() {
     if (!houseMakeup) return;
-    
-    // Update metrics
-    if (elements.partyRep) elements.partyRep.textContent = houseMakeup.republicans;
-    if (elements.partyDem) elements.partyDem.textContent = houseMakeup.democrats;
-    if (elements.partyInd) elements.partyInd.textContent = houseMakeup.independents;
-    if (elements.partyTotal) elements.partyTotal.textContent = houseMakeup.total;
-    
-    // Update Majority Control Badge
-    if (elements.majorityControlBadge) {
-        if (controllingParty) {
-            const partyFull = controllingParty === 'R' ? 'REPUBLICAN' : (controllingParty === 'D' ? 'DEMOCRATIC' : controllingParty);
-            elements.majorityControlBadge.textContent = `${partyFull} CONTROL`;
-            elements.majorityControlBadge.className = `majority-badge ${controllingParty.toLowerCase()}-control`;
-        } else {
-            elements.majorityControlBadge.className = 'majority-badge hidden';
-        }
-    }
-    
-    // Update visual bar
-    if (elements.repFill && elements.demFill && elements.indFill && elements.vacFill) {
-        // Derive from live clerk data (members + vacancies) so the bar stays correct
-        // if the House ever expands; falls back to the constitutional constant.
-        const totalSeats = (houseMakeup.total + vacancies.length) || HOUSE_TOTAL_MEMBERS;
-        const repPercent = (houseMakeup.republicans / totalSeats) * 100;
-        const demPercent = (houseMakeup.democrats / totalSeats) * 100;
-        const indPercent = (houseMakeup.independents / totalSeats) * 100;
-        const vacPercent = (vacancies.length / totalSeats) * 100;
-        
-        elements.repFill.style.width = `${repPercent}%`;
-        elements.demFill.style.width = `${demPercent}%`;
-        elements.indFill.style.width = `${indPercent}%`;
-        elements.vacFill.style.width = `${vacPercent}%`;
 
-        // Majority party always on left — append in desired order (appendChild moves existing nodes)
-        const partyBar = elements.repFill.parentElement;
-        if (partyBar) {
-            const order = houseMakeup.democrats > houseMakeup.republicans
-                ? [elements.demFill, elements.repFill, elements.indFill, elements.vacFill]
-                : [elements.repFill, elements.demFill, elements.indFill, elements.vacFill];
-            order.forEach(el => partyBar.appendChild(el));
-        }
-    }
-    
-    // Update last update time
-    if (elements.partyBreakdownLastUpdate) {
-        if (lastUpdatedDate) {
-            elements.partyBreakdownLastUpdate.textContent = formatDate(lastUpdatedDate);
-        } else {
-            const now = new Date();
-            elements.partyBreakdownLastUpdate.textContent = now.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false 
-            });
-        }
-    }
-    
-    // Update vacancies display
-    if (elements.vacanciesCount && elements.vacanciesList) {
-        elements.vacanciesCount.textContent = vacancies.length;
-        
-        if (vacancies.length > 0) {
-            const vacanciesHtml = vacancies.map(vacancy => {
-                const tagClass = vacancy.reason === 'Death' ? 'tag-death' : 'tag-resignation';
-                const tagText = vacancy.reason === 'Death' ? 'DECEASED' : 'RESIGNED';
-                return `
+    const vacancyHtml = vacancies.length > 0
+        ? vacancies.map(vacancy => {
+            const tagClass = vacancy.reason === 'Death' ? 'tag-death' : 'tag-resignation';
+            const tagText = vacancy.reason === 'Death' ? 'DECEASED' : 'RESIGNED';
+            return `
                     <div class="vacancy-item">
                         <span class="vacancy-tag ${tagClass}">${tagText}</span>
                         <span class="vacancy-district">${vacancy.district}</span>
@@ -8353,13 +8283,23 @@ function updatePartyBreakdownDisplay() {
                         <span class="vacancy-date">${formatDate(vacancy.date)}</span>
                     </div>
                 `;
-            }).join('');
-            setIfChanged(elements.vacanciesList, vacanciesHtml);
-        } else {
-            setIfChanged(elements.vacanciesList, '<div class="no-vacancies">No current vacancies</div>');
-        }
-    }
+        }).join('')
+        : '<div class="no-vacancies">No current vacancies</div>';
 
+    PartyBalance.render({
+        counts: { R: houseMakeup.republicans, D: houseMakeup.democrats, I: houseMakeup.independents },
+        total: houseMakeup.total,
+        // Derived from live Clerk data (members + vacancies) so the bar stays correct if the House
+        // ever expands; falls back to the constitutional constant.
+        seats: (houseMakeup.total + vacancies.length) || HOUSE_TOTAL_MEMBERS,
+        control: controllingParty,
+        vacancyCount: vacancies.length,
+        vacancyHtml,
+        // The Clerk dates the roster; the clock is only a fallback.
+        stamp: lastUpdatedDate
+            ? formatDate(lastUpdatedDate)
+            : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+    });
 }
 
 // Proceedings bill number links → open bill modal (or congress.gov for external).
