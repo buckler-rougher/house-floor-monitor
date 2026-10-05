@@ -6043,6 +6043,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .qb-member.is-aye { border-color: rgba(63, 185, 80, 0.75); box-shadow: 0 0 10px rgba(63, 185, 80, 0.22); }
 .qb-member.is-no { border-color: rgba(248, 81, 73, 0.75); box-shadow: 0 0 10px rgba(248, 81, 73, 0.22); }
 .qb-member.is-present { border-color: rgba(210, 153, 34, 0.75); box-shadow: 0 0 10px rgba(210, 153, 34, 0.22); }
+.qb-member.is-either { opacity: 1; filter: none; border-style: dashed; border-color: var(--text-secondary); }
 .qb-detail { display: none; }
 @media (max-width: 640px) {
   .quorum-board {
@@ -6080,6 +6081,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
   .qb-member.is-aye { box-shadow: none; background: color-mix(in srgb, var(--accent-green) 30%, var(--bg-elevated)); }
   .qb-member.is-no { box-shadow: none; background: color-mix(in srgb, var(--accent-red) 30%, var(--bg-elevated)); }
   .qb-member.is-present { box-shadow: none; background: color-mix(in srgb, var(--accent-amber) 28%, var(--bg-elevated)); }
+  .qb-member.is-either { box-shadow: none; }
   .qb-member.is-picked { outline: 1px solid var(--text-secondary); outline-offset: 1px; }
   .qb-detail:not([hidden]) {
         display: block;
@@ -6122,6 +6124,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .sen-desk.is-aye { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 6px rgba(63,185,80,0.5); }
 .sen-desk.is-no { background: var(--accent-red);   border-color: var(--accent-red);   box-shadow: 0 0 6px rgba(248,81,73,0.5); }
 .sen-desk.is-present { background: var(--accent-amber); border-color: var(--accent-amber); }
+.sen-desk.is-either { opacity: 1; background: transparent; border-style: dashed; border-color: var(--text-secondary); }
 :root[data-chamber="senate"] .rep-label { left: auto; right: 9%; }
 :root[data-chamber="senate"] .dem-label { right: auto; left: 9%; }
 :root[data-chamber="senate"] body:is(.prayer-mode, .pledge-mode, .morning-hour-mode, .speaker-mode) :is(.vote-display, .threshold-panel, .quorum-panel, .floor-grid-panel) {

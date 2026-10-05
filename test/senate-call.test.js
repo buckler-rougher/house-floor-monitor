@@ -437,4 +437,70 @@ test('merge: the longer question wins', () => {
   assert.strictEqual(C.merge(a, b).question, 'ON THE MOTION TO INVOKE CLOTURE ON THE NOMINATION OF JANE DOE');
 });
 
+// ---- the two Scotts -------------------------------------------------------------------------
+// The clerk reads a state after a surname only where two senators share it. Before this, "MR. SCOTT OF
+// FLORIDA." matched nothing at all (the name pattern took "SCOTT OF" as a two-word surname and then
+// needed a period), so the Scotts were silently never counted; and a bare "MR. SCOTT." lit both.
+// The wording is the Record's ("Mr. SCOTT of Florida"), NOT confirmed against a caption.
+
+test('a state the clerk reads is part of the key: SCOTT (FL), not nothing', () => {
+  const s = run([['MR. SCHUMER. MR. SCOTT OF FLORIDA. MR. SCOTT OF SOUTH CAROLINA. MS. SHAHEEN.', T0]]);
+  assert.deepStrictEqual(s.names, ['SCHUMER', 'SCOTT (FL)', 'SCOTT (SC)', 'SHAHEEN']);
+});
+
+test('a surname alone is still just the surname', () => {
+  assert.deepStrictEqual(run([['MR. SCOTT. MR. SCHUMER.', T0]]).names, ['SCOTT', 'SCHUMER']);
+});
+
+test('"SCOTT OF" is never a two-word surname', () => {
+  const s = run([['MR. SCOTT OF FLORIDA.', T0]]);
+  assert.ok(!s.names.some((k) => /OF$/.test(k)), JSON.stringify(s.names));
+});
+
+test('a state that is not a state is not read as one', () => {
+  assert.deepStrictEqual(run([['MR. VAN HOLLEN OF NOWHERE.', T0]]).names, [], 'no match is better than a wrong key');
+});
+
+test('votes carry the state too, each Scott answering for himself', () => {
+  const s = run([['MR. SCOTT OF FLORIDA, AYE. MR. SCOTT OF SOUTH CAROLINA, NO.', T0]]);
+  assert.deepStrictEqual(s.votes, { 'SCOTT (FL)': 'AYE', 'SCOTT (SC)': 'NO' });
+  assert.deepStrictEqual(run([['MS. DUCKWORTH, AYE. MR. SCOTT, NAY.', T0]]).votes, { DUCKWORTH: 'AYE', SCOTT: 'NO' });
+});
+
+test('under a heading, a name carries its state as well', () => {
+  const s = run([['SENATORS VOTING IN THE NEGATIVE: MR. PAUL. MR. SCOTT OF FLORIDA. SENATORS VOTING AYE: MS. COLLINS.', T0]]);
+  assert.deepStrictEqual(s.votes, { PAUL: 'NO', 'SCOTT (FL)': 'NO', COLLINS: 'AYE' });
+});
+
+test('a multi-word state and a multi-word surname together', () => {
+  assert.deepStrictEqual(run([['MR. VAN HOLLEN. MR. SCOTT OF SOUTH CAROLINA.', T0]]).names, ['VAN HOLLEN', 'SCOTT (SC)']);
+});
+
+test('keyTable: a shared surname is keyed by state, the rest by surname, and the bare name is an alias of both', () => {
+  const seats = [
+    { last: 'Scott', first: 'Rick', state: 'FL' }, { last: 'Scott', first: 'Tim', state: 'SC' },
+    { last: 'Paul', first: 'Rand', state: 'KY' }, { last: 'Luján', first: 'Ben Ray', state: 'NM' },
+  ];
+  const t = C.keyTable(seats);
+  assert.deepStrictEqual(seats.map((x) => t.keyOf(x)), ['SCOTT (FL)', 'SCOTT (SC)', 'PAUL', 'LUJAN']);
+  assert.deepStrictEqual([...t.aliases], [['SCOTT', ['SCOTT (FL)', 'SCOTT (SC)']]]);
+});
+
+test('keyTable on the real 100-senator roster: exactly one ambiguous surname, and every key unique', () => {
+  const roster = require('./senate-roster.json');
+  // stored compactly: [last, first, party, state]
+  const members = roster.map(([last, first, party, state]) => ({ last, first, party, state }));
+  const t = C.keyTable(members);
+  assert.deepStrictEqual([...t.aliases.keys()], ['SCOTT']);
+  const keys = members.map((m) => t.keyOf(m));
+  assert.strictEqual(new Set(keys).size, members.length, 'two senators share a key');
+});
+
+test('merge: a Scott read with a state and one read without are both kept, neither un-lit', () => {
+  const tab = run([['MR. SCOTT.', T0]]);
+  const worker = run([['MR. SCOTT OF FLORIDA.', T0 + 1000]]);
+  const m = C.merge(tab, worker);
+  assert.ok(m.names.includes('SCOTT') && m.names.includes('SCOTT (FL)'), JSON.stringify(m.names));
+});
+
 console.log(`\n${n} passed`);

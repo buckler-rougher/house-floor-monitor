@@ -12,6 +12,7 @@
  *   ?fixtures&bill=s4668      open a bill's modal (s4668, hr7008 have fixtures)
  *
  * STATES  idle (default)  prayer  pledge  morning-business  wrap-up  leader  quorum  vote  ended
+ *         scott-bare  scott-state  scott-quorum   (the two Scotts: a surname alone, and with the state read)
  *
  * The states go through the real code paths: the floor mode is what /senate/quorum returns
  * (lib/senate-quorum.js hands it to senate.js, as in production), and a call is built by
@@ -51,6 +52,11 @@
     quorum: 'THE CLERK WILL CALL THE ROLL. ' + NAMES.map((n) => `MR. ${n}.`).join(' '),
     vote: 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. ' +
       NAMES.map((n, i) => `MR. ${n}, ${i % 3 === 1 ? 'NO' : 'AYE'}.`).join(' '),
+    // The two Scotts. The clerk reads a state after a surname only where two senators share it
+    // ("Mr. SCOTT of Florida"; the wording is the Record's, not confirmed against a caption).
+    'scott-bare': 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. MR. SCHUMER, AYE. MR. SCOTT, AYE. MR. SHAHEEN, NO.',
+    'scott-state': 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. MR. SCHUMER, AYE. MR. SCOTT OF FLORIDA, AYE. MR. SCOTT OF SOUTH CAROLINA, NO. MR. SHAHEEN, NO.',
+    'scott-quorum': 'THE CLERK WILL CALL THE ROLL. MR. SCHUMER. MR. SCOTT. MR. SHAHEEN.',
     ended: 'THE QUESTION IS ON THE MOTION TO INVOKE CLOTURE. THE CLERK WILL CALL THE ROLL. ' +
       NAMES.map((n, i) => `MR. ${n}, ${i % 3 === 1 ? 'NO' : 'AYE'}.`).join(' ') + ' THE YEAS ARE 53, THE NAYS ARE 47. THE MOTION IS AGREED TO.',
   };
