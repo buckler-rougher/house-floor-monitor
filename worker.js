@@ -19,6 +19,7 @@ import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
 import './lib/clerk-votes.js';
 import './lib/congress-bills.js';
+import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -3835,6 +3836,32 @@ function getTodayDateET() {
   return `${y}${m}${d}`;
 }
 
+// ── House Calendar (GPO) ─────────────────────────────────────────────────────
+//
+// The front page of the House Calendars for a sitting day: the legislative day, when the House meets,
+// morning-hour debate, and the orders agreed to (see lib/house-calendar.js). GPO publishes it for each
+// day the House sits and nothing for a day it does not, so TODAY's is asked for and a day without one
+// answers `calendar: null`; yesterday's is never shown as today's.
+//
+// A fetch that fails (a network error, a 5xx) THROWS, so kvCache does not hold it: caching a null for
+// fifteen minutes because govinfo hiccupped would hide a calendar that exists.
+async function handleHouseCalendar(env) {
+  const ymd = getTodayDateET();
+  const date = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+  return kvCache(env, `house-calendar-${CURRENT_CONGRESS}-${date}-v1`, 900, async () => {
+    const pkg = `CCAL-${CURRENT_CONGRESS}hcal-${date}`;
+    const url = `https://www.govinfo.gov/content/pkg/${pkg}/html/${pkg}-pt0.htm`;
+    const r = await fetch(url, { headers: BOT_HEADERS, signal: AbortSignal.timeout(12_000) });
+    if (r.status >= 500) throw new Error(`house calendar: HTTP ${r.status}`);
+    // Not a calendar (no package that day: an error page, a redirect, a 404) is null, which is an answer.
+    const calendar = r.ok && /html/i.test(r.headers.get('Content-Type') || '')
+      ? globalThis.HouseCalendar.parse(await r.text()) : null;
+    return new Response(JSON.stringify({ date, calendar, source: calendar ? url : null }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
+    });
+  });
+}
+
 async function fetchBroadcastEvents(dateId) {
   const resp = await fetch(
     `https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${dateId}`,
@@ -5667,6 +5694,8 @@ async function handleRequest(request, env) {
     return await handleAsk(request, env);
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership(env);
+  } else if (path === '/api/house-calendar' && request.method === 'GET') {
+    return await handleHouseCalendar(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
@@ -5830,7 +5859,20 @@ async function handleRequest(request, env) {
 // above. One allowlist, two consumers.
 export default {
   async fetch(request, env) {
-    const res = await handleRequest(request, env);
+    // A handler that throws (every cached route does when its upstream fails and nothing is held) used to
+    // escape here, and Cloudflare answers that with its own error page, which carries no CORS headers: the
+    // browser then reports "not allowed by Access-Control-Allow-Origin" and hides the real status, which is
+    // how an upstream hiccup on /api/member-data looked like a CORS misconfiguration. Caught here it is an
+    // ordinary JSON 500, which the code below labels with the caller's origin like any other response.
+    let res;
+    try {
+      res = await handleRequest(request, env);
+    } catch (e) {
+      console.error('[worker] unhandled', request.method, new URL(request.url).pathname, e && e.message);
+      res = new Response(JSON.stringify({ error: `internal error: ${(e && e.message) || 'unknown'}` }), {
+        status: 500, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
     const origin = request.headers.get('Origin');
     // A WebSocket upgrade cannot be rebuilt and has no body to pass through.
     if (res.status === 101 || res.webSocket) return res;

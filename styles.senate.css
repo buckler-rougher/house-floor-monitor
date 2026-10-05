@@ -6200,3 +6200,18 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     padding-bottom: 0;
     line-height: 1;
 }
+.panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
+    align-items: center;
+}
+.panel-header > .vote-type-tag, .panel-header > .vote-id {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
+.panel-header:has(> .vote-type-tag) > .panel-label, .panel-header:has(> .vote-id) > .panel-label {
+    align-self: center;
+}

@@ -8175,6 +8175,30 @@ function updateModeClasses(mode) {
 }
 
 // Initialize
+// The House Calendar's front page for today (GPO, via the Worker): the legislative day, when the House
+// meets, morning-hour debate, and any postponed votes. The agreed orders are in the line's tooltip in full.
+// A day with no calendar (the House is not sitting) hides the line; a failure hides it too and says so in
+// the console, since a stale legislative day would be worse than none.
+async function loadHouseCalendar() {
+    const line = document.getElementById('calendar-line');
+    if (!line) return;
+    try {
+        const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const c = (await r.json()).calendar;
+        if (!c) { line.hidden = true; return; }
+        const parts = [`Legislative day ${c.legislativeDay}`];
+        if (c.meetsAt) parts.push(`meets at ${c.meetsAt}${c.morningHour ? ' for morning-hour debate' : ''}`);
+        if ((c.orders || []).some((o) => o.kind === 'postponed-vote')) parts.push('postponed votes');
+        line.textContent = parts.join(' \u00b7 ');
+        line.title = (c.orders || []).map((o) => `${o.label}: ${o.text}`).join('\n\n');
+        line.hidden = false;
+    } catch (e) {
+        line.hidden = true;
+        console.error('House calendar unavailable:', e);
+    }
+}
+
 function init() {
     loadTrackedBillsFromStorage();
     updateAlertsButtonUI();
@@ -8195,6 +8219,8 @@ function init() {
     setInterval(updateNextSessionCountdown, 1000);
     updateTodayDate();
     setInterval(updateTodayDate, 60000); // Update date every minute
+    loadHouseCalendar();
+    setInterval(loadHouseCalendar, 20 * 60 * 1000);   // published once a sitting day; a new day is picked up
     
     
     // bills, rules, whip, roll-log, casualty-list all delivered via SSE from the DO.
