@@ -1635,7 +1635,7 @@ SenateQuorum.init({ photoUrlFor });
 // thing and one who joins mid-prayer sees it too; this only draws what it is told. The body
 // classes are the House's, so its section styling applies.
 (() => {
-  const BODY = { prayer: 'prayer-mode', pledge: 'pledge-mode', 'morning-business': 'morning-hour-mode', 'wrap-up': 'morning-hour-mode', leader: 'speaker-mode' };
+  const BODY = { prayer: 'prayer-mode', pledge: 'pledge-mode', 'morning-business': 'morning-hour-mode', 'wrap-up': 'morning-hour-mode', leader: 'speaker-mode', debate: 'debate-mode' };
   const ALL = [...new Set(Object.values(BODY))];
   // The poll is every few seconds; a tab that has stopped hearing from the Worker should not
   // hold a mode on screen on its own say-so.
@@ -1684,6 +1684,52 @@ SenateQuorum.init({ photoUrlFor });
     setText('leader-next', next ? `Democratic Caucus schedule: ${next}` : '');
   }
 
+  // The measure under debate, drawn by lib/debate-panel.js (the House's panel, same markup). The
+  // Worker names it in the mode ({ mode: 'debate', bill: 'S. 1234', source, since }); the details
+  // come from /senate/bill like the modal's, warmed and cached. `source` is 'schedule' when the
+  // measure is what the caucus schedule says the Senate is on, and the tag says SCHEDULED: that is
+  // the day's plan, not a statement that debate has begun. Any other source is not labelled.
+  let _debateBill = null;
+  function paintDebate(cur) {
+    const id = cur.bill || '';
+    const lenTag = document.getElementById('debate-length-tag');
+    setText('debate-length-text', 'SCHEDULED');
+    if (lenTag) lenTag.style.display = cur.source === 'schedule' ? '' : 'none';
+    setText('debate-time', time(cur.since));
+    const src = document.getElementById('debate-source-link');
+    if (id === _debateBill) return;
+    _debateBill = id;
+    DebatePanel.bare({ id, title: cur.title || '' });
+    if (src) { src.href = 'https://www.congress.gov'; src.textContent = 'Congress.gov'; }
+    if (!id) return;
+    fetchSenateBill(id).then((entry) => {
+      if (_debateBill !== id) return; // the floor moved on while this was in flight
+      const b = entry.bill;
+      if (!b) return; // no Congress.gov record: the id and the title we were told stay
+      const sp = b.sponsor;
+      DebatePanel.fill({
+        id: b.id || id,
+        title: b.title || cur.title || '',
+        sponsor: sp ? {
+          name: sp.name,
+          party: sp.party,
+          loc: (sp.state || '') + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
+          photoUrl: sp.bioguide ? photoUrlFor(sp.bioguide) : '',
+          placeholder: PHOTO_PLACEHOLDER,
+        } : null,
+        support: b.support ? { ...b.support, cosponsorCount: b.cosponsorCount } : null,
+        committees: b.committees,
+        report: b.committeeReport,
+        reportDate: b.committeeReportDate,
+        formatDate: boardDate,
+        summary: b.summary,
+        linkClass: 'senate',
+        links: { text: b.govinfoPdf, report: b.committeeReportUrl, memo: b.sapUrl, congress: b.congressUrl },
+      });
+      if (src && b.congressUrl) src.href = b.congressUrl;
+    });
+  }
+
   const apply = () => {
     const cur = told.mode && Date.now() - told.at < STALE_MS ? told.mode : null;
     const mode = cur && cur.mode;
@@ -1700,6 +1746,8 @@ SenateQuorum.init({ photoUrlFor });
       setText('floor-note-limit', !wrap && cur.limit ? `The chair has set senators to speak for up to ${cur.limit} minutes each.` : '');
     }
     if (mode === 'leader') { setText('leader-time', time(cur.since)); paintLeader(cur); }
+    if (mode === 'debate') paintDebate(cur);
+    else _debateBill = null;
   };
   document.addEventListener('senate-mode', (e) => {
     told = { mode: e.detail && e.detail.mode, at: Date.now() };

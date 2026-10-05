@@ -1577,14 +1577,6 @@ const elements = {
     debateLengthTag: document.getElementById('debate-length-tag'),
     debateLengthText: document.getElementById('debate-length-text'),
     debateBillTitle: document.getElementById('debate-bill-title'),
-    debateBillId: document.getElementById('debate-bill-id'),
-    debateBillDescription: document.getElementById('debate-bill-description'),
-    debateSponsorSection: document.getElementById('debate-sponsor-section'),
-    debateSponsorInner: document.getElementById('debate-sponsor-inner'),
-    debateSupportSection: document.getElementById('debate-support-section'),
-    debateSupportLabel: document.getElementById('debate-support-label'),
-    debateSupportBar: document.getElementById('debate-support-bar'),
-    debateSupportLabels: document.getElementById('debate-support-labels'),
     debateTime: document.getElementById('debate-time'),
     debatePanelNav: document.getElementById('debate-panel-nav'),
     debateBillPanel: document.getElementById('debate-bill-panel'),
@@ -1592,16 +1584,6 @@ const elements = {
     cotwIndicator: document.getElementById('cotw-indicator'),
     debateRuleTag: document.getElementById('debate-rule-tag'),
     debateSourceLink: document.getElementById('debate-source-link'),
-    debateCommitteesSection: document.getElementById('debate-committees-section'),
-    debateCommitteesLabel: document.getElementById('debate-committees-label'),
-    debateCommitteesList: document.getElementById('debate-committees-list'),
-    debateCommitteeDate: document.getElementById('debate-committee-date'),
-    debateSummarySection: document.getElementById('debate-summary-section'),
-    debateLinksFoot: document.getElementById('debate-links-foot'),
-    debateLinkText: document.getElementById('debate-link-text'),
-    debateLinkReport: document.getElementById('debate-link-report'),
-    debateLinkSap: document.getElementById('debate-link-sap'),
-    debateLinkCongress: document.getElementById('debate-link-congress'),
     prayerSection: document.getElementById('prayer-section'),
     prayerImage: document.getElementById('prayer-image'),
     prayerImagePlaceholder: document.getElementById('prayer-image-placeholder'),
@@ -6087,139 +6069,42 @@ function updateDebateSection(items) {
     }
 
     // ── 6. Render bill details ────────────────────────────────────────────
+    // Drawn by lib/debate-panel.js, which the Senate board shares.
     if (foundBill) {
-        elements.debateBillTitle.textContent = foundBill.title || '—';
-        elements.debateBillId.textContent = foundBill.id || '';
-
-        // Sponsor block
-        if (elements.debateSponsorSection && elements.debateSponsorInner) {
-            if (foundBill.sponsor) {
-                const s = foundBill.sponsor;
-                const pClass = s.party === 'R' ? 'republican' : s.party === 'D' ? 'democrat' : 'independent';
-                const pLetter = s.party === 'R' ? 'R' : s.party === 'D' ? 'D' : 'I';
-                const name = `${s.firstName} ${s.lastName}`;
-                const loc = s.state + (s.district != null ? `-${String(s.district).padStart(2, '0')}` : '');
-                const photo = `https://bioguide.congress.gov/bioguide/photo/${s.bioguideId.charAt(0)}/${s.bioguideId}.jpg`;
-                setIfChanged(elements.debateSponsorInner, `
-                    <div class="absentee-member" style="padding:0;border:none;">
-                        <div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;">
-                            <div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>
-                            <img class="absentee-photo" src="${photo}" alt="${name}" onload="this.style.opacity='1';" onerror="this.style.display='none';" />
-                        </div>
-                        <div class="absentee-meta">
-                            <span class="absentee-name">${name}</span>
-                            <span class="absentee-party-tag ${pClass}">${pLetter}</span>
-                            <span class="absentee-state">${loc}</span>
-                        </div>
-                    </div>`);
-                elements.debateSponsorSection.style.display = '';
-            } else {
-                elements.debateSponsorSection.style.display = 'none';
-            }
-        }
-
-        // Cosponsor support bar
-        if (elements.debateSupportSection && elements.debateSupportBar && elements.debateSupportLabels) {
-            const allSupporters = [
-                ...(foundBill.sponsor ? [foundBill.sponsor] : []),
-                ...(foundBill.cosponsors || []),
-            ];
-            if (allSupporters.length > 0) {
-                const rCount = allSupporters.filter(m => m.party === 'R').length;
-                const dCount = allSupporters.filter(m => m.party === 'D').length;
-                const iCount = allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length;
-                const total = allSupporters.length;
-                const rPct = (rCount / total * 100).toFixed(1);
-                const dPct = (dCount / total * 100).toFixed(1);
-                const iPct = (iCount / total * 100).toFixed(1);
-                const coLabel = foundBill.cosponsors?.length
-                    ? `${foundBill.cosponsors.length} COSPONSOR${foundBill.cosponsors.length !== 1 ? 'S' : ''}`
-                    : 'NO COSPONSORS';
-                if (elements.debateSupportLabel) elements.debateSupportLabel.textContent = `SUPPORT — ${coLabel}`;
-                elements.debateSupportBar.innerHTML = [
-                    dCount ? `<div class="bill-modal-support-fill dem" style="width:${dPct}%" title="${dCount} Democrat${dCount !== 1 ? 's' : ''}"></div>` : '',
-                    rCount ? `<div class="bill-modal-support-fill rep" style="width:${rPct}%" title="${rCount} Republican${rCount !== 1 ? 's' : ''}"></div>` : '',
-                    iCount ? `<div class="bill-modal-support-fill ind" style="width:${iPct}%" title="${iCount} Independent${iCount !== 1 ? 's' : ''}"></div>` : '',
-                ].join('');
-                elements.debateSupportLabels.innerHTML = [
-                    dCount ? `<span class="bill-modal-support-count dem">${dCount}D</span>` : '',
-                    rCount ? `<span class="bill-modal-support-count rep">${rCount}R</span>` : '',
-                    iCount ? `<span class="bill-modal-support-count ind">${iCount}I</span>` : '',
-                ].join('');
-                elements.debateSupportSection.style.display = '';
-            } else {
-                elements.debateSupportSection.style.display = 'none';
-            }
-        }
-
-        // Committee (merged: chips + report tally + date — mirrors modal layout)
-        if (elements.debateCommitteesSection && elements.debateCommitteesList) {
-            const hasReport = !!foundBill.committeeReport;
-            const committeeNames = foundBill.committees?.length ? foundBill.committees : (hasReport ? ['Committee'] : []);
-            if (committeeNames.length || hasReport) {
-                // Build report tally/text inner HTML (same logic as modal)
-                let reportInner = '';
-                if (hasReport) {
-                    const tallyM = foundBill.committeeReport.match(/(\d+)[-–](\d+)/);
-                    if (tallyM) {
-                        reportInner = `<span class="committee-chip-tally"><b class="ct-aye">${tallyM[1]}</b><span class="ct-sep">–</span><b class="ct-nay">${tallyM[2]}</b></span>`;
-                    } else {
-                        const label = escapeHtml(foundBill.committeeReport.replace(/^reported( by committee)?\s*/i, '') || 'Reported');
-                        reportInner = `<span class="committee-chip-tally committee-chip-tally-text">${label}</span>`;
-                    }
-                }
-                elements.debateCommitteesList.innerHTML = committeeNames
-                    .map((c, i) => committeeChipHtml(c, i === 0 ? reportInner : ''))
-                    .join('');
-                // Label: "REFERRED TO" if no report, "COMMITTEE" if reported
-                if (elements.debateCommitteesLabel) {
-                    elements.debateCommitteesLabel.textContent = hasReport ? 'COMMITTEE' : 'REFERRED TO';
-                }
-                // Date pinned right
-                if (elements.debateCommitteeDate) {
-                    if (foundBill.committeeReportDate) {
-                        elements.debateCommitteeDate.textContent = formatDate(foundBill.committeeReportDate);
-                        elements.debateCommitteeDate.style.display = '';
-                    } else {
-                        elements.debateCommitteeDate.style.display = 'none';
-                    }
-                }
-                elements.debateCommitteesSection.style.display = '';
-            } else {
-                elements.debateCommitteesSection.style.display = 'none';
-            }
-        }
-
-        // Summary
-        if (elements.debateSummarySection && elements.debateBillDescription) {
-            if (foundBill.summary) {
-                // Decode HTML entities (e.g. &nbsp;) before display as plain text
-                const tmp = document.createElement('div');
-                tmp.innerHTML = foundBill.summary;
-                elements.debateBillDescription.textContent = tmp.textContent;
-                elements.debateSummarySection.style.display = '';
-            } else {
-                elements.debateSummarySection.style.display = 'none';
-            }
-        }
-
-        // Links footer
-        const congressUrl = billIdToCongressUrl(foundBill.id);
-        const procedureClass = foundBill.procedure === 'suspension' ? 'suspension' : 'rule';
-        const textUrl = foundBill.textUrl || null;
-        if (elements.debateLinksFoot) {
-            const setLink = (el, url, label) => {
-                if (!el) return;
-                if (url) { el.href = url; el.className = `bill-modal-link ${procedureClass}`; el.style.display = ''; }
-                else { el.style.display = 'none'; }
-            };
-            setLink(elements.debateLinkText,    textUrl,                  'View Bill Text →');
-            setLink(elements.debateLinkReport,  foundBill.committeeReportUrl, 'View Committee Report →');
-            setLink(elements.debateLinkSap,     foundBill.sapUrl,         'View White House Memo →');
-            setLink(elements.debateLinkCongress, congressUrl,             'View on Congress.gov →');
-            const anyLink = textUrl || foundBill.committeeReportUrl || foundBill.sapUrl || congressUrl;
-            elements.debateLinksFoot.style.display = anyLink ? '' : 'none';
-        }
+        const sp = foundBill.sponsor;
+        const all = [...(sp ? [sp] : []), ...(foundBill.cosponsors || [])];
+        const tmp = document.createElement('div');
+        tmp.innerHTML = foundBill.summary || ''; // decode entities (e.g. &nbsp;) before display as plain text
+        DebatePanel.fill({
+            id: foundBill.id || '',
+            title: foundBill.title || '\u2014',
+            sponsor: sp ? {
+                name: `${sp.firstName} ${sp.lastName}`,
+                party: sp.party,
+                loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
+                photoUrl: `https://bioguide.congress.gov/bioguide/photo/${sp.bioguideId.charAt(0)}/${sp.bioguideId}.jpg`,
+                placeholder: MEMBER_PHOTO_PLACEHOLDER,
+            } : null,
+            support: {
+                D: all.filter(m => m.party === 'D').length,
+                R: all.filter(m => m.party === 'R').length,
+                I: all.filter(m => m.party !== 'R' && m.party !== 'D').length,
+                total: all.length,
+                cosponsorCount: foundBill.cosponsors?.length || 0,
+            },
+            committees: foundBill.committees,
+            report: foundBill.committeeReport,
+            reportDate: foundBill.committeeReportDate,
+            formatDate,
+            summary: tmp.textContent,
+            linkClass: foundBill.procedure === 'suspension' ? 'suspension' : 'rule',
+            links: {
+                text: foundBill.textUrl || null,
+                report: foundBill.committeeReportUrl,
+                memo: foundBill.sapUrl,
+                congress: billIdToCongressUrl(foundBill.id),
+            },
+        });
     } else {
         // Bill not in billDataMap.
         // For H.Res. rule resolutions: extract the underlying bill IDs from the proceedings
@@ -6250,13 +6135,7 @@ function updateDebateSection(items) {
                 }
             }
         }
-        elements.debateBillTitle.textContent = fallbackTitle;
-        elements.debateBillId.textContent = foundBillId || '—';
-        if (elements.debateSponsorSection) elements.debateSponsorSection.style.display = 'none';
-        if (elements.debateSupportSection) elements.debateSupportSection.style.display = 'none';
-        if (elements.debateCommitteesSection) elements.debateCommitteesSection.style.display = 'none';
-        if (elements.debateSummarySection) elements.debateSummarySection.style.display = 'none';
-        if (elements.debateLinksFoot) elements.debateLinksFoot.style.display = 'none';
+        DebatePanel.bare({ id: foundBillId, title: fallbackTitle });
     }
 }
 
