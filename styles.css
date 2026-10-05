@@ -11591,3 +11591,8 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     .debate-tags-row { padding: var(--sp-16); }
     .debate-tags-row > .debate-source { margin-left: 0; flex-basis: 100%; }
 }
+
+/* Caps centred in the vote timeline chips and the whip update badge. Same fix as .whip-tag: 3px above
+   and 1px below pushed EMH Mono's caps down; equal padding keeps the box the same size and centres them. */
+.vote-tl-result, .vote-tl-duration, .vote-tl-absences { padding-top: 2px; padding-bottom: 2px; }
+.whip-type-badge { padding-top: 1px; padding-bottom: 1px; }
