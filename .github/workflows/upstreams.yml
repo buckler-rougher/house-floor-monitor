@@ -1,0 +1,33 @@
+# Is everything the boards read from other people's servers still there, in the shape we read it?
+#
+# WHY THIS EXISTS
+# The House Clerk deleted the page the Worker scraped to find the latest roll call, without
+# notice, and MISSING MEMBERS and the quorum panel sat at "--" on the live board until somebody
+# pasted a console log. Nothing was watching. dev/check-upstreams.mjs looks at the deployed
+# Worker's routes and at the pages and feeds it scrapes, with the same parsers the Worker uses;
+# this runs it every morning, so a change is found by a failing run (GitHub emails the person who
+# last edited this schedule) and not by a visitor.
+#
+# A WARNING does not fail the run: some things are legitimately empty while a chamber is out. A
+# 5xx or a dropped connection is retried once before it counts.
+name: Upstream health
+
+on:
+  schedule:
+    - cron: '23 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Check the upstreams
+        run: node dev/check-upstreams.mjs

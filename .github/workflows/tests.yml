@@ -1,0 +1,28 @@
+# Run the test suite on every push and pull request.
+#
+# WHY THIS EXISTS
+# `npm test` is the only thing that notices a stale generated stylesheet (styles.house.css and
+# styles.senate.css are built from styles.css), a parser that no longer reads a page the way it
+# was written to, and a mode cue that has stopped matching. It had no CI, so it ran only when
+# somebody remembered to. It needs no network and no dependencies, so there is nothing to install.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: npm test
+        run: npm test
