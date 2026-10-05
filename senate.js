@@ -143,64 +143,28 @@ function setConnection(state) {
 // caucusing, so the badge appears only when a party holds 51 outright and the
 // panel says why when it does not.
 function renderBalance(data) {
-    const set = (id, v) => { const n = el(id); if (n) n.textContent = v; };
     const c = data.counts || {};
-    set('party-dem', c.D ?? '--');
-    set('party-rep', c.R ?? '--');
-    set('party-ind', c.I ?? '--');
-    set('party-total', data.seats ?? '--');
-
-    const badge = el('majority-control-badge');
-    if (badge) {
-        if (data.control) {
-            badge.textContent = `${data.control === 'R' ? 'REPUBLICAN' : 'DEMOCRATIC'} CONTROL`;
-            badge.className = `majority-badge ${data.control.toLowerCase()}-control`;
-        } else {
-            badge.className = 'majority-badge hidden';
-        }
-    }
-
     const seats = data.seats || 100;
-    const pct = (n) => `${((n || 0) / seats) * 100}%`;
-    const fills = { 'rep-fill': c.R, 'dem-fill': c.D, 'ind-fill': c.I, 'vac-fill': data.vacancies };
-    for (const [id, n] of Object.entries(fills)) { const node = el(id); if (node) node.style.width = pct(n); }
+    // A date, not a clock time. This panel changes when a seat changes, which is a matter of
+    // months, so a time of day would imply a freshness the data does not have. The roster stamps
+    // itself; the fetch time is only a fallback.
+    const d = data.lastUpdated ? new Date(data.lastUpdated) : null;
 
-    // Majority on the left, as on the House board. appendChild moves existing
-    // nodes, so re-appending in order is the reorder.
-    const bar = el('rep-fill')?.parentElement;
-    if (bar) {
-        const order = (c.D || 0) > (c.R || 0)
-            ? ['dem-fill', 'rep-fill', 'ind-fill', 'vac-fill']
-            : ['rep-fill', 'dem-fill', 'ind-fill', 'vac-fill'];
-        for (const id of order) { const node = el(id); if (node) bar.appendChild(node); }
-    }
-
-    // Vacancies: the Senate fills them by appointment in most states, so this is
-    // usually 0 and the section would otherwise sit empty asserting nothing.
-    const vacSection = el('vacancies-section');
-    const vacList = el('vacancies-list');
-    set('vacancies-count', data.vacancies ?? '--');
-    if (vacList) {
-        vacList.innerHTML = '';
-        const row = document.createElement('div');
-        row.className = 'vacancy-item';
-        // Short on purpose: this sits in a narrow column and a sentence wraps to
-        // three lines there.
-        row.textContent = data.vacancies
+    // The panel is lib/party-balance.js, shared with the House board. Vacancies: the Senate fills
+    // them by appointment in most states, so this is usually 0 and a list would otherwise sit empty
+    // asserting nothing. The row is short on purpose: it sits in a narrow column and a sentence wraps
+    // to three lines there.
+    PartyBalance.render({
+        counts: { R: c.R, D: c.D, I: c.I },
+        total: data.seats,
+        seats,
+        control: data.control,
+        vacancyCount: data.vacancies,
+        vacancyHtml: `<div class="vacancy-item">${data.vacancies
             ? `${data.vacancies} seat${data.vacancies === 1 ? '' : 's'} unfilled`
-            : `All ${data.seats || 100} seats filled`;
-        vacList.appendChild(row);
-    }
-    if (vacSection) vacSection.classList.remove('hidden');
-
-    // A date, not a clock time. This panel changes when a seat changes, which is
-    // a matter of months, so a time of day would imply a freshness the data does
-    // not have. The roster stamps itself; the fetch time is only a fallback.
-    const stamp = el('party-breakdown-last-update');
-    if (stamp) {
-        const d = data.lastUpdated ? new Date(data.lastUpdated) : null;
-        stamp.textContent = fmtDate(d && !isNaN(d) ? d : new Date());
-    }
+            : `All ${seats} seats filled`}</div>`,
+        stamp: fmtDate(d && !isNaN(d) ? d : new Date()),
+    });
 
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }
