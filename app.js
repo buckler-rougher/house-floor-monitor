@@ -8105,14 +8105,16 @@ function renderHouseCalendar() {
     line.textContent = parts.join(' \u00b7 ');
     line.hidden = false;
 
+    // In the card header, outside the clamped text, so the fade never hides it.
     const source = _calendar.source
-        ? ` <a href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
+        ? `Source: <a href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
+    const setSource = (n) => { const s = n && n.querySelector('.calendar-card-source'); if (s) setIfChanged(s, source); };
     // The orders agreed for today. Always visible when there are any: a phone has no hover.
     const orders = c.orders || [];
     if (card) {
         setIfChanged(card.querySelector('.calendar-card-body'), orders.map((o) =>
-            `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
-            + (source ? `<div class="calendar-card-source">Source:${source}</div>` : ''));
+            `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join(''));
+        setSource(card);
         const count = card.querySelector('.calendar-card-count');
         if (count) count.textContent = String(orders.length);
         card.hidden = orders.length === 0;
@@ -8125,8 +8127,8 @@ function renderHouseCalendar() {
         if (!node) continue;
         const e = standing.find((s) => s.kind === kind);
         if (!e) { node.hidden = true; continue; }
-        setIfChanged(node.querySelector('.calendar-card-body'), e.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('')
-            + (source ? `<div class="calendar-card-source">Source:${source}</div>` : ''));
+        setIfChanged(node.querySelector('.calendar-card-body'), e.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join(''));
+        setSource(node);
         node.hidden = false;
         if (node._measure) node._measure();
     }

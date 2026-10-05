@@ -10697,6 +10697,13 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     background: var(--bg-card);
     text-align: left;
 }
+.calendar-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-4) var(--sp-12);
+}
 .calendar-card-title {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
@@ -10735,7 +10742,6 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 .calendar-card-label + p { margin-top: var(--sp-4); }
 .calendar-card-source {
-    margin-top: var(--sp-8);
     font-size: var(--fs-2xs);
     letter-spacing: var(--track-wide);
     text-transform: uppercase;
