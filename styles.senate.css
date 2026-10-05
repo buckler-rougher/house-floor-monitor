@@ -1530,7 +1530,7 @@
 }
   .pip-speaker.is-uncertain .pip-speaker-name { color: var(--text-secondary); font-weight: 500; }
   .pip-speaker.is-uncertain .pip-speaker-photo-wrap { opacity: 0.55; }
-  .pip-speaker.is-unknown .pip-speaker-name { color: var(--text-muted); font-weight: 500; font-style: italic; }
+  .pip-speaker.is-unknown .pip-speaker-name { color: var(--text-muted); font-weight: 500; }
   .pip-speaker.is-clerk .pip-speaker-photo-wrap {
 
   background: transparent;
@@ -3175,7 +3175,7 @@
   .this-week-day-vote { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
   .this-week-day-fly { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
   .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
-  .this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); line-height: 1; }
+  .this-week-empty { color: var(--text-muted); font-size: var(--fs-sm); line-height: 1; }
   .voting-calendar-wrap {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4619,8 +4619,7 @@ font-family: var(--font-mono);
     gap: var(--sp-16);
 }
   .morning-hour-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
     padding-bottom: var(--sp-16);
@@ -4921,7 +4920,6 @@ font-family: var(--font-mono);
     font-size: var(--fs-base);
     color: var(--text-muted);
     margin: 0;
-    font-style: italic;
 }
   .pledge-header-right {
     display: flex;
@@ -4976,8 +4974,7 @@ font-family: var(--font-mono);
     line-height: 0;
 }
   .pledge-text {
-    font-size: var(--fs-3xl);
-    font-style: italic;
+    font-size: var(--fs-3xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -5094,7 +5091,6 @@ font-family: var(--font-mono);
     font-size: var(--fs-base);
     color: var(--text-muted);
     margin: 0;
-    font-style: italic;
 }
   .message-tag-time {
     font-size: var(--fs-sm);

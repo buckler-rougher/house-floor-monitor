@@ -2014,7 +2014,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .pip-speaker.is-uncertain .pip-speaker-name { color: var(--text-secondary); font-weight: 500; }
 .pip-speaker.is-uncertain .pip-speaker-photo-wrap { opacity: 0.55; }
-.pip-speaker.is-unknown .pip-speaker-name { color: var(--text-muted); font-weight: 500; font-style: italic; }
+.pip-speaker.is-unknown .pip-speaker-name { color: var(--text-muted); font-weight: 500; }
 
 .pip-speaker.is-clerk .pip-speaker-photo-wrap {
 
@@ -4411,7 +4411,7 @@ a.tweet-quote:hover {
 .this-week-day-vote   { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
 .this-week-day-fly    { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
 .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
-.this-week-empty { color: var(--text-muted); font-style: italic; font-size: var(--fs-sm); line-height: 1; }
+.this-week-empty { color: var(--text-muted); font-size: var(--fs-sm); line-height: 1; }
 
 .voting-calendar-wrap {
     display: grid;
@@ -6944,8 +6944,7 @@ body.one-minute-mode .one-minute-section {
 }
 
 .one-minute-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
     padding-bottom: var(--sp-16);
@@ -7042,8 +7041,7 @@ body.special-order-mode .special-order-section {
 }
 
 .special-order-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
     padding-bottom: var(--sp-16);
@@ -7140,8 +7138,7 @@ body.morning-hour-mode .morning-hour-section {
 }
 
 .morning-hour-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
     padding-bottom: var(--sp-16);
@@ -7713,7 +7710,6 @@ body.committee-chair-mode .committee-chair-section {
     font-size: var(--fs-base);
     color: var(--text-muted);
     margin: 0;
-    font-style: italic;
 }
 
 .pledge-leader-website {
@@ -7872,8 +7868,7 @@ body.committee-chair-mode .committee-chair-section {
 }
 
 .oath-text {
-    font-size: var(--fs-3xl);
-    font-style: italic;
+    font-size: var(--fs-3xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -7914,8 +7909,7 @@ body.committee-chair-mode .committee-chair-section {
 }
 
 .pledge-text {
-    font-size: var(--fs-3xl);
-    font-style: italic;
+    font-size: var(--fs-3xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -8051,7 +8045,6 @@ body.committee-chair-mode .committee-chair-section {
     font-size: var(--fs-base);
     color: var(--text-muted);
     margin: 0;
-    font-style: italic;
 }
 
 .speaker-member-website {
@@ -8130,8 +8123,7 @@ body.message-mode .message-section {
 }
 
 .message-from-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
     padding-bottom: var(--sp-12);
@@ -8205,8 +8197,7 @@ body.joint-meeting-mode .joint-meeting-section {
 }
 
 .joint-meeting-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -8780,8 +8771,7 @@ body.tellers-mode .tellers-section {
 }
 
 .journal-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
@@ -8857,8 +8847,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .joint-session-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -8967,8 +8956,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .cert-election-quote-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
@@ -9081,8 +9069,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .cert-electoral-quote-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
@@ -9153,8 +9140,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .sine-die-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -9175,8 +9161,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .sine-die-quote-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
@@ -9247,8 +9232,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .new-session-description-line {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
 }
@@ -9269,8 +9253,7 @@ body.joint-session-mode .joint-session-section {
 }
 
 .new-session-quote-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
@@ -9366,8 +9349,7 @@ body.admin-oath-mode .admin-oath-section {
 }
 
 .admin-oath-text {
-    font-size: var(--fs-2xl);
-    font-style: italic;
+    font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.7;
 }
