@@ -10581,12 +10581,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 
 @media (max-width: 640px) {
-    :root[data-chamber="senate"] .bill-modal-action-row {
+    .bill-modal-action-row {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--sp-6);
     }
-    :root[data-chamber="senate"] .bill-modal-action-row .bill-modal-date {
+    .bill-modal-action-row .bill-modal-date {
         text-align: left;
         white-space: normal;
     }
