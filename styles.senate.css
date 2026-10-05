@@ -6203,6 +6203,17 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     padding-bottom: 0;
     line-height: 1;
 }
+.calendar-line[hidden] { display: none; }
+.calendar-line {
+    margin-top: var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+}
 .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
     align-items: center;
 }

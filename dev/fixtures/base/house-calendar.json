@@ -13,6 +13,33 @@
     "label": "HOUR OF MEETING",
     "text": "On motion of Mr. Flood, by unanimous consent, Ordered, That when the House adjourns Wednesday, Sept. 2, 2026, it adjourn to meet at 9 a.m. on Thursday, Sept. 3, 2026. (Agreed to Sept. 2, 2026.)"
    }
+  ],
+  "standing": [
+   {
+    "kind": "special-order-speeches",
+    "label": "SPECIAL ORDER SPEECHES",
+    "paragraphs": [
+     "The Speaker's policy with regard to special-order speeches announced on February 11, 1994, as clarified and reiterated by subsequent Speakers, will continue to apply in the 119th Congress. The Chair may recognize Members for special-order speeches for up to 4 hours. Such speeches may not extend beyond the 4-hour limit without the permission of the Chair, which may be granted only with advance consultation between the leaderships and notification to the House. However, the Chair will not recognize for any special-order speeches beyond 10 o'clock in the evening.",
+     "The 4-hour limitation will be divided between the majority and minority parties. Each party is entitled to reserve its first hour for respective leaderships or their designees. The second hour reserved to each party will be divided into two 30-minute periods. Recognition for one-hour periods and for 30-minute periods will alternate initially and subsequently between the parties each day. The Chair wishes to clarify for Members that any 60-or 30-minute period that is not claimed at the appropriate time will be considered to have expired; this includes the first 60-minute period of the day.",
+     "The allocation of time within each party's 2-hour period (or shorter period if prorated to end by 10 p.m.) will be determined by a list submitted to the Chair by the respective leaderships. Members may not sign up with their leadership for any special-order speeches earlier than one week prior to the special order. Additionally, Members must sign up with their leadership for any special-order speech at least one day prior to the special order. The Chair will not recognize a Member for more than one special-order speech per week, nor may a Member sign up for a second special-order speech in the same week. Additional guidelines may be established for such sign-ups by the respective leaderships.",
+     "Pursuant to clause 2(a) of rule V, the television cameras will not pan the Chamber, but a “crawl” indicating the conduct of morning-hour debate or that the House has completed its legislative business and is proceeding with special-order speeches will appear on the screen. The Chair may announce other adaptations during this period.",
+     "The continuation of this format for recognition by the Speaker is without prejudice to the Speaker's ultimate power of recognition under clause 2 of rule XVII and includes the ability to withdraw recognition for longer special-order speeches should circumstances warrant."
+    ]
+   },
+   {
+    "kind": "morning-hour",
+    "label": "MORNING HOUR DEBATE",
+    "paragraphs": [
+     "That during the second session of the 119th Congress: (1) on legislative days of Monday or Tuesday when the House convenes pursuant to House Resolution 976, the House shall convene 2 hours earlier than the time otherwise established by the resolution for the purpose of conducting morning-hour debate; (2) on legislative days of Wednesday or Thursday when the House convenes pursuant to House Resolution 976, the House shall convene 2 hours earlier than the time otherwise established by the resolution for the purpose of conducting morning-hour debate; (3) when the House convenes pursuant to an order other than House Resolution 976, the House shall convene for the purpose of conducting morning-hour debate only as prescribed by such order; (4) the time for morning-hour debate shall be allocated equally between the parties and may not continue beyond 10 minutes before the hour appointed for the resumption of the session of the House; and (5) the form of proceeding for morning-hour debate shall be as follows: (a) the prayer by the Chaplain, the approval of the Journal and the Pledge of Allegiance to the flag shall be postponed until resumption of the session of the House; (b) initial and subsequent recognitions for debate shall alternate between the parties; (c) recognition shall be conferred by the Speaker only pursuant to lists submitted by the Majority Leader and by the Minority Leader; (d) no Member may address the House for longer than 5 minutes, except the Majority Leader, the Minority Leader, or the minority whip; (e) no legislative business shall be in order except the filing of privileged reports; and (f) following morning-hour debate, the Chair shall declare a recess pursuant to clause 12(a) of rule I until the time appointed for the resumption of the session of the House; and (6) the Speaker may dispense with morning-hour debate upon receipt of a notification described in clause 12(c) of rule I, or upon a change in reconvening pursuant to clause 12(e) of rule I, and notify Members accordingly. (Agreed to Jan. 6, 2026.)"
+    ]
+   },
+   {
+    "kind": "hour-of-meeting",
+    "label": "DAILY HOURS OF MEETING",
+    "paragraphs": [
+     "Pursuant to the provisions of H.Res. 976, and unless otherwise ordered, the hour of daily meeting of the House shall be 2 p.m. on Mondays; noon on Tuesdays (or 2 p.m. if no legislative business was conducted on the preceding Monday); noon on Wednesdays and Thursdays; and 9 a.m. on all other days of the week. (Agreed to Jan. 6, 2026.)"
+    ]
+   }
   ]
  },
  "source": "https://www.govinfo.gov/content/pkg/CCAL-119hcal-2026-09-03/html/CCAL-119hcal-2026-09-03-pt0.htm"

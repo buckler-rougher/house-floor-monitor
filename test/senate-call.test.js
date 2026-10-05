@@ -168,6 +168,15 @@ test('a vitiated quorum call ends, and keeps its names for display', () => {
   assert.deepStrictEqual(s.names, ['ALSOBROOKS', 'ARMSTRONG']);
 });
 
+test('the word said is kept: rescinded stays rescinded, vitiated stays vitiated', () => {
+  const resc = run([['THE CLERK WILL CALL THE ROLL. MS. BALDWIN.', T0], ['I ASK UNANIMOUS CONSENT THAT THE ORDER FOR THE QUORUM CALL BE RESCINDED.', T0 + 4000]]);
+  const vit = run([['THE CLERK WILL CALL THE ROLL. MS. BALDWIN.', T0], ['I ASK UNANIMOUS CONSENT THAT THE QUORUM CALL BE VITIATED.', T0 + 4000]]);
+  assert.strictEqual(resc.ended.how, 'vitiated');
+  assert.strictEqual(resc.ended.word, 'rescinded');
+  assert.strictEqual(vit.ended.word, 'vitiated');
+  assert.strictEqual(C.summarize(resc).ended.word, 'rescinded');
+});
+
 test('the call vitiated, words the other way round', () => {
   const s = run([
     ['MR. ARMSTRONG.', T0],

@@ -8055,44 +8055,95 @@ function updateModeClasses(mode) {
 // meets, morning-hour debate, and any postponed votes. The agreed orders are in the line's tooltip in full.
 // A day with no calendar (the House is not sitting) hides the line; a failure hides it too and says so in
 // the console, since a stale legislative day would be worse than none.
-// Has the hour of meeting passed? "9 A.M.", "10:30 A.M.", "12 NOON", read against Eastern time. A calendar
-// dated before today has certainly met; one that cannot be read keeps the future tense.
-function houseHasMet(isoDate, meetsAt) {
-    const m = /^(\d{1,2})(?::(\d{2}))?\s*(A\.?M\.?|P\.?M\.?|NOON)/i.exec(meetsAt || '');
-    if (!m) return false;
-    let h = +m[1] % 12;
-    const word = m[3].toUpperCase();
-    if (word === 'NOON') h = 12; else if (word[0] === 'P') h += 12;
-    const at = h * 60 + (+m[2] || 0);
-    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-    }).formatToParts(new Date()).map((p) => [p.type, p.value]));
-    const today = `${parts.year}-${parts.month}-${parts.day}`;
-    if (isoDate && isoDate < today) return true;
-    if (isoDate && isoDate > today) return false;
-    return +parts.hour * 60 + +parts.minute >= at;
+// The House Calendar's front page for today (GPO, via the Worker): the legislative day, when the House
+// meets, morning-hour debate, the day's agreed orders and the standing rules (special-order speeches,
+// morning-hour debate). A day with no calendar (the House is not sitting) hides all of it; a failure hides
+// it too and says so in the console, since a stale legislative day would be worse than none.
+let _calendar = null;
+
+// Each calendar card shows a clamped blurb with a plus button; the button opens the rest and becomes a
+// minus. A card whose text fits has no button (`.is-short`). Measured against the clamp, and again when the
+// card's size changes: a card inside a mode panel is not laid out until that mode is on screen.
+function wireCalendarCards() {
+    for (const card of document.querySelectorAll('.calendar-card')) {
+        const body = card.querySelector('.calendar-card-body');
+        const btn = card.querySelector('.calendar-card-toggle');
+        if (!body || !btn || card._wired) continue;
+        card._wired = true;
+        const measure = () => {
+            if (card.classList.contains('is-open') || !body.clientHeight) return;
+            card.classList.toggle('is-short', body.scrollHeight <= body.clientHeight + 1);
+        };
+        btn.addEventListener('click', () => {
+            const open = card.classList.toggle('is-open');
+            btn.setAttribute('aria-expanded', String(open));
+            btn.setAttribute('aria-label', open ? 'Show less' : 'Show all');
+            if (!open) measure();
+        });
+        if (window.ResizeObserver) new ResizeObserver(measure).observe(body);
+        card._measure = measure;
+    }
+}
+
+function renderHouseCalendar() {
+    const line = document.getElementById('calendar-line');
+    const card = document.getElementById('calendar-orders');
+    if (!line) return;
+    const c = _calendar && _calendar.calendar;
+    if (!c) {
+        line.hidden = true;
+        if (card) card.hidden = true;
+        for (const id of ['special-order-policy', 'morning-hour-policy']) { const n = document.getElementById(id); if (n) n.hidden = true; }
+        return;
+    }
+    const parts = [`Legislative day ${c.legislativeDay}`];
+    if (c.meetsAt) {
+        const met = Convening.hasMet(_calendar.date, c.meetsAt);
+        parts.push(`${met ? 'met' : 'meets'} at ${Convening.format(c.meetsAt)}${c.morningHour ? ' for morning-hour debate' : ''}`);
+    }
+    if ((c.orders || []).some((o) => o.kind === 'postponed-vote')) parts.push('postponed votes');
+    line.textContent = parts.join(' \u00b7 ');
+    line.hidden = false;
+
+    const source = _calendar.source
+        ? ` <a href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
+    // The orders agreed for today. Always visible when there are any: a phone has no hover.
+    const orders = c.orders || [];
+    if (card) {
+        setIfChanged(card.querySelector('.calendar-card-body'), orders.map((o) =>
+            `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
+            + (source ? `<div class="calendar-card-source">Source:${source}</div>` : ''));
+        const count = card.querySelector('.calendar-card-count');
+        if (count) count.textContent = String(orders.length);
+        card.hidden = orders.length === 0;
+        if (card._measure) card._measure();
+    }
+    // The standing rules, in the House's words, in the panel they govern.
+    const standing = c.standing || [];
+    for (const [id, kind] of [['special-order-policy', 'special-order-speeches'], ['morning-hour-policy', 'morning-hour']]) {
+        const node = document.getElementById(id);
+        if (!node) continue;
+        const e = standing.find((s) => s.kind === kind);
+        if (!e) { node.hidden = true; continue; }
+        setIfChanged(node.querySelector('.calendar-card-body'), e.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('')
+            + (source ? `<div class="calendar-card-source">Source:${source}</div>` : ''));
+        node.hidden = false;
+        if (node._measure) node._measure();
+    }
 }
 
 async function loadHouseCalendar() {
-    const line = document.getElementById('calendar-line');
-    if (!line) return;
+    if (!document.getElementById('calendar-line')) return;
     try {
         const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar');
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const body = await r.json();
-        const c = body.calendar;
-        if (!c) { line.hidden = true; return; }
-        const parts = [`Legislative day ${c.legislativeDay}`];
-        if (c.meetsAt) parts.push(`${houseHasMet(body.date, c.meetsAt) ? 'met' : 'meets'} at ${c.meetsAt}${c.morningHour ? ' for morning-hour debate' : ''}`);
-        if ((c.orders || []).some((o) => o.kind === 'postponed-vote')) parts.push('postponed votes');
-        line.textContent = parts.join(' \u00b7 ');
-        line.title = (c.orders || []).map((o) => `${o.label}: ${o.text}`).join('\n\n');
-        line.hidden = false;
+        _calendar = await r.json();
     } catch (e) {
-        line.hidden = true;
+        _calendar = null;
         console.error('House calendar unavailable:', e);
     }
+    wireCalendarCards();
+    renderHouseCalendar();
 }
 
 function init() {
@@ -8116,6 +8167,7 @@ function init() {
     updateTodayDate();
     setInterval(updateTodayDate, 60000); // Update date every minute
     loadHouseCalendar();
+    setInterval(renderHouseCalendar, 30 * 1000);   // "meets at" becomes "met at" when the hour passes
     setInterval(loadHouseCalendar, 20 * 60 * 1000);   // published once a sitting day; a new day is picked up
     
     
