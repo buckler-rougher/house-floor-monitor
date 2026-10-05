@@ -8179,16 +8179,36 @@ function updateModeClasses(mode) {
 // meets, morning-hour debate, and any postponed votes. The agreed orders are in the line's tooltip in full.
 // A day with no calendar (the House is not sitting) hides the line; a failure hides it too and says so in
 // the console, since a stale legislative day would be worse than none.
+// Has the hour of meeting passed? "9 A.M.", "10:30 A.M.", "12 NOON", read against Eastern time. A calendar
+// dated before today has certainly met; one that cannot be read keeps the future tense.
+function houseHasMet(isoDate, meetsAt) {
+    const m = /^(\d{1,2})(?::(\d{2}))?\s*(A\.?M\.?|P\.?M\.?|NOON)/i.exec(meetsAt || '');
+    if (!m) return false;
+    let h = +m[1] % 12;
+    const word = m[3].toUpperCase();
+    if (word === 'NOON') h = 12; else if (word[0] === 'P') h += 12;
+    const at = h * 60 + (+m[2] || 0);
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date()).map((p) => [p.type, p.value]));
+    const today = `${parts.year}-${parts.month}-${parts.day}`;
+    if (isoDate && isoDate < today) return true;
+    if (isoDate && isoDate > today) return false;
+    return +parts.hour * 60 + +parts.minute >= at;
+}
+
 async function loadHouseCalendar() {
     const line = document.getElementById('calendar-line');
     if (!line) return;
     try {
         const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar');
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const c = (await r.json()).calendar;
+        const body = await r.json();
+        const c = body.calendar;
         if (!c) { line.hidden = true; return; }
         const parts = [`Legislative day ${c.legislativeDay}`];
-        if (c.meetsAt) parts.push(`meets at ${c.meetsAt}${c.morningHour ? ' for morning-hour debate' : ''}`);
+        if (c.meetsAt) parts.push(`${houseHasMet(body.date, c.meetsAt) ? 'met' : 'meets'} at ${c.meetsAt}${c.morningHour ? ' for morning-hour debate' : ''}`);
         if ((c.orders || []).some((o) => o.kind === 'postponed-vote')) parts.push('postponed votes');
         line.textContent = parts.join(' \u00b7 ');
         line.title = (c.orders || []).map((o) => `${o.label}: ${o.text}`).join('\n\n');
