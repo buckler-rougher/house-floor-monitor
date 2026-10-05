@@ -10685,3 +10685,86 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 .vote-tl-result, .vote-tl-duration, .vote-tl-absences { padding-top: 2px; padding-bottom: 2px; }
 .whip-type-badge { padding-top: 1px; padding-bottom: 1px; }
+
+.calendar-card[hidden] { display: none; }
+.calendar-card {
+    position: relative;
+    max-width: 44rem;
+    margin: var(--sp-8) auto 0;
+    padding: var(--sp-8) var(--sp-12) var(--sp-12);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-8);
+    background: var(--bg-card);
+    text-align: left;
+}
+.calendar-card-title {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.calendar-card-count { margin-left: var(--sp-6); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.calendar-card-body {
+    max-height: 6.5rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+.calendar-card.is-open .calendar-card-body,
+.calendar-card.is-short .calendar-card-body {
+    max-height: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+}
+.calendar-card-body p {
+    margin: var(--sp-8) 0 0;
+    font-size: var(--fs-md);
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+.calendar-card-label {
+    margin-top: var(--sp-8);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.calendar-card-label + p { margin-top: var(--sp-4); }
+.calendar-card-source {
+    margin-top: var(--sp-8);
+    font-size: var(--fs-2xs);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.calendar-card-source a { color: var(--accent-blue); text-decoration: none; }
+.calendar-card-source a:hover { text-decoration: underline; }
+.calendar-card-toggle {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--sp-12) * -0.5);
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+.calendar-card-toggle:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.calendar-card-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.calendar-card.is-open .calendar-card-toggle .v { display: none; }
+.calendar-card.is-short .calendar-card-toggle { display: none; }
+.calendar-card.is-open { padding-bottom: calc(var(--sp-12) + 12px); }
+.calendar-card:not(.is-short) { margin-bottom: var(--sp-12); }
+.calendar-policy { margin-left: 0; margin-right: 0; max-width: none; }

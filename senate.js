@@ -1249,6 +1249,23 @@ let _stagesData = null;
 // The caucus schedule, kept so a pending stage card can say when its vote is.
 let _agenda = null;
 
+// When the Senate convenes today: the line under the floor status, as the House board has for its
+// Calendar. "Convenes at 3 P.M." until the hour, "Convened at" after. The time is the one the Democratic
+// Caucus schedule gives ("stand adjourned until 3:00pm on Monday, October 5"), which is the previous
+// order's convening time and is hand-written, so the line says whose it is. Shown only when that
+// schedule is for TODAY: the newest post is the next sitting's once the caucus posts it in the evening,
+// and a date that is not today is not asserted (the header already names the next convening).
+function renderConvening() {
+    const line = el('calendar-line');
+    if (!line) return;
+    const iso = _agenda && Convening.isoDate(_agenda.conveneDate);
+    if (!iso || !_agenda.conveneTime || iso !== Convening.today()) { line.hidden = true; return; }
+    const met = Convening.hasMet(iso, _agenda.conveneTime);
+    line.textContent = `${met ? 'Convened' : 'Convenes'} at ${Convening.format(_agenda.conveneTime)} \u00b7 Democratic Caucus schedule`;
+    line.hidden = false;
+}
+setInterval(renderConvening, 30 * 1000);   // "Convenes" becomes "Convened" when the hour passes
+
 // The two feeds spell a measure differently: the roll call record says
 // "S. 4668", the caucus schedule says "S.4668".
 const measureKey = (m) => String(m || '').replace(/\s+/g, '').toUpperCase();
@@ -1565,6 +1582,7 @@ async function loadFloorSchedule() {
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
         _agenda = data.agenda || null;
+        renderConvening();
         renderFloorSchedule(data.agenda, data.cloture);
         // The two feeds land in whichever order the network gives them, and a
         // pending card cannot say when its vote is until the schedule is in.

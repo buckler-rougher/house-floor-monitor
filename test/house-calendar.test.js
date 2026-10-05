@@ -79,6 +79,43 @@ ok('the standing special-order policy and morning-hour rule are not read as orde
   }
 });
 
+ok('the standing orders are kept: special-order speeches, morning-hour debate, daily hours', () => {
+  for (const d of ['2026-09-16', '2026-09-02', '2026-07-22', '2026-09-17']) {
+    const s = HC.parse(page(d)).standing;
+    assert.deepStrictEqual(s.map((e) => e.kind), ['special-order-speeches', 'morning-hour', 'hour-of-meeting'], d);
+  }
+});
+
+ok('the special-order policy is five paragraphs, whole, in the House\'s words', () => {
+  const so = HC.parse(page('2026-09-16')).standing[0];
+  assert.strictEqual(so.label, 'SPECIAL ORDER SPEECHES');
+  assert.strictEqual(so.paragraphs.length, 5);
+  assert.ok(/^The Speaker's policy with regard to special-order speeches announced on February 11, 1994/.test(so.paragraphs[0]));
+  assert.ok(/up to 4 hours/.test(so.paragraphs[0]));
+  assert.ok(/10 o'clock in the evening/.test(so.paragraphs[0]));
+  assert.ok(/more than one special-order speech per week/.test(so.paragraphs[2]));
+  assert.ok(!so.paragraphs.some((p) => /MORNING HOUR|\(Agreed to/.test(p)), 'must stop at its own end');
+});
+
+ok('typeset quotes become curly quotes', () => {
+  const so = HC.parse(page('2026-09-16')).standing[0];
+  assert.ok(so.paragraphs[3].includes('\u201ccrawl\u201d'), so.paragraphs[3]);
+  assert.ok(!so.paragraphs.join(' ').includes("''"));
+});
+
+ok('the morning-hour rule and the hours of meeting end with their own "Agreed to"', () => {
+  const [, mh, hm] = HC.parse(page('2026-09-16')).standing;
+  assert.ok(/^That during the second session of the 119th Congress/.test(mh.paragraphs[0]));
+  assert.ok(/\(Agreed to Jan\. 6, 2026\.\)$/.test(mh.paragraphs[0]));
+  assert.ok(/9 a\.m\. on all other days of the week/.test(hm.paragraphs[0]));
+  assert.strictEqual(hm.label, 'DAILY HOURS OF MEETING');
+});
+
+ok('a page with no standing section has standing null, with the rest still read', () => {
+  const r = HC.parse(page('2026-09-16').replace(/^SPECIAL ORDER\b/gm, 'SOMETHING ELSE'));
+  assert.strictEqual(r.standing, null);
+});
+
 ok('a page that is not a calendar is null, never a guess', () => {
   assert.strictEqual(HC.parse('<html><body><h1>Package not found</h1></body></html>'), null);
   assert.strictEqual(HC.parse(''), null);
