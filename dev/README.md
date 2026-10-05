@@ -222,3 +222,15 @@ run the control `await __cssCompare('/styles.css')` (the page's own stylesheet a
 must be SAME, and whatever it reports is noise, not the stylesheet. Use a timer,
 never `requestAnimationFrame`, in anything run through the browser pane: it does not fire when the
 pane is hidden.
+
+## Are the other people's servers still there?
+
+`npm run check-upstreams` (`dev/check-upstreams.mjs`) looks at everything the boards read from
+outside, in two groups: the deployed Worker's routes (shape checked, not just a 200) and the pages
+and feeds the Worker scrapes, read with the same parsers the Worker uses. It exits 1 on a FAIL; a
+warning is something that can be legitimately empty (no bills this week while the House is out). A 5xx
+or dropped connection is retried once, and a pass on the retry is reported as a warning rather than
+hidden. `--worker` and `--direct` run one group. It exists because the House Clerk deleted
+`evs/<year>/index.asp` without notice and the live board showed "--" until somebody pasted a console
+log. It deliberately does not check the FAA feed directly: its WAF refuses any non-browser client
+outside Cloudflare.
