@@ -10591,3 +10591,56 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         white-space: normal;
     }
 }
+
+@media (max-width: 640px) {
+    .bill-modal-committee-row {
+        flex-wrap: wrap;
+        gap: var(--sp-8) var(--sp-16);
+    }
+    .bill-modal-committees {
+        flex: 1 1 100%;
+    }
+    .bill-modal-committee {
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr);
+        column-gap: var(--sp-8);
+        row-gap: var(--sp-4);
+        align-items: center;
+        max-width: 100%;
+    }
+    .bill-modal-committee > .committee-chip-mark,
+    .bill-modal-committee > .committee-chip-logo {
+        align-self: start;
+    }
+    .bill-modal-committee > .committee-chip-name,
+    .bill-modal-committee > .committee-chip-tally {
+        grid-column: 2;
+    }
+}
+
+.vacancies-section.is-clear .vacancies-count {
+    color: var(--accent-green);
+}
+.vacancy-note {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-8);
+    padding: var(--sp-6) 0;
+    font-size: var(--fs-base);
+    color: var(--text-secondary);
+}
+.vacancy-note-mark {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent-amber) 18%, transparent);
+    color: var(--accent-amber);
+}
+.vacancy-note.is-clear .vacancy-note-mark {
+    background: color-mix(in srgb, var(--accent-green) 18%, transparent);
+    color: var(--accent-green);
+}
