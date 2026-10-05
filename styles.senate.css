@@ -4416,6 +4416,9 @@ font-family: var(--font-mono);
     border-radius: var(--radius-12);
     overflow: hidden;
 }
+  body.debate-mode .debate-section {
+    display: block;
+}
   .debate-section .bill-panel-nav {
     display: flex;
     width: 100%;
@@ -6220,4 +6223,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         padding: var(--sp-16) var(--sp-16);
         gap: var(--sp-8) var(--sp-8);
     }
+}
+.debate-tags-row {
+    flex-wrap: wrap;
+    row-gap: var(--sp-8);
+}
+@media (max-width: 640px) {
+  .debate-tags-row { padding: var(--sp-16); }
+  .debate-tags-row > .debate-source { margin-left: 0; flex-basis: 100%; }
 }

@@ -65,6 +65,9 @@
     pledge: { mode: 'pledge', since: FIXED - 5000 },
     'morning-business': { mode: 'morning-business', since: FIXED - 600000, limit: 10 },
     'wrap-up': { mode: 'wrap-up', since: FIXED - 60000 },
+    debate: { mode: 'debate', bill: 'S. 4668', since: FIXED - 90000, source: 'schedule' },
+    'debate-caption': { mode: 'debate', bill: 'H.R. 7008', since: FIXED - 90000 },
+    'debate-unknown': { mode: 'debate', bill: 'S.J.Res. 99', title: 'A joint resolution (no record yet)', since: FIXED - 90000, source: 'schedule' },
     leader: { mode: 'leader', which: 'Majority Leader', since: FIXED - 30000, first: 'THUNE' },
   };
 

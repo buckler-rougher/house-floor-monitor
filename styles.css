@@ -11579,3 +11579,15 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         gap: var(--sp-8) var(--sp-8);
     }
 }
+
+/* Debate header: HAPPENING NOW, the DEBATE tag with its time, a length or SCHEDULED tag, a rule tag,
+   then the source. With a time of day and a second tag that is wider than a tablet or a phone, and
+   the row clipped the source. It wraps instead; on a phone the source takes its own line. */
+.debate-tags-row {
+    flex-wrap: wrap;
+    row-gap: var(--sp-8);
+}
+@media (max-width: 640px) {
+    .debate-tags-row { padding: var(--sp-16); }
+    .debate-tags-row > .debate-source { margin-left: 0; flex-basis: 100%; }
+}
