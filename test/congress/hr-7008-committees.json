@@ -1,0 +1,10 @@
+{
+ "committees": [
+  {
+   "chamber": "House",
+   "name": "House Administration Committee",
+   "systemCode": "hshm00",
+   "type": "Standing"
+  }
+ ]
+}

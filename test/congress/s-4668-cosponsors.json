@@ -1,0 +1,120 @@
+{
+    "cosponsors": [
+        {
+            "bioguideId": "C000127",
+            "firstName": "Maria",
+            "fullName": "Sen. Cantwell, Maria [D-WA]",
+            "isOriginalCosponsor": true,
+            "lastName": "Cantwell",
+            "party": "D",
+            "sponsorshipDate": "2026-06-02",
+            "state": "WA",
+            "url": "https://api.congress.gov/v3/member/C000127?format=json"
+        },
+        {
+            "bioguideId": "S001227",
+            "firstName": "Eric",
+            "fullName": "Sen. Schmitt, Eric [R-MO]",
+            "isOriginalCosponsor": true,
+            "lastName": "Schmitt",
+            "middleName": "S.",
+            "party": "R",
+            "sponsorshipDate": "2026-06-02",
+            "state": "MO",
+            "url": "https://api.congress.gov/v3/member/S001227?format=json"
+        },
+        {
+            "bioguideId": "C001088",
+            "firstName": "Christopher",
+            "fullName": "Sen. Coons, Christopher A. [D-DE]",
+            "isOriginalCosponsor": true,
+            "lastName": "Coons",
+            "middleName": "A.",
+            "party": "D",
+            "sponsorshipDate": "2026-06-02",
+            "state": "DE",
+            "url": "https://api.congress.gov/v3/member/C001088?format=json"
+        },
+        {
+            "bioguideId": "W000800",
+            "firstName": "Peter",
+            "fullName": "Sen. Welch, Peter [D-VT]",
+            "isOriginalCosponsor": false,
+            "lastName": "Welch",
+            "party": "D",
+            "sponsorshipDate": "2026-07-13",
+            "state": "VT",
+            "url": "https://api.congress.gov/v3/member/W000800?format=json"
+        },
+        {
+            "bioguideId": "C001047",
+            "firstName": "Shelley",
+            "fullName": "Sen. Capito, Shelley Moore [R-WV]",
+            "isOriginalCosponsor": false,
+            "lastName": "Capito",
+            "middleName": "Moore",
+            "party": "R",
+            "sponsorshipDate": "2026-07-13",
+            "state": "WV",
+            "url": "https://api.congress.gov/v3/member/C001047?format=json"
+        },
+        {
+            "bioguideId": "H000273",
+            "firstName": "John",
+            "fullName": "Sen. Hickenlooper, John W. [D-CO]",
+            "isOriginalCosponsor": false,
+            "lastName": "Hickenlooper",
+            "middleName": "W.",
+            "party": "D",
+            "sponsorshipDate": "2026-08-05",
+            "state": "CO",
+            "url": "https://api.congress.gov/v3/member/H000273?format=json"
+        },
+        {
+            "bioguideId": "R000618",
+            "firstName": "Pete",
+            "fullName": "Sen. Ricketts, Pete [R-NE]",
+            "isOriginalCosponsor": false,
+            "lastName": "Ricketts",
+            "party": "R",
+            "sponsorshipDate": "2026-08-05",
+            "state": "NE",
+            "url": "https://api.congress.gov/v3/member/R000618?format=json"
+        },
+        {
+            "bioguideId": "H001061",
+            "firstName": "John",
+            "fullName": "Sen. Hoeven, John [R-ND]",
+            "isOriginalCosponsor": false,
+            "lastName": "Hoeven",
+            "party": "R",
+            "sponsorshipDate": "2026-09-14",
+            "state": "ND",
+            "url": "https://api.congress.gov/v3/member/H001061?format=json"
+        },
+        {
+            "bioguideId": "L000570",
+            "firstName": "Ben",
+            "fullName": "Sen. Luján, Ben Ray [D-NM]",
+            "isOriginalCosponsor": false,
+            "lastName": "Luján",
+            "middleName": "R.",
+            "party": "D",
+            "sponsorshipDate": "2026-09-14",
+            "state": "NM",
+            "url": "https://api.congress.gov/v3/member/L000570?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 9,
+        "countIncludingWithdrawnCosponsors": 9
+    },
+    "request": {
+        "billNumber": "4668",
+        "billType": "s",
+        "billUrl": "https://api.congress.gov/v3/bill/119/s/4668?format=json",
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

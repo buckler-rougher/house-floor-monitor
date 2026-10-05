@@ -1,0 +1,85 @@
+{
+    "bill": {
+        "actions": {
+            "count": 25,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/actions?format=json"
+        },
+        "amendments": {
+            "count": 74,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/amendments?format=json"
+        },
+        "cboCostEstimates": [
+            {
+                "description": "As reported by the Senate Committee on Commerce, Science, and Transportation on \nJune 24, 2026\n",
+                "pubDate": "2026-07-31T18:43:00Z",
+                "title": "S. 4668, Protect College Sports Act of 2026",
+                "url": "https://www.cbo.gov/publication/62630"
+            }
+        ],
+        "committees": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/committees?format=json"
+        },
+        "congress": 119,
+        "cosponsors": {
+            "count": 9,
+            "countIncludingWithdrawnCosponsors": 9,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/cosponsors?format=json"
+        },
+        "introducedDate": "2026-06-02",
+        "latestAction": {
+            "actionDate": "2026-09-28",
+            "text": "Passed Senate with an amendment by Yea-Nay Vote. 77 - 22. Record Vote Number: 250. (text: CR S5044-5063)"
+        },
+        "legislationUrl": "https://www.congress.gov/bill/119th-congress/senate-bill/4668",
+        "number": "4668",
+        "originChamber": "Senate",
+        "originChamberCode": "S",
+        "policyArea": {
+            "name": "Sports and Recreation"
+        },
+        "relatedBills": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/relatedbills?format=json"
+        },
+        "sponsors": [
+            {
+                "bioguideId": "C001098",
+                "firstName": "Ted",
+                "fullName": "Sen. Cruz, Ted [R-TX]",
+                "isByRequest": "N",
+                "lastName": "Cruz",
+                "party": "R",
+                "state": "TX",
+                "url": "https://api.congress.gov/v3/member/C001098?format=json"
+            }
+        ],
+        "subjects": {
+            "count": 13,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/subjects?format=json"
+        },
+        "summaries": {
+            "count": 2,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/summaries?format=json"
+        },
+        "textVersions": {
+            "count": 3,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/text?format=json"
+        },
+        "title": "Protect College Sports Act of 2026",
+        "titles": {
+            "count": 6,
+            "url": "https://api.congress.gov/v3/bill/119/s/4668/titles?format=json"
+        },
+        "type": "S",
+        "updateDate": "2026-10-02T21:07:40Z",
+        "updateDateIncludingText": "2026-10-02T21:07:40Z"
+    },
+    "request": {
+        "billNumber": "4668",
+        "billType": "s",
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
