@@ -158,6 +158,7 @@
     '/api/cold-start-bundle':           'cold-start-bundle.json',
     '/api/domewatch-floor':             'domewatch-floor.json',
     '/api/last-session-date':           'last-session-date.json',
+    '/api/house-calendar':              'house-calendar.json',
     '/api/airport-delays':              'airport-delays.json',
     // Longer key than /api/congress-index, and ROUTE_KEYS is sorted longest
     // first, so the roll fetch resolves here rather than being handed the index.

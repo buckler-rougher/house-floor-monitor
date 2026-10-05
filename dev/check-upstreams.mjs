@@ -32,6 +32,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ClerkVotes = require(join(ROOT, 'lib/clerk-votes.js'));
 const SenateSeniority = require(join(ROOT, 'lib/senate-seniority.js'));
 const SenateDesks = require(join(ROOT, 'lib/senate-desks.js'));
+const HouseCalendar = require(join(ROOT, 'lib/house-calendar.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -80,6 +81,8 @@ const CHECKS = [
   worker('house', 'domewatch-floor', (j) => has(j.now && typeof j.now.text === 'string', 'no now.text')),
   worker('house', 'hls-url', (j) => has(typeof j.isLive === 'boolean', 'no isLive')),
   worker('house', 'leadership', (j) => has(j.bioguideId && j.name, 'no leader')),
+  worker('house', 'house-calendar', (j) => j.calendar ? has(Number.isInteger(j.calendar.legislativeDay) && j.calendar.meetsAt, 'a calendar with no legislative day or meeting time')
+    : { warn: `no House Calendar for ${j.date} (normal when the House is not sitting)` }),
   worker('house', 'last-session-date', (j) => has(/^\d{4}-\d\d-\d\d$/.test(j.date || ''), `date ${j.date}`)),
   worker('house', 'voting-days', (j) => has(arr(j.votingDays).length > 100, 'too few voting days')),
   worker('house', 'whip-notices', (j) => arr(j.recs).length ? null : { warn: 'no whip recommendations' }),
@@ -115,6 +118,18 @@ const CHECKS = [
     return `https://clerk.house.gov/evs/${year}/roll${String(latest.rollNumber).padStart(3, '0')}.xml`;
   }, (r) => r.status === 200 && r.text.includes('<rollcall-vote>') ? null : { fail: `HTTP ${r.status}, not a roll call XML: ${r.text.slice(0, 80)}` }),
   direct('clerk Home/Feed (proceedings)', 'https://clerk.house.gov/Home/Feed', (r) => r.status === 200 && /<item[\s>]/.test(r.text) ? null : { fail: `HTTP ${r.status}, no items` }),
+  // GPO's House Calendar for the latest day the House sat: read with the same parser the Worker uses, so a
+  // change to the page's layout fails here and not as a missing line on the board.
+  direct('GPO House Calendar (latest sitting day)', async () => {
+    const r = await get(`${API}/house-floor/api/last-session-date`, { headers: { Origin: 'https://house-floor.evanhollander.org' } });
+    const d = JSON.parse(r.text).date;
+    if (!/^\d{4}-\d\d-\d\d$/.test(d || '')) throw new Error(`last-session-date gave ${d}`);
+    return `https://www.govinfo.gov/content/pkg/CCAL-119hcal-${d}/html/CCAL-119hcal-${d}-pt0.htm`;
+  }, (r) => {
+    if (r.status !== 200) return { fail: `HTTP ${r.status}` };
+    const c = HouseCalendar.parse(r.text);
+    return c && c.meetsAt && c.orders !== null ? null : { fail: c ? 'the calendar parsed but its meeting time or orders section did not (lib/house-calendar.js)' : 'not a House Calendar page (lib/house-calendar.js)' };
+  }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
   direct('house docs BillsThisWeek RSS', 'https://docs.house.gov/BillsThisWeek-RSS.xml', (r) => r.status === 200 && /<rss|<feed/.test(r.text) ? null : { fail: `HTTP ${r.status}, not a feed` }),
   direct('house voting days (ics)', 'https://votingdays.house.gov/voting-days.ics', (r) => r.status === 200 && r.text.includes('BEGIN:VCALENDAR') ? null : { fail: `HTTP ${r.status}, not a calendar` }),

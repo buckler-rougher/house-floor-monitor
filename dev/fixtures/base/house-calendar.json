@@ -1,0 +1,19 @@
+{
+ "date": "2026-09-03",
+ "calendar": {
+  "legislativeDay": 117,
+  "calendarDay": 117,
+  "date": "Thursday, September 3, 2026",
+  "suspensions": false,
+  "meetsAt": "9 A.M.",
+  "morningHour": false,
+  "orders": [
+   {
+    "kind": "meeting",
+    "label": "HOUR OF MEETING",
+    "text": "On motion of Mr. Flood, by unanimous consent, Ordered, That when the House adjourns Wednesday, Sept. 2, 2026, it adjourn to meet at 9 a.m. on Thursday, Sept. 3, 2026. (Agreed to Sept. 2, 2026.)"
+   }
+  ]
+ },
+ "source": "https://www.govinfo.gov/content/pkg/CCAL-119hcal-2026-09-03/html/CCAL-119hcal-2026-09-03-pt0.htm"
+}

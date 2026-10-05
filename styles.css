@@ -11532,3 +11532,41 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     padding-bottom: 0;
     line-height: 1;
 }
+
+/* The House Calendar's line under the floor status: the legislative day, when the House meets, whether
+   for morning-hour debate, and whether there are postponed votes. Absent on a day with no calendar. */
+.calendar-line[hidden] { display: none; }
+.calendar-line {
+    margin-top: var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A panel header's label and its badges (HAPPENING NOW, PASSAGE, ROLL CALL 295). The row was top-aligned,
+   so a label with an 18px line box and badges 19.5px tall shared a top edge and not a centre, and the
+   badges were sized by their padding and line height. Every item in a row that carries a badge is now
+   centred on the same line, and the badges are one explicit height (the same 20px as the bill modal's
+   tags). Scoped by :has() so a header without badges is untouched. */
+.panel-header:has(> .vote-type-tag),
+.panel-header:has(> .vote-id) {
+    align-items: center;
+}
+.panel-header > .vote-type-tag,
+.panel-header > .vote-id {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
+.panel-header:has(> .vote-type-tag) > .panel-label,
+.panel-header:has(> .vote-id) > .panel-label {
+    align-self: center;
+}
