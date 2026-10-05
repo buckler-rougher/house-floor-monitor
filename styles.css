@@ -11514,3 +11514,21 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     background: color-mix(in srgb, var(--accent-green) 18%, transparent);
     color: var(--accent-green);
 }
+
+/* The modal's header row: the ID and its tags. The tags used to be pulled up with margin-top: -3px
+   and sized by their own padding and line height, which left them 1.5px above the ID's centre and the
+   rule tag half a pixel shorter than the others (19px against 19.5px). The row already centres its
+   items, so every tag is now the same explicit height, no negative margin, and the caps are centred in
+   the box by the box. */
+.bill-modal-header .bill-modal-badge,
+.bill-modal-header .bill-rule-tag,
+.bill-modal-header .whip-tag {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}

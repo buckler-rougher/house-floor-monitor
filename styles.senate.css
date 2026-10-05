@@ -6190,3 +6190,13 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     background: color-mix(in srgb, var(--accent-green) 18%, transparent);
     color: var(--accent-green);
 }
+.bill-modal-header .bill-modal-badge {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
