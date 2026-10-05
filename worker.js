@@ -18,6 +18,7 @@ import './lib/senate-call.js';
 import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
 import './lib/clerk-votes.js';
+import './lib/congress-bills.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -1094,24 +1095,12 @@ async function fetchBillMeta(billId) {
       const s = (data.bill?.sponsors || [])[0];
       if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
 
-      // Committee report: derive a stable PDF URL from the citation.
-      // Always set committeeReportUrl (even null) so the enrichment cache knows
-      // "no report" vs "not yet checked" and doesn't re-fetch on every warm load.
-      // e.g. "H. Rept. 119-632" → https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf
-      const crpt = (data.bill?.committeeReports || [])[0];
-      result.committeeReportUrl = null;
-      result.committeeReportCitation = null;
-      if (crpt?.citation) {
-        const m = crpt.citation.match(/^(H|S)\.\s*Rept\.\s*(\d+)-(\d+)$/i);
-        if (m) {
-          const chamber = m[1].toLowerCase(); // h or s
-          const congress = m[2];
-          const num = m[3];
-          const slug = `${chamber}rpt${num}`; // hrpt632 / srpt632
-          result.committeeReportCitation = crpt.citation;
-          result.committeeReportUrl = `https://www.congress.gov/${congress}/crpt/${slug}/CRPT-${congress}${slug}.pdf`;
-        }
-      }
+      // Committee report: a stable PDF URL from the citation. Always set committeeReportUrl (even null)
+      // so the enrichment cache knows "no report" vs "not yet checked" and doesn't re-fetch on every
+      // warm load.
+      const link = committeeReportLink((data.bill?.committeeReports || [])[0]?.citation);
+      result.committeeReportUrl = link.url;
+      result.committeeReportCitation = link.citation;
     } catch {}
   }
   if (cosponsorsResp.ok) {
@@ -1137,59 +1126,26 @@ async function fetchBillMeta(billId) {
   return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
 }
 
-// "Ordered to be Reported" → "Reported by Committee xx – yy" / "Reported out of cmte by unanimous consent"
-function formatCommitteeReport(text) {
-  const t = text || '';
-  if (/unanimous consent/i.test(t)) return 'Reported out of cmte by unanimous consent';
-  const m = t.match(/yeas? and nays?:\s*(\d+)\s*[-–]\s*(\d+)/i);
-  if (m) return `Reported by Committee ${m[1]} – ${m[2]}`;
-  if (/voice vote/i.test(t)) return 'Reported by Committee (voice vote)';
-  return 'Reported by Committee';
-}
+const { formatCommitteeReport, pickCommitteeReport, committeeReportLink } = globalThis.CongressBills;
 
 async function fetchCongressBillStatus(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   try {
-    // limit=250 (the API maximum), not 20. The loop below wants two different
-    // things from this list: the most recent floor action, which is at the top
-    // under updateDate+desc, and the committee's "Ordered to be Reported", which
-    // is one of the oldest actions on the bill. Twenty was enough for a bill
-    // fresh out of committee but not for one that has since collected a rule,
-    // amendments and several floor days -- there the committee action falls off
-    // the end, and the bill silently shows no committee vote and no Rice index
-    // despite having been reported. The loop breaks as soon as it has both, so
-    // the larger page costs nothing in the common case.
+    // limit=250 (the API maximum), not 20. Two things are wanted from this list: the most recent
+    // floor action, which is at the top under updateDate+desc, and the committee's "Ordered to be
+    // Reported", which is one of the oldest actions on the bill. Twenty was enough for a bill fresh
+    // out of committee but not for one that has since collected a rule, amendments and several
+    // floor days -- there the committee action falls off the end, and the bill silently shows no
+    // committee vote and no Rice index despite having been reported.
     const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/actions?api_key=${_congressApiKey}&limit=250&sort=updateDate+desc`;
     const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!resp.ok) return null;
     const data = await resp.json();
 
     let floorStatus = null;
-    let committeeReport = null;
-    // A committee can appear in the action list two ways, and only one of them
-    // carries the markup vote:
-    //
-    //   "Ordered to be Reported (Amended) by the Yeas and Nays: 30 - 0."
-    //   "Reported by the Committee on Energy and Commerce. H. Rept. 119-286."
-    //
-    // Matching only the first missed every bill whose markup was not logged as a
-    // separate action -- H.R. 9615 was reported and still showed no committee
-    // vote and no Rice index. Prefer the ordered-to-be-reported action, because
-    // it is the one with the tally, but fall back to the formal report action so
-    // the bill at least reads as reported.
-    let committeeReportFallback = null;
 
     for (const action of (data.actions || [])) {
-      if (!committeeReport && action.type === 'Committee') {
-        const text = action.text || '';
-        if (/ordered to be reported/i.test(text)) {
-          committeeReport = { text: formatCommitteeReport(text), date: action.actionDate };
-        } else if (!committeeReportFallback && /reported\s+(?:\([^)]*\)\s+)?by\s+the\s+committee/i.test(text)) {
-          committeeReportFallback = { text: formatCommitteeReport(text), date: action.actionDate };
-        }
-      }
-
       // Floor: passage / failure
       if (!floorStatus && action.type === 'Floor') {
         const t = (action.text || '').toLowerCase();
@@ -1225,11 +1181,10 @@ async function fetchCongressBillStatus(billId) {
         }
       }
 
-      if (floorStatus && committeeReport) break;
+      if (floorStatus) break;
     }
 
-    // No markup action in the list, but the committee did report it.
-    if (!committeeReport && committeeReportFallback) committeeReport = committeeReportFallback;
+    const committeeReport = pickCommitteeReport(data.actions);
 
     // Always return an object (even if both are null) as a sentinel that the API was checked.
     // null return is reserved for transient errors (don't cache).
@@ -2987,7 +2942,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v3`, 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v4`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -3001,8 +2956,13 @@ async function handleSenateBill(env, billId) {
 
     // limit=250 because the support bar needs every cosponsor's party, not just
     // a count. The House modal splits the bar D/R/I and a count cannot do that.
-    const [record, summaries, cosponsors, committees] = await Promise.all([
+    // /actions (limit=250, the maximum) for the committee's report: the action that orders a bill
+    // reported is among the OLDEST on it, so a short page loses it for any bill that has since had
+    // floor days. The White House memo is looked up in the list the House modal already uses; its
+    // failure costs the link, not the bill.
+    const [record, summaries, cosponsors, committees, actions, sapRaw] = await Promise.all([
       call(''), call('/summaries?limit=5'), call('/cosponsors?limit=250'), call('/committees'),
+      call('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'),
     ]);
     const bill = record?.bill;
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
@@ -3030,6 +2990,13 @@ async function handleSenateBill(env, billId) {
       : type === 'sjres' ? 'senate-joint-resolution' : type === 'hjres' ? 'house-joint-resolution'
       : type === 'sconres' ? 'senate-concurrent-resolution' : type === 'hconres' ? 'house-concurrent-resolution' : type;
     const congressUrl = `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/${webType}/${number}`;
+    const report = pickCommitteeReport(actions?.actions);
+    const reportLink = committeeReportLink((bill.committeeReports || [])[0]?.citation);
+    const sapMap = (() => { try { return JSON.parse(sapRaw); } catch { return {}; } })();
+    // The memo list keys bills as "H.R. 7008"; the id asked for may be spaced any way ("H.R.7008", "S. 4668").
+    const squash = (x) => String(x).replace(/\s+/g, '').toUpperCase();
+    const sapKey = Object.keys(sapMap).find((k) => squash(k) === squash(billId));
+    const sapUrl = sapKey ? sapMap[sapKey] : null;
 
     return new Response(JSON.stringify({
       id: billId,
@@ -3052,10 +3019,24 @@ async function handleSenateBill(env, billId) {
         const n = (p) => all.filter((m) => m.party === p).length;
         return { D: n('D'), R: n('R'), I: all.length - n('D') - n('R'), total: all.length };
       })(),
-      committees: (committees?.committees || []).map((c) => c.name).filter(Boolean).slice(0, 4),
+      // Objects, as the House modal's chips take them: the chamber decides whether a committee gets
+      // its House seal (both chambers have a Judiciary), and a plain name cannot say which.
+      committees: (committees?.committees || []).filter((c) => c.name)
+        .map((c) => ({ name: c.name, chamber: c.chamber || null, systemCode: c.systemCode || null })).slice(0, 3),
+      // The reporting committee, in the House bill's own field names so one renderer draws both. The
+      // Senate mostly records no vote count, so committeeReport reads "Reported by Committee" and
+      // not a tally (see lib/congress-bills.js).
+      committeeReport: report ? report.text : null,
+      committeeReportDate: report ? report.date : null,
+      committeeReportUrl: reportLink.url,
+      committeeReportCitation: reportLink.citation,
+      sapUrl,
       summary,
       latestAction: bill.latestAction?.text || null,
       latestActionDate: bill.latestAction?.actionDate || null,
+      // Congress.gov, which dates an action but gives no time of day. The House replaces this with
+      // its Clerk and Bluesky feeds for the live week; the Senate has no equivalent.
+      actionSource: 'congress',
       congressUrl,
       textUrl: `${congressUrl}/text`,
       govinfoPdf: `https://www.govinfo.gov/link/bills/${CURRENT_CONGRESS}/${type}/${number}?link-type=pdf`,

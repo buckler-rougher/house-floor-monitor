@@ -1,0 +1,23 @@
+{
+ "bill": {
+  "congress": 119,
+  "type": "HR",
+  "number": "7008",
+  "title": "A bill to amend chapter 131 of title 5 to require certain restrictions on stocks for Members of Congress and their spouses and dependents, and for other purposes.",
+  "introducedDate": "2025-12-10",
+  "committeeReports": [
+   {
+    "citation": "H. Rept. 119-479",
+    "url": "https://api.congress.gov/v3/committee-report/119/HRPT/479?format=json"
+   }
+  ],
+  "sponsors": [],
+  "policyArea": {
+   "name": "Government Operations and Politics"
+  },
+  "latestAction": {
+   "actionDate": "2026-09-30",
+   "text": "Motion to proceed: cloture not invoked in Senate by Yea-Nay Vote. 53 - 47."
+  }
+ }
+}
