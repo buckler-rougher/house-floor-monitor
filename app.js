@@ -1044,8 +1044,8 @@ function startSSEStreaming() {
                     renderProceedingsFeedPanel(data.items); // update the visible panel
                     autoSwitchModeFromProceedings(data.items);
                     updateBillStatusFromProceedings(data.items);
-                    if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
-                    if (updateAmendmentVotes(data.items)) updateBillsDisplay();
+                    // Both updaters run; one redraw if either changed anything.
+                    if ([updateMotionsToRecommit(data.items), updateAmendmentVotes(data.items)].some(Boolean)) updateBillsDisplay();
                     updateDebateSection(data.items);
                     updatePrayerSection(data.items);
                     updateSilenceSection(data.items);
@@ -5746,11 +5746,8 @@ async function updateProceedingsFeed() {
         // Mark any voice-vote or agreed-to passages reflected in proceedings
         updateBillStatusFromProceedings(data.items);
 
-        // Update motion to recommit indicator on bill cards
-        if (updateMotionsToRecommit(data.items)) updateBillsDisplay();
-
-        // Update amendment vote indicators on bill cards
-        if (updateAmendmentVotes(data.items)) updateBillsDisplay();
+        // Update motion to recommit and amendment vote indicators on bill cards (one redraw)
+        if ([updateMotionsToRecommit(data.items), updateAmendmentVotes(data.items)].some(Boolean)) updateBillsDisplay();
 
         // Update debate section with latest bill information
         updateDebateSection(data.items);
