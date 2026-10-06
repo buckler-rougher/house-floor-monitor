@@ -83,6 +83,9 @@ function boardDate(value) {
 const stripMarks = (t) => String(t ?? '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim();
 
 const el = (id) => document.getElementById(id);
+// (?) explanations: the engine is lib/info-popup.js, the same one the House board uses; what is true of both
+// chambers is lib/info-content.js. Senate-procedure entries are added here when they are written.
+InfoPopup.register(SharedInfoContent);
 
 // The animation module needs this board's nodes; ids differ per page.
 globalThis.BoardAnimations?.init?.({ absenteeList: document.getElementById('absentee-list') });
@@ -853,6 +856,9 @@ function billModalContent(b) {
                         report: b.committeeReportUrl,
                         reportTitle: b.committeeReportCitation,
                         memo: b.sapUrl,
+                        // The (?) beside the memo button, as on the House board: drawn once its explanation exists, and
+                        // in ?fixtures so it can be reviewed before then.
+                        memoHelp: (InfoPopup.has('sap') || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
                         congress: b.congressUrl,
                     })}
                 </div>
