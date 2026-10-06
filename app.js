@@ -5220,6 +5220,7 @@ Notice types:
 // INFO_CONTENT above, and what is true of both chambers is lib/info-content.js.
 InfoPopup.register(SharedInfoContent);
 InfoPopup.register(INFO_CONTENT);
+InfoPopup.reveal();
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {

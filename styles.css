@@ -11742,3 +11742,8 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
    fading out, and the plus opens the rest. A day with none is a single quiet line. */
 #calendar-orders .calendar-card-body { max-height: 2.9rem; }
 .calendar-card-body p.calendar-card-empty { margin: var(--sp-8) 0 0; font-size: var(--fs-md); color: var(--text-muted); }
+
+/* A (?) beside the VACANCIES label. The header spreads its label and count to the two ends, so the label and its
+   help are one group. `[hidden]` has to win over .info-btn's own display. */
+.vacancies-title { display: inline-flex; align-items: center; gap: var(--sp-8); }
+.info-btn[hidden] { display: none; }
