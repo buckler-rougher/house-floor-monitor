@@ -10872,3 +10872,20 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     .info-popup-table th, .info-popup-table td { padding: var(--sp-8) var(--sp-6); }
     .info-popup-table tbody th { width: 28%; }
 }
+
+.vote-title .vote-title-help {
+    width: 24px;
+    height: 24px;
+    margin-left: var(--sp-12);
+    font-size: var(--fs-sm);
+    vertical-align: middle;
+}
+
+.mtr-card .mtr-help {
+    width: 15px;
+    height: 15px;
+    margin-left: auto;
+    font-size: 8px;
+    padding: 0;
+    opacity: 1;
+}
