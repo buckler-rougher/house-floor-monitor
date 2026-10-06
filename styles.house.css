@@ -10831,3 +10831,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 .vacancies-title { display: inline-flex; align-items: center; gap: var(--sp-8); }
 .info-btn[hidden] { display: none; }
+
+.cotw-indicator { position: relative; }
+.cotw-indicator .cotw-help {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: var(--sp-8);
+}

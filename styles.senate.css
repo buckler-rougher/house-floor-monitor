@@ -6422,3 +6422,4 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .bill-link-group > .info-btn.bill-link-help.senate:hover { background: color-mix(in srgb, var(--accent-blue) 10%, transparent); border-color: var(--accent-blue); }
 .vacancies-title { display: inline-flex; align-items: center; gap: var(--sp-8); }
 .info-btn[hidden] { display: none; }
+.cotw-indicator { position: relative; }
