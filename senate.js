@@ -1082,7 +1082,7 @@ function nominationModalContent(n, id, vote) {
                 </div>
                 <div class="bill-modal-foot">
                     <div class="bill-modal-section">
-                        <div class="bill-modal-section-label">LINKS</div>
+                        <div class="bill-modal-section-label">RESOURCES</div>
                         <div class="bill-doc-links">${links}</div>
                     </div>
                 </div>

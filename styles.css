@@ -5934,7 +5934,7 @@ font-family: var(--font-mono);
 }
 
 /* Outer scroll safety net: when the NON-summary content (e.g. a very long rule
-   title) is itself too tall to fit, the whole interior scrolls so the footer/LINKS
+   title) is itself too tall to fit, the whole interior scrolls so the footer/RESOURCES
    row is never clipped. It's a flex column so the summary box can still flex-grow
    and own the scroll in the common case (single scrollbar, original feel). The
    close button stays pinned — it's positioned on .bill-modal, outside this wrapper. */
@@ -6152,7 +6152,7 @@ font-family: var(--font-mono);
 }
 .bill-doc-link:hover { background: rgba(88, 166, 255, 0.14); border-color: var(--accent-blue); }
 
-/* LINKS row: the two source links + copy button sit inline, consistent size.
+/* RESOURCES row: the two source links + copy button sit inline, consistent size.
    The links are .bill-modal-link (colored by procedure); reset their stacked margin. */
 .bill-doc-links .bill-modal-link {
     margin-top: 0;
