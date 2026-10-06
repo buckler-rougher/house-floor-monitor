@@ -8803,7 +8803,8 @@ const QUESTION_HELP = [
     [/motion to recommit/i, 'motion-to-recommit'],
     [/previous question/i, 'previous-question'],
     [/motion to suspend the rules/i, 'under-suspension'],
-    [/quorum/i, 'quorum'],
+    // The Clerk records a quorum call as vote-type QUORUM; the one in all of 2025 was roll 1, "Call by States", on 3 January.
+    [/quorum|call by states|call of the house/i, 'quorum'],
 ];
 const inFixtures = () => new URLSearchParams(location.search).has('fixtures');
 function questionHelpKey(question) {
