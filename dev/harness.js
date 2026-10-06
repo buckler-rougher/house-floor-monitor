@@ -199,6 +199,16 @@
   const cache = new Map();
   async function loadFixture(name) {
     if (cache.has(name)) return cache.get(name);
+    // ?question=recommit | pq | suspend | passage swaps the question the vote fixture asks, so the title's (?) and the
+    // tag can be seen for each. Only the vote fixture, and only the question text.
+    const QUESTIONS = {
+      recommit: 'H R 4795 - On Motion to Recommit',
+      pq: 'H RES 1490 - On Ordering the Previous Question',
+      suspend: 'H R 4795 - On Motion to Suspend the Rules and Pass',
+      passage: 'H R 4795 - On Passage',
+    };
+    const asked = QUESTIONS[new URLSearchParams(location.search).get('question')];
+    const withQuestion = (text) => (asked && /domewatch-floor/.test(name) ? text.split('H R 4795 - On Passage').join(asked) : text);
     const p = (async () => {
       // Cloudflare Pages answers an unknown path with index.html and status 200,
       // so r.ok is true for a fixture that does not exist and the caller gets a
@@ -230,7 +240,7 @@
         const r = await fetch(url, { cache: 'no-store' });
         if (!r.ok) continue;
         const text = await r.text();
-        if (usable(text)) return dated(text);
+        if (usable(text)) return withQuestion(dated(text));
       }
       const r = await fetch(BASE + 'base/' + name, { cache: 'no-store' });
       if (!r.ok) throw new Error(`fixture missing: ${name}`);

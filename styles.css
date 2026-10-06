@@ -11802,3 +11802,22 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     .info-popup-table th, .info-popup-table td { padding: var(--sp-8) var(--sp-6); }
     .info-popup-table tbody th { width: 28%; }
 }
+
+/* The (?) beside a vote's question: a little larger than the page's other ones, to sit beside the 28px headline,
+   and level with the text. */
+.vote-title .vote-title-help {
+    width: 24px;
+    height: 24px;
+    margin-left: var(--sp-12);
+    font-size: var(--fs-sm);
+    vertical-align: middle;
+}
+/* On the motion-to-recommit chip (a thin 10px strip) the (?) is small and pushed to the chip's right end. */
+.mtr-card .mtr-help {
+    width: 15px;
+    height: 15px;
+    margin-left: auto;
+    font-size: 8px;
+    padding: 0;
+    opacity: 1;
+}

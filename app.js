@@ -1345,14 +1345,19 @@ function updateFloorDisplay(status = null) {
         const question = floorData.rollCall.question;
         const title = floorData.rollCall.bill?.title || '';
         
+        // The (?) goes right after the question text, before the bill's name on the line below.
+        const helpKey = questionHelpKey(question);
+        const help = document.createElement('span');
+        if (helpKey) help.innerHTML = helpButtonHtml(helpKey, 'About this question', 'vote-title-help');
         if (title) {
             elements.voteTitle.textContent = '';
             const sub = document.createElement('span');
             sub.style.cssText = 'font-weight:300;opacity:0.8';
             sub.textContent = title;
-            elements.voteTitle.append(question, document.createElement('br'), sub);
+            elements.voteTitle.append(question, ...help.childNodes, document.createElement('br'), sub);
         } else {
             elements.voteTitle.textContent = question;
+            elements.voteTitle.append(...help.childNodes);
         }
     }
 
@@ -4555,11 +4560,12 @@ function createBillCard(bill, procedure) {
         const mtrLabel = mtr.status === 'failed' ? `${mtrTypeName} Failed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                        : mtr.status === 'passed' ? `${mtrTypeName} Passed${mtr.voteText ? ' · ' + mtr.voteText : ''}`
                        : `${mtrTypeName} · Vote Pending`;
+        const mtrHelpKey = (InfoPopup.has('motion-to-recommit') || inFixtures()) ? 'motion-to-recommit' : null;
         const mtrIcon = StatusMarks.chip(mtr.status);
         mtrBlockHtml = `
         <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
-            <span class="mtr-label">${mtrLabel}</span>
+            <span class="mtr-label">${mtrLabel}</span>${mtrHelpKey ? helpButtonHtml(mtrHelpKey, 'About the motion to recommit', 'mtr-help') : ''}
         </div>
         <div class="mtr-connector" aria-hidden="true"></div>`;
     }
@@ -8373,11 +8379,13 @@ function init() {
             if (trackBtn) { toggleBillTracked(trackBtn.dataset.billId); return; }
             const amdtCard = e.target.closest('.amdt-vote-card');
             if (amdtCard) { openAmdtCard(amdtCard); return; }
+            if (e.target.closest('.info-btn')) return;   // a (?) on a chip opens its explanation, not the bill
             const card = e.target.closest('[data-bill-id]');
             if (card) openBillModal(card.dataset.billId);
         });
         billsSection.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') {
+                if (e.target.closest('.info-btn')) return;
                 const amdtCard = e.target.closest('.amdt-vote-card');
                 if (amdtCard) { e.preventDefault(); openAmdtCard(amdtCard); return; }
                 const card = e.target.closest('[data-bill-id]');
@@ -8764,6 +8772,23 @@ function updateUI() {
     setTimeout(() => {
         fetchVotingDays();
     }, 1000);
+}
+
+// The (?) beside a vote's question and on a motion-to-recommit chip. The board's vote title names the question
+// ("H R 4795 - On Motion to Recommit"); a (?) is drawn for the questions that have an explanation, and only once
+// that explanation exists (or in ?fixtures, so the placement can be reviewed first).
+const QUESTION_HELP = [
+    [/motion to recommit/i, 'motion-to-recommit'],
+    [/previous question/i, 'previous-question'],
+    [/motion to suspend the rules/i, 'under-suspension'],
+];
+const inFixtures = () => new URLSearchParams(location.search).has('fixtures');
+function questionHelpKey(question) {
+    const hit = QUESTION_HELP.find(([re]) => re.test(String(question || '')));
+    return hit && (InfoPopup.has(hit[1]) || inFixtures()) ? hit[1] : null;
+}
+function helpButtonHtml(key, label, cls = '') {
+    return `<button type="button" class="info-btn ${cls}" data-info="${key}" aria-label="${escapeHtml(label)}">?</button>`;
 }
 
 function updateVoteTypeTag(question) {
