@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, '..');
 // Where explanations live. Add a file here if a new one starts citing sources.
 const FILES = ['app.js', 'senate.js', 'index.html', 'senate.html', 'lib/info-content.js'];
 
-const CRS = /crs_external_products\/(?:R|RS|IF)\/PDF\/([A-Za-z0-9-]+)\/\1\.(\d+)\.pdf"[^>]*>CRS Report \1<\/a>\s*(?:\((\d{4})\))?/g;
+const CRS = /crs_external_products\/(?:R|RS|IF|RL)\/PDF\/([A-Za-z0-9-]+)\/\1\.(\d+)\.pdf"[^>]*>CRS Report \1<\/a>\s*(?:\((\d{4})\))?/g;
 // Non-CRS sources the explanations lean on: precedents on govinfo and the artwork's catalogue page.
 const OTHER = /https:\/\/(?:www\.govinfo\.gov\/content\/pkg\/GPO-HPREC[^"'\s]+\.pdf|artgallery\.yale\.edu\/collections\/objects\/\d+)/g;
 
