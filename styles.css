@@ -11835,3 +11835,33 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     padding: 0;
     opacity: 1;
 }
+
+/* Inline pills on the joint meeting and joint session panels, the shape of the other modes' pills
+   (.one-minute-pill, .special-order-pill, .privilege-pill) in each panel's own tag colour: plum for a joint
+   meeting (#4a1942), amber-brown for a joint session (#4a2800). */
+.joint-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    margin-top: var(--sp-16);
+}
+.joint-meeting-pill,
+.joint-session-pill {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: var(--sp-4) var(--sp-10);
+    border-radius: var(--radius-12);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.joint-meeting-pill {
+    background: rgba(74, 25, 66, 0.3);
+    border: 1px solid rgba(190, 110, 175, 0.4);
+    color: #d596cb;
+}
+.joint-session-pill {
+    background: rgba(74, 40, 0, 0.32);
+    border: 1px solid rgba(210, 150, 60, 0.4);
+    color: #e4a95c;
+}
