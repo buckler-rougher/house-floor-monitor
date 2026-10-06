@@ -5563,9 +5563,16 @@ font-family: var(--font-mono);
   @media (max-width: 640px) {
     body { overflow-x: hidden; }
     .info-btn, .whip-info-tip {
-        width: 32px;
-        height: 32px;
+        width: 20px;
+        height: 20px;
+        position: relative;
     }
+    .info-btn::before, .whip-info-tip::before {
+        content: "";
+        position: absolute;
+        inset: -12px;
+    }
+    .info-btn.bill-link-help::before { display: none; }
     .whip-filter-btn, .absentee-filter-btn {
         min-height: 36px;
         padding-top: var(--sp-8);
