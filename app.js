@@ -8086,33 +8086,15 @@ function renderHouseCalendar() {
     const setSource = (n) => { const s = n && n.querySelector('.calendar-card-source'); if (s) setIfChanged(s, source); };
     // The orders agreed for today. Shown on every sitting day the Calendar could be read: a clamped blurb
     // that opens, as the policy cards do. `orders: null` means the page had a shape this could not read,
-    // which is not the same as none, and hides the card. When no order set today's hour of meeting, the
-    // standing DAILY HOURS OF MEETING order is what governs it, so that is shown in its place (labelled as
-    // the Calendar labels it) and is not counted as one of the day's orders.
+    // which is not the same as none, and hides the card. Only what the Calendar lists is shown: an hour of
+    // meeting can be set by something it does not list (the Speaker's adjournment announcement), so the
+    // standing daily hours are not quoted as if they explained it.
     if (card) {
         const orders = c.orders;
         if (orders === null || orders === undefined) {
             card.hidden = true;
         } else {
             const items = orders.map((o) => ({ label: o.label, text: o.text }));
-            if (!orders.some((o) => o.kind === 'meeting')) {
-                const daily = (c.standing || []).find((s) => s.kind === 'hour-of-meeting');
-                if (daily) {
-                    const text = daily.paragraphs.join(' ');
-                    // The standing hours only explain today's hour if today's hour is one of them (two hours
-                    // earlier on a morning-hour day). When it is not, the Calendar has an hour it gives no
-                    // order for, and quoting noon beside "meets at 4 P.M." would contradict it; say so instead.
-                    const allowed = Convening.dailyHours(text, _calendar.date);
-                    const meets = Convening.minutes(c.meetsAt);
-                    const early = c.morningHour ? 120 : 0;
-                    const fits = meets === null || (allowed && allowed.some((t) => t === meets || t - early === meets));
-                    items.push({
-                        label: daily.label,
-                        text: fits ? text
-                            : `The Calendar shows the House meeting at ${Convening.format(c.meetsAt)} but lists no order that sets that hour, and it is not one of the hours below. The standing order, which applies unless otherwise ordered, reads: ${text}`,
-                    });
-                }
-            }
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
                 ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
                 : '<p class="calendar-card-empty">No orders are listed for this day.</p>');
