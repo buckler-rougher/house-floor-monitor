@@ -1633,6 +1633,7 @@ const elements = {
     privilegeCard: document.getElementById('privilege-card'),
     privilegeSection: document.getElementById('privilege-section'),
     privilegeTagText: document.getElementById('privilege-tag-text'),
+    privilegeHelp: document.getElementById('privilege-help'),
     privilegePills: document.getElementById('privilege-pills'),
     privilegeResolution: document.getElementById('privilege-resolution'),
     privilegeResolutionId: document.getElementById('privilege-resolution-id'),
@@ -6808,6 +6809,7 @@ function updateSpeakerSection(items) {
 const PRIVILEGE_KINDS = {
     personal: {
         mode: 'privilege',
+        help: 'personal-privilege',
         tag: 'POINT OF PERSONAL PRIVILEGE',
         match: /^POINT\s+OF\s+PERSONAL\s+PRIVILEGE\b/i,
         empty: 'A Member has risen to a point of personal privilege.',
@@ -6815,6 +6817,7 @@ const PRIVILEGE_KINDS = {
     },
     house: {
         mode: 'house-privilege',
+        help: 'privileges-of-the-house',
         tag: 'QUESTION OF THE PRIVILEGES OF THE HOUSE',
         match: /^QUESTION\s+OF\s+THE\s+PRIVILEGES\s+OF\s+THE\s+HOUSE\b/i,
         empty: 'A Member has risen to a question of the privileges of the House.',
@@ -6865,6 +6868,11 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     const k = kind || PRIVILEGE_KINDS.personal;
 
     if (elements.privilegeTagText) elements.privilegeTagText.textContent = k.tag;
+    // The (?) explains whichever kind this is, and is drawn once that explanation exists (or in ?fixtures).
+    if (elements.privilegeHelp) {
+        elements.privilegeHelp.dataset.info = k.help;
+        elements.privilegeHelp.hidden = !(InfoPopup.has(k.help) || inFixtures());
+    }
     if (elements.privilegeSection) elements.privilegeSection.classList.toggle('is-house', k.mode === 'house-privilege');
     if (elements.privilegePills) {
         elements.privilegePills.innerHTML = k.pills
