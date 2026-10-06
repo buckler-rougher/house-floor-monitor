@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261006e">
+    <link rel="stylesheet" href="styles.house.css?v=20261006f">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -210,11 +210,6 @@
                 <br>
                 <span class="floor-status" id="floor-status">Loading...</span>
                 <div class="calendar-line" id="calendar-line" hidden></div>
-                <div class="calendar-card" id="calendar-orders" hidden>
-                    <div class="calendar-card-head"><div class="calendar-card-title">Orders of the day <span class="calendar-card-count"></span></div><div class="calendar-card-source"></div></div>
-                    <div class="calendar-card-body"></div>
-                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
-                </div>
                 <div class="next-session-countdown" id="next-session-countdown" style="display:none">
                     Next session: --
                 </div>
@@ -223,6 +218,11 @@
                 </a>
                 <div class="cotw-indicator" id="cotw-indicator" style="display:none">
                     In Committee of the Whole
+                </div>
+                <div class="calendar-card" id="calendar-orders" hidden>
+                    <div class="calendar-card-head"><div class="calendar-card-title">Orders of the day <span class="calendar-card-count"></span></div><div class="calendar-card-source"></div></div>
+                    <div class="calendar-card-body"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
                 </div>
             </div>
 
@@ -1621,7 +1621,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261006h"></script>
+    <script defer src="app.js?v=20261006j"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

@@ -11740,5 +11740,5 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 /* The day's orders collapse harder than the policies do: a typical day has one or two short orders, which
    would otherwise sit just under the clamp and never offer the toggle. Two lines of the first order show,
    fading out, and the plus opens the rest. A day with none is a single quiet line. */
-#calendar-orders .calendar-card-body { max-height: 4.4rem; }
+#calendar-orders .calendar-card-body { max-height: 2.9rem; }
 .calendar-card-body p.calendar-card-empty { margin: var(--sp-8) 0 0; font-size: var(--fs-md); color: var(--text-muted); }
