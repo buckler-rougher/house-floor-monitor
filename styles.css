@@ -11811,6 +11811,10 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     margin-left: var(--sp-12);
     font-size: var(--fs-sm);
     vertical-align: middle;
+    /* `middle` centres on the lowercase height, which left it 0.1em of the headline below the middle of the
+       capitals. Raised by that fraction of the headline's own size (measured against the cap height). */
+    position: relative;
+    top: calc(var(--fs-7xl) * -0.1026);
 }
 /* On the motion-to-recommit chip (a thin 10px strip) the (?) is small and pushed to the chip's right end. */
 .mtr-card .mtr-help {

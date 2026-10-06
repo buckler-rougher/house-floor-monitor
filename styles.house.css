@@ -10879,6 +10879,9 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     margin-left: var(--sp-12);
     font-size: var(--fs-sm);
     vertical-align: middle;
+
+    position: relative;
+    top: calc(var(--fs-7xl) * -0.1026);
 }
 
 .mtr-card .mtr-help {
