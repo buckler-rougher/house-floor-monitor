@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261007a">
+    <link rel="stylesheet" href="styles.house.css?v=20261007b">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -628,9 +628,12 @@
             <!-- Joint Session Section -->
             <div class="joint-session-section" id="joint-session-section">
                 <div class="joint-session-section-header">
-                    <div class="joint-session-tag">
-                        <span class="joint-session-tag-text">JOINT SESSION</span>
-                        <span class="joint-session-tag-time" id="joint-session-time"></span>
+                    <div class="section-tag-wrap">
+                        <div class="joint-session-tag">
+                            <span class="joint-session-tag-text">JOINT SESSION</span>
+                            <span class="joint-session-tag-time" id="joint-session-time"></span>
+                        </div>
+                        <button class="info-btn" type="button" data-info="joint-sessions" aria-label="About joint sessions and joint meetings" hidden>?</button>
                     </div>
                     <div class="joint-session-header-right">
                         <span class="joint-session-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -641,15 +644,23 @@
                         The House and Senate have convened in Joint Session.
                     </div>
                     <div class="joint-session-presiding-line" id="joint-session-presiding-line"></div>
+                    <div class="joint-tags-row">
+                        <span class="joint-session-pill">By concurrent resolution</span>
+                        <span class="joint-session-pill">President&rsquo;s address or electoral count</span>
+                        <span class="joint-session-pill">House and Senate</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Joint Meeting Section -->
             <div class="joint-meeting-section" id="joint-meeting-section">
                 <div class="joint-meeting-section-header">
-                    <div class="joint-meeting-tag">
-                        <span class="joint-meeting-tag-text">JOINT MEETING</span>
-                        <span class="joint-meeting-tag-time" id="joint-meeting-time"></span>
+                    <div class="section-tag-wrap">
+                        <div class="joint-meeting-tag">
+                            <span class="joint-meeting-tag-text">JOINT MEETING</span>
+                            <span class="joint-meeting-tag-time" id="joint-meeting-time"></span>
+                        </div>
+                        <button class="info-btn" type="button" data-info="joint-sessions" aria-label="About joint sessions and joint meetings" hidden>?</button>
                     </div>
                     <div class="joint-meeting-header-right">
                         <span class="joint-meeting-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -658,6 +669,11 @@
                 <div class="joint-meeting-content">
                     <div class="joint-meeting-description-line" id="joint-meeting-description-line">
                         The House convened in Joint Meeting with the Senate.
+                    </div>
+                    <div class="joint-tags-row">
+                        <span class="joint-meeting-pill">By invitation</span>
+                        <span class="joint-meeting-pill">Often a foreign leader</span>
+                        <span class="joint-meeting-pill">House and Senate</span>
                     </div>
                 </div>
             </div>
@@ -1622,7 +1638,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261007c"></script>
+    <script defer src="app.js?v=20261007g"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
