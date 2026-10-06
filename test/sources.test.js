@@ -34,6 +34,20 @@ ok('the reports behind the explanations are all found', () => {
   }
 });
 
+ok('an RL report (the Committee of the Whole\'s) is read like the others', () => {
+  const rows = [];
+  const text = '<a href="https://www.congress.gov/crs_external_products/RL/PDF/RL32200/RL32200.7.pdf" target="_blank" rel="noopener">CRS Report RL32200</a> (2023)';
+  const got = extract((f) => (f === 'app.js' ? text : ''));
+  rows.push(...got.crs);
+  assert.deepStrictEqual(rows.map((r) => [r.id, r.version, r.year]), [['RL32200', 7, 2023]]);
+});
+
+ok('two reports in one source line are both read', () => {
+  const text = 'from <a href="https://www.congress.gov/crs_external_products/RL/PDF/RL32200/RL32200.7.pdf">CRS Report RL32200</a> (2023) and <a href="https://www.congress.gov/crs_external_products/RS/PDF/98-143/98-143.10.pdf">CRS Report 98-143</a> (2014)';
+  const got = extract((f) => (f === 'app.js' ? text : ''));
+  assert.deepStrictEqual(got.crs.map((r) => [r.id, r.version, r.year]), [['RL32200', 7, 2023], ['98-143', 10, 2014]]);
+});
+
 ok('the non-CRS sources are found too', () => {
   assert.ok(other.some((u) => /GPO-HPREC-DESCHLERS-V17/.test(u)));
   assert.ok(other.some((u) => /artgallery\.yale\.edu/.test(u)));
