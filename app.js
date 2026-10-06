@@ -5224,12 +5224,12 @@ When the Committee finishes, it rises and reports its recommendation to the Hous
         table: {
             columns: ['', 'The House', 'Committee of the Whole'],
             rows: [
-                ['Presiding', 'The Speaker', 'A chair appointed by the Speaker'],
+                ['Presiding', 'The Speaker', 'A chair the Speaker appoints'],
                 ['The mace', 'Raised', 'Lowered'],
-                ['Quorum', 'A majority of Members (218 with no vacancies)', '100 Members, presumed present unless shown otherwise'],
-                ['Debate on amendments', 'The one-hour rule, with no separate procedure for amendments', 'Typically under a special rule, with the five-minute rule: the proponent and an opponent each get five minutes'],
-                ['Demanding a recorded vote', 'One-fifth of the Members present (44 with a minimum quorum)', '25 Members'],
-                ['Previous question', 'In order', 'Not in order; a motion to limit or end debate may be offered'],
+                ['Quorum', '218 (with no vacancies)', '100, presumed present unless shown otherwise'],
+                ['Debate on amendments', 'One-hour rule', 'Typically the five-minute rule: proponent and opponent get five minutes each'],
+                ['Demanding a recorded vote', 'One-fifth of Members present (44 at a minimum quorum)', '25 Members'],
+                ['Previous question', 'In order', 'Not in order (motions to limit or end debate are)'],
                 ['Motion to recommit', 'In order', 'Not in order'],
                 ['Motion to reconsider', 'In order', 'Not in order']
             ]
