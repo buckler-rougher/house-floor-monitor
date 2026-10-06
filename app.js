@@ -8803,6 +8803,7 @@ const QUESTION_HELP = [
     [/motion to recommit/i, 'motion-to-recommit'],
     [/previous question/i, 'previous-question'],
     [/motion to suspend the rules/i, 'under-suspension'],
+    [/quorum/i, 'quorum'],
 ];
 const inFixtures = () => new URLSearchParams(location.search).has('fixtures');
 function questionHelpKey(question) {
