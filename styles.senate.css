@@ -6423,3 +6423,34 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .vacancies-title { display: inline-flex; align-items: center; gap: var(--sp-8); }
 .info-btn[hidden] { display: none; }
 .cotw-indicator { position: relative; }
+.info-popup-table-wrap { margin: var(--sp-12) 0; overflow-x: auto; }
+.info-popup-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); line-height: 1.45; }
+.info-popup-table th, .info-popup-table td {
+    padding: var(--sp-8) var(--sp-10);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-color);
+}
+.info-popup-table thead th {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.info-popup-table tbody th {
+    width: 26%;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.info-popup-table td { color: var(--text-secondary); }
+.info-popup-table tbody tr:last-child th, .info-popup-table tbody tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) {
+  .info-popup-table th, .info-popup-table td { padding: var(--sp-8) var(--sp-6); }
+  .info-popup-table tbody th { width: 28%; }
+}
