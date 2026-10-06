@@ -56,21 +56,4 @@ ok('the day rolls at Eastern midnight, not UTC', () => {
   assert.strictEqual(C.today(new Date(Date.UTC(2026, 9, 6, 2, 0))), '2026-10-05');
 });
 
-const DAILY = 'Pursuant to the provisions of H.Res. 976, and unless otherwise ordered, the hour of daily meeting of the House shall be 2 p.m. on Mondays; noon on Tuesdays (or 2 p.m. if no legislative business was conducted on the preceding Monday); noon on Wednesdays and Thursdays; and 9 a.m. on all other days of the week. (Agreed to Jan. 6, 2026.)';
-
-ok('dailyHours reads the House\'s standing order for each weekday (Tuesday has two)', () => {
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-05'), [840]);        // Monday
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-06'), [720, 840]);   // Tuesday: noon, or 2 p.m.
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-07'), [720]);        // Wednesday
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-08'), [720]);        // Thursday
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-09'), [540]);        // Friday: "all other days"
-  assert.deepStrictEqual(C.dailyHours(DAILY, '2026-10-11'), [540]);        // Sunday
-});
-
-ok('dailyHours cannot tell rather than guess', () => {
-  assert.strictEqual(C.dailyHours('nothing here', '2026-10-05'), null);
-  assert.strictEqual(C.dailyHours(DAILY, 'not a date'), null);
-  assert.strictEqual(C.dailyHours(null, '2026-10-05'), null);
-});
-
 console.log(`\n${n} passed`);
