@@ -4828,7 +4828,7 @@ function openBillModal(billId) {
                     memo: bill.sapUrl,
                     // The (?) beside the memo button. Shown once its explanation exists; in ?fixtures so the
                     // button can be reviewed before then.
-                    memoHelp: (INFO_CONTENT.sap || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
+                    memoHelp: (InfoPopup.has('sap') || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
                     congress: congressUrl,
                 })}
             </div>
@@ -5135,7 +5135,7 @@ function onBillModalKey(e) {
     if (e.key === 'Escape') closeBillModal();
 }
 
-// Info popup
+// Info popup entries (the House's). See lib/info-popup.js.
 const INFO_CONTENT = {
     'prayer': {
         title: 'Opening Prayer',
@@ -5205,65 +5205,10 @@ Notice types:
     }
 };
 
-// Preload images for info popups in the background so they're cached by the time the user opens (?)
-Object.values(INFO_CONTENT).forEach(c => { if (c.image?.url) { new Image().src = c.image.url; } });
-
-function openInfoPopup(key) {
-    const content = INFO_CONTENT[key];
-    if (!content) return;
-
-    let overlay = document.getElementById('info-popup-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'info-popup-overlay';
-        overlay.className = 'info-popup-overlay';
-        document.body.appendChild(overlay);
-        overlay.addEventListener('click', e => { if (e.target === overlay) closeInfoPopup(); });
-    }
-
-    const tagsHtml = content.tags?.length
-        ? `<div class="info-popup-tags">${content.tags.map(t => `<span class="info-popup-tag">${t}</span>`).join('')}</div>`
-        : '';
-    const bodyText = typeof content.body === 'function' ? content.body() : content.body;
-    const imageHtml = content.image ? `
-        <figure class="info-popup-figure">
-            <img src="${content.image.url}" alt="${content.image.alt}" class="info-popup-image" loading="lazy">
-        </figure>
-        <p class="info-popup-caption">${content.image.caption}</p>` : '';
-    overlay.innerHTML = `
-        <div class="info-popup" role="dialog" aria-modal="true">
-            <button class="info-popup-close" id="info-popup-close" aria-label="Close">&#x2715;</button>
-            <div class="info-popup-title">${content.title}</div>
-            ${tagsHtml}
-            <div class="info-popup-body">${bodyText.split('\n\n').map(p => `<p>${p}</p>`).join('')}</div>
-            ${content.source ? `<div class="info-popup-source">${content.source}</div>` : ''}
-            ${imageHtml}
-        </div>
-    `;
-    overlay.hidden = false;
-    const _infoTrigger = document.activeElement;
-    const infoClose = document.getElementById('info-popup-close');
-    infoClose.addEventListener('click', () => closeInfoPopup(_infoTrigger));
-    // Store the bound handler so we can remove the exact same reference on close
-    _infoKeyHandler = e => onInfoPopupKey(e, _infoTrigger);
-    document.addEventListener('keydown', _infoKeyHandler);
-    _infoPopupTrapCleanup = trapFocus(overlay);
-    infoClose.focus();
-}
-
-let _infoPopupTrapCleanup = null;
-let _infoKeyHandler = null;
-function closeInfoPopup(trigger) {
-    const overlay = document.getElementById('info-popup-overlay');
-    hideAfterAnimation(overlay);
-    if (_infoKeyHandler) { document.removeEventListener('keydown', _infoKeyHandler); _infoKeyHandler = null; }
-    if (_infoPopupTrapCleanup) { _infoPopupTrapCleanup(); _infoPopupTrapCleanup = null; }
-    if (trigger) trigger.focus();
-}
-
-function onInfoPopupKey(e, trigger) {
-    if (e.key === 'Escape') closeInfoPopup(trigger);
-}
+// The popup engine is lib/info-popup.js, shared with the Senate board; this board's own entries are
+// INFO_CONTENT above, and what is true of both chambers is lib/info-content.js.
+InfoPopup.register(SharedInfoContent);
+InfoPopup.register(INFO_CONTENT);
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {
@@ -8294,12 +8239,6 @@ function init() {
             { handle: '@AndrewSolender', name: 'Andrew Solender' },
             { handle: '@mkraju',         name: 'Manu Raju' },
         ],
-    });
-
-    // Info popup click delegation
-    document.addEventListener('click', e => {
-        const btn = e.target.closest('.info-btn');
-        if (btn) { e.stopPropagation(); openInfoPopup(btn.dataset.info); }
     });
 
     // Amendment search input — live filter
