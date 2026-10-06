@@ -10337,13 +10337,22 @@ h1.brand-text {
     body { overflow-x: hidden; }
 
     /* ── Touch targets: ? circles ──────────────────────────────────────────── */
-    /* Grow circles to ~32px on mobile — small enough to look right,
-       large enough to reliably tap. */
+    /* The circle stays small (20px; at 32px it dwarfed the label it sits beside) and the TAP target grows
+       to 44px with an invisible ::before, so it is still easy to hit. The (?) joined to a link button
+       (.bill-link-help) is a segment of that button and keeps its own size and tap area. */
     .info-btn,
     .whip-info-tip {
-        width: 32px;
-        height: 32px;
+        width: 20px;
+        height: 20px;
+        position: relative;
     }
+    .info-btn::before,
+    .whip-info-tip::before {
+        content: "";
+        position: absolute;
+        inset: -12px;
+    }
+    .info-btn.bill-link-help::before { display: none; }
 
     /* ── Touch targets: standalone filter/action buttons ───────────────────── */
     /* .bills-sort-btn is intentionally excluded: those live inside compact
