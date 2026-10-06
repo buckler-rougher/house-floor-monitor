@@ -4762,6 +4762,13 @@ font-family: var(--font-mono);
     position: relative;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
+.info-popup.is-ai {
+    background: var(--ai-glow), var(--bg-elevated);
+}
+
+.info-popup.is-ai .info-popup-source {
+    opacity: 0.9;
+}
 .info-popup-close {
     position: absolute;
     top: 14px;
@@ -6947,8 +6954,6 @@ body.one-minute-mode .one-minute-section {
     font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: var(--sp-16);
-    border-bottom: 1px solid var(--border-color);
 }
 
 .one-minute-explainer {
@@ -7044,8 +7049,6 @@ body.special-order-mode .special-order-section {
     font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: var(--sp-16);
-    border-bottom: 1px solid var(--border-color);
 }
 
 .special-order-explainer {
@@ -7141,8 +7144,6 @@ body.morning-hour-mode .morning-hour-section {
     font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: var(--sp-16);
-    border-bottom: 1px solid var(--border-color);
 }
 
 .morning-hour-tags-row {
@@ -7172,6 +7173,7 @@ body.morning-hour-mode .morning-hour-section {
 }
 
 .speech-mode-ai-note {
+    font-family: var(--font-mono);
     font-size: var(--fs-md);
     color: var(--text-muted);
     opacity: 0.6;
@@ -7180,11 +7182,6 @@ body.morning-hour-mode .morning-hour-section {
 .speech-mode-ai-note a {
     color: inherit;
     text-decoration: underline;
-    text-decoration-color: transparent;
-}
-
-.speech-mode-ai-note a:hover {
-    text-decoration-color: currentColor;
 }
 
 .prayer-section {
@@ -10901,11 +10898,48 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     opacity: 1;
 }
 
+.panel-clerk-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-16);
+}
+
+:root {
+
+    --ai-glow: radial-gradient(120% 160% at 0% 0%,
+        color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 11%, transparent),
+        color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 4%, transparent) 55%,
+        transparent 90%);
+}
+.ai-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-16);
+    margin: 0 calc(-1 * var(--sp-24)) calc(-1 * var(--sp-16));
+    padding: var(--sp-16) var(--sp-24);
+    border-top: 1px solid var(--border-color);
+    background: var(--ai-glow);
+}
+.joint-meeting-content .ai-block,
+.joint-session-content .ai-block,
+.privilege-content .ai-block {
+    margin-top: var(--sp-16);
+}
+.ai-block > p,
+.ai-block .speech-mode-ai-note {
+    margin: 0;
+}
+
+.ai-block .speech-mode-ai-note {
+    opacity: 0.9;
+}
+.privilege-explainer .privilege-tags-row {
+    margin-bottom: 0;
+}
 .joint-tags-row {
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-8);
-    margin-top: var(--sp-16);
 }
 .joint-meeting-pill,
 .joint-session-pill {

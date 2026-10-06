@@ -3438,6 +3438,12 @@ font-family: var(--font-mono);
     position: relative;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
+  .info-popup.is-ai {
+    background: var(--ai-glow), var(--bg-elevated);
+}
+  .info-popup.is-ai .info-popup-source {
+    opacity: 0.9;
+}
   .info-popup-close {
     position: absolute;
     top: 14px;
@@ -4768,8 +4774,6 @@ font-family: var(--font-mono);
     font-size: var(--fs-2xl); font-weight: 500;
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: var(--sp-16);
-    border-bottom: 1px solid var(--border-color);
 }
   .morning-hour-explainer {
     font-size: var(--fs-lg);
@@ -6453,4 +6457,11 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 @media (max-width: 640px) {
   .info-popup-table th, .info-popup-table td { padding: var(--sp-8) var(--sp-6); }
   .info-popup-table tbody th { width: 28%; }
+}
+:root {
+
+    --ai-glow: radial-gradient(120% 160% at 0% 0%,
+        color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 11%, transparent),
+        color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 4%, transparent) 55%,
+        transparent 90%);
 }
