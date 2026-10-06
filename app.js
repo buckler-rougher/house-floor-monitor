@@ -4829,6 +4829,7 @@ function openBillModal(billId) {
                     // The (?) beside the memo button. Shown once its explanation exists; in ?fixtures so the
                     // button can be reviewed before then.
                     memoHelp: (InfoPopup.has('sap') || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
+                    reportHelp: (InfoPopup.has('committee-report') || new URLSearchParams(location.search).has('fixtures')) ? 'committee-report' : null,
                     congress: congressUrl,
                 })}
             </div>
@@ -8073,16 +8074,23 @@ function renderHouseCalendar() {
     const source = _calendar.source
         ? `Source: <a href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
     const setSource = (n) => { const s = n && n.querySelector('.calendar-card-source'); if (s) setIfChanged(s, source); };
-    // The orders agreed for today. Always visible when there are any: a phone has no hover.
-    const orders = c.orders || [];
+    // The orders agreed for today. Shown on every sitting day the Calendar could be read: with orders it is a
+    // clamped blurb that opens (as the policy cards do), and with none it says so. `orders: null` means the page
+    // had a shape this could not read, which is not the same as none, and hides the card.
     if (card) {
-        setIfChanged(card.querySelector('.calendar-card-body'), orders.map((o) =>
-            `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join(''));
-        setSource(card);
-        const count = card.querySelector('.calendar-card-count');
-        if (count) count.textContent = String(orders.length);
-        card.hidden = orders.length === 0;
-        if (card._measure) card._measure();
+        const orders = c.orders;
+        if (orders === null || orders === undefined) {
+            card.hidden = true;
+        } else {
+            setIfChanged(card.querySelector('.calendar-card-body'), orders.length
+                ? orders.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
+                : '<p class="calendar-card-empty">No orders are listed for this day.</p>');
+            setSource(card);
+            const count = card.querySelector('.calendar-card-count');
+            if (count) count.textContent = orders.length ? String(orders.length) : '';
+            card.hidden = false;
+            if (card._measure) card._measure();
+        }
     }
     // The standing rules, in the House's words, in the panel they govern.
     const standing = c.standing || [];
