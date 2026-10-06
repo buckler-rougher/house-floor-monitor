@@ -10820,3 +10820,6 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 #calendar-orders .calendar-card-body { max-height: 2.9rem; }
 .calendar-card-body p.calendar-card-empty { margin: var(--sp-8) 0 0; font-size: var(--fs-md); color: var(--text-muted); }
+
+.vacancies-title { display: inline-flex; align-items: center; gap: var(--sp-8); }
+.info-btn[hidden] { display: none; }

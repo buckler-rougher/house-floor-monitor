@@ -86,6 +86,7 @@ const el = (id) => document.getElementById(id);
 // (?) explanations: the engine is lib/info-popup.js, the same one the House board uses; what is true of both
 // chambers is lib/info-content.js. Senate-procedure entries are added here when they are written.
 InfoPopup.register(SharedInfoContent);
+InfoPopup.reveal();
 
 // The animation module needs this board's nodes; ids differ per page.
 globalThis.BoardAnimations?.init?.({ absenteeList: document.getElementById('absentee-list') });
