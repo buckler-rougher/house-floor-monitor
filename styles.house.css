@@ -8455,14 +8455,22 @@ body.house-privilege-mode .privilege-section { display: block; }
 }
 
 .privilege-pill {
-    font-size: var(--fs-xs);
-    color: var(--text-secondary);
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-4);
-    padding: var(--sp-4) var(--sp-8);
+
+    font-size: var(--fs-md);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: var(--sp-4) var(--sp-10);
+    border-radius: var(--radius-12);
+    background: rgba(15, 91, 94, 0.2);
+    border: 1px solid rgba(45, 160, 165, 0.4);
+    color: #5bc8cc;
     text-transform: uppercase;
-    letter-spacing: var(--track-wide);
+    letter-spacing: 0.3px;
+}
+.privilege-section.is-house .privilege-pill {
+    background: rgba(59, 63, 122, 0.24);
+    border-color: rgba(120, 128, 220, 0.4);
+    color: #a5acff;
 }
 
 .privilege-pill[hidden] { display: none; }
