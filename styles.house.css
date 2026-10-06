@@ -10817,3 +10817,6 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .bill-link-group > .info-btn.bill-link-help.suspension:hover { background: rgba(255, 193, 7, 0.1);  border-color: var(--accent-amber); }
 .bill-link-group > .info-btn.bill-link-help.maybe:hover      { background: rgba(100, 116, 139, 0.12); border-color: var(--text-secondary); }
 .bill-link-group > .info-btn.bill-link-help.senate:hover     { background: color-mix(in srgb, var(--accent-blue) 10%, transparent); border-color: var(--accent-blue); }
+
+#calendar-orders .calendar-card-body { max-height: 4.4rem; }
+.calendar-card-body p.calendar-card-empty { margin: var(--sp-8) 0 0; font-size: var(--fs-md); color: var(--text-muted); }

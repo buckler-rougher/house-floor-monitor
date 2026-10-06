@@ -859,6 +859,7 @@ function billModalContent(b) {
                         // The (?) beside the memo button, as on the House board: drawn once its explanation exists, and
                         // in ?fixtures so it can be reviewed before then.
                         memoHelp: (InfoPopup.has('sap') || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
+                        reportHelp: (InfoPopup.has('committee-report') || new URLSearchParams(location.search).has('fixtures')) ? 'committee-report' : null,
                         congress: b.congressUrl,
                     })}
                 </div>
