@@ -8097,7 +8097,21 @@ function renderHouseCalendar() {
             const items = orders.map((o) => ({ label: o.label, text: o.text }));
             if (!orders.some((o) => o.kind === 'meeting')) {
                 const daily = (c.standing || []).find((s) => s.kind === 'hour-of-meeting');
-                if (daily) items.push({ label: daily.label, text: daily.paragraphs.join(' ') });
+                if (daily) {
+                    const text = daily.paragraphs.join(' ');
+                    // The standing hours only explain today's hour if today's hour is one of them (two hours
+                    // earlier on a morning-hour day). When it is not, the Calendar has an hour it gives no
+                    // order for, and quoting noon beside "meets at 4 P.M." would contradict it; say so instead.
+                    const allowed = Convening.dailyHours(text, _calendar.date);
+                    const meets = Convening.minutes(c.meetsAt);
+                    const early = c.morningHour ? 120 : 0;
+                    const fits = meets === null || (allowed && allowed.some((t) => t === meets || t - early === meets));
+                    items.push({
+                        label: daily.label,
+                        text: fits ? text
+                            : `The Calendar shows the House meeting at ${Convening.format(c.meetsAt)} but lists no order that sets that hour, and it is not one of the hours below. The standing order, which applies unless otherwise ordered, reads: ${text}`,
+                    });
+                }
             }
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
                 ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
