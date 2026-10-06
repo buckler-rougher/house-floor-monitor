@@ -4826,6 +4826,9 @@ function openBillModal(billId) {
                     report: bill.committeeReportUrl,
                     reportTitle: bill.committeeReportCitation,
                     memo: bill.sapUrl,
+                    // The (?) beside the memo button. Shown once its explanation exists; in ?fixtures so the
+                    // button can be reviewed before then.
+                    memoHelp: (INFO_CONTENT.sap || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
                     congress: congressUrl,
                 })}
             </div>
