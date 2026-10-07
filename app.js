@@ -5897,10 +5897,10 @@ function linkifyBillNumbers(text) {
 
 // The two upstream responses behind the Whip Notices link's popover (lib/source-pop.js), fetched when it is opened: DomeWatch's
 // Firestore documents for the floor updates, and DomeWatch's data API for the daily, nightly and weekly notices. The Vote Series
-// panel is read from the same notices, so its link opens the same thing.
+// panel is read from the floor updates only, so its link opens just that response.
 function setWhipManifest() {
     if (!globalThis.SourcePop) return;
-    const manifest = () => ({
+    const manifest = (floorOnly) => ({
         title: 'DomeWatch\'s whip notices',
         load: async () => {
             const r = await fetch('https://api.evanhollander.org/house-floor/api/whip-source');
@@ -5911,19 +5911,21 @@ function setWhipManifest() {
                 note,
                 json: p.method === 'POST' ? { request: p.request, response: p.response } : p.response,
             });
+            const floor = part(d.floor, 'Floor updates. The POST body is the query; the response is every document it returned.');
+            if (floorOnly) return { parts: [floor] };
             return {
                 parts: [
-                    part(d.floor, 'Floor updates. The POST body is the query; the response is every document it returned.'),
+                    floor,
                     part(d.notices, d.notices.omitted && d.notices.omitted.length
                         ? 'Daily, nightly and weekly notices. Fields the panel does not read are left out: ' + d.notices.omitted.join(', ') + '.' : 'Daily, nightly and weekly notices.'),
                 ],
             };
         }
     });
-    for (const id of ['whip-updates', 'vote-series-panel']) {
-        const panel = document.getElementById(id);
-        if (panel) SourcePop.set(panel, manifest());
-    }
+    const notices = document.getElementById('whip-updates');
+    if (notices) SourcePop.set(notices, manifest(false));
+    const series = document.getElementById('vote-series-panel');
+    if (series) SourcePop.set(series, manifest(true));
 }
 
 // The House Docs entry behind the Bills This Week link's popover (lib/source-pop.js): the feed's own entry for the week the
