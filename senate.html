@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261007e">
+    <link rel="stylesheet" href="styles.senate.css?v=20261008b">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -44,6 +44,7 @@
             document.write('<scr' + 'ipt src="dev/senate-harness.js?v=20261004a"></scr' + 'ipt>');
         }
     </script>
+    <script src="lib/ai-pref.js?v=20261008a"></script>
 </head>
 <body class="recess-mode" data-chamber="senate">
     <noscript><div style="padding:2rem;text-align:center;color:#e6edf3;background:#0d1117;font-family:system-ui,sans-serif">JavaScript is required to use Senate Floor Monitor.</div></noscript>
@@ -1259,12 +1260,14 @@
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="/demo">Demo</a>
             <span class="site-footer-sep">&middot;</span>
+            <button class="site-footer-license ai-toggle" type="button" data-ai-toggle aria-pressed="true">AI summaries: on</button>
+            <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the Senate Floor" target="_blank" rel="noopener">Contact</a>
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source Code</a>
         </div>
         <div class="site-footer-secondary">
-            Not affiliated with the U.S. House of Representatives. For informational purposes only.
+            Not affiliated with the U.S. Senate. For informational purposes only.
         </div>
     </footer>
 
@@ -1309,7 +1312,7 @@
     <script defer src="lib/committees.js?v=20261004a"></script>
     <script defer src="lib/bill-sections.js?v=20261006d"></script>
     <script defer src="lib/debate-panel.js?v=20261005a"></script>
-    <script defer src="lib/info-popup.js?v=20261008b"></script>
+    <script defer src="lib/info-popup.js?v=20261008c"></script>
     <script defer src="lib/info-content.js?v=20261007a"></script>
     <script defer src="lib/clocks.js?v=20261004a"></script>
     <script defer src="lib/session-clock.js?v=20261004a"></script>
