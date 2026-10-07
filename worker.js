@@ -3393,7 +3393,7 @@ async function handleSenateCalendar(env) {
 async function handleSenateAbsences(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
-  return kvCache(env, `senate-absences-${congress}-${session}-v1`, 600, async () => {
+  return kvCache(env, `senate-absences-${congress}-${session}-v2`, 600, async () => {
     const UA = BOT_HEADERS;
     const get = (url, label) => fetchSource(url, label, { xml: true });
     const pick = xmlPlain;
@@ -3459,6 +3459,14 @@ async function handleSenateAbsences(env) {
       date: pick(first[1], 'vote_date'), voteDate: pick(detail, 'vote_date'),
       result: pick(first[1], 'result'),
       tally, absent,
+      // The vote file itself, for the Missing Senators link's popover: its url, everything in it except the member list,
+      // and the <member> entries marked Not Voting, verbatim.
+      source: {
+        url: `https://www.senate.gov/legislative/LIS/roll_call_votes/vote${congress}${session}/vote_${congress}_${session}_${padded}.xml`,
+        head: detail.replace(/<members>[\s\S]*<\/members>/, '<members/>'),
+        entries: members.length,
+        notVoting: [...detail.matchAll(/<member>[\s\S]*?<\/member>/g)].map((m) => m[0]).filter((raw) => /<vote_cast>\s*Not Voting\s*<\/vote_cast>/i.test(raw)),
+      },
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
     });

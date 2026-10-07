@@ -9050,6 +9050,8 @@ async function _doAbsenteeTracking() {
                 }
             });
 
+            setAbsenteeManifest(xmlDoc, rollNumber);
+
             const rollDate = xmlDoc.querySelector('action-date')?.textContent?.trim() || '';
             const rollTime = xmlDoc.querySelector('action-time')?.textContent?.trim() || '';
             await updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime);
@@ -9062,6 +9064,39 @@ async function _doAbsenteeTracking() {
         console.error('Absentee tracking error:', error);
         setIfChanged(elements.absenteeList, '<div class="absentee-member">ERROR</div>');
     }
+}
+
+// The roll call behind the Missing Members link's popover (lib/source-pop.js): the Clerk's roll XML, cut to its metadata,
+// its overall totals, and the recorded votes marked Not Voting, which are the rows the panel lists. Said in a comment, since
+// a full roll is 435 entries.
+function setAbsenteeManifest(xmlDoc, rollNumber) {
+    if (!globalThis.SourcePop) return;
+    const panel = document.getElementById('absentee');
+    if (!panel) return;
+    const X = SourcePop.xml;
+    const meta = xmlDoc.querySelector('vote-metadata');
+    if (!meta) return;
+    const year = (xmlDoc.querySelector('action-date')?.textContent || '').split('-')[2] || String(new Date().getFullYear());
+    const lines = ['<rollcall-vote>', '  <vote-metadata>'];
+    for (const c of meta.children) {
+        if (c.tagName === 'vote-totals') continue;
+        X.emit(c, 2, lines);
+    }
+    const byVote = meta.querySelector('vote-totals > totals-by-vote');
+    lines.push('    <vote-totals>');
+    lines.push(X.note(3, 'totals by party omitted'));
+    if (byVote) X.emit(byVote, 3, lines);
+    lines.push('    </vote-totals>', '  </vote-metadata>', '  <vote-data>');
+    const all = [...xmlDoc.querySelectorAll('vote-data > recorded-vote')];
+    const away = all.filter((r) => r.querySelector('vote')?.textContent === 'Not Voting' && r.querySelector('legislator')?.textContent.trim());
+    lines.push(X.note(2, all.length + ' <recorded-vote> entries. The panel lists the ' + away.length + ' marked Not Voting:'));
+    for (const r of away) X.emit(r, 2, lines);
+    lines.push('  </vote-data>', '</rollcall-vote>');
+    SourcePop.set(panel, {
+        title: 'The Clerk\'s roll call',
+        request: 'GET https://clerk.house.gov/evs/' + year + '/roll' + String(rollNumber).padStart(3, '0') + '.xml',
+        xml: lines.join('\n')
+    });
 }
 
 // Update absentee UI with data from roll call
