@@ -5486,6 +5486,7 @@ InfoPopup.register(INFO_CONTENT);
 InfoPopup.reveal();
 InfoPopup.fillInline();
 wireCalendarCards();
+setBillsManifest();
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {
@@ -5891,6 +5892,28 @@ function linkifyBillNumbers(text) {
             return escapeHtml(match);
         }
     );
+}
+
+// The House Docs entry behind the Bills This Week link's popover (lib/source-pop.js): the feed's own entry for the week the
+// panel shows, verbatim, with its escaped HTML body written out as the HTML it is. The feed is 38 MB and reaches back to 2020,
+// so the popover asks the Worker for the one entry only when it is opened.
+function setBillsManifest() {
+    if (!globalThis.SourcePop) return;
+    const panel = document.getElementById('bills');
+    if (!panel) return;
+    SourcePop.set(panel, {
+        title: 'The House Docs entry for this week',
+        request: 'GET https://docs.house.gov/BillsThisWeek-RSS.xml',
+        load: async () => {
+            const q = proceedingsDateOverride ? '?date=' + encodeURIComponent(proceedingsDateOverride) : '';
+            const r = await fetch('https://api.evanhollander.org/house-floor/api/bills-source' + q);
+            const d = await r.json();
+            if (!r.ok || d.error || !d.entry) throw new Error(d.error || ('HTTP ' + r.status));
+            const body = new DOMParser().parseFromString(d.entry, 'text/xml').querySelector('content');
+            const raw = d.entry.replace(/(<content[^>]*>)[\s\S]*?(<\/content>)/, (m, open, close) => open + (body ? body.textContent : '') + close);
+            return { html: '<!-- the feed holds ' + Number(d.entries).toLocaleString('en-US') + ' entries, back to 2020; this is the one for the week shown -->' + raw };
+        }
+    });
 }
 
 // The Clerk's floor activity behind the Floor Proceedings link's popover (lib/source-pop.js): the entries the panel shows, with the Clerk's own columns (Date, Time, Activity) shaped as JSON, and the Clerk's URL for that day.
