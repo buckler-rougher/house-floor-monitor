@@ -8211,7 +8211,66 @@ window.setMode = function(mode) {
     if (mode === 'tellers' && proceedingsData.length) {
         updateTellersSection(proceedingsData);
     }
+    updateSourceManifest(mode);
 };
+
+// The Clerk's entry behind a mode panel, for the panel's "Source: Legislative Activity (House Clerk)" link
+// (lib/source-pop.js): the link opens a small manifest with the entry as the Clerk wrote it and when it was
+// posted, and the link to the Clerk inside it. Each mode names the entry that puts it up by its own wording;
+// a mode with no entry found keeps a plain link. Only the panel showing is given one.
+const SOURCE_ENTRY = {
+    'prayer': [/prayer|chaplain/i, 'prayer-section'],
+    'silence': [/moment of silence/i, 'silence-section'],
+    'oath': [/oath/i, 'oath-section'],
+    'speaker': [/speaker pro tempore/i, 'speaker-section'],
+    'pledge': [/pledge|allegiance/i, 'pledge-section'],
+    'journal': [/journal/i, 'journal-section'],
+    'message': [/^the house received a message/i, 'message-section'],
+    'one-minute': [/one.minute/i, 'one-minute-section'],
+    'special-order': [/special order/i, 'special-order-section'],
+    'morning-hour': [/morning.hour/i, 'morning-hour-section'],
+    'tellers': [/^appointment of tellers/i, 'tellers-section'],
+    'cert-election': [/^certification of election\b/i, 'cert-election-section'],
+    'cert-electoral': [/^certification of electoral votes\b/i, 'cert-electoral-section'],
+    'new-session': [/20th amendment/i, 'new-session-section'],
+    'admin-oath': [/^administration of the oath/i, 'admin-oath-section'],
+    'sine-die': [/sine die/i, 'sine-die-section'],
+    'joint-session': [/^joint session\b/i, 'joint-session-section'],
+    'joint-meeting': [/^joint meeting\b/i, 'joint-meeting-section'],
+    'committee-chair': [/act as chair/i, 'committee-chair-section'],
+    'privilege': [/^point of personal privilege/i, 'privilege-section'],
+    'house-privilege': [/^question of the privileges of the house/i, 'privilege-section']
+};
+function updateSourceManifest(mode) {
+    if (!globalThis.SourcePop) return;
+    const spec = SOURCE_ENTRY[mode];
+    if (!spec) return;
+    const section = document.getElementById(spec[1]);
+    if (!section) return;
+    const list = proceedingsData || [];
+    const at = list.findIndex((i) => spec[0].test((i.description || '').replace(/<[^>]+>/g, '').trim()));
+    if (at < 0) { SourcePop.set(section, null); return; }
+    // The entry with the Clerk's own columns (Date, Time, Activity: the Floor Activity table), shaped as JSON, and the
+    // Clerk's URL for that day, which holds the same entry. The other entries of that day are only counted.
+    const et = (d, o) => d.toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
+    const when = list[at].pubDate ? new Date(list[at].pubDate) : null;
+    const day = (i) => (i.pubDate ? et(new Date(i.pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : null);
+    const date = when ? day(list[at]) : null;
+    const sameDay = date ? list.map((x, k) => (day(x) === date ? k : -1)).filter((k) => k >= 0) : [at];
+    const entry = {};
+    if (date) entry.date = date;
+    if (when) entry.time = et(when, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    entry.activity = decodeHtml(String(list[at].description).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    SourcePop.set(section, {
+        title: 'The Clerk\'s entry for this panel',
+        request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + (date || ''),
+        json: entry,
+        listKey: 'entries',
+        noun: 'entry',
+        before: sameDay.filter((k) => k < at).length,
+        after: sameDay.filter((k) => k > at).length
+    });
+}
 
 // Console helpers for testing — freeze/unfreeze the auto-switch without
 // touching setMode itself (so manual setMode('prayer') etc. still work).
