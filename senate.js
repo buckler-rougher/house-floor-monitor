@@ -321,7 +321,10 @@ function renderSchedule(data) {
                 hour: '2-digit', minute: '2-digit', hour12: true,
                 timeZone: 'America/New_York', timeZoneName: 'short',
             });
-            next.textContent = `NEXT CONVENES ${when}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}`;
+            // On a pro forma the (?) follows the marker, drawn only once its entry is registered.
+            const help = (latest.nextIsProForma && (InfoPopup.has('pro-forma') || new URLSearchParams(location.search).has('fixtures')))
+                ? ' <button type="button" class="info-btn next-votes-help is-quiet" data-info="pro-forma" aria-label="About pro forma sessions">?</button>' : '';
+            next.innerHTML = `NEXT CONVENES ${when}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}${help}`;
         } else if (nc && !isNaN(nc)) {
             // The feed publishes a sitting only once it has ended, so after the
             // time it last named has passed it still names that time. Showing it

@@ -10971,3 +10971,30 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     border: 1px solid rgba(210, 150, 60, 0.4);
     color: #e4a95c;
 }
+
+.calendar-line-text { position: relative; display: inline-block; }
+.calendar-line-text .calendar-line-help {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: var(--sp-8);
+}
+.session-status .session-help.is-off { display: none; }
+.next-votes .next-votes-help { vertical-align: middle; margin-left: var(--sp-6); }
+
+.info-btn.is-quiet {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+    padding-top: 1px;
+    padding-left: 1px;
+    opacity: 0.55;
+    transition: color var(--dur-150), border-color var(--dur-150), opacity var(--dur-150);
+}
+.info-btn.is-quiet:hover,
+.info-btn.is-quiet:focus-visible { opacity: 1; }
+@media (max-width: 640px) {
+
+    .info-btn.is-quiet { width: 16px; height: 16px; }
+}
