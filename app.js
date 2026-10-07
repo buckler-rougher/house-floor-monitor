@@ -5893,12 +5893,45 @@ function linkifyBillNumbers(text) {
     );
 }
 
+// The Clerk's floor activity behind the Floor Proceedings link's popover (lib/source-pop.js): the newest entries the panel
+// shows, with the Clerk's own columns (Date, Time, Activity) shaped as JSON, and the Clerk's URL for that day, which holds
+// them. The rest of the day's entries are only counted.
+function setProceedingsManifest(items) {
+    if (!globalThis.SourcePop) return;
+    const panel = document.getElementById('proceedings');
+    if (!panel || !items || !items.length) return;
+    const et = (d, o) => d.toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
+    const dayOf = (i) => (i.pubDate ? et(new Date(i.pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : '');
+    const entry = (i) => {
+        const e = {};
+        const d = dayOf(i);
+        if (d) e.date = d;
+        if (i.pubDate) e.time = et(new Date(i.pubDate), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        e.activity = decodeHtml(String(i.description || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+        return e;
+    };
+    const shown = items.slice(0, 4);
+    const day = proceedingsDateOverride
+        ? et(new Date(proceedingsDateOverride), { year: 'numeric', month: '2-digit', day: '2-digit' })
+        : dayOf(items[0]);
+    SourcePop.set(panel, {
+        title: 'The Clerk\'s floor activity',
+        request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + day,
+        json: shown.map(entry),
+        listKey: 'entries',
+        noun: 'entry',
+        before: 0,
+        after: items.length - shown.length
+    });
+}
+
 function renderProceedingsFeedPanel(items) {
     if (!elements.proceedingsFeed) return;
     if (!items || items.length === 0) {
         setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
         return;
     }
+    setProceedingsManifest(items);
     const proceedingsDate = proceedingsDateOverride
         ? new Date(proceedingsDateOverride)
         : new Date(items[0]?.pubDate || new Date());

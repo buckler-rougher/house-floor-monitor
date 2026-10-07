@@ -2890,13 +2890,29 @@ async function handleSenateProceedings(env) {
   // Five minutes, not the hour most of this board uses. The page is rewritten
   // as the day goes on, so this is the one Senate source where a short window
   // buys something: it is how the board shows a sitting day moving.
-  return kvCache(env, 'senate-proceedings-v2', 300, async () => {
+  return kvCache(env, 'senate-proceedings-v3', 300, async () => {
     const r = await fetch('https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
         signal: AbortSignal.timeout(20_000) });
     if (!r.ok) throw new Error(`floor activity: HTTP ${r.status}`);
     if (!/html/i.test(r.headers.get('Content-Type') || '')) throw new Error('floor activity: not HTML');
-    const out = parseSenateProceedings(await r.text());
+    const text = await r.text();
+    const out = parseSenateProceedings(text);
+    // The page itself, for the Recent Floor Activity link's popover: its opening, up to the fourth heading, verbatim (the
+    // style block aside), and how much of it that leaves out.
+    const region = senateProceedingsRegion(text).replace(/<style[\s\S]*?<\/style>/gi, '');
+    const heads = [...region.matchAll(/<h2 class="headings"/gi)];
+    // From the date heading (the page's head and navigation are not data), to the fourth heading at most and no more than
+    // about 2,000 characters (a day's morning business can run to thousands), cut back to the end of a tag so none is left open.
+    const start = heads[0] ? heads[0].index : 0;
+    let cut = Math.min(heads[4] ? heads[4].index : region.length, start + 2000);
+    const lastTag = region.lastIndexOf('>', cut);
+    if (lastTag > start && cut < region.length) cut = lastTag + 1;
+    out.source = {
+      url: 'https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
+      html: region.slice(start, cut).trim(),
+      omitted: Math.max(0, region.length - cut),
+    };
     return new Response(JSON.stringify(out), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
     });
