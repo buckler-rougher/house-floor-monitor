@@ -146,16 +146,31 @@ function setConnection(state) {
 // run by the smaller bloc. The roster records a party and says nothing about
 // caucusing, so the badge appears only when a party holds 51 outright and the
 // panel says why when it does not.
-// The Senate's roster as the Balance of Power link's popover shows it (lib/source-pop.js): the roster's own <member> entries,
-// every one, as the Worker passed them.
+// The Senate's roster as the Balance of Power link's popover shows it (lib/source-pop.js): the Worker passes a few of the
+// roster's own <member> entries verbatim, and this prints them as the Senate wrote them (less address and phone). It says
+// how many entries there are and how the counts are made.
 function setBalanceManifest(data) {
     if (!globalThis.SourcePop || !Array.isArray(data.sample) || !data.sample.length) return;
     const panel = document.getElementById('party-breakdown');
     if (!panel) return;
-    const parsed = new DOMParser().parseFromString('<contact_information>' + data.sample.join('') + '</contact_information>', 'text/xml');
-    if (parsed.querySelector('parsererror')) return;
-    const lines = [];
-    SourcePop.xml.emit(parsed.documentElement, 0, lines);
+    const X = SourcePop.xml;
+    const lines = ['<contact_information>'];
+    const c = data.counts || {};
+    lines.push(X.note(1, (data.entries || '') + ' <member> entries. The panel counts D ' + c.D + ', R ' + c.R + ', I ' + c.I +
+        ' by <party>. Shown: the first, then each senator who is neither D nor R.'));
+    for (const raw of data.sample) {
+        const doc = new DOMParser().parseFromString(raw, 'text/xml');
+        const m = doc.querySelector('member');
+        if (!m) continue;
+        lines.push('  <member>');
+        for (const tag of ['member_full', 'last_name', 'first_name', 'party', 'state', 'class', 'bioguide_id']) {
+            const e = m.querySelector(tag);
+            if (e) X.emit(e, 2, lines);
+        }
+        lines.push(X.note(2, 'address, phone, email, website omitted'));
+        lines.push('  </member>');
+    }
+    lines.push('</contact_information>');
     SourcePop.set(panel, {
         title: 'The Senate\'s roster',
         request: 'GET https://www.senate.gov/general/contact_information/senators_cfm.xml',
@@ -522,20 +537,29 @@ function renderAbsences(data) {
     }
 }
 
-// The vote file behind the Missing Senators link's popover (lib/source-pop.js): the Senate's own XML for the latest roll call,
-// as the Worker passed it: everything but the member list, then every member.
+// The vote file behind the Missing Senators link's popover (lib/source-pop.js): the Senate's own XML for the latest roll
+// call, as the Worker passed it (everything but the member list, then the members marked Not Voting), cut and annotated.
 function setAbsenceManifest(data) {
     const s = data && data.source;
     if (!globalThis.SourcePop || !s || !s.head) return;
     const panel = document.getElementById('absentee');
     if (!panel) return;
-    const head = new DOMParser().parseFromString(s.head, 'text/xml').documentElement;
-    if (!head || head.querySelector('parsererror')) return;
-    const members = new DOMParser().parseFromString('<members>' + (s.members || []).join('') + '</members>', 'text/xml').documentElement;
-    const slot = head.querySelector('members');
-    if (slot && members && !members.querySelector('parsererror')) slot.replaceWith(members);
-    const lines = [];
-    SourcePop.xml.emit(head, 0, lines);
+    const X = SourcePop.xml;
+    const root = new DOMParser().parseFromString(s.head, 'text/xml').documentElement;
+    if (!root || root.querySelector('parsererror')) return;
+    const lines = ['<' + root.tagName + X.attrs(root) + '>'];
+    for (const c of root.children) {
+        if (c.tagName === 'members') continue;
+        if (c.children.length > 6) { lines.push(X.note(1, c.tagName + ' omitted')); continue; }
+        X.emit(c, 1, lines);
+    }
+    lines.push('  <members>');
+    lines.push(X.note(2, (s.entries || '') + ' <member> entries. The panel lists the ' + (s.notVoting || []).length + ' marked Not Voting:'));
+    for (const raw of s.notVoting || []) {
+        const m = new DOMParser().parseFromString(raw, 'text/xml').documentElement;
+        if (m) X.emit(m, 2, lines);
+    }
+    lines.push('  </members>', '</' + root.tagName + '>');
     SourcePop.set(panel, {
         title: 'The Senate\'s roll call',
         request: 'GET ' + s.url,
