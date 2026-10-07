@@ -28,6 +28,18 @@ const store = new Map();
 const env = { CONGRESS_API_KEY: KEY, HLS_CACHE: { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } } };
 const call = (path) => worker.fetch(new Request(`https://api.evanhollander.org/senate-floor/api/${path}`), env);
 
+// S. 999 has 300 cosponsors, so Congress.gov answers 250 and then 50 (offset=250); everything else is S. 4668's files.
+const realFetch = globalThis.fetch;
+const co = (from, count) => Array.from({ length: count }, (_, i) => ({ bioguideId: 'X' + (from + i), party: (from + i) % 3 === 0 ? 'D' : 'R', state: 'TX' }));
+globalThis.fetch = async (u) => {
+  u = String(u);
+  if (/\/bill\/119\/s\/999\/cosponsors/.test(u)) {
+    const off = Number((u.match(/offset=(\d+)/) || [])[1] || 0);
+    return new Response(JSON.stringify({ cosponsors: co(off, off ? 50 : 250), pagination: { count: 300 } }), { status: 200 });
+  }
+  return realFetch(u.replace('/s/999', '/s/4668'));
+};
+
 let n = 0;
 const ok = async (name, fn) => { await fn(); n++; console.log('ok  ' + name); };
 
@@ -59,6 +71,17 @@ await ok('the API key is in no stored value and no request line', async () => {
   for (const v of store.values()) assert.ok(!v.includes(KEY));
   const { parts } = await (await call('bill-source?id=' + encodeURIComponent('S. 4668'))).json();
   for (const p of parts) assert.ok(!p.request.includes('api_key') && !p.request.includes(KEY));
+});
+
+await ok('more than 250 cosponsors: the rest are read, counted in the support bar and kept for the popover', async () => {
+  const b = await (await call('senate/bill?id=' + encodeURIComponent('S. 999'))).json();
+  const sponsor = b.sponsor ? 1 : 0;
+  assert.strictEqual(b.support.total, 300 + sponsor);
+  const { parts } = await (await call('bill-source?id=' + encodeURIComponent('S. 999'))).json();
+  const pages = parts.filter((p) => /\/cosponsors/.test(p.request));
+  assert.strictEqual(pages.length, 2);
+  assert.ok(pages[1].request.includes('offset=250'));
+  assert.strictEqual(pages[0].json.cosponsors.length + pages[1].json.cosponsors.length, 300);
 });
 
 console.log(n + ' passed');

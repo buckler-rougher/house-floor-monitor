@@ -1094,6 +1094,24 @@ async function fetchCongressBillSummary(billId, env) {
   }
 }
 
+// Congress.gov pages the cosponsors list at 250 at most, and the support bar needs every cosponsor's party, so a bill with
+// more is read page by page. Takes the first page as received; returns the pages after it, as { request, json }, each request as
+// made (no key). Capped at four more pages (1,250 cosponsors), far past any bill.
+async function moreCosponsorPages(base, first, get) {
+  const out = [];
+  let have = (first?.cosponsors || []).length;
+  const total = first?.pagination?.count || 0;
+  while (have < total && out.length < 4) {
+    const path = `/cosponsors?limit=250&offset=${have}`;
+    const json = await get(path);
+    const got = (json?.cosponsors || []).length;
+    if (!got) break;
+    out.push({ request: `GET ${base}${path}`, json });
+    have += got;
+  }
+  return out;
+}
+
 async function fetchBillMeta(billId, env) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
@@ -1102,7 +1120,7 @@ async function fetchBillMeta(billId, env) {
   // Network errors propagate as thrown exceptions — callers use safeFetchMeta to avoid caching null for transient failures
   const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
     fetch(`${base}${apiKey}`, { headers: { 'Accept': 'application/json' } }),
-    fetch(`${base}/cosponsors${apiKey}&limit=100`, { headers: { 'Accept': 'application/json' } }),
+    fetch(`${base}/cosponsors${apiKey}&limit=250`, { headers: { 'Accept': 'application/json' } }),
     fetch(`${base}/committees${apiKey}&limit=5`, { headers: { 'Accept': 'application/json' } }),
   ]);
   if ([billResp, cosponsorsResp, committeesResp].some(r => r.status === 429 || r.status >= 500)) {
@@ -1128,8 +1146,18 @@ async function fetchBillMeta(billId, env) {
   if (cosponsorsResp.ok) {
     try {
       const data = await cosponsorsResp.json();
-      raw.push({ request: `GET ${base}/cosponsors?limit=100`, json: data });
-      result.cosponsors = (data.cosponsors || []).map(c => ({ bioguideId: c.bioguideId, firstName: c.firstName, lastName: c.lastName, party: c.party, state: c.state, district: c.district ?? null }));
+      raw.push({ request: `GET ${base}/cosponsors?limit=250`, json: data });
+      const more = await moreCosponsorPages(base, data, async (path) => {
+        const r = await fetch(`${base}${path}&api_key=${_congressApiKey}`, { headers: { 'Accept': 'application/json' } });
+        if (r.status === 429 || r.status >= 500) throw new Error(`Congress.gov fetchBillMeta transient error: ${r.status}`);
+        return r.ok ? r.json() : null;
+      });
+      raw.push(...more);
+      const everyone = [data, ...more.map(p => p.json)].flatMap(d => d.cosponsors || []);
+      result.cosponsors = everyone.map(c => ({ bioguideId: c.bioguideId, firstName: c.firstName, lastName: c.lastName, party: c.party, state: c.state, district: c.district ?? null }));
+      // Marks the list as read in full. Entries cached while the request was limit=100 hold exactly 100 for a bill that
+      // had more, and lack this mark, which is how enrichment knows to read them again (see needsMeta).
+      result.cosponsorsComplete = everyone.length >= (data.pagination?.count || 0);
     } catch {}
   }
   if (committeesResp.ok) {
@@ -2094,7 +2122,10 @@ async function _fetchBills(request, env) {
         const needsSummary            = !enrichCached.summary;
         // Re-fetch meta when missing, or when the cached entry predates committeeReportUrl
         // support (key absent entirely — null means "checked, no report").
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta);
+        // Also when the cosponsors list may have been cut at the old limit of 100 (exactly 100 and not marked complete): only
+        // the few bills that large are read again, not every cached bill.
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta)
+                                        || (enrichCached.meta.cosponsors?.length >= 100 && !enrichCached.meta.cosponsorsComplete);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
         const needsStatusRefresh      = needsCommitteeReport || needsStatusVerify;
@@ -3091,11 +3122,14 @@ async function handleSenateBill(env, billId) {
       call(''), call('/summaries?limit=5'), call('/cosponsors?limit=250'), call('/committees'),
       call('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'),
     ]);
+    // More than 250 cosponsors: the rest, so the support bar counts them all.
+    const moreCo = await moreCosponsorPages(base, cosponsors, (path) => call(path));
+    const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
     const bill = record?.bill;
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
     // The responses as received, for the source popover; the requests as made, without the key.
     const asked = (path, json) => json ? [{ request: `GET ${base}${path}${path.includes('?') ? '&' : '?'}format=json`, json }] : [];
-    await saveBillRaw(env, billId, 'meta', [...asked('', record), ...asked('/cosponsors?limit=250', cosponsors), ...asked('/committees', committees)]);
+    await saveBillRaw(env, billId, 'meta', [...asked('', record), ...asked('/cosponsors?limit=250', cosponsors), ...moreCo.map(p => ({ request: p.request + '&format=json', json: p.json })), ...asked('/committees', committees)]);
     await saveBillRaw(env, billId, 'summaries', asked('/summaries?limit=5', summaries));
 
     // The first summary with real prose. Stubs shorter than a sentence are
@@ -3147,7 +3181,7 @@ async function handleSenateBill(env, billId) {
       // Party split for the support bar, sponsor included the way the House
       // modal counts it.
       support: (() => {
-        const all = [...(sp ? [{ party: sp.party }] : []), ...(cosponsors?.cosponsors || [])];
+        const all = [...(sp ? [{ party: sp.party }] : []), ...everyCosponsor];
         if (!all.length) return null;
         const n = (p) => all.filter((m) => m.party === p).length;
         return { D: n('D'), R: n('R'), I: all.length - n('D') - n('R'), total: all.length };
