@@ -12086,3 +12086,98 @@ html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
     border-bottom-right-radius: var(--radius-6);
 }
+
+/* Source links (lib/source-pop.js). A link out to a publisher carries a small arrow; one that opens a manifest carries a
+   small caret instead and opens a popover with the data and, inside it, the link. */
+a.source-link::after {
+    content: "";
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    margin-left: 0.25em;
+    vertical-align: -0.05em;
+    background: currentColor;
+    opacity: 0.65;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 2.5h6v6M9.5 2.5l-7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 2.5h6v6M9.5 2.5l-7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+a.source-link.has-manifest::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5l3.5 3.5 3.5-3.5' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5l3.5 3.5 3.5-3.5' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.source-pop {
+    position: fixed;
+    z-index: 1250;
+    box-sizing: border-box;
+    padding: var(--sp-12) var(--sp-14);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-8);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+.source-pop[hidden] { display: none; }
+.source-pop-title {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: var(--sp-8);
+}
+.source-pop-row + .source-pop-row { margin-top: var(--sp-8); }
+.source-pop-label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.source-pop-value {
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+}
+.source-pop-link {
+    display: inline-block;
+    margin-top: var(--sp-12);
+    font-size: var(--fs-md);
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+.source-pop-link:hover { text-decoration: underline; }
+
+/* The manifest is drawn as the API response it is: the request line, then the JSON, in mono. */
+.source-pop.has-json { max-width: 560px; }
+.source-pop-request {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--sp-8);
+    overflow-wrap: anywhere;
+}
+.source-pop-json {
+    margin: 0;
+    padding: var(--sp-10) var(--sp-12);
+    max-height: 260px;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-6);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 2;
+}
+.source-pop-json .j-key { color: var(--accent-blue); }
+.source-pop-json .j-str { color: var(--accent-green); }
+.source-pop-json .j-num, .source-pop-json .j-lit { color: var(--accent-amber); }
+.source-pop-json .j-p, .source-pop-json .j-note { color: var(--text-muted); }
