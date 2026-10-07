@@ -537,11 +537,43 @@ function renderAbsences(data) {
     }
 }
 
+// The vote file behind the Missing Senators link's popover (lib/source-pop.js): the Senate's own XML for the latest roll
+// call, as the Worker passed it (everything but the member list, then the members marked Not Voting), cut and annotated.
+function setAbsenceManifest(data) {
+    const s = data && data.source;
+    if (!globalThis.SourcePop || !s || !s.head) return;
+    const panel = document.getElementById('absentee');
+    if (!panel) return;
+    const X = SourcePop.xml;
+    const root = new DOMParser().parseFromString(s.head, 'text/xml').documentElement;
+    if (!root || root.querySelector('parsererror')) return;
+    const lines = ['<' + root.tagName + X.attrs(root) + '>'];
+    for (const c of root.children) {
+        if (c.tagName === 'members') continue;
+        if (c.children.length > 6) { lines.push(X.note(1, c.tagName + ' omitted')); continue; }
+        X.emit(c, 1, lines);
+    }
+    lines.push('  <members>');
+    lines.push(X.note(2, (s.entries || '') + ' <member> entries. The panel lists the ' + (s.notVoting || []).length + ' marked Not Voting:'));
+    for (const raw of s.notVoting || []) {
+        const m = new DOMParser().parseFromString(raw, 'text/xml').documentElement;
+        if (m) X.emit(m, 2, lines);
+    }
+    lines.push('  </members>', '</' + root.tagName + '>');
+    SourcePop.set(panel, {
+        title: 'The Senate\'s roll call',
+        request: 'GET ' + s.url,
+        xml: lines.join('\n')
+    });
+}
+
 async function loadAbsences() {
     try {
         const r = await fetch(`${API}/senate/absences`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderAbsences(await r.json());
+        const data = await r.json();
+        renderAbsences(data);
+        setAbsenceManifest(data);
     } catch (e) {
         const info = el('absentee-roll-info');
         if (info) info.textContent = 'unavailable';
