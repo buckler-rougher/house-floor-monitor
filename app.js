@@ -5893,35 +5893,20 @@ function linkifyBillNumbers(text) {
     );
 }
 
-// The Clerk's floor activity behind the Floor Proceedings link's popover (lib/source-pop.js): the newest entries the panel
-// shows, with the Clerk's own columns (Date, Time, Activity) shaped as JSON, and the Clerk's URL for that day, which holds
-// them. The rest of the day's entries are only counted.
+// The Clerk's floor activity behind the Floor Proceedings link's popover (lib/source-pop.js): the entries the panel shows, with the Clerk's own columns (Date, Time, Activity) shaped as JSON, and the Clerk's URL for that day.
 function setProceedingsManifest(items) {
     if (!globalThis.SourcePop) return;
     const panel = document.getElementById('proceedings');
     if (!panel || !items || !items.length) return;
-    const et = (d, o) => d.toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
-    const dayOf = (i) => (i.pubDate ? et(new Date(i.pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : '');
-    const entry = (i) => {
-        const e = {};
-        const d = dayOf(i);
-        if (d) e.date = d;
-        if (i.pubDate) e.time = et(new Date(i.pubDate), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        e.activity = decodeHtml(String(i.description || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
-        return e;
-    };
-    const shown = items.slice(0, 4);
     const day = proceedingsDateOverride
-        ? et(new Date(proceedingsDateOverride), { year: 'numeric', month: '2-digit', day: '2-digit' })
-        : dayOf(items[0]);
+        ? eastern(new Date(proceedingsDateOverride), { year: 'numeric', month: '2-digit', day: '2-digit' })
+        : (items[0].pubDate ? eastern(new Date(items[0].pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : '');
     SourcePop.set(panel, {
         title: 'The Clerk\'s floor activity',
         request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + day,
-        json: shown.map(entry),
+        json: items.map(clerkEntry),
         listKey: 'entries',
-        noun: 'entry',
-        before: 0,
-        after: items.length - shown.length
+        noun: 'entry'
     });
 }
 
@@ -8128,7 +8113,7 @@ async function fetchHouseMakeup(preData = null) {
             return dateA - dateB; // Oldest first
         });
         
-        setBalanceManifest(xmlDoc, { R: repCount, D: demCount, I: indCount });
+        setBalanceManifest(xmlDoc);
 
         houseMakeup = {
             republicans: repCount,
@@ -8154,43 +8139,15 @@ async function fetchHouseMakeup(preData = null) {
     }
 }
 
-// The Clerk's roster as the Balance of Power link's popover shows it (lib/source-pop.js): the roster's date, its title-info,
-// the entry for each vacant seat as the Clerk wrote it, and one Member as an example of what the party counts are read from.
-// The roster has 441 entries and over half a megabyte of committee assignments, so it is an excerpt, and says how it was cut.
-function setBalanceManifest(xmlDoc, counts) {
+// The Clerk's roster as the Balance of Power link's popover shows it (lib/source-pop.js): MemberData.xml as the Clerk wrote it,
+// every Member included. It is over half a megabyte, so the popover draws it in slices (lib/source-pop.js).
+function setBalanceManifest(xmlDoc) {
     if (!globalThis.SourcePop || !xmlDoc) return;
     const panel = document.getElementById('party-breakdown');
-    if (!panel) return;
-    const X = SourcePop.xml;
     const root = xmlDoc.querySelector('MemberData');
-    if (!root) return;
-    const lines = ['<MemberData' + X.attrs(root) + '>'];
-    const title = root.querySelector('title-info');
-    if (title) X.emit(title, 1, lines);
-    const all = [...xmlDoc.querySelectorAll('members > member')];
-    lines.push('  <members>');
-    lines.push(X.note(2, all.length + ' <member> entries. The panel counts R ' + counts.R + ', D ' + counts.D + ', I ' + counts.I +
-        ' by each voting Member\'s <party>. Shown: one Member, then each vacant seat.'));
-    const sample = all.find((m) => m.querySelector('namelist')?.textContent.trim());
-    if (sample) {
-        lines.push('    <member>');
-        for (const tag of ['statedistrict']) { const e = sample.querySelector(tag); if (e) X.emit(e, 3, lines); }
-        lines.push('      <member-info>');
-        for (const tag of ['namelist', 'party', 'caucus']) { const e = sample.querySelector('member-info > ' + tag); if (e) X.emit(e, 4, lines); }
-        lines.push(X.note(4, 'more fields: name parts, office, phone, elected-date, sworn-date'));
-        lines.push('      </member-info>');
-        lines.push(X.note(3, 'committee-assignments omitted'));
-        lines.push('    </member>');
-    }
-    for (const m of all) {
-        if (m.querySelector('namelist')?.textContent.trim() || !m.querySelector('predecessor-info')) continue;
-        lines.push('    <member>');
-        const sd = m.querySelector('statedistrict'); if (sd) X.emit(sd, 3, lines);
-        lines.push('      <member-info/>');
-        X.emit(m.querySelector('predecessor-info'), 3, lines);
-        lines.push('    </member>');
-    }
-    lines.push('  </members>', '</MemberData>');
+    if (!panel || !root) return;
+    const lines = [];
+    SourcePop.xml.emit(root, 0, lines);
     SourcePop.set(panel, {
         title: 'The Clerk\'s roster',
         request: 'GET https://clerk.house.gov/xml/lists/MemberData.xml',
@@ -8333,26 +8290,31 @@ function updateSourceManifest(mode) {
     const list = proceedingsData || [];
     const at = list.findIndex((i) => spec[0].test((i.description || '').replace(/<[^>]+>/g, '').trim()));
     if (at < 0) { SourcePop.set(section, null); return; }
-    // The entry with the Clerk's own columns (Date, Time, Activity: the Floor Activity table), shaped as JSON, and the
-    // Clerk's URL for that day, which holds the same entry. The other entries of that day are only counted.
-    const et = (d, o) => d.toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
-    const when = list[at].pubDate ? new Date(list[at].pubDate) : null;
-    const day = (i) => (i.pubDate ? et(new Date(i.pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : null);
-    const date = when ? day(list[at]) : null;
-    const sameDay = date ? list.map((x, k) => (day(x) === date ? k : -1)).filter((k) => k >= 0) : [at];
-    const entry = {};
-    if (date) entry.date = date;
-    if (when) entry.time = et(when, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    entry.activity = decodeHtml(String(list[at].description).replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    // The day's entries with the Clerk's own columns (Date, Time, Activity: the Floor Activity table), shaped as JSON, newest
+    // first as the Clerk lists them, the one behind this panel pointed out by a comment, and the Clerk's URL for that day.
+    const day = (i) => (i.pubDate ? eastern(new Date(i.pubDate), { year: 'numeric', month: '2-digit', day: '2-digit' }) : '');
+    const date = day(list[at]);
+    const sameDay = list.map((x, k) => k).filter((k) => day(list[k]) === date);
     SourcePop.set(section, {
-        title: 'The Clerk\'s entry for this panel',
-        request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + (date || ''),
-        json: entry,
+        title: 'The Clerk\'s floor activity',
+        request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + date,
+        json: sameDay.map((k) => clerkEntry(list[k])),
         listKey: 'entries',
         noun: 'entry',
-        before: sameDay.filter((k) => k < at).length,
-        after: sameDay.filter((k) => k > at).length
+        mark: sameDay.indexOf(at)
     });
+}
+// A Clerk floor-activity item as the Clerk's own columns, in Eastern time.
+const eastern = (d, o) => d.toLocaleString('en-US', { timeZone: 'America/New_York', ...o });
+function clerkEntry(i) {
+    const e = {};
+    if (i.pubDate) {
+        const d = new Date(i.pubDate);
+        e.date = eastern(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
+        e.time = eastern(d, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    e.activity = decodeHtml(String(i.description || '').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    return e;
 }
 
 // Console helpers for testing — freeze/unfreeze the auto-switch without
@@ -9099,32 +9061,16 @@ async function _doAbsenteeTracking() {
     }
 }
 
-// The roll call behind the Missing Members link's popover (lib/source-pop.js): the Clerk's roll XML, cut to its metadata,
-// its overall totals, and the recorded votes marked Not Voting, which are the rows the panel lists. Said in a comment, since
-// a full roll is 435 entries.
+// The roll call behind the Missing Members link's popover (lib/source-pop.js): the Clerk's roll XML as the Clerk wrote it,
+// every recorded vote included (the panel lists those marked Not Voting).
 function setAbsenteeManifest(xmlDoc, rollNumber) {
     if (!globalThis.SourcePop) return;
     const panel = document.getElementById('absentee');
-    if (!panel) return;
-    const X = SourcePop.xml;
-    const meta = xmlDoc.querySelector('vote-metadata');
-    if (!meta) return;
+    const root = xmlDoc && xmlDoc.querySelector('rollcall-vote');
+    if (!panel || !root) return;
     const year = (xmlDoc.querySelector('action-date')?.textContent || '').split('-')[2] || String(new Date().getFullYear());
-    const lines = ['<rollcall-vote>', '  <vote-metadata>'];
-    for (const c of meta.children) {
-        if (c.tagName === 'vote-totals') continue;
-        X.emit(c, 2, lines);
-    }
-    const byVote = meta.querySelector('vote-totals > totals-by-vote');
-    lines.push('    <vote-totals>');
-    lines.push(X.note(3, 'totals by party omitted'));
-    if (byVote) X.emit(byVote, 3, lines);
-    lines.push('    </vote-totals>', '  </vote-metadata>', '  <vote-data>');
-    const all = [...xmlDoc.querySelectorAll('vote-data > recorded-vote')];
-    const away = all.filter((r) => r.querySelector('vote')?.textContent === 'Not Voting' && r.querySelector('legislator')?.textContent.trim());
-    lines.push(X.note(2, all.length + ' <recorded-vote> entries. The panel lists the ' + away.length + ' marked Not Voting:'));
-    for (const r of away) X.emit(r, 2, lines);
-    lines.push('  </vote-data>', '</rollcall-vote>');
+    const lines = [];
+    SourcePop.xml.emit(root, 0, lines);
     SourcePop.set(panel, {
         title: 'The Clerk\'s roll call',
         request: 'GET https://clerk.house.gov/evs/' + year + '/roll' + String(rollNumber).padStart(3, '0') + '.xml',
