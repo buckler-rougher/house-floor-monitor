@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261007r">
+    <link rel="stylesheet" href="styles.house.css?v=20261008e">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -417,7 +417,6 @@
                             <span class="prayer-tag-time" id="prayer-time"></span>
                             <span class="section-live" id="prayer-live" hidden>NOW</span>
                         </div>
-                        <button class="info-btn" data-info="prayer" aria-label="About the opening prayer">?</button>
                     </div>
                     <div class="prayer-header-right">
                         <span class="prayer-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -441,6 +440,14 @@
                         <a class="prayer-leader-website" id="prayer-leader-website" href="https://chaplain.house.gov/chaplaincy/index.html" target="_blank" rel="noopener">https://chaplain.house.gov</a>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="prayer-ai-body" data-inline-info="prayer" data-inline-source="prayer-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="prayer-ai-source"></div>
+            </div>
             </div>
 
             <!-- Moment of Silence Section -->
@@ -451,7 +458,6 @@
                             <span class="silence-tag-text">MOMENT OF SILENCE</span>
                             <span class="silence-tag-time" id="silence-time"></span>
                         </div>
-                        <button class="info-btn" data-info="moment-of-silence" aria-label="About moments of silence">?</button>
                     </div>
                     <div class="silence-header-right">
                         <span class="silence-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -463,6 +469,14 @@
                         <p class="silence-description" id="silence-description">Loading moment of silence information...</p>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="silence-ai-body" data-inline-info="moment-of-silence" data-inline-source="silence-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="silence-ai-source"></div>
+            </div>
             </div>
 
             <!-- Oath of Office Section -->
@@ -474,7 +488,6 @@
                             <span class="oath-tag-text">OATH OF OFFICE</span>
                             <span class="oath-tag-time" id="oath-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="oath" aria-label="About the oath of office" hidden>?</button>
                     </div>
                     <div class="oath-header-right">
                         <span class="oath-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -493,6 +506,14 @@
                         <p class="oath-member-description" id="oath-member-description">Loading oath information...</p>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="oath-ai-body" data-inline-info="oath" data-inline-source="oath-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="oath-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="oath-text-container">
@@ -515,7 +536,6 @@
                             <span class="speaker-tag-time" id="speaker-time"></span>
                             <span class="section-live" id="speaker-live" hidden>NOW</span>
                         </div>
-                        <button class="info-btn" data-info="speaker-pro-tempore" aria-label="About the Speaker pro tempore">?</button>
                     </div>
                     <div class="speaker-header-right">
                         <span class="speaker-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -540,6 +560,14 @@
                         <p class="speaker-member-description" id="speaker-member-description">Loading speaker pro tempore information...</p>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="speaker-ai-body" data-inline-info="speaker-pro-tempore" data-inline-source="speaker-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="speaker-ai-source"></div>
+            </div>
             </div>
 
             <!-- Committee Chair Section -->
@@ -550,7 +578,6 @@
                             <span class="committee-chair-tag-text">CHAIR OF THE COMMITTEE</span>
                             <span class="committee-chair-tag-time" id="committee-chair-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="committee-chair" aria-label="About the chair of the Committee of the Whole" hidden>?</button>
                     </div>
                     <div class="committee-chair-header-right">
                         <span class="committee-chair-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -574,6 +601,14 @@
                         <a class="committee-chair-member-website" id="committee-chair-member-website" href="#" target="_blank" rel="noopener">--</a>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="committee-chair-ai-body" data-inline-info="committee-chair" data-inline-source="committee-chair-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="committee-chair-ai-source"></div>
+            </div>
             </div>
 
             <!-- Pledge Section -->
@@ -586,7 +621,6 @@
                             <span class="pledge-tag-time" id="pledge-time"></span>
                                 <span class="section-live" id="pledge-live" hidden>NOW</span>
                         </div>
-                        <button class="info-btn" type="button" data-info="pledge" aria-label="About the Pledge of Allegiance" hidden>?</button>
                     </div>
                     <div class="pledge-header-right">
                         <span class="pledge-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -610,6 +644,14 @@
                         <a class="pledge-leader-website" id="pledge-leader-website" href="#" target="_blank" rel="noopener">--</a>
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="pledge-ai-body" data-inline-info="pledge" data-inline-source="pledge-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="pledge-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="pledge-text-container">
@@ -636,7 +678,6 @@
                             <span class="message-tag-text">MESSAGE RECEIVED</span>
                             <span class="message-tag-time" id="message-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="message-received" aria-label="About messages to the House" hidden>?</button>
                     </div>
                     <div class="message-header-right">
                         <span class="message-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -646,6 +687,14 @@
                     <div class="message-from-line" id="message-from-line">The House received a message.</div>
                     <div class="message-body" id="message-body"></div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="message-ai-body" data-inline-info="message-received" data-inline-source="message-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="message-ai-source"></div>
+            </div>
             </div>
 
             <!-- Joint Session Section -->
@@ -656,7 +705,6 @@
                             <span class="joint-session-tag-text">JOINT SESSION</span>
                             <span class="joint-session-tag-time" id="joint-session-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="joint-sessions" aria-label="About joint sessions and joint meetings" hidden>?</button>
                     </div>
                     <div class="joint-session-header-right">
                         <span class="joint-session-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -667,15 +715,20 @@
                         The House and Senate have convened in Joint Session.
                     </div>
                     <div class="joint-session-presiding-line" id="joint-session-presiding-line"></div>
-                    <div class="ai-block">
-                        <div class="joint-tags-row">
+                </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="joint-session-ai-body" data-inline-info="joint-sessions" data-inline-source="joint-session-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="joint-tags-row">
                             <span class="joint-session-pill">By concurrent resolution</span>
                             <span class="joint-session-pill">President&rsquo;s address or electoral count</span>
                             <span class="joint-session-pill">House and Senate</span>
                         </div>
-                        <div class="speech-mode-ai-note">Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/IF/PDF/IF10211/IF10211.20.pdf" target="_blank" rel="noopener">CRS Report IF10211</a> (2026), <a href="https://www.congress.gov/crs_external_products/R/PDF/R44770/R44770.28.pdf" target="_blank" rel="noopener">CRS Report R44770</a> (2026), and <a href="https://www.congress.gov/crs_external_products/R/PDF/R48309/R48309.2.pdf" target="_blank" rel="noopener">CRS Report R48309</a> (2024)</div>
-                    </div>
-                </div>
+                <div class="speech-mode-ai-note" id="joint-session-ai-source"></div>
+            </div>
             </div>
 
             <!-- Joint Meeting Section -->
@@ -686,7 +739,6 @@
                             <span class="joint-meeting-tag-text">JOINT MEETING</span>
                             <span class="joint-meeting-tag-time" id="joint-meeting-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="joint-sessions" aria-label="About joint sessions and joint meetings" hidden>?</button>
                     </div>
                     <div class="joint-meeting-header-right">
                         <span class="joint-meeting-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -696,15 +748,20 @@
                     <div class="joint-meeting-description-line" id="joint-meeting-description-line">
                         The House convened in Joint Meeting with the Senate.
                     </div>
-                    <div class="ai-block">
-                        <div class="joint-tags-row">
+                </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="joint-meeting-ai-body" data-inline-info="joint-sessions" data-inline-source="joint-meeting-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="joint-tags-row">
                             <span class="joint-meeting-pill">By invitation</span>
                             <span class="joint-meeting-pill">Often a foreign leader</span>
                             <span class="joint-meeting-pill">House and Senate</span>
                         </div>
-                        <div class="speech-mode-ai-note">Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/IF/PDF/IF10211/IF10211.20.pdf" target="_blank" rel="noopener">CRS Report IF10211</a> (2026), <a href="https://www.congress.gov/crs_external_products/R/PDF/R44770/R44770.28.pdf" target="_blank" rel="noopener">CRS Report R44770</a> (2026), and <a href="https://www.congress.gov/crs_external_products/R/PDF/R48309/R48309.2.pdf" target="_blank" rel="noopener">CRS Report R48309</a> (2024)</div>
-                    </div>
-                </div>
+                <div class="speech-mode-ai-note" id="joint-meeting-ai-source"></div>
+            </div>
             </div>
 
             <!-- Rule IX privilege: a point of PERSONAL privilege, or a question of the
@@ -717,7 +774,6 @@
                             <span class="privilege-tag-text" id="privilege-tag-text">POINT OF PERSONAL PRIVILEGE</span>
                             <span class="privilege-tag-time" id="privilege-time"></span>
                         </div>
-                        <button class="info-btn" id="privilege-help" type="button" data-info="personal-privilege" aria-label="About this kind of privilege" hidden>?</button>
                     </div>
                     <div class="privilege-header-right">
                         <span class="privilege-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -749,11 +805,16 @@
                         <p class="privilege-resolution-title" id="privilege-resolution-title"></p>
                     </div>
                     <p class="privilege-description-line" id="privilege-description">A Member has risen on a question of privilege.</p>
-                    <div class="privilege-explainer ai-block">
-                        <div class="privilege-tags-row" id="privilege-pills"></div>
-                        <div class="speech-mode-ai-note">Summary generated by AI from <a href="https://www.congress.gov/crs_external_products/RS/PDF/98-411/98-411.12.pdf" target="_blank" rel="noopener">CRS Report 98-411</a> (2023)</div>
-                    </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="privilege-ai-body" data-inline-info="personal-privilege" data-inline-source="privilege-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="privilege-tags-row" id="privilege-pills"></div>
+                <div class="speech-mode-ai-note" id="privilege-ai-source"></div>
+            </div>
             </div>
 
             <!-- Appointment of Tellers Section -->
@@ -765,7 +826,6 @@
                             <span class="tellers-tag-text">APPOINTMENT OF TELLERS</span>
                             <span class="tellers-tag-time" id="tellers-time"></span>
                         </div>
-                        <button class="info-btn" id="tellers-help" type="button" data-info="tellers-speaker" aria-label="About tellers" hidden>?</button>
                     </div>
                     <div class="tellers-header-right">
                         <span class="tellers-source">Source: <a href="https://clerk.house.gov/CommitteeInfo/House.aspx" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -777,6 +837,14 @@
                         <!-- Teller cards will be generated by JS -->
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="tellers-ai-body" data-inline-info="tellers-speaker" data-inline-source="tellers-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="tellers-ai-source"></div>
+            </div>
             </div>
             </div>
 
@@ -789,7 +857,6 @@
                             <span class="cert-election-tag-text">CERTIFICATION OF ELECTION</span>
                             <span class="cert-election-tag-time" id="cert-election-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="certificates-of-election" aria-label="About certificates of election" hidden>?</button>
                     </div>
                     <div class="cert-election-header-right">
                         <span class="cert-election-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -805,6 +872,14 @@
                     </div>
                     <p class="cert-election-approval-text" id="cert-election-text"></p>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="cert-election-ai-body" data-inline-info="certificates-of-election" data-inline-source="cert-election-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="cert-election-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="cert-election-quote-container">
@@ -829,7 +904,6 @@
                             <span class="cert-electoral-tag-text">CERTIFICATION OF ELECTORAL VOTES</span>
                             <span class="cert-electoral-tag-time" id="cert-electoral-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="electoral-count" aria-label="About counting the electoral votes" hidden>?</button>
                     </div>
                     <div class="cert-electoral-header-right">
                         <span class="cert-electoral-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -846,6 +920,14 @@
                     </div>
                     <p class="cert-electoral-approval-text" id="cert-electoral-text"></p>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="cert-electoral-ai-body" data-inline-info="electoral-count" data-inline-source="cert-electoral-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="cert-electoral-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="cert-electoral-quote-container">
@@ -870,7 +952,6 @@
                             <span class="sine-die-tag-text">ADJOURNMENT SINE DIE</span>
                             <span class="sine-die-tag-time" id="sine-die-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="sine-die" aria-label="About adjournment sine die" hidden>?</button>
                     </div>
                     <div class="sine-die-header-right">
                         <span class="sine-die-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -881,6 +962,14 @@
                         The House stands adjourned sine die.
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="sine-die-ai-body" data-inline-info="sine-die" data-inline-source="sine-die-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="sine-die-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="sine-die-quote-container">
@@ -905,7 +994,6 @@
                             <span class="new-session-tag-text">NEW SESSION CONVENED</span>
                             <span class="new-session-tag-time" id="new-session-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="new-session" aria-label="About a new session of Congress" hidden>?</button>
                     </div>
                     <div class="new-session-header-right">
                         <span class="new-session-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -916,6 +1004,14 @@
                         The House has convened pursuant to the 20th Amendment to the Constitution.
                     </div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="new-session-ai-body" data-inline-info="new-session" data-inline-source="new-session-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="new-session-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="new-session-quote-container">
@@ -939,7 +1035,6 @@
                             <span class="admin-oath-tag-text">ADMINISTRATION OF THE OATH OF OFFICE</span>
                             <span class="admin-oath-tag-time" id="admin-oath-time"></span>
                         </div>
-                        <button class="info-btn" type="button" data-info="oath" aria-label="About the oath of office" hidden>?</button>
                     </div>
                     <div class="admin-oath-header-right">
                         <span class="admin-oath-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -953,6 +1048,14 @@
                     </div>
                     <div class="admin-oath-source-inline">Source: <a href="https://uscode.house.gov/view.xhtml?req=%28title:5%20section:3331%20edition:prelim%29%20OR%20%28granuleid:USC-prelim-title5-section3331%29&f=treesort&edition=prelim&num=0&jumpTo=true" target="_blank" rel="noopener">5 U.S. Code § 3331</a></div>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="admin-oath-ai-body" data-inline-info="oath" data-inline-source="admin-oath-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="admin-oath-ai-source"></div>
+            </div>
             </div>
 
             <!-- Journal Approval Section -->
@@ -964,7 +1067,6 @@
                             <span class="journal-tag-text">SPEAKER'S APPROVAL OF THE JOURNAL</span>
                             <span class="journal-tag-time" id="journal-time"></span>
                         </div>
-                        <button class="info-btn" data-info="journal" aria-label="About the House Journal">?</button>
                     </div>
                     <div class="journal-header-right">
                         <span class="journal-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -1000,6 +1102,14 @@
                         The Chair has examined the Journal of the proceedings of <span id="journal-last-session-date">--</span>, and announces to the House the approval thereof. Pursuant to clause 1 of rule I, the Journal stands approved.
                     </p>
                 </div>
+            
+            <div class="ai-block is-flush">
+                <div class="calendar-card ai-card">
+                    <div class="calendar-card-body" id="journal-ai-body" data-inline-info="journal" data-inline-source="journal-ai-source"></div>
+                    <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                </div>
+                <div class="speech-mode-ai-note" id="journal-ai-source"></div>
+            </div>
             </div>
             <div class="quote-card">
                 <div class="journal-text-container">
@@ -1671,7 +1781,7 @@
     <script defer src="lib/committees.js?v=20261004a"></script>
     <script defer src="lib/bill-sections.js?v=20261006d"></script>
     <script defer src="lib/debate-panel.js?v=20261005a"></script>
-    <script defer src="lib/info-popup.js?v=20261007a"></script>
+    <script defer src="lib/info-popup.js?v=20261008a"></script>
     <script defer src="lib/info-content.js?v=20261007a"></script>
     <script defer src="lib/clocks.js?v=20261004a"></script>
     <script defer src="lib/session-clock.js?v=20261004a"></script>
@@ -1687,7 +1797,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261008b"></script>
+    <script defer src="app.js?v=20261008d"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
