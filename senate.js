@@ -1287,13 +1287,29 @@ async function loadProceedings() {
     try {
         const r = await fetch(`${API}/senate/proceedings`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderProceedings(await r.json());
+        const data = await r.json();
+        renderProceedings(data);
+        setProceedingsManifest(data);
     } catch (e) {
         if (!feed.querySelector('.proceedings-measure')) {
             setIfChanged(feed, `<div class="proceedings-error">Floor activity unavailable (${escapeHtml(e.message)}).</div>`);
         }
         console.error('Proceedings fetch failed:', e);
     }
+}
+
+// The floor activity page behind the Recent Floor Activity link's popover (lib/source-pop.js): the Senate's own HTML as the
+// Worker passed it, its opening, with a note of how much of the page that leaves out.
+function setProceedingsManifest(data) {
+    const s = data && data.source;
+    if (!globalThis.SourcePop || !s || !s.html) return;
+    const panel = document.getElementById('proceedings');
+    if (!panel) return;
+    SourcePop.set(panel, {
+        title: 'The Senate\'s floor activity page',
+        request: 'GET ' + s.url,
+        html: s.html + (s.omitted ? '\n<!-- ' + s.omitted.toLocaleString('en-US') + ' more characters: the legislative business and the rest of the day -->' : '')
+    });
 }
 
 // ── Procedural stages ────────────────────────────────────────────────────────
