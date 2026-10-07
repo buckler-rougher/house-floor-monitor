@@ -6465,3 +6465,17 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 4%, transparent) 55%,
         transparent 90%);
 }
+.next-votes .next-votes-help { vertical-align: middle; margin-left: var(--sp-6); }
+.info-btn.is-quiet {
+    width: 13px;
+    height: 13px;
+    font-size: 8px;
+    padding-top: 1px;
+    padding-left: 1px;
+    opacity: 0.55;
+    transition: color var(--dur-150), border-color var(--dur-150), opacity var(--dur-150);
+}
+.info-btn.is-quiet:hover, .info-btn.is-quiet:focus-visible { opacity: 1; }
+@media (max-width: 640px) {
+  .info-btn.is-quiet { width: 16px; height: 16px; }
+}
