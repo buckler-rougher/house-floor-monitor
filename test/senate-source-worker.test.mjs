@@ -58,19 +58,24 @@ await ok('stages: only the votes on the measures on show, as the Senate wrote th
   assert.ok(body.votes.some((v) => v.includes('<issue>H.R. 70</issue>')) && body.votes.filter((v) => v.includes('H.R. 70')).length === 2, 'both votes on a measure travel together');
 });
 
-await ok('nominations: a pending stage lists all of it, merged from both files and in the panel order, uncalendared ones left out', async () => {
+await ok('nominations: a pending stage lists all of it, one entry list per file (not merged), in the panel order, uncalendared ones left out', async () => {
   const { body } = await call('senate/nominations-source?stage=calendar');
-  assert.strictEqual(body.total, 3);
-  assert.deepStrictEqual(body.entries.map((e) => e.match(/PN(\d+)-1/)[1]), ['2', '4', '1'], 'newest calendar number first');
   assert.strictEqual(body.files.length, 2);
-  assert.ok(body.entries[0].includes('xmlns:xsi'), 'raw: the client strips the declaration');
+  const pns = (f) => f.entries.map((e) => e.match(/PN(\d+)-1/)[1]);
+  assert.deepStrictEqual(pns(body.files[0]), ['2', '1'], 'the civilian file, newest calendar number first; PN3 has no number');
+  assert.deepStrictEqual(pns(body.files[1]), ['4']);
+  assert.deepStrictEqual(body.files.map((f) => f.total), [2, 1]);
+  assert.ok(body.files[0].url.endsWith('NomCivilianPendingCalendar.xml') && body.files[1].url.endsWith('NomNonCivilianPendingCalendar.xml'));
+  assert.ok(body.files[0].entries[0].includes('xmlns:xsi'), 'raw: the client strips the declaration');
 });
 
 await ok('nominations: a finished stage lists the newest 40, newest report date first', async () => {
   const { body } = await call('senate/nominations-source?stage=confirmed');
-  assert.strictEqual(body.total, 60);
-  assert.strictEqual(body.entries.length, 40);
-  const dates = body.entries.map((e) => e.match(/<ReportingStageDate>([^<]*)/)[1]);
+  const civ = body.files[0];
+  assert.strictEqual(civ.total, 60);
+  assert.strictEqual(civ.entries.length, 40);
+  assert.strictEqual(body.files[1].entries.length, 0);
+  const dates = civ.entries.map((e) => e.match(/<ReportingStageDate>([^<]*)/)[1]);
   assert.deepStrictEqual(dates, [...dates].sort().reverse());
 });
 

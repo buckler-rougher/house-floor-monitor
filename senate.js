@@ -610,6 +610,8 @@ function setStagesManifest(data) {
 }
 
 // NOMINATIONS: each sub-section's own link, with the entries that list is showing, in the order it shows them.
+// The newest this many of a finished stage are listed (NOM_SHOWN, below); the Worker cuts its source to the same.
+const NOM_SOURCE_SHOWN = 40;
 const NOM_SOURCE_FILES = {
     calendar: 'NomCivilianPendingCalendar', privileged: 'NomPrivileged', committee: 'NomCivilianPendingCommittee',
     confirmed: 'NomCivilianConfirmed', failed: 'NomFailedOrReturned', withdrawn: 'NomWithdrawn',
@@ -627,14 +629,18 @@ function setNominationsManifests() {
                 const d = await r.json();
                 if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
                 const X = SourcePop.xml;
-                const lines = ['<Nominations>', `  <Congress>${X.esc(d.congress)}</Congress>`, `  <SessionNumber>${X.esc(d.session)}</SessionNumber>`];
-                const finished = d.entries.length < d.total;
-                lines.push(X.note(1, (d.files.length > 1 ? 'The ' + d.files.length + ' files hold ' : 'The file holds ') + d.total.toLocaleString('en-US') +
-                    ' nominations at this stage. ' + (finished ? 'The list shows the newest ' + d.entries.length + '.' : 'The list shows all of them.') +
-                    (d.files.length > 1 ? ' Entries from both files are merged, in the order the list shows them.' : '') + ' The xsi namespace declaration is left out.'));
-                for (const raw of d.entries) emitRawXml(raw, 1, lines);
-                lines.push('</Nominations>');
-                return { request: d.files.map((u) => 'GET ' + u).join('\n'), xml: lines.join('\n') };
+                // One part per file, as the Senate publishes them: civilian and military are not merged.
+                const finished = stage === 'confirmed' || stage === 'withdrawn' || stage === 'failed';
+                const parts = d.files.map((f) => {
+                    const lines = ['<Nominations>', `  <Congress>${X.esc(f.congress)}</Congress>`, `  <SessionNumber>${X.esc(f.session)}</SessionNumber>`];
+                    lines.push(X.note(1, 'The file holds ' + f.total.toLocaleString('en-US') + ' nominations at this stage. ' +
+                        (finished ? 'The list shows the newest ' + NOM_SOURCE_SHOWN + ' across the stage; ' + f.entries.length + ' of them are in this file.' : 'The list shows all of them.') +
+                        ' The xsi namespace declaration is left out.'));
+                    for (const raw of f.entries) emitRawXml(raw, 1, lines);
+                    lines.push('</Nominations>');
+                    return { request: 'GET ' + f.url, xml: lines.join('\n') };
+                });
+                return { parts };
             }
         });
     }
