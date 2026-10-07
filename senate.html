@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261009b">
+    <link rel="stylesheet" href="styles.senate.css?v=20261009c">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -953,9 +953,6 @@
             <div class="bills-section" id="nominations">
                 <div class="panel-header">
                     <span class="panel-label">NOMINATIONS</span>
-                    <div class="panel-header-right">
-                        <span class="panel-source">Source: <a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
-                    </div>
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
@@ -964,6 +961,7 @@
                                 <span class="bills-column-title">ON THE EXECUTIVE CALENDAR</span>
                                 <span class="nom-count" id="nom-count-calendar"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomCivilianPendingCalendar.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="Reported out of committee and awaiting floor action. Only these carry a calendar number.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-calendar"></div>
@@ -972,6 +970,7 @@
                                 <span class="bills-column-title">IN COMMITTEE</span>
                                 <span class="nom-count" id="nom-count-committee"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomCivilianPendingCommittee.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="Referred and not yet reported. No calendar number yet.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-committee"></div>
@@ -980,6 +979,7 @@
                                 <span class="bills-column-title">FAILED OR RETURNED</span>
                                 <span class="nom-count" id="nom-count-failed"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomFailedOrReturned.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="Returned to the President, usually at the end of a session.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-failed"></div>
@@ -990,6 +990,7 @@
                                 <span class="bills-column-title">PRIVILEGED</span>
                                 <span class="nom-count" id="nom-count-privileged"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomPrivileged.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="May be taken up without being placed on the Executive Calendar first.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-privileged"></div>
@@ -998,6 +999,7 @@
                                 <span class="bills-column-title">CONFIRMED</span>
                                 <span class="nom-count" id="nom-count-confirmed"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomCivilianConfirmed.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="Confirmed by the Senate this Congress.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-confirmed"></div>
@@ -1006,6 +1008,7 @@
                                 <span class="bills-column-title">WITHDRAWN</span>
                                 <span class="nom-count" id="nom-count-withdrawn"></span>
                             </div>
+                            <span class="panel-source nom-source">Source: <a href="https://www.senate.gov/legislative/LIS/nominations/NomWithdrawn.xml" target="_blank" rel="noopener">Nominations XML (Senate)</a></span>
                             <span class="whip-info-tip" data-tooltip="Withdrawn by the President.">?</span>
                         </div>
                         <div class="bills-list list-scroll" id="nom-list-withdrawn"></div>
@@ -1313,7 +1316,7 @@
     <script defer src="lib/committees.js?v=20261004a"></script>
     <script defer src="lib/bill-sections.js?v=20261009c"></script>
     <script defer src="lib/debate-panel.js?v=20261009a"></script>
-    <script defer src="lib/source-pop.js?v=20261009c"></script>
+    <script defer src="lib/source-pop.js?v=20261009d"></script>
     <script defer src="lib/info-popup.js?v=20261008d"></script>
     <script defer src="lib/info-content.js?v=20261007a"></script>
     <script defer src="lib/clocks.js?v=20261004a"></script>
@@ -1337,7 +1340,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="senate.js?v=20261009b"></script>
+    <script defer src="senate.js?v=20261009c"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

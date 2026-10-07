@@ -76,6 +76,7 @@
     '/senate/nominations': 'senate-nominations', '/senate/proceedings': 'senate-proceedings',
     '/senate/roster': 'senate-roster', '/senate/schedule': 'senate-schedule',
     '/senate/seniority': 'senate-seniority', '/senate/stages': 'senate-stages',
+    '/senate/stages-source': 'senate-stages-source', '/senate/session-days-source': 'senate-session-days-source',
     '/senate/desks': 'senate-desks', '/tweets': 'tweets', '/airport-delays': 'airport-delays',
   };
   const json = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -100,6 +101,12 @@
       let call = SC.emptyCall();
       if (captions[state]) call = SC.feed(call, captions[state], FIXED - 30000);
       return json({ stream: 'stv093026', call, summary: SC.summarize(call), updated: null, mode: modes[state] || null, live: true, names: call.names, votes: call.votes });
+    }
+    // One nominations file per stage: dev/fixtures/senate/senate-nominations-source-<stage>.json
+    if (path === '/senate/nominations-source') {
+      const stage = new URL(url).searchParams.get('stage') || '';
+      try { return json(await (await realFetch(`${BASE}senate-nominations-source-${stage}.json`)).text()); }
+      catch (e) { return json({ error: `no fixture for ${stage}` }, 404); }
     }
     const name = ROUTES[path];
     if (name) { try { return json(await (await realFetch(`${BASE}${name}.json`)).text()); } catch (e) { return json('{}'); } }

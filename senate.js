@@ -567,6 +567,114 @@ function setAbsenceManifest(data) {
     });
 }
 
+// ── Source popovers for the roll call tables, nominations and session days (lib/source-pop.js) ──
+//
+// Each shows the Senate's own XML for its panel: the elements are the Senate's, as the Worker passed them, printed one per line.
+// The Worker cuts the file to what the panel is showing; what it left out is said in a comment.
+
+// One raw element from the Worker, printed by SourcePop.xml.emit; null if it does not parse. The xsi namespace declaration
+// the Senate puts on every nomination is left out as tooling.
+function emitRawXml(raw, depth, lines) {
+    const doc = new DOMParser().parseFromString(raw, 'text/xml');
+    const root = doc.documentElement;
+    if (!root || root.tagName === 'parsererror' || doc.querySelector('parsererror')) return false;
+    const from = lines.length;
+    SourcePop.xml.emit(root, depth, lines);
+    for (let i = from; i < lines.length; i++) lines[i] = lines[i].replace(/\sxmlns(?::\w+)?="[^"]*"/g, '');
+    return true;
+}
+
+// PROCEDURAL STAGES: the roll call menu's <vote> entries behind the cards on show.
+function setStagesManifest(data) {
+    if (!globalThis.SourcePop) return;
+    const panel = el('senate-stages');
+    if (!panel) return;
+    SourcePop.set(panel, {
+        title: 'The Senate\'s roll call menu',
+        request: data && data.congress && data.session
+            ? `GET https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${data.congress}_${data.session}.xml` : undefined,
+        load: async () => {
+            const r = await fetch(`${API}/senate/stages-source`);
+            const d = await r.json();
+            if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+            const X = SourcePop.xml;
+            const lines = ['<vote_summary>',
+                `  <congress>${X.esc(d.congress)}</congress>`, `  <session>${X.esc(d.session)}</session>`, `  <congress_year>${X.esc(d.year)}</congress_year>`,
+                X.note(1, `The menu lists ${d.total} votes. The cards show ${d.votes.length} of them: every vote on each measure shown, newest first.`),
+                '  <votes>'];
+            for (const raw of d.votes) emitRawXml(raw, 2, lines);
+            lines.push('  </votes>', '</vote_summary>');
+            return { xml: lines.join('\n') };
+        }
+    });
+}
+
+// NOMINATIONS: each sub-section's own link, with the entries that list is showing, in the order it shows them.
+const NOM_SOURCE_FILES = {
+    calendar: 'NomCivilianPendingCalendar', privileged: 'NomPrivileged', committee: 'NomCivilianPendingCommittee',
+    confirmed: 'NomCivilianConfirmed', failed: 'NomFailedOrReturned', withdrawn: 'NomWithdrawn',
+};
+function setNominationsManifests() {
+    if (!globalThis.SourcePop) return;
+    for (const stage of Object.keys(NOM_SOURCE_FILES)) {
+        const list = el(`nom-list-${stage}`);
+        const header = list && list.previousElementSibling;
+        if (!header) continue;
+        SourcePop.set(header, {
+            title: 'The Senate\'s nominations file',
+            load: async () => {
+                const r = await fetch(`${API}/senate/nominations-source?stage=${stage}`);
+                const d = await r.json();
+                if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+                const X = SourcePop.xml;
+                const lines = ['<Nominations>', `  <Congress>${X.esc(d.congress)}</Congress>`, `  <SessionNumber>${X.esc(d.session)}</SessionNumber>`];
+                const finished = d.entries.length < d.total;
+                lines.push(X.note(1, (d.files.length > 1 ? 'The ' + d.files.length + ' files hold ' : 'The file holds ') + d.total.toLocaleString('en-US') +
+                    ' nominations at this stage. ' + (finished ? 'The list shows the newest ' + d.entries.length + '.' : 'The list shows all of them.') +
+                    (d.files.length > 1 ? ' Entries from both files are merged, in the order the list shows them.' : '') + ' The xsi namespace declaration is left out.'));
+                for (const raw of d.entries) emitRawXml(raw, 1, lines);
+                lines.push('</Nominations>');
+                return { request: d.files.map((u) => 'GET ' + u).join('\n'), xml: lines.join('\n') };
+            }
+        });
+    }
+}
+
+// SENATE CALENDAR: floor_schedule.xml's days for the months the grid is drawing now, and the annual schedule's recess periods
+// that touch them (the plan behind the grid's PLANNED days). Fetched each time it is opened, so it follows the month navigation.
+function setSessionDaysManifest() {
+    if (!globalThis.SourcePop) return;
+    const panel = el('voting-calendar');
+    if (!panel) return;
+    SourcePop.set(panel, {
+        title: 'The Senate\'s session days',
+        fresh: true,
+        load: async () => {
+            const { from, to } = VotingCalendar.visibleRange();
+            const r = await fetch(`${API}/senate/session-days-source?from=${from}&to=${to}`);
+            const d = await r.json();
+            if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+            const X = SourcePop.xml;
+            const day = ['<CongressSessionDayConvenings>'];
+            day[0] = (d.floor.root || '<CongressSessionDayConvenings>');
+            day.push(X.note(1, `The file holds ${d.floor.total} session days; these are the ${d.floor.days.length} from ${from} to ${to}, the days the grid is showing.`));
+            for (const raw of d.floor.days) emitRawXml(raw, 1, day);
+            day.push('</CongressSessionDayConvenings>');
+            const parts = [{ request: 'GET ' + d.floor.url, xml: day.join('\n') }];
+            if (d.annual) {
+                const a = d.annual;
+                const plan = ['<schedule>', `  <title>${X.esc(a.title)}</title>`, `  <approvedDate>${X.esc(a.approved)}</approvedDate>`,
+                    X.note(1, `The schedule lists ${a.total} periods when the Senate is not in session; these are the ${a.dates.length} that touch ${from} to ${to}. The grid draws a weekday outside them as planned.`),
+                    '  <dates>'];
+                for (const raw of a.dates) emitRawXml(raw, 2, plan);
+                plan.push('  </dates>', '</schedule>');
+                parts.push({ request: 'GET ' + a.url, xml: plan.join('\n') });
+            }
+            return { parts };
+        }
+    });
+}
+
 async function loadAbsences() {
     try {
         const r = await fetch(`${API}/senate/absences`);
@@ -1532,7 +1640,9 @@ async function loadStages() {
     try {
         const r = await fetch(`${API}/senate/stages`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        renderStages(await r.json());
+        const stagesData = await r.json();
+        renderStages(stagesData);
+        setStagesManifest(stagesData);
         setConnection('live');
     } catch (e) {
         for (const key of STAGE_KEYS) {
@@ -1699,6 +1809,8 @@ const todayEl = el('today-date');
 if (todayEl) todayEl.textContent = fmtDateLong(new Date());
 
 loadSchedule();
+setSessionDaysManifest();
+setNominationsManifests();
 // Convene and adjourn times move over minutes, not seconds.
 setInterval(loadSchedule, 5 * 60 * 1000);
 
