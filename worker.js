@@ -2206,6 +2206,34 @@ async function _fetchBills(request, env) {
   }
 }
 
+// The voting days ICS, as the House Calendar panel's source link shows it (the popover asks for it only when opened): the
+// calendar's header and the VEVENT entries for the days between `from` and `to` (YYYY-MM-DD), verbatim. The calendar covers a
+// whole year, so the days the panel is drawing are the whole of what is shown and the rest is only counted.
+async function handleVotingDaysSource(request) {
+  const q = new URL(request.url).searchParams;
+  const from = q.get('from') || '', to = q.get('to') || '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return new Response(JSON.stringify({ error: 'from and to must be YYYY-MM-DD' }), {
+      status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
+  try {
+    const ics = (await fetchRSSFeed(RSS_FEEDS.votingDays)).replace(/\r/g, '');
+    const first = ics.indexOf('BEGIN:VEVENT');
+    const header = (first > 0 ? ics.slice(0, first) : '').trim();
+    const all = ics.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+    const day = (e) => { const m = e.match(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; };
+    const events = all.filter((e) => { const d = day(e); return d && d >= from && d <= to; });
+    return new Response(JSON.stringify({ url: RSS_FEEDS.votingDays, header, total: all.length, events }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+}
+
 async function handleVotingDays(env) {
   try {
     const icsText = await fetchRSSFeed(RSS_FEEDS.votingDays);
@@ -5736,6 +5764,8 @@ async function handleRequest(request, env) {
     return await handleProceedings(request, env);
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
+  } else if (path === '/api/voting-days-source' && request.method === 'GET') {
+    return await handleVotingDaysSource(request);
   } else if (path === '/api/whip-source' && request.method === 'GET') {
     return await handleWhipSource(env);
   } else if (path === '/api/bills-source' && request.method === 'GET') {

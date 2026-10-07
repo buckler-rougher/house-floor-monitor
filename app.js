@@ -5487,6 +5487,7 @@ InfoPopup.reveal();
 InfoPopup.fillInline();
 wireCalendarCards();
 setBillsManifest();
+setVotingDaysManifest();
 setWhipManifest();
 
 // Auto-switch mode based on latest proceeding
@@ -5926,6 +5927,34 @@ function setWhipManifest() {
     if (notices) SourcePop.set(notices, manifest(false));
     const series = document.getElementById('vote-series-panel');
     if (series) SourcePop.set(series, manifest(true));
+}
+
+// The voting days calendar behind the House Calendar link's popover (lib/source-pop.js): the ICS's header and its entries for the
+// days the grid is drawing now (so it follows the month navigation), as the House published them, fetched each time it is opened.
+function setVotingDaysManifest() {
+    if (!globalThis.SourcePop) return;
+    const panel = document.getElementById('voting-calendar');
+    if (!panel) return;
+    SourcePop.set(panel, {
+        title: 'The House voting days calendar',
+        request: 'GET https://votingdays.house.gov/voting-days.ics',
+        fresh: true,
+        load: async () => {
+            const { from, to } = VotingCalendar.visibleRange();
+            const r = await fetch('https://api.evanhollander.org/house-floor/api/voting-days-source?from=' + from + '&to=' + to);
+            const d = await r.json();
+            if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+            // Left out of each entry, as calendar-program bookkeeping that says nothing about the day: UID, SEQUENCE, DTSTAMP, CREATED,
+            // TRANSP and the X-MICROSOFT lines. Date, summary, category and status stay.
+            const bookkeeping = /^(UID|SEQUENCE|DTSTAMP|CREATED|TRANSP|X-MICROSOFT[\w-]*)\b/;
+            const slim = (e) => e.split('\n').filter((l) => !bookkeeping.test(l)).join('\n');
+            const lines = [d.header, '', ...(d.events || []).flatMap((e) => [slim(e), ''])];
+            lines.push('END:VCALENDAR');
+            lines.splice(1, 0, '# the calendar holds ' + d.total + ' entries; these are the ' + (d.events || []).length + ' for ' + from + ' to ' + to +
+                ', the days the grid is showing. UID, SEQUENCE, DTSTAMP, CREATED, TRANSP and X-MICROSOFT lines are left out.');
+            return { ics: lines.join('\n') };
+        }
+    });
 }
 
 // The House Docs entry behind the Bills This Week link's popover (lib/source-pop.js): the feed's own entry for the week the
