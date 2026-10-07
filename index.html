@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261007n">
+    <link rel="stylesheet" href="styles.house.css?v=20261007o">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -827,12 +827,13 @@
                     </div>
                 </div>
                 <div class="cert-electoral-approval-container">
-                    <div class="cert-electoral-approval-badge">
+                    <div class="cert-electoral-approval-badge is-counting" id="cert-electoral-badge">
                         <svg class="cert-electoral-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <polyline points="22 4 12 14.01 9 11.01"/>
+                            <polyline class="cert-electoral-icon-done" points="22 4 12 14.01 9 11.01"/>
+                            <polyline class="cert-electoral-icon-counting" points="12 7 12 12 15.5 14"/>
                         </svg>
-                        <span class="cert-electoral-approval-label">ELECTORAL VOTES CERTIFIED</span>
+                        <span class="cert-electoral-approval-label" id="cert-electoral-label">ELECTORAL VOTES BEING COUNTED</span>
                     </div>
                     <p class="cert-electoral-approval-text" id="cert-electoral-text"></p>
                 </div>
@@ -1671,7 +1672,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261007o"></script>
+    <script defer src="app.js?v=20261007p"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
