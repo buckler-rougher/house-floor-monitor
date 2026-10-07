@@ -3703,6 +3703,126 @@ async function handleSenateSchedule(env) {
   });
 }
 
+// ── Source popovers: what the Senate panels were drawn from ──────────────────
+//
+// Each of these hands the browser the Senate's own XML for one panel's source popover (lib/source-pop.js), cut to what the
+// panel shows and not rewritten: the elements are the Senate's own, as raw text. They are fetched when the popover opens and
+// cached, never on page load.
+
+function senateSourceFail(status, error) {
+  return new Response(JSON.stringify({ error }), {
+    status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+}
+function senateSourceOk(body, maxAge) {
+  return new Response(JSON.stringify(body), {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` },
+  });
+}
+
+// PROCEDURAL STAGES: the roll call menu's own <vote> entries behind the cards on show, which is every vote on each measure
+// shown (the card's latest vote and the chain under it), picked by running the panel's own grouping over the same file.
+async function handleSenateStagesSource(env) {
+  return kvCache(env, `senate-stages-source-${CURRENT_CONGRESS}-v1`, 1800, async () => {
+    const congress = CURRENT_CONGRESS, session = senateSession();
+    const url = `https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`;
+    try {
+      const xml = await fetchSource(url, 'vote menu', { xml: true });
+      const built = buildSenateStages(xml, congress, session);
+      const rolls = new Set();
+      for (const list of Object.values(built.stages)) {
+        for (const m of list) { rolls.add(m.latest.rollCall); for (const v of m.chain) rolls.add(v.rollCall); }
+      }
+      const all = xml.match(/<vote>[\s\S]*?<\/vote>/g) || [];
+      const votes = all.filter((v) => rolls.has(Number((v.match(/<vote_number>\s*(\d+)/) || [])[1])));
+      const tag = (t) => (xml.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1] || '';
+      return senateSourceOk({ url, congress: tag('congress'), session: tag('session'), year: tag('congress_year'), total: all.length, votes }, 1800);
+    } catch (e) {
+      return senateSourceFail(502, e.message);
+    }
+  });
+}
+
+// NOMINATIONS, one stage at a time: the <Nomination> entries of that stage's file or files, in the order the panel lists them.
+// The finished stages show only the newest SENATE_NOM_SHOWN, as senate.js does (keep the two the same); the pending ones all.
+const SENATE_NOM_SHOWN = 40;
+async function handleSenateNominationsSource(env, stage) {
+  const feeds = NOMINATION_FEEDS.filter((f) => f.stage === stage);
+  if (!feeds.length) return senateSourceFail(400, 'unknown stage');
+  return kvCache(env, `senate-noms-source-${CURRENT_CONGRESS}-${stage}-v1`, 3600, async () => {
+    try {
+      const rows = [];
+      const files = [];
+      let congress = '', session = '';
+      for (const feed of feeds) {
+        const url = `${NOM_BASE}/${feed.file}.xml`;
+        // One file down is not the stage down: as handleSenateNominations, the other still shows.
+        let xml;
+        try { xml = await fetchSource(url, `nominations ${feed.file}`, { xml: true }); }
+        catch (e) { console.warn(`[house-floor] nominations source ${feed.file}: ${e.message}`); continue; }
+        files.push(url);
+        congress = congress || (xml.match(/<Congress>([^<]*)<\/Congress>/) || [])[1] || '';
+        session = session || (xml.match(/<SessionNumber>([^<]*)<\/SessionNumber>/) || [])[1] || '';
+        for (const m of xml.matchAll(/<Nomination [^>]*>([\s\S]*?)<\/Nomination>/g)) {
+          const cal = xmlNomination(m[1], 'ExecutiveCalendarNumber');
+          if (feed.stage === 'calendar' && !/^\d+$/.test(cal)) continue;   // as handleSenateNominations
+          rows.push({ raw: m[0], calendarNo: /^\d+$/.test(cal) ? Number(cal) : null, reported: xmlNomination(m[1], 'ReportingStageDate') || null });
+        }
+      }
+      if (!files.length) throw new Error(`nominations ${stage}: no file could be read`);
+      // handleSenateNominations' order.
+      rows.sort((a, b) => (b.calendarNo ?? -1) - (a.calendarNo ?? -1) || String(b.reported).localeCompare(String(a.reported)));
+      const finished = stage === 'confirmed' || stage === 'withdrawn' || stage === 'failed';
+      const shown = finished ? rows.slice(0, SENATE_NOM_SHOWN) : rows;
+      return senateSourceOk({ stage, files, congress, session, total: rows.length, entries: shown.map((r) => r.raw) }, 3600);
+    } catch (e) {
+      return senateSourceFail(502, e.message);
+    }
+  });
+}
+
+// SENATE CALENDAR: the days the grid is drawing. floor_schedule.xml's <LegislativeDay> entries for the range, and the annual
+// schedule's non-legislative periods that touch it (the plan the grid draws its PLANNED days from).
+async function handleSenateSessionDaysSource(request, env) {
+  const q = new URL(request.url).searchParams;
+  const from = q.get('from') || '', to = q.get('to') || '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return senateSourceFail(400, 'from and to must be YYYY-MM-DD');
+  return kvCache(env, `senate-days-source-v1-${from}-${to}`, 600, async () => {
+    try {
+      const floorUrl = 'https://www.senate.gov/legislative/schedule/floor_schedule.xml';
+      const floor = await fetchSource(floorUrl, 'floor schedule', { xml: true });
+      const days = floor.match(/<LegislativeDay [\s\S]*?<\/LegislativeDay>/g) || [];
+      const dayOf = (d) => ((d.match(/LegislativeDayDate="(\d{4}-\d{2}-\d{2})/) || [])[1]) || '';
+      const inRange = days.filter((d) => { const x = dayOf(d); return x && x >= from && x <= to; });
+      const root = (floor.match(/<CongressSessionDayConvenings[^>]*>/) || [''])[0];
+
+      // Best-effort, as handleSenateSchedule: the annual file is tentative and may not exist yet.
+      let annual = null;
+      const year = new Date().getFullYear();
+      const annualUrl = `https://www.senate.gov/legislative/${year}_schedule.xml`;
+      try {
+        const a = await fetchSource(annualUrl, 'annual schedule', { xml: true });
+        const dates = a.match(/<date>[\s\S]*?<\/date>/g) || [];
+        const touching = dates.filter((d) => {
+          const b = (d.match(/<beginDate>([^<]*)</) || [])[1] || '', e = (d.match(/<endDate>([^<]*)</) || [])[1] || '';
+          return b && e && b <= to && e >= from;
+        });
+        annual = {
+          url: annualUrl,
+          title: (a.match(/<title>([^<]*)<\/title>/) || [])[1] || '',
+          approved: (a.match(/<approvedDate>([^<]*)</) || [])[1] || '',
+          total: dates.length,
+          dates: touching,
+        };
+      } catch { /* the grid draws without the plan too */ }
+
+      return senateSourceOk({ floor: { url: floorUrl, root, total: days.length, days: inRange }, annual }, 600);
+    } catch (e) {
+      return senateSourceFail(502, e.message);
+    }
+  });
+}
+
 async function handleSenateRoster(env) {
   return kvCache(env, 'senate-roster-v4', 3600, async () => {
     const r = await fetch('https://www.senate.gov/general/contact_information/senators_cfm.xml', {
@@ -5875,6 +5995,12 @@ async function handleRequest(request, env) {
     return handleSenateProceedings(env);
   } else if (path === '/api/senate/stages' && request.method === 'GET') {
     return handleSenateStages(env);
+  } else if (path === '/api/senate/stages-source' && request.method === 'GET') {
+    return handleSenateStagesSource(env);
+  } else if (path === '/api/senate/nominations-source' && request.method === 'GET') {
+    return handleSenateNominationsSource(env, url.searchParams.get('stage') || '');
+  } else if (path === '/api/senate/session-days-source' && request.method === 'GET') {
+    return handleSenateSessionDaysSource(request, env);
   } else if (path === '/api/senate/bill' && request.method === 'GET') {
     return handleSenateBill(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/floor-schedule' && request.method === 'GET') {
