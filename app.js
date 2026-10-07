@@ -5916,8 +5916,9 @@ function setWhipManifest() {
                 json: p.method === 'POST' ? { request: p.request, response: p.response } : p.response,
             });
             const floor = part(d.floor, 'Floor updates. The POST body is the query; the response is every document it returned.');
-            if (floorOnly) return { parts: [floor] };
+            if (floorOnly) return { parts: [floor], at: d.at };
             return {
+                at: d.at,
                 parts: [
                     floor,
                     part(d.notices, d.notices.omitted && d.notices.omitted.length
@@ -6001,7 +6002,7 @@ function setBillsManifest() {
                 .replace(/\sxmlns(?::\w+)?="[^"]*"/g, (m) => (/xsltsl\.org\/date-time/.test(m) ? '' : m))
                 .replace(/\s(?:width|colspan)="[^"]*"/g, '')
                 .replace(/<tr>\s*<td>\s*<\/td>\s*<\/tr>/g, '');
-            return { html: '<!-- the feed holds ' + Number(d.entries).toLocaleString('en-US') + ' entries, back to 2020; this is the one for the week shown. Width and colspan attributes, empty spacer rows and xmlns:dt declarations are left out. -->' + tidy };
+            return { html: '<!-- the feed holds ' + Number(d.entries).toLocaleString('en-US') + ' entries, back to 2020; this is the one for the week shown. Width and colspan attributes, empty spacer rows and xmlns:dt declarations are left out. -->' + tidy, at: d.at };
         }
     });
 }

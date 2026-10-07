@@ -1056,7 +1056,7 @@ async function saveBillRaw(env, billId, part, parts) {
   const key = billRawKey(billId, part);
   if (!key || !env?.HLS_CACHE || !parts.length || !_congressApiKey) return;
   try {
-    const body = JSON.stringify({ parts }).split(_congressApiKey).join('');
+    const body = JSON.stringify({ at: Date.now(), parts }).split(_congressApiKey).join('');
     await env.HLS_CACHE.put(key, body, { expirationTtl: KV_STORAGE_TTL });
   } catch { /* the popover just has less to show */ }
 }
@@ -1683,7 +1683,7 @@ async function handleBillsSource(request, env) {
         .sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
       const chosen = pick(thisWeek) || pick(priorWeek);
       if (!chosen) throw new Error('no entry for this week');
-      return new Response(JSON.stringify({ url: RSS_FEEDS.bills, entries: entries.length, entry: chosen.e }), {
+      return new Response(JSON.stringify({ at: Date.now(), url: RSS_FEEDS.bills, entries: entries.length, entry: chosen.e }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
       });
     } catch (error) {
@@ -1704,15 +1704,20 @@ async function handleBillSource(request, env) {
   });
   if (!billIdToCongressType(id)) return fail(400, 'unrecognised measure id');
   const parts = [];
+  let at = null;   // when it was fetched: the older of the two stored pieces
   for (const part of ['meta', 'summaries']) {
     const key = billRawKey(id, part);
     try {
       const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(key) : null;
-      if (raw) parts.push(...JSON.parse(raw).parts);
+      if (raw) {
+        const stored = JSON.parse(raw);
+        parts.push(...stored.parts);
+        if (stored.at) at = at === null ? stored.at : Math.min(at, stored.at);
+      }
     } catch { /* treated as not stored */ }
   }
   if (!parts.length) return fail(404, 'nothing stored for this bill yet');
-  return new Response(JSON.stringify({ parts }), {
+  return new Response(JSON.stringify({ at, parts }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
   });
 }
@@ -3715,7 +3720,8 @@ function senateSourceFail(status, error) {
   });
 }
 function senateSourceOk(body, maxAge) {
-  return new Response(JSON.stringify(body), {
+  // `at`: when this was fetched from the Senate (the body is what kvCache keeps, so a cached answer keeps its own time)
+  return new Response(JSON.stringify({ at: Date.now(), ...body }), {
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` },
   });
 }
@@ -5807,6 +5813,7 @@ async function handleWhipSource(env) {
       const shown = (dw.data || []).filter((n) => n.kind && n.sourceText);
       const omitted = [...new Set(shown.flatMap((n) => Object.keys(n)).filter((k) => !KEEP.includes(k)))];
       return new Response(JSON.stringify({
+        at: Date.now(),
         floor: { method: 'POST', url: FIRESTORE_RUN_QUERY, request: query, response: rows.filter((r) => r.document) },
         notices: {
           method: 'GET', url: 'https://data.domewatch.us/v1/whip-notices?limit=8', omitted,

@@ -52,6 +52,7 @@ await ok('stages: only the votes on the measures on show, as the Senate wrote th
   const { status, body } = await call('senate/stages-source');
   assert.strictEqual(status, 200);
   assert.strictEqual(body.congress, '119');
+  assert.ok(Math.abs(Date.now() - body.at) < 60_000, 'carries the time it was fetched');
   assert.strictEqual(body.total, 71);
   assert.ok(body.votes.length > 0 && body.votes.length < body.total, 'cut to the window, not the whole file');
   assert.ok(body.votes.every((v) => v.startsWith('<vote>') && v.endsWith('</vote>')));
