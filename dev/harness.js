@@ -235,6 +235,25 @@
                    .replace(/PLACEHOLDER_START/g, et);
       };
 
+      // ?mode=all shows every panel at once, so its feed carries every mode's own entries as well (each mode's fixture
+      // is the Clerk entry that puts that panel up), and each panel's source link has its entry to show.
+      if (!demo && mode === 'all' && name === 'proceedings.json') {
+        try {
+          const modes = JSON.parse(await (await fetch(BASE + 'modes/index.json', { cache: 'no-store' })).text());
+          const base = JSON.parse(await (await fetch(BASE + 'base/proceedings.json', { cache: 'no-store' })).text());
+          const items = [...(base.items || [])];
+          const seen = new Set(items.map((i) => i.description));
+          for (const m of modes) {
+            const r = await fetch(`${BASE}modes/${m}/proceedings.json`, { cache: 'no-store' });
+            if (!r.ok) continue;
+            const t = await r.text();
+            if (!usable(t)) continue;
+            for (const i of (JSON.parse(t).items || [])) if (!seen.has(i.description)) { seen.add(i.description); items.push(i); }
+          }
+          items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          return JSON.stringify({ ...base, items });
+        } catch (e) { /* fall through to the single-fixture path */ }
+      }
       for (const url of [demoModeUrl(name), fixtureUrl(name), demo && mode ? `${BASE}modes/${mode}/${name}` : null]) {
         if (!url) continue;
         const r = await fetch(url, { cache: 'no-store' });
