@@ -11952,3 +11952,70 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     /* the tap area stays 44px (the ::before above); only the drawn circle is small */
     .info-btn.is-quiet { width: 16px; height: 16px; }
 }
+
+/* An explanation drawn in the panel (InfoPopup.inline) instead of behind a (?): a clamped blurb with a plus that opens
+   the rest, the Orders card's mechanism (.calendar-card, wireCalendarCards) without its box. The block is the last
+   child of the panel, so it runs edge to edge with no negative margins. */
+.ai-block.is-flush {
+    margin: 0;
+    padding: var(--sp-16) var(--sp-24) var(--sp-16);
+}
+.ai-block.is-plain { background: none; }
+.calendar-card.ai-card {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: 0;
+}
+.calendar-card.ai-card:not(.is-short) { margin-bottom: var(--sp-8); }
+/* Opened, the minus sits under the last line instead of on it. */
+.calendar-card.ai-card.is-open { padding-bottom: 22px; }
+.ai-card .calendar-card-body {
+    max-height: calc(var(--fs-lg) * 1.7 * 3);
+}
+/* The blurb fades with a mask on its own text, not an overlay: an overlay has to be the colour of what is behind it, and
+   behind it is the tint, so it showed as a band (and laying the tint over the text gave the text a gradient). The
+   fade length is a registered property so that it still animates when the blurb opens and closes. */
+@property --ai-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 36px;
+}
+.ai-card .calendar-card-body {
+    --ai-fade: 36px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ai-fade)), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--ai-fade)), transparent);
+    transition: max-height 0.32s ease, --ai-fade 0.32s ease;
+}
+.ai-card.is-open .calendar-card-body,
+.ai-card.is-short .calendar-card-body { --ai-fade: 0px; }
+.ai-card .calendar-card-body::after { display: none; }
+@media (prefers-reduced-motion: reduce) {
+    .ai-card .calendar-card-body { transition: none; }
+}
+.ai-card .calendar-card-body p {
+    margin: 0 0 var(--sp-12);
+    font-size: var(--fs-lg);
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+.ai-card .calendar-card-body p:last-of-type { margin-bottom: 0; }
+.ai-card .calendar-card-toggle { background: var(--bg-card); }
+.ai-card .info-popup-figure { margin: var(--sp-16) 0 0; border-radius: var(--radius-8); overflow: hidden; }
+.ai-card .info-popup-image { width: 100%; height: 200px; object-fit: cover; display: block; }
+.ai-card .info-popup-caption { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); margin: var(--sp-8) 0 0; }
+.ai-explainer:empty,
+.privilege-tags-row:empty,
+.speech-mode-ai-note:empty { display: none; }
+/* The rule above the description marked where the member card ended; with no card or resolution shown above it there
+   is nothing to separate, and it doubled the header's rule. */
+.privilege-content:not(:has(.privilege-card:not([hidden]), .privilege-resolution:not([hidden]))) .privilege-description-line {
+    border-top: 0;
+    padding-top: 0;
+}
+
+/* No italic exists in any EMH face: the picture credits' <em> is a weight, not a slant. */
+.info-popup-caption em,
+.ai-card .info-popup-caption em { font-style: normal; font-weight: 500; }

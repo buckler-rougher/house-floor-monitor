@@ -6398,6 +6398,20 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
   .debate-tags-row > .debate-source { margin-left: 0; flex-basis: 100%; }
 }
 .whip-type-badge { padding-top: 1px; padding-bottom: 1px; }
+.calendar-card[hidden] { display: none; }
+.calendar-card {
+    position: relative;
+    max-width: 44rem;
+    margin: var(--sp-8) auto 0;
+    padding: var(--sp-8) var(--sp-12) var(--sp-12);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-8);
+    background: var(--bg-card);
+    text-align: left;
+}
+.calendar-card { transition: padding-bottom 0.32s ease; }
+.calendar-card.is-open { padding-bottom: calc(var(--sp-12) + 12px); }
+.calendar-card:not(.is-short) { margin-bottom: var(--sp-12); }
 .bill-link-group {
     display: inline-flex;
     align-items: stretch;
@@ -6465,6 +6479,18 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
         color-mix(in srgb, color-mix(in srgb, var(--accent-purple) 60%, magenta) 4%, transparent) 55%,
         transparent 90%);
 }
+.ai-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-16);
+    margin: 0 calc(-1 * var(--sp-24)) calc(-1 * var(--sp-16));
+    padding: var(--sp-16) var(--sp-24);
+    border-top: 1px solid var(--border-color);
+    background: var(--ai-glow);
+}
+.ai-block > p {
+    margin: 0;
+}
 .next-votes .next-votes-help { vertical-align: middle; margin-left: var(--sp-6); }
 .info-btn.is-quiet {
     width: 13px;
@@ -6479,3 +6505,14 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 @media (max-width: 640px) {
   .info-btn.is-quiet { width: 16px; height: 16px; }
 }
+.ai-block.is-flush {
+    margin: 0;
+    padding: var(--sp-16) var(--sp-24) var(--sp-16);
+}
+.ai-block.is-plain { background: none; }
+@property --ai-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 36px;
+}
+.info-popup-caption em { font-style: normal; font-weight: 500; }

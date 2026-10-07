@@ -1649,7 +1649,6 @@ const elements = {
     jointMeetingTime: document.getElementById('joint-meeting-time'),
     jointMeetingDescriptionLine: document.getElementById('joint-meeting-description-line'),
     tellersTime: document.getElementById('tellers-time'),
-    tellersHelp: document.getElementById('tellers-help'),
     tellersDescription: document.getElementById('tellers-description'),
     tellersList: document.getElementById('tellers-list'),
     messageTime: document.getElementById('message-time'),
@@ -5485,6 +5484,8 @@ Notice types:
 InfoPopup.register(SharedInfoContent);
 InfoPopup.register(INFO_CONTENT);
 InfoPopup.reveal();
+InfoPopup.fillInline();
+wireCalendarCards();
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {
@@ -6516,6 +6517,7 @@ function updatePrayerSection(items) {
 
     // Keep the House Chaplain name in sync for the info popup (not guests)
     if (!isGuestChaplain) _lastChaplainName = chaplainName;
+    InfoPopup.inline(document.getElementById('prayer-ai-body'), 'prayer', document.getElementById('prayer-ai-source'));   // names the Chaplain
 
     // Extract additional information - try to get meaningful description
     let additionalInfo = '';
@@ -7038,10 +7040,8 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
 
     if (elements.privilegeTagText) elements.privilegeTagText.textContent = k.tag;
     // The (?) explains whichever kind this is, and is drawn once that explanation exists (or in ?fixtures).
-    if (elements.privilegeHelp) {
-        elements.privilegeHelp.dataset.info = k.help;
-        elements.privilegeHelp.hidden = !(InfoPopup.has(k.help) || inFixtures());
-    }
+    // The explanation of whichever kind this is sits in the panel itself, under the Clerk's words.
+    InfoPopup.inline(document.getElementById('privilege-ai-body'), k.help, document.getElementById('privilege-ai-source'));
     if (elements.privilegeSection) elements.privilegeSection.classList.toggle('is-house', k.mode === 'house-privilege');
     if (elements.privilegePills) {
         elements.privilegePills.innerHTML = k.pills
@@ -7505,11 +7505,7 @@ function updateTellersSection(items) {
     // opening day) and for the electoral count; each has its own explanation, picked from the Clerk's words.
     const helpKey = /election for speaker|election of (?:the )?speaker/i.test(stripped) ? 'tellers-speaker'
         : /electoral votes/i.test(stripped) ? 'tellers-electoral' : null;
-    if (elements.tellersHelp) {
-        if (helpKey) elements.tellersHelp.dataset.info = helpKey;
-        elements.tellersHelp.hidden = !(helpKey && InfoPopup.has(helpKey)) && !inFixtures();
-        if (!helpKey && inFixtures()) elements.tellersHelp.dataset.info = 'tellers-speaker';
-    }
+    if (helpKey) InfoPopup.inline(document.getElementById('tellers-ai-body'), helpKey, document.getElementById('tellers-ai-source'));
 
     const names = extractTellerNames(stripped);
     elements.tellersList.innerHTML = '';
