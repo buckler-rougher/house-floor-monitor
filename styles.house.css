@@ -11050,15 +11050,15 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 .ai-card .calendar-card-body p:last-of-type { margin-bottom: 0; }
 .ai-card .calendar-card-toggle { background: var(--bg-card); }
-.ai-card .info-popup-figure { margin: var(--sp-16) 0 0; border-radius: var(--radius-6); overflow: hidden; max-width: 220px; }
+.ai-card .info-popup-figure { margin: var(--sp-16) 0 0; border-radius: var(--radius-8); overflow: hidden; max-width: 464px; }
 
-.ai-card .info-popup-image { width: 100%; height: auto; object-fit: contain; display: block; transform: none; }
+.ai-card .info-popup-image { width: 100%; height: auto; aspect-ratio: 464 / 200; object-fit: cover; display: block; transform: scale(1.08); }
 .ai-card .calendar-card-body .info-popup-caption {
     font-family: var(--font-mono);
     font-size: var(--fs-2xs);
     line-height: 1.5;
     color: var(--text-muted);
-    max-width: 220px;
+    max-width: 464px;
     margin: var(--sp-6) 0 0;
 }
 
@@ -11087,3 +11087,10 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 .info-popup-caption em,
 .ai-card .info-popup-caption em { font-style: normal; font-weight: 500; }
+
+.ai-block :is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .joint-meeting-pill, .joint-session-pill, .privilege-pill),
+.privilege-section.is-house .ai-block .privilege-pill {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+}
