@@ -5499,7 +5499,7 @@ const FIRESTORE_PROJECT = 'pacific-castle-135023';
 const FIRESTORE_RUN_QUERY = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`;
 
 // Generic Firestore query for a single-field-filtered ActivityFeeds collection.
-async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
+function whipFeedQuery({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
   // Floor feed uses only the office filter; typed feeds add a 'type' field filter.
   const where = noticeType
     ? {
@@ -5521,7 +5521,11 @@ async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit
       limit,
     },
   };
+  return query;
+}
 
+async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
+  const query = whipFeedQuery({ collectionId, noticeType, limit });
   const resp = await fetch(FIRESTORE_RUN_QUERY, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -5542,6 +5546,40 @@ async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit
         noticeType:  noticeType || f.type?.stringValue || 'floor',
       };
     });
+}
+
+// The two upstream responses behind the Whip Notices panel, as they came, for the panel's source link (the popover asks for
+// them only when opened). Floor updates are DomeWatch's Firestore documents, all of them with every field. The daily, nightly
+// and weekly notices are DomeWatch's data API: the notices the panel lists, with the fields it reads; the ones it does not
+// (the parsed vote lists, the week-ahead text) are named in `omitted` and left out, since they are most of the response.
+async function handleWhipSource(env) {
+  return kvCache(env, 'whip-source-v1', 120, async () => {
+    try {
+      const query = whipFeedQuery({ limit: 10 });
+      const [fsResp, dwResp] = await Promise.all([
+        fetch(FIRESTORE_RUN_QUERY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query), signal: AbortSignal.timeout(8000) }),
+        fetch('https://data.domewatch.us/v1/whip-notices?limit=8', { headers: { 'Accept': 'application/json' }, signal: AbortSignal.timeout(8000) }),
+      ]);
+      if (!fsResp.ok) throw new Error(`Firestore returned ${fsResp.status}`);
+      if (!dwResp.ok) throw new Error(`whip-notices returned ${dwResp.status}`);
+      const rows = await fsResp.json();
+      const dw = await dwResp.json();
+      const KEEP = ['id', 'kind', 'postedAt', 'publishDate', 'houseMeetsAt', 'firstVotes', 'lastVotes', 'sourceText'];
+      const shown = (dw.data || []).filter((n) => n.kind && n.sourceText);
+      const omitted = [...new Set(shown.flatMap((n) => Object.keys(n)).filter((k) => !KEEP.includes(k)))];
+      return new Response(JSON.stringify({
+        floor: { method: 'POST', url: FIRESTORE_RUN_QUERY, request: query, response: rows.filter((r) => r.document) },
+        notices: {
+          method: 'GET', url: 'https://data.domewatch.us/v1/whip-notices?limit=8', omitted,
+          response: { data: shown.map((n) => Object.fromEntries(KEEP.filter((k) => k in n).map((k) => [k, n[k]]))) },
+        },
+      }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' } });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+  });
 }
 
 async function handleWhipFloorUpdates(env) {
@@ -5698,6 +5736,8 @@ async function handleRequest(request, env) {
     return await handleProceedings(request, env);
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
+  } else if (path === '/api/whip-source' && request.method === 'GET') {
+    return await handleWhipSource(env);
   } else if (path === '/api/bills-source' && request.method === 'GET') {
     return await handleBillsSource(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {

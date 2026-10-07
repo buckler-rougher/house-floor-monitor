@@ -12190,3 +12190,6 @@ a.source-link.has-manifest::after {
 
 /* A whole response is long: the block scrolls, and is taller than the 260px of a short excerpt. */
 .source-pop-json { max-height: min(60vh, 520px); }
+
+.source-pop-note { font-size: var(--fs-sm); line-height: 1.5; color: var(--text-muted); margin-bottom: var(--sp-8); }
+.source-pop-json + .source-pop-request { margin-top: var(--sp-12); }
