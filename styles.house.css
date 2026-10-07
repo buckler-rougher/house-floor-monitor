@@ -11094,3 +11094,34 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
 }
+
+html.ai-off .ai-block { display: none !important; }
+.ai-block { position: relative; }
+.ai-off-btn {
+
+    align-self: flex-end;
+    margin: calc(var(--sp-8) * -1) calc(var(--sp-4) * -1) calc(var(--sp-8) * -1) 0;
+    padding: var(--sp-2) var(--sp-4);
+    background: none;
+    border: 0;
+    border-radius: var(--radius-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+    cursor: pointer;
+}
+.ai-off-btn:hover, .ai-off-btn:focus-visible { opacity: 1; color: var(--text-primary); text-decoration: underline; }
+button.site-footer-license {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+html.ai-off .bill-link-group > .bill-modal-link {
+    border-top-right-radius: var(--radius-6);
+    border-bottom-right-radius: var(--radius-6);
+}

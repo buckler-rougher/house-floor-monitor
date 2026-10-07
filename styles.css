@@ -12052,3 +12052,37 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
 }
+
+/* AI summaries: off hides the inline explanations (lib/ai-pref.js); the (?) of an AI entry is hidden by a rule that
+   lib/info-popup.js writes per key. Each block carries a small button to turn them off, and the footer turns them
+   back on. */
+html.ai-off .ai-block { display: none !important; }
+.ai-block { position: relative; }
+.ai-off-btn {
+    /* the last line of the block, at its right: under the source note, never over text that wraps */
+    align-self: flex-end;
+    margin: calc(var(--sp-8) * -1) calc(var(--sp-4) * -1) calc(var(--sp-8) * -1) 0;
+    padding: var(--sp-2) var(--sp-4);
+    background: none;
+    border: 0;
+    border-radius: var(--radius-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+    cursor: pointer;
+}
+.ai-off-btn:hover, .ai-off-btn:focus-visible { opacity: 1; color: var(--text-primary); text-decoration: underline; }
+button.site-footer-license {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+/* Hidden with its panel's explanation, the split (?) on a bill link leaves the button square on that side. */
+html.ai-off .bill-link-group > .bill-modal-link {
+    border-top-right-radius: var(--radius-6);
+    border-bottom-right-radius: var(--radius-6);
+}

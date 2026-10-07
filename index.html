@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261008h">
+    <link rel="stylesheet" href="styles.house.css?v=20261008j">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -43,6 +43,7 @@
             document.write('<scr' + 'ipt src="dev/harness.js?v=20260919w"></scr' + 'ipt>');
         }
     </script>
+    <script src="lib/ai-pref.js?v=20261008a"></script>
 </head>
 <body class="recess-mode" data-chamber="house">
     <noscript><div style="padding:2rem;text-align:center;color:#e6edf3;background:#0d1117;font-family:system-ui,sans-serif">JavaScript is required to use House Floor Monitor.</div></noscript>
@@ -323,9 +324,14 @@
                         </div>
                     </div>
                     <div class="ai-block">
-                        <p class="one-minute-explainer">
-                            When permitted by the Speaker, Members seek unanimous consent to address the House for one minute on a topic of their choosing. These speeches generally come at the start of a legislative day, after the prayer, the Journal and the Pledge of Allegiance, and may also be allowed after legislative business ends and before special-order speeches. The Speaker decides whether to allow them and how many. They do not need to be reserved in advance. The chair alternates between the parties in the order Members seek recognition, and will not recognize a Member more than once per legislative day.
-                        </p>
+                        <div class="calendar-card ai-card">
+                            <div class="calendar-card-body">
+                                <p class="one-minute-explainer">
+                                    When permitted by the Speaker, Members seek unanimous consent to address the House for one minute on a topic of their choosing. These speeches generally come at the start of a legislative day, after the prayer, the Journal and the Pledge of Allegiance, and may also be allowed after legislative business ends and before special-order speeches. The Speaker decides whether to allow them and how many. They do not need to be reserved in advance. The chair alternates between the parties in the order Members seek recognition, and will not recognize a Member more than once per legislative day.
+                                </p>
+                            </div>
+                            <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                        </div>
                         <div class="one-minute-tags-row">
                             <span class="one-minute-pill">1-min limit</span>
                             <span class="one-minute-pill">Any topic</span>
@@ -359,9 +365,14 @@
                         </div>
                     </div>
                     <div class="ai-block">
-                        <p class="special-order-explainer">
-                            Special-order speeches generally follow the end of legislative business, in a period of up to four hours that may not run past 10 p.m., divided evenly between the parties. Members reserve time through their party leadership and are limited to one special-order speech a week. Each party may reserve its first hour for its leaders, and its second hour is divided into two 30-minute periods. A speech may last no more than one hour during a party's first hour and 30 minutes during its second, and those allocations cannot be extended by unanimous consent.
-                        </p>
+                        <div class="calendar-card ai-card">
+                            <div class="calendar-card-body">
+                                <p class="special-order-explainer">
+                                    Special-order speeches generally follow the end of legislative business, in a period of up to four hours that may not run past 10 p.m., divided evenly between the parties. Members reserve time through their party leadership and are limited to one special-order speech a week. Each party may reserve its first hour for its leaders, and its second hour is divided into two 30-minute periods. A speech may last no more than one hour during a party's first hour and 30 minutes during its second, and those allocations cannot be extended by unanimous consent.
+                                </p>
+                            </div>
+                            <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                        </div>
                         <div class="special-order-tags-row">
                             <span class="special-order-pill">60- or 30-min periods</span>
                             <span class="special-order-pill">Reserved in advance</span>
@@ -395,9 +406,14 @@
                         </div>
                     </div>
                     <div class="ai-block">
-                        <p class="morning-hour-explainer">
-                            Members address the House for up to five minutes on topics of their choosing. Time is divided equally between the parties, with Members recognized from lists submitted by the majority and minority leaders. After morning-hour concludes, the House recesses for at least 10 minutes before resuming legislative business. The prayer, approval of the Journal, and the Pledge of Allegiance are postponed until the House resumes its session.
-                        </p>
+                        <div class="calendar-card ai-card">
+                            <div class="calendar-card-body">
+                                <p class="morning-hour-explainer">
+                                    Members address the House for up to five minutes on topics of their choosing. Time is divided equally between the parties, with Members recognized from lists submitted by the majority and minority leaders. After morning-hour concludes, the House recesses for at least 10 minutes before resuming legislative business. The prayer, approval of the Journal, and the Pledge of Allegiance are postponed until the House resumes its session.
+                                </p>
+                            </div>
+                            <button class="calendar-card-toggle" type="button" aria-expanded="false" aria-label="Show all"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 6h9" /><path class="v" d="M6 1.5v9" /></svg></button>
+                        </div>
                         <div class="morning-hour-tags-row">
                             <span class="morning-hour-pill">5-min speeches</span>
                             <span class="morning-hour-pill">Equal party time</span>
@@ -1745,6 +1761,8 @@
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="/demo">Demo</a>
             <span class="site-footer-sep">&middot;</span>
+            <button class="site-footer-license ai-toggle" type="button" data-ai-toggle aria-pressed="true">AI summaries: on</button>
+            <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the House Floor" target="_blank" rel="noopener">Contact</a>
             <span class="site-footer-sep">&middot;</span>
             <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source Code</a>
@@ -1795,7 +1813,7 @@
     <script defer src="lib/committees.js?v=20261004a"></script>
     <script defer src="lib/bill-sections.js?v=20261006d"></script>
     <script defer src="lib/debate-panel.js?v=20261005a"></script>
-    <script defer src="lib/info-popup.js?v=20261008b"></script>
+    <script defer src="lib/info-popup.js?v=20261008c"></script>
     <script defer src="lib/info-content.js?v=20261007a"></script>
     <script defer src="lib/clocks.js?v=20261004a"></script>
     <script defer src="lib/session-clock.js?v=20261004a"></script>
@@ -1811,7 +1829,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261008e"></script>
+    <script defer src="app.js?v=20261008g"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
