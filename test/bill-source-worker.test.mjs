@@ -60,7 +60,8 @@ await ok('once the bill has been enriched the popover reads it back, whole, with
   const r = await call('bill-source?id=' + encodeURIComponent('S. 4668'));
   assert.strictEqual(r.status, 200);
   assert.strictEqual(asked.length, 0, 'the popover must not call Congress.gov');
-  const { parts } = await r.json();
+  const { parts, at } = await r.json();
+  assert.ok(Math.abs(Date.now() - at) < 60_000, 'carries the time the responses were fetched');
   assert.deepStrictEqual(parts.map((p) => p.request.replace(/^GET https:\/\/api\.congress\.gov\/v3\/bill\/119\/s\/4668/, '')),
     ['?format=json', '/cosponsors?limit=250&format=json', '/committees?format=json', '/summaries?limit=5&format=json']);
   assert.strictEqual(parts[0].json.bill.number, JSON.parse(f('s-4668-record.json')).bill.number);

@@ -604,7 +604,7 @@ function setStagesManifest(data) {
                 '  <votes>'];
             for (const raw of d.votes) emitRawXml(raw, 2, lines);
             lines.push('  </votes>', '</vote_summary>');
-            return { xml: lines.join('\n') };
+            return { xml: lines.join('\n'), at: d.at };
         }
     });
 }
@@ -640,7 +640,7 @@ function setNominationsManifests() {
                     lines.push('</Nominations>');
                     return { request: 'GET ' + f.url, xml: lines.join('\n') };
                 });
-                return { parts };
+                return { parts, at: d.at };
             }
         });
     }
@@ -676,7 +676,7 @@ function setSessionDaysManifest() {
                 plan.push('  </dates>', '</schedule>');
                 parts.push({ request: 'GET ' + a.url, xml: plan.join('\n') });
             }
-            return { parts };
+            return { parts, at: d.at };
         }
     });
 }
