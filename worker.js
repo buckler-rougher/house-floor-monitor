@@ -3752,29 +3752,35 @@ async function handleSenateNominationsSource(env, stage) {
   return kvCache(env, `senate-noms-source-${CURRENT_CONGRESS}-${stage}-v1`, 3600, async () => {
     try {
       const rows = [];
-      const files = [];
-      let congress = '', session = '';
+      const files = [];   // one per file read: { url, congress, session, total }, in the order of NOMINATION_FEEDS
       for (const feed of feeds) {
         const url = `${NOM_BASE}/${feed.file}.xml`;
         // One file down is not the stage down: as handleSenateNominations, the other still shows.
         let xml;
         try { xml = await fetchSource(url, `nominations ${feed.file}`, { xml: true }); }
         catch (e) { console.warn(`[house-floor] nominations source ${feed.file}: ${e.message}`); continue; }
-        files.push(url);
-        congress = congress || (xml.match(/<Congress>([^<]*)<\/Congress>/) || [])[1] || '';
-        session = session || (xml.match(/<SessionNumber>([^<]*)<\/SessionNumber>/) || [])[1] || '';
+        const file = {
+          url,
+          congress: (xml.match(/<Congress>([^<]*)<\/Congress>/) || [])[1] || '',
+          session: (xml.match(/<SessionNumber>([^<]*)<\/SessionNumber>/) || [])[1] || '',
+          total: 0,
+          entries: [],
+        };
+        files.push(file);
         for (const m of xml.matchAll(/<Nomination [^>]*>([\s\S]*?)<\/Nomination>/g)) {
           const cal = xmlNomination(m[1], 'ExecutiveCalendarNumber');
           if (feed.stage === 'calendar' && !/^\d+$/.test(cal)) continue;   // as handleSenateNominations
-          rows.push({ raw: m[0], calendarNo: /^\d+$/.test(cal) ? Number(cal) : null, reported: xmlNomination(m[1], 'ReportingStageDate') || null });
+          file.total++;
+          rows.push({ file, raw: m[0], calendarNo: /^\d+$/.test(cal) ? Number(cal) : null, reported: xmlNomination(m[1], 'ReportingStageDate') || null });
         }
       }
       if (!files.length) throw new Error(`nominations ${stage}: no file could be read`);
-      // handleSenateNominations' order.
+      // handleSenateNominations' order, over both files together: which entries the list shows. Each file then keeps its own,
+      // in that order, and they are not merged in the popover.
       rows.sort((a, b) => (b.calendarNo ?? -1) - (a.calendarNo ?? -1) || String(b.reported).localeCompare(String(a.reported)));
       const finished = stage === 'confirmed' || stage === 'withdrawn' || stage === 'failed';
-      const shown = finished ? rows.slice(0, SENATE_NOM_SHOWN) : rows;
-      return senateSourceOk({ stage, files, congress, session, total: rows.length, entries: shown.map((r) => r.raw) }, 3600);
+      for (const r of finished ? rows.slice(0, SENATE_NOM_SHOWN) : rows) r.file.entries.push(r.raw);
+      return senateSourceOk({ stage, files }, 3600);
     } catch (e) {
       return senateSourceFail(502, e.message);
     }
