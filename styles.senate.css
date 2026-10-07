@@ -6515,4 +6515,16 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     inherits: false;
     initial-value: 36px;
 }
+.ai-pill {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: var(--sp-4) var(--sp-10);
+    border-radius: var(--radius-12);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+}
 .info-popup-caption em { font-style: normal; font-weight: 500; }
