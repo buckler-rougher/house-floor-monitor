@@ -5054,6 +5054,22 @@ font-family: var(--font-mono);
     color: var(--text-secondary);
 }
 
+/* The modal's "Source: Congress.gov" line (lib/bill-sections.js), under the links, set like a panel's source. */
+.bill-modal-source {
+    margin-top: var(--sp-12);
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    opacity: 0.8;
+}
+.bill-modal-source > a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+.bill-modal-source > a:hover { text-decoration: underline; }
+
+
 /* Section tag + ? wrapper */
 .section-tag-wrap {
     display: flex;

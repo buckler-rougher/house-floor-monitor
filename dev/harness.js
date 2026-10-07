@@ -174,6 +174,7 @@
     '/api/bluesky':                     'bluesky.json',
     '/api/tweets':                      'tweets.json',
     '/api/hls-url':                     'hls-url.json',
+    '/api/bill-source':                 'bill-source.json',
     '/api/bills-source':                'bills-source.json',
     '/api/voting-days-source':          'voting-days-source.json',
     '/api/whip-source':                 'whip-source.json',

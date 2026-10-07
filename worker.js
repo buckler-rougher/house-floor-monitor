@@ -1642,6 +1642,43 @@ async function handleBillsSource(request, env) {
   });
 }
 
+// The Congress.gov responses behind a bill modal's source link (lib/source-pop.js), as the API sent them: the bill's record,
+// its cosponsors, committees and summaries. The popover asks only when opened. The API key goes with each request and is not
+// shown; cosponsors are cut to the first three (the modal draws a count by party from all of them).
+async function handleBillSource(request, env) {
+  const parsed = billIdToCongressType(new URL(request.url).searchParams.get('id') || '');
+  const fail = (status, error) => new Response(JSON.stringify({ error }), {
+    status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+  if (!parsed) return fail(400, 'unrecognised measure id');
+  if (!_congressApiKey) return fail(502, 'no Congress.gov key configured');
+  const { type, number } = parsed;
+  return kvCache(env, `bill-source-v1-${CURRENT_CONGRESS}-${type}-${number}`, 3600, async () => {
+    const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
+    const call = async (path) => {
+      const shown = `${base}${path}${path.includes('?') ? '&' : '?'}format=json`;
+      const r = await fetch(`${shown}&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+      if (!r.ok) return { request: `GET ${shown}`, status: r.status };
+      // The API echoes request details and next-page links; none carries the key, but it is scrubbed regardless.
+      const text = (await r.text()).split(_congressApiKey).join('');
+      return { request: `GET ${shown}`, json: JSON.parse(text) };
+    };
+    const [record, cosponsors, committees, summaries] = await Promise.all([
+      call(''), call('/cosponsors?limit=250'), call('/committees'), call('/summaries?limit=5'),
+    ]);
+    if (!record.json) return fail(502, `Congress.gov answered ${record.status || 'nothing'}`);
+    const parts = [record, cosponsors, committees, summaries].filter((p) => p.json);
+    const co = cosponsors.json?.cosponsors;
+    if (co && co.length > 3) {
+      cosponsors.note = `${cosponsors.json.pagination?.count ?? co.length} cosponsors in the response; the first three are shown. The support bar counts all of them.`;
+      cosponsors.json = { ...cosponsors.json, cosponsors: co.slice(0, 3) };
+    }
+    return new Response(JSON.stringify({ parts }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+    });
+  });
+}
+
 async function handleBills(request, env) {
   const url = new URL(request.url);
   const quick = url.searchParams.has('quick');
@@ -5768,6 +5805,8 @@ async function handleRequest(request, env) {
     return await handleVotingDaysSource(request);
   } else if (path === '/api/whip-source' && request.method === 'GET') {
     return await handleWhipSource(env);
+  } else if (path === '/api/bill-source' && request.method === 'GET') {
+    return await handleBillSource(request, env);
   } else if (path === '/api/bills-source' && request.method === 'GET') {
     return await handleBillsSource(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {

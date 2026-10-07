@@ -3365,6 +3365,19 @@ font-family: var(--font-mono);
     opacity: 1;
     color: var(--text-secondary);
 }
+  .bill-modal-source {
+    margin-top: var(--sp-12);
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--track-wide);
+    opacity: 0.8;
+}
+  .bill-modal-source > a {
+    color: var(--accent-blue);
+    text-decoration: none;
+}
+  .bill-modal-source > a:hover { text-decoration: underline; }
   .section-tag-wrap {
     display: flex;
     align-items: center;

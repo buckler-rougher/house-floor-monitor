@@ -4843,6 +4843,7 @@ function openBillModal(billId) {
                     reportHelp: (InfoPopup.has('committee-report') || new URLSearchParams(location.search).has('fixtures')) ? 'committee-report' : null,
                     congress: congressUrl,
                 })}
+                ${BillSections.source(congressUrl)}
             </div>
             </div>
         </div>
@@ -4891,6 +4892,7 @@ function openBillModal(billId) {
 
     // Copy-link button — copies the current (deep-linked) URL.
     BillSections.wireCopyLink(overlay);
+    BillSections.wireSource(overlay, bill.id, 'https://api.evanhollander.org/house-floor/api');
 
     // Rule-tag buttons in the modal open the modal for that H.Res.
     overlay.querySelectorAll('.bill-rule-tag-modal[data-bill-id]').forEach(btn => {
@@ -6455,6 +6457,7 @@ function updateDebateSection(items) {
                 memo: foundBill.sapUrl,
                 congress: billIdToCongressUrl(foundBill.id),
             },
+            sourceApi: 'https://api.evanhollander.org/house-floor/api',
         });
     } else {
         // Bill not in billDataMap.

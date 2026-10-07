@@ -1,0 +1,99 @@
+{
+  "parts": [
+    {
+      "request": "GET https://api.congress.gov/v3/bill/119/hr/1234?format=json",
+      "json": {
+        "bill": {
+          "congress": 119,
+          "number": "1234",
+          "type": "HR",
+          "originChamber": "House",
+          "title": "Sample Act of 2026",
+          "introducedDate": "2026-02-03",
+          "sponsors": [
+            {
+              "bioguideId": "S000001",
+              "fullName": "Rep. Sample, Alex [R-TX-1]",
+              "party": "R",
+              "state": "TX",
+              "district": 1
+            }
+          ],
+          "latestAction": {
+            "actionDate": "2026-10-06",
+            "text": "Placed on the Union Calendar, Calendar No. 99."
+          },
+          "policyArea": {
+            "name": "Government Operations and Politics"
+          },
+          "committees": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/119/hr/1234/committees?format=json"
+          }
+        }
+      }
+    },
+    {
+      "request": "GET https://api.congress.gov/v3/bill/119/hr/1234/cosponsors?limit=250&format=json",
+      "note": "187 cosponsors in the response; the first three are shown. The support bar counts all of them.",
+      "json": {
+        "cosponsors": [
+          {
+            "bioguideId": "A000001",
+            "fullName": "Rep. Able, Sam [D-CA-2]",
+            "party": "D",
+            "state": "CA",
+            "sponsorshipDate": "2026-02-04"
+          },
+          {
+            "bioguideId": "B000001",
+            "fullName": "Rep. Baker, Pat [R-OH-3]",
+            "party": "R",
+            "state": "OH",
+            "sponsorshipDate": "2026-02-04"
+          },
+          {
+            "bioguideId": "C000001",
+            "fullName": "Rep. Cole, Dana [D-NY-4]",
+            "party": "D",
+            "state": "NY",
+            "sponsorshipDate": "2026-02-05"
+          }
+        ],
+        "pagination": {
+          "count": 187
+        }
+      }
+    },
+    {
+      "request": "GET https://api.congress.gov/v3/bill/119/hr/1234/committees?format=json",
+      "json": {
+        "committees": [
+          {
+            "name": "Oversight and Government Reform Committee",
+            "chamber": "House",
+            "systemCode": "hsgo00",
+            "activities": [
+              {
+                "name": "Referred to",
+                "date": "2026-02-03T15:00:00Z"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "request": "GET https://api.congress.gov/v3/bill/119/hr/1234/summaries?limit=5&format=json",
+      "json": {
+        "summaries": [
+          {
+            "versionCode": "00",
+            "actionDate": "2026-02-03",
+            "text": "<p><strong>Sample Act of 2026</strong></p><p>This bill requires agencies to publish their rules.</p>"
+          }
+        ]
+      }
+    }
+  ]
+}
