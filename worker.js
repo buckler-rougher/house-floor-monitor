@@ -1643,8 +1643,8 @@ async function handleBillsSource(request, env) {
 }
 
 // The Congress.gov responses behind a bill modal's source link (lib/source-pop.js), as the API sent them: the bill's record,
-// its cosponsors, committees and summaries. The popover asks only when opened. The API key goes with each request and is not
-// shown; cosponsors are cut to the first three (the modal draws a count by party from all of them).
+// its cosponsors, committees and summaries. The popover asks only when opened. The API key is not shown. Nothing is cut: the
+// cosponsors are the page the modal itself counts (limit=250, the API's maximum).
 async function handleBillSource(request, env) {
   const parsed = billIdToCongressType(new URL(request.url).searchParams.get('id') || '');
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
