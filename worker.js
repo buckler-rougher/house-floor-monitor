@@ -1668,11 +1668,6 @@ async function handleBillSource(request, env) {
     ]);
     if (!record.json) return fail(502, `Congress.gov answered ${record.status || 'nothing'}`);
     const parts = [record, cosponsors, committees, summaries].filter((p) => p.json);
-    const co = cosponsors.json?.cosponsors;
-    if (co && co.length > 3) {
-      cosponsors.note = `${cosponsors.json.pagination?.count ?? co.length} cosponsors in the response; the first three are shown. The support bar counts all of them.`;
-      cosponsors.json = { ...cosponsors.json, cosponsors: co.slice(0, 3) };
-    }
     return new Response(JSON.stringify({ parts }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
     });
