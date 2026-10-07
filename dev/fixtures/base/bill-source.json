@@ -35,7 +35,6 @@
     },
     {
       "request": "GET https://api.congress.gov/v3/bill/119/hr/1234/cosponsors?limit=250&format=json",
-      "note": "187 cosponsors in the response; the first three are shown. The support bar counts all of them.",
       "json": {
         "cosponsors": [
           {
