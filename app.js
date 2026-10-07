@@ -5487,6 +5487,7 @@ InfoPopup.reveal();
 InfoPopup.fillInline();
 wireCalendarCards();
 setBillsManifest();
+setWhipManifest();
 
 // Auto-switch mode based on latest proceeding
 function autoSwitchModeFromProceedings(items) {
@@ -5892,6 +5893,37 @@ function linkifyBillNumbers(text) {
             return escapeHtml(match);
         }
     );
+}
+
+// The two upstream responses behind the Whip Notices link's popover (lib/source-pop.js), fetched when it is opened: DomeWatch's
+// Firestore documents for the floor updates, and DomeWatch's data API for the daily, nightly and weekly notices. The Vote Series
+// panel is read from the same notices, so its link opens the same thing.
+function setWhipManifest() {
+    if (!globalThis.SourcePop) return;
+    const manifest = () => ({
+        title: 'DomeWatch\'s whip notices',
+        load: async () => {
+            const r = await fetch('https://api.evanhollander.org/house-floor/api/whip-source');
+            const d = await r.json();
+            if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+            const part = (p, note) => ({
+                request: p.method + ' ' + p.url,
+                note,
+                json: p.method === 'POST' ? { request: p.request, response: p.response } : p.response,
+            });
+            return {
+                parts: [
+                    part(d.floor, 'Floor updates. The POST body is the query; the response is every document it returned.'),
+                    part(d.notices, d.notices.omitted && d.notices.omitted.length
+                        ? 'Daily, nightly and weekly notices. Fields the panel does not read are left out: ' + d.notices.omitted.join(', ') + '.' : 'Daily, nightly and weekly notices.'),
+                ],
+            };
+        }
+    });
+    for (const id of ['whip-updates', 'vote-series-panel']) {
+        const panel = document.getElementById(id);
+        if (panel) SourcePop.set(panel, manifest());
+    }
 }
 
 // The House Docs entry behind the Bills This Week link's popover (lib/source-pop.js): the feed's own entry for the week the
