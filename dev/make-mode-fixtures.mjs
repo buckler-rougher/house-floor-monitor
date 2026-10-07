@@ -63,8 +63,8 @@ const MODES = {
   // ── Priority-ordered proceedings matches (see app.js:5745 onward) ─────────
   tellers:         { items: [item('APPOINTMENT OF TELLERS - The Chair appointed the following Members as tellers.', 3)] },
   'joint-session': { items: [item('JOINT SESSION - The House and Senate convened in Joint Session.', 8)] },
-  'cert-electoral':{ items: [item('CERTIFICATION OF ELECTORAL VOTES - The Chair announced the certification of the electoral votes.', 9)] },
-  'cert-election': { items: [item('CERTIFICATION OF ELECTION - The Chair announced the certification of the election of a Member.', 9)] },
+  'cert-electoral':{ items: [item('CERTIFICATION OF ELECTORAL VOTES - Beginning with the state of Alabama, the tellers proceeded with announcing the results of the Electoral College balloting.', 9)] },
+  'cert-election': { items: [item('CERTIFICATION OF ELECTION - The Acting Clerk announced that Certificates of Election covering 435 seats in the One Hundred Nineteenth Congress had been received and the names of those persons whose credentials show that they were regularly elected as Representatives in accordance with the laws of their respective States or of the United States would be called. Without objection, the Representatives-elect were directed to record their presence by electronic device in order to determine whether a quorum was present.', 9)] },
   'new-session':   { items: [item('Pursuant to the 20th amendment, the House convened for a new legislative day.', 6)] },
   'admin-oath':    { items: [item('ADMINISTRATION OF THE OATH OF OFFICE - The Speaker administered the oath of office to the Members-elect.', 7)] },
   // NOTE: sine-die mode looks unreachable in production. The recess branch
