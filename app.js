@@ -7280,12 +7280,24 @@ function updateCertElectionSection(items) {
 }
 
 // Update cert-electoral section
+// The Clerk logs the count twice: "CERTIFICATION OF ELECTORAL VOTES - Beginning with the state of Alabama, the
+// tellers proceeded with announcing the results..." when it starts, and "At the conclusion of counting the
+// Electoral ballots, the Vice President reported ... the votes would be recorded as follows: ..." when it ends
+// (prefixed with the label in 2021, bare in 2025). Until the second is there the count is in progress, so the
+// badge says so and is amber; once it is there, the totals replace the opening line and the badge is green.
+const ELECTORAL_CONCLUDED_RE = /\bat the conclusion of counting the electoral ballots\b/i;
 function updateCertElectoralSection(items) {
     const item = items.find(i => /^CERTIFICATION OF ELECTORAL VOTES\b/i.test(i.description.trim()));
     if (!item) return;
+    const newer = items.slice(0, items.indexOf(item) + 1);
+    const done = newer.find(i => ELECTORAL_CONCLUDED_RE.test(i.description));
     if (elements.certElectoralText) {
-        elements.certElectoralText.textContent = decodeHtml(item.description);
+        elements.certElectoralText.textContent = decodeHtml((done || item).description);
     }
+    const badge = document.getElementById('cert-electoral-badge');
+    const label = document.getElementById('cert-electoral-label');
+    if (badge) badge.classList.toggle('is-counting', !done);
+    if (label) label.textContent = done ? 'ELECTORAL VOTES CERTIFIED' : 'ELECTORAL VOTES BEING COUNTED';
 }
 
 // Update sine die section

@@ -9051,6 +9051,16 @@ body.joint-session-mode .joint-session-section {
     flex-shrink: 0;
 }
 
+.cert-electoral-approval-badge.is-counting {
+    background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-amber) 40%, transparent);
+    color: var(--accent-amber);
+}
+.cert-electoral-approval-badge.is-counting .cert-electoral-check-icon { stroke: var(--accent-amber); }
+.cert-electoral-icon-counting { display: none; }
+.cert-electoral-approval-badge.is-counting .cert-electoral-icon-counting { display: inline; }
+.cert-electoral-approval-badge.is-counting .cert-electoral-icon-done { display: none; }
+
 .cert-electoral-approval-text {
     font-size: var(--fs-2xl);
     color: var(--text-primary);
