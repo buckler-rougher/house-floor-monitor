@@ -8211,6 +8211,10 @@ window.setMode = function(mode) {
     if (mode === 'tellers' && proceedingsData.length) {
         updateTellersSection(proceedingsData);
     }
+    // Every panel's link gets its entry, not just the showing one: `?mode=all` shows them all, and a panel that comes
+    // up between two updates should not wait for the next one. The active mode goes last, since the two privilege
+    // modes share a panel and the one that is showing is the one that should win.
+    for (const m of Object.keys(SOURCE_ENTRY)) if (m !== mode) updateSourceManifest(m);
     updateSourceManifest(mode);
 };
 
