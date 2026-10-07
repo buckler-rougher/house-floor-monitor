@@ -1043,14 +1043,32 @@ function billIdToGovInfoPdf(billId) {
   return `https://www.govinfo.gov/link/bills/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}?link-type=pdf`;
 }
 
-async function fetchCongressBillSummary(billId) {
+// The Congress.gov responses a bill was enriched from, kept as received for the bill modal's source popover
+// (lib/source-pop.js), so opening it costs no Congress.gov request. Two keys per bill: `meta` (record, cosponsors, committees)
+// and `summaries`, written by whatever fetched them, House or Senate. Stored as { parts: [{ request, json }] } with the API key
+// scrubbed from every string; the request is as made, without the key. A bill enriched before this existed has none until it is
+// next fetched, and the popover says so.
+function billRawKey(billId, part) {
+  const p = billIdToCongressType(billId || '');
+  return p ? `bill-raw-v1:${CURRENT_CONGRESS}-${p.type}-${p.number}:${part}` : null;
+}
+async function saveBillRaw(env, billId, part, parts) {
+  const key = billRawKey(billId, part);
+  if (!key || !env?.HLS_CACHE || !parts.length || !_congressApiKey) return;
+  try {
+    const body = JSON.stringify({ parts }).split(_congressApiKey).join('');
+    await env.HLS_CACHE.put(key, body, { expirationTtl: KV_STORAGE_TTL });
+  } catch { /* the popover just has less to show */ }
+}
+
+async function fetchCongressBillSummary(billId, env) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   try {
     // format=json is explicit — without it the API may return XML causing resp.json() to throw.
     // limit=5 so we can try all available summaries if the first has empty text.
-    const url = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/summaries?api_key=${_congressApiKey}&format=json&limit=5&sort=updateDate+desc`;
-    const resp = await fetch(url, {
+    const shown = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}/summaries?format=json&limit=5&sort=updateDate+desc`;
+    const resp = await fetch(`${shown}&api_key=${_congressApiKey}`, {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(8000),
     });
@@ -1058,6 +1076,7 @@ async function fetchCongressBillSummary(billId) {
     if (resp.status === 429 || resp.status >= 500) throw new Error(`HTTP ${resp.status}`);
     if (!resp.ok) return null; // 404 etc. = genuinely no summary
     const data = await resp.json();
+    await saveBillRaw(env, billId, 'summaries', [{ request: `GET ${shown}`, json: data }]);
     const summaries = data.summaries || [];
     // Try all returned summaries — pick the first one with non-empty text after stripping
     for (const s of summaries) {
@@ -1075,7 +1094,7 @@ async function fetchCongressBillSummary(billId) {
   }
 }
 
-async function fetchBillMeta(billId) {
+async function fetchBillMeta(billId, env) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
@@ -1090,9 +1109,11 @@ async function fetchBillMeta(billId) {
     throw new Error(`Congress.gov fetchBillMeta transient error: ${billResp.status}`);
   }
   const result = {};
+  const raw = [];   // the responses as received, for the source popover (see saveBillRaw)
   if (billResp.ok) {
     try {
       const data = await billResp.json();
+      raw.push({ request: `GET ${base}`, json: data });
       const s = (data.bill?.sponsors || [])[0];
       if (s) result.sponsor = { bioguideId: s.bioguideId, firstName: s.firstName, lastName: s.lastName, party: s.party, state: s.state, district: s.district ?? null };
 
@@ -1107,12 +1128,14 @@ async function fetchBillMeta(billId) {
   if (cosponsorsResp.ok) {
     try {
       const data = await cosponsorsResp.json();
+      raw.push({ request: `GET ${base}/cosponsors?limit=100`, json: data });
       result.cosponsors = (data.cosponsors || []).map(c => ({ bioguideId: c.bioguideId, firstName: c.firstName, lastName: c.lastName, party: c.party, state: c.state, district: c.district ?? null }));
     } catch {}
   }
   if (committeesResp.ok) {
     try {
       const data = await committeesResp.json();
+      raw.push({ request: `GET ${base}/committees?limit=5`, json: data });
       // Keep the chamber. Congress.gov sends it and we were throwing it away, which
       // makes six of the twenty committees that turn up here unidentifiable: both
       // chambers have a Judiciary, a Rules, an Agriculture, an Armed Services and a
@@ -1124,6 +1147,7 @@ async function fetchBillMeta(billId) {
         .slice(0, 3);
     } catch {}
   }
+  await saveBillRaw(env, billId, 'meta', raw);
   return (result.sponsor || result.cosponsors?.length || result.committees?.length) ? result : null;
 }
 
@@ -1643,34 +1667,25 @@ async function handleBillsSource(request, env) {
 }
 
 // The Congress.gov responses behind a bill modal's source link (lib/source-pop.js), as the API sent them: the bill's record,
-// its cosponsors, committees and summaries. The popover asks only when opened. The API key is not shown. Nothing is cut: the
-// cosponsors are the page the modal itself counts (limit=250, the API's maximum).
+// its cosponsors, committees and summaries. Read from what enrichment stored (saveBillRaw), never fetched: opening the
+// popover makes no Congress.gov request. A bill with nothing stored yet answers 404.
 async function handleBillSource(request, env) {
-  const parsed = billIdToCongressType(new URL(request.url).searchParams.get('id') || '');
+  const id = new URL(request.url).searchParams.get('id') || '';
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
     status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-  if (!parsed) return fail(400, 'unrecognised measure id');
-  if (!_congressApiKey) return fail(502, 'no Congress.gov key configured');
-  const { type, number } = parsed;
-  return kvCache(env, `bill-source-v1-${CURRENT_CONGRESS}-${type}-${number}`, 3600, async () => {
-    const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
-    const call = async (path) => {
-      const shown = `${base}${path}${path.includes('?') ? '&' : '?'}format=json`;
-      const r = await fetch(`${shown}&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
-      if (!r.ok) return { request: `GET ${shown}`, status: r.status };
-      // The API echoes request details and next-page links; none carries the key, but it is scrubbed regardless.
-      const text = (await r.text()).split(_congressApiKey).join('');
-      return { request: `GET ${shown}`, json: JSON.parse(text) };
-    };
-    const [record, cosponsors, committees, summaries] = await Promise.all([
-      call(''), call('/cosponsors?limit=250'), call('/committees'), call('/summaries?limit=5'),
-    ]);
-    if (!record.json) return fail(502, `Congress.gov answered ${record.status || 'nothing'}`);
-    const parts = [record, cosponsors, committees, summaries].filter((p) => p.json);
-    return new Response(JSON.stringify({ parts }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
-    });
+  if (!billIdToCongressType(id)) return fail(400, 'unrecognised measure id');
+  const parts = [];
+  for (const part of ['meta', 'summaries']) {
+    const key = billRawKey(id, part);
+    try {
+      const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(key) : null;
+      if (raw) parts.push(...JSON.parse(raw).parts);
+    } catch { /* treated as not stored */ }
+  }
+  if (!parts.length) return fail(404, 'nothing stored for this bill yet');
+  return new Response(JSON.stringify({ parts }), {
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
   });
 }
 
@@ -2068,8 +2083,8 @@ async function _fetchBills(request, env) {
       let congressStatus, summary, meta;
       // Both safe wrappers return undefined on transient errors (429, 5xx, network) so callers
       // can distinguish "genuinely no data" (null) from "failed this time" (undefined).
-      const safeFetchSummary = (id) => fetchCongressBillSummary(id).catch(() => undefined);
-      const safeFetchMeta    = (id) => fetchBillMeta(id).catch(() => undefined);
+      const safeFetchSummary = (id) => fetchCongressBillSummary(id, env).catch(() => undefined);
+      const safeFetchMeta    = (id) => fetchBillMeta(id, env).catch(() => undefined);
       if (enrichCached) {
         congressStatus = enrichCached.congressStatus ?? null;
         // Retry summary/meta when null — Congress.gov may have published since last fetch.
@@ -3078,6 +3093,10 @@ async function handleSenateBill(env, billId) {
     ]);
     const bill = record?.bill;
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
+    // The responses as received, for the source popover; the requests as made, without the key.
+    const asked = (path, json) => json ? [{ request: `GET ${base}${path}${path.includes('?') ? '&' : '?'}format=json`, json }] : [];
+    await saveBillRaw(env, billId, 'meta', [...asked('', record), ...asked('/cosponsors?limit=250', cosponsors), ...asked('/committees', committees)]);
+    await saveBillRaw(env, billId, 'summaries', asked('/summaries?limit=5', summaries));
 
     // The first summary with real prose. Stubs shorter than a sentence are
     // skipped, same rule the House modal uses.
