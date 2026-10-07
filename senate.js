@@ -146,6 +146,38 @@ function setConnection(state) {
 // run by the smaller bloc. The roster records a party and says nothing about
 // caucusing, so the badge appears only when a party holds 51 outright and the
 // panel says why when it does not.
+// The Senate's roster as the Balance of Power link's popover shows it (lib/source-pop.js): the Worker passes a few of the
+// roster's own <member> entries verbatim, and this prints them as the Senate wrote them (less address and phone). It says
+// how many entries there are and how the counts are made.
+function setBalanceManifest(data) {
+    if (!globalThis.SourcePop || !Array.isArray(data.sample) || !data.sample.length) return;
+    const panel = document.getElementById('party-breakdown');
+    if (!panel) return;
+    const X = SourcePop.xml;
+    const lines = ['<contact_information>'];
+    const c = data.counts || {};
+    lines.push(X.note(1, (data.entries || '') + ' <member> entries. The panel counts D ' + c.D + ', R ' + c.R + ', I ' + c.I +
+        ' by <party>. Shown: the first, then each senator who is neither D nor R.'));
+    for (const raw of data.sample) {
+        const doc = new DOMParser().parseFromString(raw, 'text/xml');
+        const m = doc.querySelector('member');
+        if (!m) continue;
+        lines.push('  <member>');
+        for (const tag of ['member_full', 'last_name', 'first_name', 'party', 'state', 'class', 'bioguide_id']) {
+            const e = m.querySelector(tag);
+            if (e) X.emit(e, 2, lines);
+        }
+        lines.push(X.note(2, 'address, phone, email, website omitted'));
+        lines.push('  </member>');
+    }
+    lines.push('</contact_information>');
+    SourcePop.set(panel, {
+        title: 'The Senate\'s roster',
+        request: 'GET https://www.senate.gov/general/contact_information/senators_cfm.xml',
+        xml: lines.join('\n')
+    });
+}
+
 function renderBalance(data) {
     const c = data.counts || {};
     const seats = data.seats || 100;
@@ -170,6 +202,7 @@ function renderBalance(data) {
         stamp: fmtDate(d && !isNaN(d) ? d : new Date()),
     });
 
+    setBalanceManifest(data);
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }
 

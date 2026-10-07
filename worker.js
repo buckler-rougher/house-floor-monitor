@@ -3532,7 +3532,7 @@ async function handleSenateSchedule(env) {
 }
 
 async function handleSenateRoster(env) {
-  return kvCache(env, 'senate-roster-v1', 3600, async () => {
+  return kvCache(env, 'senate-roster-v2', 3600, async () => {
     const r = await fetch('https://www.senate.gov/general/contact_information/senators_cfm.xml', {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
       signal: AbortSignal.timeout(20_000),
@@ -3572,8 +3572,13 @@ async function handleSenateRoster(env) {
     // this changes when a seat changes, not every time the cache expires.
     const lastUpdated = (xml.match(/<last_updated>([^<]+)<\/last_updated>/) || [])[1] || null;
 
+    // A few of the roster's own <member> entries, verbatim, for the Balance of Power link's popover: the first, and each
+    // senator who is neither a Democrat nor a Republican (they are why control is not just the larger count).
+    const rawMembers = [...xml.matchAll(/<member>[\s\S]*?<\/member>/g)].map((m) => m[0]);
+    const sample = rawMembers.filter((raw, i) => i === 0 || !/<party>\s*[DR]\s*<\/party>/.test(raw)).slice(0, 4);
+
     return new Response(JSON.stringify({
-      seats: SEATS, counts, vacancies, needed, control, lastUpdated,
+      seats: SEATS, counts, vacancies, needed, control, lastUpdated, sample, entries: rawMembers.length,
       // Named so the board can say why control is unresolved rather than
       // silently showing nothing.
       controlNote: control ? null : 'No party holds an outright majority; control turns on how the independents caucus and on the Vice President\'s tie-breaking vote.',

@@ -1,1 +1,925 @@
-{"seats":100,"counts":{"D":45,"R":53,"I":2},"vacancies":0,"needed":51,"control":"R","lastUpdated":"2026-09-23T13:19-05:00","controlNote":null,"independents":["King (ME)","Sanders (VT)"],"members":[{"last":"Alsobrooks","first":"Angela D.","party":"D","state":"MD","bioguide":"A000382","klass":"Class I","website":"https://alsobrooks.senate.gov/"},{"last":"Armstrong","first":"Alan","party":"R","state":"OK","bioguide":"A000383","klass":"Class II","website":"https://www.armstrong.senate.gov/"},{"last":"Baldwin","first":"Tammy","party":"D","state":"WI","bioguide":"B001230","klass":"Class I","website":"https://www.baldwin.senate.gov/"},{"last":"Banks","first":"Jim","party":"R","state":"IN","bioguide":"B001299","klass":"Class I","website":"https://www.banks.senate.gov/"},{"last":"Barrasso","first":"John","party":"R","state":"WY","bioguide":"B001261","klass":"Class I","website":"https://www.barrasso.senate.gov"},{"last":"Bennet","first":"Michael F.","party":"D","state":"CO","bioguide":"B001267","klass":"Class III","website":"https://www.bennet.senate.gov"},{"last":"Blackburn","first":"Marsha","party":"R","state":"TN","bioguide":"B001243","klass":"Class I","website":"https://www.blackburn.senate.gov"},{"last":"Blumenthal","first":"Richard","party":"D","state":"CT","bioguide":"B001277","klass":"Class III","website":"https://www.blumenthal.senate.gov"},{"last":"Blunt Rochester","first":"Lisa","party":"D","state":"DE","bioguide":"B001303","klass":"Class I","website":"https://www.bluntrochester.senate.gov/"},{"last":"Booker","first":"Cory A.","party":"D","state":"NJ","bioguide":"B001288","klass":"Class II","website":"https://www.booker.senate.gov"},{"last":"Boozman","first":"John","party":"R","state":"AR","bioguide":"B001236","klass":"Class III","website":"https://www.boozman.senate.gov/"},{"last":"Britt","first":"Katie Boyd","party":"R","state":"AL","bioguide":"B001319","klass":"Class III","website":"https://www.britt.senate.gov/"},{"last":"Budd","first":"Ted","party":"R","state":"NC","bioguide":"B001305","klass":"Class III","website":"https://www.budd.senate.gov/"},{"last":"Cantwell","first":"Maria","party":"D","state":"WA","bioguide":"C000127","klass":"Class I","website":"https://www.cantwell.senate.gov"},{"last":"Capito","first":"Shelley Moore","party":"R","state":"WV","bioguide":"C001047","klass":"Class II","website":"https://www.capito.senate.gov"},{"last":"Cassidy","first":"Bill","party":"R","state":"LA","bioguide":"C001075","klass":"Class II","website":"https://www.cassidy.senate.gov"},{"last":"Collins","first":"Susan M.","party":"R","state":"ME","bioguide":"C001035","klass":"Class II","website":"https://www.collins.senate.gov"},{"last":"Coons","first":"Christopher A.","party":"D","state":"DE","bioguide":"C001088","klass":"Class II","website":"https://www.coons.senate.gov/"},{"last":"Cornyn","first":"John","party":"R","state":"TX","bioguide":"C001056","klass":"Class II","website":"https://www.cornyn.senate.gov/"},{"last":"Cortez Masto","first":"Catherine","party":"D","state":"NV","bioguide":"C001113","klass":"Class III","website":"https://www.cortezmasto.senate.gov"},{"last":"Cotton","first":"Tom","party":"R","state":"AR","bioguide":"C001095","klass":"Class II","website":"https://www.cotton.senate.gov"},{"last":"Cramer","first":"Kevin","party":"R","state":"ND","bioguide":"C001096","klass":"Class I","website":"https://www.cramer.senate.gov"},{"last":"Crapo","first":"Mike","party":"R","state":"ID","bioguide":"C000880","klass":"Class III","website":"https://www.crapo.senate.gov"},{"last":"Cruz","first":"Ted","party":"R","state":"TX","bioguide":"C001098","klass":"Class I","website":"https://www.cruz.senate.gov"},{"last":"Curtis","first":"John R.","party":"R","state":"UT","bioguide":"C001114","klass":"Class I","website":"https://www.curtis.senate.gov/"},{"last":"Daines","first":"Steve","party":"R","state":"MT","bioguide":"D000618","klass":"Class II","website":"https://www.daines.senate.gov"},{"last":"Duckworth","first":"Tammy","party":"D","state":"IL","bioguide":"D000622","klass":"Class III","website":"https://www.duckworth.senate.gov"},{"last":"Durbin","first":"Richard J.","party":"D","state":"IL","bioguide":"D000563","klass":"Class II","website":"https://www.durbin.senate.gov"},{"last":"Ernst","first":"Joni","party":"R","state":"IA","bioguide":"E000295","klass":"Class II","website":"https://www.ernst.senate.gov"},{"last":"Fetterman","first":"John","party":"D","state":"PA","bioguide":"F000479","klass":"Class III","website":"https://www.fetterman.senate.gov/"},{"last":"Fischer","first":"Deb","party":"R","state":"NE","bioguide":"F000463","klass":"Class I","website":"https://www.fischer.senate.gov"},{"last":"Gallego","first":"Ruben","party":"D","state":"AZ","bioguide":"G000574","klass":"Class I","website":"https://www.gallego.senate.gov/"},{"last":"Gillibrand","first":"Kirsten E.","party":"D","state":"NY","bioguide":"G000555","klass":"Class I","website":"https://www.gillibrand.senate.gov"},{"last":"Graham","first":"Darline","party":"R","state":"SC","bioguide":"G000608","klass":"Class II","website":"https://www.dgraham.senate.gov/"},{"last":"Grassley","first":"Chuck","party":"R","state":"IA","bioguide":"G000386","klass":"Class III","website":"https://www.grassley.senate.gov"},{"last":"Hagerty","first":"Bill","party":"R","state":"TN","bioguide":"H000601","klass":"Class II","website":"https://www.hagerty.senate.gov"},{"last":"Hassan","first":"Margaret Wood","party":"D","state":"NH","bioguide":"H001076","klass":"Class III","website":"https://www.hassan.senate.gov"},{"last":"Hawley","first":"Josh","party":"R","state":"MO","bioguide":"H001089","klass":"Class I","website":"https://www.hawley.senate.gov"},{"last":"Heinrich","first":"Martin","party":"D","state":"NM","bioguide":"H001046","klass":"Class I","website":"https://www.heinrich.senate.gov/"},{"last":"Hickenlooper","first":"John W.","party":"D","state":"CO","bioguide":"H000273","klass":"Class II","website":"https://www.hickenlooper.senate.gov"},{"last":"Hirono","first":"Mazie K.","party":"D","state":"HI","bioguide":"H001042","klass":"Class I","website":"https://www.hirono.senate.gov/"},{"last":"Hoeven","first":"John","party":"R","state":"ND","bioguide":"H001061","klass":"Class III","website":"https://www.hoeven.senate.gov"},{"last":"Husted","first":"Jon","party":"R","state":"OH","bioguide":"H001104","klass":"Class III","website":"https://www.husted.senate.gov/"},{"last":"Hyde-Smith","first":"Cindy","party":"R","state":"MS","bioguide":"H001079","klass":"Class II","website":"https://www.hydesmith.senate.gov/"},{"last":"Johnson","first":"Ron","party":"R","state":"WI","bioguide":"J000293","klass":"Class III","website":"https://www.ronjohnson.senate.gov/"},{"last":"Justice","first":"James C.","party":"R","state":"WV","bioguide":"J000312","klass":"Class I","website":"https://www.justice.senate.gov/"},{"last":"Kaine","first":"Tim","party":"D","state":"VA","bioguide":"K000384","klass":"Class I","website":"https://www.kaine.senate.gov/"},{"last":"Kelly","first":"Mark","party":"D","state":"AZ","bioguide":"K000377","klass":"Class III","website":"https://www.kelly.senate.gov"},{"last":"Kennedy","first":"John","party":"R","state":"LA","bioguide":"K000393","klass":"Class III","website":"https://www.kennedy.senate.gov"},{"last":"Kim","first":"Andy","party":"D","state":"NJ","bioguide":"K000394","klass":"Class I","website":"https://www.kim.senate.gov/"},{"last":"King","first":"Angus S., Jr.","party":"I","state":"ME","bioguide":"K000383","klass":"Class I","website":"https://www.king.senate.gov/"},{"last":"Klobuchar","first":"Amy","party":"D","state":"MN","bioguide":"K000367","klass":"Class I","website":"https://www.klobuchar.senate.gov/"},{"last":"Lankford","first":"James","party":"R","state":"OK","bioguide":"L000575","klass":"Class III","website":"https://www.lankford.senate.gov"},{"last":"Lee","first":"Mike","party":"R","state":"UT","bioguide":"L000577","klass":"Class III","website":"https://www.lee.senate.gov/"},{"last":"Luján","first":"Ben Ray","party":"D","state":"NM","bioguide":"L000570","klass":"Class II","website":"https://www.lujan.senate.gov"},{"last":"Lummis","first":"Cynthia M.","party":"R","state":"WY","bioguide":"L000571","klass":"Class II","website":"https://www.lummis.senate.gov"},{"last":"Markey","first":"Edward J.","party":"D","state":"MA","bioguide":"M000133","klass":"Class II","website":"https://www.markey.senate.gov"},{"last":"Marshall","first":"Roger","party":"R","state":"KS","bioguide":"M001198","klass":"Class II","website":"https://www.marshall.senate.gov"},{"last":"McConnell","first":"Mitch","party":"R","state":"KY","bioguide":"M000355","klass":"Class II","website":"https://www.mcconnell.senate.gov/"},{"last":"McCormick","first":"David","party":"R","state":"PA","bioguide":"M001243","klass":"Class I","website":"https://mccormick.senate.gov/"},{"last":"Merkley","first":"Jeff","party":"D","state":"OR","bioguide":"M001176","klass":"Class II","website":"https://www.merkley.senate.gov"},{"last":"Moody","first":"Ashley","party":"R","state":"FL","bioguide":"M001244","klass":"Class III","website":"https://www.moody.senate.gov"},{"last":"Moran","first":"Jerry","party":"R","state":"KS","bioguide":"M000934","klass":"Class III","website":"https://www.moran.senate.gov"},{"last":"Moreno","first":"Bernie","party":"R","state":"OH","bioguide":"M001242","klass":"Class I","website":"https://www.moreno.senate.gov"},{"last":"Murkowski","first":"Lisa","party":"R","state":"AK","bioguide":"M001153","klass":"Class III","website":"https://www.murkowski.senate.gov/"},{"last":"Murphy","first":"Christopher","party":"D","state":"CT","bioguide":"M001169","klass":"Class I","website":"https://www.murphy.senate.gov/"},{"last":"Murray","first":"Patty","party":"D","state":"WA","bioguide":"M001111","klass":"Class III","website":"https://www.murray.senate.gov/"},{"last":"Ossoff","first":"Jon","party":"D","state":"GA","bioguide":"O000174","klass":"Class II","website":"https://www.ossoff.senate.gov"},{"last":"Padilla","first":"Alex","party":"D","state":"CA","bioguide":"P000145","klass":"Class III","website":"https://www.padilla.senate.gov"},{"last":"Paul","first":"Rand","party":"R","state":"KY","bioguide":"P000603","klass":"Class III","website":"https://www.paul.senate.gov"},{"last":"Peters","first":"Gary C.","party":"D","state":"MI","bioguide":"P000595","klass":"Class II","website":"https://www.peters.senate.gov"},{"last":"Reed","first":"Jack","party":"D","state":"RI","bioguide":"R000122","klass":"Class II","website":"https://www.reed.senate.gov/"},{"last":"Ricketts","first":"Pete","party":"R","state":"NE","bioguide":"R000618","klass":"Class II","website":"https://www.ricketts.senate.gov"},{"last":"Risch","first":"James E.","party":"R","state":"ID","bioguide":"R000584","klass":"Class II","website":"https://www.risch.senate.gov"},{"last":"Rosen","first":"Jacky","party":"D","state":"NV","bioguide":"R000608","klass":"Class I","website":"https://www.rosen.senate.gov"},{"last":"Rounds","first":"Mike","party":"R","state":"SD","bioguide":"R000605","klass":"Class II","website":"https://www.rounds.senate.gov"},{"last":"Sanders","first":"Bernard","party":"I","state":"VT","bioguide":"S000033","klass":"Class I","website":"https://www.sanders.senate.gov/"},{"last":"Schatz","first":"Brian","party":"D","state":"HI","bioguide":"S001194","klass":"Class III","website":"https://www.schatz.senate.gov"},{"last":"Schiff","first":"Adam B.","party":"D","state":"CA","bioguide":"S001150","klass":"Class I","website":"https://www.schiff.senate.gov"},{"last":"Schmitt","first":"Eric","party":"R","state":"MO","bioguide":"S001227","klass":"Class III","website":"https://www.schmitt.senate.gov/"},{"last":"Schumer","first":"Charles E.","party":"D","state":"NY","bioguide":"S000148","klass":"Class III","website":"https://www.schumer.senate.gov/"},{"last":"Scott","first":"Rick","party":"R","state":"FL","bioguide":"S001217","klass":"Class I","website":"https://www.rickscott.senate.gov/"},{"last":"Scott","first":"Tim","party":"R","state":"SC","bioguide":"S001184","klass":"Class III","website":"https://www.scott.senate.gov/"},{"last":"Shaheen","first":"Jeanne","party":"D","state":"NH","bioguide":"S001181","klass":"Class II","website":"https://www.shaheen.senate.gov"},{"last":"Sheehy","first":"Tim","party":"R","state":"MT","bioguide":"S001232","klass":"Class I","website":"https://www.sheehy.senate.gov/"},{"last":"Slotkin","first":"Elissa","party":"D","state":"MI","bioguide":"S001208","klass":"Class I","website":"https://www.slotkin.senate.gov/"},{"last":"Smith","first":"Tina","party":"D","state":"MN","bioguide":"S001203","klass":"Class II","website":"https://www.smith.senate.gov"},{"last":"Sullivan","first":"Dan","party":"R","state":"AK","bioguide":"S001198","klass":"Class II","website":"https://www.sullivan.senate.gov"},{"last":"Thune","first":"John","party":"R","state":"SD","bioguide":"T000250","klass":"Class III","website":"https://www.thune.senate.gov/"},{"last":"Tillis","first":"Thom","party":"R","state":"NC","bioguide":"T000476","klass":"Class II","website":"https://www.tillis.senate.gov"},{"last":"Tuberville","first":"Tommy","party":"R","state":"AL","bioguide":"T000278","klass":"Class II","website":"https://www.tuberville.senate.gov"},{"last":"Van Hollen","first":"Chris","party":"D","state":"MD","bioguide":"V000128","klass":"Class III","website":"https://www.vanhollen.senate.gov"},{"last":"Warner","first":"Mark R.","party":"D","state":"VA","bioguide":"W000805","klass":"Class II","website":"https://www.warner.senate.gov"},{"last":"Warnock","first":"Raphael G.","party":"D","state":"GA","bioguide":"W000790","klass":"Class III","website":"https://www.warnock.senate.gov"},{"last":"Warren","first":"Elizabeth","party":"D","state":"MA","bioguide":"W000817","klass":"Class I","website":"https://www.warren.senate.gov"},{"last":"Welch","first":"Peter","party":"D","state":"VT","bioguide":"W000800","klass":"Class III","website":"https://www.welch.senate.gov/"},{"last":"Whitehouse","first":"Sheldon","party":"D","state":"RI","bioguide":"W000802","klass":"Class I","website":"https://www.whitehouse.senate.gov/"},{"last":"Wicker","first":"Roger F.","party":"R","state":"MS","bioguide":"W000437","klass":"Class I","website":"https://www.wicker.senate.gov"},{"last":"Wyden","first":"Ron","party":"D","state":"OR","bioguide":"W000779","klass":"Class III","website":"https://www.wyden.senate.gov/"},{"last":"Young","first":"Todd","party":"R","state":"IN","bioguide":"Y000064","klass":"Class III","website":"https://www.young.senate.gov"}]}
+{
+  "seats": 100,
+  "counts": {
+    "D": 45,
+    "R": 53,
+    "I": 2
+  },
+  "vacancies": 0,
+  "needed": 51,
+  "control": "R",
+  "lastUpdated": "2026-09-23T13:19-05:00",
+  "controlNote": null,
+  "independents": [
+    "King (ME)",
+    "Sanders (VT)"
+  ],
+  "members": [
+    {
+      "last": "Alsobrooks",
+      "first": "Angela D.",
+      "party": "D",
+      "state": "MD",
+      "bioguide": "A000382",
+      "klass": "Class I",
+      "website": "https://alsobrooks.senate.gov/"
+    },
+    {
+      "last": "Armstrong",
+      "first": "Alan",
+      "party": "R",
+      "state": "OK",
+      "bioguide": "A000383",
+      "klass": "Class II",
+      "website": "https://www.armstrong.senate.gov/"
+    },
+    {
+      "last": "Baldwin",
+      "first": "Tammy",
+      "party": "D",
+      "state": "WI",
+      "bioguide": "B001230",
+      "klass": "Class I",
+      "website": "https://www.baldwin.senate.gov/"
+    },
+    {
+      "last": "Banks",
+      "first": "Jim",
+      "party": "R",
+      "state": "IN",
+      "bioguide": "B001299",
+      "klass": "Class I",
+      "website": "https://www.banks.senate.gov/"
+    },
+    {
+      "last": "Barrasso",
+      "first": "John",
+      "party": "R",
+      "state": "WY",
+      "bioguide": "B001261",
+      "klass": "Class I",
+      "website": "https://www.barrasso.senate.gov"
+    },
+    {
+      "last": "Bennet",
+      "first": "Michael F.",
+      "party": "D",
+      "state": "CO",
+      "bioguide": "B001267",
+      "klass": "Class III",
+      "website": "https://www.bennet.senate.gov"
+    },
+    {
+      "last": "Blackburn",
+      "first": "Marsha",
+      "party": "R",
+      "state": "TN",
+      "bioguide": "B001243",
+      "klass": "Class I",
+      "website": "https://www.blackburn.senate.gov"
+    },
+    {
+      "last": "Blumenthal",
+      "first": "Richard",
+      "party": "D",
+      "state": "CT",
+      "bioguide": "B001277",
+      "klass": "Class III",
+      "website": "https://www.blumenthal.senate.gov"
+    },
+    {
+      "last": "Blunt Rochester",
+      "first": "Lisa",
+      "party": "D",
+      "state": "DE",
+      "bioguide": "B001303",
+      "klass": "Class I",
+      "website": "https://www.bluntrochester.senate.gov/"
+    },
+    {
+      "last": "Booker",
+      "first": "Cory A.",
+      "party": "D",
+      "state": "NJ",
+      "bioguide": "B001288",
+      "klass": "Class II",
+      "website": "https://www.booker.senate.gov"
+    },
+    {
+      "last": "Boozman",
+      "first": "John",
+      "party": "R",
+      "state": "AR",
+      "bioguide": "B001236",
+      "klass": "Class III",
+      "website": "https://www.boozman.senate.gov/"
+    },
+    {
+      "last": "Britt",
+      "first": "Katie Boyd",
+      "party": "R",
+      "state": "AL",
+      "bioguide": "B001319",
+      "klass": "Class III",
+      "website": "https://www.britt.senate.gov/"
+    },
+    {
+      "last": "Budd",
+      "first": "Ted",
+      "party": "R",
+      "state": "NC",
+      "bioguide": "B001305",
+      "klass": "Class III",
+      "website": "https://www.budd.senate.gov/"
+    },
+    {
+      "last": "Cantwell",
+      "first": "Maria",
+      "party": "D",
+      "state": "WA",
+      "bioguide": "C000127",
+      "klass": "Class I",
+      "website": "https://www.cantwell.senate.gov"
+    },
+    {
+      "last": "Capito",
+      "first": "Shelley Moore",
+      "party": "R",
+      "state": "WV",
+      "bioguide": "C001047",
+      "klass": "Class II",
+      "website": "https://www.capito.senate.gov"
+    },
+    {
+      "last": "Cassidy",
+      "first": "Bill",
+      "party": "R",
+      "state": "LA",
+      "bioguide": "C001075",
+      "klass": "Class II",
+      "website": "https://www.cassidy.senate.gov"
+    },
+    {
+      "last": "Collins",
+      "first": "Susan M.",
+      "party": "R",
+      "state": "ME",
+      "bioguide": "C001035",
+      "klass": "Class II",
+      "website": "https://www.collins.senate.gov"
+    },
+    {
+      "last": "Coons",
+      "first": "Christopher A.",
+      "party": "D",
+      "state": "DE",
+      "bioguide": "C001088",
+      "klass": "Class II",
+      "website": "https://www.coons.senate.gov/"
+    },
+    {
+      "last": "Cornyn",
+      "first": "John",
+      "party": "R",
+      "state": "TX",
+      "bioguide": "C001056",
+      "klass": "Class II",
+      "website": "https://www.cornyn.senate.gov/"
+    },
+    {
+      "last": "Cortez Masto",
+      "first": "Catherine",
+      "party": "D",
+      "state": "NV",
+      "bioguide": "C001113",
+      "klass": "Class III",
+      "website": "https://www.cortezmasto.senate.gov"
+    },
+    {
+      "last": "Cotton",
+      "first": "Tom",
+      "party": "R",
+      "state": "AR",
+      "bioguide": "C001095",
+      "klass": "Class II",
+      "website": "https://www.cotton.senate.gov"
+    },
+    {
+      "last": "Cramer",
+      "first": "Kevin",
+      "party": "R",
+      "state": "ND",
+      "bioguide": "C001096",
+      "klass": "Class I",
+      "website": "https://www.cramer.senate.gov"
+    },
+    {
+      "last": "Crapo",
+      "first": "Mike",
+      "party": "R",
+      "state": "ID",
+      "bioguide": "C000880",
+      "klass": "Class III",
+      "website": "https://www.crapo.senate.gov"
+    },
+    {
+      "last": "Cruz",
+      "first": "Ted",
+      "party": "R",
+      "state": "TX",
+      "bioguide": "C001098",
+      "klass": "Class I",
+      "website": "https://www.cruz.senate.gov"
+    },
+    {
+      "last": "Curtis",
+      "first": "John R.",
+      "party": "R",
+      "state": "UT",
+      "bioguide": "C001114",
+      "klass": "Class I",
+      "website": "https://www.curtis.senate.gov/"
+    },
+    {
+      "last": "Daines",
+      "first": "Steve",
+      "party": "R",
+      "state": "MT",
+      "bioguide": "D000618",
+      "klass": "Class II",
+      "website": "https://www.daines.senate.gov"
+    },
+    {
+      "last": "Duckworth",
+      "first": "Tammy",
+      "party": "D",
+      "state": "IL",
+      "bioguide": "D000622",
+      "klass": "Class III",
+      "website": "https://www.duckworth.senate.gov"
+    },
+    {
+      "last": "Durbin",
+      "first": "Richard J.",
+      "party": "D",
+      "state": "IL",
+      "bioguide": "D000563",
+      "klass": "Class II",
+      "website": "https://www.durbin.senate.gov"
+    },
+    {
+      "last": "Ernst",
+      "first": "Joni",
+      "party": "R",
+      "state": "IA",
+      "bioguide": "E000295",
+      "klass": "Class II",
+      "website": "https://www.ernst.senate.gov"
+    },
+    {
+      "last": "Fetterman",
+      "first": "John",
+      "party": "D",
+      "state": "PA",
+      "bioguide": "F000479",
+      "klass": "Class III",
+      "website": "https://www.fetterman.senate.gov/"
+    },
+    {
+      "last": "Fischer",
+      "first": "Deb",
+      "party": "R",
+      "state": "NE",
+      "bioguide": "F000463",
+      "klass": "Class I",
+      "website": "https://www.fischer.senate.gov"
+    },
+    {
+      "last": "Gallego",
+      "first": "Ruben",
+      "party": "D",
+      "state": "AZ",
+      "bioguide": "G000574",
+      "klass": "Class I",
+      "website": "https://www.gallego.senate.gov/"
+    },
+    {
+      "last": "Gillibrand",
+      "first": "Kirsten E.",
+      "party": "D",
+      "state": "NY",
+      "bioguide": "G000555",
+      "klass": "Class I",
+      "website": "https://www.gillibrand.senate.gov"
+    },
+    {
+      "last": "Graham",
+      "first": "Darline",
+      "party": "R",
+      "state": "SC",
+      "bioguide": "G000608",
+      "klass": "Class II",
+      "website": "https://www.dgraham.senate.gov/"
+    },
+    {
+      "last": "Grassley",
+      "first": "Chuck",
+      "party": "R",
+      "state": "IA",
+      "bioguide": "G000386",
+      "klass": "Class III",
+      "website": "https://www.grassley.senate.gov"
+    },
+    {
+      "last": "Hagerty",
+      "first": "Bill",
+      "party": "R",
+      "state": "TN",
+      "bioguide": "H000601",
+      "klass": "Class II",
+      "website": "https://www.hagerty.senate.gov"
+    },
+    {
+      "last": "Hassan",
+      "first": "Margaret Wood",
+      "party": "D",
+      "state": "NH",
+      "bioguide": "H001076",
+      "klass": "Class III",
+      "website": "https://www.hassan.senate.gov"
+    },
+    {
+      "last": "Hawley",
+      "first": "Josh",
+      "party": "R",
+      "state": "MO",
+      "bioguide": "H001089",
+      "klass": "Class I",
+      "website": "https://www.hawley.senate.gov"
+    },
+    {
+      "last": "Heinrich",
+      "first": "Martin",
+      "party": "D",
+      "state": "NM",
+      "bioguide": "H001046",
+      "klass": "Class I",
+      "website": "https://www.heinrich.senate.gov/"
+    },
+    {
+      "last": "Hickenlooper",
+      "first": "John W.",
+      "party": "D",
+      "state": "CO",
+      "bioguide": "H000273",
+      "klass": "Class II",
+      "website": "https://www.hickenlooper.senate.gov"
+    },
+    {
+      "last": "Hirono",
+      "first": "Mazie K.",
+      "party": "D",
+      "state": "HI",
+      "bioguide": "H001042",
+      "klass": "Class I",
+      "website": "https://www.hirono.senate.gov/"
+    },
+    {
+      "last": "Hoeven",
+      "first": "John",
+      "party": "R",
+      "state": "ND",
+      "bioguide": "H001061",
+      "klass": "Class III",
+      "website": "https://www.hoeven.senate.gov"
+    },
+    {
+      "last": "Husted",
+      "first": "Jon",
+      "party": "R",
+      "state": "OH",
+      "bioguide": "H001104",
+      "klass": "Class III",
+      "website": "https://www.husted.senate.gov/"
+    },
+    {
+      "last": "Hyde-Smith",
+      "first": "Cindy",
+      "party": "R",
+      "state": "MS",
+      "bioguide": "H001079",
+      "klass": "Class II",
+      "website": "https://www.hydesmith.senate.gov/"
+    },
+    {
+      "last": "Johnson",
+      "first": "Ron",
+      "party": "R",
+      "state": "WI",
+      "bioguide": "J000293",
+      "klass": "Class III",
+      "website": "https://www.ronjohnson.senate.gov/"
+    },
+    {
+      "last": "Justice",
+      "first": "James C.",
+      "party": "R",
+      "state": "WV",
+      "bioguide": "J000312",
+      "klass": "Class I",
+      "website": "https://www.justice.senate.gov/"
+    },
+    {
+      "last": "Kaine",
+      "first": "Tim",
+      "party": "D",
+      "state": "VA",
+      "bioguide": "K000384",
+      "klass": "Class I",
+      "website": "https://www.kaine.senate.gov/"
+    },
+    {
+      "last": "Kelly",
+      "first": "Mark",
+      "party": "D",
+      "state": "AZ",
+      "bioguide": "K000377",
+      "klass": "Class III",
+      "website": "https://www.kelly.senate.gov"
+    },
+    {
+      "last": "Kennedy",
+      "first": "John",
+      "party": "R",
+      "state": "LA",
+      "bioguide": "K000393",
+      "klass": "Class III",
+      "website": "https://www.kennedy.senate.gov"
+    },
+    {
+      "last": "Kim",
+      "first": "Andy",
+      "party": "D",
+      "state": "NJ",
+      "bioguide": "K000394",
+      "klass": "Class I",
+      "website": "https://www.kim.senate.gov/"
+    },
+    {
+      "last": "King",
+      "first": "Angus S., Jr.",
+      "party": "I",
+      "state": "ME",
+      "bioguide": "K000383",
+      "klass": "Class I",
+      "website": "https://www.king.senate.gov/"
+    },
+    {
+      "last": "Klobuchar",
+      "first": "Amy",
+      "party": "D",
+      "state": "MN",
+      "bioguide": "K000367",
+      "klass": "Class I",
+      "website": "https://www.klobuchar.senate.gov/"
+    },
+    {
+      "last": "Lankford",
+      "first": "James",
+      "party": "R",
+      "state": "OK",
+      "bioguide": "L000575",
+      "klass": "Class III",
+      "website": "https://www.lankford.senate.gov"
+    },
+    {
+      "last": "Lee",
+      "first": "Mike",
+      "party": "R",
+      "state": "UT",
+      "bioguide": "L000577",
+      "klass": "Class III",
+      "website": "https://www.lee.senate.gov/"
+    },
+    {
+      "last": "Luján",
+      "first": "Ben Ray",
+      "party": "D",
+      "state": "NM",
+      "bioguide": "L000570",
+      "klass": "Class II",
+      "website": "https://www.lujan.senate.gov"
+    },
+    {
+      "last": "Lummis",
+      "first": "Cynthia M.",
+      "party": "R",
+      "state": "WY",
+      "bioguide": "L000571",
+      "klass": "Class II",
+      "website": "https://www.lummis.senate.gov"
+    },
+    {
+      "last": "Markey",
+      "first": "Edward J.",
+      "party": "D",
+      "state": "MA",
+      "bioguide": "M000133",
+      "klass": "Class II",
+      "website": "https://www.markey.senate.gov"
+    },
+    {
+      "last": "Marshall",
+      "first": "Roger",
+      "party": "R",
+      "state": "KS",
+      "bioguide": "M001198",
+      "klass": "Class II",
+      "website": "https://www.marshall.senate.gov"
+    },
+    {
+      "last": "McConnell",
+      "first": "Mitch",
+      "party": "R",
+      "state": "KY",
+      "bioguide": "M000355",
+      "klass": "Class II",
+      "website": "https://www.mcconnell.senate.gov/"
+    },
+    {
+      "last": "McCormick",
+      "first": "David",
+      "party": "R",
+      "state": "PA",
+      "bioguide": "M001243",
+      "klass": "Class I",
+      "website": "https://mccormick.senate.gov/"
+    },
+    {
+      "last": "Merkley",
+      "first": "Jeff",
+      "party": "D",
+      "state": "OR",
+      "bioguide": "M001176",
+      "klass": "Class II",
+      "website": "https://www.merkley.senate.gov"
+    },
+    {
+      "last": "Moody",
+      "first": "Ashley",
+      "party": "R",
+      "state": "FL",
+      "bioguide": "M001244",
+      "klass": "Class III",
+      "website": "https://www.moody.senate.gov"
+    },
+    {
+      "last": "Moran",
+      "first": "Jerry",
+      "party": "R",
+      "state": "KS",
+      "bioguide": "M000934",
+      "klass": "Class III",
+      "website": "https://www.moran.senate.gov"
+    },
+    {
+      "last": "Moreno",
+      "first": "Bernie",
+      "party": "R",
+      "state": "OH",
+      "bioguide": "M001242",
+      "klass": "Class I",
+      "website": "https://www.moreno.senate.gov"
+    },
+    {
+      "last": "Murkowski",
+      "first": "Lisa",
+      "party": "R",
+      "state": "AK",
+      "bioguide": "M001153",
+      "klass": "Class III",
+      "website": "https://www.murkowski.senate.gov/"
+    },
+    {
+      "last": "Murphy",
+      "first": "Christopher",
+      "party": "D",
+      "state": "CT",
+      "bioguide": "M001169",
+      "klass": "Class I",
+      "website": "https://www.murphy.senate.gov/"
+    },
+    {
+      "last": "Murray",
+      "first": "Patty",
+      "party": "D",
+      "state": "WA",
+      "bioguide": "M001111",
+      "klass": "Class III",
+      "website": "https://www.murray.senate.gov/"
+    },
+    {
+      "last": "Ossoff",
+      "first": "Jon",
+      "party": "D",
+      "state": "GA",
+      "bioguide": "O000174",
+      "klass": "Class II",
+      "website": "https://www.ossoff.senate.gov"
+    },
+    {
+      "last": "Padilla",
+      "first": "Alex",
+      "party": "D",
+      "state": "CA",
+      "bioguide": "P000145",
+      "klass": "Class III",
+      "website": "https://www.padilla.senate.gov"
+    },
+    {
+      "last": "Paul",
+      "first": "Rand",
+      "party": "R",
+      "state": "KY",
+      "bioguide": "P000603",
+      "klass": "Class III",
+      "website": "https://www.paul.senate.gov"
+    },
+    {
+      "last": "Peters",
+      "first": "Gary C.",
+      "party": "D",
+      "state": "MI",
+      "bioguide": "P000595",
+      "klass": "Class II",
+      "website": "https://www.peters.senate.gov"
+    },
+    {
+      "last": "Reed",
+      "first": "Jack",
+      "party": "D",
+      "state": "RI",
+      "bioguide": "R000122",
+      "klass": "Class II",
+      "website": "https://www.reed.senate.gov/"
+    },
+    {
+      "last": "Ricketts",
+      "first": "Pete",
+      "party": "R",
+      "state": "NE",
+      "bioguide": "R000618",
+      "klass": "Class II",
+      "website": "https://www.ricketts.senate.gov"
+    },
+    {
+      "last": "Risch",
+      "first": "James E.",
+      "party": "R",
+      "state": "ID",
+      "bioguide": "R000584",
+      "klass": "Class II",
+      "website": "https://www.risch.senate.gov"
+    },
+    {
+      "last": "Rosen",
+      "first": "Jacky",
+      "party": "D",
+      "state": "NV",
+      "bioguide": "R000608",
+      "klass": "Class I",
+      "website": "https://www.rosen.senate.gov"
+    },
+    {
+      "last": "Rounds",
+      "first": "Mike",
+      "party": "R",
+      "state": "SD",
+      "bioguide": "R000605",
+      "klass": "Class II",
+      "website": "https://www.rounds.senate.gov"
+    },
+    {
+      "last": "Sanders",
+      "first": "Bernard",
+      "party": "I",
+      "state": "VT",
+      "bioguide": "S000033",
+      "klass": "Class I",
+      "website": "https://www.sanders.senate.gov/"
+    },
+    {
+      "last": "Schatz",
+      "first": "Brian",
+      "party": "D",
+      "state": "HI",
+      "bioguide": "S001194",
+      "klass": "Class III",
+      "website": "https://www.schatz.senate.gov"
+    },
+    {
+      "last": "Schiff",
+      "first": "Adam B.",
+      "party": "D",
+      "state": "CA",
+      "bioguide": "S001150",
+      "klass": "Class I",
+      "website": "https://www.schiff.senate.gov"
+    },
+    {
+      "last": "Schmitt",
+      "first": "Eric",
+      "party": "R",
+      "state": "MO",
+      "bioguide": "S001227",
+      "klass": "Class III",
+      "website": "https://www.schmitt.senate.gov/"
+    },
+    {
+      "last": "Schumer",
+      "first": "Charles E.",
+      "party": "D",
+      "state": "NY",
+      "bioguide": "S000148",
+      "klass": "Class III",
+      "website": "https://www.schumer.senate.gov/"
+    },
+    {
+      "last": "Scott",
+      "first": "Rick",
+      "party": "R",
+      "state": "FL",
+      "bioguide": "S001217",
+      "klass": "Class I",
+      "website": "https://www.rickscott.senate.gov/"
+    },
+    {
+      "last": "Scott",
+      "first": "Tim",
+      "party": "R",
+      "state": "SC",
+      "bioguide": "S001184",
+      "klass": "Class III",
+      "website": "https://www.scott.senate.gov/"
+    },
+    {
+      "last": "Shaheen",
+      "first": "Jeanne",
+      "party": "D",
+      "state": "NH",
+      "bioguide": "S001181",
+      "klass": "Class II",
+      "website": "https://www.shaheen.senate.gov"
+    },
+    {
+      "last": "Sheehy",
+      "first": "Tim",
+      "party": "R",
+      "state": "MT",
+      "bioguide": "S001232",
+      "klass": "Class I",
+      "website": "https://www.sheehy.senate.gov/"
+    },
+    {
+      "last": "Slotkin",
+      "first": "Elissa",
+      "party": "D",
+      "state": "MI",
+      "bioguide": "S001208",
+      "klass": "Class I",
+      "website": "https://www.slotkin.senate.gov/"
+    },
+    {
+      "last": "Smith",
+      "first": "Tina",
+      "party": "D",
+      "state": "MN",
+      "bioguide": "S001203",
+      "klass": "Class II",
+      "website": "https://www.smith.senate.gov"
+    },
+    {
+      "last": "Sullivan",
+      "first": "Dan",
+      "party": "R",
+      "state": "AK",
+      "bioguide": "S001198",
+      "klass": "Class II",
+      "website": "https://www.sullivan.senate.gov"
+    },
+    {
+      "last": "Thune",
+      "first": "John",
+      "party": "R",
+      "state": "SD",
+      "bioguide": "T000250",
+      "klass": "Class III",
+      "website": "https://www.thune.senate.gov/"
+    },
+    {
+      "last": "Tillis",
+      "first": "Thom",
+      "party": "R",
+      "state": "NC",
+      "bioguide": "T000476",
+      "klass": "Class II",
+      "website": "https://www.tillis.senate.gov"
+    },
+    {
+      "last": "Tuberville",
+      "first": "Tommy",
+      "party": "R",
+      "state": "AL",
+      "bioguide": "T000278",
+      "klass": "Class II",
+      "website": "https://www.tuberville.senate.gov"
+    },
+    {
+      "last": "Van Hollen",
+      "first": "Chris",
+      "party": "D",
+      "state": "MD",
+      "bioguide": "V000128",
+      "klass": "Class III",
+      "website": "https://www.vanhollen.senate.gov"
+    },
+    {
+      "last": "Warner",
+      "first": "Mark R.",
+      "party": "D",
+      "state": "VA",
+      "bioguide": "W000805",
+      "klass": "Class II",
+      "website": "https://www.warner.senate.gov"
+    },
+    {
+      "last": "Warnock",
+      "first": "Raphael G.",
+      "party": "D",
+      "state": "GA",
+      "bioguide": "W000790",
+      "klass": "Class III",
+      "website": "https://www.warnock.senate.gov"
+    },
+    {
+      "last": "Warren",
+      "first": "Elizabeth",
+      "party": "D",
+      "state": "MA",
+      "bioguide": "W000817",
+      "klass": "Class I",
+      "website": "https://www.warren.senate.gov"
+    },
+    {
+      "last": "Welch",
+      "first": "Peter",
+      "party": "D",
+      "state": "VT",
+      "bioguide": "W000800",
+      "klass": "Class III",
+      "website": "https://www.welch.senate.gov/"
+    },
+    {
+      "last": "Whitehouse",
+      "first": "Sheldon",
+      "party": "D",
+      "state": "RI",
+      "bioguide": "W000802",
+      "klass": "Class I",
+      "website": "https://www.whitehouse.senate.gov/"
+    },
+    {
+      "last": "Wicker",
+      "first": "Roger F.",
+      "party": "R",
+      "state": "MS",
+      "bioguide": "W000437",
+      "klass": "Class I",
+      "website": "https://www.wicker.senate.gov"
+    },
+    {
+      "last": "Wyden",
+      "first": "Ron",
+      "party": "D",
+      "state": "OR",
+      "bioguide": "W000779",
+      "klass": "Class III",
+      "website": "https://www.wyden.senate.gov/"
+    },
+    {
+      "last": "Young",
+      "first": "Todd",
+      "party": "R",
+      "state": "IN",
+      "bioguide": "Y000064",
+      "klass": "Class III",
+      "website": "https://www.young.senate.gov"
+    }
+  ],
+  "sample": [
+    "<member>\n        <member_full>Alsobrooks (D-MD)</member_full>\n        <last_name>Alsobrooks</last_name> \n        <first_name>Angela D.</first_name> \n        <party>D</party>\n        <state>MD</state>\n        <address>374 Russell Senate Office Building Washington DC 20510</address> \n        <phone>(202) 224-4524</phone>\n        <email>https://alsobrooks.senate.gov/</email>\n        <website>https://alsobrooks.senate.gov/</website>\n        <class>Class I</class>\n        <bioguide_id>A000382</bioguide_id>\n    </member>",
+    "<member>\n        <member_full>King (I-ME)</member_full>\n        <last_name>King</last_name>\n        <first_name>Angus S., Jr.</first_name>\n        <party>I</party>\n        <state>ME</state>\n        <address>133 Hart Senate Office Building Washington DC 20510</address>\n        <phone>(202) 224-5344</phone>\n        <email>https://www.king.senate.gov/contact</email>\n        <website>https://www.king.senate.gov/</website>\n        <class>Class I</class>\n        <bioguide_id>K000383</bioguide_id>\n    </member>",
+    "<member>\n        <member_full>Sanders (I-VT)</member_full>\n        <last_name>Sanders</last_name>\n        <first_name>Bernard</first_name>\n        <party>I</party>\n        <state>VT</state>\n        <address>332 Dirksen Senate Office Building Washington DC 20510</address>\n        <phone>(202) 224-5141</phone>\n        <email>https://www.sanders.senate.gov/contact/</email>\n        <website>https://www.sanders.senate.gov/</website>\n        <class>Class I</class>\n        <bioguide_id>S000033</bioguide_id>\n    </member>"
+  ],
+  "entries": 100
+}
