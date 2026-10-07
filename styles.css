@@ -12187,3 +12187,6 @@ a.source-link.has-manifest::after {
 .source-pop-json .j-str { color: var(--accent-green); }
 .source-pop-json .j-num, .source-pop-json .j-lit { color: var(--accent-amber); }
 .source-pop-json .j-p, .source-pop-json .j-note { color: var(--text-muted); }
+
+/* A whole response is long: the block scrolls, and is taller than the 260px of a short excerpt. */
+.source-pop-json { max-height: min(60vh, 520px); }

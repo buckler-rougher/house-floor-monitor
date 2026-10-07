@@ -2890,7 +2890,7 @@ async function handleSenateProceedings(env) {
   // Five minutes, not the hour most of this board uses. The page is rewritten
   // as the day goes on, so this is the one Senate source where a short window
   // buys something: it is how the board shows a sitting day moving.
-  return kvCache(env, 'senate-proceedings-v3', 300, async () => {
+  return kvCache(env, 'senate-proceedings-v4', 300, async () => {
     const r = await fetch('https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
         signal: AbortSignal.timeout(20_000) });
@@ -2900,18 +2900,12 @@ async function handleSenateProceedings(env) {
     const out = parseSenateProceedings(text);
     // The page itself, for the Recent Floor Activity link's popover: its opening, up to the fourth heading, verbatim (the
     // style block aside), and how much of it that leaves out.
+    // The page itself, from its date heading (its head and navigation are not data) to the end of the main region.
     const region = senateProceedingsRegion(text).replace(/<style[\s\S]*?<\/style>/gi, '');
-    const heads = [...region.matchAll(/<h2 class="headings"/gi)];
-    // From the date heading (the page's head and navigation are not data), to the fourth heading at most and no more than
-    // about 2,000 characters (a day's morning business can run to thousands), cut back to the end of a tag so none is left open.
-    const start = heads[0] ? heads[0].index : 0;
-    let cut = Math.min(heads[4] ? heads[4].index : region.length, start + 2000);
-    const lastTag = region.lastIndexOf('>', cut);
-    if (lastTag > start && cut < region.length) cut = lastTag + 1;
+    const start = Math.max(0, region.search(/<h2 class="headings"/i));
     out.source = {
       url: 'https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm',
-      html: region.slice(start, cut).trim(),
-      omitted: Math.max(0, region.length - cut),
+      html: region.slice(start).trim(),
     };
     return new Response(JSON.stringify(out), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
@@ -3409,7 +3403,7 @@ async function handleSenateCalendar(env) {
 async function handleSenateAbsences(env) {
   const congress = CURRENT_CONGRESS;
   const session = senateSession();
-  return kvCache(env, `senate-absences-${congress}-${session}-v2`, 600, async () => {
+  return kvCache(env, `senate-absences-${congress}-${session}-v3`, 600, async () => {
     const UA = BOT_HEADERS;
     const get = (url, label) => fetchSource(url, label, { xml: true });
     const pick = xmlPlain;
@@ -3475,13 +3469,13 @@ async function handleSenateAbsences(env) {
       date: pick(first[1], 'vote_date'), voteDate: pick(detail, 'vote_date'),
       result: pick(first[1], 'result'),
       tally, absent,
-      // The vote file itself, for the Missing Senators link's popover: its url, everything in it except the member list,
-      // and the <member> entries marked Not Voting, verbatim.
+      // The vote file itself, for the Missing Senators link's popover: its url, everything in it except the member list, and
+      // every <member> entry verbatim.
       source: {
         url: `https://www.senate.gov/legislative/LIS/roll_call_votes/vote${congress}${session}/vote_${congress}_${session}_${padded}.xml`,
         head: detail.replace(/<members>[\s\S]*<\/members>/, '<members/>'),
         entries: members.length,
-        notVoting: [...detail.matchAll(/<member>[\s\S]*?<\/member>/g)].map((m) => m[0]).filter((raw) => /<vote_cast>\s*Not Voting\s*<\/vote_cast>/i.test(raw)),
+        members: [...detail.matchAll(/<member>[\s\S]*?<\/member>/g)].map((m) => m[0]),
       },
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
@@ -3556,7 +3550,7 @@ async function handleSenateSchedule(env) {
 }
 
 async function handleSenateRoster(env) {
-  return kvCache(env, 'senate-roster-v2', 3600, async () => {
+  return kvCache(env, 'senate-roster-v3', 3600, async () => {
     const r = await fetch('https://www.senate.gov/general/contact_information/senators_cfm.xml', {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
       signal: AbortSignal.timeout(20_000),
@@ -3596,10 +3590,9 @@ async function handleSenateRoster(env) {
     // this changes when a seat changes, not every time the cache expires.
     const lastUpdated = (xml.match(/<last_updated>([^<]+)<\/last_updated>/) || [])[1] || null;
 
-    // A few of the roster's own <member> entries, verbatim, for the Balance of Power link's popover: the first, and each
-    // senator who is neither a Democrat nor a Republican (they are why control is not just the larger count).
+    // The roster's own <member> entries, verbatim, for the Balance of Power link's popover.
     const rawMembers = [...xml.matchAll(/<member>[\s\S]*?<\/member>/g)].map((m) => m[0]);
-    const sample = rawMembers.filter((raw, i) => i === 0 || !/<party>\s*[DR]\s*<\/party>/.test(raw)).slice(0, 4);
+    const sample = rawMembers;
 
     return new Response(JSON.stringify({
       seats: SEATS, counts, vacancies, needed, control, lastUpdated, sample, entries: rawMembers.length,
