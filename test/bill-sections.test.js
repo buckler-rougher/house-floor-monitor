@@ -29,6 +29,14 @@ ok('a section with nothing in it is the empty string', () => {
   assert.strictEqual(B.action({ textHtml: '' }), '');
 });
 
+ok('the source line: empty without a link, a new-tab link to Congress.gov with one, escaped', () => {
+  assert.strictEqual(B.source(''), '');
+  assert.strictEqual(B.source(null), '');
+  const html = B.source('https://www.congress.gov/bill/119th-congress/house-bill/1?a="b"');
+  assert.ok(html.startsWith('<div class="bill-modal-source">Source: <a href="https://www.congress.gov/bill/'));
+  assert.ok(html.includes('target="_blank"') && html.includes('&quot;') && !html.includes('"b"'));
+});
+
 ok('the sponsor card: name, party, place, photo; an unknown party is an independent', () => {
   const html = B.sponsor({ name: 'John Thune', party: 'R', loc: 'SD', photoUrl: 'https://x/p.jpg', placeholder: '<svg/>' });
   assert.ok(html.includes('absentee-party-tag republican">R<'));

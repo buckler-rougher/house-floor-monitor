@@ -931,6 +931,7 @@ function billModalContent(b) {
                         reportHelp: (InfoPopup.has('committee-report') || new URLSearchParams(location.search).has('fixtures')) ? 'committee-report' : null,
                         congress: b.congressUrl,
                     })}
+                    ${BillSections.source(b.congressUrl)}
                 </div>
             </div>
         </div>`;
@@ -1034,6 +1035,7 @@ async function openSenateBillModal(billId, trigger) {
             : billModalContent(entry.bill);
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
         BillSections.wireCopyLink(overlay);
+        if (!entry.error) BillSections.wireSource(overlay, entry.bill.id || billId, API);
     };
     if (hit) paint(hit);
     else {
@@ -1836,6 +1838,7 @@ SenateQuorum.init({ photoUrlFor });
         summary: b.summary,
         linkClass: 'senate',
         links: { text: b.govinfoPdf, report: b.committeeReportUrl, memo: b.sapUrl, congress: b.congressUrl },
+        sourceApi: API,
       });
       if (src && b.congressUrl) src.href = b.congressUrl;
     });
