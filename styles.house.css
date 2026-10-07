@@ -9722,8 +9722,14 @@ h1.brand-text {
 
     .amendments-table th:nth-child(4),
     .amendments-table td:nth-child(4) {
-        width: 80px;
-        min-width: 80px;
+        width: 96px;
+        min-width: 96px;
+    }
+
+    .amdt-status-badge {
+        display: inline-block;
+        white-space: normal;
+        line-height: 1.35;
     }
 
     .conn-dashboard {
