@@ -514,7 +514,7 @@
     margin: 0;
     background: transparent;
 }
-  .one-minute-section, .special-order-section, .morning-hour-section, .prayer-section, .silence-section, .oath-section, .speaker-section, .committee-chair-section, .pledge-section, .message-section, .joint-meeting-section, .journal-section, .joint-session-section, .cert-election-section, .cert-electoral-section, .sine-die-section, .new-session-section, .admin-oath-section, .privilege-section, .tellers-section {
+  .morning-hour-section, .prayer-section, .speaker-section, .pledge-section {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-12);
@@ -4704,21 +4704,11 @@ font-family: var(--font-mono);
     color: var(--text-secondary);
     margin: 0;
 }
-  .one-minute-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
   .one-minute-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
-}
-  .special-order-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
 }
   .special-order-tag-time {
     font-size: var(--fs-sm);
@@ -4809,14 +4799,6 @@ font-family: var(--font-mono);
   body.prayer-mode .prayer-section {
     display: block;
 }
-  .silence-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
-  .oath-section {
-
-}
   .speaker-section {
     display: none;
     padding: var(--sp-24) 0 0;
@@ -4824,11 +4806,6 @@ font-family: var(--font-mono);
 }
   body.speaker-mode .speaker-section {
     display: block;
-}
-  .committee-chair-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
 }
   .committee-chair-tag-time {
     font-size: var(--fs-sm);
@@ -5275,21 +5252,11 @@ font-family: var(--font-mono);
     color: var(--text-muted);
     margin: 0;
 }
-  .message-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
-}
   .message-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
-}
-  .joint-meeting-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
 }
   .joint-meeting-tag-time {
     font-size: var(--fs-sm);
@@ -5297,33 +5264,23 @@ font-family: var(--font-mono);
     opacity: 0.9;
     font-weight: 400;
 }
-  .journal-section {
-
-}
   .journal-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
 }
-  .privilege-section { display: none; }
   .privilege-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
 }
-  .tellers-section { display: none; }
   .tellers-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
-}
-  .joint-session-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
 }
   .joint-session-tag-time {
     font-size: var(--fs-sm);
@@ -5331,17 +5288,11 @@ font-family: var(--font-mono);
     opacity: 0.9;
     font-weight: 400;
 }
-  .cert-election-section {
-
-}
   .cert-election-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
-}
-  .cert-electoral-section {
-
 }
   .cert-electoral-tag-time {
     font-size: var(--fs-sm);
@@ -5349,28 +5300,17 @@ font-family: var(--font-mono);
     opacity: 0.9;
     font-weight: 400;
 }
-  .sine-die-section {
-
-}
   .sine-die-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
 }
-  .new-session-section {
-
-}
   .new-session-tag-time {
     font-size: var(--fs-sm);
     margin-left: var(--sp-8);
     opacity: 0.9;
     font-weight: 400;
-}
-  .admin-oath-section {
-    display: none;
-    padding: var(--sp-24) 0 0;
-    margin-bottom: var(--sp-24);
 }
   .admin-oath-tag-time {
     font-size: var(--fs-sm);
@@ -5943,7 +5883,7 @@ font-family: var(--font-mono);
     margin: 0;
     background: transparent;
 }
-.one-minute-section, .special-order-section, .morning-hour-section, .prayer-section, .silence-section, .oath-section, .speaker-section, .committee-chair-section, .pledge-section, .message-section, .joint-meeting-section, .journal-section, .joint-session-section, .cert-election-section, .cert-electoral-section, .sine-die-section, .new-session-section, .admin-oath-section, .privilege-section, .tellers-section {
+.morning-hour-section, .prayer-section, .speaker-section, .pledge-section {
     padding: 0;
 }
 .morning-hour-section-header, .prayer-section-header, .speaker-section-header, .pledge-section-header {
@@ -5965,9 +5905,6 @@ font-family: var(--font-mono);
 }
 .cal-day-today {
     border-color: rgba(88, 166, 255, 0.35);
-}
-.tellers-section {
-    padding: 0;
 }
 .stage-grid {
     display: flex;
@@ -6642,18 +6579,21 @@ html.ai-off .bill-link-group > .bill-modal-link {
 a.source-link::after {
     content: "";
     display: inline-block;
-    width: 0.75em;
-    height: 0.75em;
-    margin-left: 0.25em;
-    vertical-align: -0.05em;
+    width: 0.8em;
+    height: 0.8em;
+    margin-left: 0.28em;
+    vertical-align: -0.06em;
     background: currentColor;
-    opacity: 0.65;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 2.5h6v6M9.5 2.5l-7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.5 2.5h6v6M9.5 2.5l-7 7' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    -webkit-mask: var(--source-icon-out) center / contain no-repeat;
+    mask: var(--source-icon-out) center / contain no-repeat;
+}
+:root {
+    --source-icon-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.2 2.6h6.2v6.2M9.4 2.6L2.6 9.4' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
+    --source-icon-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 4.4L6 8l3.6-3.6' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
 }
 a.source-link.has-manifest::after {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5l3.5 3.5 3.5-3.5' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5l3.5 3.5 3.5-3.5' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    -webkit-mask-image: var(--source-icon-more);
+    mask-image: var(--source-icon-more);
 }
 .source-pop {
     position: fixed;
