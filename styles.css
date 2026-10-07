@@ -10401,8 +10401,15 @@ h1.brand-text {
     /* Collapse the wide STATUS column on mobile to save space */
     .amendments-table th:nth-child(4),
     .amendments-table td:nth-child(4) {
-        width: 80px;
-        min-width: 80px;
+        width: 96px;
+        min-width: 96px;
+    }
+    /* A badge such as MADE IN ORDER is wider than the column here; it wraps instead of running under the PDF
+       button, and the header's (?) fits beside STATUS. */
+    .amdt-status-badge {
+        display: inline-block;
+        white-space: normal;
+        line-height: 1.35;
     }
 
     /* ── Connection dashboard: cap height so it doesn't go off-screen ────────  */
