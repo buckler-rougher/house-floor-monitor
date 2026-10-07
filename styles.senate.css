@@ -6528,3 +6528,8 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     border: 1px solid var(--border-color);
 }
 .info-popup-caption em { font-style: normal; font-weight: 500; }
+.ai-block :is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .joint-meeting-pill, .joint-session-pill, .privilege-pill) {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+}
