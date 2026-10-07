@@ -1604,6 +1604,44 @@ async function handleCasualtyList(env) {
 //   full (no quick, no date): 60s — enrichment runs at most once/min
 //   quick=1: 30s — fresh enough for live vote-status badges
 //   date=*: no cache — historical one-offs
+// The House Docs feed's own entry for the week the Bills This Week panel shows, verbatim, for the panel's source link
+// (the popover asks for it only when opened: the feed is 38 MB and goes back to 2020, so it is not sent with the bills).
+// The entry is chosen as _fetchBills chooses it: the most recently updated one for the week of the date asked for, else for
+// the week before.
+async function handleBillsSource(request, env) {
+  const dateParam = new URL(request.url).searchParams.get('date') || '';
+  return kvCache(env, `bills-source-v1-${dateParam || 'now'}`, 600, async () => {
+    try {
+      const xml = await fetchRSSFeed(RSS_FEEDS.bills, 20000);
+      const entries = xml.match(/<entry[^>]*>[\s\S]*?<\/entry>/g) || [];
+      const parts = dateParam.match(/(\d+)\/(\d+)\/(\d+)/);
+      const reference = parts ? new Date(Date.UTC(Number(parts[3]), Number(parts[1]) - 1, Number(parts[2]))) : new Date();
+      const thisWeek = getWeekRangeForDate(reference).start.getTime();
+      const priorWeek = thisWeek - 7 * 86400000;
+      const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+      const weekOf = (title, updated) => {
+        const m = title.match(/week of\s+([A-Za-z]+)\s+(\d+),?\s*(\d{4})/i);
+        const mon = m ? MONTHS[m[1].toLowerCase().slice(0, 3)] : undefined;
+        const d = mon !== undefined ? new Date(Date.UTC(Number(m[3]), mon, Number(m[2]))) : new Date(updated);
+        return getWeekRangeForDate(d).start.getTime();
+      };
+      const pick = (week) => entries
+        .map((e) => ({ e, title: (e.match(/<title[^>]*>([^<]*)<\/title>/) || [])[1] || '', updated: (e.match(/<updated[^>]*>([^<]*)<\/updated>/) || [])[1] || '' }))
+        .filter((x) => x.updated && !Number.isNaN(new Date(x.updated).getTime()) && x.e.includes('floorItems') && weekOf(x.title, x.updated) === week)
+        .sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
+      const chosen = pick(thisWeek) || pick(priorWeek);
+      if (!chosen) throw new Error('no entry for this week');
+      return new Response(JSON.stringify({ url: RSS_FEEDS.bills, entries: entries.length, entry: chosen.e }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+  });
+}
+
 async function handleBills(request, env) {
   const url = new URL(request.url);
   const quick = url.searchParams.has('quick');
@@ -5660,6 +5698,8 @@ async function handleRequest(request, env) {
     return await handleProceedings(request, env);
   } else if (path === '/api/bills' && request.method === 'GET') {
     return await handleBills(request, env);
+  } else if (path === '/api/bills-source' && request.method === 'GET') {
+    return await handleBillsSource(request, env);
   } else if (path === '/api/voting-days' && request.method === 'GET') {
     return await handleVotingDays(env);
   } else if (path === '/api/airport-delays' && request.method === 'GET') {

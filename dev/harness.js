@@ -174,6 +174,7 @@
     '/api/bluesky':                     'bluesky.json',
     '/api/tweets':                      'tweets.json',
     '/api/hls-url':                     'hls-url.json',
+    '/api/bills-source':                'bills-source.json',
     '/api/bills':                       'bills.json',
     '/api/news':                        'news.json',
     'api.weather.gov/points':           'weather-points.json',
