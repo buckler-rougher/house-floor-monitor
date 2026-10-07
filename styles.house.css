@@ -11175,6 +11175,10 @@ a.source-link.has-manifest::after {
     font-weight: 400;
 }
 .source-pop[hidden] { display: none; }
+
+.source-pop { display: flex; flex-direction: column; max-height: calc(100vh - 24px); }
+.source-pop-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.source-pop-link { flex: none; align-self: flex-start; }
 .source-pop-title {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
