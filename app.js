@@ -8095,6 +8095,8 @@ async function fetchHouseMakeup(preData = null) {
             return dateA - dateB; // Oldest first
         });
         
+        setBalanceManifest(xmlDoc, { R: repCount, D: demCount, I: indCount });
+
         houseMakeup = {
             republicans: repCount,
             democrats: demCount,
@@ -8117,6 +8119,50 @@ async function fetchHouseMakeup(preData = null) {
             updatePartyBreakdownDisplay();
         }
     }
+}
+
+// The Clerk's roster as the Balance of Power link's popover shows it (lib/source-pop.js): the roster's date, its title-info,
+// the entry for each vacant seat as the Clerk wrote it, and one Member as an example of what the party counts are read from.
+// The roster has 441 entries and over half a megabyte of committee assignments, so it is an excerpt, and says how it was cut.
+function setBalanceManifest(xmlDoc, counts) {
+    if (!globalThis.SourcePop || !xmlDoc) return;
+    const panel = document.getElementById('party-breakdown');
+    if (!panel) return;
+    const X = SourcePop.xml;
+    const root = xmlDoc.querySelector('MemberData');
+    if (!root) return;
+    const lines = ['<MemberData' + X.attrs(root) + '>'];
+    const title = root.querySelector('title-info');
+    if (title) X.emit(title, 1, lines);
+    const all = [...xmlDoc.querySelectorAll('members > member')];
+    lines.push('  <members>');
+    lines.push(X.note(2, all.length + ' <member> entries. The panel counts R ' + counts.R + ', D ' + counts.D + ', I ' + counts.I +
+        ' by each voting Member\'s <party>. Shown: one Member, then each vacant seat.'));
+    const sample = all.find((m) => m.querySelector('namelist')?.textContent.trim());
+    if (sample) {
+        lines.push('    <member>');
+        for (const tag of ['statedistrict']) { const e = sample.querySelector(tag); if (e) X.emit(e, 3, lines); }
+        lines.push('      <member-info>');
+        for (const tag of ['namelist', 'party', 'caucus']) { const e = sample.querySelector('member-info > ' + tag); if (e) X.emit(e, 4, lines); }
+        lines.push(X.note(4, 'more fields: name parts, office, phone, elected-date, sworn-date'));
+        lines.push('      </member-info>');
+        lines.push(X.note(3, 'committee-assignments omitted'));
+        lines.push('    </member>');
+    }
+    for (const m of all) {
+        if (m.querySelector('namelist')?.textContent.trim() || !m.querySelector('predecessor-info')) continue;
+        lines.push('    <member>');
+        const sd = m.querySelector('statedistrict'); if (sd) X.emit(sd, 3, lines);
+        lines.push('      <member-info/>');
+        X.emit(m.querySelector('predecessor-info'), 3, lines);
+        lines.push('    </member>');
+    }
+    lines.push('  </members>', '</MemberData>');
+    SourcePop.set(panel, {
+        title: 'The Clerk\'s roster',
+        request: 'GET https://clerk.house.gov/xml/lists/MemberData.xml',
+        xml: lines.join('\n')
+    });
 }
 
 // The panel itself is lib/party-balance.js, shared with the Senate board. What is here is only what
