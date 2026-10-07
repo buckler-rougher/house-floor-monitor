@@ -5911,7 +5911,9 @@ function setBillsManifest() {
             if (!r.ok || d.error || !d.entry) throw new Error(d.error || ('HTTP ' + r.status));
             const body = new DOMParser().parseFromString(d.entry, 'text/xml').querySelector('content');
             const raw = d.entry.replace(/(<content[^>]*>)[\s\S]*?(<\/content>)/, (m, open, close) => open + (body ? body.textContent : '') + close);
-            return { html: '<!-- the feed holds ' + Number(d.entries).toLocaleString('en-US') + ' entries, back to 2020; this is the one for the week shown -->' + raw };
+            // The feed's XSLT leaves an xmlns:dt declaration on every element; it says nothing about the bills, so it is left out.
+            const tidy = raw.replace(/\sxmlns(?::\w+)?="[^"]*"/g, (m) => (/xsltsl\.org\/date-time/.test(m) ? '' : m));
+            return { html: '<!-- the feed holds ' + Number(d.entries).toLocaleString('en-US') + ' entries, back to 2020; this is the one for the week shown. The xmlns:dt declarations are left out. -->' + tidy };
         }
     });
 }
