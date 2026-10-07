@@ -1159,6 +1159,7 @@ function applyFloorData(data) {
         updateFloorDisplay('error');
         return;
     }
+    setDomeWatchManifest(data);
 
     // Detect vote → non-vote transition BEFORE overwriting floorData,
     // so reconcileVoteWithBills can still read the last roll call + counts.
@@ -5955,6 +5956,24 @@ function setVotingDaysManifest() {
             return { ics: lines.join('\n') };
         }
     });
+}
+
+// The DomeWatch response behind the vote panel's links (Happening Now, Threshold Analysis, Quorum Call; lib/source-pop.js): the latest
+// /floor response the board received, whole. The Worker passes it on unchanged, whether it came by the live stream or the
+// fallback poll. The board's API key goes with the request and is not shown.
+function setDomeWatchManifest(data) {
+    if (!globalThis.SourcePop || !data || data.error) return;
+    const manifest = {
+        title: 'DomeWatch\'s floor data',
+        parts: [{
+            request: 'GET https://data.domewatch.us/v1/floor',
+            note: 'The latest response the board received, as sent. The request carries the board\'s API key.',
+            json: data,
+        }],
+    };
+    for (const el of [document.querySelector('.vote-display'), document.getElementById('threshold'), document.getElementById('quorum')]) {
+        if (el) SourcePop.set(el, manifest);
+    }
 }
 
 // The House Docs entry behind the Bills This Week link's popover (lib/source-pop.js): the feed's own entry for the week the
