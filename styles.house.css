@@ -11139,8 +11139,8 @@ a.source-link::after {
 }
 
 :root {
-    --source-icon-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.2 2.6h6.2v6.2M9.4 2.6L2.6 9.4' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
-    --source-icon-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 4.4L6 8l3.6-3.6' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
+    --source-icon-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.2 3.6h6.2v6.2M9.4 3.6L2.6 10.4' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
+    --source-icon-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 3.6L6 7.2l3.6-3.6' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
 }
 a.source-link.has-manifest::after {
     -webkit-mask-image: var(--source-icon-more);
