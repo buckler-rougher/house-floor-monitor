@@ -11241,7 +11241,7 @@ a.source-link.has-manifest::after {
 .source-pop-json .j-num, .source-pop-json .j-lit { color: var(--accent-amber); }
 .source-pop-json .j-p, .source-pop-json .j-note { color: var(--text-muted); }
 
-.source-pop-json { max-height: min(520px, max(140px, calc(var(--pop-room, 70vh) - 170px))); }
+.source-pop-json { max-height: min(260px, max(120px, calc(var(--pop-room, 70vh) - 170px))); }
 
 .source-pop-note { font-size: var(--fs-sm); line-height: 1.5; color: var(--text-muted); margin-bottom: var(--sp-8); }
 .source-pop-json + .source-pop-request { margin-top: var(--sp-12); }
