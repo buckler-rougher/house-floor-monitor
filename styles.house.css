@@ -11253,16 +11253,30 @@ a.source-link.has-manifest::after {
     white-space: nowrap;
 }
 
-.source-dot {
+a[data-source-state]::before {
+    content: "";
     display: inline-block;
     width: 0.62em;
     height: 0.62em;
-    margin-left: 0.5em;
+    margin-right: 0.5em;
     vertical-align: 0.02em;
     background: var(--accent-green);
     opacity: 0.8;
-    cursor: help;
+    border-radius: 50%;
 }
-.source-dot[data-state="ok"] { border-radius: 50%; }
-.source-dot[data-state="warn"] { background: var(--accent-amber); opacity: 1; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.source-dot[data-state="fail"] { background: var(--accent-red); opacity: 1; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
+a[data-source-state="warn"]::before { background: var(--accent-amber); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+a[data-source-state="fail"]::before { background: var(--accent-red); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
+
+.source-group a[data-source-state]::before { margin-left: -1.12em; }
+
+.source-status-words {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
