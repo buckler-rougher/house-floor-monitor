@@ -1,0 +1,61 @@
+{
+ "at": "PLACEHOLDER_NOW",
+ "sources": {
+  "clerk-feed": {
+   "state": "ok",
+   "ms": 300
+  },
+  "clerk-votes": {
+   "state": "ok",
+   "ms": 300
+  },
+  "clerk-members": {
+   "state": "ok",
+   "ms": 300
+  },
+  "house-docs": {
+   "state": "ok",
+   "ms": 300
+  },
+  "voting-days": {
+   "state": "ok",
+   "ms": 300
+  },
+  "domewatch": {
+   "state": "ok",
+   "ms": 300
+  },
+  "faa": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-votes": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-schedule": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-nominations": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-floor-activity": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-roster": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-democrats": {
+   "state": "ok",
+   "ms": 300
+  },
+  "capcam": {
+   "state": "ok",
+   "ms": 300
+  }
+ }
+}

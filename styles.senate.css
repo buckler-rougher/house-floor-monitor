@@ -6695,3 +6695,16 @@ a.source-link.has-manifest::after {
     margin-right: var(--sp-8);
     white-space: nowrap;
 }
+.source-dot {
+    display: inline-block;
+    width: 0.62em;
+    height: 0.62em;
+    margin-left: 0.5em;
+    vertical-align: 0.02em;
+    background: var(--accent-green);
+    opacity: 0.8;
+    cursor: help;
+}
+.source-dot[data-state="ok"] { border-radius: 50%; }
+.source-dot[data-state="warn"] { background: var(--accent-amber); opacity: 1; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.source-dot[data-state="fail"] { background: var(--accent-red); opacity: 1; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
