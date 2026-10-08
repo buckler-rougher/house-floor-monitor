@@ -34,4 +34,16 @@ ok('links are matched by where they point', () => {
   assert.deepStrictEqual(idsFor('https://www.congress.gov/bill/119th-congress/house-bill/1'), [], 'no check on Congress.gov: its key is rate limited');
 });
 
+ok('in the footer\'s sources list, links with a status check come first in each group', () => {
+  for (const file of ['index.html', 'senate.html']) {
+    const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+    const groups = [...html.matchAll(/<div class="source-group">\s*<span class="source-category">([^<]*)<\/span>([\s\S]*?)<\/div>/g)];
+    assert.ok(groups.length >= 3, `${file}: could not find the source groups`);
+    for (const [, name, body] of groups) {
+      const flags = [...body.matchAll(/href="([^"]*)"/g)].map((m) => MAP.some(([re]) => re.test(m[1])));
+      assert.deepStrictEqual(flags, [...flags].sort((a, b) => b - a), `${file}, ${name}: a link with no status check comes before one that has it`);
+    }
+  }
+});
+
 console.log(n + ' passed');
