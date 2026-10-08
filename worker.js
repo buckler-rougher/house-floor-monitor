@@ -5996,7 +5996,10 @@ function sourceStatusChecks() {
 }
 
 async function handleSourceStatus(env) {
-  return kvCache(env, 'source-status-v1', 600, async () => {
+  // The key carries the number of checks, so adding one is not hidden behind the ten-minute cache of an answer that lacks it
+  // (it was, for the first ten minutes after the second set of sources went in).
+  const count = Object.keys(sourceStatusChecks()).length;
+  return kvCache(env, `source-status-v2-${count}`, 600, async () => {
     const checks = sourceStatusChecks();
     const sources = {};
     await Promise.all(Object.entries(checks).map(async ([id, [url, max, verdict]]) => {
