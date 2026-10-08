@@ -11267,7 +11267,7 @@ a.source-link.has-manifest .source-tail::after {
     background: var(--accent-green);
     border-radius: 50%;
 
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-green) 70%, transparent));
+    filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--accent-green) 45%, transparent));
 }
 
 [data-source-state="warn"]::before {
@@ -11279,7 +11279,7 @@ a.source-link.has-manifest .source-tail::after {
     border-left: 0.34em solid transparent;
     border-right: 0.34em solid transparent;
     border-bottom: 0.6em solid var(--accent-amber);
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-amber) 70%, transparent));
+    filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--accent-amber) 45%, transparent));
 }
 [data-source-state="fail"]::before {
     width: 0.5em;
@@ -11288,7 +11288,7 @@ a.source-link.has-manifest .source-tail::after {
     background: var(--accent-red);
     border-radius: 0;
     transform: rotate(45deg);
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-red) 70%, transparent));
+    filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--accent-red) 45%, transparent));
 }
 
 .source-group a[data-source-state]::before { margin-left: -1.12em; }
