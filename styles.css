@@ -12239,11 +12239,32 @@ a.source-link.has-manifest .source-tail::after {
     margin-right: 0.5em;
     vertical-align: 0.02em;
     background: var(--accent-green);
-    opacity: 0.8;
     border-radius: 50%;
+    /* the glow the live indicator at the top has; a drop-shadow, so it follows the triangle and the diamond too (clip-path would cut
+       a shadow off) */
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-green) 70%, transparent));
 }
-[data-source-state="warn"]::before { background: var(--accent-amber); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-[data-source-state="fail"]::before { background: var(--accent-red); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
+/* The three shapes always add up to 1.12em of width plus margin, so the hanging dot in the footer lines up whichever it is. */
+[data-source-state="warn"]::before {
+    width: 0;
+    height: 0;
+    margin-right: 0.44em;
+    background: none;
+    border-radius: 0;
+    border-left: 0.34em solid transparent;
+    border-right: 0.34em solid transparent;
+    border-bottom: 0.6em solid var(--accent-amber);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-amber) 70%, transparent));
+}
+[data-source-state="fail"]::before {
+    width: 0.5em;
+    height: 0.5em;
+    margin-right: 0.62em;
+    background: var(--accent-red);
+    border-radius: 0;
+    transform: rotate(45deg);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-red) 70%, transparent));
+}
 /* In the footer's list the dot hangs in the left margin, so the names line up whether or not a link has one. */
 .source-group a[data-source-state]::before { margin-left: -1.12em; }
 /* The words for a screen reader, not drawn. */
