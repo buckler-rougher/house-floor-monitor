@@ -11140,7 +11140,9 @@ html.ai-off .bill-link-group > .bill-modal-link {
     border-bottom-right-radius: var(--radius-6);
 }
 
-a.source-link::after {
+.source-tail { white-space: nowrap; }
+a.source-link:not(.has-tail)::after,
+a.source-link .source-tail::after {
     content: "";
     display: inline-block;
     width: 0.8em;
@@ -11156,7 +11158,8 @@ a.source-link::after {
     --source-icon-out: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3.2 3.6h6.2v6.2M9.4 3.6L2.6 10.4' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
     --source-icon-more: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.4 3.6L6 7.2l3.6-3.6' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='butt' stroke-linejoin='miter'/%3E%3C/svg%3E");
 }
-a.source-link.has-manifest::after {
+a.source-link.has-manifest:not(.has-tail)::after,
+a.source-link.has-manifest .source-tail::after {
     -webkit-mask-image: var(--source-icon-more);
     mask-image: var(--source-icon-more);
 }
@@ -11244,6 +11247,7 @@ a.source-link.has-manifest::after {
 .source-pop-json { max-height: min(260px, max(120px, calc(var(--pop-room, 70vh) - 170px))); }
 
 .source-pop-fetched { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: var(--sp-8); }
+.source-pop-status { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); margin-bottom: var(--sp-8); }
 .source-pop-note { font-size: var(--fs-sm); line-height: 1.5; color: var(--text-muted); margin-bottom: var(--sp-8); }
 .source-pop-json + .source-pop-request { margin-top: var(--sp-12); }
 
@@ -11253,7 +11257,7 @@ a.source-link.has-manifest::after {
     white-space: nowrap;
 }
 
-a[data-source-state]::before {
+[data-source-state]::before {
     content: "";
     display: inline-block;
     width: 0.62em;
@@ -11264,8 +11268,8 @@ a[data-source-state]::before {
     opacity: 0.8;
     border-radius: 50%;
 }
-a[data-source-state="warn"]::before { background: var(--accent-amber); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-a[data-source-state="fail"]::before { background: var(--accent-red); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
+[data-source-state="warn"]::before { background: var(--accent-amber); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+[data-source-state="fail"]::before { background: var(--accent-red); opacity: 1; border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 0.72em; height: 0.72em; }
 
 .source-group a[data-source-state]::before { margin-left: -1.12em; }
 

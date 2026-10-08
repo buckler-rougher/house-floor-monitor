@@ -56,6 +56,46 @@
   "capcam": {
    "state": "ok",
    "ms": 300
+  },
+  "nws": {
+   "state": "ok",
+   "ms": 300
+  },
+  "house-live": {
+   "state": "ok",
+   "ms": 300
+  },
+  "house-rules": {
+   "state": "ok",
+   "ms": 300
+  },
+  "house-voting-days": {
+   "state": "ok",
+   "ms": 300
+  },
+  "govinfo": {
+   "state": "ok",
+   "ms": 300
+  },
+  "press-gallery": {
+   "state": "ok",
+   "ms": 300
+  },
+  "wikipedia": {
+   "state": "ok",
+   "ms": 300
+  },
+  "wikimedia": {
+   "state": "ok",
+   "ms": 300
+  },
+  "airports": {
+   "state": "ok",
+   "ms": 300
+  },
+  "senate-floor": {
+   "state": "ok",
+   "ms": 300
   }
  }
 }
