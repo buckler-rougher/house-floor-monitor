@@ -5935,6 +5935,89 @@ function handleOptions() {
 // the HTTP status of a minimal API call so /api/health can distinguish
 // "secret not set" from "secret set but rejected (403)" from "API down" —
 // the three states that all surface identically as empty bill modals.
+// ── Source status ───────────────────────────────────────────────────────────
+//
+// /api/status: is each source the panels read from still answering, in the shape we read? lib/source-status.js draws a small
+// dot beside each panel's source link from this. It is the light version of dev/check-upstreams.mjs (which also parses each
+// page with the Worker's own parsers and runs daily in CI): one request per source, the first few KB of the answer checked for
+// its shape, run from here so it sees what the Worker sees (the FAA refuses every other client). Cached ten minutes, so the
+// sources are asked about a handful of times an hour however many people are looking. It does not touch Congress.gov: that
+// API is rate limited and the key is spent on bills.
+//
+// A state is 'ok', 'warn' (answered, but slow or only on the retry) or 'fail'. A 5xx or a dropped connection is retried once
+// before it counts, as in check-upstreams.mjs: these are other people's servers.
+
+// The first `max` bytes of an answer, so a 38 MB feed is checked without being read.
+async function probeSource(url, max = 4096) {
+  const r = await fetch(url, { headers: BOT_HEADERS, signal: AbortSignal.timeout(8000), redirect: 'follow' });
+  const reader = r.body && r.body.getReader();
+  const dec = new TextDecoder();
+  let text = '', n = 0;
+  while (reader && n < max) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    text += dec.decode(value, { stream: true });
+    n += value.length;
+  }
+  try { if (reader) await reader.cancel(); } catch { /* already closed */ }
+  return { status: r.status, type: r.headers.get('Content-Type') || '', text };
+}
+
+function sourceStatusChecks() {
+  const year = Number(new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).slice(0, 4));
+  const session = year % 2 ? 1 : 2;
+  const ok200 = (r, test, what) => r.status !== 200 ? `HTTP ${r.status}` : test(r) ? null : `not ${what}`;
+  return {
+    'clerk-feed': ['https://clerk.house.gov/Home/Feed', 4096, (r) => ok200(r, (x) => /<item[\s>]/.test(x.text), 'the proceedings feed')],
+    'clerk-votes': [globalThis.ClerkVotes.listUrl(year), 400_000, (r) => ok200(r, (x) => globalThis.ClerkVotes.parseRolls(x.text, year).length > 0, 'the roll call list')],
+    'clerk-members': ['https://clerk.house.gov/xml/lists/MemberData.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<MemberData'), 'MemberData')],
+    'house-docs': ['https://docs.house.gov/BillsThisWeek-RSS.xml', 4096, (r) => ok200(r, (x) => /<rss|<feed/.test(x.text), 'a feed')],
+    'voting-days': ['https://votingdays.house.gov/voting-days.ics', 4096, (r) => ok200(r, (x) => x.text.includes('BEGIN:VCALENDAR'), 'a calendar')],
+    'domewatch': ['https://data.domewatch.us/v1/whip-notices?limit=1', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
+    'faa': ['https://nasstatus.faa.gov/api/airport-status-information', 8192, (r) => ok200(r, (x) => x.text.includes('AIRPORT_STATUS_INFORMATION'), 'the FAA feed')],
+    'senate-votes': [`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${CURRENT_CONGRESS}_${session}.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<vote_summary'), 'a vote menu')],
+    'senate-schedule': ['https://www.senate.gov/legislative/schedule/floor_schedule.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<CongressSessionDayConvenings'), 'the session days file')],
+    'senate-nominations': [`${NOM_BASE}/NomCivilianPendingCalendar.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<Nominations'), 'a nominations file')],
+    'senate-floor-activity': ['https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm', 4096, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
+    'senate-roster': ['https://www.senate.gov/general/contact_information/senators_cfm.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<member>') || x.text.includes('<contact_information'), 'the roster')],
+    'senate-democrats': ['https://www.democrats.senate.gov/floor/senate-schedule', 4096, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
+    'capcam': ['https://www-senate-gov-media-srs.akamaized.net/hls/live/2036784/capcam/capcam/master.m3u8', 1024, (r) => ok200(r, (x) => x.text.startsWith('#EXTM3U'), 'a playlist')],
+  };
+}
+
+async function handleSourceStatus(env) {
+  return kvCache(env, 'source-status-v1', 600, async () => {
+    const checks = sourceStatusChecks();
+    const sources = {};
+    await Promise.all(Object.entries(checks).map(async ([id, [url, max, verdict]]) => {
+      const once = async () => {
+        const t0 = Date.now();
+        try {
+          const bad = verdict(await probeSource(url, max));
+          return { bad, ms: Date.now() - t0 };
+        } catch (e) {
+          return { bad: e.name === 'TimeoutError' ? 'timed out' : (e.message || 'unreachable'), ms: Date.now() - t0, transient: true };
+        }
+      };
+      let r = await once();
+      let retried = false;
+      if (r.bad && (r.transient || /^HTTP 5\d\d/.test(r.bad))) {
+        retried = true;
+        const again = await once();
+        r = again.bad ? { ...again, bad: `${r.bad}, and again on retry` } : { bad: null, ms: again.ms, recovered: r.bad };
+      }
+      sources[id] = r.bad ? { state: 'fail', detail: r.bad, ms: r.ms }
+        : r.recovered ? { state: 'warn', detail: `failed once (${r.recovered}), passed on retry`, ms: r.ms }
+        : r.ms > 5000 ? { state: 'warn', detail: `slow: ${(r.ms / 1000).toFixed(1)} s`, ms: r.ms }
+        : { state: 'ok', ms: r.ms };
+      if (retried) sources[id].retried = true;
+    }));
+    return new Response(JSON.stringify({ at: Date.now(), sources }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+    });
+  });
+}
+
 async function checkCongressApiHealth() {
   const currentCongress = CURRENT_CONGRESS;
   if (!_congressApiKey) {
@@ -6187,6 +6270,8 @@ async function handleRequest(request, env) {
       return new Response('Bad request', { status: 400, headers: CORS_HEADERS });
     }
     return await handleRollCall(rollNumber);
+  } else if (path === '/api/status' && request.method === 'GET') {
+    return handleSourceStatus(env);
   } else if (path === '/api/health' && request.method === 'GET') {
     const coordinator = await getStreamCoordinator(env);
     const [streamStatus, congress] = await Promise.all([

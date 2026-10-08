@@ -76,7 +76,7 @@
     '/senate/nominations': 'senate-nominations', '/senate/proceedings': 'senate-proceedings',
     '/senate/roster': 'senate-roster', '/senate/schedule': 'senate-schedule',
     '/senate/seniority': 'senate-seniority', '/senate/stages': 'senate-stages',
-    '/senate/stages-source': 'senate-stages-source', '/senate/session-days-source': 'senate-session-days-source',
+    '/status': 'senate-status', '/senate/stages-source': 'senate-stages-source', '/senate/session-days-source': 'senate-session-days-source',
     '/senate/desks': 'senate-desks', '/tweets': 'tweets', '/airport-delays': 'airport-delays',
   };
   const json = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -109,7 +109,7 @@
       catch (e) { return json({ error: `no fixture for ${stage}` }, 404); }
     }
     const name = ROUTES[path];
-    if (name) { try { return json(await (await realFetch(`${BASE}${name}.json`)).text()); } catch (e) { return json('{}'); } }
+    if (name) { try { return json((await (await realFetch(`${BASE}${name}.json`)).text()).replace(/"PLACEHOLDER_NOW"/g, String(Date.now()))); } catch (e) { return json('{}'); } }
     // Anything else is blocked rather than let out: a live call brings back the nondeterminism
     // this exists to remove. (Weather, the FAA airport list and the like.)
     return json('{}');

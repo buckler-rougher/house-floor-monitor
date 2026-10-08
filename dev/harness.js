@@ -175,6 +175,7 @@
     '/api/tweets':                      'tweets.json',
     '/api/hls-url':                     'hls-url.json',
     '/api/bill-source':                 'bill-source.json',
+    '/api/status':                      'status.json',
     '/api/bills-source':                'bills-source.json',
     '/api/voting-days-source':          'voting-days-source.json',
     '/api/whip-source':                 'whip-source.json',
@@ -229,6 +230,7 @@
       // spots with PLACEHOLDER_PUBLISHED and they are stamped at load time.
       const dated = (text) => {
         if (!text.includes('PLACEHOLDER_')) return text;
+        text = text.replace(/"PLACEHOLDER_NOW"/g, String(Date.now()));   // the status fixture: checked just now
         const at = new Date(Date.now() - 20 * 60 * 1000);
         // The notice's own "At approximately H:MM a.m./p.m." has to move with the
         // timestamp, or the panel reports a series that ended before it started.
@@ -269,7 +271,7 @@
       if (!r.ok) throw new Error(`fixture missing: ${name}`);
       const text = await r.text();
       if (!usable(text)) throw new Error(`fixture missing: ${name} (server returned a page)`);
-      return text;
+      return /status\.json$/.test(name) ? dated(text) : text;   // only the status fixture is stamped here; the others are left as captured
     })();
     cache.set(name, p);
     return p;
