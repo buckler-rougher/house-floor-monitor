@@ -88,6 +88,18 @@ ok('morning business, in the chair\'s words from the Record, with the limit it s
   assert.strictEqual(mode(u, 1 * S), 'morning-business');
 });
 
+ok('a motion to proceed ends morning business too: the real 30 September captions never said "morning business is closed"', () => {
+  // The wording is C-SPAN2's, lower case and without labels (the Senate's own caption format is still to be captured); the
+  // words are the chair's and the leader's, so the match does not depend on it.
+  let s = M.feed(M.empty(), 'under the previous order, the leadership time is reserved. under the previous order, the senate will be in a period of morning business, with senators permitted to speak therein for up to ten minutes each.', 0);
+  assert.strictEqual(mode(s, 1 * S), 'morning-business');
+  s = M.feed(s, "mr. president. the majority leader. mr. president, i move to proceed to calendar number six, 84, hr 9340. the clerk will report.", 5 * MIN);
+  assert.strictEqual(mode(s, 5 * MIN + 10 * S), null, 'closed once the motion is made');
+  // the same words still rolling in the window cannot reopen it
+  s = M.feed(s, 'the clerk will report. motion to proceed to calendar 684. hr 9340.', 5 * MIN + 12 * S);
+  assert.strictEqual(mode(s, 5 * MIN + 20 * S), null);
+});
+
 ok('morning business lasts until the chair closes it, however long that is', () => {
   let s = M.feed(M.empty(), 'THE SENATE WILL BE IN A PERIOD OF MORNING BUSINESS, FOR UP TO 5 MINUTES EACH', 0);
   assert.strictEqual(mode(s, 3 * 60 * MIN), 'morning-business', 'three hours in and still open');
