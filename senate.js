@@ -1035,7 +1035,9 @@ function billModalContent(b) {
                     ${BillSections.action({ textHtml: b.latestAction ? escapeHtml(b.latestAction) : '', dateHtml: actionDate })}
                     ${BillSections.links({
                         linkClass: 'senate',
-                        text: b.govinfoPdf,
+                        text: b.textVersionUrl || b.govinfoPdf,
+                        textLabel: b.textVersionUrl ? b.textVersionType : null,
+                        textTitle: b.textVersionUrl ? [b.textVersionType, b.textVersionDate].filter(Boolean).join(', ') : null,
                         report: b.committeeReportUrl,
                         reportTitle: b.committeeReportCitation,
                         cbo: b.cboCostEstimateUrl,
@@ -1965,7 +1967,7 @@ SenateQuorum.init({ photoUrlFor });
         formatDate: boardDate,
         summary: b.summary,
         linkClass: 'senate',
-        links: { text: b.govinfoPdf, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, memo: b.sapUrl, congress: b.congressUrl },
+        links: { text: b.textVersionUrl || b.govinfoPdf, textLabel: b.textVersionUrl ? b.textVersionType : null, textTitle: b.textVersionUrl ? [b.textVersionType, b.textVersionDate].filter(Boolean).join(', ') : null, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, memo: b.sapUrl, congress: b.congressUrl },
         sourceApi: API,
       });
       if (src && b.congressUrl) src.href = b.congressUrl;

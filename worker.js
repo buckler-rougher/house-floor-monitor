@@ -1124,18 +1124,28 @@ function latestCboEstimate(bill) {
   return { url: e ? e.url : null, title: e ? [e.title, String(e.description || '').replace(/\s+/g, ' ').trim()].filter(Boolean).join(' - ') : null };
 }
 
+// The newest text version on a Congress.gov /text answer: { type, date, url } (a PDF where there is one). The API lists newest first, and a version not yet
+// dated (an enrolled bill) leads the list, so the first entry is the current text.
+function latestTextVersion(data) {
+  const v = (data?.textVersions || [])[0];
+  if (!v) return { type: null, date: null, url: null };
+  const f = (v.formats || []).find((x) => x.type === 'PDF') || (v.formats || []).find((x) => x.type === 'Formatted Text') || (v.formats || [])[0];
+  return { type: v.type || null, date: v.date ? String(v.date).slice(0, 10) : null, url: f?.url || null };
+}
+
 async function fetchBillMeta(billId, env) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
   const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}`;
   const apiKey = `?api_key=${_congressApiKey}`;
   // Network errors propagate as thrown exceptions — callers use safeFetchMeta to avoid caching null for transient failures
-  const [billResp, cosponsorsResp, committeesResp] = await Promise.all([
+  const [billResp, cosponsorsResp, committeesResp, textResp] = await Promise.all([
     fetch(`${base}${apiKey}`, { headers: { 'Accept': 'application/json' } }),
     fetch(`${base}/cosponsors${apiKey}&limit=250`, { headers: { 'Accept': 'application/json' } }),
     fetch(`${base}/committees${apiKey}&limit=5`, { headers: { 'Accept': 'application/json' } }),
+    fetch(`${base}/text${apiKey}&limit=20`, { headers: { 'Accept': 'application/json' } }),
   ]);
-  if ([billResp, cosponsorsResp, committeesResp].some(r => r.status === 429 || r.status >= 500)) {
+  if ([billResp, cosponsorsResp, committeesResp, textResp].some(r => r.status === 429 || r.status >= 500)) {
     throw new Error(`Congress.gov fetchBillMeta transient error: ${billResp.status}`);
   }
   const result = {};
@@ -1173,6 +1183,16 @@ async function fetchBillMeta(billId, env) {
       // Marks the list as read in full. Entries cached while the request was limit=100 hold exactly 100 for a bill that
       // had more, and lack this mark, which is how enrichment knows to read them again (see needsMeta).
       result.cosponsorsComplete = everyone.length >= (data.pagination?.count || 0);
+    } catch {}
+  }
+  // The current text version (introduced, reported, engrossed ...), so the link goes to the text the House has and says which it is. Always set, null when none.
+  result.textVersionUrl = null; result.textVersionType = null; result.textVersionDate = null;
+  if (textResp.ok) {
+    try {
+      const data = await textResp.json();
+      raw.push({ request: `GET ${base}/text?limit=20`, json: data });
+      const t = latestTextVersion(data);
+      result.textVersionUrl = t.url; result.textVersionType = t.type; result.textVersionDate = t.date;
     } catch {}
   }
   if (committeesResp.ok) {
@@ -2144,7 +2164,7 @@ async function _fetchBills(request, env) {
         // support (key absent entirely — null means "checked, no report").
         // Also when the cosponsors list may have been cut at the old limit of 100 (exactly 100 and not marked complete): only
         // the few bills that large are read again, not every cached bill.
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta)
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta) || !('textVersionUrl' in enrichCached.meta)
                                         || (enrichCached.meta.cosponsors?.length >= 100 && !enrichCached.meta.cosponsorsComplete);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
@@ -2229,6 +2249,7 @@ async function _fetchBills(request, env) {
         if (meta.committees) bill.committees = meta.committees;
         if (meta.committeeReportUrl) bill.committeeReportUrl = meta.committeeReportUrl;
         if (meta.committeeReportCitation) bill.committeeReportCitation = meta.committeeReportCitation;
+        if (meta.textVersionUrl) { bill.textVersionUrl = meta.textVersionUrl; bill.textVersionType = meta.textVersionType; bill.textVersionDate = meta.textVersionDate; }
         if (meta.cboCostEstimateUrl) { bill.cboCostEstimateUrl = meta.cboCostEstimateUrl; bill.cboCostEstimateTitle = meta.cboCostEstimateTitle; }
       }
     }));
@@ -3121,7 +3142,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v5`, 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v6`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -3139,9 +3160,9 @@ async function handleSenateBill(env, billId) {
     // reported is among the OLDEST on it, so a short page loses it for any bill that has since had
     // floor days. The White House memo is looked up in the list the House modal already uses; its
     // failure costs the link, not the bill.
-    const [record, summaries, cosponsors, committees, actions, sapRaw] = await Promise.all([
+    const [record, summaries, cosponsors, committees, actions, sapRaw, textVersions] = await Promise.all([
       call(''), call('/summaries?limit=5'), call('/cosponsors?limit=250'), call('/committees'),
-      call('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'),
+      call('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), call('/text?limit=20'),
     ]);
     // More than 250 cosponsors: the rest, so the support bar counts them all.
     const moreCo = await moreCosponsorPages(base, cosponsors, (path) => call(path));
@@ -3150,7 +3171,7 @@ async function handleSenateBill(env, billId) {
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
     // The responses as received, for the source popover; the requests as made, without the key.
     const asked = (path, json) => json ? [{ request: `GET ${base}${path}${path.includes('?') ? '&' : '?'}format=json`, json }] : [];
-    await saveBillRaw(env, billId, 'meta', [...asked('', record), ...asked('/cosponsors?limit=250', cosponsors), ...moreCo.map(p => ({ request: p.request + '&format=json', json: p.json })), ...asked('/committees', committees)]);
+    await saveBillRaw(env, billId, 'meta', [...asked('', record), ...asked('/cosponsors?limit=250', cosponsors), ...moreCo.map(p => ({ request: p.request + '&format=json', json: p.json })), ...asked('/committees', committees), ...asked('/text?limit=20', textVersions)]);
     await saveBillRaw(env, billId, 'summaries', asked('/summaries?limit=5', summaries));
 
     // The first summary with real prose. Stubs shorter than a sentence are
@@ -3218,6 +3239,9 @@ async function handleSenateBill(env, billId) {
       committeeReportDate: report ? report.date : null,
       committeeReportUrl: reportLink.url,
       committeeReportCitation: reportLink.citation,
+      textVersionUrl: latestTextVersion(textVersions).url,
+      textVersionType: latestTextVersion(textVersions).type,
+      textVersionDate: latestTextVersion(textVersions).date,
       cboCostEstimateUrl: latestCboEstimate(bill).url,
       cboCostEstimateTitle: latestCboEstimate(bill).title,
       sapUrl,

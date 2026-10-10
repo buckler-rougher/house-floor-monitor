@@ -4599,6 +4599,12 @@ function createBillCard(bill, procedure) {
     </div>`;
 }
 
+// "Introduced in House, Mar 14, 2025": the tooltip of the bill-text link, which goes to the current version.
+function textVersionTitle(b) {
+    const d = b.textVersionDate ? new Date(b.textVersionDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+    return [b.textVersionType, d].filter(Boolean).join(', ');
+}
+
 function billIdToCongressUrl(billId) {
     const norm = billId.trim().replace(/([A-Z])\.\s+(?=[A-Z])/gi, '$1.');
     const m = norm.match(/^(H\.R\.|H\.Con\.Res\.|H\.J\.Res\.|H\.Res\.|S\.Con\.Res\.|S\.J\.Res\.|S\.Res\.|S\.)\s*(\d+)$/i);
@@ -4833,7 +4839,9 @@ function openBillModal(billId) {
                 })}
                 ${BillSections.links({
                     linkClass: procedureClass,
-                    text: textUrl,
+                    text: bill.textVersionUrl || textUrl,
+                    textLabel: bill.textVersionUrl ? bill.textVersionType : null,
+                    textTitle: bill.textVersionUrl ? textVersionTitle(bill) : null,
                     report: bill.committeeReportUrl,
                     reportTitle: bill.committeeReportCitation,
                     cbo: bill.cboCostEstimateUrl,
@@ -6915,7 +6923,9 @@ function updateDebateSection(items) {
             summary: tmp.textContent,
             linkClass: foundBill.procedure === 'suspension' ? 'suspension' : 'rule',
             links: {
-                text: foundBill.textUrl || null,
+                text: foundBill.textVersionUrl || foundBill.textUrl || null,
+                textLabel: foundBill.textVersionUrl ? foundBill.textVersionType : null,
+                textTitle: foundBill.textVersionUrl ? textVersionTitle(foundBill) : null,
                 report: foundBill.committeeReportUrl,
                 cbo: foundBill.cboCostEstimateUrl,
                 memo: foundBill.sapUrl,
