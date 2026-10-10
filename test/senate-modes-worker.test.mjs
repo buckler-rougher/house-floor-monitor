@@ -57,6 +57,8 @@ await step('then the Democratic leader\'s', 'leader', 'The Democratic leader is 
 await step('a senator is recognized: back to morning business', 'morning-business', 'The Senator from Iowa is recognized.');
 await step('the majority leader again mid-day is no mode', 'morning-business', 'The majority leader is recognized.');
 await step('morning business closed', null, 'The PRESIDING OFFICER. Morning business is closed.');
+await step('the clerk reports the motion to proceed: that measure is before the Senate', 'debate', 'The PRESIDING OFFICER. The clerk will report. The legislative clerk read as follows: Motion to proceed to Calendar No. 684, H.R. 9340, an act to amend the Public Utility Regulatory Policies Act of 1978.', { bill: 'H.R. 9340' });
+await step('a request to take up another bill that draws an objection changes nothing', 'debate', 'Mr. President, I ask unanimous consent that the Senate proceed to the immediate consideration of Calendar No. 678, S. 5438. Is there objection? The objection is heard.', { bill: 'H.R. 9340' });
 await step('the wrap-up', 'wrap-up', 'Mr. THUNE. Mr. President, I ask unanimous consent that when the Senate completes its business today, it stand adjourned, to then convene for pro forma session only');
 await step('adjourned', 'wrap-up', 'Under the previous order, the Senate stands adjourned until 10:30 a.m. tomorrow.');
 clock += 60000;
