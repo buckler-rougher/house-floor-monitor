@@ -5194,6 +5194,7 @@ async function openRemoteBillModal(billId, trigger) {
     const entry = await RemoteBill.fetch(billId, API);
     if (overlay.hidden || overlay.dataset.closing) return;
     overlay.innerHTML = entry.error ? RemoteBill.skeleton(billId, `Details unavailable (${entry.error})`) : RemoteBill.content(entry.bill, opts);
+    overlay.querySelector('.bill-modal-scroll')?.classList.add('is-filled');   // the content fades in over the dots
     wire();
     if (!entry.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, entry.bill.id || billId, API); }
 }
@@ -6444,7 +6445,7 @@ function openDischargeSigners(id, number, trigger) {
     o.id = 'dp-modal-overlay';
     o.className = 'dp-modal-overlay';
     o.innerHTML = `<div class="dp-modal" role="dialog" aria-modal="true" aria-label="Signers of discharge petition ${number}">
-        <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">×</button></div>
+        <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">✕</button></div>
         <div class="dp-modal-tools">
             <input type="search" id="dp-modal-search" class="dp-modal-search" aria-label="Search signers by name or state" autocomplete="off">
             <div class="bills-sort-bar dp-modal-sort">
@@ -6493,15 +6494,23 @@ function openDischargeSigners(id, number, trigger) {
         document.querySelectorAll('#dp-modal-filters [data-party]').forEach((x) => x.classList.toggle('active', x.dataset.party === party));
         draw();
     });
-    fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`)
+    // The window opens first, with its dots; the request starts after that has been painted, and the names are drawn once the opening has finished and fade in, so
+    // an answer that is already in the browser's cache does not arrive in the middle of the opening and turn it into a flash.
+    const opened = performance.now();
+    const load = () => fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`)
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => new Promise((res) => setTimeout(() => res(d), Math.max(0, 300 - (performance.now() - opened)))))
         .then((d) => {
-            signers = d.signers || []; draw();
+            if (!document.contains(o)) return;
+            signers = d.signers || [];
+            document.getElementById('dp-modal-list')?.classList.add('is-filled');
+            draw();
             // examples out of the list itself: signers' names and the states they come from
             searchField?.setExamples([...signers.map((s) => s.name), ...signers.map((s) => s.stateName)]);
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
-        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="proceedings-error">SIGNERS UNAVAILABLE</div>'; });
+        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="empty-note">Signers unavailable</div>'; });
+    requestAnimationFrame(() => requestAnimationFrame(load));
 }
 document.addEventListener('click', (e) => {
     const t = e.target;
