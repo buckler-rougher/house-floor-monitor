@@ -1,0 +1,94 @@
+{
+ "at": 1791666412048,
+ "pending": 0,
+ "hearings": {
+  "PN1180-3": {
+   "day": "2026-09-16",
+   "time": "10:00 AM",
+   "committee": "Health, Education, Labor, and Pensions",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=help&filename=help091626",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338742"
+  },
+  "PN963": {
+   "day": "2026-09-16",
+   "time": "10:00 AM",
+   "committee": "Health, Education, Labor, and Pensions",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=help&filename=help091626",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338742"
+  },
+  "PN1179": {
+   "day": "2026-09-16",
+   "time": "10:00 AM",
+   "committee": "Health, Education, Labor, and Pensions",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=help&filename=help091626",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338742"
+  },
+  "PN1128": {
+   "day": "2026-09-15",
+   "time": "10:00 AM",
+   "committee": "Finance",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=finance&filename=finance091526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338741"
+  },
+  "PN1098-3": {
+   "day": "2026-09-15",
+   "time": "10:00 AM",
+   "committee": "Finance",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=finance&filename=finance091526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338741"
+  },
+  "PN1022-5": {
+   "day": "2026-09-15",
+   "time": "10:00 AM",
+   "committee": "Finance",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=finance&filename=finance091526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338741"
+  },
+  "PN1181-5": {
+   "day": "2026-08-05",
+   "time": "10:15 AM",
+   "committee": "Judiciary",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=xxxx&filename=xxxx080526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338700"
+  },
+  "PN1181-2": {
+   "day": "2026-08-05",
+   "time": "10:15 AM",
+   "committee": "Judiciary",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=xxxx&filename=xxxx080526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338700"
+  },
+  "PN1201-1": {
+   "day": "2026-08-05",
+   "time": "10:15 AM",
+   "committee": "Judiciary",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=xxxx&filename=xxxx080526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338700"
+  },
+  "PN1181-1": {
+   "day": "2026-08-05",
+   "time": "10:15 AM",
+   "committee": "Judiciary",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=xxxx&filename=xxxx080526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338700"
+  },
+  "PN1181-7": {
+   "day": "2026-08-05",
+   "time": "10:15 AM",
+   "committee": "Judiciary",
+   "type": "Hearing",
+   "video": "https://www.senate.gov/isvp/?comm=xxxx&filename=xxxx080526",
+   "url": "https://www.congress.gov/event/119th-Congress/senate-event/338700"
+  }
+ }
+}

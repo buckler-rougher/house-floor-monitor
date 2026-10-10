@@ -940,6 +940,15 @@ async function loadNominations() {
 // the House one works too, so senate.html needs nothing added to it.
 let _billModalTrigger = null;
 let _nominations = [];
+// The hearing each nomination had (the Worker's /senate/nomination-hearings: Congress.gov's committee meetings that name a nomination), by the Senate's own
+// nomination id. The first answer on an empty state is partial; it is asked again until the Worker says nothing is left to read.
+let _nomHearings = {};
+function loadNominationHearings(tries = 0) {
+    fetch(`${API}/senate/nomination-hearings`)
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then((d) => { _nomHearings = d.hearings || {}; if (d.pending && tries < 24) setTimeout(() => loadNominationHearings(tries + 1), 15000); })
+        .catch(() => { /* the modal is right without it */ });
+}
 
 function closeSenateBillModal() {
     const overlay = el('bill-modal-overlay');
@@ -1120,8 +1129,10 @@ function nominationModalContent(n, id, vote) {
     // the card that opens this modal already draws them that way. The vote row
     // above uses boardDate for the same reason, because the card it came from
     // does.
+    const hearing = n?.pn ? _nomHearings[n.pn] : null;
     const dates = [
         n?.received ? ['Received', noticeDate2(n.received)] : null,
+        hearing ? [`Hearing${hearing.committee ? ` (${hearing.committee})` : ''}`, noticeDate2(hearing.day)] : null,
         n?.reported ? ['Reported', noticeDate2(n.reported)] : null,
     ].filter(Boolean);
     const timeline = dates.length ? `
@@ -1136,6 +1147,8 @@ function nominationModalContent(n, id, vote) {
 
     const links = [
         vote?.url ? `<a href="${escapeHtml(vote.url)}" class="bill-modal-link senate" target="_blank" rel="noopener">Roll call vote</a>` : '',
+        hearing && hearing.video ? `<a href="${escapeHtml(hearing.video)}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing video</a>` : '',
+        hearing ? `<a href="${escapeHtml(hearing.url)}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing on Congress.gov</a>` : '',
         `<a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" class="bill-modal-link senate" target="_blank" rel="noopener">Nominations XML</a>`,
     ].filter(Boolean).join('');
 
@@ -1898,6 +1911,7 @@ initNoticeFilter();
 initBillModal();
 openDeepLinkedBill();
 loadNominations();
+loadNominationHearings();
 loadFloorSchedule();
 // The caucus posts the next day's schedule each evening.
 setInterval(loadFloorSchedule, 30 * 60 * 1000);

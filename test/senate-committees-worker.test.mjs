@@ -11,7 +11,7 @@ import worker from '../worker.js';
 const day = (offset) => new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
 let calls = [];
 const meetings = {};   // id -> record
-const add = (id, whenIso) => { meetings[id] = { chamber: 'Senate', congress: 119, eventId: id, date: whenIso, meetingStatus: 'Scheduled', type: 'Open Hearing', committees: [{ name: 'Senate Judiciary' }], location: { building: 'Hart Senate Office Building', room: '216' }, title: 'Hearing ' + id, videos: [], meetingDocuments: [] }; };
+const add = (id, whenIso, extra = {}) => { meetings[id] = { chamber: 'Senate', congress: 119, eventId: id, date: whenIso, meetingStatus: 'Scheduled', type: 'Open Hearing', committees: [{ name: 'Senate Judiciary' }], location: { building: 'Hart Senate Office Building', room: '216' }, title: 'Hearing ' + id, videos: [], meetingDocuments: [], ...extra }; };
 // 70 meetings ten days ahead (outside the week), then one tomorrow and one the day after
 for (let i = 0; i < 70; i++) add(String(400000 + i), `${day(10)}T14:00:00Z`);
 // and three from last week: past, but still in the month's list, and read once and kept (a recess lists only past ones)
@@ -72,6 +72,24 @@ await ok('later runs read what is left and then nothing; the answer is the first
   assert.strictEqual(r.body.events.length, 1, 'tomorrow\'s, not the day after\'s and not the ones ten days out');
   assert.strictEqual(r.body.events[0].id, '500001');
   assert.match(r.body.events[0].time, /^[12]:30 PM$/, '18:30 UTC is 2:30 PM in daylight time and 1:30 PM in winter');
+});
+
+await ok('nomination hearings: the newest HEARING that names a nomination, never the business meeting that reports it or a canceled one, keyed by PN, from a longer window', async () => {
+  const nom = (number, part) => ({ nominations: [{ congress: 119, number, part }] });
+  add('600001', `${day(-60)}T14:00:00Z`, { relatedItems: nom(1272, '07'), videos: [{ url: 'https://www.senate.gov/isvp/?comm=judiciary&filename=j1' }] });
+  add('600002', `${day(-10)}T14:00:00Z`, { type: 'Open Business Meeting', relatedItems: nom(1272, '07') });
+  add('600003', `${day(-30)}T14:00:00Z`, { meetingStatus: 'Canceled', relatedItems: nom(1300, '02') });
+  add('600004', `${day(-20)}T14:00:00Z`, { relatedItems: nom(1301, '03') });
+  const realNow = Date.now;
+  let t = realNow();
+  Date.now = () => t;
+  let r;
+  try { for (let i = 0; i < 4; i++) { t += 6 * 60 * 1000; r = await ask('/senate/nomination-hearings', env); } } finally { Date.now = realNow; }
+  assert.strictEqual(r.body.pending, 0);
+  assert.deepStrictEqual(Object.keys(r.body.hearings).sort(), ['PN1272-7', 'PN1301-3']);
+  assert.strictEqual(r.body.hearings['PN1272-7'].day, day(-60), 'the hearing, not the business meeting ten days ago');
+  assert.strictEqual(r.body.hearings['PN1272-7'].video, 'https://www.senate.gov/isvp/?comm=judiciary&filename=j1');
+  assert.strictEqual(r.body.hearings['PN1301-3'].video, null);
 });
 
 await ok('treaties: both Congresses are listed, each read with its actions, and the ratified one is not pending', async () => {
