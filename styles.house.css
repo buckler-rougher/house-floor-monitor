@@ -5564,8 +5564,9 @@ font-family: var(--font-mono);
 }
 
 .bill-modal-body {
-    flex: 1 1 auto;
-    min-height: 5rem;
+    flex: 1 0 auto;
+
+    min-height: min(18rem, 50vh);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -5581,6 +5582,7 @@ font-family: var(--font-mono);
 .bill-modal-summary-scroll {
     flex: 1 1 auto;
     min-height: 0;
+    max-height: 28rem;
     overflow-y: auto;
     overscroll-behavior: contain;
 }

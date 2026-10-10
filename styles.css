@@ -6012,8 +6012,9 @@ font-family: var(--font-mono);
 /* The summary box: the label stays where it is and only the CRS text scrolls under it (the label used to be sticky inside the scrolling box, and a bounce at the top
    dragged it down), with a fade along the bottom edge while there is more to read (lib/scroll-fade.js). */
 .bill-modal-body {
-    flex: 1 1 auto;
-    min-height: 5rem;
+    flex: 1 0 auto;
+    /* enough to read: when the window is too short for it the modal's own scroll takes over, the summary is not squeezed to a sliver beside the other sections */
+    min-height: min(18rem, 50vh);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -6029,6 +6030,7 @@ font-family: var(--font-mono);
 .bill-modal-summary-scroll {
     flex: 1 1 auto;
     min-height: 0;
+    max-height: 28rem;
     overflow-y: auto;
     overscroll-behavior: contain;
 }
