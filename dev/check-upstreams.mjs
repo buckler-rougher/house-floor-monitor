@@ -102,6 +102,7 @@ const CHECKS = [
   // The Senate board's committee meetings and treaties (Congress.gov API). Meetings: the answer is a day and a list (empty in a recess, which is normal) and
   // `pending` says records are still being read; a recess with a meeting listed and no date is the failure. Treaties: at least one of this Congress's or the last's.
   worker('senate', 'senate/committee-meetings', (j) => (Array.isArray(j.events) && /^\d{4}-\d\d-\d\d$/.test(j.date || '') ? (j.events.length ? null : { warn: 'no committee meetings in the next week (normal in a recess)' }) : { fail: 'no events list or date' })),
+  worker('senate', 'senate/nomination-hearings', (j) => (j.hearings && typeof j.hearings === 'object' ? (Object.keys(j.hearings).length ? null : { warn: 'no nomination hearings found in 180 days' }) : { fail: 'no hearings object' })),
   worker('senate', 'senate/treaties', (j) => (arr(j.treaties).length ? null : { warn: 'no treaties listed' })),
   // The funding line of the appropriations panel: the date in section 106 of this year's continuing resolution. A warning, not a failure: the panel just shows no line.
   worker('house', 'appropriations', (j) => (Array.isArray(j.bills) && j.bills.length ? (j.funding && /^\d{4}-\d\d-\d\d$/.test(j.funding.through) ? null : { warn: `no funding deadline read (${(j.discovery || {}).fundingError || 'no continuing resolution found for the year'})` }) : { fail: 'no appropriations bills' })),

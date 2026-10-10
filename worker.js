@@ -4185,54 +4185,78 @@ async function handleCommitteeMeetings(request, env) {
 
 // The Senate's committee meetings, from Congress.gov's committee-meeting API (lib/senate-committees.js). The list holds only ids and update times, so the date,
 // committees, room and video come from each meeting's own record: those are read thirty a run, kept in KV (a meeting is read again only when its update time
-// moves) and the answer says how many are still to read (`pending`), so the board asks again until they are. Like the House panel it shows the first day from
-// today (Eastern) that has a meeting, up to a week ahead. Meetings from a month back are asked for, since one is scheduled some days to weeks before it is held.
+// moves; one that has left the window's list is dropped, one still in it stays even when past, so a recess does not re-read everything every run) and the answer
+// says how many are still to read (`pending`), so the board asks again until they are. The panel shows the first day from today (Eastern) that has a meeting, up
+// to a week ahead; a month back is read, since a meeting is scheduled some days to weeks before it is held. The nominations route (below) reads a longer window
+// into its own state, because a nominee's hearing can be months old.
+async function readSenateMeetings(env, call, { days, key }) {
+  const SC = globalThis.SenateCommittees;
+  let st = {};
+  try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 19) + 'Z';
+  const listed = [];
+  let next = `https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate?limit=250&fromDateTime=${since}`;
+  for (let page = 0; next && page < 4; page++) {
+    const json = await call(next.replace(/[?&](format|api_key)=[^&]*/g, ''));
+    if (!json) break;
+    listed.push(...(json.committeeMeetings || []));
+    next = json.pagination?.next || null;
+  }
+  const todo = listed.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate);
+  const batch = todo.slice(0, 30);
+  for (let i = 0; i < batch.length; i += 6) {
+    await Promise.all(batch.slice(i, i + 6).map(async (m) => {
+      try {
+        const rec = await call(`https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate/${m.eventId}`);
+        const e = SC.shape(rec?.committeeMeeting);
+        if (e) st[m.eventId] = { u: m.updateDate, e };
+      } catch { /* read again next run */ }
+    }));
+  }
+  const live = new Set(listed.map((m) => String(m.eventId)));
+  for (const id of Object.keys(st)) if (!live.has(id)) delete st[id];
+  if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+  const pending = Math.max(0, todo.length - batch.length) + batch.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate).length;
+  return { meetings: Object.values(st).map((x) => x.e), pending };
+}
+
+const congressCall = async (url) => {
+  const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+  if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
+  return r.ok ? r.json() : null;
+};
+
 async function handleSenateCommitteeMeetings(env) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   if (!_congressApiKey) return fail(503, 'committee meetings: no Congress.gov key configured');
   return kvCache(env, `senate-committees-v1-${CURRENT_CONGRESS}`, 120, async () => {
-    const SC = globalThis.SenateCommittees;
-    const call = async (url) => {
-      const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
-      if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
-      return r.ok ? r.json() : null;
-    };
     try {
-      const key = `senate-committees-state-v1-${CURRENT_CONGRESS}`;
-      let st = {};
-      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
-      const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 19) + 'Z';
-      const listed = [];
-      let next = `https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate?limit=250&fromDateTime=${since}`;
-      for (let page = 0; next && page < 3; page++) {
-        const json = await call(next.replace(/[?&](format|api_key)=[^&]*/g, ''));
-        if (!json) break;
-        listed.push(...(json.committeeMeetings || []));
-        next = json.pagination?.next || null;
-      }
-      const todo = listed.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate);
-      const batch = todo.slice(0, 30);
-      for (let i = 0; i < batch.length; i += 6) {
-        await Promise.all(batch.slice(i, i + 6).map(async (m) => {
-          try {
-            const rec = await call(`https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate/${m.eventId}`);
-            const e = SC.shape(rec?.committeeMeeting);
-            if (e) st[m.eventId] = { u: m.updateDate, e };
-          } catch { /* read again next run */ }
-        }));
-      }
-      // a meeting that has left the month's list is dropped; one in it stays even when it is past (a past one is read once, not every run)
+      const { meetings, pending } = await readSenateMeetings(env, congressCall, { days: 30, key: `senate-committees-state-v1-${CURRENT_CONGRESS}` });
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-      const live = new Set(listed.map((m) => String(m.eventId)));
-      for (const id of Object.keys(st)) if (!live.has(id)) delete st[id];
-      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
-      const found = SC.pick(Object.values(st).map((x) => x.e), today, 7);
-      const pending = Math.max(0, todo.length - batch.length) + batch.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate).length;
+      const found = globalThis.SenateCommittees.pick(meetings, today, 7);
       return new Response(JSON.stringify({ at: Date.now(), asked: today, date: found ? found.day : today, events: found ? found.events : [], pending }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${pending ? 10 : 120}` },
       });
     } catch (e) { return fail(502, e.message); }
   }, 120, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
+}
+
+// The hearing each nomination had, for the nominations on the Senate board: the committee meetings of the last 180 days that name a nomination, newest hearing
+// per nomination (a business meeting that reports it is not its hearing). Keyed by the Senate's own nomination id (PN1272-07), which is what the board's
+// nominations carry. The first answer on an empty state is partial (`pending` says how much is left); the board asks again until it is whole.
+async function handleSenateNominationHearings(env) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!_congressApiKey) return fail(503, 'nomination hearings: no Congress.gov key configured');
+  return kvCache(env, `senate-nomination-hearings-v1-${CURRENT_CONGRESS}`, 300, async () => {
+    try {
+      const { meetings, pending } = await readSenateMeetings(env, congressCall, { days: 180, key: `senate-nomination-hearings-state-v1-${CURRENT_CONGRESS}` });
+      const hearings = {};
+      for (const m of meetings.filter((x) => /hearing/i.test(x.type) && x.nominations.length && !/cancel|postpone/i.test(x.status)).sort((a, b) => a.date.localeCompare(b.date))) {
+        for (const pn of m.nominations) hearings[pn] = { day: m.day, time: m.time, committee: m.committee, type: m.type, video: m.video, url: m.url };
+      }
+      return new Response(JSON.stringify({ at: Date.now(), pending, hearings }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${pending ? 10 : 300}` } });
+    } catch (e) { return fail(502, e.message); }
+  }, 300, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
 }
 
 // The treaties before the Senate (lib/senate-treaties.js): those received in this Congress and the last, each with its actions, from Congress.gov's treaty API.
@@ -6680,6 +6704,8 @@ async function handleRequest(request, env) {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/committee-meetings' && request.method === 'GET') {
     return await handleSenateCommitteeMeetings(env);
+  } else if (path === '/api/senate/nomination-hearings' && request.method === 'GET') {
+    return await handleSenateNominationHearings(env);
   } else if (path === '/api/senate/treaties' && request.method === 'GET') {
     return await handleSenateTreaties(env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {

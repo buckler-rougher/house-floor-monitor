@@ -56,6 +56,13 @@ ok('a canceled meeting is kept and carries its status', () => {
   assert.strictEqual(SC.shape({ ...hearing, meetingStatus: 'Canceled' }).status, 'Canceled');
 });
 
+
+ok('the nominations a meeting takes up are named as the Senate names them (PN, number, part), once each', () => {
+  const e = SC.shape({ ...hearing, relatedItems: { nominations: [{ congress: 119, number: 1272, part: '07' }, { congress: 119, number: 1272, part: '08' }, { congress: 119, number: 1272, part: '07' }, { congress: 119, number: 55 }, { congress: 119, number: 1011, part: '00' }] } });
+  assert.deepStrictEqual(e.nominations, ['PN1272-7', 'PN1272-8', 'PN55', 'PN1011']);
+  assert.deepStrictEqual(SC.shape(hearing).nominations, []);
+});
+
 const treaty = [{
   congressReceived: 119, number: 2, suffix: '', topic: 'Taxation', transmittedDate: '2026-09-14T00:00:00Z', resolutionText: null, inForceDate: null,
   countriesParties: [{ name: 'Croatia' }],
