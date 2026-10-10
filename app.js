@@ -6117,6 +6117,126 @@ function renderTodayInHouse(items) {
     }
 }
 
+// COMMITTEE MEETINGS: the day's hearings and markups from the Clerk's Committee Repository (docs.house.gov), through the Worker's /api/committee-meetings.
+// Asked for today with `scan`, so on a day with nothing on (a recess, a weekend) it shows the next day that has something, and says which day that is; with
+// nothing in the next week it says so. Titles, committees, times and rooms are the Clerk's own words; a markup's title is the bills it takes up.
+let _committee = null;
+let _committeeAll = false;
+const COMMITTEE_SHOWN = 8;
+function renderCommitteeMeetings() {
+    const list = document.getElementById('committee-list');
+    if (!list || !_committee) return;
+    const d = _committee;
+    const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dayDate = new Date(Date.UTC(Number(d.date.slice(6)), Number(d.date.slice(0, 2)) - 1, Number(d.date.slice(3, 5)), 12));
+    const dayText = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+    const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
+    put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
+    if (!d.events.length) {
+        setIfChanged(list, '<div class="proceedings-error">NO COMMITTEE MEETINGS ARE SCHEDULED IN THE NEXT WEEK</div>');
+    } else {
+        const shown = _committeeAll ? d.events : d.events.slice(0, COMMITTEE_SHOWN);
+        const rest = d.events.length - shown.length;
+        setIfChanged(list, shown.map((e) => `
+        <div class="committee-item">
+            <span class="committee-time">${escapeHtml(e.time)}</span>
+            <div class="committee-what">
+                <a class="committee-title" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
+                <span class="committee-name">${escapeHtml(e.committee)}</span>
+            </div>
+            <span class="committee-room">${escapeHtml(e.location)}</span>
+        </div>`).join('') + (d.events.length > COMMITTEE_SHOWN ? `<button type="button" class="dp-toggle" id="committee-toggle">${_committeeAll ? 'Show fewer' : `Show ${rest} more meeting${rest === 1 ? '' : 's'}`}</button>` : ''));
+    }
+    const link = document.getElementById('committee-source-link');
+    if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
+    if (globalThis.SourcePop) SourcePop.set(document.getElementById('committee-meetings'), d.table ? {
+        request: 'GET https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, ''),
+        html: d.table,
+        at: d.at,
+    } : null);
+}
+function loadCommitteeMeetings() {
+    const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
+    fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?scan=1&date=' + encodeURIComponent(today))
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { _committee = d; renderCommitteeMeetings(); })
+        .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), '<div class="proceedings-error">COMMITTEE MEETINGS UNAVAILABLE</div>'); });
+}
+
+// DISCHARGE PETITIONS: the House Clerk's list for this Congress, each with the number of signatures it has against the 218 it needs, through the Worker's
+// /api/discharge-petitions. The open ones come first, closest to the number first, as a bar; the ones that got there are a list behind a button. A
+// petition that has reached 218 shows a full green bar. The count of a petition is the rows of its own signature table at the Clerk.
+let _discharge = null;
+let _dischargeAll = false;
+const DISCHARGE_SHOWN = 6;
+function dischargeParts(p) {
+    // "Providing for consideration of the bill (H.R. 1589) to authorize ..." -> the bill, and what it does
+    const m = (p.description || '').match(/\(([^)]*\d[^)]*)\)\s*(.*)$/);
+    return { bill: m ? m[1].replace(/\s+/g, ' ') : (p.billNumber || ''), what: m && m[2] ? m[2].replace(/,\s*and for other purposes\.?$/i, '').replace(/\.$/, '') : (p.description || '') };
+}
+function renderDischargePetitions() {
+    const list = document.getElementById('discharge-list');
+    if (!list || !_discharge) return;
+    const need = _discharge.needed;
+    const all = _discharge.petitions.filter((p) => p.signatures != null);
+    const open = all.filter((p) => p.signatures < need).sort((a, b) => b.signatures - a.signatures || b.number - a.number);
+    const done = all.filter((p) => p.signatures >= need).sort((a, b) => b.number - a.number);
+    const shown = _dischargeAll ? open : open.slice(0, DISCHARGE_SHOWN);
+    const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
+    put('discharge-summary', `${open.length} open \u00b7 ${done.length} reached ${need}`);
+    const date = (iso) => iso ? new Date(iso.slice(6) + '-' + iso.slice(0, 2) + '-' + iso.slice(3, 5) + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+    const bar = (p) => {
+        const pct = Math.min(100, Math.round(1000 * p.signatures / need) / 10);
+        const state = p.signatures >= need ? 'done' : p.signatures >= need - 5 ? 'close' : '';
+        return `<div class="dp-bar ${state}" role="progressbar" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${p.signatures}" aria-label="${p.signatures} of ${need} signatures"><span style="width:${pct}%"></span></div>`;
+    };
+    const item = (p) => {
+        const { bill, what } = dischargeParts(p);
+        const more = need - p.signatures;
+        const url = p.id ? `https://clerk.house.gov/DischargePetition/${p.id}` : 'https://clerk.house.gov/DischargePetition';
+        return `
+        <div class="dp-item">
+            <div class="dp-top">
+                <span class="dp-id"><span class="dp-num">No. ${p.number}</span> ${escapeHtml(bill)}</span>
+                <span class="dp-count"><b>${p.signatures}</b> of ${need}</span>
+            </div>
+            <div class="dp-what">${escapeHtml(what)}</div>
+            ${bar(p)}
+            <div class="dp-meta">
+                <span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>
+                <span>${escapeHtml(p.sponsor)}</span>
+                ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
+                ${p.lastSigned ? `<span>last signed ${escapeHtml(date(p.lastSigned))}</span>` : ''}
+                <a href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
+            </div>
+        </div>`;
+    };
+    const rest = open.length - shown.length;
+    setIfChanged(list,
+        (shown.map(item).join('') || `<div class="proceedings-error">NO OPEN PETITIONS</div>`)
+        + (open.length > DISCHARGE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-toggle">${_dischargeAll ? 'Show fewer' : `Show ${rest} more open petition${rest === 1 ? '' : 's'}`}</button>` : '')
+        + (done.length ? `<details class="dp-done"><summary>${done.length} reached ${need}</summary>${done.map((p) => {
+            const { bill, what } = dischargeParts(p);
+            return `<div class="dp-done-item"><span class="dp-num">No. ${p.number}</span> ${escapeHtml(bill)} <span class="dp-done-what">${escapeHtml(what)}</span><span class="dp-done-sponsor">${escapeHtml(p.sponsor)}</span></div>`;
+        }).join('')}</details>` : ''));
+    if (globalThis.SourcePop) {
+        // the Clerk's own list entries, as sent, each with where its signature count comes from
+        const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
+            + open.map((p) => `<!-- ${p.signatures} signatures: GET https://clerk.house.gov/DischargePetition/${p.id} -->\n${p.block}`).join('\n');
+        SourcePop.set(document.getElementById('discharge-petitions'), { request: `GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}`, html, at: _discharge.at });
+    }
+}
+function loadDischargePetitions() {
+    fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions')
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { _discharge = d; renderDischargePetitions(); })
+        .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), '<div class="proceedings-error">DISCHARGE PETITIONS UNAVAILABLE</div>'); });
+}
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
+    if (e.target && e.target.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
+});
+
 function renderProceedingsFeedPanel(items) {
     if (!elements.proceedingsFeed) return;
     if (!items || items.length === 0) {
@@ -10232,3 +10352,11 @@ document.addEventListener('DOMContentLoaded', init);
 // ── Suggestion drawer ─────────────────────────────────────────────────────────
 // Moved to lib/suggest-box.js so both boards get it. It wires itself on
 // DOMContentLoaded and needs no call from here.
+
+// Started last: loadCommitteeMeetings reads `eastern`, a const declared above, and a call before its line has run is a ReferenceError that stops the
+// whole script (it did, the first time these were written higher up). The Clerk changes both through the day: a petition gains a signature, a meeting
+// is added.
+loadCommitteeMeetings();
+loadDischargePetitions();
+setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
+setInterval(loadDischargePetitions, 10 * 60 * 1000);
