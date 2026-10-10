@@ -2672,10 +2672,17 @@ body.tellers-mode .tellers-column { display: flex; }
 .search-field { display: block; }
 .search-field-head { margin-bottom: var(--sp-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); opacity: 0.6; line-height: 1.2; }
 .search-field-box { position: relative; }
-.search-field-box > input { width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
-/* the box's own border takes the focus colour, nothing else: no outline ring around it */
-.search-field-box > input { transition: border-color var(--dur-150), background var(--dur-150); }
-.search-field-box > input:focus, .search-field-box > input:focus-visible { outline: none; box-shadow: none; border-color: rgba(88, 166, 255, 0.5); background: rgba(88, 166, 255, 0.06); }
+.search-field-box > input {
+    /* ONE look for every search box (this beats each place's own input class): the signers list's, the one the owner liked */
+    width: 100%; box-sizing: border-box; height: var(--control-h, 2rem); margin: 0; padding: 0 var(--sp-10);
+    background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-6);
+    color: var(--text-primary); font-family: var(--font-sans); font-size: var(--fs-md); line-height: normal;
+    -webkit-appearance: none; appearance: none; outline: none;
+    transition: border-color var(--dur-150), background var(--dur-150);
+}
+.search-field-box > input::-webkit-search-cancel-button, .search-field-box > input::-webkit-search-decoration { display: none; }
+/* the box's own border and a little blue in its fill: no outline ring around it */
+.search-field-box > input:focus, .search-field-box > input:focus-visible { outline: none; box-shadow: none; border-color: rgba(88, 166, 255, 0.55); background: rgba(88, 166, 255, 0.1); }
 .search-field-example { position: absolute; inset: 0; display: flex; align-items: center; box-sizing: border-box; pointer-events: none; user-select: none; white-space: nowrap; overflow: hidden; color: var(--text-muted); opacity: 0.65; }
 .search-field-example.is-hidden { display: none; }
 .search-field-word { display: inline-block; animation-duration: 350ms; animation-fill-mode: both; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
@@ -4129,7 +4136,7 @@ body.tellers-mode .tellers-column { display: flex; }
 
 .reporter-search-row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: var(--sp-8);
     padding: var(--sp-8) var(--sp-16);
     border-bottom: 1px solid var(--border-color);
@@ -4208,6 +4215,7 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 .reporter-search-clear {
+    height: 2rem;
     background: none;
     border: none;
     color: var(--text-muted);
