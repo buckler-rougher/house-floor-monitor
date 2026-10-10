@@ -4241,10 +4241,12 @@ async function handleDischargeCalendar(env) {
 }
 
 // The twelve regular appropriations bills of the fiscal year and how far each has got (lib/appropriations.js), read from each bill's own Congress.gov record and
-// actions: 24 requests, so this is its own route and kept half an hour. A bill Congress.gov does not know (a number that has not been introduced, or a
-// wrong one) is listed at stage 0 with `known: false`, never dropped, so a wrong number shows rather than hides.
+// actions: 24 requests, so this is its own route and kept half an hour. THE BILLS ARE FOUND, not listed: the House Appropriations Committee's bills (Congress.gov
+// /committee/house/hsap00/bills, a few pages) of this and the last Congress, the regular ones told by title, the newest fiscal year with at least six of its
+// subcommittees. That is how FY2028 takes over, whenever its bills appear. If that finds nothing the FY2027 list written in the lib is used and `listSource` says so.
+// A bill Congress.gov does not know is listed at stage 0 with `known: false`, never dropped, so a wrong number shows rather than hides.
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v1-${globalThis.Appropriations.FISCAL_YEAR}`, 1800, async () => {
+  return kvCache(env, `appropriations-v2-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
     const call = async (base, path) => {
@@ -4252,18 +4254,33 @@ async function handleAppropriations(env) {
       if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
       return r.ok ? r.json() : null;
     };
-    const bills = await Promise.all(AP.BILLS.map(async (b) => {
-      const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hr/${b.number}`;
+    // discovery: the committee's bills, up to eight pages of 250; any trouble is "found nothing"
+    let found = null;
+    try {
+      const items = [];
+      let next = 'https://api.congress.gov/v3/committee/house/hsap00/bills?limit=250';
+      for (let page = 0; next && page < 8; page++) {
+        const json = await call(next.split('?')[0], '?' + next.split('?')[1].replace(/[?&](format|api_key)=[^&]*/g, ''));
+        if (!json) break;
+        items.push(...AP.itemsOf(json));
+        next = json.pagination?.next || null;
+      }
+      found = AP.discover(items.filter((i) => [CURRENT_CONGRESS, CURRENT_CONGRESS - 1].includes(Number(i.congress))));
+    } catch (e) { console.warn(`[house-floor] appropriations discovery: ${e.message}`); }
+    const set = found || { fiscalYear: AP.FALLBACK_YEAR, bills: AP.FALLBACK };
+    const bills = await Promise.all(set.bills.map(async (b) => {
+      const congress = found ? (b.congress || CURRENT_CONGRESS) : CURRENT_CONGRESS;
+      const base = `https://api.congress.gov/v3/bill/${congress}/hr/${b.number}`;
       const [record, actions] = await Promise.all([call(base, ''), call(base, '/actions?limit=250')]);
       const bill = record?.bill;
-      const s = AP.stage(actions?.actions, bill?.laws);
+      const s = AP.stage(actions?.actions, bill?.laws, bill?.committeeReports);
       return {
         id: `H.R. ${b.number}`, short: b.short, name: b.name, known: !!bill, title: bill?.title || null,
-        url: `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/house-bill/${b.number}`,
+        url: `https://www.congress.gov/bill/${congress}th-congress/house-bill/${b.number}`,
         ...s, latestAction: bill?.latestAction?.text || null, latestActionDate: bill?.latestAction?.actionDate || null,
       };
     }));
-    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: AP.FISCAL_YEAR, stages: AP.STAGES, bills }), {
+    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills' : 'written list (discovery found nothing)', stages: AP.STAGES, bills }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
     });
   });
