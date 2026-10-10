@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261010i">
+    <link rel="stylesheet" href="styles.house.css?v=20261010k">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1391,7 +1391,7 @@
                     <span class="vote-series-sub-timing" id="vote-series-sub-timing"></span>
                 </div>
                 <div class="vote-series-body" id="vote-series-body">
-                    <div class="whip-updates-loading">Loading vote series…</div>
+                    <div class="loading-indicator" role="status" aria-label="Loading vote series"><i></i><i></i><i></i></div>
                 </div>
             </div>
 
@@ -1409,7 +1409,7 @@
                 </div>
                 <div class="whip-filter-dropdown" id="whip-filter-dropdown" hidden></div>
                 <div class="whip-updates-feed" id="whip-updates-feed">
-                    <div class="whip-updates-loading">Loading whip notices…</div>
+                    <div class="loading-indicator" role="status" aria-label="Loading whip notices"><i></i><i></i><i></i></div>
                 </div>
             </div>
 
@@ -1548,7 +1548,7 @@
                 <button class="reporter-search-clear" id="reporter-search-clear" aria-label="Clear">&#xD7;</button>
             </div>
             <div class="tweets-feed" id="tweets-feed">
-                <div class="tweets-loading">Loading…</div>
+                <div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div>
             </div>
         </div>
 
@@ -1652,7 +1652,7 @@
                     <span class="proceedings-time" id="committee-date"></span>
                 </div>
             </div>
-            <div class="committee-list" id="committee-list"><div class="proceedings-error">LOADING</div></div>
+            <div class="committee-list" id="committee-list"><div class="loading-indicator" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Discharge Petitions: how close each open petition is to the signatures it needs (renderDischargePetitions) -->
@@ -1675,7 +1675,7 @@
                     <button type="button" class="bills-sort-btn" data-dp-sort="recent" aria-pressed="false">Last signed</button>
                 </div>
             </div>
-            <div class="discharge-list" id="discharge-list"><div class="proceedings-error">LOADING</div></div>
+            <div class="discharge-list" id="discharge-list"><div class="loading-indicator" role="status" aria-label="Loading discharge petitions"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Appropriations: the twelve regular bills of the fiscal year and how far each has got (lib/approps-panel.js) -->
@@ -1687,7 +1687,7 @@
                     <span class="proceedings-time" id="approps-summary"></span>
                 </div>
             </div>
-            <div class="approps-list" id="approps-list"><div class="empty-note">Loading</div></div>
+            <div class="approps-list" id="approps-list"><div class="loading-indicator" role="status" aria-label="Loading appropriations"><i></i><i></i><i></i></div></div>
         </div>
 
 <!-- place scripts at end of body -->
@@ -1903,7 +1903,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261010u"></script>
+    <script defer src="app.js?v=20261010v"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

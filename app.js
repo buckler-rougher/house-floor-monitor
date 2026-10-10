@@ -6189,7 +6189,7 @@ function renderCommitteeMeetings() {
 // What the Clerk's page for one meeting holds: who is testifying, with their documents, and the legislation, notices and votes. Document titles are the
 // Clerk's, less the date it appends ("Testimony_Taylor_09.16.2026" -> "Testimony Taylor").
 function committeeDetailHtml(x) {
-    if (!x || x === 'loading') return '<div class="committee-detail"><span class="committee-detail-note">Loading</span></div>';
+    if (!x || x === 'loading') return '<div class="committee-detail"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>';
     if (x === 'error') return '<div class="committee-detail"><span class="committee-detail-note">Details unavailable</span></div>';
     const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
     const doc = (i) => i.url ? `<a href="${escapeHtml(i.url)}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
@@ -6407,7 +6407,7 @@ function openDischargeSigners(id, number, trigger) {
                 </div>
             </div>
         </div>
-        <div class="dp-modal-list" id="dp-modal-list"><div class="proceedings-error">LOADING</div></div>
+        <div class="dp-modal-list" id="dp-modal-list"><div class="loading-indicator" role="status" aria-label="Loading signers"><i></i><i></i><i></i></div></div>
         <div class="dp-modal-foot dp-modal-source">Source: <a href="https://clerk.house.gov/DischargePetition/${escapeHtml(id)}" target="_blank" rel="noopener">Discharge Petition ${number} (House Clerk)</a></div>
     </div>`;
     document.body.appendChild(o);
