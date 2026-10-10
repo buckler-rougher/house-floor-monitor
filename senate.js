@@ -978,7 +978,7 @@ function onSenateBillModalKey(e) {
 
 // The modal itself is lib/remote-bill.js, shared with the House board (which uses it for any bill that is not in its week's business).
 const REMOTE_BILL = { linkClass: 'senate', photoUrlFor: (id) => photoUrlFor(id), placeholder: PHOTO_PLACEHOLDER, formatDate: (d) => boardDate(d) };
-function billModalSkeleton(id) { return RemoteBill.skeleton(id); }
+function billModalSkeleton(id, message) { return RemoteBill.skeleton(id, message); }
 function billModalContent(b) { return RemoteBill.content(b, REMOTE_BILL); }
 // Bill details, warmed rather than fetched on click: this board has no bulk endpoint (the Senate publishes no weekly bill list), so it asks for each measure once,
 // in the background, and keeps the answers (lib/remote-bill.js), which are worth more here than on the House board: PROCEDURAL STAGES reaches back months, so
@@ -1029,7 +1029,7 @@ async function openSenateBillModal(billId, trigger) {
     const paint = (entry) => {
         if (overlay.hidden || overlay.dataset.closing) return;
         overlay.innerHTML = entry.error
-            ? billModalSkeleton(billId).replace('Loading…', `Details unavailable (${escapeHtml(entry.error)})`)
+            ? billModalSkeleton(billId, `Details unavailable (${entry.error})`)
             : billModalContent(entry.bill);
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
         BillSections.wireCopyLink(overlay);

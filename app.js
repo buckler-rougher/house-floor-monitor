@@ -4882,7 +4882,7 @@ function openBillModal(billId) {
                 <input type="search" class="amdt-search-input" data-amdt-search placeholder="Search by #, sponsor, or summary…" autocomplete="off">
             </div>
             <div class="bill-amendments-panel-body" id="amendments-body">
-                <div class="bill-amendments-empty">Loading…</div>
+                <div class="loading-indicator" role="status" aria-label="Loading amendments"><i></i><i></i><i></i></div>
             </div>
             <div class="bill-modal-foot">
                 <div class="bill-doc-links">
