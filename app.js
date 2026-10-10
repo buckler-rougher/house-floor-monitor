@@ -6069,6 +6069,22 @@ function renderTodayInHouse(items) {
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('today-house-label', isToday ? 'TODAY IN THE HOUSE' : 'LAST SITTING DAY');
     put('today-house-date', fmtDate(new Date(proceedingsDateOverride || items[0].pubDate)));
+    // The source link's popover: the Clerk's entry the adjournment was read from, and the votes as the board kept them (DomeWatch's /floor tally
+    // at the moment each roll closed).
+    if (globalThis.SourcePop) {
+        const parts = [];
+        if (adjourned) parts.push({
+            request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + day,
+            note: 'The Clerk\'s entry the adjournment time and the next meeting are read from.',
+            json: { entries: [clerkEntry(adjourned.entry)] },
+        });
+        if (votes.length) parts.push({
+            request: 'GET https://data.domewatch.us/v1/floor',
+            note: 'The votes: the tally DomeWatch reported when each roll closed, as the board kept it.',
+            json: { entries: votes },
+        });
+        SourcePop.set(panel, parts.length ? { parts } : null);
+    }
     setIfChanged(body, rows.map(([label, value]) => `<div class="today-row"><div class="today-label">${label}</div><div class="today-value">${value}</div></div>`).join(''));
     panel.classList.add('has-data');
 }

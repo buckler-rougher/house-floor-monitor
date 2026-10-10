@@ -18,6 +18,7 @@ ok('the adjournment is the entry that says so, and the next meeting is the Clerk
   const r = W.summarize({ items: [adjourn, other], rollLog: [], day, etDay });
   assert.strictEqual(r.adjourned.at, Date.parse('2026-09-03T17:05:53.000Z'));
   assert.strictEqual(r.adjourned.next, '10:00 a.m. on September 4, 2026');
+  assert.strictEqual(r.adjourned.entry, adjourn, 'the entry itself, for the source popover');
 });
 
 ok('an adjournment with no next-meeting sentence still says when it adjourned, and nothing is made up for the next meeting', () => {
