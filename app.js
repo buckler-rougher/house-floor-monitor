@@ -6336,7 +6336,7 @@ function renderDischargePetitions() {
     if (_dischargeSort === 'close') {
         // closest to 218 puts the finished ones first, as their own group
         if (done.length) {
-            entries.push({ key: 'head', html: `<div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar until the House acts. After 7 legislative days a signer can announce the motion, and the Speaker must schedule it within 2.</span></div>` });
+            entries.push({ key: 'head', html: `<div class="dp-group-head">Reached ${need}</div>` });
             shownDone.forEach((p) => entries.push(card(p)));
             if (done.length > DISCHARGE_DONE_SHOWN) { const r = done.length - shownDone.length; entries.push(toggle('dp-done-toggle', _dischargeDoneAll ? 'Show fewer' : `Show ${r} more that reached ${need}`)); }
         }
