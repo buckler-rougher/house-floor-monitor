@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261009t">
+    <link rel="stylesheet" href="styles.house.css?v=20261009u">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1662,10 +1662,13 @@
                     <span class="proceedings-time" id="discharge-summary"></span>
                 </div>
             </div>
-            <div class="dp-sort" id="dp-sort" role="group" aria-label="Sort petitions">
-                <button type="button" class="bills-sort-btn active" data-dp-sort="close" aria-pressed="true">Closest to 218</button>
-                <button type="button" class="bills-sort-btn" data-dp-sort="new" aria-pressed="false">Newest</button>
-                <button type="button" class="bills-sort-btn" data-dp-sort="recent" aria-pressed="false">Last signed</button>
+            <div class="bills-sort-bar dp-sort" id="dp-sort" role="group" aria-label="Sort petitions">
+                <span class="bills-sort-label">SORT</span>
+                <div class="bills-sort-switcher">
+                    <button type="button" class="bills-sort-btn active" data-dp-sort="close" aria-pressed="true">Closest to 218</button>
+                    <button type="button" class="bills-sort-btn" data-dp-sort="new" aria-pressed="false">Newest</button>
+                    <button type="button" class="bills-sort-btn" data-dp-sort="recent" aria-pressed="false">Last signed</button>
+                </div>
             </div>
             <div class="discharge-list" id="discharge-list"><div class="proceedings-error">LOADING</div></div>
         </div>
@@ -1877,7 +1880,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261009v"></script>
+    <script defer src="app.js?v=20261009w"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
