@@ -106,6 +106,12 @@ ok('links: only the ones that exist, in order, with the committee report titled 
   assert.ok(B.links({ report: 'https://r' }).includes('title="Committee Report"'));
 });
 
+ok('links: the CBO cost estimate sits after the memo, titled with what it priced', () => {
+  const l = B.links({ text: 'https://t', memo: 'https://m', cbo: 'https://www.cbo.gov/publication/1', cboTitle: 'S. 1 - As reported', congress: 'https://c' });
+  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text →', 'View White House Memo →', 'View CBO Cost Estimate →', 'View on Congress.gov →']);
+  assert.ok(l.includes('title="S. 1 - As reported"'));
+});
+
 ok('the Copy link button is always there, and an href is escaped', () => {
   assert.ok(B.links({}).includes('id="bill-copy-link"'));
   assert.ok(B.links({ text: 'https://t/?a=1&b="2"' }).includes('href="https://t/?a=1&amp;b=&quot;2&quot;"'));

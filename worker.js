@@ -1115,6 +1115,15 @@ async function moreCosponsorPages(base, first, get) {
   return out;
 }
 
+// The newest CBO cost estimate on a Congress.gov bill record (`cboCostEstimates`), as { url, title }, or nulls. The estimate's description says which version of
+// the bill it priced ("As ordered reported by the House Committee on ... on May 14, 2026"), which is what the link's tooltip shows.
+function latestCboEstimate(bill) {
+  const list = (bill?.cboCostEstimates || []).filter((e) => e && /^https:\/\/www\.cbo\.gov\//.test(e.url || ''));
+  list.sort((a, b) => String(b.pubDate || '').localeCompare(String(a.pubDate || '')));
+  const e = list[0];
+  return { url: e ? e.url : null, title: e ? [e.title, String(e.description || '').replace(/\s+/g, ' ').trim()].filter(Boolean).join(' - ') : null };
+}
+
 async function fetchBillMeta(billId, env) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
@@ -1144,6 +1153,9 @@ async function fetchBillMeta(billId, env) {
       const link = committeeReportLink((data.bill?.committeeReports || [])[0]?.citation);
       result.committeeReportUrl = link.url;
       result.committeeReportCitation = link.citation;
+      const cbo = latestCboEstimate(data.bill);
+      result.cboCostEstimateUrl = cbo.url;
+      result.cboCostEstimateTitle = cbo.title;
     } catch {}
   }
   if (cosponsorsResp.ok) {
@@ -2132,7 +2144,7 @@ async function _fetchBills(request, env) {
         // support (key absent entirely — null means "checked, no report").
         // Also when the cosponsors list may have been cut at the old limit of 100 (exactly 100 and not marked complete): only
         // the few bills that large are read again, not every cached bill.
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta)
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta)
                                         || (enrichCached.meta.cosponsors?.length >= 100 && !enrichCached.meta.cosponsorsComplete);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
@@ -2217,6 +2229,7 @@ async function _fetchBills(request, env) {
         if (meta.committees) bill.committees = meta.committees;
         if (meta.committeeReportUrl) bill.committeeReportUrl = meta.committeeReportUrl;
         if (meta.committeeReportCitation) bill.committeeReportCitation = meta.committeeReportCitation;
+        if (meta.cboCostEstimateUrl) { bill.cboCostEstimateUrl = meta.cboCostEstimateUrl; bill.cboCostEstimateTitle = meta.cboCostEstimateTitle; }
       }
     }));
 
@@ -3108,7 +3121,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v4`, 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v5`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -3205,6 +3218,8 @@ async function handleSenateBill(env, billId) {
       committeeReportDate: report ? report.date : null,
       committeeReportUrl: reportLink.url,
       committeeReportCitation: reportLink.citation,
+      cboCostEstimateUrl: latestCboEstimate(bill).url,
+      cboCostEstimateTitle: latestCboEstimate(bill).title,
       sapUrl,
       summary,
       latestAction: bill.latestAction?.text || null,
@@ -6185,6 +6200,7 @@ function sourceStatusChecks() {
     'house-live': ['https://live.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-rules': ['https://rules.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-voting-days': ['https://www.house.gov/voting-days', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
+    'cbo': ['https://www.cbo.gov/publications/all/rss.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<rss'), 'the cost estimates feed')],
     'govinfo': ['https://www.govinfo.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'press-gallery': ['https://pressgallery.house.gov/member-data/casualty-list', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'wikipedia': ['https://en.wikipedia.org/api/rest_v1/page/summary/United_States_Senate', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
