@@ -3497,6 +3497,17 @@ let amendmentsPartyFilter = 'all';
 let amendmentsMemberFilter = null;
 // Amendment text search query
 let amendmentsSearchQuery = '';
+// What the amendments search box is for, and how its examples come out of the amendments it searches (renderAmendmentsTable): numbers, sponsors and words of the summaries
+const AMDT_SEARCH = { fields: ['Number', 'Sponsor', 'Summary'] };
+function amendmentExamples(amendments) {
+    const words = [];
+    for (const a of amendments) for (const w of String(a.summary || '').split(/[^A-Za-z]+/)) if (w.length >= 7 && !/^(provides|include|including|amendment|section|requires|prohibits|appropriations|provision)$/i.test(w)) words.push(w.toLowerCase());
+    return [
+        ...amendments.map(a => '#' + a.num),
+        ...amendments.flatMap(a => (a._enrichedSponsors || []).map(s => s.name)),
+        ...SearchField.sample(words, 12),
+    ];
+}
 // Deep-link narrowing: number | number[] | null. Set when jumping to the Amendments
 // panel from an amendment-vote indicator (bill card or Vote Series item) so the panel
 // opens narrowed to that specific amendment (or en bloc group) instead of the full list.
@@ -4643,6 +4654,7 @@ function openBillModalToAmendments(billId, num = null, enBlocNums = null) {
         const searchInput = document.querySelector('#bill-amendments-panel-el [data-amdt-search]');
         if (searchInput) {
             searchInput.value = enBlocNums && enBlocNums.length ? `En Bloc: ${enBlocNums.join(', ')}` : (num != null ? `#${num}` : '');
+            searchInput._searchField?.refresh();
         }
         const slug = body.dataset.amendmentsSlug;
         const cached = slug && _amendmentsDataCache.get(slug);
@@ -4880,7 +4892,7 @@ function openBillModal(billId) {
                 </div>
             </div>
             <div class="amdt-search-bar">
-                <input type="search" class="amdt-search-input" data-amdt-search placeholder="Search by #, sponsor, or summary…" autocomplete="off">
+                <input type="search" class="amdt-search-input" data-amdt-search aria-label="Search amendments by number, sponsor or summary" autocomplete="off">
             </div>
             <div class="bill-amendments-panel-body" id="amendments-body">
                 <div class="loading-indicator" role="status" aria-label="Loading amendments"><i></i><i></i><i></i></div>
@@ -4922,6 +4934,7 @@ function openBillModal(billId) {
         btn.classList.toggle('active', btn.dataset.sort === amendmentsSortMode));
     overlay.querySelectorAll('.amdt-filter-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.filter === amendmentsPartyFilter));
+    overlay.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i, AMDT_SEARCH));
     requestAnimationFrame(() =>
         overlay.querySelectorAll('.amdt-filter-btn, .amdt-sort-btn').forEach(btn => { btn.style.transition = ''; }));
 
@@ -5021,6 +5034,8 @@ function sortAmendmentsForDisplay(amendments) {
 }
 
 function renderAmendmentsTable({ amendments }, body) {
+    // the search box above this table rotates through examples out of THESE amendments
+    body.parentElement?.querySelectorAll('[data-amdt-search]').forEach(i => i._searchField?.setExamples(amendmentExamples(amendments)));
     let display = sortAmendmentsForDisplay(amendments);
 
     // Deep-link narrowing (from an amendment-vote indicator) — exact match on
@@ -6431,7 +6446,7 @@ function openDischargeSigners(id, number, trigger) {
     o.innerHTML = `<div class="dp-modal" role="dialog" aria-modal="true" aria-label="Signers of discharge petition ${number}">
         <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">×</button></div>
         <div class="dp-modal-tools">
-            <input type="search" id="dp-modal-search" class="dp-modal-search" placeholder="Search name or state" aria-label="Search signers" autocomplete="off">
+            <input type="search" id="dp-modal-search" class="dp-modal-search" aria-label="Search signers by name or state" autocomplete="off">
             <div class="bills-sort-bar dp-modal-sort">
                 <span class="bills-sort-label">PARTY</span>
                 <div class="bills-sort-switcher" id="dp-modal-filters">
@@ -6470,6 +6485,7 @@ function openDischargeSigners(id, number, trigger) {
         if (!entries.length) entries.push({ key: 'none', html: '<div class="empty-note">No matching signers</div>' });
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
+    const searchField = SearchField.mount(document.getElementById('dp-modal-search'), { fields: ['Name', 'State'] });
     document.getElementById('dp-modal-search').addEventListener('input', draw);
     document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
         const b = e.target.closest('[data-party]'); if (!b) return;
@@ -6481,6 +6497,8 @@ function openDischargeSigners(id, number, trigger) {
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => {
             signers = d.signers || []; draw();
+            // examples out of the list itself: signers' names and the states they come from
+            searchField?.setExamples([...signers.map((s) => s.name), ...signers.map((s) => s.stateName)]);
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
         .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="proceedings-error">SIGNERS UNAVAILABLE</div>'; });
@@ -6888,7 +6906,7 @@ function updateDebateSection(items) {
                 if (amendPanel) amendPanel.style.display = '';
                 amendmentsExactFilter = debateAmendmentNum;
                 const searchInput = elements.debateAmendmentsPanel?.querySelector('[data-amdt-search]');
-                if (searchInput) searchInput.value = `#${debateAmendmentNum}`;
+                if (searchInput) { searchInput.value = `#${debateAmendmentNum}`; searchInput._searchField?.refresh(); }
                 loadAmendments(rulesSlug, 'debate-amendments-body', 'debate-amendments-count');
                 setDebateSource('amendments');
             } else if (!amendmentKey) {
@@ -10629,6 +10647,8 @@ loadCommitteeMeetings();
 loadDischargePetitions();
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
+// the amendments search box of the debate panel (the modal's is mounted when it is built)
+document.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i, AMDT_SEARCH));
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
 setInterval(loadDischargeCalendar, 15 * 60 * 1000);
