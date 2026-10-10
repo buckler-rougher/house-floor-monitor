@@ -91,7 +91,7 @@ ok('the summary is escaped plain text', () => {
 
 ok('the latest action takes HTML from the board, and the date is optional', () => {
   const html = B.action({ textHtml: 'Agreed to <i>by voice</i>', dateHtml: '3 Sep <a href="x">Source</a>' });
-  assert.ok(html.includes('<span class="bill-modal-action-text">Agreed to <i>by voice</i></span>'));
+  assert.ok(html.includes('<span class="bill-modal-action-text" title="Agreed to by voice">Agreed to <i>by voice</i></span>'), 'one line, the whole text as its tooltip, markup stripped');
   assert.ok(html.includes('<span class="bill-modal-date">3 Sep <a href="x">Source</a></span>'));
   assert.ok(!B.action({ textHtml: 'Passed', dateHtml: '' }).includes('bill-modal-date'));
 });
