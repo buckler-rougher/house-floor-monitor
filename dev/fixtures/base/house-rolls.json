@@ -1,0 +1,266 @@
+{
+ "at": 1791595680639,
+ "date": "09/16/2026",
+ "year": 2026,
+ "rolls": [
+  {
+   "roll": "308",
+   "legis": "H R 5334",
+   "question": "On Motion to Concur in the Senate Amendments",
+   "type": "YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:28 PM",
+   "desc": "An Act to amend the Internal Revenue Code of 1986 to allow early childhood educators to take the educator expense deduction, and for other purposes",
+   "totals": {
+    "yeas": 262,
+    "nays": 159,
+    "present": 0,
+    "notVoting": 12
+   },
+   "parties": {
+    "R": {
+     "yeas": 203,
+     "nays": 7,
+     "present": 0,
+     "notVoting": 8
+    },
+    "D": {
+     "yeas": 58,
+     "nays": 152,
+     "present": 0,
+     "notVoting": 4
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>308</rollcall-num>\r\n    <legis-num>H R 5334</legis-num>\r\n    <vote-question>On Motion to Concur in the Senate Amendments</vote-question>\r\n    <vote-type>YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:28\">6:28 PM</action-time>\r\n    <vote-desc>An Act to amend the Internal Revenue Code of 1986 to allow early childhood educators to take the educator expense deduction, and for other purposes</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>203</yea-total>\r\n        <nay-total>7</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>8</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>58</yea-total>\r\n        <nay-total>152</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>4</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>262</yea-total>\r\n        <nay-total>159</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>12</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "309",
+   "legis": "H R 9576",
+   "question": "On Passage",
+   "type": "YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:37 PM",
+   "desc": "National Fraud Enforcement Division Act",
+   "totals": {
+    "yeas": 352,
+    "nays": 72,
+    "present": 0,
+    "notVoting": 9
+   },
+   "parties": {
+    "R": {
+     "yeas": 212,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 6
+    },
+    "D": {
+     "yeas": 139,
+     "nays": 72,
+     "present": 0,
+     "notVoting": 3
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>309</rollcall-num>\r\n    <legis-num>H R 9576</legis-num>\r\n    <vote-question>On Passage</vote-question>\r\n    <vote-type>YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:37\">6:37 PM</action-time>\r\n    <vote-desc>National Fraud Enforcement Division Act</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>212</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>6</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>139</yea-total>\r\n        <nay-total>72</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>3</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>352</yea-total>\r\n        <nay-total>72</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>9</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "310",
+   "legis": "H R 10326",
+   "question": "On Passage",
+   "type": "YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:43 PM",
+   "desc": "PROOF Act",
+   "totals": {
+    "yeas": 217,
+    "nays": 207,
+    "present": 0,
+    "notVoting": 9
+   },
+   "parties": {
+    "R": {
+     "yeas": 210,
+     "nays": 1,
+     "present": 0,
+     "notVoting": 7
+    },
+    "D": {
+     "yeas": 6,
+     "nays": 206,
+     "present": 0,
+     "notVoting": 2
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>310</rollcall-num>\r\n    <legis-num>H R 10326</legis-num>\r\n    <vote-question>On Passage</vote-question>\r\n    <vote-type>YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:43\">6:43 PM</action-time>\r\n    <vote-desc>PROOF Act</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>210</yea-total>\r\n        <nay-total>1</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>7</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>6</yea-total>\r\n        <nay-total>206</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>2</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>217</yea-total>\r\n        <nay-total>207</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>9</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "311",
+   "legis": "H J RES 213",
+   "question": "On Passage",
+   "type": "YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:49 PM",
+   "desc": "Providing for congressional disapproval under chapter 8 of title 5, United States Code, of the rule issued by the Environmental Protection Agency relating to the “California State Nonroad Engine Pollution Control Standards; Commercial Harbor Craft Regulations; Notice of Decision”",
+   "totals": {
+    "yeas": 214,
+    "nays": 208,
+    "present": 0,
+    "notVoting": 11
+   },
+   "parties": {
+    "R": {
+     "yeas": 210,
+     "nays": 1,
+     "present": 0,
+     "notVoting": 7
+    },
+    "D": {
+     "yeas": 3,
+     "nays": 207,
+     "present": 0,
+     "notVoting": 4
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>311</rollcall-num>\r\n    <legis-num>H J RES 213</legis-num>\r\n    <vote-question>On Passage</vote-question>\r\n    <vote-type>YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:49\">6:49 PM</action-time>\r\n    <vote-desc>Providing for congressional disapproval under chapter 8 of title 5, United States Code, of the rule issued by the Environmental Protection Agency relating to the “California State Nonroad Engine Pollution Control Standards; Commercial Harbor Craft Regulations; Notice of Decision”</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>210</yea-total>\r\n        <nay-total>1</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>7</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>3</yea-total>\r\n        <nay-total>207</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>4</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>214</yea-total>\r\n        <nay-total>208</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>11</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "312",
+   "legis": "H R 9340",
+   "question": "On Motion to Suspend the Rules and Pass, as Amended",
+   "type": "2/3 YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:53 PM",
+   "desc": "Ratepayer Protection Act",
+   "totals": {
+    "yeas": 417,
+    "nays": 3,
+    "present": 0,
+    "notVoting": 12
+   },
+   "parties": {
+    "R": {
+     "yeas": 210,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 7
+    },
+    "D": {
+     "yeas": 206,
+     "nays": 3,
+     "present": 0,
+     "notVoting": 5
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>312</rollcall-num>\r\n    <legis-num>H R 9340</legis-num>\r\n    <vote-question>On Motion to Suspend the Rules and Pass, as Amended</vote-question>\r\n    <vote-type>2/3 YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:53\">6:53 PM</action-time>\r\n    <vote-desc>Ratepayer Protection Act</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>210</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>7</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>206</yea-total>\r\n        <nay-total>3</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>5</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>417</yea-total>\r\n        <nay-total>3</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>12</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "313",
+   "legis": "H R 9497",
+   "question": "On Motion to Suspend the Rules and Pass, as Amended",
+   "type": "2/3 YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "6:58 PM",
+   "desc": "Water Resources Development Act",
+   "totals": {
+    "yeas": 415,
+    "nays": 9,
+    "present": 0,
+    "notVoting": 9
+   },
+   "parties": {
+    "R": {
+     "yeas": 202,
+     "nays": 9,
+     "present": 0,
+     "notVoting": 7
+    },
+    "D": {
+     "yeas": 212,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 2
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>313</rollcall-num>\r\n    <legis-num>H R 9497</legis-num>\r\n    <vote-question>On Motion to Suspend the Rules and Pass, as Amended</vote-question>\r\n    <vote-type>2/3 YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"18:58\">6:58 PM</action-time>\r\n    <vote-desc>Water Resources Development Act</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>202</yea-total>\r\n        <nay-total>9</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>7</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>212</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>2</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>415</yea-total>\r\n        <nay-total>9</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>9</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  },
+  {
+   "roll": "314",
+   "legis": "S 2403",
+   "question": "On Motion to Suspend the Rules and Pass",
+   "type": "2/3 YEA-AND-NAY",
+   "result": "Passed",
+   "date": "09/16/2026",
+   "time": "7:05 PM",
+   "desc": "Retire through Ownership Act",
+   "totals": {
+    "yeas": 401,
+    "nays": 14,
+    "present": 0,
+    "notVoting": 18
+   },
+   "parties": {
+    "R": {
+     "yeas": 191,
+     "nays": 14,
+     "present": 0,
+     "notVoting": 13
+    },
+    "D": {
+     "yeas": 209,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 5
+    },
+    "I": {
+     "yeas": 1,
+     "nays": 0,
+     "present": 0,
+     "notVoting": 0
+    }
+   },
+   "metadata": "<vote-metadata>\r\n    <majority>R</majority>\r\n    <congress>119</congress>\r\n    <session>2nd</session>\r\n    <chamber>U.S. House of Representatives</chamber>\r\n    <rollcall-num>314</rollcall-num>\r\n    <legis-num>S 2403</legis-num>\r\n    <vote-question>On Motion to Suspend the Rules and Pass</vote-question>\r\n    <vote-type>2/3 YEA-AND-NAY</vote-type>\r\n    <vote-result>Passed</vote-result>\r\n    <action-date>16-Sep-2026</action-date>\r\n    <action-time time-etz=\"19:05\">7:05 PM</action-time>\r\n    <vote-desc>Retire through Ownership Act</vote-desc>\r\n    <vote-totals>\r\n      <totals-by-party>\r\n        <party>Republican</party>\r\n        <yea-total>191</yea-total>\r\n        <nay-total>14</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>13</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Democratic</party>\r\n        <yea-total>209</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>5</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-party>\r\n        <party>Independent</party>\r\n        <yea-total>1</yea-total>\r\n        <nay-total>0</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>0</not-voting-total>\r\n      </totals-by-party>\r\n      <totals-by-vote>\r\n        <total-stub>Totals</total-stub>\r\n        <yea-total>401</yea-total>\r\n        <nay-total>14</nay-total>\r\n        <present-total>0</present-total>\r\n        <not-voting-total>18</not-voting-total>\r\n      </totals-by-vote>\r\n    </vote-totals>\r\n  </vote-metadata>"
+  }
+ ]
+}

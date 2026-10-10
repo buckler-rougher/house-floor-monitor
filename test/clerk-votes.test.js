@@ -53,4 +53,41 @@ ok('the session follows the year: first in odd years, second in even', () => {
   assert.strictEqual(V.listUrl(2026), 'https://clerk.house.gov/Votes/MemberVotes?Session=2nd');
 });
 
+// ---- one roll call's own file ---------------------------------------------------------------
+// test/clerk-roll-314.xml is roll 314 (16 September 2026) as the Clerk published it, with the member-by-member votes cut after the first two.
+{
+  const fs = require('fs'), path = require('path');
+  const xml = fs.readFileSync(path.join(__dirname, 'clerk-roll-314.xml'), 'utf8');
+  ok('a roll call file is read for its question, result, time, title and the totals by party', () => {
+    const r = ClerkVotes.parseRoll(xml);
+    assert.strictEqual(r.roll, '314');
+    assert.strictEqual(r.legis, 'S 2403');
+    assert.strictEqual(r.question, 'On Motion to Suspend the Rules and Pass');
+    assert.strictEqual(r.result, 'Passed');
+    assert.strictEqual(r.date, '09/16/2026');
+    assert.strictEqual(r.time, '7:05 PM');
+    assert.strictEqual(r.desc, 'Retire through Ownership Act');
+    assert.deepStrictEqual(r.totals, { yeas: 401, nays: 14, present: 0, notVoting: 18 });
+    assert.deepStrictEqual(r.parties.R, { yeas: 191, nays: 14, present: 0, notVoting: 13 });
+    assert.deepStrictEqual(r.parties.D, { yeas: 209, nays: 0, present: 0, notVoting: 5 });
+    assert.deepStrictEqual(r.parties.I, { yeas: 1, nays: 0, present: 0, notVoting: 0 });
+  });
+  ok('the metadata is kept as the Clerk wrote it, less the table-header boilerplate and every member\'s vote', () => {
+    const r = ClerkVotes.parseRoll(xml);
+    assert.ok(r.metadata.startsWith('<vote-metadata>') && r.metadata.endsWith('</vote-metadata>'));
+    assert.ok(!r.metadata.includes('totals-by-party-header') && !r.metadata.includes('recorded-vote'));
+    assert.ok(r.metadata.includes('<vote-result>Passed</vote-result>'));
+  });
+  ok('a page that is not a roll call (a 200 with an error, an empty file) is not a vote', () => {
+    assert.strictEqual(ClerkVotes.parseRoll('<html><body>Page not found</body></html>'), null);
+    assert.strictEqual(ClerkVotes.parseRoll(''), null);
+    assert.strictEqual(ClerkVotes.parseRoll(null), null);
+  });
+  ok('the date reads whatever the day\'s width, and entities in the title are decoded', () => {
+    const r = ClerkVotes.parseRoll('<rollcall-vote><vote-metadata><rollcall-num>5</rollcall-num><action-date>2-Jan-2026</action-date><vote-desc>Taxes &amp; Fees Act</vote-desc></vote-metadata></rollcall-vote>');
+    assert.strictEqual(r.date, '01/02/2026');
+    assert.strictEqual(r.desc, 'Taxes & Fees Act');
+  });
+}
+
 console.log(`\n${n} passed`);

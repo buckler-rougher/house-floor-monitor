@@ -3964,6 +3964,41 @@ async function handleSenateVotes(env) {
   });
 }
 
+// The roll calls the House took on one day, from the Clerk's own roll call files (evs/<year>/rollNNN.xml), reduced to each roll's metadata: what
+// the TODAY IN THE HOUSE panel shows (question, result, time, the totals and each party's). The files are 90 KB each because they list every
+// member's vote, so the board does not fetch them; this reads them newest first from the latest roll until it passes the day (rolls are in
+// time order), keeps the ones on the day, and sends them oldest first. A day with no votes costs one file. `date` is MM/DD/YYYY, Eastern.
+async function handleHouseRolls(request, env) {
+  const date = new URL(request.url).searchParams.get('date') || '';
+  const fail = (status, error) => new Response(JSON.stringify({ error }), {
+    status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) return fail(400, 'date must be MM/DD/YYYY');
+  const year = Number(date.slice(6));
+  const iso = (d) => `${d.slice(6)}-${d.slice(0, 2)}-${d.slice(3, 5)}`;
+  const today = getTodayDateET();   // YYYYMMDD
+  const isToday = iso(date).replace(/-/g, '') === today;
+  return kvCache(env, `house-rolls-v1-${date}`, isToday ? 120 : 6 * 3600, async () => {
+    try {
+      const rolls = [];
+      const nums = globalThis.ClerkVotes.parseRolls(await fetchRSSFeed(globalThis.ClerkVotes.listUrl(year)), year);
+      if (!nums.length) throw new Error('the Clerk vote listing had no roll calls (has the page changed?)');
+      for (let n = Number(nums[0].rollNumber), seen = 0; n >= 1 && seen < 60; n--, seen++) {
+        const roll = globalThis.ClerkVotes.parseRoll(await fetchRSSFeed(`https://clerk.house.gov/evs/${year}/roll${String(n).padStart(3, '0')}.xml`));
+        if (!roll || !roll.date) throw new Error(`roll ${n} was not a roll call file`);
+        if (roll.date === date) rolls.push(roll);
+        else if (iso(roll.date) < iso(date)) break;   // older than the day: no more to find
+      }
+      rolls.reverse();
+      return new Response(JSON.stringify({ at: Date.now(), date, year, rolls }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${isToday ? 120 : 3600}` },
+      });
+    } catch (e) {
+      return fail(502, e.message);
+    }
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6082,6 +6117,8 @@ async function handleRequest(request, env) {
     return await handleVotingDaysSource(request);
   } else if (path === '/api/whip-source' && request.method === 'GET') {
     return await handleWhipSource(env);
+  } else if (path === '/api/house-rolls' && request.method === 'GET') {
+    return await handleHouseRolls(request, env);
   } else if (path === '/api/bill-source' && request.method === 'GET') {
     return await handleBillSource(request, env);
   } else if (path === '/api/bills-source' && request.method === 'GET') {

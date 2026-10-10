@@ -12294,6 +12294,11 @@ body.recess-mode .today-house.has-data { display: block; }
 .today-value .today-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent-green); margin-right: var(--sp-8); }
 .today-votes { display: grid; gap: var(--sp-8); }
 .today-vote { display: grid; grid-template-columns: 3.2rem 1fr; gap: var(--sp-4) var(--sp-12); align-items: baseline; }
+.today-vote-tally .nb { white-space: nowrap; }
+.today-vote-desc { grid-column: 2; font-size: var(--fs-sm); line-height: 1.4; color: var(--text-muted); }
+.today-vote-result { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; margin-right: var(--sp-4); }
+.today-vote-result.ok { color: var(--accent-green); }
+.today-vote-result.no { color: var(--accent-red); }
 .today-vote-roll { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .today-vote-what { color: var(--text-primary); }
 .today-vote-tally { grid-column: 2; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--text-secondary); }

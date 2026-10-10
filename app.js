@@ -395,7 +395,6 @@ function applyRollLogData(entries) {
         updateLastVoteAbsencesDisplay();
     }
     applyRollLogToBills(rollLog, activeRoll);
-    renderTodayInHouse();
     updateVoteTimelineStatus(); // refresh absence badges with newly loaded data
 }
 
@@ -6025,14 +6024,32 @@ function setProceedingsManifest(items) {
     });
 }
 
-// TODAY IN THE HOUSE, once the House is out (the panel is drawn always and shown by CSS only in recess-mode, and only with something to say). Three
-// things the board did not say in one place, each from its own source and shown as it was sent:
-//   ADJOURNED   the time of the Clerk's adjournment entry;
-//   NEXT MEETING  the Clerk's own words from that entry ("The next meeting is scheduled for 10:00 a.m. on September 4, 2026."), not reformatted;
-//   VOTES       the day's recorded votes from the roll log (DomeWatch): the question as it came, the tally, how many did not vote, and each party's split.
-// The votes are only those whose log time falls on the day the proceedings are for, so looking at an earlier day never shows today's votes. No result
-// word is given: the roll log carries a tally, not an outcome, and a tally alone does not say (a suspension needs two thirds).
+// TODAY IN THE HOUSE, once the House is out (the panel is drawn always and shown by CSS only in recess-mode, and only with something to say). All of it
+// is the House Clerk's, each from its own file and shown as it was sent:
+//   CONVENED, ADJOURNED   the times of the Clerk's own floor entries for the day ("The House convened, ...", the adjournment);
+//   NEXT MEETING          the Clerk's sentence from the adjournment entry ("The next meeting is scheduled for 1:30 p.m. on October 13, 2026."), not reformatted;
+//   VOTES                 the day's roll calls from the Clerk's roll call files: the question, the result, the tally, who did not vote, each party's split.
+// The votes come from the Worker's /api/house-rolls (the files are 90 KB each, with every member's vote; it sends only each roll's metadata). Only the
+// rolls the Clerk dated to the day the proceedings are for are shown, so looking at an earlier day never shows today's.
 let _todayItems = null;
+const _rollsByDay = {};   // MM/DD/YYYY -> { at, rolls, loading }
+function loadRollsFor(day) {
+    const have = _rollsByDay[day];
+    if (have && have.loading) return;
+    _rollsByDay[day] = { ...have, loading: true };
+    fetch('https://api.evanhollander.org/house-floor/api/house-rolls?date=' + encodeURIComponent(day))
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { _rollsByDay[day] = { at: Date.now(), rolls: d.rolls || [] }; })
+        .catch(() => { _rollsByDay[day] = { at: Date.now(), rolls: (have && have.rolls) || [], failed: true }; })
+        .finally(() => renderTodayInHouse());
+}
+function rollMetadataXml(raw) {
+    const doc = new DOMParser().parseFromString(raw, 'text/xml');
+    if (!doc.documentElement || doc.querySelector('parsererror')) return raw;
+    const lines = [];
+    SourcePop.xml.emit(doc.documentElement, 0, lines);
+    return lines.join('\n');
+}
 function renderTodayInHouse(items) {
     const panel = document.getElementById('today-house');
     const body = document.getElementById('today-house-body');
@@ -6043,50 +6060,61 @@ function renderTodayInHouse(items) {
     const etDay = (d) => eastern(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
     const day = etDay(proceedingsDateOverride ? new Date(proceedingsDateOverride) : new Date(items[0].pubDate));
     const isToday = day === etDay(new Date());
+    const clock = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
     const rows = [];
-    const { adjourned, votes } = HouseWrapup.summarize({ items, rollLog, day, etDay });
+    const { convened, adjourned } = HouseWrapup.summarize({ items });
 
-    if (adjourned) {
-        const when = new Date(adjourned.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
-        rows.push(['ADJOURNED', `<span class="today-time">${escapeHtml(when)}</span>`]);
-        if (adjourned.next) rows.push(['NEXT MEETING', escapeHtml(decodeHtml(adjourned.next))]);
-    }
+    // the votes: asked for only once the panel can be seen, and again every two minutes on a day that is still going
+    const cached = _rollsByDay[day];
+    if (document.body.classList.contains('recess-mode') && (!cached || (isToday && !cached.loading && Date.now() - cached.at > 120000))) loadRollsFor(day);
+    const rolls = (cached && cached.rolls) || [];
 
-    if (votes.length) {
+    if (convened) rows.push(['CONVENED', `<span class="today-time">${escapeHtml(clock(convened.at))}</span>`]);
+    if (rolls.length) {
         const split = (p) => p && (p.yeas || p.nays) ? `${p.yeas}\u2013${p.nays}` : '';
-        rows.push([votes.length === 1 ? 'VOTE (DOMEWATCH)' : `${votes.length} VOTES (DOMEWATCH)`, `<div class="today-votes">${votes.map((e) => {
-            const t = e.totals || {};
+        rows.push([rolls.length === 1 ? 'VOTE' : `${rolls.length} VOTES`, `<div class="today-votes">${rolls.map((r) => {
+            const t = r.totals || {};
+            const verdict = /^(?:passed|agreed to)/i.test(r.result) ? 'ok' : /^(?:failed|rejected|not agreed)/i.test(r.result) ? 'no' : '';
             const parts = [
                 `<span class="yea">${t.yeas ?? 0}</span>\u2013<span class="nay">${t.nays ?? 0}</span>`,
                 t.notVoting ? `${t.notVoting} not voting` : '',
-                split(e.dem) ? `Dem ${split(e.dem)}` : '', split(e.rep) ? `Rep ${split(e.rep)}` : '',
-            ].filter(Boolean).join(' \u00b7 ');
-            return `<div class="today-vote"><span class="today-vote-roll">${escapeHtml(String(e.roll))}</span><span class="today-vote-what">${linkifyBillNumbers(escapeHtml(decodeHtml(e.question || e.bill || 'Vote')))}</span><span class="today-vote-tally">${parts}</span></div>`;
+                split(r.parties && r.parties.D) ? `Dem ${split(r.parties.D)}` : '', split(r.parties && r.parties.R) ? `Rep ${split(r.parties.R)}` : '', split(r.parties && r.parties.I) ? `Ind ${split(r.parties.I)}` : '',
+                r.time ? escapeHtml(r.time) : '',
+            ].filter(Boolean).map((x) => `<span class="nb">${x}</span>`).join(' \u00b7 ');   // an item is never broken across lines ("Ind 1-" / "0")
+            const what = [r.legis, r.question].filter(Boolean).join(' \u00b7 ');
+            return `<div class="today-vote"><span class="today-vote-roll">${escapeHtml(String(r.roll))}</span><span class="today-vote-what">${escapeHtml(what || 'Vote')}</span>`
+                + (r.desc ? `<span class="today-vote-desc">${escapeHtml(r.desc)}</span>` : '')
+                + `<span class="today-vote-tally">${r.result ? `<span class="today-vote-result ${verdict}">${escapeHtml(r.result)}</span> ` : ''}${parts}</span></div>`;
         }).join('')}</div>`]);
     }
+    if (adjourned) {
+        rows.push(['ADJOURNED', `<span class="today-time">${escapeHtml(clock(adjourned.at))}</span>`]);
+        if (adjourned.next) rows.push(['NEXT MEETING', escapeHtml(decodeHtml(adjourned.next))]);
+    }
 
-    if (!rows.length) { panel.classList.remove('has-data'); return; }
+    if (!rows.length) { panel.classList.remove('has-data'); if (globalThis.SourcePop) SourcePop.set(panel, null); return; }
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('today-house-label', isToday ? 'TODAY IN THE HOUSE' : 'LAST SITTING DAY');
     put('today-house-date', fmtDate(new Date(proceedingsDateOverride || items[0].pubDate)));
-    // The source link's popover: the Clerk's entry the adjournment was read from, and the votes as the board kept them (DomeWatch's /floor tally
-    // at the moment each roll closed).
+    setIfChanged(body, rows.map(([label, value]) => `<div class="today-row"><div class="today-label">${label}</div><div class="today-value">${value}</div></div>`).join(''));
+    panel.classList.add('has-data');
+
+    // The source link's popover: the Clerk's entries the times and the next meeting were read from, then each roll's own metadata, as the Clerk wrote it.
     if (globalThis.SourcePop) {
         const parts = [];
-        if (adjourned) parts.push({
+        const entries = [convened, adjourned].filter(Boolean).map((x) => clerkEntry(x.entry));
+        if (entries.length) parts.push({
             request: 'GET https://clerk.house.gov/FloorSummary/ViewFloorActions?date=' + day,
-            note: 'The Clerk\'s entry the adjournment time and the next meeting are read from.',
-            json: { entries: [clerkEntry(adjourned.entry)] },
+            note: 'The Clerk\'s entries the times and the next meeting are read from.',
+            json: { entries },
         });
-        if (votes.length) parts.push({
-            request: 'GET https://data.domewatch.us/v1/floor',
-            note: 'The votes: the tally DomeWatch reported when each roll closed, as the board kept it.',
-            json: { entries: votes },
+        for (const r of rolls) parts.push({
+            request: `GET https://clerk.house.gov/evs/${day.slice(6)}/roll${String(r.roll).padStart(3, '0')}.xml`,
+            note: 'The roll call\'s metadata. The member-by-member votes that follow it in the file, and the table headers, are left out.',
+            xml: rollMetadataXml(r.metadata),
         });
         SourcePop.set(panel, parts.length ? { parts } : null);
     }
-    setIfChanged(body, rows.map(([label, value]) => `<div class="today-row"><div class="today-label">${label}</div><div class="today-value">${value}</div></div>`).join(''));
-    panel.classList.add('has-data');
 }
 
 function renderProceedingsFeedPanel(items) {
