@@ -4104,7 +4104,7 @@ async function handleDischargePetition(env, id) {
     try {
       const sig = globalThis.DischargePetitions.parseSignatures(await fetchSource(`https://clerk.house.gov/DischargePetition/${id}`, `petition ${id}`, { timeout: 30_000 }));
       if (!sig) throw new Error('the petition page had no signature table (has the page changed?)');
-      return new Response(JSON.stringify({ at: Date.now(), id, count: sig.count, last: sig.last, signers: sig.signers }), {
+      return new Response(JSON.stringify({ at: Date.now(), id, count: sig.count, last: sig.last, signers: sig.signers, rows: sig.rows }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
       });
     } catch (e) {

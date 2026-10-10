@@ -6172,21 +6172,37 @@ function loadCommitteeMeetings() {
 // Rebuild a list without rebuilding what has not changed: an entry whose HTML is the same keeps its element (so a face already loaded does not blink),
 // and the elements are put in the new order. entries: [{ key, html }]; the container must hold only these.
 function reconcileList(container, entries) {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const first = !container.querySelector('[data-key]');   // the first fill is not animated
     const old = new Map([...container.children].map((el) => [el.dataset.key, el]));
-    const frag = [];
+    const before = new Map([...old].filter(([k]) => k).map(([k, el]) => [k, el.getBoundingClientRect()]));
+    const placed = [];
     for (const { key, html } of entries) {
         let el = old.get(key);
+        old.delete(key);
         if (!el || el.dataset.sig !== html) {
             const t = document.createElement('template');
             t.innerHTML = html.trim();
-            el = t.content.firstElementChild;
-            el.dataset.key = key; el.dataset.sig = html;
+            const fresh = t.content.firstElementChild;
+            fresh.dataset.key = key; fresh.dataset.sig = html;
+            if (el) el.remove();
+            el = fresh;
         }
-        old.delete(key);
-        frag.push(el);
+        placed.push(el);
     }
     old.forEach((el) => el.remove());
-    frag.forEach((el, i) => { if (container.children[i] !== el) container.insertBefore(el, container.children[i] || null); });
+    placed.forEach((el, i) => { if (container.children[i] !== el) container.insertBefore(el, container.children[i] || null); });
+    if (reduce || first) return;
+    // what moved slides to its new place; what is new fades in (the same easing as the bills panel)
+    const EASE = 'cubic-bezier(0.15, 0.83, 0.66, 1)';
+    placed.forEach((el) => {
+        const prev = before.get(el.dataset.key);
+        if (!prev) { el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: EASE }); return; }
+        const now = el.getBoundingClientRect();
+        const dx = prev.left - now.left, dy = prev.top - now.top;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: EASE });
+    });
 }
 let _discharge = null;
 let _dischargeAll = false;
@@ -6233,7 +6249,7 @@ function renderDischargePetitions() {
     const shown = _dischargeAll ? open : open.slice(0, DISCHARGE_SHOWN);
     const shownDone = _dischargeDoneAll ? done : done.slice(0, DISCHARGE_DONE_SHOWN);
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
-    put('discharge-summary', `${open.length} open · ${done.length} reached ${need}`);
+    put('discharge-summary', `${open.length} open`);
     document.querySelectorAll('#dp-sort [data-dp-sort]').forEach((b) => { const on = b.dataset.dpSort === _dischargeSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     const bar = (p) => {
         const pct = Math.min(100, Math.round(1000 * p.signatures / need) / 10);
@@ -6310,7 +6326,11 @@ function loadDischargePetitions() {
 let _dpModalReturn = null;
 function closeDischargeSigners() {
     const o = document.getElementById('dp-modal-overlay');
-    if (o) o.remove();
+    if (o) {
+        o.id = '';   // a new one may open while this one leaves
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) o.remove();
+        else { o.classList.add('is-closing'); setTimeout(() => o.remove(), 220); }
+    }
     document.removeEventListener('keydown', dischargeModalKey);
     if (_dpModalReturn && document.contains(_dpModalReturn)) _dpModalReturn.focus();
     _dpModalReturn = null;
@@ -6337,7 +6357,7 @@ function openDischargeSigners(id, number, trigger) {
             </div>
         </div>
         <div class="dp-modal-list" id="dp-modal-list"><div class="proceedings-error">LOADING</div></div>
-        <div class="dp-modal-foot">Source: <a href="https://clerk.house.gov/DischargePetition/${escapeHtml(id)}" target="_blank" rel="noopener">Discharge Petition ${number} (House Clerk)</a></div>
+        <div class="dp-modal-foot dp-modal-source">Source: <a href="https://clerk.house.gov/DischargePetition/${escapeHtml(id)}" target="_blank" rel="noopener">Discharge Petition ${number} (House Clerk)</a></div>
     </div>`;
     document.body.appendChild(o);
     document.addEventListener('keydown', dischargeModalKey);
@@ -6361,7 +6381,7 @@ function openDischargeSigners(id, number, trigger) {
                 <span class="dp-signer-date">${escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
         });
-        if (!entries.length) entries.push({ key: 'none', html: '<div class="proceedings-error">NO MATCH</div>' });
+        if (!entries.length) entries.push({ key: 'none', html: '<div class="dp-empty">No matching signers</div>' });
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     document.getElementById('dp-modal-search').addEventListener('input', draw);
@@ -6373,7 +6393,10 @@ function openDischargeSigners(id, number, trigger) {
     });
     fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`)
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then((d) => { signers = d.signers || []; draw(); })
+        .then((d) => {
+            signers = d.signers || []; draw();
+            if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
+        })
         .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="proceedings-error">SIGNERS UNAVAILABLE</div>'; });
 }
 document.addEventListener('click', (e) => {
