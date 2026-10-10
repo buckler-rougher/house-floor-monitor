@@ -10591,7 +10591,7 @@ document.addEventListener('DOMContentLoaded', init);
 loadCommitteeMeetings();
 loadDischargePetitions();
 loadDischargeCalendar();
-AppropsPanel.mount({ url: 'https://api.evanhollander.org/house-floor/api/appropriations' });
+AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
 setInterval(loadDischargeCalendar, 15 * 60 * 1000);
