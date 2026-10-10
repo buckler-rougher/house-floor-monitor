@@ -21,6 +21,7 @@ import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
 import './lib/senate-treaties.js';
+import './lib/funding-deadline.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
 import './lib/cra-rule.js';
@@ -4393,7 +4394,7 @@ async function handleDischargeCalendar(env) {
 // `known: false`, never dropped, so a wrong number shows rather than hides. Requests: the list (1 or 2), the records of the original measures of the last
 // fourteen months or so (about 12 to 26), then the chosen bills' actions (12).
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v4-${CURRENT_CONGRESS}`, 1800, async () => {
+  return kvCache(env, `appropriations-v5-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
     const call = async (url) => {
@@ -4442,7 +4443,35 @@ async function handleAppropriations(env) {
         ...s, latestAction: bill?.latestAction?.text || null, latestActionDate: bill?.latestAction?.actionDate || null,
       };
     }));
-    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills (reported original measures)' : 'written list (discovery found nothing)', discovery, stages: AP.STAGES, bills }), {
+    // How long the government is funded: section 106 of the year's continuing resolution (lib/funding-deadline.js). A law's text never changes, so the date read from
+    // it is kept by law number; the list of laws is one call. Anything that fails leaves `funding` null and the panel without the line.
+    let funding = null;
+    try {
+      const FD = globalThis.FundingDeadline;
+      const laws = await call(`https://api.congress.gov/v3/law/${CURRENT_CONGRESS}?limit=250`);
+      const cr = FD.pick(laws?.bills, set.fiscalYear);
+      if (cr) {
+        const lawNumber = cr.laws[0].number, type = String(cr.type).toLowerCase();
+        const key = `funding-deadline-v1-${lawNumber}`;
+        let got = null;
+        try { got = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { got = null; }
+        if (!got) {
+          const tv = await call(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${cr.number}/text?limit=10`);
+          const file = (((tv?.textVersions || []).find((v) => /enrolled/i.test(v.type)) || {}).formats || []).find((f) => /formatted text/i.test(f.type))?.url || '';
+          const pkg = (file.match(/(BILLS-[A-Za-z0-9]+)\.htm$/) || [])[1];
+          if (pkg) {
+            const textUrl = `https://www.govinfo.gov/content/pkg/${pkg}/html/${pkg}.htm`;
+            const through = FD.parse(await fetchSource(textUrl, 'continuing resolution text'));
+            if (through) {
+              got = { through, textUrl };
+              if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(got), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+            }
+          }
+        }
+        if (got) funding = { ...got, law: lawNumber, bill: `${String(cr.type).toUpperCase()}. ${cr.number}`.replace(/^HR\./, 'H.R.').replace(/^HJRES\./, 'H.J.Res.'), title: cr.title, enacted: cr.latestAction?.actionDate || null };
+      }
+    } catch (e) { discovery.fundingError = e.message; console.warn(`[house-floor] funding deadline: ${e.message}`); }
+    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills (reported original measures)' : 'written list (discovery found nothing)', discovery, funding, stages: AP.STAGES, bills }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
     });
   });

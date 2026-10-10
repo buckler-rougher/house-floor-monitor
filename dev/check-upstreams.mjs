@@ -103,6 +103,8 @@ const CHECKS = [
   // `pending` says records are still being read; a recess with a meeting listed and no date is the failure. Treaties: at least one of this Congress's or the last's.
   worker('senate', 'senate/committee-meetings', (j) => (Array.isArray(j.events) && /^\d{4}-\d\d-\d\d$/.test(j.date || '') ? (j.events.length ? null : { warn: 'no committee meetings in the next week (normal in a recess)' }) : { fail: 'no events list or date' })),
   worker('senate', 'senate/treaties', (j) => (arr(j.treaties).length ? null : { warn: 'no treaties listed' })),
+  // The funding line of the appropriations panel: the date in section 106 of this year's continuing resolution. A warning, not a failure: the panel just shows no line.
+  worker('house', 'appropriations', (j) => (Array.isArray(j.bills) && j.bills.length ? (j.funding && /^\d{4}-\d\d-\d\d$/.test(j.funding.through) ? null : { warn: `no funding deadline read (${(j.discovery || {}).fundingError || 'no continuing resolution found for the year'})` }) : { fail: 'no appropriations bills' })),
   worker('house', 'discharge-petitions', (j) => {
     if (!arr(j.petitions).length || j.needed !== 218) return { fail: `${arr(j.petitions).length} petitions, needed ${j.needed}` };
     const unread = j.petitions.filter((p) => p.id && p.signatures == null).length;
