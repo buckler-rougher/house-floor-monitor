@@ -10809,7 +10809,7 @@ body.all-mode .floor-grid-panel {
 }
 
 /* The continuing resolution's status band, under the appropriations header: a badge, what it funds through and under which law (its P.L. number is plain text, not a
-   bill-number button: the bill behind it, H.R. 6500, was introduced as the AGOA Extension Act and the Senate rewrote it, so its modal would open on that), the days left in a dial (the ring is the days still left out of the whole stretch, the number inside it; amber, red inside three days). */
+   bill-number button: the bill behind it, H.R. 6500, was introduced as the AGOA Extension Act and the Senate rewrote it, so its modal would open on that), the days left in a dial (the ring fills as the stretch is used up, the number of days left inside it; amber, red inside three days). */
 .cr-deadline { border-bottom: 1px solid var(--border-color); background: rgba(13, 17, 23, 0.28); }
 .cr-deadline[hidden] { display: none; }
 .cr-main { display: flex; align-items: center; gap: var(--sp-16); padding: var(--sp-10) var(--sp-32); }
