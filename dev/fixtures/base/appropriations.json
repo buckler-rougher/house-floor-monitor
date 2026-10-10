@@ -1,1 +1,410 @@
-{"at":1791639498445,"fiscalYear":2027,"listSource":"Congress.gov committee bills (reported original measures)","discovery":{"listed":109,"originals":15,"records":15},"stages":["Not started","Subcommittee","Committee","Passed House","Passed Senate","Law"],"bills":[{"id":"H.R. 8646","short":"Agriculture","name":"Agriculture, Rural Development, Food and Drug Administration, and Related Agency","known":true,"title":"Agriculture, Rural Development, Food and Drug Administration, and Related Agency Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/8646","reported":"2026-05-01","rule":"2026-06-03","housePassed":"2026-06-04","receivedSenate":"2026-06-08","senatePassed":null,"law":null,"stage":3,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-05-01","detail":"H. Rept. 119-632","url":"https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf"},{"key":"rule","label":"Rule reported","date":"2026-06-03","detail":"H. Res. 1333","url":null},{"key":"house","label":"Passed the House","date":"2026-06-04","detail":null,"url":null},{"key":"received","label":"Received in the Senate","date":"2026-06-08","detail":null,"url":null}],"latestAction":"Received in the Senate.","latestActionDate":"2026-06-08"},{"id":"H.R. 8845","short":"Commerce, Justice, Science","name":"Commerce, Justice, Science,","known":true,"title":"Commerce, Justice, Science, and Related Agencies Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/8845","reported":"2026-05-15","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-05-15","detail":"H. Rept. 119-652","url":"https://www.congress.gov/119/crpt/hrpt652/CRPT-119hrpt652.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 567.","latestActionDate":"2026-05-15"},{"id":"H.R. 9495","short":"Defense","name":"Department of Defense","known":true,"title":"Department of Defense Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9495","reported":"2026-06-26","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-06-26","detail":"H. Rept. 119-715","url":"https://www.congress.gov/119/crpt/hrpt715/CRPT-119hrpt715.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 621.","latestActionDate":"2026-06-26"},{"id":"H.R. 9022","short":"Energy and Water","name":"Energy and Water Development","known":true,"title":"Energy and Water Development and Related Agencies Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9022","reported":"2026-05-22","rule":"2026-06-23","housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-05-22","detail":"H. Rept. 119-667","url":"https://www.congress.gov/119/crpt/hrpt667/CRPT-119hrpt667.pdf"},{"key":"rule","label":"Rule reported","date":"2026-06-23","detail":"H. Res. 1377","url":null}],"latestAction":"Rules Committee Resolution H. Res. 1377 Reported to House. Rule provides for consideration of H.R. 1181, H.R. 9022, H.R. 8595 and H.R. 9237. The resolution provides for consideration of H.R. 1181 and H.R. 9237 under a closed rule and H.R. 9022 and H.R. 8595 under a structured rule. The resolution provides for one hour of general debate and one motion to recommit on each bill.","latestActionDate":"2026-06-23"},{"id":"H.R. 8495","short":"Financial Services","name":"Financial Services and General Government","known":true,"title":"Financial Services and General Government Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/8495","reported":"2026-04-24","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-04-24","detail":"H. Rept. 119-623","url":"https://www.congress.gov/119/crpt/hrpt623/CRPT-119hrpt623.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 540.","latestActionDate":"2026-04-24"},{"id":"H.R. 9310","short":"Homeland Security","name":"Department of Homeland Security","known":true,"title":"Department of Homeland Security Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9310","reported":"2026-06-12","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-06-12","detail":"H. Rept. 119-697","url":"https://www.congress.gov/119/crpt/hrpt697/CRPT-119hrpt697.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 605.","latestActionDate":"2026-06-12"},{"id":"H.R. 9171","short":"Interior, Environment","name":"Department of the Interior, Environment,","known":true,"title":"Department of the Interior, Environment, and Related Agencies Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9171","reported":"2026-06-05","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-06-05","detail":"H. Rept. 119-687","url":"https://www.congress.gov/119/crpt/hrpt687/CRPT-119hrpt687.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 599.","latestActionDate":"2026-06-05"},{"id":"H.R. 9010","short":"Legislative Branch","name":"Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.","known":true,"title":"Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.","url":"https://www.congress.gov/bill/119th-congress/house-bill/9010","reported":"2026-05-22","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-05-22","detail":"H. Rept. 119-666","url":"https://www.congress.gov/119/crpt/hrpt666/CRPT-119hrpt666.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 580.","latestActionDate":"2026-05-22"},{"id":"H.R. 9260","short":"Labor, HHS, Education","name":"Departments of Labor, Health and Human Services, and Education,","known":true,"title":"Departments of Labor, Health and Human Services, and Education, and Related Agencies Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9260","reported":"2026-06-11","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-06-11","detail":"H. Rept. 119-696","url":"https://www.congress.gov/119/crpt/hrpt696/CRPT-119hrpt696.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 604.","latestActionDate":"2026-06-11"},{"id":"H.R. 8469","short":"Military Construction, VA","name":"Making appropriations for military construction, the Department of Veterans Affairs, and related agencies for the fiscal year ending September 30, 2027, and for other purposes.","known":true,"title":"Making appropriations for military construction, the Department of Veterans Affairs, and related agencies for the fiscal year ending September 30, 2027, and for other purposes.","url":"https://www.congress.gov/bill/119th-congress/house-bill/8469","reported":"2026-04-23","rule":"2026-05-12","housePassed":"2026-05-14","receivedSenate":"2026-05-20","senatePassed":null,"law":null,"stage":3,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-04-23","detail":"H. Rept. 119-622","url":"https://www.congress.gov/119/crpt/hrpt622/CRPT-119hrpt622.pdf"},{"key":"rule","label":"Rule reported","date":"2026-05-12","detail":"H. Res. 1275","url":null},{"key":"house","label":"Passed the House","date":"2026-05-14","detail":"voice vote","url":null},{"key":"received","label":"Received in the Senate","date":"2026-05-20","detail":null,"url":null}],"latestAction":"Read the second time. Placed on Senate Legislative Calendar under General Orders. Calendar No. 455.","latestActionDate":"2026-07-14"},{"id":"H.R. 8595","short":"State, National Security","name":"Making appropriations for national security, Department of State, and related programs for the fiscal year ending September 30, 2027, and for other purposes.","known":true,"title":"Making appropriations for national security, Department of State, and related programs for the fiscal year ending September 30, 2027, and for other purposes.","url":"https://www.congress.gov/bill/119th-congress/house-bill/8595","reported":"2026-04-30","rule":"2026-06-23","housePassed":"2026-07-15","receivedSenate":"2026-07-29","senatePassed":null,"law":null,"stage":3,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-04-30","detail":"H. Rept. 119-631","url":"https://www.congress.gov/119/crpt/hrpt631/CRPT-119hrpt631.pdf"},{"key":"rule","label":"Rule reported","date":"2026-06-23","detail":"H. Res. 1377","url":null},{"key":"house","label":"Passed the House","date":"2026-07-15","detail":"voice vote","url":null},{"key":"received","label":"Received in the Senate","date":"2026-07-29","detail":null,"url":null}],"latestAction":"Received in the Senate.","latestActionDate":"2026-07-29"},{"id":"H.R. 9170","short":"Transportation, HUD","name":"Transportation, Housing and Urban Development,","known":true,"title":"Transportation, Housing and Urban Development, and Related Agencies Appropriations Act, 2027","url":"https://www.congress.gov/bill/119th-congress/house-bill/9170","reported":"2026-06-05","rule":null,"housePassed":null,"receivedSenate":null,"senatePassed":null,"law":null,"stage":2,"milestones":[{"key":"reported","label":"Reported by the committee","date":"2026-06-05","detail":"H. Rept. 119-686","url":"https://www.congress.gov/119/crpt/hrpt686/CRPT-119hrpt686.pdf"}],"latestAction":"Placed on the Union Calendar, Calendar No. 598.","latestActionDate":"2026-06-05"}]}
+{
+ "at": 1791662674129,
+ "fiscalYear": 2027,
+ "listSource": "Congress.gov committee bills (reported original measures)",
+ "discovery": {
+  "listed": 109,
+  "originals": 15,
+  "records": 15
+ },
+ "funding": {
+  "through": "2026-12-11",
+  "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-119hr6500enr/html/BILLS-119hr6500enr.htm",
+  "law": "119-103",
+  "bill": "H.R. 6500",
+  "title": "Continuing Appropriations and Extensions Act, 2027",
+  "enacted": "2026-09-02"
+ },
+ "stages": [
+  "Not started",
+  "Subcommittee",
+  "Committee",
+  "Passed House",
+  "Passed Senate",
+  "Law"
+ ],
+ "bills": [
+  {
+   "id": "H.R. 8646",
+   "short": "Agriculture",
+   "name": "Agriculture, Rural Development, Food and Drug Administration, and Related Agency",
+   "known": true,
+   "title": "Agriculture, Rural Development, Food and Drug Administration, and Related Agency Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/8646",
+   "reported": "2026-05-01",
+   "rule": "2026-06-03",
+   "housePassed": "2026-06-04",
+   "receivedSenate": "2026-06-08",
+   "senatePassed": null,
+   "law": null,
+   "stage": 3,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-05-01",
+     "detail": "H. Rept. 119-632",
+     "url": "https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf"
+    },
+    {
+     "key": "rule",
+     "label": "Rule reported",
+     "date": "2026-06-03",
+     "detail": "H. Res. 1333",
+     "url": null
+    },
+    {
+     "key": "house",
+     "label": "Passed the House",
+     "date": "2026-06-04",
+     "detail": null,
+     "url": null
+    },
+    {
+     "key": "received",
+     "label": "Received in the Senate",
+     "date": "2026-06-08",
+     "detail": null,
+     "url": null
+    }
+   ],
+   "latestAction": "Received in the Senate.",
+   "latestActionDate": "2026-06-08"
+  },
+  {
+   "id": "H.R. 8845",
+   "short": "Commerce, Justice, Science",
+   "name": "Commerce, Justice, Science,",
+   "known": true,
+   "title": "Commerce, Justice, Science, and Related Agencies Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/8845",
+   "reported": "2026-05-15",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-05-15",
+     "detail": "H. Rept. 119-652",
+     "url": "https://www.congress.gov/119/crpt/hrpt652/CRPT-119hrpt652.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 567.",
+   "latestActionDate": "2026-05-15"
+  },
+  {
+   "id": "H.R. 9495",
+   "short": "Defense",
+   "name": "Department of Defense",
+   "known": true,
+   "title": "Department of Defense Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9495",
+   "reported": "2026-06-26",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-06-26",
+     "detail": "H. Rept. 119-715",
+     "url": "https://www.congress.gov/119/crpt/hrpt715/CRPT-119hrpt715.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 621.",
+   "latestActionDate": "2026-06-26"
+  },
+  {
+   "id": "H.R. 9022",
+   "short": "Energy and Water",
+   "name": "Energy and Water Development",
+   "known": true,
+   "title": "Energy and Water Development and Related Agencies Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9022",
+   "reported": "2026-05-22",
+   "rule": "2026-06-23",
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-05-22",
+     "detail": "H. Rept. 119-667",
+     "url": "https://www.congress.gov/119/crpt/hrpt667/CRPT-119hrpt667.pdf"
+    },
+    {
+     "key": "rule",
+     "label": "Rule reported",
+     "date": "2026-06-23",
+     "detail": "H. Res. 1377",
+     "url": null
+    }
+   ],
+   "latestAction": "Rules Committee Resolution H. Res. 1377 Reported to House. Rule provides for consideration of H.R. 1181, H.R. 9022, H.R. 8595 and H.R. 9237. The resolution provides for consideration of H.R. 1181 and H.R. 9237 under a closed rule and H.R. 9022 and H.R. 8595 under a structured rule. The resolution provides for one hour of general debate and one motion to recommit on each bill.",
+   "latestActionDate": "2026-06-23"
+  },
+  {
+   "id": "H.R. 8495",
+   "short": "Financial Services",
+   "name": "Financial Services and General Government",
+   "known": true,
+   "title": "Financial Services and General Government Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/8495",
+   "reported": "2026-04-24",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-04-24",
+     "detail": "H. Rept. 119-623",
+     "url": "https://www.congress.gov/119/crpt/hrpt623/CRPT-119hrpt623.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 540.",
+   "latestActionDate": "2026-04-24"
+  },
+  {
+   "id": "H.R. 9310",
+   "short": "Homeland Security",
+   "name": "Department of Homeland Security",
+   "known": true,
+   "title": "Department of Homeland Security Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9310",
+   "reported": "2026-06-12",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-06-12",
+     "detail": "H. Rept. 119-697",
+     "url": "https://www.congress.gov/119/crpt/hrpt697/CRPT-119hrpt697.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 605.",
+   "latestActionDate": "2026-06-12"
+  },
+  {
+   "id": "H.R. 9171",
+   "short": "Interior, Environment",
+   "name": "Department of the Interior, Environment,",
+   "known": true,
+   "title": "Department of the Interior, Environment, and Related Agencies Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9171",
+   "reported": "2026-06-05",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-06-05",
+     "detail": "H. Rept. 119-687",
+     "url": "https://www.congress.gov/119/crpt/hrpt687/CRPT-119hrpt687.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 599.",
+   "latestActionDate": "2026-06-05"
+  },
+  {
+   "id": "H.R. 9010",
+   "short": "Legislative Branch",
+   "name": "Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.",
+   "known": true,
+   "title": "Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9010",
+   "reported": "2026-05-22",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-05-22",
+     "detail": "H. Rept. 119-666",
+     "url": "https://www.congress.gov/119/crpt/hrpt666/CRPT-119hrpt666.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 580.",
+   "latestActionDate": "2026-05-22"
+  },
+  {
+   "id": "H.R. 9260",
+   "short": "Labor, HHS, Education",
+   "name": "Departments of Labor, Health and Human Services, and Education,",
+   "known": true,
+   "title": "Departments of Labor, Health and Human Services, and Education, and Related Agencies Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9260",
+   "reported": "2026-06-11",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-06-11",
+     "detail": "H. Rept. 119-696",
+     "url": "https://www.congress.gov/119/crpt/hrpt696/CRPT-119hrpt696.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 604.",
+   "latestActionDate": "2026-06-11"
+  },
+  {
+   "id": "H.R. 8469",
+   "short": "Military Construction, VA",
+   "name": "Making appropriations for military construction, the Department of Veterans Affairs, and related agencies for the fiscal year ending September 30, 2027, and for other purposes.",
+   "known": true,
+   "title": "Making appropriations for military construction, the Department of Veterans Affairs, and related agencies for the fiscal year ending September 30, 2027, and for other purposes.",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/8469",
+   "reported": "2026-04-23",
+   "rule": "2026-05-12",
+   "housePassed": "2026-05-14",
+   "receivedSenate": "2026-05-20",
+   "senatePassed": null,
+   "law": null,
+   "stage": 3,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-04-23",
+     "detail": "H. Rept. 119-622",
+     "url": "https://www.congress.gov/119/crpt/hrpt622/CRPT-119hrpt622.pdf"
+    },
+    {
+     "key": "rule",
+     "label": "Rule reported",
+     "date": "2026-05-12",
+     "detail": "H. Res. 1275",
+     "url": null
+    },
+    {
+     "key": "house",
+     "label": "Passed the House",
+     "date": "2026-05-14",
+     "detail": "voice vote",
+     "url": null
+    },
+    {
+     "key": "received",
+     "label": "Received in the Senate",
+     "date": "2026-05-20",
+     "detail": null,
+     "url": null
+    }
+   ],
+   "latestAction": "Read the second time. Placed on Senate Legislative Calendar under General Orders. Calendar No. 455.",
+   "latestActionDate": "2026-07-14"
+  },
+  {
+   "id": "H.R. 8595",
+   "short": "State, National Security",
+   "name": "Making appropriations for national security, Department of State, and related programs for the fiscal year ending September 30, 2027, and for other purposes.",
+   "known": true,
+   "title": "Making appropriations for national security, Department of State, and related programs for the fiscal year ending September 30, 2027, and for other purposes.",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/8595",
+   "reported": "2026-04-30",
+   "rule": "2026-06-23",
+   "housePassed": "2026-07-15",
+   "receivedSenate": "2026-07-29",
+   "senatePassed": null,
+   "law": null,
+   "stage": 3,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-04-30",
+     "detail": "H. Rept. 119-631",
+     "url": "https://www.congress.gov/119/crpt/hrpt631/CRPT-119hrpt631.pdf"
+    },
+    {
+     "key": "rule",
+     "label": "Rule reported",
+     "date": "2026-06-23",
+     "detail": "H. Res. 1377",
+     "url": null
+    },
+    {
+     "key": "house",
+     "label": "Passed the House",
+     "date": "2026-07-15",
+     "detail": "voice vote",
+     "url": null
+    },
+    {
+     "key": "received",
+     "label": "Received in the Senate",
+     "date": "2026-07-29",
+     "detail": null,
+     "url": null
+    }
+   ],
+   "latestAction": "Received in the Senate.",
+   "latestActionDate": "2026-07-29"
+  },
+  {
+   "id": "H.R. 9170",
+   "short": "Transportation, HUD",
+   "name": "Transportation, Housing and Urban Development,",
+   "known": true,
+   "title": "Transportation, Housing and Urban Development, and Related Agencies Appropriations Act, 2027",
+   "url": "https://www.congress.gov/bill/119th-congress/house-bill/9170",
+   "reported": "2026-06-05",
+   "rule": null,
+   "housePassed": null,
+   "receivedSenate": null,
+   "senatePassed": null,
+   "law": null,
+   "stage": 2,
+   "milestones": [
+    {
+     "key": "reported",
+     "label": "Reported by the committee",
+     "date": "2026-06-05",
+     "detail": "H. Rept. 119-686",
+     "url": "https://www.congress.gov/119/crpt/hrpt686/CRPT-119hrpt686.pdf"
+    }
+   ],
+   "latestAction": "Placed on the Union Calendar, Calendar No. 598.",
+   "latestActionDate": "2026-06-05"
+  }
+ ]
+}
