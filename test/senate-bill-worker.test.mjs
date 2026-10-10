@@ -19,6 +19,7 @@ const f = (n) => readFileSync(join(here, 'congress', n), 'utf8');
 
 const { default: worker } = await import('../worker.js');
 
+let failSummaries = false;
 let sap = '<a href="https://www.whitehouse.gov/wp-content/uploads/2026/06/H.R.-7008-SAP.pdf">H.R. 7008 — Stop Insider Trading Act (June 4, 2026)</a>';
 let asked = [];
 globalThis.fetch = async (u) => {
@@ -27,7 +28,8 @@ globalThis.fetch = async (u) => {
   if (m) {
     // H.R. 7009 is H.R. 7008's payloads under another number, so a test can ask for a bill the
     // Worker has not cached (it holds each for a day, which is the point of it).
-    const num = m[1] === 'hr' && m[2] === '7009' ? '7008' : m[2];
+    const num = m[1] === 'hr' && (m[2] === '7009' || m[2] === '7010') ? '7008' : m[2];
+    if (failSummaries && m[2] === '7010' && m[3] === '/committees') return new Response('', { status: 500 });
     const name = `${m[1]}-${num}-${(m[3] || '/record').slice(1)}.json`;
     try { return new Response(f(name), { status: 200 }); } catch { return new Response('{}', { status: 404 }); }
   }
@@ -91,6 +93,17 @@ await ok('the memo list being down costs the link, not the bill', async () => {
   assert.strictEqual(body.sapUrl, null);
   assert.strictEqual(body.committeeReport, 'Reported by Committee 7 – 4');
   assert.strictEqual(body.committeeReportUrl, 'https://www.congress.gov/119/crpt/hrpt479/CRPT-119hrpt479.pdf');
+});
+
+await ok('a section that cannot be read (a 500 from Congress.gov) leaves that section empty; the modal still opens, and the answer is not kept', async () => {
+  failSummaries = true;
+  const first = await get('H.R. 7010');
+  assert.strictEqual(first.status, 200);
+  assert.strictEqual(first.body.title.length > 0, true);
+  assert.deepStrictEqual(first.body.committees, []);
+  failSummaries = false;
+  const second = await get('H.R. 7010');
+  assert.ok(second.body.committees.length > 0, 'read again, not served from a kept degraded answer');
 });
 
 console.log(`\n${n} passed`);

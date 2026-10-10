@@ -1400,8 +1400,8 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
   if (response.ok) {
     try {
       const body = await response.clone().text();
-      _mSet(key, body, ttlMs);
       const noStore = response.headers.get(KV_NO_STORE_HEADER) === '1';
+      if (!noStore) _mSet(key, body, ttlMs);   // a degraded answer is not kept in this isolate's memory either
       if (noStore) console.warn(`[house-floor] kvCache: not persisting degraded payload for key=${key}`);
       if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
         // Write only if content changed — stable data may never write again after first fetch
@@ -3166,14 +3166,20 @@ async function handleSenateBill(env, billId) {
   return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v7`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
-    const call = async (path) => {
+    // One retry: Congress.gov is sometimes slow from the edge (a request that timed out at nine seconds took one to two the next time).
+    const callOnce = async (path, ms) => {
       const r = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`,
-        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+        { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(ms) });
       // 429 and 5xx are transient; throwing keeps kvCache from storing a hole.
       if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
       if (!r.ok) return null;
       return r.json();
     };
+    const call = async (path) => { try { return await callOnce(path, 9000); } catch { return await callOnce(path, 14000); } };
+    // Everything but the bill's own record is an enrichment: a section that could not be read leaves its section empty and the answer is not kept (so the next
+    // opening reads it again), instead of failing the whole modal. Only the record itself is required.
+    let degraded = false;
+    const soft = (path) => call(path).catch(() => { degraded = true; return null; });
 
     // limit=250 because the support bar needs every cosponsor's party, not just
     // a count. The House modal splits the bar D/R/I and a count cannot do that.
@@ -3182,11 +3188,11 @@ async function handleSenateBill(env, billId) {
     // floor days. The White House memo is looked up in the list the House modal already uses; its
     // failure costs the link, not the bill.
     const [record, summaries, cosponsors, committees, actions, sapRaw, textVersions] = await Promise.all([
-      call(''), call('/summaries?limit=5'), call('/cosponsors?limit=250'), call('/committees'),
-      call('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), call('/text?limit=20'),
+      call(''), soft('/summaries?limit=5'), soft('/cosponsors?limit=250'), soft('/committees'),
+      soft('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), soft('/text?limit=20'),
     ]);
     // More than 250 cosponsors: the rest, so the support bar counts them all.
-    const moreCo = await moreCosponsorPages(base, cosponsors, (path) => call(path));
+    const moreCo = await moreCosponsorPages(base, cosponsors, (path) => soft(path));
     const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
     const bill = record?.bill;
     const craRule = await fetchCraRule(bill?.title).catch(() => null);
@@ -3279,7 +3285,8 @@ async function handleSenateBill(env, billId) {
       textUrl: `${congressUrl}/text`,
       govinfoPdf: `https://www.govinfo.gov/link/bills/${CURRENT_CONGRESS}/${type}/${number}?link-type=pdf`,
     }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
+      // a section that could not be read: served, but not kept (KV or the browser), so the next opening reads it again
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': degraded ? 'no-store' : 'public, max-age=3600', ...(degraded ? { [KV_NO_STORE_HEADER]: '1' } : {}) },
     });
   });
 }
