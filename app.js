@@ -395,6 +395,7 @@ function applyRollLogData(entries) {
         updateLastVoteAbsencesDisplay();
     }
     applyRollLogToBills(rollLog, activeRoll);
+    renderTodayInHouse();
     updateVoteTimelineStatus(); // refresh absence badges with newly loaded data
 }
 
@@ -6024,6 +6025,54 @@ function setProceedingsManifest(items) {
     });
 }
 
+// TODAY IN THE HOUSE, once the House is out (the panel is drawn always and shown by CSS only in recess-mode, and only with something to say). Three
+// things the board did not say in one place, each from its own source and shown as it was sent:
+//   ADJOURNED   the time of the Clerk's adjournment entry;
+//   NEXT MEETING  the Clerk's own words from that entry ("The next meeting is scheduled for 10:00 a.m. on September 4, 2026."), not reformatted;
+//   VOTES       the day's recorded votes from the roll log (DomeWatch): the question as it came, the tally, how many did not vote, and each party's split.
+// The votes are only those whose log time falls on the day the proceedings are for, so looking at an earlier day never shows today's votes. No result
+// word is given: the roll log carries a tally, not an outcome, and a tally alone does not say (a suspension needs two thirds).
+let _todayItems = null;
+function renderTodayInHouse(items) {
+    const panel = document.getElementById('today-house');
+    const body = document.getElementById('today-house-body');
+    if (!panel || !body) return;
+    if (items) _todayItems = items;
+    items = _todayItems;
+    if (!items || !items.length) { panel.classList.remove('has-data'); return; }
+    const etDay = (d) => eastern(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const day = etDay(proceedingsDateOverride ? new Date(proceedingsDateOverride) : new Date(items[0].pubDate));
+    const isToday = day === etDay(new Date());
+    const rows = [];
+    const { adjourned, votes } = HouseWrapup.summarize({ items, rollLog, day, etDay });
+
+    if (adjourned) {
+        const when = new Date(adjourned.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+        rows.push(['ADJOURNED', `<span class="today-time">${escapeHtml(when)}</span>`]);
+        if (adjourned.next) rows.push(['NEXT MEETING', escapeHtml(decodeHtml(adjourned.next))]);
+    }
+
+    if (votes.length) {
+        const split = (p) => p && (p.yeas || p.nays) ? `${p.yeas}\u2013${p.nays}` : '';
+        rows.push([votes.length === 1 ? 'VOTE (DOMEWATCH)' : `${votes.length} VOTES (DOMEWATCH)`, `<div class="today-votes">${votes.map((e) => {
+            const t = e.totals || {};
+            const parts = [
+                `<span class="yea">${t.yeas ?? 0}</span>\u2013<span class="nay">${t.nays ?? 0}</span>`,
+                t.notVoting ? `${t.notVoting} not voting` : '',
+                split(e.dem) ? `Dem ${split(e.dem)}` : '', split(e.rep) ? `Rep ${split(e.rep)}` : '',
+            ].filter(Boolean).join(' \u00b7 ');
+            return `<div class="today-vote"><span class="today-vote-roll">${escapeHtml(String(e.roll))}</span><span class="today-vote-what">${linkifyBillNumbers(escapeHtml(decodeHtml(e.question || e.bill || 'Vote')))}</span><span class="today-vote-tally">${parts}</span></div>`;
+        }).join('')}</div>`]);
+    }
+
+    if (!rows.length) { panel.classList.remove('has-data'); return; }
+    const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
+    put('today-house-label', isToday ? 'TODAY IN THE HOUSE' : 'LAST SITTING DAY');
+    put('today-house-date', fmtDate(new Date(proceedingsDateOverride || items[0].pubDate)));
+    setIfChanged(body, rows.map(([label, value]) => `<div class="today-row"><div class="today-label">${label}</div><div class="today-value">${value}</div></div>`).join(''));
+    panel.classList.add('has-data');
+}
+
 function renderProceedingsFeedPanel(items) {
     if (!elements.proceedingsFeed) return;
     if (!items || items.length === 0) {
@@ -6031,6 +6080,7 @@ function renderProceedingsFeedPanel(items) {
         return;
     }
     setProceedingsManifest(items);
+    renderTodayInHouse(items);
     const proceedingsDate = proceedingsDateOverride
         ? new Date(proceedingsDateOverride)
         : new Date(items[0]?.pubDate || new Date());

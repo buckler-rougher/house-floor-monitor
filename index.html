@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261009n">
+    <link rel="stylesheet" href="styles.house.css?v=20261009o">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1349,6 +1349,18 @@
 
             </div><!-- /.vote-column -->
 
+            <!-- The day, once the House is out: when it adjourned, when it meets next, the votes it took (drawn by renderTodayInHouse) -->
+            <div class="proceedings-panel today-house" id="today-house">
+                <div class="panel-header">
+                    <span class="panel-label" id="today-house-label">TODAY IN THE HOUSE</span>
+                    <div class="panel-header-right">
+                        <span class="panel-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
+                        <span class="proceedings-time" id="today-house-date"></span>
+                    </div>
+                </div>
+                <div class="today-house-body" id="today-house-body"></div>
+            </div>
+
             <!-- Floor Proceedings -->
             <div class="proceedings-panel" id="proceedings">
                 <div class="panel-header">
@@ -1815,6 +1827,7 @@
     <script defer src="lib/bill-sections.js?v=20261009d"></script>
     <script defer src="lib/debate-panel.js?v=20261009a"></script>
     <script defer src="lib/source-pop.js?v=20261009l"></script>
+    <script defer src="lib/house-wrapup.js?v=20261009a"></script>
     <script defer src="lib/source-status.js?v=20261009d"></script>
     <script defer src="lib/info-popup.js?v=20261008d"></script>
     <script defer src="lib/info-content.js?v=20261007a"></script>
@@ -1832,7 +1845,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261009l"></script>
+    <script defer src="app.js?v=20261009n"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

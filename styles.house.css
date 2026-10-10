@@ -11306,3 +11306,22 @@ a.source-link.has-manifest .source-tail::after {
     white-space: nowrap;
     border: 0;
 }
+
+.today-house { display: none; }
+body.recess-mode .today-house.has-data { display: block; }
+.today-house-body { display: grid; gap: var(--sp-12); padding: var(--sp-14) var(--sp-24) var(--sp-16); }
+.today-row { display: grid; grid-template-columns: 9.5rem 1fr; gap: var(--sp-12); align-items: baseline; }
+.today-label { font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+.today-value { font-size: var(--fs-md); color: var(--text-primary); line-height: 1.45; }
+.today-value .today-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent-green); margin-right: var(--sp-8); }
+.today-votes { display: grid; gap: var(--sp-8); }
+.today-vote { display: grid; grid-template-columns: 3.2rem 1fr; gap: var(--sp-4) var(--sp-12); align-items: baseline; }
+.today-vote-roll { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.today-vote-what { color: var(--text-primary); }
+.today-vote-tally { grid-column: 2; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--text-secondary); }
+.today-vote-tally .yea { color: var(--accent-green); }
+.today-vote-tally .nay { color: var(--accent-red); }
+@media (max-width: 640px) {
+    .today-house-body { padding: var(--sp-12) var(--sp-16); }
+    .today-row { grid-template-columns: 1fr; gap: var(--sp-4); }
+}
