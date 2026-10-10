@@ -57,30 +57,52 @@ ok('itemsOf finds the entries however the answer is wrapped', () => {
 });
 ok('reported without a "Reported" action: the committee report on the record, or being placed on the Union Calendar', () => {
   const cal = [act('2026-05-15', 'Calendars', 'Placed on the Union Calendar, Calendar No. 567.')];
-  assert.deepStrictEqual([A.stage(cal, [], []).stage, A.stage(cal, [], []).reported], [1, '2026-05-15']);
-  assert.strictEqual(A.stage([act('2026-05-01', 'IntroReferral', 'Introduced in House')], [], [{ citation: 'H. Rept. 119-652' }]).stage, 1);
+  assert.deepStrictEqual([A.stage(cal, [], []).stage, A.stage(cal, [], []).reported], [2, '2026-05-15']);
+  assert.strictEqual(A.stage([act('2026-05-01', 'IntroReferral', 'Introduced in House')], [], [{ citation: 'H. Rept. 119-652' }]).stage, 2);
   assert.strictEqual(A.stage([act('2026-05-01', 'IntroReferral', 'Introduced in House')], [], []).stage, 0);
 });
 ok('introduced only: stage 0', () => {
-  assert.deepStrictEqual(A.stage([act('2026-05-01', 'IntroReferral', 'Introduced in House')], []), { reported: null, housePassed: null, senatePassed: null, law: null, stage: 0 });
+  assert.deepStrictEqual(A.stage([act('2026-05-01', 'IntroReferral', 'Introduced in House')], []), { reported: null, rule: null, housePassed: null, receivedSenate: null, senatePassed: null, law: null, stage: 0, milestones: [] });
 });
-ok('reported by the committee: stage 1, with the date of the first report (it is logged twice)', () => {
+ok('reported by the committee: stage 2, with the date of the first report (it is logged twice)', () => {
   const r = A.stage([act('2026-06-05', 'Committee', 'Reported (Amended) by the Committee on Appropriations. H. Rept. 119-600.'), act('2026-06-05', 'Committee', 'Reported (Amended) by the Committee on Appropriations. H. Rept. 119-600.'), act('2026-06-03', 'Committee', 'Committee Consideration and Mark-up Session Held')], []);
-  assert.deepStrictEqual([r.stage, r.reported], [1, '2026-06-05']);
+  assert.deepStrictEqual([r.stage, r.reported], [2, '2026-06-05']);
 });
-ok('passed the House: stage 2; a rule\'s adoption and a failed vote are not passage', () => {
+ok('passed the House: stage 3; a rule\'s adoption and a failed vote are not passage', () => {
   const base = [act('2026-06-05', 'Committee', 'Reported by the Committee on Appropriations. H. Rept. 119-1.')];
-  assert.strictEqual(A.stage([act('2026-06-23', 'Floor', 'Rule H. Res. 1377 passed House.', 'H1L100'), ...base], []).stage, 1);
-  assert.strictEqual(A.stage([act('2026-06-25', 'Floor', 'On passage Failed by the Yeas and Nays: 200 - 220 (Roll no. 300).'), ...base], []).stage, 1);
+  assert.strictEqual(A.stage([act('2026-06-23', 'Floor', 'Rule H. Res. 1377 passed House.', 'H1L100'), ...base], []).stage, 2);
+  assert.strictEqual(A.stage([act('2026-06-25', 'Floor', 'On passage Failed by the Yeas and Nays: 200 - 220 (Roll no. 300).'), ...base], []).stage, 2);
   const r = A.stage([act('2026-06-26', 'Floor', 'Passed/agreed to in House: On passage Passed by the Yeas and Nays: 215 - 210 (Roll no. 301).'), ...base], []);
-  assert.deepStrictEqual([r.stage, r.housePassed], [2, '2026-06-26']);
+  assert.deepStrictEqual([r.stage, r.housePassed], [3, '2026-06-26']);
 });
-ok('passed the Senate: stage 3', () => {
+ok('passed the Senate: stage 4', () => {
   const r = A.stage([act('2026-09-28', 'Floor', 'Passed Senate with an amendment by Yea-Nay Vote. 77 - 22. Record Vote Number: 250.'), act('2026-06-08', 'Floor', 'Passed/agreed to in House: On passage Passed by the Yeas and Nays: 215 - 210.')], []);
-  assert.deepStrictEqual([r.stage, r.senatePassed], [3, '2026-09-28']);
+  assert.deepStrictEqual([r.stage, r.senatePassed], [4, '2026-09-28']);
 });
-ok('became law: stage 4, by the action or by the record\'s laws', () => {
-  assert.strictEqual(A.stage([act('2026-10-01', 'BecameLaw', 'Became Public Law No: 119-90.')], []).stage, 4);
-  assert.strictEqual(A.stage([], [{ number: '119-90', type: 'Public Law' }]).stage, 4);
+ok('became law: stage 5, by the action or by the record\'s laws', () => {
+  assert.strictEqual(A.stage([act('2026-10-01', 'BecameLaw', 'Became Public Law No: 119-90.')], []).stage, 5);
+  assert.strictEqual(A.stage([], [{ number: '119-90', type: 'Public Law' }]).stage, 5);
+});
+ok('milestones from the real actions of H.R. 8646: the report (with its PDF), the rule, the House vote with its tally and roll, the Senate receiving it', () => {
+  const m = A.stage([act('2026-06-08', 'IntroReferral', 'Received in the Senate.'), act('2026-06-04', 'Floor', 'Passed/agreed to in House: On passage Passed by the Yeas and Nays: 213 - 210 (Roll no. 205).', '8000'),
+    act('2026-06-03', 'Floor', 'Rules Committee Resolution H. Res. 1333 Reported to House. Rule provides for consideration of H.R. 8646.', 'H1L210'), act('2026-05-01', 'Calendars', 'Placed on the Union Calendar, Calendar No. 548.', 'H12410'),
+    act('2026-05-01', 'Committee', 'The House Committee on Appropriations reported an original measure, H. Rept. 119-632, by Mr. Harris (MD).', 'H12100')], [], []);
+  assert.strictEqual(m.stage, 3);
+  assert.deepStrictEqual(m.milestones.map((x) => [x.key, x.date, x.detail]), [['reported', '2026-05-01', 'H. Rept. 119-632'], ['rule', '2026-06-03', 'H. Res. 1333'], ['house', '2026-06-04', '213\u2013210 (roll 205)'], ['received', '2026-06-08', null]]);
+  assert.strictEqual(m.milestones[0].url, 'https://www.congress.gov/119/crpt/hrpt632/CRPT-119hrpt632.pdf');
+  assert.strictEqual(A.stage([act('2026-06-04', 'Floor', 'Passed/agreed to in House: On passage Passed by voice vote.')], []).milestones[0].detail, 'voice vote');
+});
+
+// markup meetings as the committee repository titles them (real ones of April to June 2026)
+ok('markups: which bills a meeting names (one, or two marked up together), and that a hearing is not one', () => {
+  assert.deepStrictEqual(A.shortNames('Fiscal Year 2027 Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Bill'), ['Agriculture']);
+  assert.deepStrictEqual(A.shortNames('Fiscal Year 2027 Military Construction, Veterans Affairs, and Related Agencies Bill, Fiscal Year 2027 Financial Services and General Government Bill'), ['Military Construction, VA', 'Financial Services']);
+  assert.deepStrictEqual(A.shortNames('Fiscal Year 2027 Labor, Health and Human Services, Education, and Related Agencies Bill and the Fiscal Year 2027 Department of Homeland Security Bill'), ['Labor, HHS, Education', 'Homeland Security']);
+  assert.deepStrictEqual(A.shortNames('Fiscal Year 2027 Transportation, and Housing and Urban Development, and Related Agencies Bill'), ['Transportation, HUD']);
+  assert.ok(A.isMarkup('Fiscal Year 2027 Defense Bill (Closed)'));
+  assert.ok(A.isMarkup('Fiscal Year 2027 National Security, Department of State, and Related Programs Bill (Rescheduled)'));
+  assert.ok(!A.isMarkup('Budget Hearing - Department of Commerce'));
+  assert.ok(!A.isMarkup('Fiscal Year 2027 Budget Request for the Military Services (CLOSED)'));
+  assert.deepStrictEqual([A.markupKind('Subcommittee on Defense (Committee on Appropriations)'), A.markupKind('Committee on Appropriations')], ['subcommittee', 'full']);
 });
 console.log(`\n${n} passed`);

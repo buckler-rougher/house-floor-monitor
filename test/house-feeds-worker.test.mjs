@@ -53,6 +53,19 @@ globalThis.fetch = async (u) => {
     const TITLES = { 8646: 'Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Appropriations Act, 2027', 8845: 'Commerce, Justice, Science, and Related Agencies Appropriations Act, 2027', 9022: 'Energy and Water Development and Related Agencies Appropriations Act, 2027', 9495: 'Department of Defense Appropriations Act, 2027', 9310: 'Department of Homeland Security Appropriations Act, 2027', 9170: 'Transportation, Housing and Urban Development, and Related Agencies Appropriations Act, 2027', 9010: 'Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.', 100: 'Department of Defense Appropriations Act, 2028', 7: 'Continuing Appropriations Act, 2027' };
     return new Response(JSON.stringify({ bill: { title: (discoveryOn && TITLES[n]) || `Appropriations Act ${n}`, latestAction: { actionDate: '2026-06-08', text: n === '8646' ? 'Received in the Senate.' : 'Placed on the Union Calendar' }, laws: [] } }), { status: 200 });
   }
+  const apDay = u.match(/ByDay\.aspx\?DayID=(0420|0421|0422|0423|0424)2026/);
+  if (apDay) {
+    const row = (id, title, committee) => `<tr><td><a href="ByEvent.aspx?EventID=${id}">${title}</a><br/><span class="text-tiny">${committee}</span></td><td><span class="text-small">9:00 AM</span></td><td><span class="text-small">2359 RHOB</span></td></tr>`;
+    const rows = { '0421': row(119215, 'Fiscal Year 2027 Military Construction, Veterans Affairs, and Related Agencies Bill, Fiscal Year 2027 Financial Services and General Government Bill', 'Committee on Appropriations'),
+      '0422': row(119187, 'Budget Hearing - Department of Commerce', 'Subcommittee on Commerce, Justice, Science, and Related Agencies (Committee on Appropriations)'),
+      '0423': row(119233, 'Fiscal Year 2027 Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Bill', 'Subcommittee on Agriculture, Rural Development, Food and Drug Administration, and Related Agencies (Committee on Appropriations)') + row(119231, 'Fiscal Year 2027 National Security, Department of State, and Related Programs Bill', 'Subcommittee on National Security, Department of State, and Related Programs (Committee on Appropriations)') }[apDay[1]] || '';
+    return new Response(`<table id="MainContent_GridViewMeetings"><tbody>${rows || '<tr><td>No meetings found.</td></tr>'}</tbody></table>`, { status: 200 });
+  }
+  const evA = u.match(/ByEvent\.aspx\?EventID=(119215|119233|119231)/);
+  if (evA) {
+    const sub = evA[1] !== '119215';
+    return new Response(`<div id="previewPanel"><div class="well"><h1>Markup of Fiscal Year 2027 Bill<small class="text-tiny"><blockquote><p>${sub ? 'Subcommittee on Agriculture (Committee on Appropriations)' : 'Committee on Appropriations'}<br></p></blockquote></small></h1></div><div class="meeting-date"><p class="meetingTime">Thursday (9:00 AM)</p></div><blockquote class="location"><strong>H-140</strong><br> Washington, D.C. </blockquote><h2>Support Documents</h2><ul class="unstyled"><li>FY27 – ${sub ? 'Subcommittee' : ''} Roll Call Votes\n[<a target="_blank" href="http://docs.house.gov/meetings/AP/AP00/2026/${evA[1]}/votes.pdf">PDF</a>]</li></ul><p class="lastUpdated">First Published: x<br>Last Updated: y</p></div></div><div class="button-row">`, { status: 200 });
+  }
   const ev = u.match(/ByEvent\.aspx\?EventID=(\d+)/);
   if (ev) return new Response(ev[1] === '119559' ? read('committee-event-hearing.html') : '<html>Service unavailable</html>', { status: 200 });
   const day = u.match(/ByDay\.aspx\?DayID=(\d{8})/);
@@ -171,8 +184,8 @@ await ok('appropriations, when discovery finds nothing: the written FY2027 twelv
   assert.strictEqual(b.bills.length, 12);
   assert.deepStrictEqual([b.fiscalYear, b.listSource], [2027, 'written list (discovery found nothing)']);
   const by = Object.fromEntries(b.bills.map((x) => [x.id, x]));
-  assert.deepStrictEqual([by['H.R. 8646'].stage, by['H.R. 8646'].housePassed, by['H.R. 8646'].latestAction], [2, '2026-06-08', 'Received in the Senate.']);
-  assert.strictEqual(by['H.R. 8845'].stage, 1);
+  assert.deepStrictEqual([by['H.R. 8646'].stage, by['H.R. 8646'].housePassed, by['H.R. 8646'].latestAction], [3, '2026-06-08', 'Received in the Senate.']);
+  assert.strictEqual(by['H.R. 8845'].stage, 2);
   assert.deepStrictEqual([by['H.R. 9495'].known, by['H.R. 9495'].stage, by['H.R. 9495'].latestAction], [false, 0, null]);
   assert.strictEqual(by['H.R. 8646'].url, 'https://www.congress.gov/bill/119th-congress/house-bill/8646');
 });
@@ -188,6 +201,20 @@ await ok('appropriations, found by the committee\'s reported original measures: 
     assert.deepStrictEqual([b.discovery.listed, b.discovery.originals, b.discovery.records], [9, 8, 8]);
     assert.deepStrictEqual(b.bills.map((x) => x.short), ['Agriculture', 'Commerce, Justice, Science', 'Defense', 'Energy and Water', 'Homeland Security', 'Legislative Branch', 'Transportation, HUD']);
   } finally { discoveryOn = false; Date.now = real; }
+});
+
+await ok('appropriations markups: read a range a day at a time, the markups kept (two bills in one meeting listed for both, a hearing left out), with each meeting\'s roll call votes; the range read comes back', async () => {
+  const r = await get('appropriations-markups?fy=2027&from=2026-04-20&to=2026-04-24');
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.body.events.map((e) => [e.date, e.kind, e.shorts, e.id]), [
+    ['2026-04-21', 'full', ['Military Construction, VA', 'Financial Services'], '119215'],
+    ['2026-04-23', 'subcommittee', ['Agriculture'], '119233'],
+    ['2026-04-23', 'subcommittee', ['State, National Security'], '119231'],
+  ]);
+  assert.strictEqual(r.body.events[1].docs.votes, 'https://docs.house.gov/meetings/AP/AP00/2026/119233/votes.pdf');
+  assert.deepStrictEqual([r.body.scannedFrom, r.body.scannedTo, r.body.complete], ['2026-04-20', '2026-04-24', true]);
+  assert.strictEqual((await get('appropriations-markups?fy=2027&from=2026-04-20')).status, 400);
+  assert.strictEqual((await get('appropriations-markups?fy=2027&from=2024-01-01&to=2026-04-24')).status, 400);
 });
 
 console.log(`\n${n} passed`);

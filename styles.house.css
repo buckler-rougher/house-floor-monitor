@@ -11438,10 +11438,18 @@ body.recess-mode .today-house.has-data { display: block; }
 .approps-stage { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .approps-stage span { font-weight: 400; color: var(--text-muted); }
 .approps-stage.is-law { color: var(--accent-green); }
-.approps-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
+.approps-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-4); }
 .approps-track i { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); }
 .approps-track i.on { background: var(--accent-blue); }
 .approps-track i.is-law { background: var(--accent-green); }
 .approps-action { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
 .approps-action span { color: var(--text-muted); }
+.approps-ms { display: grid; gap: var(--sp-6); padding: var(--sp-6) 0 var(--sp-2); }
+.approps-ms-row { display: grid; grid-template-columns: 5.2rem 1fr; gap: var(--sp-8); align-items: baseline; font-size: var(--fs-sm); }
+.approps-ms-date { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+.approps-ms-what { color: var(--text-primary); line-height: 1.4; }
+.approps-ms-what span { color: var(--text-muted); }
+.approps-ms-links { display: inline-flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-12); margin-left: var(--sp-8); }
+.approps-ms-links a { color: var(--accent-blue); text-decoration: none; }
+.approps-ms-links a:hover { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .dp-bar span { transition: none; } }

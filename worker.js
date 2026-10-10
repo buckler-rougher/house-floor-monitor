@@ -4304,6 +4304,80 @@ async function handleAppropriations(env) {
   });
 }
 
+// The appropriations markups of the House committee and its subcommittees (subcommittee approval, committee approval), read off the Clerk's committee repository
+// one day at a time (docs.house.gov ByDay), because nothing lists them: a meeting whose title names "Fiscal Year 2027 ... Bill" and whose committee is the
+// Appropriations Committee or one of its subcommittees (lib/appropriations.js `isMarkup`), then its own page for the documents (the roll call votes, the report,
+// the amendments). A day is a request, so a range is read in steps: 24 days a call, the last two days again every call (a meeting gets its documents a day
+// later), up to 10 meeting pages, with what is found kept in KV between calls and the range read so far in `scannedFrom`..`scannedTo`; the client asks again
+// until `complete`. Past days never change, so they are never read twice.
+async function handleApproMarkups(env, url) {
+  const q = url.searchParams;
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const day = (s) => (/^\d{4}-\d\d-\d\d$/.test(s || '') && !Number.isNaN(Date.parse(s + 'T00:00:00Z')) ? s : null);
+  const from = day(q.get('from')), to = day(q.get('to')), fy = /^\d{4}$/.test(q.get('fy') || '') ? q.get('fy') : null;
+  if (!from || !to || !fy) return fail(400, 'from, to (YYYY-MM-DD) and fy (YYYY) are required');
+  const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const ms = (s) => Date.parse(s + 'T00:00:00Z');
+  const todayMs = ms(`${getTodayDateET().slice(0, 4)}-${getTodayDateET().slice(4, 6)}-${getTodayDateET().slice(6, 8)}`);
+  if (ms(to) < ms(from) || ms(to) - ms(from) > 400 * 86400000 || ms(to) > todayMs + 30 * 86400000) return fail(400, 'a range of at most 400 days, ending within 30 days of today');
+  return kvCache(env, `approps-markups-v1-${fy}-${from}-${to}`, 30, async () => {
+    const AP = globalThis.Appropriations, CM = globalThis.CommitteeMeetings;
+    const key = `approps-markups-state-v1-${fy}`;
+    let st = null;
+    try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { st = null; }
+    // what has been read is one run of days; start again if the wanted range does not touch it
+    if (!st || ms(st.scannedTo) < ms(from) - 86400000 || ms(st.scannedFrom) > ms(to) + 86400000) st = { scannedFrom: iso(ms(from)), scannedTo: iso(ms(from) - 86400000), events: [], docs: {} };
+    // the last two days, and the days ahead, are still moving (a meeting gets its documents a day later, a new one is scheduled): read again every call
+    const settled = iso(todayMs - 3 * 86400000);
+    st.events = st.events.filter((e) => e.date <= settled);
+    if (st.scannedTo > settled) st.scannedTo = settled;
+    const end = iso(Math.min(ms(to), todayMs + 7 * 86400000));
+    const todo = [];
+    for (let d = ms(st.scannedTo) + 86400000; d <= ms(end) && todo.length < 24; d += 86400000) todo.push(iso(d));
+    for (let d = ms(st.scannedFrom) - 86400000; d >= ms(from) && todo.length < 24; d -= 86400000) todo.push(iso(d));
+    const read = new Set();
+    for (let i = 0; i < todo.length; i += 8) {
+      await Promise.all(todo.slice(i, i + 8).map(async (date) => {
+        try {
+          const id = `${date.slice(5, 7)}${date.slice(8, 10)}${date.slice(0, 4)}`;
+          const page = CM.parseDay(await fetchSource(`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${id}`, `committee day ${date}`));
+          if (!page) throw new Error('not the calendar');
+          for (const e of page.events) {
+            if (!AP.isMarkup(e.title) || !new RegExp(`Fiscal Year ${fy}`).test(e.title)) continue;
+            st.events.push({ id: e.id, date, kind: AP.markupKind(e.committee), shorts: AP.shortNames(e.title), title: e.title, committee: e.committee, url: e.url });
+          }
+          read.add(date);
+        } catch { /* that day is read again next call, and the run stops short of it */ }
+      }));
+    }
+    // the run of days read grows only through days actually read, in both directions
+    for (let d = ms(st.scannedTo) + 86400000; read.has(iso(d)); d += 86400000) st.scannedTo = iso(d);
+    for (let d = ms(st.scannedFrom) - 86400000; read.has(iso(d)); d -= 86400000) st.scannedFrom = iso(d);
+    const failures = todo.filter((d) => !read.has(d));
+    // documents of the meetings found, ten pages a call
+    const need = st.events.filter((e) => !st.docs[e.id]).slice(0, 10);
+    await Promise.all(need.map(async (e) => {
+      try {
+        const ev = CM.parseEvent(await fetchSource(e.url, `committee meeting ${e.id}`));
+        if (!ev) return;
+        const items = [...ev.sections.flatMap((s) => s.items)];
+        const pick = (re) => (items.find((i) => re.test(i.title)) || {}).url || null;
+        // the committee comes from the meeting's own page, which is right where the day table is not
+        const mine = /appropriations/i.test(ev.committee);
+        st.docs[e.id] = { markup: /^Markup of/i.test(ev.title) && mine, kind: AP.markupKind(ev.committee), committee: ev.committee, votes: pick(/roll call votes/i), report: pick(/\bReport\b/), amendments: pick(/amendments/i), text: pick(/Full Committee Mark|Subcommittee Mark|Bill/) };
+      } catch { /* asked again next call */ }
+    }));
+    st.events = st.events.filter((e) => !(st.docs[e.id] && st.docs[e.id].markup === false));
+    if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+    const events = st.events.filter((e) => e.date >= from && e.date <= to).sort((a, b) => a.date.localeCompare(b.date)).map((e) => ({ ...e, kind: (st.docs[e.id] && st.docs[e.id].kind) || e.kind, committee: (st.docs[e.id] && st.docs[e.id].committee) || e.committee, docs: st.docs[e.id] || null }));
+    return new Response(JSON.stringify({
+      at: Date.now(), fiscalYear: Number(fy), from, to, scannedFrom: st.scannedFrom, scannedTo: st.scannedTo,
+      complete: ms(st.scannedFrom) <= ms(from) && ms(st.scannedTo) >= Math.min(ms(to), ms(settled)) && failures.length === 0,
+      events,
+    }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' } });
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6433,6 +6507,8 @@ async function handleRequest(request, env) {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/appropriations-markups' && request.method === 'GET') {
+    return await handleApproMarkups(env, url);
   } else if (path === '/api/appropriations' && request.method === 'GET') {
     return await handleAppropriations(env);
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
