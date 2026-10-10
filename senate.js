@@ -1031,6 +1031,7 @@ async function openSenateBillModal(billId, trigger) {
         overlay.innerHTML = entry.error
             ? billModalSkeleton(billId, `Details unavailable (${entry.error})`)
             : billModalContent(entry.bill);
+        if (!hit) overlay.querySelector('.bill-modal-scroll')?.classList.add('is-filled');
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
         BillSections.wireCopyLink(overlay);
         if (!entry.error) BillSections.wireSource(overlay, entry.bill.id || billId, API);
