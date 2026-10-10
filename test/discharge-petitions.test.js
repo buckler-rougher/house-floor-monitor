@@ -60,7 +60,28 @@ ok('the signature count is the highest signer number in the table, and the newes
 
 ok('a page with no signature table is null (not zero signatures), and an empty table is zero', () => {
   assert.strictEqual(D.parseSignatures('<html>Not found</html>'), null);
-  assert.deepStrictEqual(D.parseSignatures('<tbody id="member-signatures"></tbody>'), { count: 0, last: null });
+  assert.deepStrictEqual(D.parseSignatures('<tbody id="member-signatures"></tbody>'), { count: 0, last: null, signers: [] });
+});
+
+ok('the sponsor\'s bioguide id comes off the sponsor link', () => {
+  assert.strictEqual(D.parseList(read('discharge-list.html')).petitions[0].sponsorId, 'L000596');
+});
+
+ok('the block is the entry without the page furniture: no layout divs, no styling or accessibility attributes, one copy of the buttons, hrefs quoted', () => {
+  const b = D.parseList(read('discharge-list.html')).petitions[0].block;
+  assert.ok(!/<div|class=|style=|aria-|tabindex|role=/.test(b), b);
+  assert.strictEqual((b.match(/View Petition/g) || []).length, 1);
+  assert.strictEqual((b.match(/View Bill/g) || []).length, 1);
+  assert.ok(b.includes('<a href="https://www.congress.gov/bill/119/HRes/725">H.Res. 725</a>'));
+  assert.ok(b.split('\n').length >= 6, 'one element a line');
+});
+
+ok('each signer: number, bioguide id, name (the Clerk\'s stray carriage return gone), state, district, party and the day signed', () => {
+  const row = (n, id, nm, st, ab, d, party, date) => `<tr><td data-label="No.">${n}.</td><td data-label="Representative"><a href="/Members/${id}" title="View Profile">${nm}</a></td><td style="display:none;">${nm}</td><td data-label="State">${st}</td><td style="display:none;">${ab}</td><td data-label="District">${d}</td><td data-label="Party">${party}</td><td data-label="Signed Date"><span style="display:none;">${date} 00:00:00</span>December 2nd, 2025</td></tr>`;
+  const s = D.parseSignatures(`<tbody id="member-signatures">${row(1, 'L000596', 'Anna Paulina &#xD; Luna', 'Florida', 'FL', '13', 'Republican', '12/02/2025')}${row(2, 'K000009', 'Marcy Kaptur', 'Ohio', 'OH', '09', 'Democratic', '06/11/2026')}</tbody>`);
+  assert.deepStrictEqual(s.signers[0], { n: 1, id: 'L000596', name: 'Anna Paulina Luna', state: 'FL', stateName: 'Florida', district: '13', party: 'Republican', date: '12/02/2025' });
+  assert.strictEqual(s.signers[1].party, 'Democratic');
+  assert.strictEqual(s.last, '06/11/2026');
 });
 
 console.log(`\n${n} passed`);

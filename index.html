@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261009s">
+    <link rel="stylesheet" href="styles.house.css?v=20261009t">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1662,6 +1662,11 @@
                     <span class="proceedings-time" id="discharge-summary"></span>
                 </div>
             </div>
+            <div class="dp-sort" id="dp-sort" role="group" aria-label="Sort petitions">
+                <button type="button" class="bills-sort-btn active" data-dp-sort="close" aria-pressed="true">Closest to 218</button>
+                <button type="button" class="bills-sort-btn" data-dp-sort="new" aria-pressed="false">Newest</button>
+                <button type="button" class="bills-sort-btn" data-dp-sort="recent" aria-pressed="false">Last signed</button>
+            </div>
             <div class="discharge-list" id="discharge-list"><div class="proceedings-error">LOADING</div></div>
         </div>
 
@@ -1746,6 +1751,9 @@
                         <a href="https://clerk.house.gov/Votes" target="_blank" rel="noopener">Roll Call Votes (House Clerk)</a>
                         <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">Member Data (House Clerk)</a>
                         <a href="https://docs.house.gov/BillsThisWeek-RSS.xml" target="_blank" rel="noopener">House Docs (House Clerk/Majority Leader)</a>
+                        <a href="https://docs.house.gov/Committee/Calendar/ByDay.aspx" target="_blank" rel="noopener">Committee Meetings (House Clerk Committee Repository)</a>
+                        <a href="https://clerk.house.gov/DischargePetition" target="_blank" rel="noopener">Discharge Petitions (House Clerk)</a>
+                        <a href="https://votingdays.house.gov/voting-days.ics" target="_blank" rel="noopener">House Voting Days Feed (votingdays.house.gov)</a>
                         <a href="https://www.house.gov/voting-days" target="_blank" rel="noopener">Voting Days Calendar (house.gov)</a>
                         <a href="https://live.house.gov" target="_blank" rel="noopener">House Live Floor Feed (House Clerk)</a>
                         <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a>
@@ -1869,7 +1877,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261009u"></script>
+    <script defer src="app.js?v=20261009v"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

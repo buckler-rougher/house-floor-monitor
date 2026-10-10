@@ -178,6 +178,7 @@
     '/api/status':                      'status.json',
     '/api/house-rolls':                 'house-rolls.json',
     '/api/committee-meetings':          'committee-meetings.json',
+    '/api/discharge-petition?':         'discharge-signers.json',
     '/api/discharge-petitions':         'discharge-petitions.json',
     '/api/bills-source':                'bills-source.json',
     '/api/voting-days-source':          'voting-days-source.json',
