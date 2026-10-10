@@ -6136,6 +6136,8 @@ function renderTodayInHouse(items) {
 // nothing in the next week it says so. Titles, committees, times and rooms are the Clerk's own words; a markup's title is the bills it takes up.
 let _committee = null;
 let _committeeAll = false;
+const _committeeOpen = new Set();   // meetings whose details are open
+const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
 const COMMITTEE_SHOWN = 8;
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
@@ -6157,17 +6159,45 @@ function renderCommitteeMeetings() {
             <div class="committee-what">
                 <a class="committee-title" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
                 <span class="committee-name">${escapeHtml(e.committee)}</span>
+                <button type="button" class="committee-more" data-committee-detail="${escapeHtml(e.id)}" aria-expanded="${_committeeOpen.has(e.id)}">${_committeeOpen.has(e.id) ? 'Hide details' : 'Witnesses and documents'}</button>
             </div>
             <span class="committee-room">${escapeHtml(e.location)}</span>
+            ${_committeeOpen.has(e.id) ? committeeDetailHtml(_committeeDetail[e.id]) : ''}
         </div>`).join('') + (d.events.length > COMMITTEE_SHOWN ? `<button type="button" class="dp-toggle" id="committee-toggle">${_committeeAll ? 'Show fewer' : `Show ${rest} more meeting${rest === 1 ? '' : 's'}`}</button>` : ''));
     }
     const link = document.getElementById('committee-source-link');
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
-    if (globalThis.SourcePop) SourcePop.set(document.getElementById('committee-meetings'), d.table ? {
-        request: 'GET https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, ''),
-        html: d.table,
-        at: d.at,
-    } : null);
+    if (globalThis.SourcePop) {
+        const dayPart = d.table ? { request: 'GET https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, ''), html: d.table } : null;
+        // each meeting opened adds its own page, as the Clerk sent it
+        const eventParts = [..._committeeOpen].map((id) => _committeeDetail[id]).filter((x) => x && x.panel).map((x) => ({ request: `GET ${x.url}`, html: x.panel }));
+        SourcePop.set(document.getElementById('committee-meetings'), !dayPart ? null : eventParts.length ? { parts: [dayPart, ...eventParts], at: d.at } : { ...dayPart, at: d.at });
+    }
+}
+// What the Clerk's page for one meeting holds: who is testifying, with their documents, and the legislation, notices and votes. Document titles are the
+// Clerk's, less the date it appends ("Testimony_Taylor_09.16.2026" -> "Testimony Taylor").
+function committeeDetailHtml(x) {
+    if (!x || x === 'loading') return '<div class="committee-detail"><span class="committee-detail-note">Loading</span></div>';
+    if (x === 'error') return '<div class="committee-detail"><span class="committee-detail-note">Details unavailable</span></div>';
+    const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
+    const doc = (i) => i.url ? `<a href="${escapeHtml(i.url)}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
+    const witnesses = x.witnesses.length ? `<div class="committee-detail-head">Witnesses</div>${x.witnesses.map((w) => `
+        <div class="committee-witness"><span class="committee-witness-name">${escapeHtml(w.name)}</span><span class="committee-witness-role">${escapeHtml(w.role)}</span>
+        ${w.docs.length ? `<span class="committee-docs">${w.docs.map(doc).join('')}</span>` : ''}</div>`).join('')}` : '';
+    const sections = x.sections.map((s) => `<div class="committee-detail-head">${escapeHtml(s.title)}</div><ul class="committee-docs-list">${s.items.map((i) => `<li>${doc(i)}</li>`).join('')}</ul>`).join('');
+    return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? '<span class="committee-detail-note">Nothing posted yet</span>' : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
+}
+function toggleCommitteeDetail(id) {
+    if (_committeeOpen.has(id)) { _committeeOpen.delete(id); renderCommitteeMeetings(); return; }
+    _committeeOpen.add(id);
+    if (!_committeeDetail[id] || _committeeDetail[id] === 'error') {
+        _committeeDetail[id] = 'loading';
+        fetch(`https://api.evanhollander.org/house-floor/api/committee-event?id=${encodeURIComponent(id)}`)
+            .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then((d) => { _committeeDetail[id] = d; renderCommitteeMeetings(); })
+            .catch(() => { _committeeDetail[id] = 'error'; renderCommitteeMeetings(); });
+    }
+    renderCommitteeMeetings();
 }
 function loadCommitteeMeetings() {
     const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -6445,6 +6475,8 @@ document.addEventListener('click', (e) => {
     const t = e.target;
     if (!t || !t.closest) return;
     if (t.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
+    const more = t.closest('[data-committee-detail]');
+    if (more) toggleCommitteeDetail(more.dataset.committeeDetail);
     if (t.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
     if (t.id === 'dp-done-toggle') { _dischargeDoneAll = !_dischargeDoneAll; renderDischargePetitions(); }
     const sortBtn = t.closest('[data-dp-sort]');

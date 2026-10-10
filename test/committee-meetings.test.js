@@ -48,4 +48,33 @@ ok('a day with no meetings is an empty list; a page with no calendar table is no
   assert.strictEqual(CM.parseDay(null), null);
 });
 
+ok('a hearing\'s own page: the witnesses with their titles and documents (https links), and the record', () => {
+  const e = CM.parseEvent(read('committee-event-hearing.html'));
+  assert.strictEqual(e.title, 'Hearing: "Increasing Demand and Opportunities for Homegrown Products Here and Abroad"');
+  assert.strictEqual(e.committee, 'Committee on Agriculture');
+  assert.strictEqual(e.time, 'Wednesday, September 16, 2026 (9:30 AM)');
+  assert.strictEqual(e.location, '1300 LHOB');
+  assert.strictEqual(e.witnesses.length, 6);
+  assert.deepStrictEqual(e.witnesses[0].name, 'The Honorable Alexis Taylor');
+  assert.strictEqual(e.witnesses[0].role, 'Chief Global Policy Officer, International Fresh Produce Association, Washington, DC');
+  assert.deepStrictEqual(e.witnesses[0].docs[0], { title: 'Testimony_Taylor_09.16.2026', url: 'https://docs.house.gov/meetings/AG/AG00/20260916/119559/HHRG-119-AG00-Wstate-TaylorA-20260916.pdf' });
+  assert.deepStrictEqual(e.sections.map((x) => x.title), ['Hearing Record']);
+  assert.ok(!/class=|style=|target=/.test(e.panel) && e.panel.includes('https://docs.house.gov/meetings/'), 'the panel for a popover: no styling, https');
+});
+
+ok('a markup: the text of the legislation, the notice and the votes, and no witnesses', () => {
+  const e = CM.parseEvent(read('committee-event-markup.html'));
+  assert.deepStrictEqual(e.sections.map((x) => x.title), ['Text of Legislation', 'Support Documents', 'Votes']);
+  assert.deepStrictEqual(e.sections[0].items.map((i) => i.title), ['H.R. 4464, the Preventive Health Savings Act', 'H.R. 6470, the Increasing Baseline Updates Act']);
+  assert.strictEqual(e.sections[2].items[0].title, 'Vote #1-On Favorably Reporting, without amendment, H.R. 6470');
+  assert.deepStrictEqual(e.witnesses, []);
+  assert.strictEqual(e.updated, 'September 16, 2026 at 04:40 PM');
+});
+
+ok('a hearing with witnesses and nothing else lists no sections; a page that is not a meeting is null', () => {
+  assert.deepStrictEqual(CM.parseEvent(read('committee-event-small.html')).sections, []);
+  assert.strictEqual(CM.parseEvent('<html>Service unavailable</html>'), null);
+  assert.strictEqual(CM.parseEvent(''), null);
+});
+
 console.log(`\n${n} passed`);

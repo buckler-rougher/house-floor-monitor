@@ -33,6 +33,8 @@ globalThis.fetch = async (u) => {
     const body = cal[2] === '6' ? read('discharge-calendar-one.htm') : read(cal[1] === '2026-09-15' ? 'house-calendar/2026-09-15.htm' : 'house-calendar/2026-09-16.htm');
     return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
   }
+  const ev = u.match(/ByEvent\.aspx\?EventID=(\d+)/);
+  if (ev) return new Response(ev[1] === '119559' ? read('committee-event-hearing.html') : '<html>Service unavailable</html>', { status: 200 });
   const day = u.match(/ByDay\.aspx\?DayID=(\d{8})/);
   if (day) return new Response(day[1] === '09162026' ? dayPage : day[1] === '09172026' ? '<html>Service unavailable</html>' : emptyPage, { status: 200 });
   if (u.includes('/DischargePetition/DischargePetitions')) {
@@ -131,6 +133,15 @@ await ok('no calendar to be found is an error, not "nothing pending"', async () 
   const real = Date.now;
   Date.now = () => real() + 30 * 60 * 1000;
   try { assert.strictEqual((await get('discharge-calendar')).status, 502); } finally { calendarDown = false; Date.now = real; }
+});
+
+await ok('a meeting\'s own page: its witnesses; a page that is not a meeting is an error, and a bad id a 400', async () => {
+  const r = await get('committee-event?id=119559');
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.witnesses.length, 6);
+  assert.strictEqual(r.body.url, 'https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=119559');
+  assert.strictEqual((await get('committee-event?id=119999')).status, 502);
+  assert.strictEqual((await get('committee-event?id=abc')).status, 400);
 });
 
 console.log(`\n${n} passed`);

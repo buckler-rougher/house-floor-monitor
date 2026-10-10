@@ -177,6 +177,7 @@
     '/api/bill-source':                 'bill-source.json',
     '/api/status':                      'status.json',
     '/api/house-rolls':                 'house-rolls.json',
+    '/api/committee-event?':            'committee-event.json',
     '/api/committee-meetings':          'committee-meetings.json',
     '/api/discharge-petition?':         'discharge-signers.json',
     '/api/discharge-calendar':          'discharge-calendar.json',

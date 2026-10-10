@@ -153,6 +153,12 @@ const CHECKS = [
     : CommitteeMeetings.parseDay(r.text) ? null : { fail: 'no meetings table: the page has changed (lib/committee-meetings.js)' }),
   direct('GPO discharge calendar (part 6, today)', `https://www.govinfo.gov/content/pkg/CCAL-${congress}hcal-${todayEt.replace(/(\d\d)\/(\d\d)\/(\d{4})/, '$3-$1-$2')}/html/CCAL-${congress}hcal-${todayEt.replace(/(\d\d)\/(\d\d)\/(\d{4})/, '$3-$1-$2')}-pt6.htm`, (r) => r.status !== 200 ? { warn: `HTTP ${r.status} (no Calendar on a day the House does not sit)` }
     : DischargeCalendar.parse(r.text) ? null : { warn: 'not the calendar (a day with no package, or the page has changed: lib/discharge-calendar.js)' }),
+  // a meeting's own page (witnesses, legislation, notices), read for the panel's details; a fixed old meeting, whose page stays
+  direct('docs.house.gov meeting page (EventID 119559)', 'https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=119559', (r) => {
+    if (r.status !== 200) return { fail: `HTTP ${r.status}` };
+    const e = CommitteeMeetings.parseEvent(r.text);
+    return e && e.witnesses.length ? null : { fail: e ? 'a hearing with no witnesses read: the page has changed (lib/committee-meetings.js)' : 'no meeting panel: the page has changed (lib/committee-meetings.js)' };
+  }),
   direct('clerk discharge petition list', `https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${congress}`, (r) => {
     if (r.status !== 200) return { fail: `HTTP ${r.status}` };
     const l = DischargePetitions.parseList(r.text);

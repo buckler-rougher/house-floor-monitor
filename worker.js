@@ -4020,6 +4020,21 @@ async function handleHouseRolls(request, env) {
 // The House's committee meetings for a day, from the Clerk's Committee Repository calendar (docs.house.gov), parsed by lib/committee-meetings.js.
 // `scan` looks forward from the date for the first day that has any (up to a week), because a board asked on a Friday or a recess day wants the next
 // day with something on, and says which day it found. A page that is not the calendar is an error, never an empty day.
+// One committee meeting's own page: witnesses and their documents, the legislation, notices and votes (lib/committee-meetings.js parseEvent). Asked for when a
+// reader opens a meeting in the panel, so only the meetings looked at are read.
+async function handleCommitteeEvent(env, id) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!/^\d{3,8}$/.test(id || '')) return fail(400, 'an event id is required');
+  return kvCache(env, `committee-event-v1-${id}`, 600, async () => {
+    try {
+      const url = `https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=${id}`;
+      const e = globalThis.CommitteeMeetings.parseEvent(await fetchSource(url, `committee meeting ${id}`));
+      if (!e) throw new Error('the meeting page was not a meeting (has it changed?)');
+      return new Response(JSON.stringify({ at: Date.now(), id, url, ...e }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' } });
+    } catch (e) { return fail(502, e.message); }
+  });
+}
+
 async function handleCommitteeMeetings(request, env) {
   const q = new URL(request.url).searchParams;
   const date = q.get('date') || '';
@@ -6300,6 +6315,8 @@ async function handleRequest(request, env) {
     return await handleWhipSource(env);
   } else if (path === '/api/house-rolls' && request.method === 'GET') {
     return await handleHouseRolls(request, env);
+  } else if (path === '/api/committee-event' && request.method === 'GET') {
+    return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
