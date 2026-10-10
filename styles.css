@@ -2704,8 +2704,10 @@ body.tellers-mode .tellers-column { display: flex; }
 @media (prefers-reduced-motion: reduce) { .bill-modal-scroll.is-filled, .dp-modal-list.is-filled { animation: none; } }
 /* the two clipped lists of the discharge panel: petitions at 218 under their label, and the rest */
 .dp-region { display: grid; gap: var(--sp-16); }
-#dp-done-block { display: grid; gap: var(--sp-8); }
+#dp-done-block, #dp-open-block { display: grid; gap: var(--sp-8); }
 #dp-done-block[hidden] { display: none; }
+#dp-open-head[hidden] { display: none; }
+#dp-done-block { margin-bottom: var(--sp-4); }
 /* A list clipped to its first items and the top of the next, faded out along the bottom, with a + / - on the edge (lib/clamp-list.js): the Orders card's motif */
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }
@@ -12390,7 +12392,8 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-modal-sort { padding: 0; }
 .dp-sort { padding: var(--sp-12) var(--sp-24) 0; }
 @media (max-width: 640px) { .dp-sort { padding: var(--sp-12) var(--sp-16) 0; } }
-.dp-group-head { padding: 0 var(--sp-2); margin-bottom: calc(var(--sp-8) * -1); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-green); }
+.dp-group-head { padding: 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-green); }
+#dp-open-head { color: var(--text-muted); }
 .dp-item.is-done { border-color: rgba(63, 185, 80, 0.35); background: rgba(63, 185, 80, 0.06); }
 .dp-subheader { height: auto; min-height: 44px; padding-top: var(--sp-10); padding-bottom: var(--sp-10); }
 .dp-subheader .vote-series-sub-status { font-weight: 400; color: var(--text-muted); line-height: 1.4; }
