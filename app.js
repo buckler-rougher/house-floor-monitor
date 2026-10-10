@@ -6192,7 +6192,7 @@ function committeeDetailHtml(x) {
     if (!x || x === 'loading') return '<div class="committee-detail"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>';
     if (x === 'error') return '<div class="committee-detail"><span class="committee-detail-note">Details unavailable</span></div>';
     const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
-    const doc = (i) => i.url ? `<a href="${escapeHtml(i.url)}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
+    const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(i.url)}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
     const witnesses = x.witnesses.length ? `<div class="committee-detail-head">Witnesses</div>${x.witnesses.map((w) => `
         <div class="committee-witness"><span class="committee-witness-name">${escapeHtml(w.name)}</span><span class="committee-witness-role">${escapeHtml(w.role)}</span>
         ${w.docs.length ? `<span class="committee-docs">${w.docs.map(doc).join('')}</span>` : ''}</div>`).join('')}` : '';
@@ -6299,7 +6299,7 @@ function renderDischargePetitions() {
         const state = p.signatures >= need ? 'done' : p.signatures >= need - 5 ? 'close' : '';
         return `<div class="dp-bar ${state}" role="progressbar" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${p.signatures}" aria-label="${p.signatures} of ${need} signatures"><span style="width:${pct}%"></span></div>`;
     };
-    const link = (href, text) => href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>` : escapeHtml(text);
+    const link = (href, text) => href ? `<a class="ext" href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>` : escapeHtml(text);
     const item = (p) => {
         const { bill, what } = dischargeParts(p);
         const isDone = p.signatures >= need;
@@ -6321,7 +6321,7 @@ function renderDischargePetitions() {
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
-                <a href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
+                <a class="ext" href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
             </div>
             ${isDone && p.action ? `<div class="dp-action"><span title="From Congress.gov">Latest action${p.action.date ? `, ${escapeHtml(dischargeDate(p.action.date.slice(5, 7) + '/' + p.action.date.slice(8, 10) + '/' + p.action.date.slice(0, 4)))}` : ''}:</span> ${escapeHtml(p.action.text)}</div>` : ''}
             <div class="dp-people">
@@ -9075,7 +9075,7 @@ function renderHouseCalendar() {
 
     // In the card header, outside the clamped text, so the fade never hides it.
     const source = _calendar.source
-        ? `Source: <a href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
+        ? `Source: <a class="ext" href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
     const setSource = (n) => { const s = n && n.querySelector('.calendar-card-source'); if (s) setIfChanged(s, source); };
     // The orders agreed for today. Shown on every sitting day the Calendar could be read: a clamped blurb
     // that opens, as the policy cards do. `orders: null` means the page had a shape this could not read,
