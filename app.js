@@ -2749,7 +2749,7 @@ function updateVoteTimelineStatus() {
     // rather than waiting for the next full re-render (matches renderVoteTimeline).
     if (liveStatuses.length && liveStatuses.every(s => s === 'passed' || s === 'failed')) {
         currentVotesList = [];
-        body.innerHTML = '<div class="whip-updates-loading">No active vote series.</div>';
+        body.innerHTML = '<div class="empty-note">No active vote series</div>';
         const subHeader = document.getElementById('vote-series-sub-header');
         if (subHeader) subHeader.hidden = true;
         return;
@@ -2933,7 +2933,7 @@ function renderVoteTimeline(items) {
     // follow-up "1 vote" notice doesn't erase already-voted items.
     const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
     if (!seriesItems.length) {
-        body.innerHTML = '<div class="whip-updates-loading">No vote series announced yet.</div>';
+        body.innerHTML = '<div class="empty-note">No vote series announced yet</div>';
         hideSubHeader();
         return;
     }
@@ -2975,7 +2975,7 @@ function renderVoteTimeline(items) {
     // Completed (older) votes come first in the timeline; current/pending after
     const votes = [...completedVotes, ...currentVotes];
     if (votes.length === 0) {
-        body.innerHTML = '<div class="whip-updates-loading">No votes listed in notice.</div>';
+        body.innerHTML = '<div class="empty-note">No votes listed in notice</div>';
         hideSubHeader();
         return;
     }
@@ -3002,7 +3002,7 @@ function renderVoteTimeline(items) {
     const isStale = staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
     if (allComplete || isStale) {
         currentVotesList = [];
-        body.innerHTML = '<div class="whip-updates-loading">No active vote series.</div>';
+        body.innerHTML = '<div class="empty-note">No active vote series</div>';
         hideSubHeader();
         return;
     }
@@ -3678,10 +3678,10 @@ async function fetchBillsThisWeek() {
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
-            setIfChanged(elements.ruleBillsList, '<div class="no-bills">Unable to load bills</div>');
+            setIfChanged(elements.ruleBillsList, '<div class="empty-note">Unable to load bills</div>');
         }
         if (elements.suspensionBillsList) {
-            setIfChanged(elements.suspensionBillsList, '<div class="no-bills">Unable to load bills</div>');
+            setIfChanged(elements.suspensionBillsList, '<div class="empty-note">Unable to load bills</div>');
         }
     }
 }
@@ -4370,13 +4370,13 @@ function updateBillsDisplay() {
     if (sortedRule.length > 0) {
         setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
-        setIfChanged(elements.ruleBillsList, `<div class="no-bills">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills subject to a rule'}</div>`);
+        setIfChanged(elements.ruleBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills subject to a rule'}</div>`);
     }
 
     if (sortedSuspension.length > 0) {
         setIfChanged(elements.suspensionBillsList, sortedSuspension.map(bill => createBillCard(bill, 'suspension')).join(''));
     } else {
-        setIfChanged(elements.suspensionBillsList, `<div class="no-bills">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills under suspension'}</div>`);
+        setIfChanged(elements.suspensionBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills under suspension'}</div>`);
     }
 
     const trackedFilterBtn = document.getElementById('bills-tracked-filter-btn');
@@ -6149,7 +6149,7 @@ function renderCommitteeMeetings() {
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
     if (!d.events.length) {
-        setIfChanged(list, '<div class="dp-empty">No committee meetings scheduled in the next week</div>');
+        setIfChanged(list, '<div class="empty-note">No committee meetings scheduled in the next week</div>');
     } else {
         const shown = _committeeAll ? d.events : d.events.slice(0, COMMITTEE_SHOWN);
         const rest = d.events.length - shown.length;
@@ -6453,7 +6453,7 @@ function openDischargeSigners(id, number, trigger) {
                 <span class="dp-signer-date">${escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
         });
-        if (!entries.length) entries.push({ key: 'none', html: '<div class="dp-empty">No matching signers</div>' });
+        if (!entries.length) entries.push({ key: 'none', html: '<div class="empty-note">No matching signers</div>' });
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     document.getElementById('dp-modal-search').addEventListener('input', draw);

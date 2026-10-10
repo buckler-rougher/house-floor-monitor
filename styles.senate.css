@@ -3753,6 +3753,12 @@ font-family: var(--font-mono);
     background: rgba(139, 148, 158, 0.06);
     box-shadow: none;
 }
+  .empty-note {
+    padding: var(--sp-24) var(--sp-16);
+    text-align: center;
+    font-size: var(--fs-md);
+    color: var(--text-muted);
+}
   .bill-modal-overlay {
     position: fixed;
     inset: 0;
@@ -6008,7 +6014,7 @@ font-family: var(--font-mono);
 #senate-stages .bills-list {
     gap: var(--sp-20);
 }
-.stage-row .list-scroll:has(> .whip-updates-loading:only-child) {
+.stage-row .list-scroll:has(> .whip-updates-loading:only-child), .stage-row .list-scroll:has(> .empty-note:only-child) {
     justify-content: center;
 }
 .proceedings-section-label {

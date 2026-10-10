@@ -778,7 +778,7 @@ function renderNotices() {
     if (!feed) return;
     const shown = _noticeFilter === 'all' ? _notices : _notices.filter((n) => n.type === _noticeFilter);
     if (!shown.length) {
-        setIfChanged(feed, '<div class="whip-updates-loading">No floor notices.</div>');
+        setIfChanged(feed, '<div class="empty-note">No floor notices</div>');
         watchListScroll(feed);
         return;
     }
@@ -910,7 +910,7 @@ function renderNominations() {
         if (!list) continue;
         setIfChanged(list, shown.length
             ? shown.map(nominationCard).join('')
-            : '<div class="whip-updates-loading">None at this stage.</div>');
+            : '<div class="empty-note">None at this stage</div>');
         watchListScroll(list);
     }
 }
@@ -1626,7 +1626,7 @@ function renderStages(data) {
         if (!list) continue;
         setIfChanged(list, rows.length
             ? rows.map((m, i) => stageCard(m, key, i)).join('')
-            : '<div class="whip-updates-loading">Nothing at this stage.</div>');
+            : '<div class="empty-note">Nothing at this stage</div>');
         watchListScroll(list);
     }
     // Say what the window reached, rather than showing a slice and letting it
