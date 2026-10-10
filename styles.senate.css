@@ -5880,7 +5880,7 @@ font-family: var(--font-mono);
   .calendar-mobile-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); border-color: var(--border-color); }
   .panel-header { position: relative; container-type: inline-size; }
   @container (min-width: 640px) {
-    .panel-header > .majority-badge, .panel-header .calendar-desktop-nav, .panel-header .bills-sort-switcher {
+    .panel-header > .majority-badge, .panel-header .calendar-desktop-nav, .panel-header .bills-sort-switcher, .panel-header #approps-summary {
         position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content;
     }
   }
