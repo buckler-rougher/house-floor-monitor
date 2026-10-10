@@ -99,6 +99,10 @@ const CHECKS = [
   // The Worker's two Clerk feeds for the committee and discharge panels. The petitions answer carries a count for every petition, and a petition
   // with none means its own page could not be read, which is a warning (the panel leaves it out) and not a failure.
   worker('house', `committee-meetings?scan=1&date=${encodeURIComponent(todayEt)}`, (j) => has(Array.isArray(j.events) && typeof j.table === 'string' && /^\d\d\/\d\d\/\d{4}$/.test(j.date || ''), 'no events list, table or date')),
+  // The Senate board's committee meetings and treaties (Congress.gov API). Meetings: the answer is a day and a list (empty in a recess, which is normal) and
+  // `pending` says records are still being read; a recess with a meeting listed and no date is the failure. Treaties: at least one of this Congress's or the last's.
+  worker('senate', 'senate/committee-meetings', (j) => (Array.isArray(j.events) && /^\d{4}-\d\d-\d\d$/.test(j.date || '') ? (j.events.length ? null : { warn: 'no committee meetings in the next week (normal in a recess)' }) : { fail: 'no events list or date' })),
+  worker('senate', 'senate/treaties', (j) => (arr(j.treaties).length ? null : { warn: 'no treaties listed' })),
   worker('house', 'discharge-petitions', (j) => {
     if (!arr(j.petitions).length || j.needed !== 218) return { fail: `${arr(j.petitions).length} petitions, needed ${j.needed}` };
     const unread = j.petitions.filter((p) => p.id && p.signatures == null).length;
