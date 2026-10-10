@@ -6203,7 +6203,8 @@ function sourceStatusChecks() {
     'voting-days': ['https://votingdays.house.gov/voting-days.ics', 4096, (r) => ok200(r, (x) => x.text.includes('BEGIN:VCALENDAR'), 'a calendar')],
     'domewatch': ['https://data.domewatch.us/v1/whip-notices?limit=1', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
     'faa': ['https://nasstatus.faa.gov/api/airport-status-information', 8192, (r) => ok200(r, (x) => x.text.includes('AIRPORT_STATUS_INFORMATION'), 'the FAA feed')],
-    'house-committees': ['https://docs.house.gov/Committee/Calendar/ByDay.aspx', 40_000, (r) => ok200(r, (x) => x.text.includes('MainContent_GridViewMeetings'), 'the committee calendar')],
+    // a day's page (the bare address redirects to the month view, which has no meetings table)
+    'house-committees': [`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${getTodayDateET().slice(4, 6)}${getTodayDateET().slice(6, 8)}${getTodayDateET().slice(0, 4)}`, 40_000, (r) => ok200(r, (x) => x.text.includes('MainContent_GridViewMeetings'), 'the committee calendar')],
     'house-discharge': [`https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${CURRENT_CONGRESS}`, 40_000, (r) => ok200(r, (x) => x.text.includes('Discharge Petition No.'), 'the petition list')],
     'senate-votes': [`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${CURRENT_CONGRESS}_${session}.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<vote_summary'), 'a vote menu')],
     'senate-schedule': ['https://www.senate.gov/legislative/schedule/floor_schedule.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<CongressSessionDayConvenings'), 'the session days file')],
