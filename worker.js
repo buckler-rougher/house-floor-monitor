@@ -4246,7 +4246,7 @@ async function handleDischargeCalendar(env) {
 // subcommittees. That is how FY2028 takes over, whenever its bills appear. If that finds nothing the FY2027 list written in the lib is used and `listSource` says so.
 // A bill Congress.gov does not know is listed at stage 0 with `known: false`, never dropped, so a wrong number shows rather than hides.
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v2-${CURRENT_CONGRESS}`, 1800, async () => {
+  return kvCache(env, `appropriations-v3-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
     const call = async (base, path) => {
@@ -4254,19 +4254,30 @@ async function handleAppropriations(env) {
       if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
       return r.ok ? r.json() : null;
     };
-    // discovery: the committee's bills, up to eight pages of 250; any trouble is "found nothing"
+    // discovery: the committee's bills, up to eight pages of 250; any trouble is "found nothing". `discovery` in the answer says what happened (status, how many
+    // entries, how many of them regular appropriations bills), so a failure is visible from outside.
     let found = null;
+    const discovery = { pages: [], entries: 0, regular: 0 };
     try {
       const items = [];
       let next = 'https://api.congress.gov/v3/committee/house/hsap00/bills?limit=250';
       for (let page = 0; next && page < 8; page++) {
-        const json = await call(next.split('?')[0], '?' + next.split('?')[1].replace(/[?&](format|api_key)=[^&]*/g, ''));
-        if (!json) break;
-        items.push(...AP.itemsOf(json));
+        const q = next.split('?')[1].replace(/(^|&)(format|api_key)=[^&]*/g, '').replace(/^&/, '');
+        const r = await fetch(`${next.split('?')[0]}?${q}&format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+        discovery.pages.push(r.status);
+        if (!r.ok) break;
+        const json = await r.json();
+        const got = AP.itemsOf(json);
+        if (page === 0) discovery.shape = { keys: Object.keys(json), first: got[0] ? Object.keys(got[0]) : null, sampleTitle: got[0] ? String(got[0].title || '').slice(0, 80) : null };
+        items.push(...got);
         next = json.pagination?.next || null;
       }
-      found = AP.discover(items.filter((i) => [CURRENT_CONGRESS, CURRENT_CONGRESS - 1].includes(Number(i.congress))));
-    } catch (e) { console.warn(`[house-floor] appropriations discovery: ${e.message}`); }
+      discovery.entries = items.length;
+      discovery.congresses = [...new Set(items.map((i) => i.congress))].slice(0, 6);
+      const mine = items.filter((i) => [CURRENT_CONGRESS, CURRENT_CONGRESS - 1].includes(Number(i.congress)));
+      discovery.regular = mine.filter((i) => String(i.type).toUpperCase() === 'HR' && AP.isRegular(i.title)).length;
+      found = AP.discover(mine);
+    } catch (e) { discovery.error = e.message; console.warn(`[house-floor] appropriations discovery: ${e.message}`); }
     const set = found || { fiscalYear: AP.FALLBACK_YEAR, bills: AP.FALLBACK };
     const bills = await Promise.all(set.bills.map(async (b) => {
       const congress = found ? (b.congress || CURRENT_CONGRESS) : CURRENT_CONGRESS;
@@ -4280,7 +4291,7 @@ async function handleAppropriations(env) {
         ...s, latestAction: bill?.latestAction?.text || null, latestActionDate: bill?.latestAction?.actionDate || null,
       };
     }));
-    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills' : 'written list (discovery found nothing)', stages: AP.STAGES, bills }), {
+    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills' : 'written list (discovery found nothing)', discovery, stages: AP.STAGES, bills }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
     });
   });
