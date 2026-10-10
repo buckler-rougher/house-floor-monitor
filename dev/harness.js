@@ -174,6 +174,7 @@
     '/api/bluesky':                     'bluesky.json',
     '/api/tweets':                      'tweets.json',
     '/api/hls-url':                     'hls-url.json',
+    '/api/senate/bill':                 'remote-bill.json',
     '/api/bill-source':                 'bill-source.json',
     '/api/status':                      'status.json',
     '/api/house-rolls':                 'house-rolls.json',

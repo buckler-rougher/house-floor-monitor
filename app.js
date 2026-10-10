@@ -4705,9 +4705,8 @@ function openBillModal(billId) {
         }
     }
     if (!bill) {
-        // Bill not on the floor this week — link out to Congress.gov
-        const url = billIdToCongressUrl(billId);
-        if (url) window.open(url, '_blank', 'noopener');
+        // Not in this week's business: the same modal from Congress.gov's record (lib/remote-bill.js), the one the Senate board opens for every bill
+        openRemoteBillModal(billId);
         return;
     }
 
@@ -5147,6 +5146,41 @@ function trapFocus(el) {
 
 let _billModalTrigger = null;
 let _billModalTrapCleanup = null;
+
+// A bill that is not in the week's floor business: sponsor, cosponsors, committees, CRS summary, latest action and links from Congress.gov through the Worker.
+// It uses the same overlay, close and Escape handling as the floor modal.
+async function openRemoteBillModal(billId, trigger) {
+    if (!billId) return;
+    _billModalTrigger = trigger || document.activeElement || null;
+    let overlay = document.getElementById('bill-modal-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'bill-modal-overlay';
+        overlay.className = 'bill-modal-overlay';
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
+    }
+    overlay.classList.remove('has-amendments');
+    overlay.hidden = false;
+    delete overlay.dataset.closing;
+    const API = 'https://api.evanhollander.org/house-floor/api';
+    const opts = { linkClass: 'rule', photoUrlFor: buildBioguidePhotoUrl, placeholder: MEMBER_PHOTO_PLACEHOLDER, formatDate: (d) => formatDate(d) };
+    const wire = () => {
+        overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeBillModal);
+        if (_billModalTrapCleanup) { _billModalTrapCleanup(); _billModalTrapCleanup = null; }
+        if (overlay.querySelector('.bill-modal')) { _billModalTrapCleanup = trapFocus(overlay); overlay.querySelector('#bill-modal-close')?.focus(); }
+    };
+    const hit = RemoteBill.cached(billId);
+    overlay.innerHTML = hit ? (hit.error ? RemoteBill.skeleton(billId, `Details unavailable (${hit.error})`) : RemoteBill.content(hit.bill, opts)) : RemoteBill.skeleton(billId);
+    wire();
+    document.addEventListener('keydown', onBillModalKey);
+    if (hit) { if (!hit.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, hit.bill.id || billId, API); } return; }
+    const entry = await RemoteBill.fetch(billId, API);
+    if (overlay.hidden || overlay.dataset.closing) return;
+    overlay.innerHTML = entry.error ? RemoteBill.skeleton(billId, `Details unavailable (${entry.error})`) : RemoteBill.content(entry.bill, opts);
+    wire();
+    if (!entry.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, entry.bill.id || billId, API); }
+}
 
 function closeBillModal() {
     const overlay = document.getElementById('bill-modal-overlay');
@@ -6299,19 +6333,19 @@ function renderDischargePetitions() {
         const state = p.signatures >= need ? 'done' : p.signatures >= need - 5 ? 'close' : '';
         return `<div class="dp-bar ${state}" role="progressbar" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${p.signatures}" aria-label="${p.signatures} of ${need} signatures"><span style="width:${pct}%"></span></div>`;
     };
-    const link = (href, text) => href ? `<a class="ext" href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>` : escapeHtml(text);
+    // a bill or a resolution opens its modal here (data-bill-open), it does not leave the board
+    const billBtn = (id) => id ? `<button type="button" class="bill-open" data-bill-open="${escapeHtml(id)}">${escapeHtml(id)}</button>` : '';
     const item = (p) => {
         const { bill, what } = dischargeParts(p);
         const isDone = p.signatures >= need;
         const more = need - p.signatures;
         const url = p.id ? `https://clerk.house.gov/DischargePetition/${p.id}` : 'https://clerk.house.gov/DischargePetition';
-        const measureUrl = billIdToCongressUrl(bill);
         const hasRule = p.billNumber && p.billNumber.replace(/\s+/g, '') !== bill.replace(/\s+/g, '');
         const standing = isDone ? dischargeStanding(p) : null;
         return `
         <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}">
             <div class="dp-top">
-                <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${link(measureUrl || p.billUrl, bill)}${hasRule ? `<span class="dp-rule">rule ${link(p.billUrl, p.billNumber)}</span>` : ''}</span>
+                <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${billBtn(bill)}${hasRule ? `<span class="dp-rule">rule ${billBtn(p.billNumber)}</span>` : ''}</span>
                 <span class="dp-count">${isDone ? `<span class="dp-check" aria-hidden="true">✓</span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
@@ -6453,6 +6487,8 @@ function openDischargeSigners(id, number, trigger) {
 document.addEventListener('click', (e) => {
     const t = e.target;
     if (!t || !t.closest) return;
+    const billOpen = t.closest('[data-bill-open]');
+    if (billOpen) { openBillModal(billOpen.dataset.billOpen); return; }
     if (t.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
     const more = t.closest('[data-committee-detail]');
     if (more) toggleCommitteeDetail(more.dataset.committeeDetail);
