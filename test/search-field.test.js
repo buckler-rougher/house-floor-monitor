@@ -16,4 +16,10 @@ ok('at most n, shuffled (a different order from a different draw), and an empty 
   assert.deepStrictEqual(S.sample([]), []);
   assert.deepStrictEqual(S.sample(null), []);
 });
+ok('the header names the options in words: one, two (or), three (comma, or)', () => {
+  assert.strictEqual(S.describe('Search by', ['Name']), 'Search by name');
+  assert.strictEqual(S.describe('Search by', ['Name', 'State']), 'Search by name or state');
+  assert.strictEqual(S.describe('Search by', ['Number', 'Sponsor', 'Summary']), 'Search by number, sponsor or summary');
+  assert.strictEqual(S.describe('Search by', []), 'Search by');
+});
 console.log(`\n${n} passed`);

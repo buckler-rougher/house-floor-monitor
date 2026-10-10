@@ -1816,11 +1816,10 @@
   .bill-open { padding: 0; background: none; border: 0; font: inherit; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--accent-blue); cursor: pointer; }
   .bill-open:hover, .bill-open:focus-visible { text-decoration: underline; }
   .search-field { display: block; }
-  .search-field-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-6); margin-bottom: var(--sp-4); font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
-  .search-field-opt { color: var(--text-secondary); }
-  .search-field-sep { opacity: 0.5; }
+  .search-field-head { margin-bottom: var(--sp-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); opacity: 0.6; line-height: 1.2; }
   .search-field-box { position: relative; }
-  .search-field-box > input { width: 100%; box-sizing: border-box; }
+  .search-field-box > input { width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
+  .search-field-box > input:focus, .search-field-box > input:focus-visible { outline: none; box-shadow: none; border-color: rgba(88, 166, 255, 0.5); }
   .search-field-example { position: absolute; inset: 0; display: flex; align-items: center; box-sizing: border-box; pointer-events: none; user-select: none; white-space: nowrap; overflow: hidden; color: var(--text-muted); opacity: 0.65; }
   .search-field-example.is-hidden { display: none; }
   .search-field-word { display: inline-block; animation-duration: 350ms; animation-fill-mode: both; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
