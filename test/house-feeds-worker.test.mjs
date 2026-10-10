@@ -35,23 +35,23 @@ globalThis.fetch = async (u) => {
     return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
   }
   if (u.includes('/committee/house/hsap00/bills')) {
-    // discovery: the committee's bills, in the shape assumed (a wrapper object holding the list): seven regular FY2027 bills, one FY2028 and a continuing bill
+    // the committee's bills as Congress.gov lists them: no titles, a relationship type; the regular bills are "Reported Original Measure"
     if (!discoveryOn) return new Response('{}', { status: 404 });
-    const mk = (title, number, congress = 119) => ({ congress, type: 'HR', number: String(number), title, updateDate: '2026-06-01' });
-    const ys = ['Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Appropriations Act', 'Commerce, Justice, Science, and Related Agencies Appropriations Act', 'Energy and Water Development and Related Agencies Appropriations Act', 'Department of Defense Appropriations Act', 'Department of Homeland Security Appropriations Act', 'Transportation, Housing and Urban Development, and Related Agencies Appropriations Act', 'Legislative Branch Appropriations Act'];
-    return new Response(JSON.stringify({ 'committee-bills': { bills: [...ys.map((t, i) => mk(`${t}, 2027`, [8646, 8845, 9022, 9495, 9310, 9170, 9010][i])), mk(`${ys[0]}, 2028`, 100, 120), mk('Continuing Appropriations Act, 2027', 7)] }, pagination: { count: 9 } }), { status: 200 });
+    const e = (number, relationshipType = 'Reported Original Measure') => ({ congress: 119, type: 'HR', number: String(number), relationshipType, actionDate: '2026-05-01T12:00:00Z', updateDate: '2026-06-01T00:00:00Z', url: `https://api.congress.gov/v3/bill/119/hr/${number}?format=json` });
+    return new Response(JSON.stringify({ 'committee-bills': { bills: [8646, 8845, 9022, 9495, 9310, 9170, 9010, 100].map((n) => e(n)).concat([e(7, 'Referred To')]), count: 9 }, pagination: { count: 9 } }), { status: 200 });
   }
   const ap = u.match(/api\.congress\.gov\/v3\/bill\/119\/hr\/(\d+)(\/actions)?\?/);
   if (ap) {
     // the twelve appropriations bills: 8646 passed the House, 8845 only reported, 9495 is unknown to Congress.gov, the rest are introduced
     const n = ap[1];
-    if (n === '9495') return new Response('{}', { status: 404 });
+    if (n === '9495' && !discoveryOn) return new Response('{}', { status: 404 });
     if (ap[2]) {
       const acts = n === '8646' ? [{ actionDate: '2026-06-08', type: 'Floor', text: 'Passed/agreed to in House: On passage Passed by the Yeas and Nays: 215 - 210 (Roll no. 301).' }, { actionDate: '2026-05-20', type: 'Committee', text: 'Reported (Amended) by the Committee on Appropriations. H. Rept. 119-1.' }]
         : n === '8845' ? [{ actionDate: '2026-05-15', type: 'Committee', text: 'Reported by the Committee on Appropriations. H. Rept. 119-2.' }] : [{ actionDate: '2026-05-01', type: 'IntroReferral', text: 'Introduced in House' }];
       return new Response(JSON.stringify({ actions: acts }), { status: 200 });
     }
-    return new Response(JSON.stringify({ bill: { title: `Appropriations Act ${n}`, latestAction: { actionDate: '2026-06-08', text: n === '8646' ? 'Received in the Senate.' : 'Placed on the Union Calendar' }, laws: [] } }), { status: 200 });
+    const TITLES = { 8646: 'Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Appropriations Act, 2027', 8845: 'Commerce, Justice, Science, and Related Agencies Appropriations Act, 2027', 9022: 'Energy and Water Development and Related Agencies Appropriations Act, 2027', 9495: 'Department of Defense Appropriations Act, 2027', 9310: 'Department of Homeland Security Appropriations Act, 2027', 9170: 'Transportation, Housing and Urban Development, and Related Agencies Appropriations Act, 2027', 9010: 'Making appropriations for the Legislative Branch for the fiscal year ending September 30, 2027, and for other purposes.', 100: 'Department of Defense Appropriations Act, 2028', 7: 'Continuing Appropriations Act, 2027' };
+    return new Response(JSON.stringify({ bill: { title: (discoveryOn && TITLES[n]) || `Appropriations Act ${n}`, latestAction: { actionDate: '2026-06-08', text: n === '8646' ? 'Received in the Senate.' : 'Placed on the Union Calendar' }, laws: [] } }), { status: 200 });
   }
   const ev = u.match(/ByEvent\.aspx\?EventID=(\d+)/);
   if (ev) return new Response(ev[1] === '119559' ? read('committee-event-hearing.html') : '<html>Service unavailable</html>', { status: 200 });
@@ -177,14 +177,15 @@ await ok('appropriations, when discovery finds nothing: the written FY2027 twelv
   assert.strictEqual(by['H.R. 8646'].url, 'https://www.congress.gov/bill/119th-congress/house-bill/8646');
 });
 
-await ok('appropriations, found: the newest fiscal year with six subcommittees (two FY2028 bills do not take over), the continuing bill left out', async () => {
+await ok('appropriations, found by the committee\'s reported original measures: the newest fiscal year with six subcommittees (one FY2028 bill does not take over); a bill only referred to the committee is not one', async () => {
   discoveryOn = true; store.clear();
   const real = Date.now;
   Date.now = () => real() + 3 * 3600 * 1000;
   try {
     const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/appropriations'), { ...env, CONGRESS_API_KEY: 'test' });
     const b = await r.json();
-    assert.deepStrictEqual([b.fiscalYear, b.listSource, b.bills.length], [2027, 'Congress.gov committee bills', 7]);
+    assert.deepStrictEqual([b.fiscalYear, b.listSource, b.bills.length], [2027, 'Congress.gov committee bills (reported original measures)', 7]);
+    assert.deepStrictEqual([b.discovery.listed, b.discovery.originals, b.discovery.records], [9, 8, 8]);
     assert.deepStrictEqual(b.bills.map((x) => x.short), ['Agriculture', 'Commerce, Justice, Science', 'Defense', 'Energy and Water', 'Homeland Security', 'Legislative Branch', 'Transportation, HUD']);
   } finally { discoveryOn = false; Date.now = real; }
 });

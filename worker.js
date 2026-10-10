@@ -4241,49 +4241,56 @@ async function handleDischargeCalendar(env) {
 }
 
 // The twelve regular appropriations bills of the fiscal year and how far each has got (lib/appropriations.js), read from each bill's own Congress.gov record and
-// actions: 24 requests, so this is its own route and kept half an hour. THE BILLS ARE FOUND, not listed: the House Appropriations Committee's bills (Congress.gov
-// /committee/house/hsap00/bills, a few pages) of this and the last Congress, the regular ones told by title, the newest fiscal year with at least six of its
-// subcommittees. That is how FY2028 takes over, whenever its bills appear. If that finds nothing the FY2027 list written in the lib is used and `listSource` says so.
-// A bill Congress.gov does not know is listed at stage 0 with `known: false`, never dropped, so a wrong number shows rather than hides.
+// actions. THE BILLS ARE FOUND, not listed: each subcommittee's bill is an ORIGINAL MEASURE the House Appropriations Committee reports, and Congress.gov's list
+// of the committee's bills (/committee/house/hsap00/bills; no titles in it, oldest first, `fromDateTime` narrows it by update date) marks exactly those with
+// relationshipType "Reported Original Measure". Their records give the titles, which say the fiscal year and the subcommittee; the newest fiscal year with at
+// least six subcommittees is the set (so FY2028 takes over when its bills are reported, in the spring, in the 120th Congress). If that finds nothing the FY2027
+// list written in the lib is used and `listSource` says so; `discovery` says what the lookup saw. A bill Congress.gov does not know is listed at stage 0 with
+// `known: false`, never dropped, so a wrong number shows rather than hides. Requests: the list (1 or 2), the records of the original measures of the last
+// fourteen months or so (about 12 to 26), then the chosen bills' actions (12).
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v3-${CURRENT_CONGRESS}`, 1800, async () => {
+  return kvCache(env, `appropriations-v4-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
-    const call = async (base, path) => {
-      const r = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+    const call = async (url) => {
+      const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
       if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
       return r.ok ? r.json() : null;
     };
-    // discovery: the committee's bills, up to eight pages of 250; any trouble is "found nothing". `discovery` in the answer says what happened (status, how many
-    // entries, how many of them regular appropriations bills), so a failure is visible from outside.
+    const discovery = { listed: 0, originals: 0, records: 0 };
+    const records = {};   // `${congress}-${number}` -> the bill record, kept for the chosen set
     let found = null;
-    const discovery = { pages: [], entries: 0, regular: 0 };
     try {
-      const items = [];
-      let next = 'https://api.congress.gov/v3/committee/house/hsap00/bills?limit=250';
-      for (let page = 0; next && page < 8; page++) {
-        const q = next.split('?')[1].replace(/(^|&)(format|api_key)=[^&]*/g, '').replace(/^&/, '');
-        const r = await fetch(`${next.split('?')[0]}?${q}&format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
-        discovery.pages.push(r.status);
-        if (!r.ok) break;
-        const json = await r.json();
+      const since = new Date(Date.now() - 430 * 86400000).toISOString().slice(0, 19) + 'Z';
+      const originals = [];
+      let next = `https://api.congress.gov/v3/committee/house/hsap00/bills?limit=250&fromDateTime=${since}`;
+      for (let page = 0; next && page < 3; page++) {
+        const json = await call(next.replace(/[?&](format|api_key)=[^&]*/g, ''));
+        if (!json) break;
         const got = AP.itemsOf(json);
-        if (page === 0) discovery.shape = { keys: Object.keys(json), first: got[0] ? Object.keys(got[0]) : null, sampleTitle: got[0] ? String(got[0].title || '').slice(0, 80) : null };
-        items.push(...got);
+        discovery.listed += got.length;
+        originals.push(...got.filter((i) => String(i.type).toUpperCase() === 'HR' && /original measure/i.test(i.relationshipType || '') && [CURRENT_CONGRESS, CURRENT_CONGRESS - 1].includes(Number(i.congress))));
         next = json.pagination?.next || null;
       }
-      discovery.entries = items.length;
-      discovery.congresses = [...new Set(items.map((i) => i.congress))].slice(0, 6);
-      const mine = items.filter((i) => [CURRENT_CONGRESS, CURRENT_CONGRESS - 1].includes(Number(i.congress)));
-      discovery.regular = mine.filter((i) => String(i.type).toUpperCase() === 'HR' && AP.isRegular(i.title)).length;
-      found = AP.discover(mine);
+      discovery.originals = originals.length;
+      // newest first, and not more than 26: two sets of twelve and a stray
+      originals.sort((a, b) => String(b.actionDate).localeCompare(String(a.actionDate)));
+      const titled = await Promise.all(originals.slice(0, 26).map(async (i) => {
+        const rec = await call(`https://api.congress.gov/v3/bill/${i.congress}/hr/${i.number}`);
+        if (rec?.bill) records[`${i.congress}-${i.number}`] = rec.bill;
+        return { congress: i.congress, type: 'HR', number: i.number, title: rec?.bill?.title || '', updateDate: i.updateDate };
+      }));
+      discovery.records = Object.keys(records).length;
+      found = AP.discover(titled);
     } catch (e) { discovery.error = e.message; console.warn(`[house-floor] appropriations discovery: ${e.message}`); }
     const set = found || { fiscalYear: AP.FALLBACK_YEAR, bills: AP.FALLBACK };
     const bills = await Promise.all(set.bills.map(async (b) => {
       const congress = found ? (b.congress || CURRENT_CONGRESS) : CURRENT_CONGRESS;
       const base = `https://api.congress.gov/v3/bill/${congress}/hr/${b.number}`;
-      const [record, actions] = await Promise.all([call(base, ''), call(base, '/actions?limit=250')]);
-      const bill = record?.bill;
+      const [bill, actions] = await Promise.all([
+        records[`${congress}-${b.number}`] ? Promise.resolve(records[`${congress}-${b.number}`]) : call(base).then((r) => r?.bill),
+        call(`${base}/actions?limit=250`),
+      ]);
       const s = AP.stage(actions?.actions, bill?.laws, bill?.committeeReports);
       return {
         id: `H.R. ${b.number}`, short: b.short, name: b.name, known: !!bill, title: bill?.title || null,
@@ -4291,7 +4298,7 @@ async function handleAppropriations(env) {
         ...s, latestAction: bill?.latestAction?.text || null, latestActionDate: bill?.latestAction?.actionDate || null,
       };
     }));
-    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills' : 'written list (discovery found nothing)', discovery, stages: AP.STAGES, bills }), {
+    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills (reported original measures)' : 'written list (discovery found nothing)', discovery, stages: AP.STAGES, bills }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
     });
   });
