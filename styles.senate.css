@@ -2959,6 +2959,7 @@
     align-items: center;
     gap: var(--sp-12);
 }
+  .panel-header-right > .panel-source { order: 1; }
   .proceedings-panel .panel-header-right {
     align-items: baseline;
 }

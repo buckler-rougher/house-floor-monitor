@@ -4504,6 +4504,8 @@ a.tweet-quote:hover {
     align-items: center;
     gap: var(--sp-12);
 }
+/* The source is always the rightmost thing in a header; a timestamp, a button or a control sits to its left. */
+.panel-header-right > .panel-source { order: 1; }
 
 /* Baseline-align source link and date in the proceedings header so
    different font sizes sit on the same visual line */
