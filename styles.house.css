@@ -3592,7 +3592,7 @@ body.tellers-mode .tellers-column { display: flex; }
     border-radius: var(--radius-14) var(--radius-14) 0 0;
     background: var(--bg-elevated);
     border-bottom: 1px solid rgba(52, 72, 100, 0.8);
-    padding: var(--sp-16) var(--sp-24);
+    padding: var(--sp-16) var(--sp-32);
 }
 .tweets-feed {
     max-height: 700px;
@@ -3628,7 +3628,7 @@ body.tellers-mode .tellers-column { display: flex; }
     gap: var(--sp-8);
     height: 44px;
     box-sizing: border-box;
-    padding: 0 var(--sp-24);
+    padding: 0 var(--sp-32);
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.28);
     flex-shrink: 0;
@@ -3725,7 +3725,7 @@ body.tellers-mode .tellers-column { display: flex; }
     display: flex;
     align-items: flex-end;
     gap: var(--sp-8);
-    padding: var(--sp-8) var(--sp-16);
+    padding: var(--sp-8) var(--sp-32);
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.15);
 }
@@ -3827,7 +3827,7 @@ body.tellers-mode .tellers-column { display: flex; }
     font-family: var(--font-mono);
 }
 .tweet-item {
-    padding: var(--sp-12) var(--sp-20);
+    padding: var(--sp-12) var(--sp-32);
     border-bottom: 1px solid var(--border-color);
 }
 .tweet-item:last-child { border-bottom: none; }
@@ -4341,7 +4341,7 @@ a.tweet-quote:hover {
     border-radius: var(--radius-14) var(--radius-14) 0 0;
     background: var(--bg-elevated);
     border-bottom: 1px solid rgba(52, 72, 100, 0.8);
-    padding: var(--sp-16) var(--sp-24);
+    padding: var(--sp-16) var(--sp-32);
 }
 
 .voting-calendar-panel .panel-header-right {
@@ -4354,7 +4354,7 @@ a.tweet-quote:hover {
     gap: var(--sp-12);
     height: 44px;
     box-sizing: border-box;
-    padding: 16px var(--sp-24) 0;
+    padding: 16px var(--sp-32) 0;
     border-bottom: 1px solid var(--border-color);
     background: rgba(13, 17, 23, 0.28);
 }
@@ -9594,7 +9594,13 @@ body.admin-oath-mode .admin-oath-section {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--sp-4);
+        height: auto;
+        min-height: 44px;
+        padding-bottom: var(--sp-12);
     }
+    .twitter-panel .panel-header, .voting-calendar-panel .panel-header { padding: var(--sp-10) var(--sp-16); }
+    .reporter-filter-bar, .reporter-search-row, .this-week-strip { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+    .tweet-item { padding-left: var(--sp-16); padding-right: var(--sp-16); }
     .calendar-desktop-nav { display: none; }
     .calendar-mobile-nav {
         display: flex;
@@ -10069,6 +10075,16 @@ body.all-mode .floor-grid-panel {
     border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.03); color: var(--text-secondary);
 }
 .calendar-mobile-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); border-color: var(--border-color); }
+
+.panel-header { position: relative; container-type: inline-size; }
+@container (min-width: 640px) {
+    .panel-header > .majority-badge,
+    .panel-header .calendar-desktop-nav,
+    .panel-header .vrec-open-btn,
+    .panel-header .bills-sort-switcher {
+        position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content;
+    }
+}
 }
 
 .main-display > * {
