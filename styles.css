@@ -10833,6 +10833,14 @@ body.all-mode .floor-grid-panel {
   .cr-clock { margin-left: auto; }
   .cr-num { font-size: var(--fs-5xl); }
 }
+
+/* the appropriations header's three counts: passed the House, passed the Senate, enacted, each out of the twelve */
+#approps-summary { display: inline-flex; gap: var(--sp-12); }
+.approps-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--text-muted); white-space: nowrap; }
+.approps-count > span { text-transform: uppercase; letter-spacing: var(--track-wide); font-size: var(--fs-xs); }
+.approps-count b { font-weight: 700; font-size: var(--fs-base); color: var(--text-primary); }
+.approps-count i { font-style: normal; color: var(--text-muted); }
+.approps-count.is-law b { color: var(--accent-green); }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
