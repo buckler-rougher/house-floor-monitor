@@ -10834,7 +10834,7 @@ body.all-mode .floor-grid-panel {
   .cr-num { font-size: var(--fs-5xl); }
 }
 
-/* the appropriations header's three counts: passed the House, passed the Senate, enacted, each out of the twelve */
+/* the appropriations header's two counts: passed the House, enacted, each out of the twelve */
 #approps-summary { display: inline-flex; gap: var(--sp-12); }
 .approps-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--text-muted); white-space: nowrap; }
 .approps-count > span { text-transform: uppercase; letter-spacing: var(--track-wide); font-size: var(--fs-xs); }
