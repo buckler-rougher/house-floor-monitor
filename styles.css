@@ -2674,7 +2674,8 @@ body.tellers-mode .tellers-column { display: flex; }
 .search-field-box { position: relative; }
 .search-field-box > input { width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
 /* the box's own border takes the focus colour, nothing else: no outline ring around it */
-.search-field-box > input:focus, .search-field-box > input:focus-visible { outline: none; box-shadow: none; border-color: rgba(88, 166, 255, 0.5); }
+.search-field-box > input { transition: border-color var(--dur-150), background var(--dur-150); }
+.search-field-box > input:focus, .search-field-box > input:focus-visible { outline: none; box-shadow: none; border-color: rgba(88, 166, 255, 0.5); background: rgba(88, 166, 255, 0.06); }
 .search-field-example { position: absolute; inset: 0; display: flex; align-items: center; box-sizing: border-box; pointer-events: none; user-select: none; white-space: nowrap; overflow: hidden; color: var(--text-muted); opacity: 0.65; }
 .search-field-example.is-hidden { display: none; }
 .search-field-word { display: inline-block; animation-duration: 350ms; animation-fill-mode: both; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
@@ -2684,11 +2685,12 @@ body.tellers-mode .tellers-column { display: flex; }
 @keyframes sf-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .search-field-word { animation: none; } }
 .dp-modal-tools .search-field { flex: 1; min-width: 140px; }
-/* the party filter: its label above it, in the same place as the search box's header, and the buttons as tall as the box */
-.dp-modal-tools { align-items: stretch; }
-.dp-modal-sort { flex-direction: column; align-items: flex-start; gap: var(--sp-4); }
-.dp-modal-sort .bills-sort-label { line-height: 1.2; }
-.dp-modal-sort .bills-sort-switcher { flex: 1; }
+/* The search box and the party filter side by side: both are a small label over a control, the controls are the same height, and the tops line up, so the labels and the
+   controls each sit on one line (the box is 2rem tall, the buttons are stretched to it) */
+.dp-modal-tools .search-field-box > input { height: var(--control-h); }
+.dp-modal-tools .dp-modal-sort { flex-direction: column; align-items: flex-start; gap: var(--sp-4); padding: 0; }
+.dp-modal-tools .dp-modal-sort .bills-sort-label { line-height: 1.2; }
+.dp-modal-tools .dp-modal-sort .bills-sort-switcher { height: var(--control-h); box-sizing: border-box; align-items: stretch; }
 /* A panel waiting for its first answer: three dots that pulse in turn (still, and dimmer, when the reader asks for reduced motion). Errors keep their own red. */
 .loading-indicator { display: flex; justify-content: center; align-items: center; gap: var(--sp-6); padding: var(--sp-24); }
 .loading-indicator i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-blue); opacity: 0.25; animation: loading-dot 1.2s ease-in-out infinite; }
@@ -12444,7 +12446,7 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-modal-count { margin-left: var(--sp-8); font-weight: 400; font-size: var(--fs-sm); color: var(--text-muted); }
 .dp-modal-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--text-muted); cursor: pointer; }
 .dp-modal-close:hover { color: var(--text-primary); }
-.dp-modal-tools { display: flex; flex-wrap: wrap; gap: var(--sp-8); align-items: center; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
+.dp-modal-tools { display: flex; flex-wrap: wrap; gap: var(--sp-8); align-items: flex-start; --control-h: 2rem; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
 .dp-modal-search { flex: 1; min-width: 140px; padding: var(--sp-6) var(--sp-8); border: 1px solid var(--border-color); border-radius: var(--radius-6); background: transparent; font: inherit; font-size: var(--fs-md); color: var(--text-primary); }
 .dp-modal-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-8) var(--sp-16); }
 .dp-signer { padding: var(--sp-6) 0; border: none; border-bottom: 1px solid var(--border-color); gap: var(--sp-8); }
