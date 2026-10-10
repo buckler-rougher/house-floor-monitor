@@ -24,6 +24,7 @@ const sigPage = (n) => `<tbody id="member-signatures">${Array.from({ length: SIG
 
 let fetched = [];
 let calendarDown = false;
+let discoveryOn = false;
 globalThis.fetch = async (u) => {
   u = String(u); fetched.push(u);
   const cal = u.match(/CCAL-119hcal-(\d{4}-\d\d-\d\d)-pt(\d)\.htm/);
@@ -32,6 +33,13 @@ globalThis.fetch = async (u) => {
     if (calendarDown) return new Response('<html>Not a calendar</html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
     const body = cal[2] === '6' ? read('discharge-calendar-one.htm') : read(cal[1] === '2026-09-15' ? 'house-calendar/2026-09-15.htm' : 'house-calendar/2026-09-16.htm');
     return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
+  }
+  if (u.includes('/committee/house/hsap00/bills')) {
+    // discovery: the committee's bills, in the shape assumed (a wrapper object holding the list): seven regular FY2027 bills, one FY2028 and a continuing bill
+    if (!discoveryOn) return new Response('{}', { status: 404 });
+    const mk = (title, number, congress = 119) => ({ congress, type: 'HR', number: String(number), title, updateDate: '2026-06-01' });
+    const ys = ['Agriculture, Rural Development, Food and Drug Administration, and Related Agencies Appropriations Act', 'Commerce, Justice, Science, and Related Agencies Appropriations Act', 'Energy and Water Development and Related Agencies Appropriations Act', 'Department of Defense Appropriations Act', 'Department of Homeland Security Appropriations Act', 'Transportation, Housing and Urban Development, and Related Agencies Appropriations Act', 'Legislative Branch Appropriations Act'];
+    return new Response(JSON.stringify({ 'committee-bills': { bills: [...ys.map((t, i) => mk(`${t}, 2027`, [8646, 8845, 9022, 9495, 9310, 9170, 9010][i])), mk(`${ys[0]}, 2028`, 100, 120), mk('Continuing Appropriations Act, 2027', 7)] }, pagination: { count: 9 } }), { status: 200 });
   }
   const ap = u.match(/api\.congress\.gov\/v3\/bill\/119\/hr\/(\d+)(\/actions)?\?/);
   if (ap) {
@@ -156,17 +164,29 @@ await ok('a meeting\'s own page: its witnesses; a page that is not a meeting is 
   assert.strictEqual((await get('committee-event?id=abc')).status, 400);
 });
 
-await ok('appropriations: the twelve bills with their stage; a bill Congress.gov does not know is listed, not dropped', async () => {
+await ok('appropriations, when discovery finds nothing: the written FY2027 twelve, with their stages; a bill Congress.gov does not know is listed, not dropped', async () => {
   const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/appropriations'), { ...env, CONGRESS_API_KEY: 'test' });
   const b = await r.json();
   assert.strictEqual(r.status, 200);
   assert.strictEqual(b.bills.length, 12);
-  assert.strictEqual(b.fiscalYear, 2027);
+  assert.deepStrictEqual([b.fiscalYear, b.listSource], [2027, 'written list (discovery found nothing)']);
   const by = Object.fromEntries(b.bills.map((x) => [x.id, x]));
   assert.deepStrictEqual([by['H.R. 8646'].stage, by['H.R. 8646'].housePassed, by['H.R. 8646'].latestAction], [2, '2026-06-08', 'Received in the Senate.']);
   assert.strictEqual(by['H.R. 8845'].stage, 1);
   assert.deepStrictEqual([by['H.R. 9495'].known, by['H.R. 9495'].stage, by['H.R. 9495'].latestAction], [false, 0, null]);
   assert.strictEqual(by['H.R. 8646'].url, 'https://www.congress.gov/bill/119th-congress/house-bill/8646');
+});
+
+await ok('appropriations, found: the newest fiscal year with six subcommittees (two FY2028 bills do not take over), the continuing bill left out', async () => {
+  discoveryOn = true; store.clear();
+  const real = Date.now;
+  Date.now = () => real() + 3 * 3600 * 1000;
+  try {
+    const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/appropriations'), { ...env, CONGRESS_API_KEY: 'test' });
+    const b = await r.json();
+    assert.deepStrictEqual([b.fiscalYear, b.listSource, b.bills.length], [2027, 'Congress.gov committee bills', 7]);
+    assert.deepStrictEqual(b.bills.map((x) => x.short), ['Agriculture', 'Commerce, Justice, Science', 'Defense', 'Energy and Water', 'Homeland Security', 'Legislative Branch', 'Transportation, HUD']);
+  } finally { discoveryOn = false; Date.now = real; }
 });
 
 console.log(`\n${n} passed`);
