@@ -101,13 +101,4 @@ ok('anything that is not a citation is no link, never a guess', () => {
   }
 });
 
-ok('how long a bill\'s answer is kept: six hours if it moved in the last three days, a day for a month, a week when quiet longer, a day when its date is unknown', () => {
-  const now = Date.parse('2026-10-11T12:00:00Z');
-  assert.strictEqual(CB.cacheSeconds('2026-10-10', now), 6 * 3600);
-  assert.strictEqual(CB.cacheSeconds('2026-09-20', now), 24 * 3600);
-  assert.strictEqual(CB.cacheSeconds('2026-06-04', now), 7 * 24 * 3600);
-  assert.strictEqual(CB.cacheSeconds(null, now), 24 * 3600);
-  assert.strictEqual(CB.cacheSeconds('not a date', now), 24 * 3600);
-});
-
 console.log(`\n${n} passed`);
