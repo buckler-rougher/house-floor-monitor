@@ -36,7 +36,6 @@ const HouseCalendar = require(join(ROOT, 'lib/house-calendar.js'));
 const CommitteeMeetings = require(join(ROOT, 'lib/committee-meetings.js'));
 const DischargePetitions = require(join(ROOT, 'lib/discharge-petitions.js'));
 const DischargeCalendar = require(join(ROOT, 'lib/discharge-calendar.js'));
-const JctPublications = require(join(ROOT, 'lib/jct-publications.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -176,13 +175,6 @@ const CHECKS = [
     const s = DischargePetitions.parseSignatures(r.text);
     return s && s.count > 0 ? null : { fail: s ? 'a signature table with no signers' : 'no signature table: the page has changed (lib/discharge-petitions.js)' };
   }),
-  // the JCT's feed: it turns scripts away with a challenge page when it likes, which is a warning here (the boards just show no JCT link)
-  direct('JCT publications feed', 'https://www.jct.gov/publications-xml/xml/?name=119th%20Congress', (r) => {
-    if (r.status !== 200) return { warn: `HTTP ${r.status} (a challenge page turns scripts away; the Worker may still get through)` };
-    const l = JctPublications.parse(r.text);
-    return l && l.length ? null : { fail: 'not the publications feed, or no publication names a bill: the feed has changed (lib/jct-publications.js)' };
-  }),
-  worker('house', 'jct-publications', (j) => has(Array.isArray(j.publications) && j.publications.length > 0, 'no publications')),
   direct('CBO cost estimates feed', 'https://www.cbo.gov/publications/all/rss.xml', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : /<rss/.test(r.text) && /<item>/.test(r.text) ? null : { fail: 'not an RSS feed with items' }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
   direct('house docs BillsThisWeek RSS', 'https://docs.house.gov/BillsThisWeek-RSS.xml', (r) => r.status === 200 && /<rss|<feed/.test(r.text) ? null : { fail: `HTTP ${r.status}, not a feed` }),

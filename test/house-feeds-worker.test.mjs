@@ -24,7 +24,6 @@ const sigPage = (n) => `<tbody id="member-signatures">${Array.from({ length: SIG
 
 let fetched = [];
 let calendarDown = false;
-let jctBlocked = false;
 globalThis.fetch = async (u) => {
   u = String(u); fetched.push(u);
   const cal = u.match(/CCAL-119hcal-(\d{4}-\d\d-\d\d)-pt(\d)\.htm/);
@@ -34,7 +33,6 @@ globalThis.fetch = async (u) => {
     const body = cal[2] === '6' ? read('discharge-calendar-one.htm') : read(cal[1] === '2026-09-15' ? 'house-calendar/2026-09-15.htm' : 'house-calendar/2026-09-16.htm');
     return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
   }
-  if (u.includes('jct.gov/publications-xml')) return new Response(jctBlocked ? '<html>Attention Required! | Cloudflare</html>' : read('jct-sample.xml'), { status: jctBlocked ? 403 : 200 });
   const ev = u.match(/ByEvent\.aspx\?EventID=(\d+)/);
   if (ev) return new Response(ev[1] === '119559' ? read('committee-event-hearing.html') : '<html>Service unavailable</html>', { status: 200 });
   const day = u.match(/ByDay\.aspx\?DayID=(\d{8})/);
@@ -144,16 +142,6 @@ await ok('a meeting\'s own page: its witnesses; a page that is not a meeting is 
   assert.strictEqual(r.body.url, 'https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=119559');
   assert.strictEqual((await get('committee-event?id=119999')).status, 502);
   assert.strictEqual((await get('committee-event?id=abc')).status, 400);
-});
-
-await ok('JCT publications: the ones that name a bill; a challenge page is an error, not an empty list', async () => {
-  const r = await get('jct-publications');
-  assert.strictEqual(r.status, 200);
-  assert.deepStrictEqual(r.body.publications.map((p) => p.bill), ['HR997', 'HR1']);
-  jctBlocked = true; store.clear();
-  const real = Date.now;
-  Date.now = () => real() + 7 * 3600 * 1000;
-  try { assert.strictEqual((await get('jct-publications')).status, 502); } finally { jctBlocked = false; Date.now = real; }
 });
 
 console.log(`\n${n} passed`);
