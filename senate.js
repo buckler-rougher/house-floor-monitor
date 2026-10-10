@@ -1042,6 +1042,8 @@ function billModalContent(b) {
                         reportTitle: b.committeeReportCitation,
                         cbo: b.cboCostEstimateUrl,
                         cboTitle: b.cboCostEstimateTitle,
+                        rule: b.ruleUrl,
+                        ruleTitle: b.ruleTitle,
                         memo: b.sapUrl,
                         // The (?) beside the memo button, as on the House board: drawn once its explanation exists, and
                         // in ?fixtures so it can be reviewed before then.
@@ -1967,7 +1969,7 @@ SenateQuorum.init({ photoUrlFor });
         formatDate: boardDate,
         summary: b.summary,
         linkClass: 'senate',
-        links: { text: b.textVersionUrl || b.govinfoPdf, textLabel: b.textVersionUrl ? b.textVersionType : null, textTitle: b.textVersionUrl ? [b.textVersionType, b.textVersionDate].filter(Boolean).join(', ') : null, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, memo: b.sapUrl, congress: b.congressUrl },
+        links: { text: b.textVersionUrl || b.govinfoPdf, textLabel: b.textVersionUrl ? b.textVersionType : null, textTitle: b.textVersionUrl ? [b.textVersionType, b.textVersionDate].filter(Boolean).join(', ') : null, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, rule: b.ruleUrl, ruleTitle: b.ruleTitle, memo: b.sapUrl, congress: b.congressUrl },
         sourceApi: API,
       });
       if (src && b.congressUrl) src.href = b.congressUrl;

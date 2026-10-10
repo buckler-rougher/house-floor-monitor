@@ -21,6 +21,7 @@ import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
+import './lib/cra-rule.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -1115,6 +1116,18 @@ async function moreCosponsorPages(base, first, get) {
   return out;
 }
 
+// The Federal Register rule a Congressional Review Act resolution would overturn (lib/cra-rule.js): { url, title, date, agency }, or null when the title is
+// not a CRA resolution's or the Federal Register has no rule of that name. Throws when the Federal Register cannot be reached, so a caller does not keep a
+// "no rule" it never learned. The Federal Register API needs no key.
+async function fetchCraRule(billTitle) {
+  const cra = globalThis.CraRule.parse(billTitle);
+  if (!cra) return null;
+  const r = await fetch(globalThis.CraRule.searchUrl(cra.ruleTitle), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+  if (r.status === 429 || r.status >= 500) throw new Error(`federalregister.gov HTTP ${r.status}`);
+  if (!r.ok) return null;
+  return globalThis.CraRule.pick((await r.json())?.results, cra.agency, cra.ruleTitle);
+}
+
 // The newest CBO cost estimate on a Congress.gov bill record (`cboCostEstimates`), as { url, title }, or nulls. The estimate's description says which version of
 // the bill it priced ("As ordered reported by the House Committee on ... on May 14, 2026"), which is what the link's tooltip shows.
 function latestCboEstimate(bill) {
@@ -1163,6 +1176,12 @@ async function fetchBillMeta(billId, env) {
       const link = committeeReportLink((data.bill?.committeeReports || [])[0]?.citation);
       result.committeeReportUrl = link.url;
       result.committeeReportCitation = link.citation;
+      // a Congressional Review Act resolution: the rule it would overturn. A failed lookup leaves the key out, so enrichment asks again.
+      try {
+        const rule = await fetchCraRule(data.bill?.title);
+        result.ruleUrl = rule ? rule.url : null;
+        result.ruleTitle = rule ? `${rule.agency ? rule.agency + ', ' : ''}${rule.date}: ${rule.title}` : null;
+      } catch { /* asked again next time */ }
       const cbo = latestCboEstimate(data.bill);
       result.cboCostEstimateUrl = cbo.url;
       result.cboCostEstimateTitle = cbo.title;
@@ -2164,7 +2183,7 @@ async function _fetchBills(request, env) {
         // support (key absent entirely — null means "checked, no report").
         // Also when the cosponsors list may have been cut at the old limit of 100 (exactly 100 and not marked complete): only
         // the few bills that large are read again, not every cached bill.
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta) || !('textVersionUrl' in enrichCached.meta)
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta) || !('textVersionUrl' in enrichCached.meta) || !('ruleUrl' in enrichCached.meta)
                                         || (enrichCached.meta.cosponsors?.length >= 100 && !enrichCached.meta.cosponsorsComplete);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
@@ -2249,6 +2268,7 @@ async function _fetchBills(request, env) {
         if (meta.committees) bill.committees = meta.committees;
         if (meta.committeeReportUrl) bill.committeeReportUrl = meta.committeeReportUrl;
         if (meta.committeeReportCitation) bill.committeeReportCitation = meta.committeeReportCitation;
+        if (meta.ruleUrl) { bill.ruleUrl = meta.ruleUrl; bill.ruleTitle = meta.ruleTitle; }
         if (meta.textVersionUrl) { bill.textVersionUrl = meta.textVersionUrl; bill.textVersionType = meta.textVersionType; bill.textVersionDate = meta.textVersionDate; }
         if (meta.cboCostEstimateUrl) { bill.cboCostEstimateUrl = meta.cboCostEstimateUrl; bill.cboCostEstimateTitle = meta.cboCostEstimateTitle; }
       }
@@ -3142,7 +3162,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v6`, 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v7`, 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     const call = async (path) => {
@@ -3168,6 +3188,7 @@ async function handleSenateBill(env, billId) {
     const moreCo = await moreCosponsorPages(base, cosponsors, (path) => call(path));
     const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
     const bill = record?.bill;
+    const craRule = await fetchCraRule(bill?.title).catch(() => null);
     if (!bill) throw new Error(`bill detail: no record for ${billId}`);
     // The responses as received, for the source popover; the requests as made, without the key.
     const asked = (path, json) => json ? [{ request: `GET ${base}${path}${path.includes('?') ? '&' : '?'}format=json`, json }] : [];
@@ -3239,6 +3260,8 @@ async function handleSenateBill(env, billId) {
       committeeReportDate: report ? report.date : null,
       committeeReportUrl: reportLink.url,
       committeeReportCitation: reportLink.citation,
+      ruleUrl: craRule ? craRule.url : null,
+      ruleTitle: craRule ? `${craRule.agency ? craRule.agency + ', ' : ''}${craRule.date}: ${craRule.title}` : null,
       textVersionUrl: latestTextVersion(textVersions).url,
       textVersionType: latestTextVersion(textVersions).type,
       textVersionDate: latestTextVersion(textVersions).date,
@@ -6240,6 +6263,7 @@ function sourceStatusChecks() {
     'house-live': ['https://live.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-rules': ['https://rules.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-voting-days': ['https://www.house.gov/voting-days', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
+    'federal-register': ['https://www.federalregister.gov/api/v1/documents.json?per_page=1&fields[]=title', 4096, (r) => ok200(r, (x) => x.text.includes('"results"'), 'the documents API')],
     'cbo': ['https://www.cbo.gov/publications/all/rss.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<rss'), 'the cost estimates feed')],
     'govinfo': ['https://www.govinfo.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'press-gallery': ['https://pressgallery.house.gov/member-data/casualty-list', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],

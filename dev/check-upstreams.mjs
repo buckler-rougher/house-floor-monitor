@@ -36,6 +36,7 @@ const HouseCalendar = require(join(ROOT, 'lib/house-calendar.js'));
 const CommitteeMeetings = require(join(ROOT, 'lib/committee-meetings.js'));
 const DischargePetitions = require(join(ROOT, 'lib/discharge-petitions.js'));
 const DischargeCalendar = require(join(ROOT, 'lib/discharge-calendar.js'));
+const CraRule = require(join(ROOT, 'lib/cra-rule.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -174,6 +175,12 @@ const CHECKS = [
     if (r.status !== 200) return { fail: `HTTP ${r.status}` };
     const s = DischargePetitions.parseSignatures(r.text);
     return s && s.count > 0 ? null : { fail: s ? 'a signature table with no signers' : 'no signature table: the page has changed (lib/discharge-petitions.js)' };
+  }),
+  // the Federal Register API, searched the way the Worker does for a CRA resolution's rule (a real one: H.J.Res. 25's)
+  direct('Federal Register rule search', CraRule.searchUrl('Gross Proceeds Reporting by Brokers That Regularly Provide Services Effectuating Digital Asset Sales'), (r) => {
+    if (r.status !== 200) return { fail: `HTTP ${r.status}` };
+    const p = CraRule.pick(JSON.parse(r.text).results, 'Internal Revenue Service', 'Gross Proceeds Reporting by Brokers That Regularly Provide Services Effectuating Digital Asset Sales');
+    return p && p.date === '2024-12-30' ? null : { fail: 'the rule was not found, or not first (the API or lib/cra-rule.js has changed)' };
   }),
   direct('CBO cost estimates feed', 'https://www.cbo.gov/publications/all/rss.xml', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : /<rss/.test(r.text) && /<item>/.test(r.text) ? null : { fail: 'not an RSS feed with items' }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
