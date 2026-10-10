@@ -6169,6 +6169,8 @@ font-family: var(--font-mono);
     gap: var(--sp-6);
     font-size: var(--fs-md);
 }
+/* a link that ties its last word to the arrow (lib/source-pop.js) is two inline pieces; as flex items the 6px gap split the label ("Hearing   video") */
+.bill-doc-links .bill-modal-link.has-tail { display: inline-block; }
 /* Copy button — neutral, outlined, matches the link pills but visually secondary. */
 .bill-copy-link {
     color: var(--text-secondary);
