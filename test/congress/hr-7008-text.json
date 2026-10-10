@@ -1,0 +1,87 @@
+{
+    "pagination": {
+        "count": 4
+    },
+    "request": {
+        "billNumber": "7008",
+        "billType": "hr",
+        "billUrl": "https://api.congress.gov/v3/bill/119/hr/7008?format=json",
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    },
+    "textVersions": [
+        {
+            "date": "2026-08-06T04:00:00Z",
+            "formats": [
+                {
+                    "type": "Formatted Text",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008pcs.htm"
+                },
+                {
+                    "type": "PDF",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008pcs.pdf"
+                },
+                {
+                    "type": "Formatted XML",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008pcs.xml"
+                }
+            ],
+            "type": "Placed on Calendar Senate"
+        },
+        {
+            "date": "2026-07-22T04:00:00Z",
+            "formats": [
+                {
+                    "type": "Formatted Text",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008eh.htm"
+                },
+                {
+                    "type": "PDF",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008eh.pdf"
+                },
+                {
+                    "type": "Formatted XML",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008eh.xml"
+                }
+            ],
+            "type": "Engrossed in House"
+        },
+        {
+            "date": "2026-02-03T05:00:00Z",
+            "formats": [
+                {
+                    "type": "Formatted Text",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008rh.htm"
+                },
+                {
+                    "type": "PDF",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008rh.pdf"
+                },
+                {
+                    "type": "Formatted XML",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008rh.xml"
+                }
+            ],
+            "type": "Reported in House"
+        },
+        {
+            "date": "2026-01-12T05:00:00Z",
+            "formats": [
+                {
+                    "type": "Formatted Text",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008ih.htm"
+                },
+                {
+                    "type": "PDF",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008ih.pdf"
+                },
+                {
+                    "type": "Formatted XML",
+                    "url": "https://www.congress.gov/119/bills/hr7008/BILLS-119hr7008ih.xml"
+                }
+            ],
+            "type": "Introduced in House"
+        }
+    ]
+}

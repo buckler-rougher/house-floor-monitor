@@ -112,6 +112,12 @@ ok('links: the CBO cost estimate sits after the memo, titled with what it priced
   assert.ok(l.includes('title="S. 1 - As reported"'));
 });
 
+ok('links: the bill text link names the version it goes to, with its date in the tooltip', () => {
+  const l = B.links({ text: 'https://t.pdf', textLabel: 'Reported in House', textTitle: 'Reported in House, Feb 3, 2026' });
+  assert.ok(l.includes('>View Bill Text (Reported in House) →<') && l.includes('title="Reported in House, Feb 3, 2026"'));
+  assert.ok(B.links({ text: 'https://t.pdf' }).includes('>View Bill Text →<'));
+});
+
 ok('the Copy link button is always there, and an href is escaped', () => {
   assert.ok(B.links({}).includes('id="bill-copy-link"'));
   assert.ok(B.links({ text: 'https://t/?a=1&b="2"' }).includes('href="https://t/?a=1&amp;b=&quot;2&quot;"'));
