@@ -63,7 +63,7 @@ await ok('once the bill has been enriched the popover reads it back, whole, with
   const { parts, at } = await r.json();
   assert.ok(Math.abs(Date.now() - at) < 60_000, 'carries the time the responses were fetched');
   assert.deepStrictEqual(parts.map((p) => p.request.replace(/^GET https:\/\/api\.congress\.gov\/v3\/bill\/119\/s\/4668/, '')),
-    ['?format=json', '/cosponsors?limit=250&format=json', '/committees?format=json', '/summaries?limit=5&format=json']);
+    ['?format=json', '/cosponsors?limit=250&format=json', '/committees?format=json', '/text?limit=20&format=json', '/summaries?limit=5&format=json']);
   assert.strictEqual(parts[0].json.bill.number, JSON.parse(f('s-4668-record.json')).bill.number);
   assert.strictEqual(parts[1].json.cosponsors.length, JSON.parse(f('s-4668-cosponsors.json')).cosponsors.length, 'every cosponsor, none cut');
 });
