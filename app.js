@@ -6220,10 +6220,11 @@ let _discharge = null;
 let _dischargeAll = false;
 let _dischargeDoneAll = false;
 let _dischargeSort = 'close';
+let _dischargeCal = null;   // /api/discharge-calendar: the motions on the Discharge Calendar and the legislative days each has waited
+const DISCHARGE_WAIT_DAYS = 7;
 const DISCHARGE_SHOWN = 3;        // open petitions shown before the button
 const DISCHARGE_DONE_SHOWN = 1;   // the same for the ones at 218, in the grouped sort
 const DISCHARGE_MIXED_SHOWN = 4;  // all of them, in the other sorts
-const DISCHARGE_RIPE_DAYS = 21;   // the House meets at least every third day, so seven legislative days are surely past after three weeks
 function dischargeParts(p) {
     // "Providing for consideration of the bill (H.R. 1589) to authorize ..." -> the bill, and what it does
     const m = (p.description || '').match(/\(([^)]*\d[^)]*)\)\s*(.*)$/);
@@ -6232,9 +6233,28 @@ function dischargeParts(p) {
 }
 function dischargeDateKey(d) { return d ? d.slice(6) + d.slice(0, 2) + d.slice(3, 5) : ''; }
 function dischargeDate(d) { return d ? new Date(d.slice(6) + '-' + d.slice(0, 2) + '-' + d.slice(3, 5) + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''; }
+// Where a petition at 218 stands on the Discharge Calendar (the House Calendars' own list): waiting out seven legislative days, eligible, or off it.
+// null when the calendar could not be read (nothing is claimed then).
+function dischargeStanding(p) {
+    if (!_dischargeCal || p.signatures < _discharge.needed) return null;
+    const m = _dischargeCal.pending.find((x) => x.number === p.number);
+    if (m) {
+        if (m.elapsed == null) return { kind: 'listed', label: 'On the Discharge Calendar' };
+        return m.elapsed >= DISCHARGE_WAIT_DAYS
+            ? { kind: 'eligible', label: 'Eligible for action', detail: `${m.elapsed} legislative days on the calendar` }
+            : { kind: 'waiting', label: `${m.elapsed} of ${DISCHARGE_WAIT_DAYS} legislative days`, detail: 'on the Discharge Calendar' };
+    }
+    // reached 218 on the newest calendar's day or after: not entered yet. Earlier and not listed: the House has dealt with it.
+    return dischargeDateKey(p.lastSigned) >= _dischargeCal.date.replace(/-/g, '')
+        ? { kind: 'entering', label: 'Just reached 218', detail: 'not on the calendar yet' }
+        : { kind: 'off', label: 'Off the Discharge Calendar', detail: 'the House has acted on it' };
+}
+const DISCHARGE_STANDING_RANK = { eligible: 0, waiting: 1, listed: 1, entering: 2, off: 3 };
 function dischargeSorted(list) {
     const by = {
-        close: (a, b) => b.signatures - a.signatures || b.number - a.number,
+        close: (a, b) => (b.signatures >= _discharge.needed) - (a.signatures >= _discharge.needed)
+            || ((DISCHARGE_STANDING_RANK[dischargeStanding(a)?.kind] ?? 3) - (DISCHARGE_STANDING_RANK[dischargeStanding(b)?.kind] ?? 3))
+            || b.signatures - a.signatures || b.number - a.number,
         new: (a, b) => b.number - a.number,
         recent: (a, b) => dischargeDateKey(b.lastSigned).localeCompare(dischargeDateKey(a.lastSigned)) || b.number - a.number,
     }[_dischargeSort] || ((a, b) => b.number - a.number);
@@ -6276,9 +6296,9 @@ function renderDischargePetitions() {
         const url = p.id ? `https://clerk.house.gov/DischargePetition/${p.id}` : 'https://clerk.house.gov/DischargePetition';
         const measureUrl = billIdToCongressUrl(bill);
         const hasRule = p.billNumber && p.billNumber.replace(/\s+/g, '') !== bill.replace(/\s+/g, '');
-        const age = isDone && p.lastSigned ? (Date.now() - Date.parse(p.lastSigned.slice(6) + '-' + p.lastSigned.slice(0, 2) + '-' + p.lastSigned.slice(3, 5) + 'T12:00:00Z')) / 86400000 : null;
+        const standing = isDone ? dischargeStanding(p) : null;
         return `
-        <div class="dp-item${isDone ? ' is-done' : ''}">
+        <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${link(measureUrl || p.billUrl, bill)}${hasRule ? `<span class="dp-rule">rule ${link(p.billUrl, p.billNumber)}</span>` : ''}</span>
                 <span class="dp-count">${isDone ? `<span class="dp-check" aria-hidden="true">✓</span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
@@ -6286,7 +6306,7 @@ function renderDischargePetitions() {
             <div class="dp-what">${escapeHtml(what)}</div>
             ${bar(p)}
             <div class="dp-meta">
-                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${age != null && age < DISCHARGE_RIPE_DAYS ? '<span class="dp-ripening">Ripening</span>' : ''}`
+                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `<span class="dp-standing is-${standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
@@ -6305,7 +6325,7 @@ function renderDischargePetitions() {
     if (_dischargeSort === 'close') {
         // closest to 218 puts the finished ones first, as their own group
         if (done.length) {
-            entries.push({ key: 'head', html: `<div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar. A signer can give notice after 7 legislative days, and the Speaker must then schedule it within 2.</span></div>` });
+            entries.push({ key: 'head', html: `<div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar until the House acts. After 7 legislative days a signer can announce the motion, and the Speaker must schedule it within 2.</span></div>` });
             shownDone.forEach((p) => entries.push(card(p)));
             if (done.length > DISCHARGE_DONE_SHOWN) { const r = done.length - shownDone.length; entries.push(toggle('dp-done-toggle', _dischargeDoneAll ? 'Show fewer' : `Show ${r} more that reached ${need}`)); }
         }
@@ -6324,8 +6344,16 @@ function renderDischargePetitions() {
         // the Clerk's own list entries (tidied, see lib/discharge-petitions.js), each with where its signature count comes from
         const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
             + [...open, ...done].map((p) => `<!-- ${p.signatures} signatures: GET https://clerk.house.gov/DischargePetition/${p.id} -->\n${p.block}`).join('\n');
-        SourcePop.set(document.getElementById('discharge-petitions'), { request: `GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}`, html, at: _discharge.at });
+        const listPart = { request: `GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}`, html };
+        const calPart = _dischargeCal && _dischargeCal.table ? [{ request: `GET ${_dischargeCal.source}`, html: `<pre>${escapeHtml(_dischargeCal.table)}</pre>` }] : [];
+        SourcePop.set(document.getElementById('discharge-petitions'), calPart.length ? { parts: [listPart, ...calPart], at: _discharge.at } : { ...listPart, at: _discharge.at });
     }
+}
+function loadDischargeCalendar() {
+    fetch('https://api.evanhollander.org/house-floor/api/discharge-calendar')
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { _dischargeCal = d; if (_discharge) renderDischargePetitions(); })
+        .catch(() => { /* no standing is shown without it */ });
 }
 function loadDischargePetitions() {
     fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions')
@@ -10544,5 +10572,7 @@ document.addEventListener('DOMContentLoaded', init);
 // is added.
 loadCommitteeMeetings();
 loadDischargePetitions();
+loadDischargeCalendar();
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
+setInterval(loadDischargeCalendar, 15 * 60 * 1000);
