@@ -46,7 +46,6 @@
     --accent-yellow:     #e3b341;
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
-    --accent-twilight:   #8a8cf8;
 
     --party-d:           #58a6ff;
     --party-r:           #ff4d4f;
@@ -3099,8 +3098,8 @@ body.tellers-mode .tellers-column { display: flex; }
   background: color-mix(in srgb, var(--accent-green) 12%, transparent);
 }
 .whip-type-badge.whip-type-nightly {
-  color: var(--accent-twilight);
-  background: color-mix(in srgb, var(--accent-twilight) 12%, transparent);
+  color: var(--accent-purple);
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
 }
 .whip-type-badge.whip-type-weekly {
   color: var(--accent-amber);
@@ -3112,8 +3111,8 @@ body.tellers-mode .tellers-column { display: flex; }
   background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
 }
 .whip-type-badge.whip-type-wrap-up {
-  color: var(--accent-twilight);
-  background: color-mix(in srgb, var(--accent-twilight) 12%, transparent);
+  color: var(--accent-purple);
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
 }
 
 .whip-update-time {
@@ -3206,9 +3205,9 @@ body.tellers-mode .tellers-column { display: flex; }
   color: var(--accent-green);
 }
 .whip-filter-btn[data-active-filter="nightly"] {
-  background: color-mix(in srgb, var(--accent-twilight) 12%, transparent);
-  border-color: color-mix(in srgb, var(--accent-twilight) 35%, transparent);
-  color: var(--accent-twilight);
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-purple) 35%, transparent);
+  color: var(--accent-purple);
 }
 .whip-filter-btn[data-active-filter="weekly"] {
   background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
@@ -3254,10 +3253,10 @@ body.tellers-mode .tellers-column { display: flex; }
 .whip-filter-chip.whip-type-all    { color: var(--text-secondary); background: color-mix(in srgb, var(--text-muted) 10%, transparent); }
 .whip-filter-chip.whip-type-floor   { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
 .whip-filter-chip.whip-type-daily   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
-.whip-filter-chip.whip-type-nightly { color: var(--accent-twilight); background: color-mix(in srgb, var(--accent-twilight) 12%, transparent); }
+.whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 .whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
 .whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
-.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-twilight); background: color-mix(in srgb, var(--accent-twilight) 12%, transparent); }
+.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 
 .whip-label-group {
   display: flex;
