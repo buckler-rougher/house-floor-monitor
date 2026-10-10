@@ -6209,8 +6209,8 @@ let _dischargeAll = false;
 let _dischargeDoneAll = false;
 let _dischargeSort = 'close';
 const DISCHARGE_SHOWN = 3;        // open petitions shown before the button
-const DISCHARGE_DONE_SHOWN = 2;   // the same for the ones at 218, in the grouped sort
-const DISCHARGE_MIXED_SHOWN = 5;  // all of them, in the other sorts
+const DISCHARGE_DONE_SHOWN = 1;   // the same for the ones at 218, in the grouped sort
+const DISCHARGE_MIXED_SHOWN = 4;  // all of them, in the other sorts
 const DISCHARGE_RIPE_DAYS = 21;   // the House meets at least every third day, so seven legislative days are surely past after three weeks
 function dischargeParts(p) {
     // "Providing for consideration of the bill (H.R. 1589) to authorize ..." -> the bill, and what it does
