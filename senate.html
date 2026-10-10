@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261011q">
+    <link rel="stylesheet" href="styles.senate.css?v=20261011t">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1034,12 +1034,14 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </button>
             </div>
-            <div class="reporter-search-row" id="reporter-search-row" style="display:none">
+            <div class="reporter-search-drawer" id="reporter-search-drawer" hidden>
+            <div class="reporter-search-row" id="reporter-search-row">
                 <div class="reporter-search-wrapper">
                     <input class="reporter-search-input" id="reporter-search-input" type="text" aria-label="Search reporters by handle or name" autocomplete="off" />
                     <div class="reporter-search-results" id="reporter-search-results" style="display:none"></div>
                 </div>
-                <button class="reporter-search-clear" id="reporter-search-clear" aria-label="Clear">&#xD7;</button>
+                <button class="reporter-search-clear" id="reporter-search-clear" aria-label="Clear"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5 12.5 12.5M12.5 3.5 3.5 12.5"/></svg></button>
+            </div>
             </div>
             <div class="tweets-feed" id="tweets-feed">
                 <div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div>
@@ -1052,9 +1054,9 @@
                 <span class="panel-label">SENATE CALENDAR</span>
                 <div class="panel-header-right">
                     <div class="calendar-desktop-nav" id="calendar-desktop-nav">
-                        <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months">&#8249;</button>
+                        <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
                         <button class="calendar-desktop-today calendar-today-at-current" id="calendar-desktop-today">TODAY</button>
-                        <button class="calendar-desktop-btn" id="calendar-desktop-next" aria-label="Next months">&#8250;</button>
+                        <button class="calendar-desktop-btn" id="calendar-desktop-next" aria-label="Next months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
                     </div>
                     <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/schedule/floor_schedule.xml" target="_blank" rel="noopener">Session Days (Senate)</a></span>
                 </div>
@@ -1064,9 +1066,9 @@
                 <div class="this-week-body" id="this-week-body">—</div>
             </div>
             <div class="calendar-mobile-nav" id="calendar-mobile-nav">
-                <button class="calendar-mobile-btn" id="calendar-mobile-prev" aria-label="Previous month">&#8249;</button>
+                <button class="calendar-mobile-btn" id="calendar-mobile-prev" aria-label="Previous month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
                 <span class="calendar-mobile-title" id="calendar-mobile-title"></span>
-                <button class="calendar-mobile-btn" id="calendar-mobile-next" aria-label="Next month">&#8250;</button>
+                <button class="calendar-mobile-btn" id="calendar-mobile-next" aria-label="Next month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
             </div>
             <div class="voting-calendar-wrap" id="voting-calendar-wrap">
                 <div class="voting-calendar-month" id="voting-calendar-prev"></div>
@@ -1361,7 +1363,7 @@
     <script defer src="lib/senate-speaker.js?v=20261004b"></script>
     <script defer src="lib/floor-feed.js?v=20261005a"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
-    <script defer src="lib/reporters.js?v=20261011a"></script>
+    <script defer src="lib/reporters.js?v=20261011b"></script>
     <script defer src="lib/capcam.js?v=20261005a"></script>
     <script defer src="lib/scroll-fade.js?v=20261003a"></script>
     <script defer src="lib/weather.js?v=20261003a"></script>
