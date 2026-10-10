@@ -6163,7 +6163,7 @@ function renderCommitteeMeetings() {
     } else {
         const shown = _committeeAll ? d.events : d.events.slice(0, COMMITTEE_SHOWN);
         const rest = d.events.length - shown.length;
-        setIfChanged(list, shown.map((e) => `
+        const entries = shown.map((e) => ({ key: e.id, html: `
         <div class="committee-item">
             <span class="committee-time">${escapeHtml(e.time)}</span>
             <div class="committee-what">
@@ -6173,7 +6173,9 @@ function renderCommitteeMeetings() {
             </div>
             <span class="committee-room">${escapeHtml(e.location)}</span>
             ${_committeeOpen.has(e.id) ? committeeDetailHtml(_committeeDetail[e.id]) : ''}
-        </div>`).join('') + (d.events.length > COMMITTEE_SHOWN ? `<button type="button" class="dp-toggle" id="committee-toggle">${_committeeAll ? 'Show fewer' : `Show ${rest} more meeting${rest === 1 ? '' : 's'}`}</button>` : ''));
+        </div>` }));
+        if (d.events.length > COMMITTEE_SHOWN) entries.push({ key: 'committee-toggle', tail: true, html: `<button type="button" class="dp-toggle" id="committee-toggle">${_committeeAll ? 'Show fewer' : `Show ${rest} more meeting${rest === 1 ? '' : 's'}`}</button>` });
+        ListSync.sync(list, entries);
     }
     const link = document.getElementById('committee-source-link');
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
@@ -6223,41 +6225,8 @@ function loadCommitteeMeetings() {
 // table (/api/discharge-petition). After the 218th signature the motion goes on the Discharge Calendar; it can be called up once seven legislative days
 // have passed, when a signer gives notice and the Speaker must schedule it within two legislative days (House Rule XV, clause 2; CRS R45920 v5, Feb 2026). The Clerk does not say whether that happened, so a petition at 218 shows
 // where its resolution stands on Congress.gov, in that site's words.
-// Rebuild a list without rebuilding what has not changed: an entry whose HTML is the same keeps its element (so a face already loaded does not blink),
-// and the elements are put in the new order. entries: [{ key, html }]; the container must hold only these.
-function reconcileList(container, entries) {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const first = !container.querySelector('[data-key]');   // the first fill is not animated
-    const old = new Map([...container.children].map((el) => [el.dataset.key, el]));
-    const before = new Map([...old].filter(([k]) => k).map(([k, el]) => [k, el.getBoundingClientRect()]));
-    const placed = [];
-    for (const { key, html } of entries) {
-        let el = old.get(key);
-        old.delete(key);
-        if (!el || el.dataset.sig !== html) {
-            const t = document.createElement('template');
-            t.innerHTML = html.trim();
-            const fresh = t.content.firstElementChild;
-            fresh.dataset.key = key; fresh.dataset.sig = html;
-            if (el) el.remove();
-            el = fresh;
-        }
-        placed.push(el);
-    }
-    old.forEach((el) => el.remove());
-    placed.forEach((el, i) => { if (container.children[i] !== el) container.insertBefore(el, container.children[i] || null); });
-    if (reduce || first) return;
-    // what moved slides to its new place; what is new fades in (the same easing as the bills panel)
-    const EASE = 'cubic-bezier(0.15, 0.83, 0.66, 1)';
-    placed.forEach((el) => {
-        const prev = before.get(el.dataset.key);
-        if (!prev) { el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: EASE }); return; }
-        const now = el.getBoundingClientRect();
-        const dx = prev.left - now.left, dy = prev.top - now.top;
-        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: EASE });
-    });
-}
+// (a list that keeps what has not changed and animates what does: lib/list-sync.js)
+const reconcileList = (list, entries) => ListSync.sync(list, entries);
 let _discharge = null;
 let _dischargeAll = false;
 let _dischargeDoneAll = false;
@@ -6362,7 +6331,7 @@ function renderDischargePetitions() {
         </div>`;
     };
     const entries = [];
-    const toggle = (id, label) => ({ key: id, html: `<button type="button" class="dp-toggle" id="${id}">${label}</button>` });
+    const toggle = (id, label) => ({ key: id, tail: true, html: `<button type="button" class="dp-toggle" id="${id}">${label}</button>` });
     const card = (p) => ({ key: p.id || 'n' + p.number, html: item(p) });
     if (_dischargeSort === 'close') {
         // closest to 218 puts the finished ones first, as their own group
