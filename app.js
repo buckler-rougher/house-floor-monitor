@@ -6164,65 +6164,107 @@ function loadCommitteeMeetings() {
 }
 
 // DISCHARGE PETITIONS: the House Clerk's list for this Congress, each with the number of signatures it has against the 218 it needs, through the Worker's
-// /api/discharge-petitions. The open ones come first, closest to the number first, as a bar; the ones that got there are a list behind a button. A
-// petition that has reached 218 shows a full green bar. The count of a petition is the rows of its own signature table at the Clerk.
+// /api/discharge-petitions. The ones that reached 218 are pinned on top in green; the open ones are bars below, in the order picked (closest to 218,
+// newest petition, most recent signature). The count of a petition is the rows of its own signature table at the Clerk, and the button on each opens that
+// table (/api/discharge-petition). After the 218th signature the motion goes on the Discharge Calendar; it can be called up once seven legislative days
+// have passed, on a second or fourth Monday (House Rule XV, clause 2; CRS 97-552). The Clerk does not say whether that happened, so a petition at 218 shows
+// where its resolution stands on Congress.gov, in that site's words.
 let _discharge = null;
 let _dischargeAll = false;
+let _dischargeDoneAll = false;
+let _dischargeSort = 'close';
 const DISCHARGE_SHOWN = 6;
+const DISCHARGE_DONE_SHOWN = 3;
+const DISCHARGE_RIPE_DAYS = 21;   // the House meets at least every third day, so seven legislative days are surely past after three weeks
 function dischargeParts(p) {
     // "Providing for consideration of the bill (H.R. 1589) to authorize ..." -> the bill, and what it does
     const m = (p.description || '').match(/\(([^)]*\d[^)]*)\)\s*(.*)$/);
-    return { bill: m ? m[1].replace(/\s+/g, ' ') : (p.billNumber || ''), what: m && m[2] ? m[2].replace(/,\s*and for other purposes\.?$/i, '').replace(/\.$/, '') : (p.description || '') };
+    const what = m && m[2] ? m[2].replace(/,\s*and for other purposes\.?$/i, '').replace(/\.$/, '') : (p.description || '');
+    return { bill: m ? m[1].replace(/\s+/g, ' ') : (p.billNumber || ''), what: what.charAt(0).toUpperCase() + what.slice(1) };
+}
+function dischargeDateKey(d) { return d ? d.slice(6) + d.slice(0, 2) + d.slice(3, 5) : ''; }
+function dischargeDate(d) { return d ? new Date(d.slice(6) + '-' + d.slice(0, 2) + '-' + d.slice(3, 5) + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''; }
+function dischargeSorted(list) {
+    const by = {
+        close: (a, b) => b.signatures - a.signatures || b.number - a.number,
+        new: (a, b) => b.number - a.number,
+        recent: (a, b) => dischargeDateKey(b.lastSigned).localeCompare(dischargeDateKey(a.lastSigned)) || b.number - a.number,
+    }[_dischargeSort] || ((a, b) => b.number - a.number);
+    return [...list].sort(by);
+}
+function dischargeSponsorHtml(p) {
+    const seat = p.sponsorSeat;
+    const party = seat ? (/^R/i.test(seat.party) ? 'R' : /^D/i.test(seat.party) ? 'D' : 'I') : null;
+    const cls = party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent';
+    const loc = seat ? seat.state + (/^\d+$/.test(seat.district || '') ? '-' + String(seat.district).padStart(2, '0') : '') : '';
+    const photo = p.sponsorId ? buildBioguidePhotoUrl(p.sponsorId) : null;
+    return `<div class="absentee-member dp-sponsor" title="Sponsor">
+        <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
+        <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">Sponsor</span></div>
+    </div>`;
 }
 function renderDischargePetitions() {
     const list = document.getElementById('discharge-list');
     if (!list || !_discharge) return;
     const need = _discharge.needed;
     const all = _discharge.petitions.filter((p) => p.signatures != null);
-    const open = all.filter((p) => p.signatures < need).sort((a, b) => b.signatures - a.signatures || b.number - a.number);
-    const done = all.filter((p) => p.signatures >= need).sort((a, b) => b.number - a.number);
+    const open = dischargeSorted(all.filter((p) => p.signatures < need));
+    const done = dischargeSorted(all.filter((p) => p.signatures >= need));
     const shown = _dischargeAll ? open : open.slice(0, DISCHARGE_SHOWN);
+    const shownDone = _dischargeDoneAll ? done : done.slice(0, DISCHARGE_DONE_SHOWN);
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
-    put('discharge-summary', `${open.length} open \u00b7 ${done.length} reached ${need}`);
-    const date = (iso) => iso ? new Date(iso.slice(6) + '-' + iso.slice(0, 2) + '-' + iso.slice(3, 5) + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+    put('discharge-summary', `${open.length} open · ${done.length} reached ${need}`);
+    document.querySelectorAll('#dp-sort [data-dp-sort]').forEach((b) => { const on = b.dataset.dpSort === _dischargeSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     const bar = (p) => {
         const pct = Math.min(100, Math.round(1000 * p.signatures / need) / 10);
         const state = p.signatures >= need ? 'done' : p.signatures >= need - 5 ? 'close' : '';
         return `<div class="dp-bar ${state}" role="progressbar" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${p.signatures}" aria-label="${p.signatures} of ${need} signatures"><span style="width:${pct}%"></span></div>`;
     };
+    const link = (href, text) => href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>` : escapeHtml(text);
     const item = (p) => {
         const { bill, what } = dischargeParts(p);
+        const isDone = p.signatures >= need;
         const more = need - p.signatures;
         const url = p.id ? `https://clerk.house.gov/DischargePetition/${p.id}` : 'https://clerk.house.gov/DischargePetition';
+        const measureUrl = billIdToCongressUrl(bill);
+        const hasRule = p.billNumber && p.billNumber.replace(/\s+/g, '') !== bill.replace(/\s+/g, '');
+        const age = isDone && p.lastSigned ? (Date.now() - Date.parse(p.lastSigned.slice(6) + '-' + p.lastSigned.slice(0, 2) + '-' + p.lastSigned.slice(3, 5) + 'T12:00:00Z')) / 86400000 : null;
         return `
-        <div class="dp-item">
+        <div class="dp-item${isDone ? ' is-done' : ''}">
             <div class="dp-top">
-                <span class="dp-id"><span class="dp-num">No. ${p.number}</span> ${escapeHtml(bill)}</span>
-                <span class="dp-count"><b>${p.signatures}</b> of ${need}</span>
+                <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${link(measureUrl || p.billUrl, bill)}${hasRule ? `<span class="dp-rule">rule ${link(p.billUrl, p.billNumber)}</span>` : ''}</span>
+                <span class="dp-count">${isDone ? `<span class="dp-check" aria-hidden="true">✓</span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
             ${bar(p)}
             <div class="dp-meta">
-                <span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>
-                <span>${escapeHtml(p.sponsor)}</span>
+                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${age != null && age < DISCHARGE_RIPE_DAYS ? '<span class="dp-ripening">Ripening</span>' : ''}`
+                    : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
-                ${p.lastSigned ? `<span>last signed ${escapeHtml(date(p.lastSigned))}</span>` : ''}
+                ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
                 <a href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
+            </div>
+            ${isDone && p.action ? `<div class="dp-action"><span>Congress.gov${p.action.date ? `, ${escapeHtml(dischargeDate(p.action.date.slice(5, 7) + '/' + p.action.date.slice(8, 10) + '/' + p.action.date.slice(0, 4)))}` : ''}:</span> ${escapeHtml(p.action.text)}</div>` : ''}
+            <div class="dp-people">
+                ${p.sponsor ? dischargeSponsorHtml(p) : ''}
+                ${p.id ? `<button type="button" class="dp-signers-btn" data-dp-signers="${escapeHtml(p.id)}" data-dp-number="${p.number}">Signers (${p.signatures})</button>` : ''}
             </div>
         </div>`;
     };
-    const rest = open.length - shown.length;
+    const restOpen = open.length - shown.length;
+    const restDone = done.length - shownDone.length;
     setIfChanged(list,
-        (shown.map(item).join('') || `<div class="proceedings-error">NO OPEN PETITIONS</div>`)
-        + (open.length > DISCHARGE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-toggle">${_dischargeAll ? 'Show fewer' : `Show ${rest} more open petition${rest === 1 ? '' : 's'}`}</button>` : '')
-        + (done.length ? `<details class="dp-done"><summary>${done.length} reached ${need}</summary>${done.map((p) => {
-            const { bill, what } = dischargeParts(p);
-            return `<div class="dp-done-item"><span class="dp-num">No. ${p.number}</span> ${escapeHtml(bill)} <span class="dp-done-what">${escapeHtml(what)}</span><span class="dp-done-sponsor">${escapeHtml(p.sponsor)}</span></div>`;
-        }).join('')}</details>` : ''));
+        (done.length ? `<section class="dp-group dp-group-done" aria-label="Reached ${need} signatures">
+            <div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar. Can be called up after 7 legislative days, on a second or fourth Monday.</span></div>
+            ${shownDone.map(item).join('')}
+            ${done.length > DISCHARGE_DONE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-done-toggle">${_dischargeDoneAll ? 'Show fewer' : `Show ${restDone} more that reached ${need}`}</button>` : ''}
+        </section>` : '')
+        + (shown.map(item).join('') || `<div class="proceedings-error">NO OPEN PETITIONS</div>`)
+        + (open.length > DISCHARGE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-toggle">${_dischargeAll ? 'Show fewer' : `Show ${restOpen} more open petition${restOpen === 1 ? '' : 's'}`}</button>` : ''));
     if (globalThis.SourcePop) {
-        // the Clerk's own list entries, as sent, each with where its signature count comes from
+        // the Clerk's own list entries (tidied, see lib/discharge-petitions.js), each with where its signature count comes from
         const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
-            + open.map((p) => `<!-- ${p.signatures} signatures: GET https://clerk.house.gov/DischargePetition/${p.id} -->\n${p.block}`).join('\n');
+            + [...open, ...done].map((p) => `<!-- ${p.signatures} signatures: GET https://clerk.house.gov/DischargePetition/${p.id} -->\n${p.block}`).join('\n');
         SourcePop.set(document.getElementById('discharge-petitions'), { request: `GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}`, html, at: _discharge.at });
     }
 }
@@ -6232,9 +6274,82 @@ function loadDischargePetitions() {
         .then((d) => { _discharge = d; renderDischargePetitions(); })
         .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), '<div class="proceedings-error">DISCHARGE PETITIONS UNAVAILABLE</div>'); });
 }
+
+// Everyone who signed one petition, in a window: searchable, by party, newest signers first or in the order signed.
+let _dpModalReturn = null;
+function closeDischargeSigners() {
+    const o = document.getElementById('dp-modal-overlay');
+    if (o) o.remove();
+    document.removeEventListener('keydown', dischargeModalKey);
+    if (_dpModalReturn && document.contains(_dpModalReturn)) _dpModalReturn.focus();
+    _dpModalReturn = null;
+}
+function dischargeModalKey(e) { if (e.key === 'Escape') closeDischargeSigners(); }
+function openDischargeSigners(id, number, trigger) {
+    closeDischargeSigners();
+    _dpModalReturn = trigger || null;
+    const o = document.createElement('div');
+    o.id = 'dp-modal-overlay';
+    o.className = 'dp-modal-overlay';
+    o.innerHTML = `<div class="dp-modal" role="dialog" aria-modal="true" aria-label="Signers of discharge petition ${number}">
+        <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">×</button></div>
+        <div class="dp-modal-tools">
+            <input type="search" id="dp-modal-search" class="dp-modal-search" placeholder="Search name or state" aria-label="Search signers" autocomplete="off">
+            <div class="dp-modal-filters" id="dp-modal-filters">
+                <button type="button" class="bills-sort-btn active" data-party="">All</button>
+                <button type="button" class="bills-sort-btn" data-party="D">D</button>
+                <button type="button" class="bills-sort-btn" data-party="R">R</button>
+                <button type="button" class="bills-sort-btn" data-party="I">I</button>
+            </div>
+        </div>
+        <div class="dp-modal-list" id="dp-modal-list"><div class="proceedings-error">LOADING</div></div>
+        <div class="dp-modal-foot">Source: <a href="https://clerk.house.gov/DischargePetition/${escapeHtml(id)}" target="_blank" rel="noopener">Discharge Petition ${number} (House Clerk)</a></div>
+    </div>`;
+    document.body.appendChild(o);
+    document.addEventListener('keydown', dischargeModalKey);
+    o.addEventListener('click', (e) => { if (e.target === o) closeDischargeSigners(); });
+    document.getElementById('dp-modal-close').addEventListener('click', closeDischargeSigners);
+    document.getElementById('dp-modal-close').focus();
+    let signers = [], party = '';
+    const letter = (p) => /^R/i.test(p) ? 'R' : /^D/i.test(p) ? 'D' : 'I';
+    const draw = () => {
+        const q = document.getElementById('dp-modal-search').value.trim().toLowerCase();
+        const rows = signers.filter((s) => (!party || letter(s.party) === party) && (!q || `${s.name} ${s.state} ${s.stateName}`.toLowerCase().includes(q)));
+        document.getElementById('dp-modal-count').textContent = `${rows.length === signers.length ? signers.length : rows.length + ' of ' + signers.length} signer${signers.length === 1 ? '' : 's'}`;
+        document.getElementById('dp-modal-list').innerHTML = rows.map((s) => {
+            const l = letter(s.party), cls = l === 'R' ? 'republican' : l === 'D' ? 'democrat' : 'independent';
+            const loc = s.state + (/^\d+$/.test(s.district) ? '-' + s.district.padStart(2, '0') : '');
+            const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
+            return `<div class="absentee-member dp-signer">
+                <span class="dp-signer-n">${s.n}</span>
+                <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
+                <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
+                <span class="dp-signer-date">${escapeHtml(dischargeDate(s.date))}</span>
+            </div>`;
+        }).join('') || '<div class="proceedings-error">NO MATCH</div>';
+    };
+    document.getElementById('dp-modal-search').addEventListener('input', draw);
+    document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-party]'); if (!b) return;
+        party = b.dataset.party;
+        document.querySelectorAll('#dp-modal-filters [data-party]').forEach((x) => x.classList.toggle('active', x === b));
+        draw();
+    });
+    fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`)
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { signers = d.signers || []; draw(); })
+        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="proceedings-error">SIGNERS UNAVAILABLE</div>'; });
+}
 document.addEventListener('click', (e) => {
-    if (e.target && e.target.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
-    if (e.target && e.target.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
+    const t = e.target;
+    if (!t || !t.closest) return;
+    if (t.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
+    if (t.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
+    if (t.id === 'dp-done-toggle') { _dischargeDoneAll = !_dischargeDoneAll; renderDischargePetitions(); }
+    const sortBtn = t.closest('[data-dp-sort]');
+    if (sortBtn) { _dischargeSort = sortBtn.dataset.dpSort; renderDischargePetitions(); }
+    const sig = t.closest('[data-dp-signers]');
+    if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });
 
 function renderProceedingsFeedPanel(items) {

@@ -100,5 +100,15 @@ await ok('a petition that reached 218 is not read again; the open ones are, once
   } finally { Date.now = real; }
 });
 
+await ok('the signers of one petition: every row of its page, with party, seat and date; a bad id is a 400', async () => {
+  const r = await get('discharge-petition?id=202500002' + '0');
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.count, 218);
+  assert.strictEqual(r.body.signers.length, 218);
+  assert.strictEqual(r.body.signers[0].n, 1);
+  assert.strictEqual((await get('discharge-petition?id=abc')).status, 400);
+  assert.strictEqual((await get('discharge-petition')).status, 400);
+});
+
 console.log(`\n${n} passed`);
 process.exit(0);

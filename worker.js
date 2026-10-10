@@ -4040,7 +4040,7 @@ async function handleCommitteeMeetings(request, env) {
 // lose signatures), and only the open ones are read again, once the ten-minute cache has gone. All the counts are kept under ONE key, since every KV read
 // and write counts against the request's subrequest limit.
 async function handleDischargePetitions(env) {
-  return kvCache(env, `discharge-petitions-v1-${CURRENT_CONGRESS}`, 600, async () => {
+  return kvCache(env, `discharge-petitions-v2-${CURRENT_CONGRESS}`, 600, async () => {
     const DP = globalThis.DischargePetitions;
     try {
       const base = `https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${CURRENT_CONGRESS}`;
@@ -4049,7 +4049,7 @@ async function handleDischargePetitions(env) {
       const petitions = [...first.petitions];
       for (let p = 2; p <= first.pages; p++) petitions.push(...DP.parseList(await fetchSource(`${base}&Page=${p}`, 'discharge petitions')).petitions);
 
-      const key = `discharge-counts-v1-${CURRENT_CONGRESS}`;
+      const key = `discharge-counts-v2-${CURRENT_CONGRESS}`;
       let counts = {};
       try { counts = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { counts = {}; }
       const todo = petitions.filter((p) => p.id && !(counts[p.id] && counts[p.id].count >= DP.NEEDED));
@@ -4058,19 +4058,57 @@ async function handleDischargePetitions(env) {
         await Promise.all(todo.slice(i, i + 6).map(async (p) => {
           try {
             const sig = DP.parseSignatures(await fetchSource(`https://clerk.house.gov/DischargePetition/${p.id}`, `petition ${p.number}`, { timeout: 30_000 }));
-            if (sig) { counts[p.id] = { count: sig.count, last: sig.last }; changed = true; }
+            if (sig) {
+              // the sponsor's party and seat come off the sponsor's own row in the signature table (the sponsor signs first)
+              const sp = sig.signers.find((x) => x.id && x.id === p.sponsorId);
+              counts[p.id] = { ...counts[p.id], count: sig.count, last: sig.last, sponsor: sp ? { party: sp.party, state: sp.state, district: sp.district } : null };
+              changed = true;
+            }
           } catch (e) { console.warn(`[house-floor] discharge petition ${p.number}: ${e.message}`); }
+        }));
+      }
+      // A petition at 218 shows where its resolution stands, word for word from Congress.gov: the Clerk's pages do not say whether the motion has been
+      // called up. Read again after six hours, at most ten a run (the subrequest limit is shared with the pages above).
+      if (_congressApiKey) {
+        const stale = petitions.filter((p) => p.id && counts[p.id] && counts[p.id].count >= DP.NEEDED && (!counts[p.id].action || Date.now() - counts[p.id].action.at > 6 * 3600_000)).slice(0, 10);
+        await Promise.all(stale.map(async (p) => {
+          const parsed = p.billNumber && billIdToCongressType(p.billNumber);
+          if (!parsed) return;
+          try {
+            const r = await fetch(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${parsed.type}/${parsed.number}?format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+            if (!r.ok) return;
+            const la = (await r.json())?.bill?.latestAction;
+            if (la?.text) { counts[p.id].action = { text: la.text, date: la.actionDate || null, at: Date.now() }; changed = true; }
+          } catch (e) { console.warn(`[house-floor] discharge petition ${p.number} action: ${e.message}`); }
         }));
       }
       if (changed && env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(counts), { expirationTtl: KV_STORAGE_TTL }); } catch { /* counted again next time */ } }
       return new Response(JSON.stringify({
         at: Date.now(), congress: CURRENT_CONGRESS, needed: DP.NEEDED, total: first.total,
-        petitions: petitions.map((p) => ({ ...p, signatures: counts[p.id] ? counts[p.id].count : null, lastSigned: counts[p.id] ? counts[p.id].last : null })),
+        petitions: petitions.map((p) => ({ ...p, signatures: counts[p.id] ? counts[p.id].count : null, lastSigned: counts[p.id] ? counts[p.id].last : null, sponsorSeat: counts[p.id] ? counts[p.id].sponsor || null : null, action: counts[p.id] && counts[p.id].action ? { text: counts[p.id].action.text, date: counts[p.id].action.date } : null })),
       }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' } });
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), {
         status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
+    }
+  });
+}
+
+// One petition's signers, in the order they signed, for the list the board opens. Read from the petition's own page at the Clerk.
+async function handleDischargePetition(env, id) {
+  if (!/^\d{6,12}$/.test(id || '')) {
+    return new Response(JSON.stringify({ error: 'a petition id is required' }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  }
+  return kvCache(env, `discharge-signers-v1-${id}`, 600, async () => {
+    try {
+      const sig = globalThis.DischargePetitions.parseSignatures(await fetchSource(`https://clerk.house.gov/DischargePetition/${id}`, `petition ${id}`, { timeout: 30_000 }));
+      if (!sig) throw new Error('the petition page had no signature table (has the page changed?)');
+      return new Response(JSON.stringify({ at: Date.now(), id, count: sig.count, last: sig.last, signers: sig.signers }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
   });
 }
@@ -6086,6 +6124,8 @@ function sourceStatusChecks() {
     'voting-days': ['https://votingdays.house.gov/voting-days.ics', 4096, (r) => ok200(r, (x) => x.text.includes('BEGIN:VCALENDAR'), 'a calendar')],
     'domewatch': ['https://data.domewatch.us/v1/whip-notices?limit=1', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
     'faa': ['https://nasstatus.faa.gov/api/airport-status-information', 8192, (r) => ok200(r, (x) => x.text.includes('AIRPORT_STATUS_INFORMATION'), 'the FAA feed')],
+    'house-committees': ['https://docs.house.gov/Committee/Calendar/ByDay.aspx', 40_000, (r) => ok200(r, (x) => x.text.includes('MainContent_GridViewMeetings'), 'the committee calendar')],
+    'house-discharge': [`https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${CURRENT_CONGRESS}`, 40_000, (r) => ok200(r, (x) => x.text.includes('Discharge Petition No.'), 'the petition list')],
     'senate-votes': [`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${CURRENT_CONGRESS}_${session}.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<vote_summary'), 'a vote menu')],
     'senate-schedule': ['https://www.senate.gov/legislative/schedule/floor_schedule.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<CongressSessionDayConvenings'), 'the session days file')],
     'senate-nominations': [`${NOM_BASE}/NomCivilianPendingCalendar.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<Nominations'), 'a nominations file')],
@@ -6197,6 +6237,8 @@ async function handleRequest(request, env) {
     return await handleHouseRolls(request, env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/discharge-petition' && request.method === 'GET') {
+    return await handleDischargePetition(env, url.searchParams.get('id'));
   } else if (path === '/api/discharge-petitions' && request.method === 'GET') {
     return await handleDischargePetitions(env);
   } else if (path === '/api/bill-source' && request.method === 'GET') {

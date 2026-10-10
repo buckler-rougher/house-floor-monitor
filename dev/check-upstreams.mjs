@@ -33,6 +33,8 @@ const ClerkVotes = require(join(ROOT, 'lib/clerk-votes.js'));
 const SenateSeniority = require(join(ROOT, 'lib/senate-seniority.js'));
 const SenateDesks = require(join(ROOT, 'lib/senate-desks.js'));
 const HouseCalendar = require(join(ROOT, 'lib/house-calendar.js'));
+const CommitteeMeetings = require(join(ROOT, 'lib/committee-meetings.js'));
+const DischargePetitions = require(join(ROOT, 'lib/discharge-petitions.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -40,6 +42,7 @@ const API = process.env.API_BASE || 'https://api.evanhollander.org';
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 const year = Number(new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).slice(0, 4));
 const congress = 119;
+const todayEt = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' });   // MM/DD/YYYY
 const senateSession = year % 2 ? 1 : 2;
 
 const get = async (url, { ms = 30_000, headers = {} } = {}) => {
@@ -91,6 +94,14 @@ const CHECKS = [
   worker('house', 'roll-log', (j) => arr(j.entries).length ? null : { warn: 'roll log is empty' }),
   worker('house', 'tweets', (j) => has(arr(j.tweets).length >= 5, `${arr(j.tweets).length} tweets`)),
   worker('house', 'casualty-list', (j) => has(Object.keys(j).length > 0, 'empty')),
+  // The Worker's two Clerk feeds for the committee and discharge panels. The petitions answer carries a count for every petition, and a petition
+  // with none means its own page could not be read, which is a warning (the panel leaves it out) and not a failure.
+  worker('house', `committee-meetings?scan=1&date=${encodeURIComponent(todayEt)}`, (j) => has(Array.isArray(j.events) && typeof j.table === 'string' && /^\d\d\/\d\d\/\d{4}$/.test(j.date || ''), 'no events list, table or date')),
+  worker('house', 'discharge-petitions', (j) => {
+    if (!arr(j.petitions).length || j.needed !== 218) return { fail: `${arr(j.petitions).length} petitions, needed ${j.needed}` };
+    const unread = j.petitions.filter((p) => p.id && p.signatures == null).length;
+    return unread ? { warn: `${unread} petition page(s) not read (no signature count)` } : null;
+  }),
   worker('house', 'airport-delays', (j) => has((j.xmlData || '').includes('AIRPORT_STATUS_INFORMATION'), 'not the FAA feed')),
 
   // ---- the deployed Worker, Senate ----
@@ -129,6 +140,25 @@ const CHECKS = [
     if (r.status !== 200) return { fail: `HTTP ${r.status}` };
     const c = HouseCalendar.parse(r.text);
     return c && c.meetsAt && c.orders !== null ? null : { fail: c ? 'the calendar parsed but its meeting time or orders section did not (lib/house-calendar.js)' : 'not a House Calendar page (lib/house-calendar.js)' };
+  }),
+  // The pages those two feeds are read from, with the same parsers the Worker uses. A change to the Clerk's markup fails here, not as a panel that says nothing.
+  direct('docs.house.gov committee calendar (today)', `https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${todayEt.replace(/\//g, '')}`, (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` }
+    : CommitteeMeetings.parseDay(r.text) ? null : { fail: 'no meetings table: the page has changed (lib/committee-meetings.js)' }),
+  direct('clerk discharge petition list', `https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${congress}`, (r) => {
+    if (r.status !== 200) return { fail: `HTTP ${r.status}` };
+    const l = DischargePetitions.parseList(r.text);
+    if (!l.petitions.length) return { fail: 'no petitions found: the page has changed (lib/discharge-petitions.js)' };
+    return l.petitions.every((p) => p.id && p.description && p.sponsor) ? null : { fail: 'a petition entry is missing its link, description or sponsor' };
+  }),
+  direct('clerk discharge petition page (first)', async () => {
+    const r = await get(`https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${congress}`);
+    const first = DischargePetitions.parseList(r.text).petitions[0];
+    if (!first || !first.id) throw new Error('no petition link on the list');
+    return `https://clerk.house.gov/DischargePetition/${first.id}`;
+  }, (r) => {
+    if (r.status !== 200) return { fail: `HTTP ${r.status}` };
+    const s = DischargePetitions.parseSignatures(r.text);
+    return s && s.count > 0 ? null : { fail: s ? 'a signature table with no signers' : 'no signature table: the page has changed (lib/discharge-petitions.js)' };
   }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
   direct('house docs BillsThisWeek RSS', 'https://docs.house.gov/BillsThisWeek-RSS.xml', (r) => r.status === 200 && /<rss|<feed/.test(r.text) ? null : { fail: `HTTP ${r.status}, not a feed` }),
