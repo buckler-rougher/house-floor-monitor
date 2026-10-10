@@ -18,6 +18,8 @@ import './lib/senate-call.js';
 import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
 import './lib/clerk-votes.js';
+import './lib/committee-meetings.js';
+import './lib/discharge-petitions.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -3999,6 +4001,80 @@ async function handleHouseRolls(request, env) {
   });
 }
 
+// The House's committee meetings for a day, from the Clerk's Committee Repository calendar (docs.house.gov), parsed by lib/committee-meetings.js.
+// `scan` looks forward from the date for the first day that has any (up to a week), because a board asked on a Friday or a recess day wants the next
+// day with something on, and says which day it found. A page that is not the calendar is an error, never an empty day.
+async function handleCommitteeMeetings(request, env) {
+  const q = new URL(request.url).searchParams;
+  const date = q.get('date') || '';
+  const scan = q.has('scan');
+  const fail = (status, error) => new Response(JSON.stringify({ error }), {
+    status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+  const m = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12 || Number(m[2]) < 1 || Number(m[2]) > 31) return fail(400, 'date must be MM/DD/YYYY');
+  const isToday = `${m[3]}${m[1]}${m[2]}` === getTodayDateET();
+  return kvCache(env, `committee-meetings-v1-${date}${scan ? '-scan' : ''}`, isToday ? 300 : 3600, async () => {
+    try {
+      let found = null, day = date;
+      for (let i = 0; i < (scan ? 7 : 1); i++) {
+        const d = new Date(Date.UTC(Number(m[3]), Number(m[1]) - 1, Number(m[2]) + i));
+        day = `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}/${d.getUTCFullYear()}`;
+        const html = await fetchSource(`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${day.replace(/\//g, '')}`, 'committee calendar');
+        const parsed = globalThis.CommitteeMeetings.parseDay(html);
+        if (!parsed) throw new Error('the committee calendar page had no meetings table (has it changed?)');
+        found = parsed;
+        if (parsed.events.length) break;
+      }
+      return new Response(JSON.stringify({ at: Date.now(), asked: date, date: day, events: found.events, table: found.table }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${isToday ? 300 : 3600}` },
+      });
+    } catch (e) {
+      return fail(502, e.message);
+    }
+  });
+}
+
+// The discharge petitions of the current Congress, from the Clerk (lib/discharge-petitions.js). The list has no signature counts: each is the number of
+// rows in its petition's own page (500 KB, nearly all of it script), so a petition that has reached the number is read once and kept (a petition does not
+// lose signatures), and only the open ones are read again, once the ten-minute cache has gone. All the counts are kept under ONE key, since every KV read
+// and write counts against the request's subrequest limit.
+async function handleDischargePetitions(env) {
+  return kvCache(env, `discharge-petitions-v1-${CURRENT_CONGRESS}`, 600, async () => {
+    const DP = globalThis.DischargePetitions;
+    try {
+      const base = `https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${CURRENT_CONGRESS}`;
+      const first = DP.parseList(await fetchSource(base, 'discharge petitions'));
+      if (!first.petitions.length) throw new Error('the Clerk\'s petition list had no petitions (has the page changed?)');
+      const petitions = [...first.petitions];
+      for (let p = 2; p <= first.pages; p++) petitions.push(...DP.parseList(await fetchSource(`${base}&Page=${p}`, 'discharge petitions')).petitions);
+
+      const key = `discharge-counts-v1-${CURRENT_CONGRESS}`;
+      let counts = {};
+      try { counts = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { counts = {}; }
+      const todo = petitions.filter((p) => p.id && !(counts[p.id] && counts[p.id].count >= DP.NEEDED));
+      let changed = false;
+      for (let i = 0; i < todo.length; i += 6) {
+        await Promise.all(todo.slice(i, i + 6).map(async (p) => {
+          try {
+            const sig = DP.parseSignatures(await fetchSource(`https://clerk.house.gov/DischargePetition/${p.id}`, `petition ${p.number}`, { timeout: 30_000 }));
+            if (sig) { counts[p.id] = { count: sig.count, last: sig.last }; changed = true; }
+          } catch (e) { console.warn(`[house-floor] discharge petition ${p.number}: ${e.message}`); }
+        }));
+      }
+      if (changed && env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(counts), { expirationTtl: KV_STORAGE_TTL }); } catch { /* counted again next time */ } }
+      return new Response(JSON.stringify({
+        at: Date.now(), congress: CURRENT_CONGRESS, needed: DP.NEEDED, total: first.total,
+        petitions: petitions.map((p) => ({ ...p, signatures: counts[p.id] ? counts[p.id].count : null, lastSigned: counts[p.id] ? counts[p.id].last : null })),
+      }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' } });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6119,6 +6195,10 @@ async function handleRequest(request, env) {
     return await handleWhipSource(env);
   } else if (path === '/api/house-rolls' && request.method === 'GET') {
     return await handleHouseRolls(request, env);
+  } else if (path === '/api/committee-meetings' && request.method === 'GET') {
+    return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/discharge-petitions' && request.method === 'GET') {
+    return await handleDischargePetitions(env);
   } else if (path === '/api/bill-source' && request.method === 'GET') {
     return await handleBillSource(request, env);
   } else if (path === '/api/bills-source' && request.method === 'GET') {

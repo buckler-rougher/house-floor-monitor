@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261009q">
+    <link rel="stylesheet" href="styles.house.css?v=20261009s">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1641,6 +1641,30 @@
                 </div>
             </div>
 
+        <!-- Committee Meetings: the day's hearings and markups from the Clerk's Committee Repository (renderCommitteeMeetings) -->
+        <div class="proceedings-panel committee-panel" id="committee-meetings">
+            <div class="panel-header">
+                <span class="panel-label">COMMITTEE MEETINGS</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a id="committee-source-link" href="https://docs.house.gov/Committee/Calendar/ByDay.aspx" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span>
+                    <span class="proceedings-time" id="committee-date"></span>
+                </div>
+            </div>
+            <div class="committee-list" id="committee-list"><div class="proceedings-error">LOADING</div></div>
+        </div>
+
+        <!-- Discharge Petitions: how close each open petition is to the signatures it needs (renderDischargePetitions) -->
+        <div class="proceedings-panel discharge-panel" id="discharge-petitions">
+            <div class="panel-header">
+                <span class="panel-label">DISCHARGE PETITIONS</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a href="https://clerk.house.gov/DischargePetition" target="_blank" rel="noopener">Discharge Petitions (House Clerk)</a></span>
+                    <span class="proceedings-time" id="discharge-summary"></span>
+                </div>
+            </div>
+            <div class="discharge-list" id="discharge-list"><div class="proceedings-error">LOADING</div></div>
+        </div>
+
 <!-- place scripts at end of body -->
 <!-- hls.js is 159KB from a third-party origin and only the video needs it.
      defer lets the rest of the document finish parsing first. All three of
@@ -1845,7 +1869,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261004a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261009r"></script>
+    <script defer src="app.js?v=20261009u"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
