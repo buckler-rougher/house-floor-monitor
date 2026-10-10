@@ -6472,8 +6472,8 @@ function openDischargeSigners(id, number, trigger) {
     document.getElementById('dp-modal-search').addEventListener('input', draw);
     document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
         const b = e.target.closest('[data-party]'); if (!b) return;
-        party = b.dataset.party;
-        document.querySelectorAll('#dp-modal-filters [data-party]').forEach((x) => x.classList.toggle('active', x === b));
+        party = Segmented.next('filter', party, b.dataset.party, '');   // a filter: the option on again goes back to All
+        document.querySelectorAll('#dp-modal-filters [data-party]').forEach((x) => x.classList.toggle('active', x.dataset.party === party));
         draw();
     });
     fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`)
@@ -6495,7 +6495,7 @@ document.addEventListener('click', (e) => {
     if (t.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
     if (t.id === 'dp-done-toggle') { _dischargeDoneAll = !_dischargeDoneAll; renderDischargePetitions(); }
     const sortBtn = t.closest('[data-dp-sort]');
-    if (sortBtn && sortBtn.dataset.dpSort !== _dischargeSort) { _dischargeSort = sortBtn.dataset.dpSort; _dischargeAll = false; _dischargeDoneAll = false; renderDischargePetitions(); }
+    if (sortBtn) { const next = Segmented.next('sort', _dischargeSort, sortBtn.dataset.dpSort); if (next !== _dischargeSort) { _dischargeSort = next; _dischargeAll = false; _dischargeDoneAll = false; renderDischargePetitions(); } }
     const sig = t.closest('[data-dp-signers]');
     if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });
@@ -9320,7 +9320,7 @@ function init() {
         // Party filter buttons (All / D / R / Bipartisan)
         const amdtFilterBtn = e.target.closest('.amdt-filter-btn');
         if (amdtFilterBtn) {
-            amendmentsPartyFilter = amdtFilterBtn.dataset.filter;
+            amendmentsPartyFilter = Segmented.next('filter', amendmentsPartyFilter, amdtFilterBtn.dataset.filter);   // the option on again goes back to All
             if (amendmentsPartyFilter === 'all') amendmentsMemberFilter = null; // "All" resets member filter too
             document.querySelectorAll('.amdt-filter-btn').forEach(b =>
                 b.classList.toggle('active', b.dataset.filter === amendmentsPartyFilter));
