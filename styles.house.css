@@ -4829,7 +4829,7 @@ font-family: var(--font-mono);
 .info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible {
     opacity: 1; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); outline: none;
 }
-.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close { position: absolute; top: 10px; right: 12px; }
+.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close { position: absolute; top: 10px; right: 12px; z-index: 20; }
 .info-popup-title {
     font-family: var(--font-mono);
     font-size: var(--fs-md);
@@ -5537,7 +5537,7 @@ font-family: var(--font-mono);
     border-radius: var(--radius-12);
     max-width: 720px;
     width: 100%;
-    max-height: 85vh;
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -5562,9 +5562,9 @@ font-family: var(--font-mono);
 }
 
 .bill-modal-body {
-    flex: 1 0 auto;
 
-    min-height: min(18rem, 50vh);
+    flex: 0 1 auto;
+    min-height: 7rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -5580,14 +5580,15 @@ font-family: var(--font-mono);
 .bill-modal-summary-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    max-height: 28rem;
     overflow-y: auto;
     overscroll-behavior: contain;
 }
 
 .bill-modal-foot {
+    flex: none;
     padding: var(--sp-14) var(--sp-24) var(--sp-20);
 }
+.bill-modal-sections { flex: none; }
 
 .bill-modal-header {
     display: flex;
