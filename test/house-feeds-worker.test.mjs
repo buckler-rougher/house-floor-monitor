@@ -23,8 +23,16 @@ const listPage = (nums, page) => `<nav class="library-pagination_v0"><div>1 - 10
 const sigPage = (n) => `<tbody id="member-signatures">${Array.from({ length: SIGNERS[n] }, (_, i) => `<tr><td data-label="No.">${i + 1}.</td><td><span style="display:none;">11/${String(1 + (i % 28)).padStart(2, '0')}/2025 00:00:00</span></td></tr>`).join('')}</tbody>`;
 
 let fetched = [];
+let calendarDown = false;
 globalThis.fetch = async (u) => {
   u = String(u); fetched.push(u);
+  const cal = u.match(/CCAL-119hcal-(\d{4}-\d\d-\d\d)-pt(\d)\.htm/);
+  if (cal) {
+    // the House Calendars: every day answers with the 16 September page (legislative day 123) but 15 September (122); part 6 is the discharge calendar
+    if (calendarDown) return new Response('<html>Not a calendar</html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+    const body = cal[2] === '6' ? read('discharge-calendar-one.htm') : read(cal[1] === '2026-09-15' ? 'house-calendar/2026-09-15.htm' : 'house-calendar/2026-09-16.htm');
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
+  }
   const day = u.match(/ByDay\.aspx\?DayID=(\d{8})/);
   if (day) return new Response(day[1] === '09162026' ? dayPage : day[1] === '09172026' ? '<html>Service unavailable</html>' : emptyPage, { status: 200 });
   if (u.includes('/DischargePetition/DischargePetitions')) {
@@ -108,6 +116,21 @@ await ok('the signers of one petition: every row of its page, with party, seat a
   assert.strictEqual(r.body.signers[0].n, 1);
   assert.strictEqual((await get('discharge-petition?id=abc')).status, 400);
   assert.strictEqual((await get('discharge-petition')).status, 400);
+});
+
+await ok('the discharge calendar: the newest sitting day\'s legislative day, and how many days each pending motion has waited', async () => {
+  const r = await get('discharge-calendar');
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.legislativeDay, 123);
+  assert.deepStrictEqual(r.body.pending.map((m) => [m.number, m.entered, m.enteredLegislativeDay, m.elapsed]), [[22, '2026-09-15', 122, 1]]);
+  assert.ok(r.body.table.includes('H. Res. 1247'));
+});
+
+await ok('no calendar to be found is an error, not "nothing pending"', async () => {
+  calendarDown = true; store.clear();   // the answer above is cached, in memory too: ask after it has expired
+  const real = Date.now;
+  Date.now = () => real() + 30 * 60 * 1000;
+  try { assert.strictEqual((await get('discharge-calendar')).status, 502); } finally { calendarDown = false; Date.now = real; }
 });
 
 console.log(`\n${n} passed`);

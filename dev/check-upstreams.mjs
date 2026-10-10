@@ -35,6 +35,7 @@ const SenateDesks = require(join(ROOT, 'lib/senate-desks.js'));
 const HouseCalendar = require(join(ROOT, 'lib/house-calendar.js'));
 const CommitteeMeetings = require(join(ROOT, 'lib/committee-meetings.js'));
 const DischargePetitions = require(join(ROOT, 'lib/discharge-petitions.js'));
+const DischargeCalendar = require(join(ROOT, 'lib/discharge-calendar.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -102,6 +103,12 @@ const CHECKS = [
     const unread = j.petitions.filter((p) => p.id && p.signatures == null).length;
     return unread ? { warn: `${unread} petition page(s) not read (no signature count)` } : null;
   }),
+  // legislative days each motion on the Discharge Calendar has waited (GPO's House Calendars); a pending motion with no count means its entry day's Calendar was not found
+  worker('house', 'discharge-calendar', (j) => {
+    if (!(j.legislativeDay > 0) || !Array.isArray(j.pending)) return { fail: 'no legislative day or pending list' };
+    const unread = j.pending.filter((m) => m.elapsed == null).length;
+    return unread ? { warn: `${unread} pending motion(s) with no legislative-day count` } : null;
+  }),
   worker('house', 'airport-delays', (j) => has((j.xmlData || '').includes('AIRPORT_STATUS_INFORMATION'), 'not the FAA feed')),
 
   // ---- the deployed Worker, Senate ----
@@ -144,6 +151,8 @@ const CHECKS = [
   // The pages those two feeds are read from, with the same parsers the Worker uses. A change to the Clerk's markup fails here, not as a panel that says nothing.
   direct('docs.house.gov committee calendar (today)', `https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${todayEt.replace(/\//g, '')}`, (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` }
     : CommitteeMeetings.parseDay(r.text) ? null : { fail: 'no meetings table: the page has changed (lib/committee-meetings.js)' }),
+  direct('GPO discharge calendar (part 6, today)', `https://www.govinfo.gov/content/pkg/CCAL-${congress}hcal-${todayEt.replace(/(\d\d)\/(\d\d)\/(\d{4})/, '$3-$1-$2')}/html/CCAL-${congress}hcal-${todayEt.replace(/(\d\d)\/(\d\d)\/(\d{4})/, '$3-$1-$2')}-pt6.htm`, (r) => r.status !== 200 ? { warn: `HTTP ${r.status} (no Calendar on a day the House does not sit)` }
+    : DischargeCalendar.parse(r.text) ? null : { warn: 'not the calendar (a day with no package, or the page has changed: lib/discharge-calendar.js)' }),
   direct('clerk discharge petition list', `https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${congress}`, (r) => {
     if (r.status !== 200) return { fail: `HTTP ${r.status}` };
     const l = DischargePetitions.parseList(r.text);

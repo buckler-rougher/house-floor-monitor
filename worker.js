@@ -20,6 +20,7 @@ import './lib/senate-agenda.js';
 import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/discharge-petitions.js';
+import './lib/discharge-calendar.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -4113,6 +4114,54 @@ async function handleDischargePetition(env, id) {
   });
 }
 
+// The Calendar of Motions to Discharge Committees and how many legislative days each motion has been on it, from the House Calendars (GPO). The legislative
+// day is the number on the Calendar's front page for a sitting day (lib/house-calendar.js), so the days a motion has waited are the difference between the
+// newest published day's number and the number on the day the motion was entered. A motion on the calendar for seven legislative days can be announced by a
+// signer (Rule XV clause 2(c)(1)). Its OWN request, not part of /api/discharge-petitions, so that route's subrequests stay under the limit.
+async function houseCalendarPage(date, part) {
+  const pkg = `CCAL-${CURRENT_CONGRESS}hcal-${date}`;
+  const url = `https://www.govinfo.gov/content/pkg/${pkg}/html/${pkg}-pt${part}.htm`;
+  const r = await fetch(url, { headers: BOT_HEADERS, signal: AbortSignal.timeout(12_000) });
+  if (r.status >= 500) throw new Error(`house calendar: HTTP ${r.status}`);
+  // a day with no package answers with an HTML error page, so only a page that parses is a calendar
+  return r.ok && /html/i.test(r.headers.get('Content-Type') || '') ? await r.text() : null;
+}
+async function handleDischargeCalendar(env) {
+  const ymd = getTodayDateET();
+  return kvCache(env, `discharge-calendar-v1-${ymd}`, 900, async () => {
+    try {
+      // the newest sitting day with a published Calendar, looking back up to a week from today
+      let latest = null;
+      for (let back = 0; back < 8 && !latest; back++) {
+        const d = new Date(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8) - back));
+        const date = d.toISOString().slice(0, 10);
+        const page = await houseCalendarPage(date, 0);
+        const cal = page && globalThis.HouseCalendar.parse(page);
+        if (cal) latest = { date, legislativeDay: cal.legislativeDay };
+      }
+      if (!latest) throw new Error('no House Calendar found for the last week');
+      const part6 = await houseCalendarPage(latest.date, 6);
+      const pending = globalThis.DischargeCalendar.parse(part6);
+      if (!pending) throw new Error('the Discharge Calendar page was not the calendar (has it changed?)');
+      const days = {};
+      for (const date of [...new Set(pending.map((m) => m.entered))].slice(0, 4)) {
+        if (date === latest.date) { days[date] = latest.legislativeDay; continue; }
+        const page = await houseCalendarPage(date, 0);
+        const parsed = page && globalThis.HouseCalendar.parse(page);
+        days[date] = parsed ? parsed.legislativeDay : null;
+      }
+      return new Response(JSON.stringify({
+        at: Date.now(), date: latest.date, legislativeDay: latest.legislativeDay,
+        pending: pending.map((m) => ({ ...m, enteredLegislativeDay: days[m.entered] ?? null, elapsed: days[m.entered] != null ? latest.legislativeDay - days[m.entered] : null })),
+        table: globalThis.DischargeCalendar.table(part6),
+        source: `https://www.govinfo.gov/content/pkg/CCAL-${CURRENT_CONGRESS}hcal-${latest.date}/html/CCAL-${CURRENT_CONGRESS}hcal-${latest.date}-pt6.htm`,
+      }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' } });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6237,6 +6286,8 @@ async function handleRequest(request, env) {
     return await handleHouseRolls(request, env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
+    return await handleDischargeCalendar(env);
   } else if (path === '/api/discharge-petition' && request.method === 'GET') {
     return await handleDischargePetition(env, url.searchParams.get('id'));
   } else if (path === '/api/discharge-petitions' && request.method === 'GET') {
