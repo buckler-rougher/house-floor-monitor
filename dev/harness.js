@@ -176,6 +176,7 @@
     '/api/hls-url':                     'hls-url.json',
     '/api/bill-source':                 'bill-source.json',
     '/api/status':                      'status.json',
+    '/api/house-rolls':                 'house-rolls.json',
     '/api/bills-source':                'bills-source.json',
     '/api/voting-days-source':          'voting-days-source.json',
     '/api/whip-source':                 'whip-source.json',
