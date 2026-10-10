@@ -6459,7 +6459,7 @@ document.addEventListener('click', (e) => {
     if (t.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
     if (t.id === 'dp-done-toggle') { _dischargeDoneAll = !_dischargeDoneAll; renderDischargePetitions(); }
     const sortBtn = t.closest('[data-dp-sort]');
-    if (sortBtn) { _dischargeSort = sortBtn.dataset.dpSort; renderDischargePetitions(); }
+    if (sortBtn && sortBtn.dataset.dpSort !== _dischargeSort) { _dischargeSort = sortBtn.dataset.dpSort; _dischargeAll = false; _dischargeDoneAll = false; renderDischargePetitions(); }
     const sig = t.closest('[data-dp-signers]');
     if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });
