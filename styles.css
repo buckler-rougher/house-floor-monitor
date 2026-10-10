@@ -10802,7 +10802,8 @@ body.all-mode .floor-grid-panel {
     .panel-header > .majority-badge,
     .panel-header .calendar-desktop-nav,
     .panel-header .vrec-open-btn,
-    .panel-header .bills-sort-switcher {
+    .panel-header .bills-sort-switcher,
+    .panel-header #approps-summary {
         position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content;
     }
 }
