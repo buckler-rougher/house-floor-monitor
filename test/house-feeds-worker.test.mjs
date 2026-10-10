@@ -33,6 +33,18 @@ globalThis.fetch = async (u) => {
     const body = cal[2] === '6' ? read('discharge-calendar-one.htm') : read(cal[1] === '2026-09-15' ? 'house-calendar/2026-09-15.htm' : 'house-calendar/2026-09-16.htm');
     return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' } });
   }
+  const ap = u.match(/api\.congress\.gov\/v3\/bill\/119\/hr\/(\d+)(\/actions)?\?/);
+  if (ap) {
+    // the twelve appropriations bills: 8646 passed the House, 8845 only reported, 9495 is unknown to Congress.gov, the rest are introduced
+    const n = ap[1];
+    if (n === '9495') return new Response('{}', { status: 404 });
+    if (ap[2]) {
+      const acts = n === '8646' ? [{ actionDate: '2026-06-08', type: 'Floor', text: 'Passed/agreed to in House: On passage Passed by the Yeas and Nays: 215 - 210 (Roll no. 301).' }, { actionDate: '2026-05-20', type: 'Committee', text: 'Reported (Amended) by the Committee on Appropriations. H. Rept. 119-1.' }]
+        : n === '8845' ? [{ actionDate: '2026-05-15', type: 'Committee', text: 'Reported by the Committee on Appropriations. H. Rept. 119-2.' }] : [{ actionDate: '2026-05-01', type: 'IntroReferral', text: 'Introduced in House' }];
+      return new Response(JSON.stringify({ actions: acts }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ bill: { title: `Appropriations Act ${n}`, latestAction: { actionDate: '2026-06-08', text: n === '8646' ? 'Received in the Senate.' : 'Placed on the Union Calendar' }, laws: [] } }), { status: 200 });
+  }
   const ev = u.match(/ByEvent\.aspx\?EventID=(\d+)/);
   if (ev) return new Response(ev[1] === '119559' ? read('committee-event-hearing.html') : '<html>Service unavailable</html>', { status: 200 });
   const day = u.match(/ByDay\.aspx\?DayID=(\d{8})/);
@@ -142,6 +154,19 @@ await ok('a meeting\'s own page: its witnesses; a page that is not a meeting is 
   assert.strictEqual(r.body.url, 'https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=119559');
   assert.strictEqual((await get('committee-event?id=119999')).status, 502);
   assert.strictEqual((await get('committee-event?id=abc')).status, 400);
+});
+
+await ok('appropriations: the twelve bills with their stage; a bill Congress.gov does not know is listed, not dropped', async () => {
+  const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/appropriations'), { ...env, CONGRESS_API_KEY: 'test' });
+  const b = await r.json();
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(b.bills.length, 12);
+  assert.strictEqual(b.fiscalYear, 2027);
+  const by = Object.fromEntries(b.bills.map((x) => [x.id, x]));
+  assert.deepStrictEqual([by['H.R. 8646'].stage, by['H.R. 8646'].housePassed, by['H.R. 8646'].latestAction], [2, '2026-06-08', 'Received in the Senate.']);
+  assert.strictEqual(by['H.R. 8845'].stage, 1);
+  assert.deepStrictEqual([by['H.R. 9495'].known, by['H.R. 9495'].stage, by['H.R. 9495'].latestAction], [false, 0, null]);
+  assert.strictEqual(by['H.R. 8646'].url, 'https://www.congress.gov/bill/119th-congress/house-bill/8646');
 });
 
 console.log(`\n${n} passed`);
