@@ -10087,6 +10087,15 @@ body.all-mode .floor-grid-panel {
         position: absolute; inset: 0; margin: auto; width: fit-content; height: fit-content;
     }
 }
+
+.cr-deadline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-6) var(--sp-12); padding: var(--sp-10) var(--sp-32); border-bottom: 1px solid var(--border-color); background: rgba(13, 17, 23, 0.28); }
+.cr-deadline[hidden] { display: none; }
+.cr-badge { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent); padding: 2px 8px; border-radius: var(--radius-full); cursor: help; }
+.cr-through { font-size: var(--fs-md); color: var(--text-secondary); }
+.cr-count { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-base); font-weight: 700; color: var(--text-primary); }
+.cr-count.is-soon { color: var(--accent-amber); }
+.cr-count.is-urgent { color: var(--accent-red); }
+@media (max-width: 768px) { .cr-deadline { padding-left: var(--sp-16); padding-right: var(--sp-16); } }
 }
 
 .main-display > * {
