@@ -5703,6 +5703,10 @@ font-family: var(--font-mono);
 .bill-modal-action-text {
     flex: 1;
     min-width: 0;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .bill-modal-date {
