@@ -7309,6 +7309,9 @@ body.debate-mode .debate-section {
     color: var(--text-muted);
     text-transform: uppercase;
 }
+/* The schedule is a plan, not a view of the floor: when the panel is drawn from the day's schedule post (senate.js planDebate) it says
+   so instead of HAPPENING NOW, and its tag names what the post says is going to happen to the measure. */
+.debate-section.is-planned .debate-tags-row::before { content: "ON THE FLOOR TODAY"; }
 .debate-source {
     margin-left: auto;
     font-size: var(--fs-2xs);

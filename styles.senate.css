@@ -4631,6 +4631,7 @@ font-family: var(--font-mono);
     color: var(--text-muted);
     text-transform: uppercase;
 }
+  .debate-section.is-planned .debate-tags-row::before { content: "ON THE FLOOR TODAY"; }
   .debate-source {
     margin-left: auto;
     font-size: var(--fs-2xs);

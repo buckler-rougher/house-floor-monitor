@@ -1929,10 +1929,16 @@ SenateQuorum.init({ photoUrlFor });
   let _debateBill = null;
   function paintDebate(cur) {
     const id = cur.bill || '';
+    const planned = cur.source === 'schedule';
+    document.getElementById('debate-section')?.classList.toggle('is-planned', planned);
+    // From the schedule, the tag says what the post says will happen, not that the Senate is debating it.
+    setText('debate-tag-text', planned ? ({ 'taken-up': 'CONSIDERATION', cloture: 'CLOTURE VOTE', vote: 'MOTION TO PROCEED' }[cur.role] || 'DEBATE') : 'DEBATE');
     const lenTag = document.getElementById('debate-length-tag');
     setText('debate-length-text', 'SCHEDULED');
     if (lenTag) lenTag.style.display = cur.source === 'schedule' ? '' : 'none';
-    setText('debate-time', cur.since ? time(cur.since) : '');
+    // a scheduled time is the post's own ("At 11:30am ..."), approximate, and shown as such
+    const at = cur.at != null ? new Date(Date.UTC(2000, 0, 1, Math.floor(cur.at / 60), cur.at % 60)).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) : '';
+    setText('debate-time', cur.since ? time(cur.since) : (at ? `AROUND ${at}` : ''));
     const src = document.getElementById('debate-source-link');
     if (id === _debateBill) return;
     _debateBill = id;
@@ -2011,7 +2017,7 @@ SenateQuorum.init({ photoUrlFor });
     const hit = post && SenateAgenda.onFloor(post, { minutes: now.minutes, done: disposedToday(now) });
     if (!hit) return null;
     return { mode: 'debate', bill: hit.measure.replace(/^(H\.R\.|S\.J\.Res\.|H\.J\.Res\.|S\.Con\.Res\.|H\.Con\.Res\.|S\.Res\.|H\.Res\.|S\.)(\d+)$/, '$1 $2'),
-      title: hit.title || '', source: 'schedule', since: null };
+      title: hit.title || '', source: 'schedule', role: hit.role, at: hit.at, since: null };
   }
 
   const apply = () => {
