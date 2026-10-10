@@ -6386,14 +6386,22 @@ function renderDischargePetitions() {
         block.innerHTML = '<div class="dp-group-head" id="dp-done-head"></div>';
         const doneRegion = document.createElement('div'); doneRegion.className = 'dp-region'; doneRegion.id = 'dp-done';
         block.append(doneRegion);
+        const openBlock = document.createElement('div');
+        openBlock.id = 'dp-open-block';
+        openBlock.innerHTML = '<div class="dp-group-head" id="dp-open-head" hidden></div>';
         const openRegion = document.createElement('div'); openRegion.className = 'dp-region'; openRegion.id = 'dp-open';
-        list.append(block, openRegion);
+        openBlock.append(openRegion);
+        list.append(block, openBlock);
         list._dp = { block, doneRegion, openRegion, doneClamp: ClampList.mount(doneRegion, { keep: DISCHARGE_DONE_SHOWN }), openClamp: ClampList.mount(openRegion, { keep: () => (_dischargeSort === 'close' ? DISCHARGE_SHOWN : DISCHARGE_MIXED_SHOWN) }) };
     }
     const dp = list._dp;
     const grouped = _dischargeSort === 'close' && done.length > 0;
     dp.block.hidden = !grouped;
     document.getElementById('dp-done-head').textContent = `Reached ${need}`;
+    // when the ones at 218 have their own label, the rest has one too (the other sorts are one list and have none)
+    const openHead = document.getElementById('dp-open-head');
+    openHead.hidden = !grouped;
+    openHead.textContent = `Open \u00b7 ${open.length}`;
     ListSync.sync(dp.doneRegion, grouped ? done.map(card) : []);
     const rest = grouped ? open : dischargeSorted(all);
     ListSync.sync(dp.openRegion, rest.length ? rest.map(card) : [{ key: 'none', html: '<div class="empty-note">No open petitions</div>' }]);
