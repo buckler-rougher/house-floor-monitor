@@ -4819,6 +4819,7 @@ function openBillModal(billId) {
                     <span class="bill-modal-id">${bill.id}</span>
                     <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
                     <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
+                    ${bill.policyArea ? `<span class="bill-modal-badge">${escapeHtml(bill.policyArea)}</span>` : ''}
                     ${modalRuleTagHtml}
                     ${whipRecTagHtml(bill.id)}
                 </div>

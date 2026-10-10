@@ -1183,6 +1183,7 @@ async function fetchBillMeta(billId, env) {
         result.ruleUrl = rule ? rule.url : null;
         result.ruleTitle = rule ? `${rule.agency ? rule.agency + ', ' : ''}${rule.date}: ${rule.title}` : null;
       } catch { /* asked again next time */ }
+      result.policyArea = data.bill?.policyArea?.name || null;   // Congress.gov's primary subject, the badge by the bill's number in the modal
       const cbo = latestCboEstimate(data.bill);
       result.cboCostEstimateUrl = cbo.url;
       result.cboCostEstimateTitle = cbo.title;
@@ -1337,14 +1338,18 @@ const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, schedu
 // kvCache below.
 const _kvInflight = new Map();
 
-async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
+// opts.ttlOf(body) -> seconds: how long THIS body stays fresh, when that depends on what it says (a bill that has not moved in a month can be kept a week, one that
+// moved yesterday a few hours); never longer than ttlSeconds / kvFreshTtl. opts.browserSeconds: the Cache-Control max-age, when it should not be the whole ttl.
+async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts = {}) {
   const ttlMs = ttlSeconds * 1000;
   const kvFreshMs = kvFreshTtl * 1000;
   const now = Date.now();
+  const maxAge = opts.browserSeconds ?? ttlSeconds;
+  const freshFor = (body, maxMs) => { try { const s = opts.ttlOf ? opts.ttlOf(body) : null; return s > 0 ? Math.min(maxMs, s * 1000) : maxMs; } catch { return maxMs; } };
 
   // 1. In-memory (zero I/O, shared within this isolate)
   const mem = _mGet(key);
-  if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+  if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` } });
 
   // 2. KV — skip if kvFreshTtl=0
   let prevBody = null;
@@ -1362,10 +1367,11 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
           }
         } catch {}
         prevBody = body; // saved for post-fetch comparison
-        if (age < kvFreshMs) {
+        const freshMs = freshFor(body, kvFreshMs);
+        if (age < freshMs) {
           // Still fresh per KV freshness window — serve, warm in-memory
-          _mSet(key, body, Math.min(ttlMs, kvFreshMs - age));
-          return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${ttlSeconds}` } });
+          _mSet(key, body, Math.min(ttlMs, freshMs - age));
+          return new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` } });
         }
         // Stale by KV window — fall through to origin; prevBody held for comparison
       }
@@ -1401,7 +1407,7 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds) {
     try {
       const body = await response.clone().text();
       const noStore = response.headers.get(KV_NO_STORE_HEADER) === '1';
-      if (!noStore) _mSet(key, body, ttlMs);   // a degraded answer is not kept in this isolate's memory either
+      if (!noStore) _mSet(key, body, freshFor(body, ttlMs));   // a degraded answer is not kept in this isolate's memory either
       if (noStore) console.warn(`[house-floor] kvCache: not persisting degraded payload for key=${key}`);
       if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
         // Write only if content changed — stable data may never write again after first fetch
@@ -2184,7 +2190,7 @@ async function _fetchBills(request, env) {
         // support (key absent entirely — null means "checked, no report").
         // Also when the cosponsors list may have been cut at the old limit of 100 (exactly 100 and not marked complete): only
         // the few bills that large are read again, not every cached bill.
-        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta) || !('textVersionUrl' in enrichCached.meta) || !('ruleUrl' in enrichCached.meta)
+        const needsMeta               = !enrichCached.meta || !('committeeReportUrl' in enrichCached.meta) || !('cboCostEstimateUrl' in enrichCached.meta) || !('textVersionUrl' in enrichCached.meta) || !('ruleUrl' in enrichCached.meta) || !('policyArea' in enrichCached.meta)
                                         || (enrichCached.meta.cosponsors?.length >= 100 && !enrichCached.meta.cosponsorsComplete);
         const needsCommitteeReport    = !('committeeReport' in (enrichCached.congressStatus || {}));
         const needsStatusVerify       = TERMINAL_STATUSES.has(enrichCached.congressStatus?.status);
@@ -2270,6 +2276,7 @@ async function _fetchBills(request, env) {
         if (meta.committeeReportUrl) bill.committeeReportUrl = meta.committeeReportUrl;
         if (meta.committeeReportCitation) bill.committeeReportCitation = meta.committeeReportCitation;
         if (meta.ruleUrl) { bill.ruleUrl = meta.ruleUrl; bill.ruleTitle = meta.ruleTitle; }
+        if (meta.policyArea) bill.policyArea = meta.policyArea;
         if (meta.textVersionUrl) { bill.textVersionUrl = meta.textVersionUrl; bill.textVersionType = meta.textVersionType; bill.textVersionDate = meta.textVersionDate; }
         if (meta.cboCostEstimateUrl) { bill.cboCostEstimateUrl = meta.cboCostEstimateUrl; bill.cboCostEstimateTitle = meta.cboCostEstimateTitle; }
       }
@@ -3163,7 +3170,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v7`, 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v7`, 7 * 86_400, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     // One retry: Congress.gov is sometimes slow from the edge (a request that timed out at nine seconds took one to two the next time).
@@ -3288,7 +3295,7 @@ async function handleSenateBill(env, billId) {
       // a section that could not be read: served, but not kept (KV or the browser), so the next opening reads it again
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': degraded ? 'no-store' : 'public, max-age=3600', ...(degraded ? { [KV_NO_STORE_HEADER]: '1' } : {}) },
     });
-  });
+  }, 7 * 86_400, { ttlOf: (body) => globalThis.CongressBills.cacheSeconds(JSON.parse(body).latestActionDate), browserSeconds: 3600 });
 }
 
 async function handleSenateFloorSchedule(env) {
