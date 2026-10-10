@@ -12323,6 +12323,18 @@ body.recess-mode .today-house.has-data { display: block; }
 .committee-title { color: var(--text-primary); font-size: var(--fs-md); line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
 .committee-title:hover { text-decoration: underline; }
 .committee-name { font-size: var(--fs-sm); color: var(--text-muted); }
+.committee-more { justify-self: start; margin-top: var(--sp-4); padding: 0; background: none; border: none; font: inherit; font-size: var(--fs-sm); color: var(--accent-blue); cursor: pointer; }
+.committee-more:hover { text-decoration: underline; }
+.committee-detail { grid-column: 2 / -1; display: grid; gap: var(--sp-6); padding-top: var(--sp-4); }
+.committee-detail-head { margin-top: var(--sp-6); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+.committee-detail-note { font-size: var(--fs-sm); color: var(--text-muted); }
+.committee-witness { display: grid; gap: var(--sp-2); }
+.committee-witness-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); }
+.committee-witness-role { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
+.committee-docs { display: flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-12); font-size: var(--fs-sm); }
+.committee-docs a, .committee-docs-list a { color: var(--accent-blue); text-decoration: none; overflow-wrap: anywhere; }
+.committee-docs a:hover, .committee-docs-list a:hover { text-decoration: underline; }
+.committee-docs-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-4); font-size: var(--fs-md); color: var(--text-primary); }
 .committee-room { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-secondary); white-space: nowrap; }
 @media (max-width: 640px) {
     .committee-list { padding: var(--sp-8) var(--sp-16) var(--sp-12); }
