@@ -3917,38 +3917,6 @@ body.tellers-mode .tellers-column { display: flex; }
 }
 
 /* Absentee sort toggle */
-.absentee-filter-switcher {
-    display: flex;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    padding: var(--sp-2);
-    gap: 1px;
-}
-.absentee-filter-btn {
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    font-family: var(--font-mono);
-    letter-spacing: var(--track-wide);
-    text-transform: uppercase;
-    color: var(--text-muted);
-    background: none;
-    border: none;
-    border-radius: var(--radius-3);
-    padding: 3px 9px;
-    cursor: pointer;
-    transition: color var(--dur-150) ease, background var(--dur-150) ease;
-    line-height: 1.2;
-    white-space: nowrap;
-}
-.absentee-filter-btn:hover:not(.active) {
-    color: var(--text-secondary);
-    background: rgba(255, 255, 255, 0.04);
-}
-.absentee-filter-btn.active {
-    color: var(--accent-blue);
-    background: rgba(88, 166, 255, 0.12);
-}
 .twitter-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -10410,8 +10378,7 @@ h1.brand-text {
        .bills-sort-switcher groups and must stay visually small; inflating them
        to 36px makes the whole widget unreasonably tall on mobile. */
     .whip-filter-btn,
-    .vrec-open-btn,
-    .absentee-filter-btn {
+    .vrec-open-btn {
         min-height: 36px;
         padding-top: var(--sp-8);
         padding-bottom: var(--sp-8);
