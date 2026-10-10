@@ -6149,7 +6149,7 @@ function renderCommitteeMeetings() {
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
     if (!d.events.length) {
-        setIfChanged(list, '<div class="proceedings-error">NO COMMITTEE MEETINGS ARE SCHEDULED IN THE NEXT WEEK</div>');
+        setIfChanged(list, '<div class="dp-empty">No committee meetings scheduled in the next week</div>');
     } else {
         const shown = _committeeAll ? d.events : d.events.slice(0, COMMITTEE_SHOWN);
         const rest = d.events.length - shown.length;
