@@ -5892,6 +5892,7 @@ font-family: var(--font-mono);
   .cr-through { font-size: var(--fs-base); color: var(--text-secondary); }
   .cr-through b { font-weight: 600; color: var(--text-primary); }
   .cr-law { display: flex; align-items: baseline; gap: var(--sp-8); min-width: 0; font-size: var(--fs-sm); color: var(--text-muted); }
+  .cr-pl { font-family: var(--font-mono); font-weight: 600; color: var(--text-secondary); flex: none; }
   .cr-law-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .cr-clock { flex: none; display: flex; align-items: baseline; gap: var(--sp-6); color: var(--text-primary); }
   .cr-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-6xl); font-weight: 700; line-height: 1; }
