@@ -1,0 +1,71 @@
+{
+ "at": 1791662219170,
+ "treaties": [
+  {
+   "id": "Treaty Doc. 119-2",
+   "congress": 119,
+   "number": 2,
+   "title": "Tax Convention with Croatia and Protocol Amending the Tax Convention with Croatia",
+   "topic": "Taxation",
+   "parties": [
+    "Croatia"
+   ],
+   "received": "2026-09-14",
+   "latest": {
+    "date": "2026-09-14",
+    "text": "Received in the Senate and referred to the Committee on Foreign Relations by unanimous consent removing the injunction of secrecy.",
+    "committee": "Foreign Relations Committee"
+   },
+   "pending": true
+  },
+  {
+   "id": "Treaty Doc. 119-1",
+   "congress": 119,
+   "number": 1,
+   "title": "Treaty with the United Arab Emirates on Mutual Legal Assistance in Criminal Matters",
+   "topic": "Mutual Legal Assistance",
+   "parties": [
+    "United Arab Emirates"
+   ],
+   "received": "2025-01-14",
+   "latest": {
+    "date": "2025-01-14",
+    "text": "Received in the Senate and referred to the Committee on Foreign Relations by unanimous consent removing the injunction of secrecy.",
+    "committee": "Foreign Relations Committee"
+   },
+   "pending": true
+  },
+  {
+   "id": "Treaty Doc. 118-2",
+   "congress": 118,
+   "number": 2,
+   "title": "Agreement Under the United Nations Convention on the Law of the Sea on the Conservation and Sustainable Use of Marine Biological Diversity of Areas Beyond National Jurisdiction",
+   "topic": "International Law and Organization",
+   "parties": [],
+   "received": "2024-12-18",
+   "latest": {
+    "date": "2024-12-18",
+    "text": "Received in the Senate and referred to the Committee on Foreign Relations by unanimous consent removing the injunction of secrecy.",
+    "committee": "Foreign Relations Committee"
+   },
+   "pending": true
+  },
+  {
+   "id": "Treaty Doc. 118-1",
+   "congress": 118,
+   "number": 1,
+   "title": "The Treaties with the Republic of Cuba and the Government of the United Mexican States on the Delimitation of Maritime Boundaries",
+   "topic": "Maritime Boundaries and Claims",
+   "parties": [
+    "Mexico"
+   ],
+   "received": "2023-12-18",
+   "latest": {
+    "date": "2023-12-18",
+    "text": "Received in the Senate and referred to the Committee on Foreign Relations by unanimous consent removing the injunction of secrecy.",
+    "committee": "Foreign Relations Committee"
+   },
+   "pending": true
+  }
+ ]
+}

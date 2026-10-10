@@ -19,6 +19,8 @@ import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
 import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
+import './lib/senate-committees.js';
+import './lib/senate-treaties.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
 import './lib/cra-rule.js';
@@ -4180,6 +4182,82 @@ async function handleCommitteeMeetings(request, env) {
   });
 }
 
+// The Senate's committee meetings, from Congress.gov's committee-meeting API (lib/senate-committees.js). The list holds only ids and update times, so the date,
+// committees, room and video come from each meeting's own record: those are read thirty a run, kept in KV (a meeting is read again only when its update time
+// moves) and the answer says how many are still to read (`pending`), so the board asks again until they are. Like the House panel it shows the first day from
+// today (Eastern) that has a meeting, up to a week ahead. Meetings from a month back are asked for, since one is scheduled some days to weeks before it is held.
+async function handleSenateCommitteeMeetings(env) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!_congressApiKey) return fail(503, 'committee meetings: no Congress.gov key configured');
+  return kvCache(env, `senate-committees-v1-${CURRENT_CONGRESS}`, 120, async () => {
+    const SC = globalThis.SenateCommittees;
+    const call = async (url) => {
+      const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+      if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
+      return r.ok ? r.json() : null;
+    };
+    try {
+      const key = `senate-committees-state-v1-${CURRENT_CONGRESS}`;
+      let st = {};
+      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+      const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 19) + 'Z';
+      const listed = [];
+      let next = `https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate?limit=250&fromDateTime=${since}`;
+      for (let page = 0; next && page < 3; page++) {
+        const json = await call(next.replace(/[?&](format|api_key)=[^&]*/g, ''));
+        if (!json) break;
+        listed.push(...(json.committeeMeetings || []));
+        next = json.pagination?.next || null;
+      }
+      const todo = listed.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate);
+      const batch = todo.slice(0, 30);
+      for (let i = 0; i < batch.length; i += 6) {
+        await Promise.all(batch.slice(i, i + 6).map(async (m) => {
+          try {
+            const rec = await call(`https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate/${m.eventId}`);
+            const e = SC.shape(rec?.committeeMeeting);
+            if (e) st[m.eventId] = { u: m.updateDate, e };
+          } catch { /* read again next run */ }
+        }));
+      }
+      // a meeting that has left the month's list is dropped; one in it stays even when it is past (a past one is read once, not every run)
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const live = new Set(listed.map((m) => String(m.eventId)));
+      for (const id of Object.keys(st)) if (!live.has(id)) delete st[id];
+      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      const found = SC.pick(Object.values(st).map((x) => x.e), today, 7);
+      const pending = Math.max(0, todo.length - batch.length) + batch.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate).length;
+      return new Response(JSON.stringify({ at: Date.now(), asked: today, date: found ? found.day : today, events: found ? found.events : [], pending }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${pending ? 10 : 120}` },
+      });
+    } catch (e) { return fail(502, e.message); }
+  }, 120, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
+}
+
+// The treaties before the Senate (lib/senate-treaties.js): those received in this Congress and the last, each with its actions, from Congress.gov's treaty API.
+async function handleSenateTreaties(env) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!_congressApiKey) return fail(503, 'treaties: no Congress.gov key configured');
+  return kvCache(env, `senate-treaties-v1-${CURRENT_CONGRESS}`, 3600, async () => {
+    const call = async (url) => {
+      const r = await fetch(`${url}${url.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+      if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
+      return r.ok ? r.json() : null;
+    };
+    try {
+      const lists = await Promise.all([CURRENT_CONGRESS, CURRENT_CONGRESS - 1].map((c) => call(`https://api.congress.gov/v3/treaty/${c}?limit=50`)));
+      if (lists.every((l) => !l)) throw new Error('the treaty list could not be read');
+      const items = lists.flatMap((l) => (l && l.treaties) || []).slice(0, 12);
+      const treaties = (await Promise.all(items.map(async (t) => {
+        const base = `https://api.congress.gov/v3/treaty/${t.congressReceived}/${t.number}${t.suffix || ''}`;
+        const [rec, acts] = await Promise.all([call(base), call(`${base}/actions`)]);
+        return globalThis.SenateTreaties.shape(rec?.treaty, acts?.actions);
+      }))).filter(Boolean).sort((a, b) => String(b.received).localeCompare(String(a.received)));
+      return new Response(JSON.stringify({ at: Date.now(), treaties }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' } });
+    } catch (e) { return fail(502, e.message); }
+  });
+}
+
 // The discharge petitions of the current Congress, from the Clerk (lib/discharge-petitions.js). The list has no signature counts: each is the number of
 // rows in its petition's own page (500 KB, nearly all of it script), so a petition that has reached the number is read once and kept (a petition does not
 // lose signatures), and only the open ones are read again, once the ten-minute cache has gone. All the counts are kept under ONE key, since every KV read
@@ -6571,6 +6649,10 @@ async function handleRequest(request, env) {
     return await handleHouseRolls(request, env);
   } else if (path === '/api/committee-event' && request.method === 'GET') {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
+  } else if (path === '/api/senate/committee-meetings' && request.method === 'GET') {
+    return await handleSenateCommitteeMeetings(env);
+  } else if (path === '/api/senate/treaties' && request.method === 'GET') {
+    return await handleSenateTreaties(env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
   } else if (path === '/api/appropriations-markups' && request.method === 'GET') {

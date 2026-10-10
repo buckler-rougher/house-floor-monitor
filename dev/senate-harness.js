@@ -77,7 +77,7 @@
     '/senate/roster': 'senate-roster', '/senate/schedule': 'senate-schedule',
     '/senate/seniority': 'senate-seniority', '/senate/stages': 'senate-stages',
     '/status': 'senate-status', '/senate/stages-source': 'senate-stages-source', '/senate/session-days-source': 'senate-session-days-source',
-    '/senate/desks': 'senate-desks', '/tweets': 'tweets', '/airport-delays': 'airport-delays',
+    '/senate/desks': 'senate-desks', '/senate/committee-meetings': 'senate-committee-meetings', '/senate/treaties': 'senate-treaties', '/tweets': 'tweets', '/airport-delays': 'airport-delays',
   };
   const json = (body, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   const realFetch = window.fetch.bind(window);

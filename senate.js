@@ -1712,6 +1712,8 @@ initAirportDelays();
 // a bill number in the appropriations panel opens its modal
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-bill-open]'); if (b) openSenateBillModal(b.dataset.billOpen, b); });
 AppropsPanel.mount({ base: API });
+SenateCommittees.mount({ base: API });
+SenateTreaties.mount({ base: API });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });
