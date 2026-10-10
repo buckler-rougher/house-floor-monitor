@@ -169,6 +169,7 @@ const CHECKS = [
     const s = DischargePetitions.parseSignatures(r.text);
     return s && s.count > 0 ? null : { fail: s ? 'a signature table with no signers' : 'no signature table: the page has changed (lib/discharge-petitions.js)' };
   }),
+  direct('CBO cost estimates feed', 'https://www.cbo.gov/publications/all/rss.xml', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : /<rss/.test(r.text) && /<item>/.test(r.text) ? null : { fail: 'not an RSS feed with items' }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
   direct('house docs BillsThisWeek RSS', 'https://docs.house.gov/BillsThisWeek-RSS.xml', (r) => r.status === 200 && /<rss|<feed/.test(r.text) ? null : { fail: `HTTP ${r.status}, not a feed` }),
   direct('house voting days (ics)', 'https://votingdays.house.gov/voting-days.ics', (r) => r.status === 200 && r.text.includes('BEGIN:VCALENDAR') ? null : { fail: `HTTP ${r.status}, not a calendar` }),

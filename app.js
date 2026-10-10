@@ -4836,6 +4836,8 @@ function openBillModal(billId) {
                     text: textUrl,
                     report: bill.committeeReportUrl,
                     reportTitle: bill.committeeReportCitation,
+                    cbo: bill.cboCostEstimateUrl,
+                    cboTitle: bill.cboCostEstimateTitle,
                     memo: bill.sapUrl,
                     // The (?) beside the memo button. Shown once its explanation exists; in ?fixtures so the
                     // button can be reviewed before then.
@@ -6883,6 +6885,7 @@ function updateDebateSection(items) {
             links: {
                 text: foundBill.textUrl || null,
                 report: foundBill.committeeReportUrl,
+                cbo: foundBill.cboCostEstimateUrl,
                 memo: foundBill.sapUrl,
                 congress: billIdToCongressUrl(foundBill.id),
             },

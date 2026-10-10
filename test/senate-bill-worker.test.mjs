@@ -51,6 +51,8 @@ await ok('a Senate bill: its committee is a Senate object, reported with no inve
   assert.strictEqual(b.committeeReportUrl, null, 'reported without a written report: no PDF to link');
   assert.strictEqual(b.sapUrl, null);
   assert.strictEqual(b.actionSource, 'congress');
+  assert.strictEqual(b.cboCostEstimateUrl, 'https://www.cbo.gov/publication/62630', 'the newest CBO estimate on the Congress.gov record');
+  assert.ok(b.cboCostEstimateTitle.startsWith('S. 4668, Protect College Sports Act of 2026 - As reported by the Senate Committee on Commerce'));
 });
 
 await ok('the existing fields are still there', async () => {
