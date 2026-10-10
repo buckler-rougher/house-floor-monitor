@@ -106,6 +106,8 @@ const CHECKS = [
   worker('senate', 'senate/treaties', (j) => (arr(j.treaties).length ? null : { warn: 'no treaties listed' })),
   // The funding line of the appropriations panel: the date in section 106 of this year's continuing resolution. A warning, not a failure: the panel just shows no line.
   worker('house', 'appropriations', (j) => (Array.isArray(j.bills) && j.bills.length ? (j.funding && /^\d{4}-\d\d-\d\d$/.test(j.funding.through) ? null : { warn: `no funding deadline read (${(j.discovery || {}).fundingError || 'no continuing resolution found for the year'})` }) : { fail: 'no appropriations bills' })),
+  // the minibus/omnibus read: the panel's fiscal year in the route's own answer; no packages is normal until one exists
+  worker('house', 'appropriations-packages?fy=2027', (j) => (Array.isArray(j.packages) ? null : { fail: 'no packages list' })),
   worker('house', 'discharge-petitions', (j) => {
     if (!arr(j.petitions).length || j.needed !== 218) return { fail: `${arr(j.petitions).length} petitions, needed ${j.needed}` };
     const unread = j.petitions.filter((p) => p.id && p.signatures == null).length;

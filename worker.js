@@ -4575,6 +4575,67 @@ async function handleApproMarkups(env, url) {
   });
 }
 
+// MINIBUSES AND OMNIBUSES: a regular bill's text is often enacted (or passed) inside another bill, which then never gets a law of its own number, so the panel
+// would show it stuck at committee for ever. This finds the packages for the fiscal year (enacted laws whose titles say appropriations, and recent House and Senate
+// bills that could be packages: lib/appropriations.js packageLike) and reads each one's latest text at govinfo for its division headings (Appropriations.divisions),
+// which name the subcommittees' bills it carries. A package's stage is its own (law, passed the Senate, passed the House). What was read is kept in KV by bill and
+// text version, so a text is read once; a bill with no text printed yet is not kept and is asked again. Its own route and budget: the appropriations route is
+// near the subrequest limit already. Checked against eleven enacted packages from the 116th to the 119th Congress (test/appropriations-packages.test.js).
+async function handleApproPackages(env, url) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const fy = /^\d{4}$/.test(url.searchParams.get('fy') || '') ? url.searchParams.get('fy') : null;
+  if (!fy) return fail(400, 'fy (YYYY) is required');
+  if (!_congressApiKey) return fail(503, 'appropriations packages: no Congress.gov key configured');
+  return kvCache(env, `approps-packages-v1-${CURRENT_CONGRESS}-${fy}`, 1800, async () => {
+    const AP = globalThis.Appropriations;
+    const fyRe = new RegExp(`\\b${fy}\\b`);
+    const typeName = { HR: 'H.R.', S: 'S.', HJRES: 'H.J.Res.', SJRES: 'S.J.Res.' };
+    try {
+      const [laws, hr, sen] = await Promise.all([
+        congressCall(`https://api.congress.gov/v3/law/${CURRENT_CONGRESS}?limit=250`),
+        congressCall(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hr?limit=250&sort=updateDate+desc`),
+        congressCall(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/s?limit=250&sort=updateDate+desc`),
+      ]);
+      const seen = new Set(), cands = [];
+      const push = (b, enacted) => {
+        const id = `${b.type}${b.number}`;
+        if (seen.has(id)) return;
+        seen.add(id);
+        cands.push({ id, type: String(b.type).toLowerCase(), number: b.number, label: `${typeName[b.type] || b.type} ${b.number}`, title: b.title, enacted, law: enacted ? (b.laws || [])[0]?.number : null, v: b.updateDateIncludingText || b.updateDate, latestAction: b.latestAction });
+      };
+      for (const b of laws?.bills || []) if (/appropriations/i.test(b.title) && fyRe.test(b.title) && (b.laws || []).length) push(b, true);
+      for (const b of [...(hr?.bills || []), ...(sen?.bills || [])]) if (AP.packageLike(b.title) && fyRe.test(b.title) && !/supplemental/i.test(b.title)) push(b, false);
+      const use = [...cands.filter((c) => c.enacted), ...cands.filter((c) => !c.enacted)].slice(0, 10);
+      const key = `approps-packages-state-v1-${fy}`;
+      let st = {};
+      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+      let changed = false;
+      const packages = (await Promise.all(use.map(async (c) => {
+        const sk = `${c.id}:${c.v}`;
+        if (!Array.isArray(st[sk])) {
+          const tv = await congressCall(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${c.type}/${c.number}/text?limit=10`);
+          const file = (((tv?.textVersions || [])[0] || {}).formats || []).find((f) => /formatted text/i.test(f.type))?.url || '';
+          const pkg = (file.match(/(BILLS-[A-Za-z0-9]+)\.htm$/) || [])[1];
+          if (!pkg) return null;   // no text printed yet: asked again next time
+          st[sk] = AP.divisions(await fetchSource(`https://www.govinfo.gov/content/pkg/${pkg}/html/${pkg}.htm`, `package text ${c.label}`, { timeout: 30_000 }), fy);
+          changed = true;
+        }
+        const shorts = st[sk];
+        if (!shorts.length) return null;
+        let stage = 5, milestones = [];
+        if (!c.enacted) {
+          const acts = await congressCall(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${c.type}/${c.number}/actions?limit=250`);
+          const s = AP.stage(acts?.actions, [], []);
+          stage = s.stage; milestones = s.milestones || [];
+        }
+        return { id: c.label, law: c.law, enacted: c.enacted, stage, title: c.title, shorts, latestAction: c.latestAction?.text || null, latestActionDate: c.latestAction?.actionDate || null, milestones };
+      }))).filter(Boolean);
+      if (changed && env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      return new Response(JSON.stringify({ at: Date.now(), fiscalYear: Number(fy), candidates: use.length, packages }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' } });
+    } catch (e) { return fail(502, e.message); }
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6710,6 +6771,8 @@ async function handleRequest(request, env) {
     return await handleSenateTreaties(env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/appropriations-packages' && request.method === 'GET') {
+    return await handleApproPackages(env, url);
   } else if (path === '/api/appropriations-markups' && request.method === 'GET') {
     return await handleApproMarkups(env, url);
   } else if (path === '/api/appropriations' && request.method === 'GET') {
