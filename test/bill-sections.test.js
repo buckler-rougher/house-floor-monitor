@@ -118,6 +118,12 @@ ok('links: the bill text link names the version it goes to, with its date in the
   assert.ok(B.links({ text: 'https://t.pdf' }).includes('>View Bill Text →<'));
 });
 
+ok('links: the Federal Register rule a CRA resolution would overturn, after the CBO estimate, titled with its agency and date', () => {
+  const l = B.links({ text: 'https://t', cbo: 'https://c', rule: 'https://www.federalregister.gov/d', ruleTitle: 'Treasury Department, 2024-12-30: Gross Proceeds Reporting', congress: 'https://g' });
+  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text →', 'View CBO Cost Estimate →', 'View Federal Register Rule →', 'View on Congress.gov →']);
+  assert.ok(l.includes('title="Treasury Department, 2024-12-30: Gross Proceeds Reporting"'));
+});
+
 ok('the Copy link button is always there, and an href is escaped', () => {
   assert.ok(B.links({}).includes('id="bill-copy-link"'));
   assert.ok(B.links({ text: 'https://t/?a=1&b="2"' }).includes('href="https://t/?a=1&amp;b=&quot;2&quot;"'));
