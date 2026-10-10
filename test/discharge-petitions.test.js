@@ -60,7 +60,7 @@ ok('the signature count is the highest signer number in the table, and the newes
 
 ok('a page with no signature table is null (not zero signatures), and an empty table is zero', () => {
   assert.strictEqual(D.parseSignatures('<html>Not found</html>'), null);
-  assert.deepStrictEqual(D.parseSignatures('<tbody id="member-signatures"></tbody>'), { count: 0, last: null, signers: [] });
+  assert.deepStrictEqual(D.parseSignatures('<tbody id="member-signatures"></tbody>'), { count: 0, last: null, signers: [], rows: '' });
 });
 
 ok('the sponsor\'s bioguide id comes off the sponsor link', () => {
@@ -81,6 +81,7 @@ ok('each signer: number, bioguide id, name (the Clerk\'s stray carriage return g
   const s = D.parseSignatures(`<tbody id="member-signatures">${row(1, 'L000596', 'Anna Paulina &#xD; Luna', 'Florida', 'FL', '13', 'Republican', '12/02/2025')}${row(2, 'K000009', 'Marcy Kaptur', 'Ohio', 'OH', '09', 'Democratic', '06/11/2026')}</tbody>`);
   assert.deepStrictEqual(s.signers[0], { n: 1, id: 'L000596', name: 'Anna Paulina Luna', state: 'FL', stateName: 'Florida', district: '13', party: 'Republican', date: '12/02/2025' });
   assert.strictEqual(s.signers[1].party, 'Democratic');
+  assert.strictEqual(s.rows.split('\n')[1], '<tr><td>2.</td><td><a href="/Members/K000009">Marcy Kaptur</a></td><td>Ohio</td><td>09</td><td>Democratic</td><td>December 2nd, 2025</td></tr>', 'the rows as sent, minus hidden cells and attributes');
   assert.strictEqual(s.last, '06/11/2026');
 });
 
