@@ -5232,6 +5232,14 @@ font-family: var(--font-mono);
 .info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible {
     opacity: 1; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); outline: none;
 }
+/* The ✕ is drawn, not typed: a text glyph sits on its font's baseline and never lands in the middle of the square. Two 18px strokes crossed at the centre. */
+.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close { position: relative; font-size: 0; }
+.info-popup-close::before, .info-popup-close::after, .bill-modal-close::before, .bill-modal-close::after, .vrec-close-x::before, .vrec-close-x::after,
+.suggest-data-close::before, .suggest-data-close::after, .suggest-drawer-close::before, .suggest-drawer-close::after, .dp-modal-close::before, .dp-modal-close::after {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 16px; height: 2px; margin: -1px 0 0 -8px; border-radius: 1px; background: currentColor;
+    transform: rotate(45deg);
+}
+.info-popup-close::after, .bill-modal-close::after, .vrec-close-x::after, .suggest-data-close::after, .suggest-drawer-close::after, .dp-modal-close::after { transform: rotate(-45deg); }
 .info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close { position: absolute; top: 10px; right: 12px; z-index: 20; }   /* above the content under it, or it cannot be clicked */
 .info-popup-title {
     font-family: var(--font-mono);
