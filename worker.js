@@ -21,7 +21,6 @@ import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
-import './lib/jct-publications.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -4193,21 +4192,6 @@ async function handleDischargeCalendar(env) {
   });
 }
 
-// The Joint Committee on Taxation's publications that name a bill (lib/jct-publications.js), for the bill modals' "View JCT Analysis" link. The feed is the
-// whole 119th Congress (about 110 KB, 70 or so naming a bill), so it is read every six hours and the boards look the bill up themselves. A host that turns the
-// request away (a challenge page) is a 502 and the boards simply show no link.
-async function handleJctPublications(env) {
-  return kvCache(env, 'jct-publications-v1', 21_600, async () => {
-    try {
-      const list = globalThis.JctPublications.parse(await fetchSource('https://www.jct.gov/publications-xml/xml/?name=119th%20Congress', 'JCT publications'));
-      if (!list) throw new Error('the JCT answer was not its publications feed (a challenge page, or the feed has changed)');
-      return new Response(JSON.stringify({ at: Date.now(), publications: list }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' } });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-    }
-  });
-}
-
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6231,7 +6215,6 @@ function sourceStatusChecks() {
     'house-live': ['https://live.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-rules': ['https://rules.house.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'house-voting-days': ['https://www.house.gov/voting-days', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
-    'jct': ['https://www.jct.gov/publications-xml/xml/?name=119th%20Congress', 4096, (r) => ok200(r, (x) => x.text.includes('<Publications'), 'the publications feed')],
     'cbo': ['https://www.cbo.gov/publications/all/rss.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<rss'), 'the cost estimates feed')],
     'govinfo': ['https://www.govinfo.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'press-gallery': ['https://pressgallery.house.gov/member-data/casualty-list', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
@@ -6336,8 +6319,6 @@ async function handleRequest(request, env) {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
-  } else if (path === '/api/jct-publications' && request.method === 'GET') {
-    return await handleJctPublications(env);
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
     return await handleDischargeCalendar(env);
   } else if (path === '/api/discharge-petition' && request.method === 'GET') {

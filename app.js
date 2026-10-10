@@ -4838,8 +4838,6 @@ function openBillModal(billId) {
                     reportTitle: bill.committeeReportCitation,
                     cbo: bill.cboCostEstimateUrl,
                     cboTitle: bill.cboCostEstimateTitle,
-                    jct: JctPublications.forBill(bill.id).url,
-                    jctTitle: JctPublications.forBill(bill.id).title,
                     memo: bill.sapUrl,
                     // The (?) beside the memo button. Shown once its explanation exists; in ?fixtures so the
                     // button can be reviewed before then.
@@ -6920,7 +6918,6 @@ function updateDebateSection(items) {
                 text: foundBill.textUrl || null,
                 report: foundBill.committeeReportUrl,
                 cbo: foundBill.cboCostEstimateUrl,
-                jct: JctPublications.forBill(foundBill.id).url,
                 memo: foundBill.sapUrl,
                 congress: billIdToCongressUrl(foundBill.id),
             },
@@ -10611,7 +10608,6 @@ document.addEventListener('DOMContentLoaded', init);
 loadCommitteeMeetings();
 loadDischargePetitions();
 loadDischargeCalendar();
-JctPublications.load('https://api.evanhollander.org/house-floor/api/jct-publications');
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
 setInterval(loadDischargeCalendar, 15 * 60 * 1000);
