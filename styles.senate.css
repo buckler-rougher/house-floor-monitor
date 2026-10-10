@@ -4015,6 +4015,7 @@ font-family: var(--font-mono);
     gap: var(--sp-6);
     font-size: var(--fs-md);
 }
+  .bill-doc-links .bill-modal-link.has-tail { display: inline-block; }
   .bill-copy-link {
     color: var(--text-secondary);
     background: var(--bg-elevated);
