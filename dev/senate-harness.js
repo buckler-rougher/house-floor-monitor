@@ -12,8 +12,6 @@
  *   ?fixtures&bill=s4668      open a bill's modal (s4668, hr7008 have fixtures)
  *
  * STATES  idle (default)  prayer  pledge  morning-business  wrap-up  leader  quorum  vote  ended
- *         plan   the Senate is in at 11:30 a.m. on 30 September with nothing heard on the captions and no votes taken yet: the
- *                debate panel comes from today's Democratic Caucus schedule post (H.R.7008, then H.R.9340 once its vote is in)
  *         scott-bare  scott-state  scott-quorum   (the two Scotts: a surname alone, and with the state read)
  *
  * The states go through the real code paths: the floor mode is what /senate/quorum returns
@@ -39,7 +37,7 @@
     link.href = link.href.replace(/[?&]_hcb=\d+/, '') + (link.href.includes('?') ? '&' : '?') + '_hcb=' + Date.now();
   }
 
-  const FIXED = Date.parse(q.get('freeze') && q.get('freeze') !== '1' && q.get('freeze') !== '0' ? q.get('freeze') : (state === 'plan' ? '2026-09-30T15:30:00Z' : '2026-09-30T14:00:00Z'));
+  const FIXED = Date.parse(q.get('freeze') && q.get('freeze') !== '1' && q.get('freeze') !== '0' ? q.get('freeze') : '2026-09-30T14:00:00Z');
   if (q.get('freeze') !== '0') {
     const RealDate = Date;
     const Frozen = function (...a) { return a.length === 0 ? new RealDate(FIXED) : new RealDate(...a); };
@@ -109,16 +107,6 @@
       const stage = new URL(url).searchParams.get('stage') || '';
       try { return json(await (await realFetch(`${BASE}senate-nominations-source-${stage}.json`)).text()); }
       catch (e) { return json({ error: `no fixture for ${stage}` }, 404); }
-    }
-    // The plan state: the Senate came in at its announced 10:15 and has taken no vote yet (no roll calls in the window).
-    if (state === 'plan' && path === '/senate/schedule') {
-      const d = JSON.parse(await (await realFetch(`${BASE}senate-schedule.json`)).text());
-      d.latest = { ...d.latest, convene: '2026-09-29T10:00:00-04:00', adjourn: '2026-09-29T20:00:00-04:00', proForma: false, nextConvene: '2026-09-30T10:15:00-04:00', nextIsProForma: false };
-      return json(d);
-    }
-    if (state === 'plan' && path === '/senate/stages') {
-      const d = JSON.parse(await (await realFetch(`${BASE}senate-stages.json`)).text());
-      return json({ ...d, stages: {}, counts: {}, kept: 0 });
     }
     const name = ROUTES[path];
     if (name) { try { return json((await (await realFetch(`${BASE}${name}.json`)).text()).replace(/"PLACEHOLDER_NOW"/g, String(Date.now()))); } catch (e) { return json('{}'); } }

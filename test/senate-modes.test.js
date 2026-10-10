@@ -95,9 +95,65 @@ ok('a motion to proceed ends morning business too: the real 30 September caption
   assert.strictEqual(mode(s, 1 * S), 'morning-business');
   s = M.feed(s, "mr. president. the majority leader. mr. president, i move to proceed to calendar number six, 84, hr 9340. the clerk will report.", 5 * MIN);
   assert.strictEqual(mode(s, 5 * MIN + 10 * S), null, 'closed once the motion is made');
-  // the same words still rolling in the window cannot reopen it
+  // the clerk then reads the motion, which puts the measure before the Senate (and does not reopen morning business)
   s = M.feed(s, 'the clerk will report. motion to proceed to calendar 684. hr 9340.', 5 * MIN + 12 * S);
-  assert.strictEqual(mode(s, 5 * MIN + 20 * S), null);
+  assert.deepStrictEqual(M.current(s, 5 * MIN + 20 * S), { mode: 'debate', bill: 'H.R. 9340', since: 5 * MIN + 12 * S });
+});
+
+// ---- the measure before the Senate -----------------------------------------------------------
+// The wordings are from the C-SPAN2 captions of 30 September 2026, 10:00 to 12:00 (lower case, no speaker labels: the Senate's own caption
+// text is still to be captured). Each is what the Senate said and what it did NOT mean, in the order it happened.
+const SAID = {
+  morning: 'under the previous order, the leadership time is reserved. under the previous order, the senate will be in a period of morning business, with senators permitted to speak therein for up to ten minutes each.',
+  motion: 'mr. president. the majority leader. mr. president, i move to proceed to calendar number six, 84, hr 9340. the clerk will report. motion to proceed to calendar 684. hr 9340. an act to amend the public utility regulatory policies act of 1978, and so forth, and for other purposes.',
+  secondReading: 'the clerk will read the titles of the bill for the second time on block. s, 5602. a bill to prohibit the use of federal funds for the planning and construction of any structure or monument at memorial circle at columbia island. s 5603. a bill to prohibit the demolition of presidential memorials.',
+  objected: 'mr. president, i ask unanimous consent that the senate proceed to the immediate consideration of calendar number four, 48, hr 4238. further, i ask that the bill be considered, read a third time and passed. is there objection? mr. president, reserving the right to object. therefore, mr. president, i do object. the objection is heard.',
+  objected2: 'i ask unanimous consent that the senate proceed to the immediate consideration of calendar number 678 s 5438. further, that the bill be passed. the objection is heard.',
+  clotureRead: 'cloture motion. we, the undersigned senators, in accordance with the provisions of rule 22 of the standing rules of the senate, do hereby move to bring to close debate on the motion to proceed to calendar number 5448. hr 7008. an act to amend chapter one three one of title five. signed by 17 senators.',
+  question: 'the question is, is the sense of the senate that debate on the motion to proceed to h.r. 7008, an act to amend chapter one three, one of title five, shall be brought to a close. the clerk will call the roll.',
+};
+
+ok('the clerk reporting the motion to proceed puts that measure before the Senate, and it ends morning business', () => {
+  let s = M.feed(M.empty(), SAID.morning, 0);
+  assert.strictEqual(mode(s, 1 * S), 'morning-business');
+  s = M.feed(s, SAID.motion, 5 * MIN);
+  assert.deepStrictEqual(M.current(s, 5 * MIN + 10 * S), { mode: 'debate', bill: 'H.R. 9340', since: 5 * MIN });
+});
+
+ok('what went by in that transcript and was NOT a measure before the Senate starts nothing: second reading, requests that drew an objection, a cloture motion read, the question on cloture', () => {
+  for (const [name, text] of Object.entries({ secondReading: SAID.secondReading, objected: SAID.objected, objected2: SAID.objected2, clotureRead: SAID.clotureRead, question: SAID.question })) {
+    assert.strictEqual(mode(M.feed(M.empty(), text, 0), 1 * S), null, name);
+  }
+});
+
+ok('after the motion, none of those moves the measure, and the same words still in the caption window do not move its time', () => {
+  let s = M.feed(M.empty(), SAID.motion, 0);
+  for (const k of ['secondReading', 'objected', 'objected2', 'clotureRead', 'question']) s = M.feed(s, SAID[k], 10 * S);
+  s = M.feed(s, SAID.motion, 20 * S);
+  assert.deepStrictEqual(M.current(s, 30 * S), { mode: 'debate', bill: 'H.R. 9340', since: 0 });
+});
+
+ok('a different measure reported replaces it; passage or adjournment ends it, and the passage still in the window cannot bring it back', () => {
+  let s = M.feed(M.empty(), SAID.motion, 0);
+  s = M.feed(s, 'the clerk will report. motion to proceed to calendar number 449. s 4668. a bill to protect college sports.', 5 * MIN);
+  assert.strictEqual(M.current(s, 5 * MIN + S).bill, 'S. 4668');
+  s = M.feed(s, 'the bill, s. 4668, as amended, was passed.', 20 * MIN);
+  assert.strictEqual(mode(s, 20 * MIN + S), null);
+  s = M.feed(s, 'the clerk will report. motion to proceed to calendar number 449. s 4668.', 20 * MIN + 5 * S);
+  assert.strictEqual(mode(s, 20 * MIN + 10 * S), null, 'the same words rolling past');
+});
+
+ok('the chair resuming a measure from an earlier day is read, but not the same words inside a unanimous-consent request', () => {
+  assert.strictEqual(M.current(M.feed(M.empty(), 'under the previous order, the senate will resume consideration of calendar number 449, s 4668, the protect college sports act, post-cloture.', 0), S).bill, 'S. 4668');
+  // (that sentence is the wrap-up, which is its own mode; what matters is that it names no measure before the Senate)
+  assert.notStrictEqual(mode(M.feed(M.empty(), 'i ask unanimous consent that when the senate completes its business today it stand adjourned until 10 a.m. tomorrow and that the senate then resume consideration of calendar number 449, s 4668.', 0), S), 'debate');
+});
+
+ok('the clerk reports during the wrap-up are bills being passed by consent, not the measure before the Senate', () => {
+  let s = M.feed(M.empty(), 'i ask unanimous consent that when the senate completes its business today, it stand adjourned until 10 a.m. tomorrow.', 0);
+  assert.strictEqual(mode(s, S), 'wrap-up');
+  s = M.feed(s, 'the clerk will report. motion to proceed to calendar number 12. s 99.', 10 * S);
+  assert.strictEqual(mode(s, 20 * S), 'wrap-up');
 });
 
 ok('morning business lasts until the chair closes it, however long that is', () => {

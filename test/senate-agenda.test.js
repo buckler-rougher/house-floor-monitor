@@ -74,7 +74,6 @@ ok('text that is not a post gives nothing', () => {
 // (dev/backtest-senate-schedule.mjs reruns it). What is pinned here is what it must keep reading. Do not tidy them.
 const corpus = require('./senate-schedule-corpus.json');
 const post = (re) => A.parse(corpus.find((p) => re.test(p.title)).body);
-const on = (re, minutes, done) => { const r = A.onFloor(post(re), { minutes, done }); return r && r.measure; };
 
 ok('every post that is not a pro forma notice gives a convening date (one gives no year, which is the post\'s own omission)', () => {
   const missing = corpus.filter((p) => !/pro forma/i.test(p.title) && !A.parse(p.body).conveneDate).map((p) => p.title);
@@ -88,36 +87,15 @@ ok('the formats the old parser lost: "Calendar #299, H.R.6938", "House Message w
   assert.deepStrictEqual(apr, [['S.J.Res.123', 'discharge'], ['S.J.Res.32', 'discharge'], ['S.J.Res.138', 'named'], ['H.J.Res.140', 'possible']]);
 });
 
-ok('what the Senate is on: the measure the post says it takes up, not one it only votes on (13 January: H.R.6938 all day, S.J.Res.84 is a vote at 2:15pm)', () => {
-  assert.strictEqual(on(/January 13, 2026/, 11 * 60), 'H.R.6938');
-  assert.strictEqual(on(/January 13, 2026/, 15 * 60), 'H.R.6938');
-  assert.strictEqual(post(/January 13, 2026/).measures.find((m) => m.measure === 'S.J.Res.84').role, 'vote');
+ok('a measure only voted on is not one the Senate takes up (13 January: H.R.6938 is taken up, S.J.Res.84 is a vote at 2:15pm); a day of discharge motions takes up none (15 April)', () => {
+  const jan = post(/January 13, 2026/).measures;
+  assert.strictEqual(jan.find((m) => m.measure === 'H.R.6938').role, 'taken-up');
+  assert.strictEqual(jan.find((m) => m.measure === 'S.J.Res.84').role, 'vote');
+  assert.ok(!post(/April 15, 2026/).measures.some((m) => m.role === 'taken-up'));
 });
 
-ok('a timed step switches it (7 August: nominations en bloc, then H.R.5334 "at 11:30am the Senate will proceed")', () => {
-  assert.strictEqual(on(/Friday August 7/, 10 * 60 + 30), 'S.Res.817');
-  assert.strictEqual(on(/Friday August 7/, 11 * 60 + 45), 'H.R.5334');
-});
-
-ok('votes in a row advance as each is disposed of (30 September: H.R.7008, then H.R.9340, then nothing)', () => {
-  assert.strictEqual(on(/Wednesday, September 30/, 10 * 60 + 30), 'H.R.7008');
-  assert.strictEqual(on(/Wednesday, September 30/, 12 * 60, ['H.R.7008']), 'H.R.9340');
-  assert.strictEqual(on(/Wednesday, September 30/, 13 * 60, ['H.R.7008', 'H.R.9340']), null);
-});
-
-ok('a day of motions to discharge and morning business names no measure the Senate is on (15 April)', () => {
-  assert.strictEqual(on(/April 15, 2026/, 10 * 60 + 30), null);
-});
-
-ok('amendments do not change the measure: the bill is named while amendments are voted (24 and 28 September: S.4668)', () => {
-  assert.strictEqual(on(/Thursday, September 24/, 10 * 60 + 30), 'S.4668');
-  assert.strictEqual(on(/Monday, September 28/, 16 * 60), 'S.4668');
-});
-
-ok('a measure is disposed of by a final vote, or by a failed cloture or motion to proceed; an amendment vote disposes of nothing', () => {
-  assert.deepStrictEqual(A.disposedBy([{ measure: 'H.R. 7008', stage: 'cloture-mtp', carried: false }]), ['H.R.7008']);
-  assert.deepStrictEqual(A.disposedBy([{ measure: 'S. 4668', stage: 'final', carried: true }]), ['S.4668']);
-  assert.deepStrictEqual(A.disposedBy([{ measure: 'S. 4668', stage: 'cloture-mtp', carried: true }, { measure: 'S. 4668', stage: 'amendment', carried: false }]), []);
+ok('amendments do not change the measure: the bill is the one named (24 and 28 September: S.4668, taken up)', () => {
+  for (const re of [/Thursday, September 24/, /Monday, September 28/]) assert.strictEqual(post(re).measures.find((m) => m.measure === 'S.4668').role, 'taken-up');
 });
 
 console.log(`\n${n} passed`);

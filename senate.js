@@ -314,9 +314,6 @@ function renderCongressBanner(data) {
 // adjourn times and, for the next sitting, whether it is a pro forma. That flag
 // is the point: a pro forma is gavel in, gavel out, so calling it "in session"
 // would be true and misleading at once.
-// Whether the Senate is in session now, as renderSchedule works it out; the plan-driven debate panel waits on it.
-let _sitting = false;
-
 function renderSchedule(data) {
     const line = el('session-text');
     const next = el('next-votes');
@@ -341,7 +338,6 @@ function renderSchedule(data) {
     const nextIn = latest.nextConvene ? new Date(latest.nextConvene).getTime() : NaN;
     if (!sitting && !isNaN(nextIn) && nextIn <= now && now - nextIn < 18 * 3600 * 1000) sitting = true;
 
-    _sitting = !!sitting;
     if (sitting) {
         line.textContent = 'IN SESSION';
         document.body.classList.remove('recess-mode');
@@ -1974,55 +1970,8 @@ SenateQuorum.init({ photoUrlFor });
     });
   }
 
-  // THE SCHEDULE AS THE FALLBACK. Nothing heard on the captions, and the Senate is in: show the measure the Democratic Caucus's post for
-  // today says it is on, labelled SCHEDULED, which says what the plan is and not that debate has begun. lib/senate-agenda.js reads the
-  // post as a sequence (what the Senate takes up, and when, and what its votes have already disposed of); on the 103 posts of this
-  // session it reads every measure the posts name, and the Record bears out the measure it picks. It names a measure only when the
-  // post does: a day of morning business and discharge motions shows none.
-  const plan = new Map();   // post body -> parsed
-  const parsedPost = (n) => { if (!plan.has(n.body)) plan.set(n.body, SenateAgenda.parse(n.body || '')); return plan.get(n.body); };
-  const easternNow = () => {
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-      .formatToParts(new Date()).map((x) => [x.type, x.value]));
-    return { iso: `${p.year}-${p.month}-${p.day}`, day: Number(p.day), month: Number(p.month), minutes: Number(p.hour) * 60 + Number(p.minute) };
-  };
-  // Today's post, by the convening date it states; one that omits the year is matched on the month and day in its title.
-  function todaysPost(now) {
-    const mon = MONTHS[now.month - 1];
-    for (const n of _notices) {
-      if (n.type !== 'schedule' || !n.body) continue;
-      const r = parsedPost(n);
-      if (r.conveneDate ? Convening.isoDate(r.conveneDate) === now.iso : new RegExp(`${mon}\\s+${now.day}\\b`).test(n.title || '')) return r;
-    }
-    return null;
-  }
-  // The day's roll calls that finished a measure, from the stages feed (the last 50 roll calls, which holds today's).
-  function disposedToday(now) {
-    const abbr = MONTHS[now.month - 1].slice(0, 3).toLowerCase();
-    const votes = [];
-    for (const list of Object.values((_stagesData && _stagesData.stages) || {})) {
-      for (const m of list) {
-        for (const v of [m.latest, ...(m.chain || [])]) {
-          const [d, mo] = String(v && v.date || '').split('-');
-          if (v && Number(d) === now.day && String(mo).toLowerCase().startsWith(abbr)) votes.push({ measure: m.measure, stage: v.stage, carried: v.carried });
-        }
-      }
-    }
-    return SenateAgenda.disposedBy(votes);
-  }
-  function planDebate() {
-    if (!_sitting) return null;
-    const now = easternNow();
-    const post = todaysPost(now);
-    const hit = post && SenateAgenda.onFloor(post, { minutes: now.minutes, done: disposedToday(now) });
-    if (!hit) return null;
-    return { mode: 'debate', bill: hit.measure.replace(/^(H\.R\.|S\.J\.Res\.|H\.J\.Res\.|S\.Con\.Res\.|H\.Con\.Res\.|S\.Res\.|H\.Res\.|S\.)(\d+)$/, '$1 $2'),
-      title: hit.title || '', source: 'schedule', role: hit.role, at: hit.at, since: null };
-  }
-
   const apply = () => {
-    let cur = told.mode && Date.now() - told.at < STALE_MS ? told.mode : null;
-    if (!cur) cur = planDebate();
+    const cur = told.mode && Date.now() - told.at < STALE_MS ? told.mode : null;
     const mode = cur && cur.mode;
     const cls = BODY[mode];
     for (const c of ALL) document.body.classList.toggle(c, c === cls);
