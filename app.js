@@ -6169,12 +6169,32 @@ function loadCommitteeMeetings() {
 // table (/api/discharge-petition). After the 218th signature the motion goes on the Discharge Calendar; it can be called up once seven legislative days
 // have passed, on a second or fourth Monday (House Rule XV, clause 2; CRS 97-552). The Clerk does not say whether that happened, so a petition at 218 shows
 // where its resolution stands on Congress.gov, in that site's words.
+// Rebuild a list without rebuilding what has not changed: an entry whose HTML is the same keeps its element (so a face already loaded does not blink),
+// and the elements are put in the new order. entries: [{ key, html }]; the container must hold only these.
+function reconcileList(container, entries) {
+    const old = new Map([...container.children].map((el) => [el.dataset.key, el]));
+    const frag = [];
+    for (const { key, html } of entries) {
+        let el = old.get(key);
+        if (!el || el.dataset.sig !== html) {
+            const t = document.createElement('template');
+            t.innerHTML = html.trim();
+            el = t.content.firstElementChild;
+            el.dataset.key = key; el.dataset.sig = html;
+        }
+        old.delete(key);
+        frag.push(el);
+    }
+    old.forEach((el) => el.remove());
+    frag.forEach((el, i) => { if (container.children[i] !== el) container.insertBefore(el, container.children[i] || null); });
+}
 let _discharge = null;
 let _dischargeAll = false;
 let _dischargeDoneAll = false;
 let _dischargeSort = 'close';
-const DISCHARGE_SHOWN = 6;
-const DISCHARGE_DONE_SHOWN = 3;
+const DISCHARGE_SHOWN = 3;        // open petitions shown before the button
+const DISCHARGE_DONE_SHOWN = 2;   // the same for the ones at 218, in the grouped sort
+const DISCHARGE_MIXED_SHOWN = 5;  // all of them, in the other sorts
 const DISCHARGE_RIPE_DAYS = 21;   // the House meets at least every third day, so seven legislative days are surely past after three weeks
 function dischargeParts(p) {
     // "Providing for consideration of the bill (H.R. 1589) to authorize ..." -> the bill, and what it does
@@ -6251,16 +6271,27 @@ function renderDischargePetitions() {
             </div>
         </div>`;
     };
-    const restOpen = open.length - shown.length;
-    const restDone = done.length - shownDone.length;
-    setIfChanged(list,
-        (done.length ? `<section class="dp-group dp-group-done" aria-label="Reached ${need} signatures">
-            <div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar. Can be called up after 7 legislative days, on a second or fourth Monday.</span></div>
-            ${shownDone.map(item).join('')}
-            ${done.length > DISCHARGE_DONE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-done-toggle">${_dischargeDoneAll ? 'Show fewer' : `Show ${restDone} more that reached ${need}`}</button>` : ''}
-        </section>` : '')
-        + (shown.map(item).join('') || `<div class="proceedings-error">NO OPEN PETITIONS</div>`)
-        + (open.length > DISCHARGE_SHOWN ? `<button type="button" class="dp-toggle" id="dp-toggle">${_dischargeAll ? 'Show fewer' : `Show ${restOpen} more open petition${restOpen === 1 ? '' : 's'}`}</button>` : ''));
+    const entries = [];
+    const toggle = (id, label) => ({ key: id, html: `<button type="button" class="dp-toggle" id="${id}">${label}</button>` });
+    const card = (p) => ({ key: p.id || 'n' + p.number, html: item(p) });
+    if (_dischargeSort === 'close') {
+        // closest to 218 puts the finished ones first, as their own group
+        if (done.length) {
+            entries.push({ key: 'head', html: `<div class="dp-group-head"><span>Reached ${need}</span><span class="dp-group-note">On the Discharge Calendar. Can be called up after 7 legislative days, on a second or fourth Monday.</span></div>` });
+            shownDone.forEach((p) => entries.push(card(p)));
+            if (done.length > DISCHARGE_DONE_SHOWN) { const r = done.length - shownDone.length; entries.push(toggle('dp-done-toggle', _dischargeDoneAll ? 'Show fewer' : `Show ${r} more that reached ${need}`)); }
+        }
+        if (!shown.length) entries.push({ key: 'none', html: '<div class="proceedings-error">NO OPEN PETITIONS</div>' });
+        shown.forEach((p) => entries.push(card(p)));
+        if (open.length > DISCHARGE_SHOWN) { const r = open.length - shown.length; entries.push(toggle('dp-toggle', _dischargeAll ? 'Show fewer' : `Show ${r} more open petition${r === 1 ? '' : 's'}`)); }
+    } else {
+        // the other sorts mix them, the finished ones keeping their green
+        const every = dischargeSorted(all);
+        const part = _dischargeAll ? every : every.slice(0, DISCHARGE_MIXED_SHOWN);
+        part.forEach((p) => entries.push(card(p)));
+        if (every.length > DISCHARGE_MIXED_SHOWN) { const r = every.length - part.length; entries.push(toggle('dp-toggle', _dischargeAll ? 'Show fewer' : `Show ${r} more petition${r === 1 ? '' : 's'}`)); }
+    }
+    reconcileList(list, entries);
     if (globalThis.SourcePop) {
         // the Clerk's own list entries (tidied, see lib/discharge-petitions.js), each with where its signature count comes from
         const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
@@ -6295,11 +6326,14 @@ function openDischargeSigners(id, number, trigger) {
         <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">×</button></div>
         <div class="dp-modal-tools">
             <input type="search" id="dp-modal-search" class="dp-modal-search" placeholder="Search name or state" aria-label="Search signers" autocomplete="off">
-            <div class="dp-modal-filters" id="dp-modal-filters">
-                <button type="button" class="bills-sort-btn active" data-party="">All</button>
-                <button type="button" class="bills-sort-btn" data-party="D">D</button>
-                <button type="button" class="bills-sort-btn" data-party="R">R</button>
-                <button type="button" class="bills-sort-btn" data-party="I">I</button>
+            <div class="bills-sort-bar dp-modal-sort">
+                <span class="bills-sort-label">PARTY</span>
+                <div class="bills-sort-switcher" id="dp-modal-filters">
+                    <button type="button" class="bills-sort-btn active" data-party="">All</button>
+                    <button type="button" class="bills-sort-btn" data-party="D">D</button>
+                    <button type="button" class="bills-sort-btn" data-party="R">R</button>
+                    <button type="button" class="bills-sort-btn" data-party="I">I</button>
+                </div>
             </div>
         </div>
         <div class="dp-modal-list" id="dp-modal-list"><div class="proceedings-error">LOADING</div></div>
@@ -6316,17 +6350,19 @@ function openDischargeSigners(id, number, trigger) {
         const q = document.getElementById('dp-modal-search').value.trim().toLowerCase();
         const rows = signers.filter((s) => (!party || letter(s.party) === party) && (!q || `${s.name} ${s.state} ${s.stateName}`.toLowerCase().includes(q)));
         document.getElementById('dp-modal-count').textContent = `${rows.length === signers.length ? signers.length : rows.length + ' of ' + signers.length} signer${signers.length === 1 ? '' : 's'}`;
-        document.getElementById('dp-modal-list').innerHTML = rows.map((s) => {
+        const entries = rows.map((s) => {
             const l = letter(s.party), cls = l === 'R' ? 'republican' : l === 'D' ? 'democrat' : 'independent';
             const loc = s.state + (/^\d+$/.test(s.district) ? '-' + s.district.padStart(2, '0') : '');
             const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
-            return `<div class="absentee-member dp-signer">
+            return { key: String(s.n), html: `<div class="absentee-member dp-signer">
                 <span class="dp-signer-n">${s.n}</span>
                 <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
                 <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
                 <span class="dp-signer-date">${escapeHtml(dischargeDate(s.date))}</span>
-            </div>`;
-        }).join('') || '<div class="proceedings-error">NO MATCH</div>';
+            </div>` };
+        });
+        if (!entries.length) entries.push({ key: 'none', html: '<div class="proceedings-error">NO MATCH</div>' });
+        reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     document.getElementById('dp-modal-search').addEventListener('input', draw);
     document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
