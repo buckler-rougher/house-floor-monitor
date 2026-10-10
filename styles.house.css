@@ -5550,19 +5550,23 @@ font-family: var(--font-mono);
 .bill-modal-body {
     flex: 1 1 auto;
     min-height: 5rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 0 var(--sp-24) var(--sp-16);
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
-
 .bill-modal-body .bill-modal-section-label {
-    position: sticky;
-    top: 0;
-    background: var(--bg-card);
+    flex: none;
     padding-top: var(--sp-12);
     padding-bottom: var(--sp-6);
-    z-index: 10;
+}
+.bill-modal-summary-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .bill-modal-foot {

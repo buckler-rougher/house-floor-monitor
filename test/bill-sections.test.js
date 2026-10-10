@@ -99,28 +99,28 @@ ok('the latest action takes HTML from the board, and the date is optional', () =
 ok('links: only the ones that exist, in order, with the committee report titled by its citation', () => {
   const all = B.links({ linkClass: 'senate', text: 'https://t', report: 'https://r', reportTitle: 'S. Rept. 119-1', memo: 'https://m', congress: 'https://c' });
   const labels = [...all.matchAll(/>(View [^<]+)</g)].map((m) => m[1]);
-  assert.deepStrictEqual(labels, ['View Bill Text →', 'View Committee Report →', 'View White House Memo →', 'View on Congress.gov →']);
-  assert.ok(all.includes('title="S. Rept. 119-1"') && all.includes('bill-modal-link senate'));
+  assert.deepStrictEqual(labels, ['View Bill Text', 'View Committee Report', 'View White House Memo', 'View on Congress.gov']);
+  assert.ok(all.includes('title="S. Rept. 119-1"') && all.includes('bill-modal-link ext senate'));
   const some = B.links({ linkClass: 'rule', text: 'https://t', congress: 'https://c' });
-  assert.deepStrictEqual([...some.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text →', 'View on Congress.gov →']);
+  assert.deepStrictEqual([...some.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text', 'View on Congress.gov']);
   assert.ok(B.links({ report: 'https://r' }).includes('title="Committee Report"'));
 });
 
 ok('links: the CBO cost estimate sits after the memo, titled with what it priced', () => {
   const l = B.links({ text: 'https://t', memo: 'https://m', cbo: 'https://www.cbo.gov/publication/1', cboTitle: 'S. 1 - As reported', congress: 'https://c' });
-  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text →', 'View White House Memo →', 'View CBO Cost Estimate →', 'View on Congress.gov →']);
+  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text', 'View White House Memo', 'View CBO Cost Estimate', 'View on Congress.gov']);
   assert.ok(l.includes('title="S. 1 - As reported"'));
 });
 
 ok('links: the bill text link names the version it goes to, with its date in the tooltip', () => {
   const l = B.links({ text: 'https://t.pdf', textLabel: 'Reported in House', textTitle: 'Reported in House, Feb 3, 2026' });
-  assert.ok(l.includes('>View Bill Text (Reported in House) →<') && l.includes('title="Reported in House, Feb 3, 2026"'));
-  assert.ok(B.links({ text: 'https://t.pdf' }).includes('>View Bill Text →<'));
+  assert.ok(l.includes('>View Bill Text (Reported in House)<') && l.includes('title="Reported in House, Feb 3, 2026"'));
+  assert.ok(B.links({ text: 'https://t.pdf' }).includes('>View Bill Text<'));
 });
 
 ok('links: the Federal Register rule a CRA resolution would overturn, after the CBO estimate, titled with its agency and date', () => {
   const l = B.links({ text: 'https://t', cbo: 'https://c', rule: 'https://www.federalregister.gov/d', ruleTitle: 'Treasury Department, 2024-12-30: Gross Proceeds Reporting', congress: 'https://g' });
-  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text →', 'View CBO Cost Estimate →', 'View Federal Register Rule →', 'View on Congress.gov →']);
+  assert.deepStrictEqual([...l.matchAll(/>(View [^<]+)</g)].map((m) => m[1]), ['View Bill Text', 'View CBO Cost Estimate', 'View Federal Register Rule', 'View on Congress.gov']);
   assert.ok(l.includes('title="Treasury Department, 2024-12-30: Gross Proceeds Reporting"'));
 });
 

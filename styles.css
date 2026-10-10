@@ -5993,24 +5993,28 @@ font-family: var(--font-mono);
     display: flex;
     flex-direction: column;
 }
-/* Summary keeps its own bounded, internally-scrolling box (sticky label + borders):
-   the CRS text scrolls while the title/sponsor/footer stay put. */
+/* The summary box: the label stays where it is and only the CRS text scrolls under it (the label used to be sticky inside the scrolling box, and a bounce at the top
+   dragged it down), with a fade along the bottom edge while there is more to read (lib/scroll-fade.js). */
 .bill-modal-body {
     flex: 1 1 auto;
     min-height: 5rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 0 var(--sp-24) var(--sp-16);
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
-
 .bill-modal-body .bill-modal-section-label {
-    position: sticky;
-    top: 0;
-    background: var(--bg-card);
+    flex: none;
     padding-top: var(--sp-12);
     padding-bottom: var(--sp-6);
-    z-index: 10;
+}
+.bill-modal-summary-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .bill-modal-foot {
