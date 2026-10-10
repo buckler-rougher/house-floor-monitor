@@ -6279,7 +6279,7 @@ function dischargeStanding(p) {
     // reached 218 on the newest calendar's day or after: not entered yet. Earlier and not listed: the House has dealt with it.
     return dischargeDateKey(p.lastSigned) >= _dischargeCal.date.replace(/-/g, '')
         ? { kind: 'entering', label: 'Just reached 218', detail: 'not on the calendar yet' }
-        : { kind: 'off', label: 'Off the Discharge Calendar', detail: 'the House has acted on it' };
+        : { kind: 'off', label: 'Off the Discharge Calendar' };
 }
 const DISCHARGE_STANDING_RANK = { eligible: 0, waiting: 1, listed: 1, entering: 2, off: 3 };
 function dischargeSorted(list) {
@@ -6344,7 +6344,7 @@ function renderDischargePetitions() {
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
                 <a href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
             </div>
-            ${isDone && p.action ? `<div class="dp-action"><span>Congress.gov${p.action.date ? `, ${escapeHtml(dischargeDate(p.action.date.slice(5, 7) + '/' + p.action.date.slice(8, 10) + '/' + p.action.date.slice(0, 4)))}` : ''}:</span> ${escapeHtml(p.action.text)}</div>` : ''}
+            ${isDone && p.action ? `<div class="dp-action"><span title="From Congress.gov">Latest action${p.action.date ? `, ${escapeHtml(dischargeDate(p.action.date.slice(5, 7) + '/' + p.action.date.slice(8, 10) + '/' + p.action.date.slice(0, 4)))}` : ''}:</span> ${escapeHtml(p.action.text)}</div>` : ''}
             <div class="dp-people">
                 ${p.sponsor ? dischargeSponsorHtml(p) : ''}
                 ${p.id ? `<button type="button" class="dp-signers-btn" data-dp-signers="${escapeHtml(p.id)}" data-dp-number="${p.number}">Signers (${p.signatures})</button>` : ''}
