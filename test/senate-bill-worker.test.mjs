@@ -22,13 +22,18 @@ const { default: worker } = await import('../worker.js');
 let failSummaries = false;
 let sap = '<a href="https://www.whitehouse.gov/wp-content/uploads/2026/06/H.R.-7008-SAP.pdf">H.R. 7008 — Stop Insider Trading Act (June 4, 2026)</a>';
 let asked = [];
+let changedFeed = {};     // type -> [numbers] the change feed says moved
+let recordTitle = null;   // when set, the record of H.R. 7011 carries this title (a bill whose record changed)
 globalThis.fetch = async (u) => {
   u = String(u); asked.push(u);
+  const feed = u.match(/api\.congress\.gov\/v3\/bill\/119\/([a-z]+)\?limit=250.*fromDateTime=/);
+  if (feed) return new Response(JSON.stringify({ bills: (changedFeed[feed[1]] || []).map((n) => ({ type: feed[1].toUpperCase(), number: String(n), updateDate: '2026-10-11' })), pagination: {} }), { status: 200 });
   const m = u.match(/api\.congress\.gov\/v3\/bill\/119\/(s|hr)\/(\d+)(\/[a-z]+)?\?/);
   if (m) {
     // H.R. 7009 is H.R. 7008's payloads under another number, so a test can ask for a bill the
     // Worker has not cached (it holds each for a day, which is the point of it).
-    const num = m[1] === 'hr' && (m[2] === '7009' || m[2] === '7010') ? '7008' : m[2];
+    const num = m[1] === 'hr' && (m[2] === '7009' || m[2] === '7010' || m[2] === '7011') ? '7008' : m[2];
+    if (recordTitle && m[1] === 'hr' && m[2] === '7011' && !m[3]) { const j = JSON.parse(f('hr-7008-record.json')); j.bill.title = recordTitle; return new Response(JSON.stringify(j), { status: 200 }); }
     if (failSummaries && m[2] === '7010' && m[3] === '/committees') return new Response('', { status: 500 });
     const name = `${m[1]}-${num}-${(m[3] || '/record').slice(1)}.json`;
     try { return new Response(f(name), { status: 200 }); } catch { return new Response('{}', { status: 404 }); }
@@ -104,6 +109,30 @@ await ok('a section that cannot be read (a 500 from Congress.gov) leaves that se
   failSummaries = false;
   const second = await get('H.R. 7010');
   assert.ok(second.body.committees.length > 0, 'read again, not served from a kept degraded answer');
+});
+
+await ok('a bill\'s answer is kept until the change feed says the bill moved, then read again; a bill that did not move is not touched', async () => {
+  const store = new Map();
+  const kv = { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); },
+    list: async ({ prefix }) => ({ keys: [...store.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name })), list_complete: true }) };
+  const ask = async (id) => { const r = await worker.fetch(new Request(`https://api.evanhollander.org/senate-floor/api/senate/bill?id=${encodeURIComponent(id)}`), { CONGRESS_API_KEY: 'test', HLS_CACHE: kv }); return r.json(); };
+  const real = Date.now; let skew = 0; Date.now = () => real() + skew;
+  try {
+    skew = 20 * 60_000;                           // past any earlier check
+    recordTitle = 'First title';
+    assert.strictEqual((await ask('H.R. 7011')).title, 'First title');
+    await ask('H.R. 7010');                        // another kept bill, which will not move
+    assert.ok([...store.keys()].some((k) => k.endsWith('-hr-7011-v8')) && [...store.keys()].some((k) => k.endsWith('-hr-7010-v8')));
+    recordTitle = 'Second title';
+    skew += 11 * 60_000;                           // a check is due, and nothing moved: still the kept answer
+    changedFeed = {};
+    assert.strictEqual((await ask('H.R. 7011')).title, 'First title', 'kept while Congress.gov reports no change');
+    skew += 11 * 60_000;                           // the next check finds H.R. 7011 moved
+    changedFeed = { hr: [7011, 9999] };
+    assert.strictEqual((await ask('H.R. 7011')).title, 'Second title', 'read again once it moved');
+    assert.ok([...store.keys()].some((k) => k.endsWith('-hr-7010-v8')), 'the bill that did not move keeps its answer');
+    assert.ok(store.has('bill-changes-checkpoint-v1'), 'the time of the check is kept');
+  } finally { Date.now = real; changedFeed = {}; recordTitle = null; }
 });
 
 console.log(`\n${n} passed`);

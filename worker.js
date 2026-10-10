@@ -3150,6 +3150,56 @@ async function handleSenateStages(env) {
   });
 }
 
+// A bill's modal answer is kept UNTIL CONGRESS.GOV SAYS THE BILL CHANGED, not for a set time. Most bills asked for here (a petition's, an appropriations bill,
+// last year's) sit for months, so a clock would re-read them for nothing; a bill that moves is found by asking Congress.gov which bills changed since we last
+// asked (`/bill/<congress>/<type>?fromDateTime=`, one request per type, a handful of entries), and the kept answers of exactly those are deleted so the next
+// opening reads them again. Checked at most every ten minutes per isolate, with the time of the last check in KV (the first looks back a day), only for the types that
+// are kept, and what is held in memory goes stale in ten minutes. A bill added to a Congress.gov record without its
+// update date moving (a new text version) is caught by the month the answers are kept at most.
+let _billSyncAt = 0;
+const BILL_SYNC_TYPES = ['hr', 's', 'hres', 'hjres', 'sres', 'sjres', 'hconres', 'sconres'];
+let _ctx = null;   // the request's execution context, so the check can finish after the answer is sent
+async function syncBillChanges(env) {
+  if (!env?.HLS_CACHE || typeof env.HLS_CACHE.list !== 'function' || !_congressApiKey) return;
+  if (Date.now() - _billSyncAt < 10 * 60_000) return;
+  _billSyncAt = Date.now();
+  const checkpointKey = 'bill-changes-checkpoint-v1';
+  try {
+    const started = Date.now();
+    // the kept answers first (one list, not a request each): with none there is nothing to find out, and only the types that are kept need asking about
+    const kept = [];
+    let cursor;
+    do {
+      const l = await env.HLS_CACHE.list({ prefix: `senate-bill-${CURRENT_CONGRESS}-`, cursor });
+      for (const k of l.keys || []) { const m = k.name.match(/^senate-bill-\d+-([a-z]+)-(\d+)-v\d+$/); if (m) kept.push({ name: k.name, id: `${m[1]}-${m[2]}`, type: m[1] }); }
+      cursor = l.list_complete ? undefined : l.cursor;
+    } while (cursor);
+    let since = null;
+    try { since = JSON.parse((await env.HLS_CACHE.get(checkpointKey)) || 'null')?.checked || null; } catch { since = null; }
+    since = since || new Date(started - 24 * 3600_000).toISOString().slice(0, 19) + 'Z';
+    const changed = new Set();
+    for (const type of [...new Set(kept.map((k) => k.type))].filter((t) => BILL_SYNC_TYPES.includes(t))) {
+      let next = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}?limit=250&sort=updateDate+asc&fromDateTime=${since}`;
+      for (let page = 0; next && page < 3; page++) {
+        const r = await fetch(`${next.replace(/[?&](format|api_key)=[^&]*/g, '')}&format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+        if (!r.ok) throw new Error(`bill changes: ${type} HTTP ${r.status}`);
+        const json = await r.json();
+        for (const b of json.bills || []) changed.add(`${String(b.type).toLowerCase()}-${b.number}`);
+        next = json.pagination?.next || null;
+      }
+      // more changed than three pages hold (the board was not asked for a long while): every kept answer of the type is treated as changed, not guessed at
+      if (next) for (const k of kept) if (k.type === type) changed.add(k.id);
+    }
+    let deletes = 0;
+    for (const k of kept) {
+      if (changed.has(k.id) && deletes < 40) { await env.HLS_CACHE.delete(k.name); _mem.delete(k.name); deletes++; }
+    }
+    // two minutes of overlap, so a change that landed while we were asking is not missed
+    await env.HLS_CACHE.put(checkpointKey, JSON.stringify({ checked: new Date(started - 120_000).toISOString().slice(0, 19) + 'Z' }), { expirationTtl: KV_STORAGE_TTL });
+    if (deletes) console.log(`[house-floor] bill changes: ${deletes} kept answer(s) dropped (${changed.size} bills changed since ${since})`);
+  } catch (e) { _billSyncAt = 0; console.warn(`[house-floor] bill changes: ${e.message}`); }
+}
+
 async function handleSenateBill(env, billId) {
   const parsed = billIdToCongressType(billId || '');
   if (!parsed) {
@@ -3158,6 +3208,8 @@ async function handleSenateBill(env, billId) {
     });
   }
   const { type, number } = parsed;
+  // the check for changed bills runs beside the answer, not before it (it can take a few seconds; the answer in hand was right a few minutes ago)
+  if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil(syncBillChanges(env)); else await syncBillChanges(env);
   // A day, not the House's hour.
   //
   // The House caches one week of floor business, where latestAction moves
@@ -3170,7 +3222,7 @@ async function handleSenateBill(env, billId) {
   // The one live measure is the pending one, and what it is doing next comes
   // from the caucus schedule on ON THE FLOOR, which refreshes every 30 minutes.
   // This endpoint is not where the board learns that.
-  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v7`, 7 * 86_400, async () => {
+  return kvCache(env, `senate-bill-${CURRENT_CONGRESS}-${type}-${number}-v8`, 600, async () => {
     if (!_congressApiKey) throw new Error('bill detail: no Congress.gov key configured');
     const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}`;
     // One retry: Congress.gov is sometimes slow from the edge (a request that timed out at nine seconds took one to two the next time).
@@ -3295,7 +3347,7 @@ async function handleSenateBill(env, billId) {
       // a section that could not be read: served, but not kept (KV or the browser), so the next opening reads it again
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': degraded ? 'no-store' : 'public, max-age=3600', ...(degraded ? { [KV_NO_STORE_HEADER]: '1' } : {}) },
     });
-  }, 7 * 86_400, { ttlOf: (body) => globalThis.CongressBills.cacheSeconds(JSON.parse(body).latestActionDate), browserSeconds: 3600 });
+  }, KV_STORAGE_TTL, { browserSeconds: 3600 });
 }
 
 async function handleSenateFloorSchedule(env) {
@@ -6767,7 +6819,8 @@ async function handleRequest(request, env) {
 // the header on the way out, against the same ALLOWED_ORIGINS list declared
 // above. One allowlist, two consumers.
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    _ctx = ctx || null;
     // A handler that throws (every cached route does when its upstream fails and nothing is held) used to
     // escape here, and Cloudflare answers that with its own error page, which carries no CORS headers: the
     // browser then reports "not allowed by Access-Control-Allow-Origin" and hides the real status, which is
