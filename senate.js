@@ -1830,6 +1830,7 @@ setInterval(loadSchedule, 5 * 60 * 1000);
 
 initAnalogClocks();
 initAirportDelays();
+AppropsPanel.mount({ url: `${API}/appropriations` });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });

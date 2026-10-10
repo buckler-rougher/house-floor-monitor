@@ -6749,3 +6749,24 @@ a.source-link.has-manifest:not(.has-tail)::after, a.source-link.has-manifest .so
     border: 0;
 }
 .committee-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--accent-green); white-space: nowrap; }
+.dp-toggle { justify-self: start; background: none; border: 1px solid var(--border-color); border-radius: var(--radius-6); padding: var(--sp-6) var(--sp-12); font: inherit; font-size: var(--fs-sm); color: var(--accent-blue); cursor: pointer; }
+.dp-toggle:hover { border-color: var(--accent-blue); }
+.approps-list { padding: var(--sp-12) var(--sp-24) var(--sp-16); display: grid; gap: var(--sp-16); }
+@media (max-width: 640px) {
+  .approps-list { padding: var(--sp-12) var(--sp-16); }
+}
+.approps-item { display: grid; gap: var(--sp-6); }
+.approps-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-12); }
+.approps-id { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-4) var(--sp-8); min-width: 0; }
+.approps-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); }
+.approps-id a { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--accent-blue); text-decoration: none; }
+.approps-id a:hover { text-decoration: underline; }
+.approps-stage { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.approps-stage span { font-weight: 400; color: var(--text-muted); }
+.approps-stage.is-law { color: var(--accent-green); }
+.approps-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
+.approps-track i { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); }
+.approps-track i.on { background: var(--accent-blue); }
+.approps-track i.is-law { background: var(--accent-green); }
+.approps-action { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
+.approps-action span { color: var(--text-muted); }

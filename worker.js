@@ -22,6 +22,7 @@ import './lib/committee-meetings.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
 import './lib/cra-rule.js';
+import './lib/appropriations.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -4239,6 +4240,35 @@ async function handleDischargeCalendar(env) {
   });
 }
 
+// The twelve regular appropriations bills of the fiscal year and how far each has got (lib/appropriations.js), read from each bill's own Congress.gov record and
+// actions: 24 requests, so this is its own route and kept half an hour. A bill Congress.gov does not know (a number that has not been introduced, or a
+// wrong one) is listed at stage 0 with `known: false`, never dropped, so a wrong number shows rather than hides.
+async function handleAppropriations(env) {
+  return kvCache(env, `appropriations-v1-${globalThis.Appropriations.FISCAL_YEAR}`, 1800, async () => {
+    if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
+    const AP = globalThis.Appropriations;
+    const call = async (base, path) => {
+      const r = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}format=json&api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(9000) });
+      if (r.status === 429 || r.status >= 500) throw new Error(`HTTP ${r.status}`);
+      return r.ok ? r.json() : null;
+    };
+    const bills = await Promise.all(AP.BILLS.map(async (b) => {
+      const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hr/${b.number}`;
+      const [record, actions] = await Promise.all([call(base, ''), call(base, '/actions?limit=250')]);
+      const bill = record?.bill;
+      const s = AP.stage(actions?.actions, bill?.laws);
+      return {
+        id: `H.R. ${b.number}`, short: b.short, name: b.name, known: !!bill, title: bill?.title || null,
+        url: `https://www.congress.gov/bill/${CURRENT_CONGRESS}th-congress/house-bill/${b.number}`,
+        ...s, latestAction: bill?.latestAction?.text || null, latestActionDate: bill?.latestAction?.actionDate || null,
+      };
+    }));
+    return new Response(JSON.stringify({ at: Date.now(), fiscalYear: AP.FISCAL_YEAR, stages: AP.STAGES, bills }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' },
+    });
+  });
+}
+
 async function handleCongressIndex() {
   try {
     // The Clerk's old index page (evs/<year>/index.asp) is gone; lib/clerk-votes.js reads the
@@ -6368,6 +6398,8 @@ async function handleRequest(request, env) {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
     return await handleCommitteeMeetings(request, env);
+  } else if (path === '/api/appropriations' && request.method === 'GET') {
+    return await handleAppropriations(env);
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
     return await handleDischargeCalendar(env);
   } else if (path === '/api/discharge-petition' && request.method === 'GET') {
