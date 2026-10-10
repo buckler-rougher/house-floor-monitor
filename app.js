@@ -3299,7 +3299,8 @@ function renderVoteRecsRows() {
     const body = document.getElementById('vrec-body');
     if (!body) return;
     if (!currentVotesList.length) {
-        body.innerHTML = '<div style="padding:20px 24px;color:var(--text-muted);font-family:var(--font-mono);font-size:var(--fs-base);">No votes in current series.</div>';
+        body.innerHTML = '<div class="vrec-empty">No votes in the current series.</div>';
+        updateVrecCount();
         return;
     }
     body.innerHTML = currentVotesList.map(({ billId, text, action }, i) => {
@@ -3326,13 +3327,24 @@ function renderVoteRecsRows() {
                 <button class="vrec-vote-btn" data-vote="YES"     onclick="setVoteRec('${safeKey}','YES')">YES</button>
                 <button class="vrec-vote-btn" data-vote="NO"      onclick="setVoteRec('${safeKey}','NO')">NO</button>
                 <button class="vrec-vote-btn" data-vote="PRESENT" onclick="setVoteRec('${safeKey}','PRESENT')">PRESENT</button>
-                <button class="vrec-vote-btn" data-vote=""        onclick="setVoteRec('${safeKey}',null)">—</button>
+                <button class="vrec-vote-btn" data-vote=""        onclick="setVoteRec('${safeKey}',null)" aria-label="No recommendation" title="No recommendation">—</button>
             </div>
             <input class="vrec-note-input" type="text" placeholder="Note (optional)"
                 value="${escapeHtml(entry.note || '')}"
                 oninput="setVoteRecNote('${safeKey}', this.value)">
         </div>`;
     }).join('');
+    updateVrecCount();
+}
+
+// "3 of 7 decided" in the footer, and the line under the title
+function updateVrecCount() {
+    const n = currentVotesList.length;
+    const done = currentVotesList.filter(({ billId, text, action }) => (voteRecsMap.get(voteRecKey(billId, action, text)) || {}).vote).length;
+    const count = document.getElementById('vrec-count');
+    if (count) count.textContent = n ? `${done} of ${n} decided` : '';
+    const sub = document.getElementById('vrec-sub');
+    if (sub) sub.textContent = n ? `${n} ${n === 1 ? 'vote' : 'votes'} in the current series` : '';
 }
 
 function setVoteRec(key, vote) {
@@ -3346,6 +3358,7 @@ function setVoteRec(key, vote) {
         const btns = row.querySelector('.vrec-vote-btns');
         if (btns) btns.dataset.sel = vote || '';
     }
+    updateVrecCount();
 }
 
 function setVoteRecNote(key, note) {
@@ -3432,11 +3445,12 @@ function exportVoteRecs() {
     const text = lines.join('\n');
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('vrec-export-btn');
-        if (!btn) return;
-        const orig = btn.textContent;
-        btn.textContent = 'Copied!';
+        const label = btn && btn.querySelector('.bill-copy-text');
+        if (!label) return;
+        const orig = label.textContent;
+        label.textContent = 'Copied';
         btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+        setTimeout(() => { label.textContent = orig; btn.classList.remove('copied'); }, 1500);
     }).catch(() => {
         // Fallback: select text from a temporary textarea
         const ta = document.createElement('textarea');
