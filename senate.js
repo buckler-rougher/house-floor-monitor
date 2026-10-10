@@ -976,137 +976,15 @@ function onSenateBillModalKey(e) {
     if (e.key === 'Escape') closeSenateBillModal();
 }
 
-function billModalSkeleton(id) {
-    return `
-        <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(id)}">
-            <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
-            <div class="bill-modal-scroll">
-                <div class="bill-modal-top">
-                    <div class="bill-modal-header">
-                        <span class="bill-modal-id">${escapeHtml(id)}</span>
-                    </div>
-                    <h2 class="bill-modal-title">Loading…</h2>
-                </div>
-            </div>
-        </div>`;
-}
-
-function billModalContent(b) {
-    // The sections are lib/bill-sections.js, the House modal's own: sponsor, support, committees, the
-    // CRS summary, latest action, and links. This function maps what the Worker sent into them.
-    const sp = b.sponsor;
-    const sections = [
-        BillSections.sponsor(sp ? {
-            name: sp.name,
-            party: sp.party,
-            loc: (sp.state || '') + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
-            photoUrl: sp.bioguide ? photoUrlFor(sp.bioguide) : '',
-            placeholder: PHOTO_PLACEHOLDER,
-        } : {}),
-        BillSections.support(b.support ? { ...b.support, cosponsorCount: b.cosponsorCount } : { total: 0 }),
-        BillSections.committees({
-            committees: b.committees,
-            report: b.committeeReport,
-            reportDate: b.committeeReportDate,
-            formatDate: boardDate,
-        }),
-    ].join('');
-
-    // Congress.gov dates an action but gives no time of day, so there is a date and where it came from.
-    const actionDate = b.latestActionDate
-        ? `${escapeHtml(boardDate(b.latestActionDate))}${b.congressUrl
-            ? ` <a href="${escapeHtml(b.congressUrl)}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">Congress.gov</a>` : ''}`
-        : '';
-
-    return `
-        <div class="bill-modal" id="bill-main-panel" role="dialog" aria-modal="true">
-            <button class="bill-modal-close" id="bill-modal-close" aria-label="Close">✕</button>
-            <div class="bill-modal-scroll">
-                <div class="bill-modal-top">
-                    <div class="bill-modal-header">
-                        <span class="bill-modal-id">${escapeHtml(b.id)}</span>
-                        ${b.policyArea ? `<span class="bill-modal-badge">${escapeHtml(b.policyArea)}</span>` : ''}
-                    </div>
-                    <h2 class="bill-modal-title">${escapeHtml(b.title || '')}</h2>
-                </div>
-                <div class="bill-modal-sections">${sections}</div>
-                ${BillSections.summary(b.summary)}
-                <div class="bill-modal-foot">
-                    ${BillSections.action({ textHtml: b.latestAction ? escapeHtml(b.latestAction) : '', dateHtml: actionDate })}
-                    ${BillSections.links({
-                        linkClass: 'senate',
-                        text: b.textVersionUrl || b.govinfoPdf,
-                        textLabel: b.textVersionUrl ? b.textVersionType : null,
-                        textTitle: b.textVersionUrl ? [b.textVersionType, b.textVersionDate].filter(Boolean).join(', ') : null,
-                        report: b.committeeReportUrl,
-                        reportTitle: b.committeeReportCitation,
-                        cbo: b.cboCostEstimateUrl,
-                        cboTitle: b.cboCostEstimateTitle,
-                        rule: b.ruleUrl,
-                        ruleTitle: b.ruleTitle,
-                        memo: b.sapUrl,
-                        // The (?) beside the memo button, as on the House board: drawn once its explanation exists, and
-                        // in ?fixtures so it can be reviewed before then.
-                        memoHelp: (InfoPopup.has('sap') || new URLSearchParams(location.search).has('fixtures')) ? 'sap' : null,
-                        reportHelp: (InfoPopup.has('committee-report') || new URLSearchParams(location.search).has('fixtures')) ? 'committee-report' : null,
-                        congress: b.congressUrl,
-                    })}
-                    ${BillSections.source(b.congressUrl)}
-                </div>
-            </div>
-        </div>`;
-}
-
-// Bill details, warmed rather than fetched on click.
-//
-// The House modal is synchronous: openBillModal reads billDataMap, which one
-// bulk /api/bills call fills for the week's floor business, so a click paints
-// immediately. This board has no bulk endpoint -- the Senate publishes no
-// weekly bill list to build one from -- so it reaches the same place by asking
-// for each measure once, in the background, and keeping the answers.
-//
-// Worth more here than on the House board, not less: PROCEDURAL STAGES reaches
-// back months rather than one week, so the same bill is on screen for far
-// longer and a click on it is far more likely to be a repeat.
-const _billCache = new Map();     // id -> { at, bill } | { at, error }
-const _billInflight = new Map();  // id -> Promise, so a prefetch and a click share one request
-// Long, because none of what the modal draws changes: sponsor, the cosponsor
-// split, committees and the CRS summary are fixed at introduction. The Worker
-// holds the same record for a day for the same reason.
-const BILL_CACHE_MS = 6 * 60 * 60 * 1000;
-
-function cachedBill(id) {
-    const hit = _billCache.get(id);
-    return hit && Date.now() - hit.at <= BILL_CACHE_MS ? hit : null;
-}
-
-function fetchSenateBill(id) {
-    const hit = cachedBill(id);
-    if (hit) return Promise.resolve(hit);
-    if (_billInflight.has(id)) return _billInflight.get(id);
-    const p = (async () => {
-        try {
-            const r = await fetch(`${API}/senate/bill?id=${encodeURIComponent(id)}`);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const bill = await r.json();
-            if (bill.error) throw new Error(bill.error);
-            const entry = { at: Date.now(), bill };
-            _billCache.set(id, entry);
-            return entry;
-        } catch (e) {
-            // Cached too. A measure with no Congress.gov record fails the same
-            // way every time, and retrying it on every click spends the quota
-            // to arrive at the same message.
-            const entry = { at: Date.now(), error: e.message };
-            _billCache.set(id, entry);
-            return entry;
-        } finally {
-            _billInflight.delete(id);
-        }
-    })();
-    _billInflight.set(id, p);
-    return p;
-}
+// The modal itself is lib/remote-bill.js, shared with the House board (which uses it for any bill that is not in its week's business).
+const REMOTE_BILL = { linkClass: 'senate', photoUrlFor: (id) => photoUrlFor(id), placeholder: PHOTO_PLACEHOLDER, formatDate: (d) => boardDate(d) };
+function billModalSkeleton(id) { return RemoteBill.skeleton(id); }
+function billModalContent(b) { return RemoteBill.content(b, REMOTE_BILL); }
+// Bill details, warmed rather than fetched on click: this board has no bulk endpoint (the Senate publishes no weekly bill list), so it asks for each measure once,
+// in the background, and keeps the answers (lib/remote-bill.js), which are worth more here than on the House board: PROCEDURAL STAGES reaches back months, so
+// the same bill is on screen far longer and a click on it is far more likely to be a repeat.
+function cachedBill(id) { return RemoteBill.cached(id); }
+function fetchSenateBill(id) { return RemoteBill.fetch(id, API); }
 
 // Every bill-shaped measure currently drawn, warmed two at a time so the board
 // does not open twenty sockets at once on a panel nobody has clicked yet.
@@ -1830,6 +1708,8 @@ setInterval(loadSchedule, 5 * 60 * 1000);
 
 initAnalogClocks();
 initAirportDelays();
+// a bill number in the appropriations panel opens its modal
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-bill-open]'); if (b) openSenateBillModal(b.dataset.billOpen, b); });
 AppropsPanel.mount({ base: API });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
