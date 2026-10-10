@@ -1040,6 +1040,8 @@ function billModalContent(b) {
                         reportTitle: b.committeeReportCitation,
                         cbo: b.cboCostEstimateUrl,
                         cboTitle: b.cboCostEstimateTitle,
+                        jct: JctPublications.forBill(b.id).url,
+                        jctTitle: JctPublications.forBill(b.id).title,
                         memo: b.sapUrl,
                         // The (?) beside the memo button, as on the House board: drawn once its explanation exists, and
                         // in ?fixtures so it can be reviewed before then.
@@ -1826,6 +1828,7 @@ setInterval(loadSchedule, 5 * 60 * 1000);
 
 initAnalogClocks();
 initAirportDelays();
+JctPublications.load(`${API}/jct-publications`);
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });
@@ -1965,7 +1968,7 @@ SenateQuorum.init({ photoUrlFor });
         formatDate: boardDate,
         summary: b.summary,
         linkClass: 'senate',
-        links: { text: b.govinfoPdf, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, memo: b.sapUrl, congress: b.congressUrl },
+        links: { text: b.govinfoPdf, report: b.committeeReportUrl, cbo: b.cboCostEstimateUrl, jct: JctPublications.forBill(b.id).url, memo: b.sapUrl, congress: b.congressUrl },
         sourceApi: API,
       });
       if (src && b.congressUrl) src.href = b.congressUrl;
