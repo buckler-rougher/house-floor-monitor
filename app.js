@@ -6196,10 +6196,9 @@ function renderTodayInHouse(items) {
 // Asked for today with `scan`, so on a day with nothing on (a recess, a weekend) it shows the next day that has something, and says which day that is; with
 // nothing in the next week it says so. Titles, committees, times and rooms are the Clerk's own words; a markup's title is the bills it takes up.
 let _committee = null;
-let _committeeAll = false;
 const _committeeOpen = new Set();   // meetings whose details are open
 const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
-const COMMITTEE_SHOWN = 8;
+const COMMITTEE_SHOWN = 5;
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
     if (!list || !_committee) return;
@@ -6212,9 +6211,8 @@ function renderCommitteeMeetings() {
     if (!d.events.length) {
         setIfChanged(list, '<div class="empty-note">No committee meetings scheduled in the next week</div>');
     } else {
-        const shown = _committeeAll ? d.events : d.events.slice(0, COMMITTEE_SHOWN);
-        const rest = d.events.length - shown.length;
-        const entries = shown.map((e) => ({ key: e.id, html: `
+        if (!list._clamp) { list.innerHTML = ''; ClampList.mount(list, { keep: COMMITTEE_SHOWN }); }
+        const entries = d.events.map((e) => ({ key: e.id, html: `
         <div class="committee-item">
             <span class="committee-time">${escapeHtml(e.time)}</span>
             <div class="committee-what">
@@ -6225,8 +6223,8 @@ function renderCommitteeMeetings() {
             <span class="committee-room">${escapeHtml(e.location)}</span>
             ${_committeeOpen.has(e.id) ? committeeDetailHtml(_committeeDetail[e.id]) : ''}
         </div>` }));
-        if (d.events.length > COMMITTEE_SHOWN) entries.push({ key: 'committee-toggle', tail: true, html: `<button type="button" class="dp-toggle" id="committee-toggle">${_committeeAll ? 'Show fewer' : `Show ${rest} more meeting${rest === 1 ? '' : 's'}`}</button>` });
         ListSync.sync(list, entries);
+        list._clamp?.refresh();
     }
     const link = document.getElementById('committee-source-link');
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
@@ -6279,12 +6277,10 @@ function loadCommitteeMeetings() {
 // (a list that keeps what has not changed and animates what does: lib/list-sync.js)
 const reconcileList = (list, entries) => ListSync.sync(list, entries);
 let _discharge = null;
-let _dischargeAll = false;
-let _dischargeDoneAll = false;
 let _dischargeSort = 'close';
 let _dischargeCal = null;   // /api/discharge-calendar: the motions on the Discharge Calendar and the legislative days each has waited
 const DISCHARGE_WAIT_DAYS = 7;
-const DISCHARGE_SHOWN = 3;        // open petitions shown before the button
+const DISCHARGE_SHOWN = 3;        // open petitions shown whole before the fade
 const DISCHARGE_DONE_SHOWN = 1;   // the same for the ones at 218, in the grouped sort
 const DISCHARGE_MIXED_SHOWN = 4;  // all of them, in the other sorts
 function dischargeParts(p) {
@@ -6340,8 +6336,6 @@ function renderDischargePetitions() {
     const all = _discharge.petitions.filter((p) => p.signatures != null);
     const open = dischargeSorted(all.filter((p) => p.signatures < need));
     const done = dischargeSorted(all.filter((p) => p.signatures >= need));
-    const shown = _dischargeAll ? open : open.slice(0, DISCHARGE_SHOWN);
-    const shownDone = _dischargeDoneAll ? done : done.slice(0, DISCHARGE_DONE_SHOWN);
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('discharge-summary', `${open.length} open`);
     document.querySelectorAll('#dp-sort [data-dp-sort]').forEach((b) => { const on = b.dataset.dpSort === _dischargeSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
@@ -6382,26 +6376,28 @@ function renderDischargePetitions() {
         </div>`;
     };
     const entries = [];
-    const toggle = (id, label) => ({ key: id, tail: true, html: `<button type="button" class="dp-toggle" id="${id}">${label}</button>` });
     const card = (p) => ({ key: p.id || 'n' + p.number, html: item(p) });
-    if (_dischargeSort === 'close') {
-        // closest to 218 puts the finished ones first, as their own group
-        if (done.length) {
-            entries.push({ key: 'head', html: `<div class="dp-group-head">Reached ${need}</div>` });
-            shownDone.forEach((p) => entries.push(card(p)));
-            if (done.length > DISCHARGE_DONE_SHOWN) { const r = done.length - shownDone.length; entries.push(toggle('dp-done-toggle', _dischargeDoneAll ? 'Show fewer' : `Show ${r} more that reached ${need}`)); }
-        }
-        if (!shown.length) entries.push({ key: 'none', html: '<div class="proceedings-error">NO OPEN PETITIONS</div>' });
-        shown.forEach((p) => entries.push(card(p)));
-        if (open.length > DISCHARGE_SHOWN) { const r = open.length - shown.length; entries.push(toggle('dp-toggle', _dischargeAll ? 'Show fewer' : `Show ${r} more open petition${r === 1 ? '' : 's'}`)); }
-    } else {
-        // the other sorts mix them, the finished ones keeping their green
-        const every = dischargeSorted(all);
-        const part = _dischargeAll ? every : every.slice(0, DISCHARGE_MIXED_SHOWN);
-        part.forEach((p) => entries.push(card(p)));
-        if (every.length > DISCHARGE_MIXED_SHOWN) { const r = every.length - part.length; entries.push(toggle('dp-toggle', _dischargeAll ? 'Show fewer' : `Show ${r} more petition${r === 1 ? '' : 's'}`)); }
+    // two clipped lists, made once: the petitions at 218 (with their label above) and the rest. Each shows its first petitions whole and the top of the next under a fade,
+    // with a + to open it (lib/clamp-list.js). Closest to 218 puts the finished ones in the first; the other sorts mix them all into the second, finished ones green.
+    if (!list._dp) {
+        list.innerHTML = '';
+        const block = document.createElement('div');
+        block.id = 'dp-done-block';
+        block.innerHTML = '<div class="dp-group-head" id="dp-done-head"></div>';
+        const doneRegion = document.createElement('div'); doneRegion.className = 'dp-region'; doneRegion.id = 'dp-done';
+        block.append(doneRegion);
+        const openRegion = document.createElement('div'); openRegion.className = 'dp-region'; openRegion.id = 'dp-open';
+        list.append(block, openRegion);
+        list._dp = { block, doneRegion, openRegion, doneClamp: ClampList.mount(doneRegion, { keep: DISCHARGE_DONE_SHOWN }), openClamp: ClampList.mount(openRegion, { keep: () => (_dischargeSort === 'close' ? DISCHARGE_SHOWN : DISCHARGE_MIXED_SHOWN) }) };
     }
-    reconcileList(list, entries);
+    const dp = list._dp;
+    const grouped = _dischargeSort === 'close' && done.length > 0;
+    dp.block.hidden = !grouped;
+    document.getElementById('dp-done-head').textContent = `Reached ${need}`;
+    ListSync.sync(dp.doneRegion, grouped ? done.map(card) : []);
+    const rest = grouped ? open : dischargeSorted(all);
+    ListSync.sync(dp.openRegion, rest.length ? rest.map(card) : [{ key: 'none', html: '<div class="empty-note">No open petitions</div>' }]);
+    dp.doneClamp.refresh(); dp.openClamp.refresh();
     if (globalThis.SourcePop) {
         // the Clerk's own list entries (tidied, see lib/discharge-petitions.js), each with where its signature count comes from
         const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
@@ -6517,13 +6513,10 @@ document.addEventListener('click', (e) => {
     if (!t || !t.closest) return;
     const billOpen = t.closest('[data-bill-open]');
     if (billOpen) { openBillModal(billOpen.dataset.billOpen); return; }
-    if (t.id === 'committee-toggle') { _committeeAll = !_committeeAll; renderCommitteeMeetings(); }
     const more = t.closest('[data-committee-detail]');
     if (more) toggleCommitteeDetail(more.dataset.committeeDetail);
-    if (t.id === 'dp-toggle') { _dischargeAll = !_dischargeAll; renderDischargePetitions(); }
-    if (t.id === 'dp-done-toggle') { _dischargeDoneAll = !_dischargeDoneAll; renderDischargePetitions(); }
     const sortBtn = t.closest('[data-dp-sort]');
-    if (sortBtn) { const next = Segmented.next('sort', _dischargeSort, sortBtn.dataset.dpSort); if (next !== _dischargeSort) { _dischargeSort = next; _dischargeAll = false; _dischargeDoneAll = false; renderDischargePetitions(); } }
+    if (sortBtn) { const next = Segmented.next('sort', _dischargeSort, sortBtn.dataset.dpSort); if (next !== _dischargeSort) { _dischargeSort = next; const l = document.getElementById('discharge-list'); l?._dp?.doneClamp.close(); l?._dp?.openClamp.close(); renderDischargePetitions(); } }
     const sig = t.closest('[data-dp-signers]');
     if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });

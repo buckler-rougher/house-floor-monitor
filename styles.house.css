@@ -2434,6 +2434,24 @@ body.tellers-mode .tellers-column { display: flex; }
 @keyframes fill-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .bill-modal-scroll.is-filled, .dp-modal-list.is-filled { animation: none; } }
 
+.dp-region { display: grid; gap: var(--sp-16); }
+#dp-done-block { display: grid; gap: var(--sp-8); }
+#dp-done-block[hidden] { display: none; }
+
+.clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
+.clamp.is-short { padding-bottom: 0; }
+.clamp-body { position: relative; overflow: hidden; transition: max-height 0.32s ease; }
+.clamp-body > * { position: relative; }
+
+.clamp-body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3.5rem; background: linear-gradient(to bottom, transparent, var(--bg-card)); opacity: 1; transition: opacity 0.32s ease; pointer-events: none; }
+.clamp.is-open .clamp-body::after, .clamp.is-short .clamp-body::after { opacity: 0; }
+.clamp-toggle { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); box-sizing: border-box; width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; z-index: 2; }
+.clamp-toggle:hover, .clamp-toggle:focus-visible { color: var(--text-primary); border-color: var(--text-muted); outline: none; }
+.clamp-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.clamp.is-open .clamp-toggle .v { display: none; }
+.clamp.is-short .clamp-toggle { display: none; }
+@media (prefers-reduced-motion: reduce) { .clamp, .clamp-body, .clamp-body::after { transition: none; } }
+
 .loading-indicator { display: flex; justify-content: center; align-items: center; gap: var(--sp-6); padding: var(--sp-24); }
 .loading-indicator i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-blue); opacity: 0.25; animation: loading-dot 1.2s ease-in-out infinite; }
 .loading-indicator i:nth-child(2) { animation-delay: 0.15s; }
