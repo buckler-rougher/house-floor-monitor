@@ -5162,6 +5162,7 @@ font-family: var(--font-mono);
 .info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible {
     opacity: 1; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); outline: none;
 }
+[data-quiet] .info-popup-close:focus-visible, [data-quiet] .dp-modal-close:focus-visible { opacity: 0.6; color: var(--text-muted); background: none; }   /* focused by a reload, not lit (QuietFocus in lib/util.js) */
 /* The ✕ is drawn, not typed: a text glyph sits on its font's baseline and never lands in the middle of the square. Two 18px strokes crossed at the centre. */
 .info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close { position: relative; font-size: 0; }
 .info-popup-close::before, .info-popup-close::after, .bill-modal-close::before, .bill-modal-close::after, .vrec-close-x::before, .vrec-close-x::after,

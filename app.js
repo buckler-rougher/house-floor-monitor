@@ -6512,7 +6512,8 @@ function openDischargeSigners(id, number, trigger) {
     document.addEventListener('keydown', dischargeModalKey);
     o.addEventListener('click', (e) => { if (e.target === o) closeDischargeSigners(); });
     document.getElementById('dp-modal-close').addEventListener('click', closeDischargeSigners);
-    if (trigger) document.getElementById('dp-modal-close').focus();   // reopened by a reload (no trigger): nothing is focused, so nothing is lit
+    document.getElementById('dp-modal-close').focus();
+    if (!trigger) QuietFocus(o);   // reopened by a reload: focused as after a click, not lit
     let signers = [], party = '', order = 'new', unsigned = false, absent = [];   // absent: the members who have not signed, from the Clerk's roster
     const letter = (p) => /^R/i.test(p) ? 'R' : /^D/i.test(p) ? 'D' : 'I';
     const draw = () => {

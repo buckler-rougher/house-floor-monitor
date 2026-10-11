@@ -4783,6 +4783,7 @@ font-family: var(--font-mono);
 .info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible {
     opacity: 1; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); outline: none;
 }
+[data-quiet] .info-popup-close:focus-visible, [data-quiet] .dp-modal-close:focus-visible { opacity: 0.6; color: var(--text-muted); background: none; }
 
 .info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close { position: relative; font-size: 0; }
 .info-popup-close::before, .info-popup-close::after, .bill-modal-close::before, .bill-modal-close::after, .vrec-close-x::before, .vrec-close-x::after,
