@@ -28,6 +28,7 @@ import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
 import './lib/cra-rule.js';
 import './lib/appropriations.js';
+import './lib/leadership.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -6311,7 +6312,7 @@ function toEasternDateStr(isoString) {
 
 
 async function handleLeadership(env) {
-  return kvCache(env, 'leadership', 3600, async () => {
+  return kvCache(env, 'leadership-v2', 3600, async () => {
     try {
       const response = await fetch('https://clerk.house.gov/Members/ViewLeadership', {
         signal: AbortSignal.timeout(10000),
@@ -6326,11 +6327,36 @@ async function handleLeadership(env) {
 
       if (!bioguideMatch || !nameMatch) throw new Error('Could not parse Speaker from leadership page');
 
+      // the Speaker (what the prayer, pledge and Journal panels use) and, for the BALANCE OF POWER panel, the leaders and whips
       return new Response(JSON.stringify({
         bioguideId: bioguideMatch[1],
         name: nameMatch[1].trim(),
         title: titleMatch ? titleMatch[1].trim() : 'Speaker of the House',
+        leaders: globalThis.Leadership.parseHouse(html),
       }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
+    }
+  });
+}
+
+// The Senate's leaders and whips, from senate.gov's own leadership page. A page of another shape is an error, not an empty list.
+async function handleSenateLeadership(env) {
+  return kvCache(env, 'senate-leadership-v1', 6 * 3600, async () => {
+    try {
+      const response = await fetch('https://www.senate.gov/senators/leadership.htm', {
+        signal: AbortSignal.timeout(10000),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const leaders = globalThis.Leadership.parseSenate(await response.text());
+      if (!leaders) throw new Error('Could not read the leaders and whips from the leadership page');
+      return new Response(JSON.stringify({ leaders }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' }
       });
     } catch (error) {
@@ -6783,6 +6809,8 @@ function sourceStatusChecks() {
     'senate-schedule': ['https://www.senate.gov/legislative/schedule/floor_schedule.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<CongressSessionDayConvenings'), 'the session days file')],
     'senate-nominations': [`${NOM_BASE}/NomCivilianPendingCalendar.xml`, 4096, (r) => ok200(r, (x) => x.text.includes('<Nominations'), 'a nominations file')],
     'senate-floor-activity': ['https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm', 4096, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
+    'house-leadership': ['https://clerk.house.gov/Members/ViewLeadership', 40_000, (r) => ok200(r, (x) => globalThis.Leadership.parseHouse(x.text) !== null, 'the leadership page')],
+    'senate-leadership': ['https://www.senate.gov/senators/leadership.htm', 60_000, (r) => ok200(r, (x) => globalThis.Leadership.parseSenate(x.text) !== null, 'the leadership page')],
     'senate-roster': ['https://www.senate.gov/general/contact_information/senators_cfm.xml', 4096, (r) => ok200(r, (x) => x.text.includes('<member>') || x.text.includes('<contact_information'), 'the roster')],
     'senate-democrats': ['https://www.democrats.senate.gov/floor/senate-schedule', 4096, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'nws': ['https://api.weather.gov/points/38.8899,-77.0091', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
@@ -6956,6 +6984,8 @@ async function handleRequest(request, env) {
     return handleSenateSchedule(env);
   } else if (path === '/api/senate/roster' && request.method === 'GET') {
     return handleSenateRoster(env);
+  } else if (path === '/api/senate/leadership' && request.method === 'GET') {
+    return handleSenateLeadership(env);
   } else if (path === '/api/senate/seniority' && request.method === 'GET') {
     return handleSenateSeniority(env);
   } else if (path === '/api/senate/votes' && request.method === 'GET') {

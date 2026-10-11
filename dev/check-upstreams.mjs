@@ -37,6 +37,7 @@ const CommitteeMeetings = require(join(ROOT, 'lib/committee-meetings.js'));
 const DischargePetitions = require(join(ROOT, 'lib/discharge-petitions.js'));
 const DischargeCalendar = require(join(ROOT, 'lib/discharge-calendar.js'));
 const CraRule = require(join(ROOT, 'lib/cra-rule.js'));
+const Leadership = require(join(ROOT, 'lib/leadership.js'));
 
 const args = process.argv.slice(2);
 const only = args.includes('--worker') ? 'worker' : args.includes('--direct') ? 'direct' : null;
@@ -86,6 +87,7 @@ const CHECKS = [
   worker('house', 'domewatch-floor', (j) => has(j.now && typeof j.now.text === 'string', 'no now.text')),
   worker('house', 'hls-url', (j) => has(typeof j.isLive === 'boolean', 'no isLive')),
   worker('house', 'leadership', (j) => has(j.bioguideId && j.name, 'no leader')),
+  worker('house', 'leadership', (j) => has(Array.isArray(j.leaders) && j.leaders.length === 5, 'the leaders and whips are missing')),
   worker('house', 'house-calendar', (j) => j.calendar ? has(Number.isInteger(j.calendar.legislativeDay) && j.calendar.meetsAt, 'a calendar with no legislative day or meeting time')
     : { warn: `no House Calendar for ${j.date} (normal when the House is not sitting)` }),
   worker('house', 'last-session-date', (j) => has(/^\d{4}-\d\d-\d\d$/.test(j.date || ''), `date ${j.date}`)),
@@ -124,6 +126,7 @@ const CHECKS = [
   // ---- the deployed Worker, Senate ----
   worker('senate', 'senate/roster', (j) => has(j.seats === 100 && arr(j.members).length === 100, `${arr(j.members).length} senators`)),
   worker('senate', 'senate/desks', (j) => has(j.count === 100 && arr(j.seats).length === 100, `${j.count} desks`)),
+  worker('senate', 'senate/leadership', (j) => has(arr(j.leaders).length === 4, `${arr(j.leaders).length} leaders and whips`)),
   worker('senate', 'senate/seniority', (j) => has(arr(j.rows).length >= 90, `${arr(j.rows).length} rows`)),
   worker('senate', 'senate/schedule', (j) => has(arr(j.days).length > 100 && j.latest, 'no schedule')),
   worker('senate', 'senate/votes', (j) => has(arr(j.votes).length > 0, 'no votes')),
@@ -214,6 +217,8 @@ const CHECKS = [
     if (!plan) throw new Error('no floorplan');
     return 'https://www.senate.gov/art-artifacts/decorative-art/furniture/senate-chamber-desks/xml/' + plan.ref;
   }, (r) => r.status === 200 && SenateDesks.valid(SenateDesks.parseSeats(r.text)) ? null : { fail: `HTTP ${r.status}, did not parse to a whole chamber` }),
+  direct('house leadership page', 'https://clerk.house.gov/Members/ViewLeadership', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : Leadership.parseHouse(r.text) ? null : { fail: 'the leaders and whips did not parse (lib/leadership.js)' }),
+  direct('senate leadership page', 'https://www.senate.gov/senators/leadership.htm', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : Leadership.parseSenate(r.text) ? null : { fail: 'the leaders and whips did not parse (lib/leadership.js)' }),
   direct('wikipedia seniority table', 'https://en.wikipedia.org/api/rest_v1/page/html/Seniority_in_the_United_States_Senate', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` }
     : SenateSeniority.valid(SenateSeniority.parse(r.text)) ? null : { fail: 'the ranked table did not parse cleanly (lib/senate-seniority.js)' },
     { headers: { 'User-Agent': 'house-floor-monitor/1.0 (https://house-floor.evanhollander.org)', Accept: 'text/html' } }),

@@ -10952,6 +10952,29 @@ body.all-mode .floor-grid-panel {
 .toc-card a::after { left: 0; top: 9px; bottom: 9px; }
 .toc-card a.is-active { background: color-mix(in srgb, var(--accent-blue) 10%, transparent); }
 @keyframes toc-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* Party leadership in the Balance of Power panel (lib/leadership.js): the Speaker big (House only), then the leaders and whips, the majority's in the left column */
+.leadership-section { margin-top: var(--sp-16); padding-top: var(--sp-16); border-top: 1px solid var(--border-color); }
+.leadership-section[hidden] { display: none; }
+.leadership-header { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-8); margin-bottom: var(--sp-12); }
+.leadership-label { font-size: var(--fs-base); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: var(--track-wide); }
+.leadership-source { font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); text-decoration: none; }
+.leadership-source:hover { color: var(--accent-blue); }
+.leadership-list { display: flex; flex-direction: column; gap: var(--sp-16); }
+.lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-12) var(--sp-16); }
+.lead-card { display: flex; align-items: center; gap: var(--sp-10); min-width: 0; --lead-color: var(--text-muted); }
+.lead-card.rep { --lead-color: var(--party-r); }
+.lead-card.dem { --lead-color: var(--party-d); }
+.lead-card.ind { --lead-color: var(--party-i); }
+.lead-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--bg-card-hover, rgba(255, 255, 255, 0.06)); box-shadow: 0 0 0 2px var(--lead-color); }
+.lead-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 0.2s; display: block; }
+.lead-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.lead-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lead-title { font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lead-card.is-big { gap: var(--sp-14); }
+.lead-card.is-big .lead-photo { width: 64px; height: 64px; box-shadow: 0 0 0 3px var(--lead-color); }
+.lead-card.is-big .lead-name { font-size: var(--fs-xl); }
+.lead-card.is-big .lead-title { font-size: var(--fs-sm); }
+.lead-card.is-empty { visibility: hidden; }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────

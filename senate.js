@@ -203,6 +203,8 @@ function renderBalance(data) {
     });
 
     setBalanceManifest(data);
+    globalThis.__boardControl = data.control;   // which party holds the majority (lib/leadership.js)
+    globalThis.__leadership?.render();
     if (!data.control && data.controlNote) console.info('[senate] control unresolved:', data.controlNote);
 }
 
@@ -1737,6 +1739,7 @@ Toc.mount({
   ],
 });
 SenateTreaties.mount({ base: API });
+globalThis.__leadership = Leadership.mount({ base: API, board: 'senate', photoUrlFor, getControl: () => globalThis.__boardControl });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });
