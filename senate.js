@@ -1727,6 +1727,7 @@ document.addEventListener('click', (e) => { const b = e.target.closest && e.targ
 AppropsPanel.mount({ base: API });
 SenateCommittees.mount({ base: API });
 SenateAmendments.mount({ base: API });
+PipelinePanel.mount({ base: API, board: 'senate' });
 SenateTreaties.mount({ base: API });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);

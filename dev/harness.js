@@ -182,6 +182,7 @@
     '/api/committee-meetings':          'committee-meetings.json',
     '/api/discharge-petition?':         'discharge-signers.json',
     '/api/appropriations-packages':     'appropriations-packages.json',
+    '/api/pipeline?board=house':        'chamber-pipeline-house.json',
     '/api/appropriations-markups':      'appropriations-markups.json',
     '/api/appropriations':              'appropriations.json',
     '/api/discharge-calendar':          'discharge-calendar.json',

@@ -22,6 +22,7 @@ import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
 import './lib/senate-treaties.js';
 import './lib/senate-amendments.js';
+import './lib/pipeline.js';
 import './lib/funding-deadline.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
@@ -4311,6 +4312,75 @@ async function handleSenateAmendments(env, billId) {
   }, 120, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
 }
 
+// WAITING FOR THE FLOOR (lib/pipeline.js): every bill of the Congress sorted by its latest action into the boards' two columns each. Nothing lists these, so the Worker keeps
+// the ones that match in KV and updates them from Congress.gov's bill lists, oldest update first from a cursor per bill type (hr, s, hjres, sjres: about 17,000 bills, 250 a
+// page), 36 pages a run: the first fills over a few runs (`complete` says when it has caught up) and after that a run is a page or two. A bill that stops matching is dropped the
+// next time its record updates, because the cursor goes by update time.
+async function handleChamberPipeline(env, board) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (board !== 'house' && board !== 'senate') return fail(400, 'board must be house or senate');
+  if (!_congressApiKey) return fail(503, 'pipeline: no Congress.gov key configured');
+  return kvCache(env, `pipeline-v1-${CURRENT_CONGRESS}-${board}`, 120, async () => {
+    const PL = globalThis.Pipeline;
+    try {
+      const key = `pipeline-state-v1-${CURRENT_CONGRESS}`;
+      let st = null;
+      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { st = null; }
+      if (!st || !st.bills) st = { cursors: {}, bills: {} };
+      const start = '2025-01-03T00:00:00Z';
+      const budget = Number(env?.PIPELINE_PAGES) || 36;   // pages a run may ask for (the subrequest limit is 50; a test lowers it)
+      let pages = 0;
+      const done = {};
+      const take = (type, json) => {
+        for (const b of json.bills || []) {
+          const rec = { t: b.type, n: b.number, ti: b.title, d: b.latestAction?.actionDate || null, a: b.latestAction?.text || '', u: b.updateDate };
+          const k = `${b.type}:${b.number}`;
+          if (PL.classify({ type: rec.t, a: rec.a })) st.bills[k] = rec; else delete st.bills[k];
+          if (b.updateDate && b.updateDate > (st.cursors[type] || '')) st.cursors[type] = b.updateDate;
+        }
+      };
+      for (const type of ['hjres', 'sjres', 's', 'hr']) {
+        // the lists give updateDate as a bare day ("2026-02-04") for a bill, a full stamp for others: either goes back as a stamp (a bare day with a Z on it is not a date the API reads)
+        const cur = st.cursors[type] || start;
+        const from = /^\d{4}-\d\d-\d\d$/.test(cur) ? cur + 'T00:00:00Z' : cur.slice(0, 19) + 'Z';
+        const base = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}?limit=250&sort=updateDate+asc&fromDateTime=${from}`;
+        // the first page says how many there are; the rest are asked for six at a time (one after another took two minutes for the House's 11,000 bills). A page that fails ends this
+        // type's reading for the run, not the run: what was read in order up to it is kept, and the cursor carries on from there.
+        let first = null;
+        try { first = pages < budget ? await congressCall(base) : null; pages++; } catch { first = null; }
+        if (!first) { done[type] = false; continue; }
+        take(type, first);
+        const total = Number(first.pagination?.count || (first.bills || []).length);
+        const offsets = [];
+        for (let o = 250; o < total; o += 250) offsets.push(o);
+        let ok = true, processed = 0;
+        for (let i = 0; i < offsets.length && ok && pages < budget; i += 6) {
+          const group = offsets.slice(i, i + Math.min(6, budget - pages));
+          pages += group.length;
+          const got = await Promise.all(group.map((o) => congressCall(`${base}&offset=${o}`).catch(() => null)));
+          for (const json of got) { if (!json) { ok = false; break; } take(type, json); processed++; }
+        }
+        done[type] = ok && processed === offsets.length;
+      }
+      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      const names = { HR: 'H.R.', S: 'S.', HJRES: 'H.J.Res.', SJRES: 'S.J.Res.' };
+      const cols = { calendar: [], from: [] };
+      for (const rec of Object.values(st.bills)) {
+        const c = PL.classify({ type: rec.t, a: rec.a });
+        if (!c || c.board !== board) continue;
+        cols[c.col].push({ id: `${names[rec.t] || rec.t} ${rec.n}`, ti: String(rec.ti || '').slice(0, 160), d: rec.d, a: rec.a.slice(0, 120), cal: c.cal, tag: c.tag });
+      }
+      // newest first; in the "from" column the bills the other chamber AMENDED lead (they come back for a vote on the amendment, which is a different ask from a bill passed untouched)
+      const lead = (b) => (b.tag === 'amended' ? 0 : 1);
+      for (const k of Object.keys(cols)) cols[k].sort((x, y) => lead(x) - lead(y) || String(y.d || '').localeCompare(String(x.d || '')) || String(x.id).localeCompare(String(y.id)));
+      const complete = Object.values(done).every(Boolean);
+      return new Response(JSON.stringify({ at: Date.now(), board, complete, calendar: cols.calendar, from: cols.from }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${complete ? 120 : 10}` },
+      });
+    } catch (e) { return fail(502, e.message); }
+  }, 120, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).complete ? 0 : 15; } catch { return 0; } } });
+}
+
 // The treaties before the Senate (lib/senate-treaties.js): those received in this Congress and the last, each with its actions, from Congress.gov's treaty API.
 async function handleSenateTreaties(env) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -6828,6 +6898,8 @@ async function handleRequest(request, env) {
     return await handleSenateNominationHearings(env);
   } else if (path === '/api/senate/amendments' && request.method === 'GET') {
     return await handleSenateAmendments(env, url.searchParams.get('id'));
+  } else if (path === '/api/pipeline' && request.method === 'GET') {
+    return await handleChamberPipeline(env, url.searchParams.get('board'));
   } else if (path === '/api/senate/treaties' && request.method === 'GET') {
     return await handleSenateTreaties(env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {

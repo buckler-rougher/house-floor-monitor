@@ -3566,17 +3566,29 @@ font-family: var(--font-mono);
     background: rgba(63, 185, 80, 0.06);
     box-shadow: 0 0 0 1px rgba(63, 185, 80, 0.4);
 }
+  .bill-card[data-status="passed"]:hover .bill-chevron { color: var(--accent-green); }
   .bill-card[data-status="failed"]:hover {
     background: rgba(248, 81, 73, 0.06);
     box-shadow: 0 0 0 1px rgba(248, 81, 73, 0.4);
 }
+  .bill-card[data-status="failed"]:hover .bill-chevron { color: var(--accent-red); }
   .bill-card[data-status="roll-call"]:hover {
     background: rgba(210, 153, 34, 0.06);
     box-shadow: 0 0 0 1px rgba(210, 153, 34, 0.4);
 }
+  .bill-card[data-status="roll-call"]:hover .bill-chevron { color: var(--accent-amber); }
   .bill-card[data-status="scheduled"]:hover, .bill-card[data-status="pending"]:hover, .bill-card:not([data-status]):hover {
     background: rgba(139, 148, 158, 0.06);
     box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
+}
+  .bill-card[data-status="scheduled"]:hover .bill-chevron, .bill-card[data-status="pending"]:hover .bill-chevron, .bill-card:not([data-status]):hover .bill-chevron { color: var(--text-secondary); }
+  .bill-chevron {
+    color: var(--text-muted);
+    font-size: var(--fs-3xl);
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: color var(--dur-150) ease;
 }
   .bill-status {
     width: 20px;
@@ -3728,6 +3740,9 @@ font-family: var(--font-mono);
     background: rgba(63, 185, 80, 0.06);
     box-shadow: none;
 }
+  .bill-slot:hover:has(.bill-card[data-status="passed"]) .bill-card .bill-chevron {
+    color: var(--accent-green);
+}
   .bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .amdt-vote-card {
     border-color: rgba(139, 148, 158, 0.35);
     background: rgba(139, 148, 158, 0.06);
@@ -3736,6 +3751,9 @@ font-family: var(--font-mono);
     border-color: rgba(139, 148, 158, 0.35);
     background: rgba(139, 148, 158, 0.06);
     box-shadow: none;
+}
+  .bill-slot:hover:not(:has(.bill-card[data-status="passed"])) .bill-card .bill-chevron {
+    color: var(--text-secondary);
 }
   .empty-note {
     padding: var(--sp-24) var(--sp-16);
@@ -6079,6 +6097,24 @@ font-family: var(--font-mono);
   .amdt-numwrap { display: inline-flex; align-items: center; gap: var(--sp-6); white-space: nowrap; }
   .amendments-table.is-senate th:nth-child(1) { width: 70px; }
   .amdt-co { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); cursor: help; }
+  .pipe-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .pipe-col { min-width: 0; padding: var(--sp-14) var(--sp-24) var(--sp-16) var(--sp-32); border-right: 1px solid var(--border-color); }
+  .pipe-col:last-child { border-right: 0; padding-left: var(--sp-24); padding-right: var(--sp-32); }
+  .pipe-head { display: flex; align-items: baseline; gap: var(--sp-8); }
+  .pipe-head-name { font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
+  .pipe-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); font-weight: 700; color: var(--text-primary); }
+  .pipe-sub { margin: var(--sp-2) 0 var(--sp-8); font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
+  .pipe-list { max-height: 420px; overflow-y: auto; display: grid; align-content: start; gap: var(--sp-8); padding-bottom: var(--sp-4); }
+  .pipe-list .bill-meta { align-items: flex-start; }
+  .pipe-list .bill-action { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+  .pipe-list .bill-date { flex: none; white-space: nowrap; }
+  .pipe-tag { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); padding: 1px 6px; border-radius: var(--radius-full); background: rgba(255, 255, 255, 0.06); }
+  .pipe-tag.is-amended { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent); padding: 0 6px; }
+  @media (max-width: 768px) {
+    .pipe-cols { grid-template-columns: 1fr; }
+    .pipe-col, .pipe-col:last-child { padding: var(--sp-12) var(--sp-16); border-right: 0; }
+    .pipe-col + .pipe-col { border-top: 1px solid var(--border-color); }
+  }
 }
 .main-display > * {
     margin-bottom: 0;
