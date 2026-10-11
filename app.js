@@ -8923,6 +8923,8 @@ function updatePartyBreakdownDisplay() {
             ? formatDate(lastUpdatedDate)
             : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
     });
+    globalThis.__boardControl = controllingParty;   // the Speaker's party (lib/leadership.js)
+    globalThis.__leadership?.render();
 }
 
 // Proceedings bill number links → open bill modal (or congress.gov for external).
@@ -10748,6 +10750,7 @@ Toc.mount({
     }),
 });
 loadDischargePetitions();
+globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house', photoUrlFor: buildBioguidePhotoUrl, getControl: () => globalThis.__boardControl });
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
 // the amendments search box of the debate panel (the modal's is mounted when it is built)
