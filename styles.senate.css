@@ -1508,7 +1508,7 @@
 }
   .pip-speaker-gavel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
   .pip-speaker-gavel svg { width: 16px; height: 16px; display: block; }
-  .pip-speaker-gavel img { width: auto; height: 18px; object-fit: contain; display: block; opacity: 0.75; }
+  .pip-speaker-gavel .senate-gavel { width: 11px; height: 18px; background: currentColor; -webkit-mask: url('senate-gavel.svg') no-repeat center / contain; mask: url('senate-gavel.svg') no-repeat center / contain; }
   .pip-speaker-text {
   display: flex;
   flex-direction: column;

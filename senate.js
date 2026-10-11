@@ -1775,7 +1775,7 @@ FloorFeed.init({
 // Reads the floor feed's own caption track. Senate TV names the member at the
 // moment they are recognised and never again, so the module latches the label
 // rather than reading whatever is on screen. loadBalance hands it the roster.
-SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor });
+SenateSpeaker.init({ videoId: 'player-pip', photoUrlFor, officers: () => globalThis.__senateOfficers || {} });
 // The bars beside the speaker. The signals come from the floor feed; this draws them.
 SpeakerMeter.init(document.getElementById('pip-speaker'));
 // The quorum board listens for the roll names the speaker module broadcasts.
