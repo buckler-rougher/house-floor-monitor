@@ -2205,6 +2205,10 @@ body.tellers-mode .tellers-column { display: flex; }
   z-index: 1;
 }
 
+.pip-speaker-gavel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.pip-speaker-gavel svg { width: 16px; height: 16px; display: block; }
+.pip-speaker-gavel img { width: auto; height: 18px; object-fit: contain; display: block; opacity: 0.75; }   /* the Senate's gavel is plain white: dimmed to the text colour the House's takes */
+
 .pip-speaker-placeholder {
   position: absolute;
   inset: 0;
