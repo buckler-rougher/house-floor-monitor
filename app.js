@@ -6452,12 +6452,24 @@ function loadDischargeCalendar() {
 function loadDischargePetitions() {
     fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then((d) => { _discharge = d; renderDischargePetitions(); })
+        .then((d) => { _discharge = d; renderDischargePetitions(); restoreDischargeSigners(); })
         .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), '<div class="proceedings-error">DISCHARGE PETITIONS UNAVAILABLE</div>'); });
 }
 
 // Everyone who signed one petition, in a window: searchable, by party, newest signers first or in the order signed.
 let _dpModalReturn = null;
+// the open signers window is in the address (?signers=<petition id>), so a reload opens it again once the petitions are known
+function setDischargeParam(id) {
+    try { const u = new URL(location.href); if (id) u.searchParams.set('signers', id); else u.searchParams.delete('signers'); history.replaceState(history.state, '', u); } catch { /* none */ }
+}
+let _signersRestored = false;
+function restoreDischargeSigners() {
+    if (_signersRestored || !_discharge) return;
+    let id; try { id = new URL(location.href).searchParams.get('signers'); } catch { id = null; }
+    _signersRestored = true;
+    const p = id && (_discharge.petitions || []).find((x) => String(x.id) === id);
+    if (p) openDischargeSigners(p.id, p.number, null);
+}
 function closeDischargeSigners() {
     const o = document.getElementById('dp-modal-overlay');
     if (o) {
@@ -6466,12 +6478,14 @@ function closeDischargeSigners() {
         else { o.classList.add('is-closing'); setTimeout(() => o.remove(), 220); }
     }
     document.removeEventListener('keydown', dischargeModalKey);
+    setDischargeParam(null);
     if (_dpModalReturn && document.contains(_dpModalReturn)) _dpModalReturn.focus();
     _dpModalReturn = null;
 }
 function dischargeModalKey(e) { if (e.key === 'Escape') closeDischargeSigners(); }
 function openDischargeSigners(id, number, trigger) {
     closeDischargeSigners();
+    setDischargeParam(id);
     _dpModalReturn = trigger || null;
     const o = document.createElement('div');
     o.id = 'dp-modal-overlay';
