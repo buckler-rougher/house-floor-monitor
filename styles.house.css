@@ -382,6 +382,7 @@ body {
     display: flex;
     align-items: center;
     gap: var(--sp-24);
+    max-width: calc(50% - 96px);
 }
 
 .header-right {
@@ -9403,6 +9404,7 @@ body.admin-oath-mode .admin-oath-section {
     .header-logo { height: 40px; width: 40px; }
 
     .header-left {
+        max-width: none;
         flex: 1;
         min-width: 0;
         flex-direction: column;

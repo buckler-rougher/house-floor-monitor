@@ -467,6 +467,7 @@ body {
     display: flex;
     align-items: center;
     gap: var(--sp-24);
+    max-width: calc(50% - 96px);   /* ends before the centered logo (160px wide): a long line wraps, it does not run under it */
 }
 
 .header-right {
@@ -10024,6 +10025,7 @@ body.admin-oath-mode .admin-oath-section {
 
     /* ── Brand + date (row 1, fills remaining width) ─────────────────────── */
     .header-left {
+        max-width: none;
         flex: 1;
         min-width: 0;
         flex-direction: column;
