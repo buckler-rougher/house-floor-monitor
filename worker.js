@@ -4418,7 +4418,7 @@ async function handleDischargeCalendar(env) {
 // `known: false`, never dropped, so a wrong number shows rather than hides. Requests: the list (1 or 2), the records of the original measures of the last
 // fourteen months or so (about 12 to 26), then the chosen bills' actions (12).
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v5-${CURRENT_CONGRESS}`, 1800, async () => {
+  return kvCache(env, `appropriations-v6-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
     const call = async (url) => {
@@ -4473,7 +4473,10 @@ async function handleAppropriations(env) {
     try {
       const FD = globalThis.FundingDeadline;
       const laws = await call(`https://api.congress.gov/v3/law/${CURRENT_CONGRESS}?limit=250`);
-      const cr = FD.pick(laws?.bills, set.fiscalYear);
+      // the year running TODAY, not the list's year: the list moves on to next year's bills in spring while this year is still on its resolution
+      const td = getTodayDateET();
+      const fundingFy = FD.fiscalYear(`${td.slice(0, 4)}-${td.slice(4, 6)}-${td.slice(6, 8)}`);
+      const cr = FD.pick(laws?.bills, fundingFy);
       if (cr) {
         const lawNumber = cr.laws[0].number, type = String(cr.type).toLowerCase();
         const key = `funding-deadline-v1-${lawNumber}`;
@@ -4492,7 +4495,7 @@ async function handleAppropriations(env) {
             }
           }
         }
-        if (got) funding = { ...got, law: lawNumber, bill: `${String(cr.type).toUpperCase()}. ${cr.number}`.replace(/^HR\./, 'H.R.').replace(/^HJRES\./, 'H.J.Res.'), title: cr.title, enacted: cr.latestAction?.actionDate || null };
+        if (got) funding = { ...got, fiscalYear: fundingFy, law: lawNumber, bill: `${String(cr.type).toUpperCase()}. ${cr.number}`.replace(/^HR\./, 'H.R.').replace(/^HJRES\./, 'H.J.Res.'), title: cr.title, enacted: cr.latestAction?.actionDate || null };
       }
     } catch (e) { discovery.fundingError = e.message; console.warn(`[house-floor] funding deadline: ${e.message}`); }
     return new Response(JSON.stringify({ at: Date.now(), fiscalYear: set.fiscalYear, listSource: found ? 'Congress.gov committee bills (reported original measures)' : 'written list (discovery found nothing)', discovery, funding, stages: AP.STAGES, bills }), {

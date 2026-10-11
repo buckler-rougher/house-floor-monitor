@@ -1,5 +1,5 @@
 {
- "at": 1791662674129,
+ "at": 1791677105939,
  "fiscalYear": 2027,
  "listSource": "Congress.gov committee bills (reported original measures)",
  "discovery": {
@@ -10,6 +10,7 @@
  "funding": {
   "through": "2026-12-11",
   "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-119hr6500enr/html/BILLS-119hr6500enr.htm",
+  "fiscalYear": 2027,
   "law": "119-103",
   "bill": "H.R. 6500",
   "title": "Continuing Appropriations and Extensions Act, 2027",
