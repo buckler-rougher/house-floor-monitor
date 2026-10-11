@@ -10252,6 +10252,7 @@ body.all-mode .floor-grid-panel {
 .lead-seal.is-president { background-image: url('senate-president-seal.svg'); }
 .lead-seal.is-protem { background-image: url('senate-pro-tempore-seal.svg'); }
 .lead-card.is-empty { visibility: hidden; }
+.leadership-note { margin: var(--sp-12) 0 0; font-size: var(--fs-2xs); color: var(--text-muted); opacity: 0.8; }
 }
 
 .main-display > * {
