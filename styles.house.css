@@ -9440,7 +9440,7 @@ body.admin-oath-mode .admin-oath-section {
 
     .clock-group .clock:last-child { display: none; }
 
-    .container { padding-top: 108px; }
+    .container { padding-top: calc(var(--header-h, 100px) + var(--sp-8)); }
     #vote, #proceedings, #bills, #live { scroll-margin-top: 116px; }
 
     .absentee-list {

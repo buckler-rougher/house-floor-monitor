@@ -5503,7 +5503,7 @@ font-family: var(--font-mono);
     .clock-label { font-size: var(--fs-2xs); letter-spacing: 0.8px; }
     .clock-time { font-size: var(--fs-sm); }
     .clock-group .clock:last-child { display: none; }
-    .container { padding-top: 108px; }
+    .container { padding-top: calc(var(--header-h, 100px) + var(--sp-8)); }
     #vote, #proceedings, #bills, #live { scroll-margin-top: 116px; }
     .absentee-list {
         grid-template-columns: 1fr;

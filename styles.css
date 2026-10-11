@@ -10069,7 +10069,7 @@ body.admin-oath-mode .admin-oath-section {
     /* Header ≈ 94 px; 108 px gives breathing room.
        The ≤768 px breakpoint sets padding:16px (all sides) earlier in the
        file — this longhand overrides just the top. */
-    .container { padding-top: 108px; }
+    .container { padding-top: calc(var(--header-h, 100px) + var(--sp-8)); }
     #vote, #proceedings, #bills, #live { scroll-margin-top: 116px; }
 
     /* ── Missing members list: single column on narrow screens ───────────── */
