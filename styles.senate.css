@@ -1538,10 +1538,6 @@
   border-color: transparent;
   color: var(--text-primary);
 }
-  .pip-speaker.is-presiding .pip-speaker-photo-wrap {
-  background: transparent;
-  border-color: transparent;
-}
   .pip-speaker.is-stale .pip-speaker-photo-wrap { opacity: 0.5; }
   .pip-speaker.is-stale .pip-speaker-name { color: var(--text-secondary); }
   .pip-speaker.is-stale .pip-speaker-meta { color: var(--accent-amber); opacity: 0.85; }
@@ -6179,13 +6175,8 @@ font-family: var(--font-mono);
   .lead-card.is-big .lead-name { font-size: var(--fs-xl); }
   .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
   .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
-  .lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-  .lead-seal { flex: 0 0 auto; width: 64px; height: 64px; background: no-repeat center / contain; }
-  .lead-seal.is-speaker { background-image: url('house-speaker-seal.svg'); }
-  .lead-seal.is-president { background-image: url('senate-president-seal.svg'); }
-  .lead-seal.is-protem { background-image: url('senate-pro-tempore-seal.svg'); }
+  .lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .lead-card.is-empty { visibility: hidden; }
-  .leadership-note { margin: var(--sp-12) 0 0; font-size: var(--fs-2xs); color: var(--text-muted); opacity: 0.8; }
 }
 .main-display > * {
     margin-bottom: 0;
