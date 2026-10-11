@@ -10821,7 +10821,6 @@ body.all-mode .floor-grid-panel {
 .cr-law { display: flex; align-items: baseline; gap: var(--sp-8); min-width: 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .cr-pl { font-family: var(--font-mono); font-weight: 600; color: var(--text-secondary); flex: none; }
 .cr-law-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.cr-badge.is-lapse ~ .cr-text .cr-law-name { white-space: normal; }
 .cr-clock { flex: none; display: flex; align-items: center; gap: var(--sp-8); color: var(--text-primary); }
 .cr-dial { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; }
 .cr-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }

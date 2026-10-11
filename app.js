@@ -4626,7 +4626,7 @@ function createBillCard(bill, procedure) {
 
 // "Introduced in House, Mar 14, 2025": the tooltip of the bill-text link, which goes to the current version.
 function textVersionTitle(b) {
-    const d = b.textVersionDate ? new Date(b.textVersionDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+    const d = globalThis.BoardUtil.fmtIso(b.textVersionDate);
     return [b.textVersionType, d].filter(Boolean).join(', ');
 }
 
@@ -6218,8 +6218,7 @@ function renderCommitteeMeetings() {
     if (!list || !_committee) return;
     const d = _committee;
     const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
-    const dayDate = new Date(Date.UTC(Number(d.date.slice(6)), Number(d.date.slice(0, 2)) - 1, Number(d.date.slice(3, 5)), 12));
-    const dayText = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' });
+    const dayText = globalThis.BoardUtil.fmtIsoLong(`${d.date.slice(6)}-${d.date.slice(0, 2)}-${d.date.slice(3, 5)}`);
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
     if (!d.events.length) {
@@ -6304,7 +6303,7 @@ function dischargeParts(p) {
     return { bill: m ? m[1].replace(/\s+/g, ' ') : (p.billNumber || ''), what: what.charAt(0).toUpperCase() + what.slice(1) };
 }
 function dischargeDateKey(d) { return d ? d.slice(6) + d.slice(0, 2) + d.slice(3, 5) : ''; }
-function dischargeDate(d) { return d ? new Date(d.slice(6) + '-' + d.slice(0, 2) + '-' + d.slice(3, 5) + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : ''; }
+function dischargeDate(d) { return d ? globalThis.BoardUtil.fmtIso(d.slice(6) + '-' + d.slice(0, 2) + '-' + d.slice(3, 5)) : ''; }
 // Where a petition at 218 stands on the Discharge Calendar (the House Calendars' own list): waiting out seven legislative days, eligible, or off it.
 // null when the calendar could not be read (nothing is claimed then).
 function dischargeStanding(p) {
