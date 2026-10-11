@@ -4261,7 +4261,7 @@ async function handleSenateNominationHearings(env) {
 }
 
 // The amendments offered to a measure the Senate is on (lib/senate-amendments.js), from Congress.gov: the bill's amendments list (numbers, and for most a purpose and latest
-// action) and, for the sponsor and anything the list left out, each amendment's own record, read thirty a run and kept in KV by amendment and update time (a record is read
+// action) and, for the sponsor and anything the list left out, each amendment's own record (and its cosponsors, when it has any), read eighteen a run and kept in KV by amendment and update time (a record is read
 // again only when its update time moves). `pending` is how many are still to read; the board asks again until none are. S.4668 had 74 on 30 September, 59 with no action yet.
 async function handleSenateAmendments(env, billId) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -4284,13 +4284,18 @@ async function handleSenateAmendments(env, billId) {
         next = json.pagination?.next || null;
       }
       const todo = items.filter((a) => !st[a.number] || st[a.number].u !== a.updateDate);
-      const batch = todo.slice(0, 30);
+      const batch = todo.slice(0, 18);   // a record, and its cosponsors when it has any: two calls each at most, inside the 50 a request may make
       for (let i = 0; i < batch.length; i += 6) {
         await Promise.all(batch.slice(i, i + 6).map(async (a) => {
           try {
             const rec = await congressCall(`https://api.congress.gov/v3/amendment/${CURRENT_CONGRESS}/${String(a.type).toLowerCase()}/${a.number}`);
             const d = rec?.amendment;
-            if (d) st[a.number] = { u: a.updateDate, d: { number: d.number, type: d.type, purpose: d.purpose, proposedDate: d.proposedDate, submittedDate: d.submittedDate, latestAction: d.latestAction ? { actionDate: d.latestAction.actionDate, text: d.latestAction.text } : null, sponsors: (d.sponsors || []).slice(0, 1).map((s) => ({ fullName: s.fullName, lastName: s.lastName, party: s.party, state: s.state })) } };
+            let cosponsorList = [];
+            if (d && d.cosponsors && d.cosponsors.count > 0) {
+              const cs = await congressCall(`https://api.congress.gov/v3/amendment/${CURRENT_CONGRESS}/${String(a.type).toLowerCase()}/${a.number}/cosponsors?limit=100`);
+              cosponsorList = ((cs && cs.cosponsors) || []).map((c) => ({ fullName: c.fullName, lastName: c.lastName, party: c.party, state: c.state }));
+            }
+            if (d) st[a.number] = { u: a.updateDate, d: { cosponsorList, number: d.number, type: d.type, purpose: d.purpose, proposedDate: d.proposedDate, submittedDate: d.submittedDate, latestAction: d.latestAction ? { actionDate: d.latestAction.actionDate, text: d.latestAction.text } : null, sponsors: (d.sponsors || []).slice(0, 1).map((s) => ({ fullName: s.fullName, lastName: s.lastName, party: s.party, state: s.state })) } };
           } catch { /* read again next run */ }
         }));
       }

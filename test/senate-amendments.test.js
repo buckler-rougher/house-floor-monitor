@@ -39,7 +39,7 @@ ok('a row: number, purpose, status, the sponsor from the amendment\'s own record
   const detail = { number: '6835', type: 'SAMDT', purpose: 'To establish certain standards with respect to coaches of varsity sports teams.', proposedDate: '2026-09-28T04:00:00Z', submittedDate: '2026-09-24T04:00:00Z',
     sponsors: [{ fullName: 'Sen. Booker, Cory A. [D-NJ]', lastName: 'Booker', party: 'D', state: 'NJ' }],
     latestAction: { actionDate: '2026-09-28', text: 'Under the order of 9/28/26, amendment SA 6835 not agreed to in Senate by Yea-Nay Vote. 47 - 52. Record Vote Number: 249.' } };
-  assert.deepStrictEqual(SA.shape({ number: '6835', type: 'SAMDT' }, detail), { num: 6835, type: 'SAMDT', summary: 'To establish certain standards with respect to coaches of varsity sports teams.', status: 'Not agreed 47-52', kind: 'failed', date: '2026-09-28', sponsor: { name: 'Booker', party: 'D', state: 'NJ' } });
+  assert.deepStrictEqual(SA.shape({ number: '6835', type: 'SAMDT' }, detail), { num: 6835, type: 'SAMDT', summary: 'To establish certain standards with respect to coaches of varsity sports teams.', status: 'Not agreed 47-52', kind: 'failed', date: '2026-09-28', sponsor: { name: 'Booker', party: 'D', state: 'NJ' }, cosponsors: [], dot: 'dem' });
 });
 
 ok('a row from the list alone has no sponsor yet, and a record with no number is nothing', () => {
@@ -47,6 +47,17 @@ ok('a row from the list alone has no sponsor yet, and a record with no number is
   assert.strictEqual(r.sponsor, null);
   assert.strictEqual(r.status, 'Agreed (UC)');
   assert.strictEqual(SA.shape({}, null), null);
+});
+
+ok('the dot is the amendment\'s party: its sponsor\'s when everyone is one party, bipartisan when they are not; the letters stay each member\'s', () => {
+  const base = { number: '6836', type: 'SAMDT', purpose: 'x', sponsors: [{ lastName: 'Scott', fullName: 'Sen. Scott, Tim [R-SC]', party: 'R', state: 'SC' }] };
+  assert.strictEqual(SA.shape({}, base).dot, 'rep');
+  assert.strictEqual(SA.shape({}, { ...base, cosponsorList: [{ lastName: 'Lee', party: 'R', state: 'UT' }] }).dot, 'rep', 'a cosponsor of the same party');
+  const bi = SA.shape({}, { ...base, cosponsorList: [{ lastName: 'Warnock', party: 'D', state: 'GA' }] });
+  assert.strictEqual(bi.dot, 'bipartisan');
+  assert.deepStrictEqual(bi.cosponsors, [{ name: 'Warnock', party: 'D', state: 'GA' }]);
+  assert.strictEqual(SA.shape({}, { ...base, sponsors: [{ lastName: 'Baldwin', party: 'D', state: 'WI' }], cosponsorList: [{ lastName: 'Durbin', party: 'D' }, { lastName: 'Kaine', party: 'D' }] }).dot, 'dem');
+  assert.strictEqual(SA.shape({ number: '6900', type: 'SAMDT' }, null).dot, null, 'no sponsor read yet: no dot');
 });
 
 console.log(`\n${n} passed`);

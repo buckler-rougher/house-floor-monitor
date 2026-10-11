@@ -1,5 +1,5 @@
 {
- "at": 1791682559692,
+ "at": 1791683137294,
  "bill": "s4668",
  "count": 74,
  "pending": 0,
@@ -15,7 +15,40 @@
     "name": "Hawley",
     "party": "R",
     "state": "MO"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Lee",
+     "party": "R",
+     "state": "UT"
+    },
+    {
+     "name": "Tuberville",
+     "party": "R",
+     "state": "AL"
+    },
+    {
+     "name": "Banks",
+     "party": "R",
+     "state": "IN"
+    },
+    {
+     "name": "Marshall",
+     "party": "R",
+     "state": "KS"
+    },
+    {
+     "name": "Risch",
+     "party": "R",
+     "state": "ID"
+    },
+    {
+     "name": "Paul",
+     "party": "R",
+     "state": "KY"
+    }
+   ],
+   "dot": "rep"
   },
   {
    "num": 6752,
@@ -28,7 +61,9 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6753,
@@ -41,7 +76,9 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6754,
@@ -54,7 +91,9 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6755,
@@ -67,7 +106,9 @@
     "name": "Lee",
     "party": "R",
     "state": "UT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6756,
@@ -80,7 +121,9 @@
     "name": "Blackburn",
     "party": "R",
     "state": "TN"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6757,
@@ -93,7 +136,9 @@
     "name": "Paul",
     "party": "R",
     "state": "KY"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6758,
@@ -106,7 +151,9 @@
     "name": "Paul",
     "party": "R",
     "state": "KY"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6759,
@@ -119,7 +166,15 @@
     "name": "Kennedy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Scott",
+     "party": "R",
+     "state": "SC"
+    }
+   ],
+   "dot": "rep"
   },
   {
    "num": 6760,
@@ -132,7 +187,9 @@
     "name": "Kennedy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6761,
@@ -145,7 +202,9 @@
     "name": "Kennedy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6762,
@@ -158,7 +217,9 @@
     "name": "Cassidy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6763,
@@ -171,7 +232,9 @@
     "name": "Cassidy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6768,
@@ -184,7 +247,15 @@
     "name": "Cruz",
     "party": "R",
     "state": "TX"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Cantwell",
+     "party": "D",
+     "state": "WA"
+    }
+   ],
+   "dot": "bipartisan"
   },
   {
    "num": 6770,
@@ -197,7 +268,9 @@
     "name": "Tuberville",
     "party": "R",
     "state": "AL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6773,
@@ -210,7 +283,9 @@
     "name": "Husted",
     "party": "R",
     "state": "OH"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6774,
@@ -223,7 +298,9 @@
     "name": "Murphy",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6775,
@@ -236,7 +313,20 @@
     "name": "Gillibrand",
     "party": "D",
     "state": "NY"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Schiff",
+     "party": "D",
+     "state": "CA"
+    },
+    {
+     "name": "Merkley",
+     "party": "D",
+     "state": "OR"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6776,
@@ -249,7 +339,25 @@
     "name": "Cruz",
     "party": "R",
     "state": "TX"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Cantwell",
+     "party": "D",
+     "state": "WA"
+    },
+    {
+     "name": "Schmitt",
+     "party": "R",
+     "state": "MO"
+    },
+    {
+     "name": "Coons",
+     "party": "D",
+     "state": "DE"
+    }
+   ],
+   "dot": "bipartisan"
   },
   {
    "num": 6777,
@@ -262,7 +370,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6778,
@@ -275,7 +385,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6779,
@@ -288,7 +400,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6780,
@@ -301,7 +415,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6781,
@@ -314,7 +430,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6782,
@@ -327,7 +445,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6783,
@@ -340,7 +460,9 @@
     "name": "Thune",
     "party": "R",
     "state": "SD"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6784,
@@ -353,7 +475,9 @@
     "name": "Baldwin",
     "party": "D",
     "state": "WI"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6785,
@@ -366,7 +490,65 @@
     "name": "Baldwin",
     "party": "D",
     "state": "WI"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Durbin",
+     "party": "D",
+     "state": "IL"
+    },
+    {
+     "name": "Welch",
+     "party": "D",
+     "state": "VT"
+    },
+    {
+     "name": "Whitehouse",
+     "party": "D",
+     "state": "RI"
+    },
+    {
+     "name": "Schiff",
+     "party": "D",
+     "state": "CA"
+    },
+    {
+     "name": "Blumenthal",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Hirono",
+     "party": "D",
+     "state": "HI"
+    },
+    {
+     "name": "Schatz",
+     "party": "D",
+     "state": "HI"
+    },
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    },
+    {
+     "name": "Gillibrand",
+     "party": "D",
+     "state": "NY"
+    },
+    {
+     "name": "Duckworth",
+     "party": "D",
+     "state": "IL"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6786,
@@ -379,7 +561,9 @@
     "name": "Baldwin",
     "party": "D",
     "state": "WI"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6787,
@@ -392,7 +576,9 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6788,
@@ -405,7 +591,9 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6789,
@@ -418,7 +606,9 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6790,
@@ -431,7 +621,30 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Blumenthal",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    },
+    {
+     "name": "Reed",
+     "party": "D",
+     "state": "RI"
+    },
+    {
+     "name": "Wyden",
+     "party": "D",
+     "state": "OR"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6793,
@@ -444,7 +657,15 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6794,
@@ -457,7 +678,25 @@
     "name": "Murphy",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    },
+    {
+     "name": "Wyden",
+     "party": "D",
+     "state": "OR"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6795,
@@ -470,7 +709,20 @@
     "name": "Murphy",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    },
+    {
+     "name": "Wyden",
+     "party": "D",
+     "state": "OR"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6796,
@@ -483,7 +735,9 @@
     "name": "Hirono",
     "party": "D",
     "state": "HI"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6797,
@@ -496,7 +750,9 @@
     "name": "Hirono",
     "party": "D",
     "state": "HI"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6798,
@@ -509,7 +765,9 @@
     "name": "Hirono",
     "party": "D",
     "state": "HI"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6799,
@@ -522,7 +780,35 @@
     "name": "Warnock",
     "party": "D",
     "state": "GA"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Booker",
+     "party": "D",
+     "state": "NJ"
+    },
+    {
+     "name": "Scott",
+     "party": "R",
+     "state": "SC"
+    },
+    {
+     "name": "Blunt Rochester",
+     "party": "D",
+     "state": "DE"
+    },
+    {
+     "name": "Alsobrooks",
+     "party": "D",
+     "state": "MD"
+    },
+    {
+     "name": "Coons",
+     "party": "D",
+     "state": "DE"
+    }
+   ],
+   "dot": "bipartisan"
   },
   {
    "num": 6800,
@@ -535,7 +821,15 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Murphy",
+     "party": "D",
+     "state": "CT"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6801,
@@ -548,7 +842,20 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Murphy",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6802,
@@ -561,7 +868,20 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Blumenthal",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6803,
@@ -574,7 +894,30 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Murphy",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Blunt Rochester",
+     "party": "D",
+     "state": "DE"
+    },
+    {
+     "name": "Alsobrooks",
+     "party": "D",
+     "state": "MD"
+    },
+    {
+     "name": "Warnock",
+     "party": "D",
+     "state": "GA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6804,
@@ -587,7 +930,20 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Murphy",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6805,
@@ -600,7 +956,20 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Blumenthal",
+     "party": "D",
+     "state": "CT"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6806,
@@ -613,7 +982,15 @@
     "name": "Britt",
     "party": "R",
     "state": "AL"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Tuberville",
+     "party": "R",
+     "state": "AL"
+    }
+   ],
+   "dot": "rep"
   },
   {
    "num": 6807,
@@ -626,7 +1003,9 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6808,
@@ -639,7 +1018,9 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6809,
@@ -652,7 +1033,15 @@
     "name": "Tuberville",
     "party": "R",
     "state": "AL"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Scott",
+     "party": "R",
+     "state": "SC"
+    }
+   ],
+   "dot": "rep"
   },
   {
    "num": 6810,
@@ -665,7 +1054,15 @@
     "name": "Tuberville",
     "party": "R",
     "state": "AL"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Britt",
+     "party": "R",
+     "state": "AL"
+    }
+   ],
+   "dot": "rep"
   },
   {
    "num": 6811,
@@ -678,7 +1075,9 @@
     "name": "Kennedy",
     "party": "R",
     "state": "LA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6812,
@@ -691,7 +1090,9 @@
     "name": "Armstrong",
     "party": "R",
     "state": "OK"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6813,
@@ -704,7 +1105,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6814,
@@ -717,7 +1120,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6815,
@@ -730,7 +1135,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6816,
@@ -743,7 +1150,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6817,
@@ -756,7 +1165,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6818,
@@ -769,7 +1180,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6819,
@@ -782,7 +1195,9 @@
     "name": "Blumenthal",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6820,
@@ -795,7 +1210,9 @@
     "name": "Blumenthal",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6821,
@@ -808,7 +1225,9 @@
     "name": "Blumenthal",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6822,
@@ -821,7 +1240,9 @@
     "name": "Blumenthal",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6823,
@@ -834,7 +1255,9 @@
     "name": "Blumenthal",
     "party": "D",
     "state": "CT"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6824,
@@ -847,7 +1270,9 @@
     "name": "Blackburn",
     "party": "R",
     "state": "TN"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6825,
@@ -860,7 +1285,9 @@
     "name": "Warnock",
     "party": "D",
     "state": "GA"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6826,
@@ -873,7 +1300,15 @@
     "name": "Baldwin",
     "party": "D",
     "state": "WI"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6827,
@@ -886,7 +1321,9 @@
     "name": "Merkley",
     "party": "D",
     "state": "OR"
-   }
+   },
+   "cosponsors": [],
+   "dot": "dem"
   },
   {
    "num": 6828,
@@ -899,7 +1336,20 @@
     "name": "Baldwin",
     "party": "D",
     "state": "WI"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Durbin",
+     "party": "D",
+     "state": "IL"
+    },
+    {
+     "name": "Kaine",
+     "party": "D",
+     "state": "VA"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6829,
@@ -912,7 +1362,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6830,
@@ -925,7 +1377,9 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [],
+   "dot": "rep"
   },
   {
    "num": 6831,
@@ -938,7 +1392,15 @@
     "name": "Moody",
     "party": "R",
     "state": "FL"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Padilla",
+     "party": "D",
+     "state": "CA"
+    }
+   ],
+   "dot": "bipartisan"
   },
   {
    "num": 6835,
@@ -951,7 +1413,15 @@
     "name": "Booker",
     "party": "D",
     "state": "NJ"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Murphy",
+     "party": "D",
+     "state": "CT"
+    }
+   ],
+   "dot": "dem"
   },
   {
    "num": 6836,
@@ -964,7 +1434,15 @@
     "name": "Scott",
     "party": "R",
     "state": "SC"
-   }
+   },
+   "cosponsors": [
+    {
+     "name": "Warnock",
+     "party": "D",
+     "state": "GA"
+    }
+   ],
+   "dot": "bipartisan"
   }
  ]
 }
