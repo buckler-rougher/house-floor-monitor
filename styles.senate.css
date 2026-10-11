@@ -6076,6 +6076,9 @@ font-family: var(--font-mono);
   @media (max-width: 768px) {
     .cr-expires { padding-left: var(--sp-16); padding-right: var(--sp-16); }
   }
+  .amdt-numwrap { display: inline-flex; align-items: center; gap: var(--sp-6); white-space: nowrap; }
+  .amendments-table.is-senate th:nth-child(1) { width: 70px; }
+  .amdt-co { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); cursor: help; }
 }
 .main-display > * {
     margin-bottom: 0;
