@@ -3495,6 +3495,7 @@ font-family: var(--font-mono);
     margin: 0 0 var(--sp-12);
 }
   .info-popup-body p:last-child { margin-bottom: 0; }
+  .info-popup-body b { font-weight: 600; color: var(--text-primary); }
   .info-popup-figure {
     margin: var(--sp-18) 0 0;
     border-radius: var(--radius-8);
