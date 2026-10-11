@@ -6175,7 +6175,7 @@ font-family: var(--font-mono);
   .lead-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lead-title { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lead-card.is-big { gap: var(--sp-14); }
-  .lead-card.is-big .lead-photo { width: 64px; height: 64px; box-shadow: 0 0 0 3px var(--lead-color); }
+  .lead-card.is-big .lead-photo { width: 64px; height: 64px; }
   .lead-card.is-big .lead-name { font-size: var(--fs-xl); }
   .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
   .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
