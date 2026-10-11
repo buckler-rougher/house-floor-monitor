@@ -10245,9 +10245,11 @@ body.all-mode .floor-grid-panel {
 .lead-card.is-big .lead-name { font-size: var(--fs-xl); }
 .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
 .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
-.lead-top.is-pair { grid-template-columns: 1fr 1fr; }
 
-.lead-seal { flex: 0 0 auto; width: 64px; height: 64px; background: url('house-speaker-seal.svg') no-repeat center / contain; }
+.lead-seal { flex: 0 0 auto; width: 64px; height: 64px; background: no-repeat center / contain; }
+.lead-seal.is-speaker { background-image: url('house-speaker-seal.svg'); }
+.lead-seal.is-president { background-image: url('senate-president-seal.svg'); }
+.lead-seal.is-protem { background-image: url('senate-pro-tempore-seal.svg'); }
 .lead-card.is-empty { visibility: hidden; }
 }
 
