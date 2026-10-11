@@ -10853,7 +10853,18 @@ body.all-mode .floor-grid-panel {
 /* the fiscal year of the twelve bills, a plain label above the list (the panel's title does not carry it: the continuing resolution band above is its own thing) */
 .approps-fy { padding: var(--sp-12) var(--sp-32) 0; font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
 .approps-fy:empty { display: none; }
-@media (max-width: 768px) { .approps-fy { padding-left: var(--sp-16); padding-right: var(--sp-16); } }
+/* the five steps, one over each segment of every bill's track (the same five columns and gap, the same side padding as the list) */
+.approps-legend { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-4); padding: var(--sp-6) var(--sp-32) 0; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+.approps-legend span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.approps-legend b { font-weight: 600; }
+.approps-legend .short { display: none; }
+.approps-legend:empty { display: none; }
+@media (max-width: 768px) {
+  .approps-fy { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+  .approps-legend { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+  .approps-legend .long { display: none; }
+  .approps-legend .short { display: inline; }
+}
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
@@ -12494,7 +12505,8 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-modal-foot { padding: var(--sp-8) var(--sp-16); border-top: 1px solid var(--border-color); font-size: var(--fs-2xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); opacity: 0.8; }
 .dp-modal-foot a { color: var(--accent-blue); text-decoration: none; }
 .dp-modal-foot a:hover { text-decoration: underline; }
-.approps-list { padding: var(--sp-12) var(--sp-24) var(--sp-16); display: grid; gap: var(--sp-16); }
+.approps-list { padding: var(--sp-12) var(--sp-32) var(--sp-16); display: grid; gap: var(--sp-16); }
+@media (max-width: 768px) { .approps-list { padding-left: var(--sp-16); padding-right: var(--sp-16); } }
 @media (max-width: 640px) { .approps-list { padding: var(--sp-12) var(--sp-16); } }
 .approps-item { display: grid; gap: var(--sp-6); }
 .approps-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-12); }
