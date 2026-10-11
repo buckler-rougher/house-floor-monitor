@@ -10668,6 +10668,20 @@ document.addEventListener('DOMContentLoaded', init);
 // is added.
 loadCommitteeMeetings();
 PipelinePanel.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house' });
+// The contents list at the left of the page (lib/toc.js), where there is room for it. The top item is the live floor, today's sitting or the last sitting day.
+Toc.mount({
+    items: [
+        { id: '', label: 'Last sitting day' }, { id: 'proceedings', label: 'Floor proceedings' }, { id: 'vote-series-panel', label: 'Vote series' }, { id: 'whip-updates', label: 'Dem whip notices' },
+        { id: 'absentee', label: 'Missing members' }, { id: 'bills', label: 'Bills this week' }, { id: 'twitter', label: 'Reporters' }, { id: 'voting-calendar', label: 'House calendar' },
+        { id: 'airport-delays', label: 'Airport delays' }, { id: 'party-breakdown', label: 'Balance of power' }, { id: 'committee-meetings', label: 'Committee meetings' },
+        { id: 'discharge-petitions', label: 'Discharge petitions' }, { id: 'pipeline', label: 'Waiting for the floor' }, { id: 'appropriations', label: 'Appropriations' },
+    ],
+    topLabel: () => Toc.topLabel({
+        live: !document.body.classList.contains('recess-mode'),
+        todayLabel: document.getElementById('today-house')?.classList.contains('has-data') ? document.getElementById('today-house-label')?.textContent : '',
+        session: document.getElementById('session-text')?.textContent,
+    }),
+});
 loadDischargePetitions();
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
