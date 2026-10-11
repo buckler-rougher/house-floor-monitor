@@ -4418,7 +4418,7 @@ async function handleDischargeCalendar(env) {
 // `known: false`, never dropped, so a wrong number shows rather than hides. Requests: the list (1 or 2), the records of the original measures of the last
 // fourteen months or so (about 12 to 26), then the chosen bills' actions (12).
 async function handleAppropriations(env) {
-  return kvCache(env, `appropriations-v7-${CURRENT_CONGRESS}`, 1800, async () => {
+  return kvCache(env, `appropriations-v8-${CURRENT_CONGRESS}`, 1800, async () => {
     if (!_congressApiKey) throw new Error('appropriations: no Congress.gov key configured');
     const AP = globalThis.Appropriations;
     const call = async (url) => {
@@ -4482,7 +4482,7 @@ async function handleAppropriations(env) {
       fundingChecked = !!(laws && Array.isArray(laws.bills)) && !cr;
       if (cr) {
         const lawNumber = cr.laws[0].number, type = String(cr.type).toLowerCase();
-        const key = `funding-deadline-v1-${lawNumber}`;
+        const key = `funding-deadline-v2-${lawNumber}`;
         let got = null;
         try { got = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { got = null; }
         if (!got) {
@@ -4491,9 +4491,10 @@ async function handleAppropriations(env) {
           const pkg = (file.match(/(BILLS-[A-Za-z0-9]+)\.htm$/) || [])[1];
           if (pkg) {
             const textUrl = `https://www.govinfo.gov/content/pkg/${pkg}/html/${pkg}.htm`;
-            const through = FD.parse(await fetchSource(textUrl, 'continuing resolution text'));
+            const crText = await fetchSource(textUrl, 'continuing resolution text');
+            const through = FD.parse(crText);
             if (through) {
-              got = { through, textUrl };
+              got = { through, textUrl, expires: FD.expires(crText, through) };
               if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(got), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
             }
           }

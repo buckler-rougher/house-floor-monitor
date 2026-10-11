@@ -61,6 +61,24 @@ ok('fiscalYear: the year that is running today; it rolls on 1 October', () => {
   assert.strictEqual(FD.fiscalYear('2027-12-31'), 2028);
 });
 
+ok('expires: the sections with a capitalized heading that name the end date, in order, once each; not the general provisions, not housekeeping, not another date', () => {
+  const text = '<pre>Sec. 157. (a) Notwithstanding section 106, through December 11, 2026, a rule shall not take effect. '
+    + 'SEC. 2003. FOOD FOR PEACE ACT. Section 408 of the Food for Peace Act is applied by substituting ``December 11, 2026\'\' for ``December 31, 2025\'\'. '
+    + 'SEC. 2011. CYBERSECURITY INFORMATION SHARING ACT OF 2015. Section 111 is amended by striking ``September 30, 2026\'\' and inserting ``December 11, 2026\'\'. '
+    + 'SEC. 2012. DEFINITIONS. In this division, until December 11, 2026. '
+    + 'SEC. 2013. A SECTION WITH ANOTHER DATE. Amended by inserting ``January 30, 2027\'\'. '
+    + 'SEC. 4101. EXTENSION OF AUTHORITY FOR COLLECTION OF COPAYMENTS FOR HOSPITAL CARE. Amended: inserting ``December 11, 2026\'\'. '
+    + 'SEC. 2003. FOOD FOR PEACE ACT. Again, December 11, 2026.</pre>';
+  assert.deepStrictEqual(FD.expires(text, '2026-12-11'), ['FOOD FOR PEACE ACT', 'CYBERSECURITY INFORMATION SHARING ACT OF 2015', 'EXTENSION OF AUTHORITY FOR COLLECTION OF COPAYMENTS FOR HOSPITAL CARE']);
+});
+
+ok('expires: a date that is not a date, or a text with no such sections, is an empty list', () => {
+  assert.deepStrictEqual(FD.expires('SEC. 1. SOMETHING. December 11, 2026 here. ', 'soon'), []);
+  assert.deepStrictEqual(FD.expires('', '2026-12-11'), []);
+  assert.deepStrictEqual(FD.expires(null, '2026-12-11'), []);
+  assert.deepStrictEqual(FD.expires(fs.readFileSync(path.join(__dirname, 'funding-cr-excerpt.txt'), 'utf8'), '2026-12-11'), [], 'sections 105 to 107 name the date only in the clause that sets it');
+});
+
 const cr = { through: '2026-12-11', fiscalYear: 2027 };
 const base = { funding: cr, fundingYear: 2027, listYear: 2027, today: '2026-12-14', unfunded: 9 };
 
