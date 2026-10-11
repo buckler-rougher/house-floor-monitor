@@ -352,7 +352,7 @@ function renderSchedule(data) {
             const et = (o) => nc.toLocaleString('en-US', Object.assign({ timeZone: 'America/New_York' }, o));
             // the board's formats: day-first with the month spelled ("Tuesday, 13 October 2026"), a padded 12-hour clock with the zone ("03:30 PM EDT")
             const day = new Date(nc.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) + 'T12:00:00');
-            const when = `${BoardUtil.fmtDateLong(day)} at ${et({ hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
+            const when = `${BoardUtil.DAY_NAMES[day.getDay()].slice(0, 3)}, ${BoardUtil.fmtDate(day)} at ${et({ hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
             // On a pro forma the (?) follows the marker, drawn only once its entry is registered.
             const help = (latest.nextIsProForma && (InfoPopup.has('pro-forma') || new URLSearchParams(location.search).has('fixtures')))
                 ? ' <button type="button" class="info-btn next-votes-help is-quiet" data-info="pro-forma" aria-label="About pro forma sessions">?</button>' : '';
