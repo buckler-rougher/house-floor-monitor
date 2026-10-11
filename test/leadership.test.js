@@ -18,17 +18,25 @@ test('House: the real Clerk page gives the Speaker and the leaders and whips, wi
   assert.strictEqual(p.length, 5, 'conference and committee chairs are not kept');
 });
 
-test('Senate: the real senate.gov page gives the leaders and whips, not the chairs', () => {
+test('Senate: the real senate.gov page gives the President of the Senate, the President Pro Tempore and the two leaders, not the whips or the chairs', () => {
   const p = L.parseSenate(read('senate.html'));
   assert(p);
   assert.strictEqual(p.length, 4);
+  const vp = p.find((x) => x.role === 'president');
+  assert.strictEqual(vp.title, 'President of the Senate');
+  assert.strictEqual(vp.name, 'J.D. Vance');
+  assert.strictEqual(vp.bioguideId, 'V000137');
+  assert.strictEqual(vp.party, null, 'the page gives no party for the Vice President');
+  const pt = p.find((x) => x.role === 'protem');
+  assert.strictEqual(pt.name, 'Chuck Grassley');
+  assert.strictEqual(pt.party, 'R');
+  assert.strictEqual(pt.state, 'IA');
   const thune = p.find((x) => x.name === 'John Thune');
   assert.strictEqual(thune.role, 'leader');
   assert.strictEqual(thune.party, 'R');
-  assert.strictEqual(thune.state, 'SD');
   assert.strictEqual(thune.bioguideId, 'T000250');
-  assert.strictEqual(p.find((x) => x.party === 'D' && x.role === 'whip').name, 'Richard J. Durbin');
   assert.strictEqual(p.find((x) => x.party === 'D' && x.role === 'leader').name, 'Charles E. Schumer');
+  assert(!p.some((x) => x.role === 'whip'));
 });
 
 test('a page of another shape is null, never a list with holes', () => {
@@ -37,16 +45,19 @@ test('a page of another shape is null, never a list with holes', () => {
   assert.strictEqual(L.parseHouse(read('house.html').replace(/Majority Whip/g, 'Something')), null);
 });
 
-test('layout: majority in the left column, minority in the right; the Senate takes sides from the party in control', () => {
+test('layout: majority in the left column, minority in the right; the Senate takes sides from the party in control and has no whips', () => {
   const h = L.layout(L.parseHouse(read('house.html')), 'R');
-  assert.strictEqual(h.speaker.name, 'Mike Johnson');
+  assert.strictEqual(h.top.length, 1);
+  assert.strictEqual(h.top[0].name, 'Mike Johnson');
+  assert.strictEqual(h.rows.length, 2);
   assert.strictEqual(h.rows[0][0].name, 'Steve Scalise');
   assert.strictEqual(h.rows[0][1].party, 'D');
   const s = L.layout(L.parseSenate(read('senate.html')), 'R');
-  assert.strictEqual(s.speaker, null);
+  assert.deepStrictEqual(s.top.map((p) => p.title), ['President of the Senate', 'President Pro Tempore']);
+  assert.strictEqual(s.rows.length, 1);
   assert.strictEqual(s.rows[0][0].name, 'John Thune');
-  assert.strictEqual(s.rows[1][1].name, 'Richard J. Durbin');
-  // the page's own "Majority" wording wins over the party in control; a party it does not name takes the other side
+  assert.strictEqual(s.rows[0][1].name, 'Charles E. Schumer');
+  // the page's own "Majority" wording wins over the party in control
   assert.strictEqual(L.layout(L.parseSenate(read('senate.html')), 'D').rows[0][0].name, 'John Thune');
 });
 

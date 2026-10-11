@@ -126,7 +126,7 @@ const CHECKS = [
   // ---- the deployed Worker, Senate ----
   worker('senate', 'senate/roster', (j) => has(j.seats === 100 && arr(j.members).length === 100, `${arr(j.members).length} senators`)),
   worker('senate', 'senate/desks', (j) => has(j.count === 100 && arr(j.seats).length === 100, `${j.count} desks`)),
-  worker('senate', 'senate/leadership', (j) => has(arr(j.leaders).length === 4, `${arr(j.leaders).length} leaders and whips`)),
+  worker('senate', 'senate/leadership', (j) => has(arr(j.leaders).length === 4, `${arr(j.leaders).length} officers and leaders`)),
   worker('senate', 'senate/seniority', (j) => has(arr(j.rows).length >= 90, `${arr(j.rows).length} rows`)),
   worker('senate', 'senate/schedule', (j) => has(arr(j.days).length > 100 && j.latest, 'no schedule')),
   worker('senate', 'senate/votes', (j) => has(arr(j.votes).length > 0, 'no votes')),
