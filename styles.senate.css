@@ -6180,7 +6180,7 @@ font-family: var(--font-mono);
   .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
   .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
   .lead-top.is-pair { grid-template-columns: 1fr 1fr; }
-  .lead-seal { margin-left: var(--sp-4); flex: 0 0 auto; width: 64px; height: 64px; object-fit: contain; }
+  .lead-seal { flex: 0 0 auto; width: 64px; height: 64px; background: url('house-speaker-seal.svg') no-repeat -0.32px -0.16px / 80.6px 80.2px; }
   .lead-card.is-empty { visibility: hidden; }
 }
 .main-display > * {
