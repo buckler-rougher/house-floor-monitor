@@ -310,6 +310,12 @@ test('a handoff inside one cue takes the last label', () => {
   assert.strictEqual(s.speaker.label, 'LEE');
 });
 
+test('the Vice President in the chair is an office, and so is the Pro Tempore; an ACTING Pro Tempore is a different office (a senator filling in)', () => {
+  assert.strictEqual(run([['THE VICE PRESIDENT: THE YEAS ARE 50', T0]]).speaker.label, 'THE VICE PRESIDENT');
+  assert.strictEqual(run([['THE PRESIDENT PRO TEMPORE: THE SENATE WILL COME TO ORDER', T0]]).speaker.label, 'THE PRESIDENT PRO TEMPORE');
+  assert.strictEqual(run([['THE ACTING PRESIDENT PRO TEMPORE: THE SENATOR FROM OHIO', T0]]).speaker.label, 'THE ACTING PRESIDENT PRO TEMPORE');
+});
+
 test('the chair and the clerk are offices, not members', () => {
   const s = run([['THE PRESIDING OFFICER: WITHOUT OBJECTION', T0]]);
   assert.strictEqual(s.speaker.kind, 'office');
