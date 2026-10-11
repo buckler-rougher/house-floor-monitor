@@ -69,6 +69,13 @@ ok('status: a resolution in date is a countdown, to the day itself', () => {
   assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-11' }), { kind: 'cr', left: 0 });
 });
 
+ok('status: an omnibus enacting all twelve while the resolution still has days left ends the band, and a partial enactment does not', () => {
+  assert.strictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 0 }), null, 'full-year funding: no countdown to a stopgap');
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 3 }), { kind: 'cr', left: 6 }, 'nine of twelve enacted: the resolution still covers the other three');
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: undefined }), { kind: 'cr', left: 6 }, 'no count yet (rows not drawn): the resolution is not hidden on a guess');
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 0, listYear: 2028 }), { kind: 'cr', left: 6 }, 'the count is of another year\'s bills: not used');
+});
+
 ok('status: the day after the date, with bills not enacted, is a lapse that began that day, counted in days', () => {
   assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-12' }), { kind: 'lapse', since: '2026-12-12', days: 1, why: 'ended' });
   assert.deepStrictEqual(FD.status(base), { kind: 'lapse', since: '2026-12-12', days: 3, why: 'ended' });
