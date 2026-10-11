@@ -3788,9 +3788,9 @@ font-family: var(--font-mono);
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
   @media (prefers-reduced-motion: reduce) {
-    .bill-modal-overlay:not([hidden]), .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
+    .bill-modal-overlay:not([hidden]), .dp-modal-overlay, .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
   }
-  .vrec-overlay:not([hidden]), .info-popup-overlay:not([hidden]) {
+  .vrec-overlay:not([hidden]), .dp-modal-overlay, .info-popup-overlay:not([hidden]) {
     animation: bill-overlay-in var(--dur-150) ease both;
 }
   .vrec-overlay:not([hidden]) .vrec-modal, .info-popup-overlay:not([hidden]) .info-popup {
@@ -3804,7 +3804,7 @@ font-family: var(--font-mono);
     from { opacity: 1; transform: none; }
     to   { opacity: 0; transform: translateY(6px) scale(0.99); }
 }
-  .bill-modal-overlay.is-closing, .vrec-overlay.is-closing, .info-popup-overlay.is-closing {
+  .bill-modal-overlay.is-closing, .vrec-overlay.is-closing, .dp-modal-overlay.is-closing, .info-popup-overlay.is-closing {
     animation: bill-overlay-out var(--dur-200) ease both;
 }
   .bill-modal-overlay.is-closing .bill-modal, .vrec-overlay.is-closing .vrec-modal, .info-popup-overlay.is-closing .info-popup {
@@ -7046,6 +7046,7 @@ a.source-link.has-manifest:not(.has-tail)::after, a.source-link.has-manifest .so
   .committee-item { grid-template-columns: 4.2rem 1fr; }
   .committee-room { grid-column: 2; }
 }
+.dp-modal-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: var(--sp-24); background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px); }
 .approps-list { padding: var(--sp-12) var(--sp-32) var(--sp-16); display: grid; gap: var(--sp-16); }
 @media (max-width: 768px) {
   .approps-list { padding-left: var(--sp-16); padding-right: var(--sp-16); }
