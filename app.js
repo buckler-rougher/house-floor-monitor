@@ -6113,10 +6113,22 @@ function setProceedingsManifest(items) {
     });
 }
 
+// The Clerk's "1:30 p.m. on October 13, 2026" in the board's format: "01:30 PM EDT" and "Tuesday, 13 October 2026" (the zone is Eastern, as the House meets, EDT or EST by that date).
+// A sentence of a shape the parser does not know is shown as the Clerk wrote it rather than guessed at.
+function nextMeetingHtml(next) {
+    const raw = decodeHtml(next);
+    const p = globalThis.HouseWrapup.parseNext(raw);
+    if (!p) return escapeHtml(raw);
+    const [y, m, d] = p.day.split('-').map(Number);
+    const clock12 = `${String((p.hour + 11) % 12 + 1).padStart(2, '0')}:${String(p.minute).padStart(2, '0')} ${p.hour >= 12 ? 'PM' : 'AM'}`;
+    const zone = new Date(Date.UTC(y, m - 1, d, 17)).toLocaleTimeString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }).split(' ').pop();
+    return `<span class="today-time">${clock12} ${zone}</span> ${escapeHtml(globalThis.BoardUtil.fmtIsoLong(p.day))}`;
+}
+
 // TODAY IN THE HOUSE, once the House is out (the panel is drawn always and shown by CSS only in recess-mode, and only with something to say). All of it
 // is the House Clerk's, each from its own file and shown as it was sent:
 //   CONVENED, ADJOURNED   the times of the Clerk's own floor entries for the day ("The House convened, ...", the adjournment);
-//   NEXT MEETING          the Clerk's sentence from the adjournment entry ("The next meeting is scheduled for 1:30 p.m. on October 13, 2026."), not reformatted;
+//   NEXT MEETING          the Clerk's sentence from the adjournment entry ("The next meeting is scheduled for 1:30 p.m. on October 13, 2026."), shown in the board's format (nextMeetingHtml: "01:30 PM EDT  Tuesday, 13 October 2026"), or as sent when its shape is not known;
 //   VOTES                 the day's roll calls from the Clerk's roll call files: the question, the result, the tally, who did not vote, each party's split.
 // The votes come from the Worker's /api/house-rolls (the files are 90 KB each, with every member's vote; it sends only each roll's metadata). Only the
 // rolls the Clerk dated to the day the proceedings are for are shown, so looking at an earlier day never shows today's.
@@ -6178,7 +6190,7 @@ function renderTodayInHouse(items) {
     }
     if (adjourned) {
         rows.push(['ADJOURNED', `<span class="today-time">${escapeHtml(clock(adjourned.at))}</span>`]);
-        if (adjourned.next) rows.push(['NEXT MEETING', escapeHtml(decodeHtml(adjourned.next))]);
+        if (adjourned.next) rows.push(['NEXT MEETING', nextMeetingHtml(adjourned.next)]);
     }
 
     if (!rows.length) { panel.classList.remove('has-data'); if (globalThis.SourcePop) SourcePop.set(panel, null); return; }
