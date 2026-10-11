@@ -8850,6 +8850,7 @@ function setBalanceManifest(xmlDoc, counts) {
     if (!globalThis.SourcePop || !xmlDoc) return;
     const panel = document.getElementById('party-breakdown');
     if (!panel) return;
+    const headerLink = panel.querySelector('.panel-header');   // only the header's source: the leadership block has its own
     const X = SourcePop.xml;
     const root = xmlDoc.querySelector('MemberData');
     if (!root) return;
@@ -8880,7 +8881,7 @@ function setBalanceManifest(xmlDoc, counts) {
         lines.push('    </member>');
     }
     lines.push('  </members>', '</MemberData>');
-    SourcePop.set(panel, {
+    SourcePop.set(headerLink, {
         title: 'The Clerk\'s roster',
         request: 'GET https://clerk.house.gov/xml/lists/MemberData.xml',
         xml: lines.join('\n')
