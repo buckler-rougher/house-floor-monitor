@@ -6422,7 +6422,10 @@ function renderDischargePetitions() {
     const dp = list._dp;
     const grouped = _dischargeSort === 'close' && done.length > 0;
     dp.block.hidden = !grouped;
-    document.getElementById('dp-done-head').textContent = `Reached ${need}`;
+    // the same shape as the open group's label below: a count, and for the ones at 218 how many are eligible for action now (only said when the Discharge Calendar has been read:
+    // without it eligibility is not known, and a "0" would claim it is)
+    const eligibleNow = _dischargeCal ? done.filter((p) => { const s = dischargeStanding(p); return s && s.kind === 'eligible'; }).length : null;
+    document.getElementById('dp-done-head').textContent = `Reached ${need} \u00b7 ${done.length}` + (eligibleNow == null ? '' : ` \u00b7 ${eligibleNow} eligible`);
     // when the ones at 218 have their own label, the rest has one too (the other sorts are one list and have none)
     const openHead = document.getElementById('dp-open-head');
     openHead.hidden = !grouped;
