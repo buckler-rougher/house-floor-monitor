@@ -10667,6 +10667,7 @@ document.addEventListener('DOMContentLoaded', init);
 // whole script (it did, the first time these were written higher up). The Clerk changes both through the day: a petition gains a signature, a meeting
 // is added.
 loadCommitteeMeetings();
+PipelinePanel.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house' });
 loadDischargePetitions();
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });

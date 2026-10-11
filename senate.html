@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261013a">
+    <link rel="stylesheet" href="styles.senate.css?v=20261013e">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1151,6 +1151,29 @@
             <div class="committee-list" id="senate-committees-list"><div class="loading-indicator" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
         </div>
 
+        <!-- Waiting for the floor: bills a committee has reported, and what the other chamber has sent over (lib/pipeline-panel.js) -->
+        <div class="proceedings-panel pipeline-panel" id="pipeline">
+            <div class="panel-header">
+                <span class="panel-label">WAITING FOR THE FLOOR</span>
+                <div class="panel-header-right">
+                    <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
+                    <span class="proceedings-time" id="pipeline-summary"></span>
+                </div>
+            </div>
+            <div class="pipe-cols">
+                <div class="pipe-col">
+                    <div class="pipe-head"><span class="pipe-head-name" id="pipeline-head-calendar"></span><span class="pipe-count" id="pipeline-count-calendar"></span></div>
+                    <div class="pipe-sub" id="pipeline-sub-calendar"></div>
+                    <div class="pipe-list" id="pipeline-list-calendar"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                </div>
+                <div class="pipe-col">
+                    <div class="pipe-head"><span class="pipe-head-name" id="pipeline-head-from"></span><span class="pipe-count" id="pipeline-count-from"></span></div>
+                    <div class="pipe-sub" id="pipeline-sub-from"></div>
+                    <div class="pipe-list" id="pipeline-list-from"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Appropriations: the twelve regular bills of the fiscal year and how far each has got (lib/approps-panel.js) -->
         <div class="proceedings-panel approps-panel" id="appropriations">
             <div class="panel-header">
@@ -1372,6 +1395,7 @@
     <script defer src="lib/list-sync.js?v=20261010c"></script>
     <script defer src="lib/clamp-list.js?v=20261012a"></script>
     <script defer src="lib/funding-deadline.js?v=20261012e"></script>
+    <script defer src="lib/pipeline-panel.js?v=20261013c"></script>
     <script defer src="lib/approps-panel.js?v=20261012r"></script>
     <script defer src="lib/senate-amendments.js?v=20261012e"></script>
     <script defer src="lib/senate-committees.js?v=20261012c"></script>
@@ -1402,7 +1426,7 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261011b"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="senate.js?v=20261012d"></script>
+    <script defer src="senate.js?v=20261013a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
