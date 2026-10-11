@@ -10905,7 +10905,7 @@ body.all-mode .floor-grid-panel {
 
 /* CONTENTS: a fixed list at the left of the page (lib/toc.js), where the margin has room for it. The body face, not the board's mono: a quiet list, the section in view in bold with a
    short accent bar on the rail, the rest muted. The weight eases (the face is variable). Hidden by the script when it does not fit. */
-.toc-rail { position: absolute; z-index: 30; pointer-events: none; }
+.toc-rail { position: absolute; top: 0; bottom: 0; z-index: 30; pointer-events: none; margin: 0 !important; }
 .toc-rail[hidden] { display: none; }
 .toc { position: sticky; pointer-events: auto; font-family: var(--font-sans); overflow-y: auto; scrollbar-width: none; }
 .toc::-webkit-scrollbar { display: none; }
