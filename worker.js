@@ -6822,7 +6822,6 @@ function sourceStatusChecks() {
     'govinfo': ['https://www.govinfo.gov/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'press-gallery': ['https://pressgallery.house.gov/member-data/casualty-list', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'wikipedia': ['https://en.wikipedia.org/api/rest_v1/page/summary/United_States_Senate', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
-    'wikimedia': ['https://commons.wikimedia.org/w/api.php?action=query&meta=siteinfo&format=json', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
     'airports': ['https://raw.githubusercontent.com/lxndrblz/Airports/main/airports.csv', 1024, (r) => ok200(r, (x) => x.text.includes(','), 'the airport list')],
     'senate-floor': ['https://www.senate.gov/floor/', 2048, (r) => ok200(r, (x) => /html/.test(x.type), 'a page')],
     'capcam': ['https://www-senate-gov-media-srs.akamaized.net/hls/live/2036784/capcam/capcam/master.m3u8', 1024, (r) => ok200(r, (x) => x.text.startsWith('#EXTM3U'), 'a playlist')],

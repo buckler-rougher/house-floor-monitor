@@ -37,7 +37,7 @@ ok('links are matched by where they point', () => {
 ok('in the footer\'s sources list, links with a status check come first in each group', () => {
   for (const file of ['index.html', 'senate.html']) {
     const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-    const groups = [...html.matchAll(/<div class="source-group">\s*<span class="source-category">([^<]*)<\/span>([\s\S]*?)<\/div>/g)];
+    const groups = [...html.matchAll(/<div class="source-group[^"]*">\s*<span class="source-category">([^<]*)<\/span>([\s\S]*?)<\/div>/g)];
     assert.ok(groups.length >= 3, `${file}: could not find the source groups`);
     for (const [, name, body] of groups) {
       const flags = [...body.matchAll(/href="([^"]*)"/g)].map((m) => MAP.some(([re]) => re.test(m[1])));

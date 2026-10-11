@@ -336,6 +336,19 @@ body {
     margin-bottom: var(--sp-6);
 }
 
+/* a long group (House Proceedings) takes two grid columns and sets its links in two columns of its own, the title across both */
+.source-group.is-wide {
+    grid-column: span 2;
+    display: block;
+    column-count: 2;
+    column-gap: var(--sp-16);
+}
+.source-group.is-wide .source-category { column-span: all; display: block; }
+.source-group.is-wide a { display: block; break-inside: avoid; margin-bottom: var(--sp-4); }
+@media (max-width: 640px) {
+    .source-group.is-wide { grid-column: auto; column-count: 1; }
+}
+
 .source-group a {
     font-size: var(--fs-sm);
     color: var(--accent-blue);
