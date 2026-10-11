@@ -710,7 +710,7 @@ async function handleImageProxy(request) {
 
 
 // Helper function to get current week range through Friday
-const W_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const W_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function wFmtDate(d) {
     return `${String(d.getDate()).padStart(2, '0')} ${W_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
@@ -6676,7 +6676,7 @@ async function handleWhipNoticesFeed(env) {
         .map(n => {
           // Construct a human-readable title from kind + publishDate
           const dateStr = n.publishDate
-            ? new Date(n.publishDate + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+            ? new Date(n.publishDate + 'T12:00:00Z').toLocaleDateString('en-GB', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'UTC' })
             : '';
           const label = KIND_LABEL[n.kind] || (n.kind.charAt(0).toUpperCase() + n.kind.slice(1) + ' Whip Notice');
           return {

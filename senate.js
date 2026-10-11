@@ -68,7 +68,7 @@ function boardDate(value) {
     m = v.match(/^(\d{1,2})-([A-Za-z]{3,})$/);
     if (m) {
         const i = MONTH_NAMES.findIndex((n) => n.toLowerCase().startsWith(m[2].toLowerCase().slice(0, 3)));
-        if (i >= 0) return `${String(+m[1]).padStart(2, '0')} ${MONTH_NAMES[i]}`;
+        if (i >= 0) return `${String(+m[1]).padStart(2, '0')} ${MONTH_NAMES[i].slice(0, 3)}`;
     }
 
     return v;   // Unrecognised: show the source's own string rather than a wrong one.

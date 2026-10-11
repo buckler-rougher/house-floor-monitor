@@ -9830,7 +9830,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
         if (parts.length === 3) {
             // parts[0]=day, parts[1]=month name, parts[2]=year
             const monthIdx = MONTH_NAMES.findIndex(m => m.toLowerCase().startsWith(parts[1].toLowerCase().slice(0, 3)));
-            const mon = monthIdx >= 0 ? MONTH_NAMES[monthIdx] : parts[1];
+            const mon = monthIdx >= 0 ? MONTH_NAMES[monthIdx].slice(0, 3) : parts[1];
             dateTimeStr = `${parseInt(parts[0])} ${mon} ${parts[2]}`;
         } else {
             dateTimeStr = formatDate(rollDate);
