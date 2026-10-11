@@ -5916,6 +5916,11 @@ font-family: var(--font-mono);
   .approps-count b { font-weight: 700; font-size: var(--fs-base); color: var(--text-primary); }
   .approps-count i { font-style: normal; color: var(--text-muted); }
   .approps-count.is-law b { color: var(--accent-green); }
+  .approps-fy { padding: var(--sp-12) var(--sp-32) 0; font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+  .approps-fy:empty { display: none; }
+  @media (max-width: 768px) {
+    .approps-fy { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+  }
 }
 .main-display > * {
     margin-bottom: 0;
