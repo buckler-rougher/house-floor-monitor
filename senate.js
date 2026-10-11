@@ -153,6 +153,7 @@ function setBalanceManifest(data) {
     if (!globalThis.SourcePop || !Array.isArray(data.sample) || !data.sample.length) return;
     const panel = document.getElementById('party-breakdown');
     if (!panel) return;
+    const headerLink = panel.querySelector('.panel-header');   // only the header's source: the leadership block has its own
     const X = SourcePop.xml;
     const lines = ['<contact_information>'];
     const c = data.counts || {};
@@ -171,7 +172,7 @@ function setBalanceManifest(data) {
         lines.push('  </member>');
     }
     lines.push('</contact_information>');
-    SourcePop.set(panel, {
+    SourcePop.set(headerLink, {
         title: 'The Senate\'s roster',
         request: 'GET https://www.senate.gov/general/contact_information/senators_cfm.xml',
         xml: lines.join('\n')

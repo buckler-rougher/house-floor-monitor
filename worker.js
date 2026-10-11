@@ -6347,7 +6347,7 @@ async function handleLeadership(env) {
 
 // The Senate's leaders and whips, from senate.gov's own leadership page. A page of another shape is an error, not an empty list.
 async function handleSenateLeadership(env) {
-  return kvCache(env, 'senate-leadership-v1', 6 * 3600, async () => {
+  return kvCache(env, 'senate-leadership-v2', 6 * 3600, async () => {
     try {
       const response = await fetch('https://www.senate.gov/senators/leadership.htm', {
         signal: AbortSignal.timeout(10000),
