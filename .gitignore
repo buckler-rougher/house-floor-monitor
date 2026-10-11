@@ -27,3 +27,8 @@ AGENTS.md
 # /.claude/launch.json returns 200), and these describe how to drive the app
 # and name internals. Same reason AGENTS.md is ignored.
 .claude/skills/
+
+# Local-only artwork: government seals the site no longer shows (kept on disk, not deployed)
+house-speaker-seal.svg
+senate-president-seal.svg
+senate-pro-tempore-seal.svg
