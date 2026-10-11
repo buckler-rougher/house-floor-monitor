@@ -10559,7 +10559,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
         // identifies a voice rather than decorating the panel. Before this, clerk
         // turns were skipped entirely and the previous member kept the row through
         // the whole reading.
-        // The presiding officer. The Speaker gets the seal of the office; the Chair
+        // The presiding officer. The Speaker and the Chair
         // of the Committee of the Whole gets the generic silhouette, because that
         // role rotates among members all day and naming them would be a guess.
         const H = globalThis.HouseFloorSpeaker;
@@ -10593,9 +10593,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
             const want = inCommittee ? 'chair' : 'speaker';
             if (lastPhotoId !== want) {
                 lastPhotoId = want;
-                photo.innerHTML = inCommittee
-                    ? `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>`
-                    : '<img class="pip-speaker-seal" src="house-speaker-seal.svg" alt="">';
+                photo.innerHTML = `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>`;
             }
             row.title = inCommittee
                 ? 'the Chair of the Committee of the Whole is presiding'

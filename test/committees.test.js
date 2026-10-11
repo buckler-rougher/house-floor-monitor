@@ -25,6 +25,12 @@ ok('a House committee gets its seal; the same name from the Senate does not', ()
   assert.strictEqual(C.committeeMark({ name: 'Judiciary', systemCode: 'hsju00' }).logo, 'judiciary');
 });
 
+ok('no government seal is drawn: a House committee chip is a monogram too (owner, 14 October)', () => {
+  const html = C.committeeChipHtml({ name: 'Judiciary Committee', chamber: 'House', systemCode: 'hsju00' });
+  assert.ok(html.includes('committee-chip-mark'), html);
+  assert.ok(!html.includes('<img') && !html.includes('committee-chip-logo'), html);
+});
+
 ok('a Senate chip says so, and shows its own monogram', () => {
   const html = C.committeeChipHtml({ name: 'Commerce, Science, and Transportation Committee', chamber: 'Senate', systemCode: 'sscm00' });
   assert.ok(html.includes('bill-modal-committee is-senate'), html);

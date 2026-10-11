@@ -2260,21 +2260,6 @@ body.tellers-mode .tellers-column { display: flex; }
   color: var(--text-primary);
 }
 
-/* The Speaker's seal, in place of a photograph while they preside. Full colour
-   rather than masked: it is a seal, not a glyph, and flattening it to one tone
-   would turn it into a disc. */
-.pip-speaker.is-presiding .pip-speaker-photo-wrap {
-  background: transparent;
-  border-color: transparent;
-}
-
-.pip-speaker-seal {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
 .pip-speaker-quill {
   width: 100%;
   height: 100%;
@@ -10974,14 +10959,8 @@ body.all-mode .floor-grid-panel {
 .lead-card.is-big .lead-name { font-size: var(--fs-xl); }
 .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
 .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
-.lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }   /* the two Senate officers side by side where there is room for photo, seal and name each, stacked where there is not */
-/* the Speaker's seal (house-speaker-seal.svg: white, no background, cropped to its artwork; the floating feed's speaker row uses the same file) */
-.lead-seal { flex: 0 0 auto; width: 64px; height: 64px; background: no-repeat center / contain; }
-.lead-seal.is-speaker { background-image: url('house-speaker-seal.svg'); }
-.lead-seal.is-president { background-image: url('senate-president-seal.svg'); }
-.lead-seal.is-protem { background-image: url('senate-pro-tempore-seal.svg'); }
+.lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }   /* the two Senate officers side by side where there is room for photo and name each, stacked where there is not */
 .lead-card.is-empty { visibility: hidden; }
-.leadership-note { margin: var(--sp-12) 0 0; font-size: var(--fs-2xs); color: var(--text-muted); opacity: 0.8; }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
