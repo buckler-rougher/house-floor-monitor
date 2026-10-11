@@ -39,17 +39,17 @@ test('escapeHtml does not double-escape what it has already escaped differently'
 
 test('fmtDate is day-first with the month spelled out and the day padded', () => {
   assert.strictEqual(U.fmtDate(new Date(2026, 4, 2)), '02 May 2026');
-  assert.strictEqual(U.fmtDate(new Date(2026, 8, 26)), '26 September 2026');
+  assert.strictEqual(U.fmtDate(new Date(2026, 8, 26)), '26 Sep 2026');
 });
 
 test('fmtDateLong adds the weekday', () => {
-  assert.strictEqual(U.fmtDateLong(new Date(2026, 8, 26)), 'Saturday, 26 September 2026');
+  assert.strictEqual(U.fmtDateLong(new Date(2026, 8, 26)), 'Saturday, 26 Sep 2026');
 });
 
 test('fmtIso and fmtIsoLong: the same formats from an ISO date, read as a day in no time zone, from a stamp too; anything else is empty', () => {
-  assert.strictEqual(U.fmtIso('2026-09-30'), '30 September 2026');
+  assert.strictEqual(U.fmtIso('2026-09-30'), '30 Sep 2026');
   assert.strictEqual(U.fmtIso('2026-05-02T23:59:59Z'), '02 May 2026', 'the day written, whatever the machine\'s zone');
-  assert.strictEqual(U.fmtIsoLong('2026-09-30'), 'Wednesday, 30 September 2026');
+  assert.strictEqual(U.fmtIsoLong('2026-09-30'), 'Wednesday, 30 Sep 2026');
   for (const bad of ['', null, undefined, 'soon', '09/30/2026', '2026-9-3']) { assert.strictEqual(U.fmtIso(bad), ''); assert.strictEqual(U.fmtIsoLong(bad), ''); }
 });
 
