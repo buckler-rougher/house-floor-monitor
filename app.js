@@ -6524,6 +6524,8 @@ function openDischargeSigners(id, number, trigger) {
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     const searchField = SearchField.mount(document.getElementById('dp-modal-search'), { fields: ['Name', 'State'] });
+    // examples out of the list being searched: the signers, or the members who have not signed
+    const syncExamples = () => { const pool = unsigned ? absent : signers; searchField?.setExamples([...pool.map((s) => s.name), ...pool.map((s) => s.stateName || s.state)]); };
     document.getElementById('dp-modal-search').addEventListener('input', draw);
     document.getElementById('dp-modal-order').addEventListener('click', (e) => {
         order = order === 'new' ? 'old' : 'new';
@@ -6549,6 +6551,7 @@ function openDischargeSigners(id, number, trigger) {
                     .sort((a, b) => a.last.localeCompare(b.last) || a.name.localeCompare(b.name));
             } catch { unsigned = false; toggle.classList.remove('active'); toggle.setAttribute('aria-pressed', 'false'); document.getElementById('dp-modal-order').hidden = false; }
         }
+        syncExamples();
         draw();
     });
     document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
@@ -6570,7 +6573,7 @@ function openDischargeSigners(id, number, trigger) {
             document.getElementById('dp-modal-list')?.classList.add('is-filled');
             draw();
             // examples out of the list itself: signers' names and the states they come from
-            searchField?.setExamples([...signers.map((s) => s.name), ...signers.map((s) => s.stateName)]);
+            syncExamples();
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
         .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="empty-note">Signers unavailable</div>'; });
