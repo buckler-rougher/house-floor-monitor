@@ -2692,7 +2692,12 @@ body.tellers-mode .tellers-column { display: flex; }
 @keyframes sf-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(8px); } }
 @keyframes sf-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .search-field-word { animation: none; } }
-.dp-modal-tools .search-field { flex: 1; min-width: 140px; }
+.dp-modal-tools .search-field { flex: 0 1 180px; min-width: 120px; }   /* a little narrower, so the party and order controls fit beside it */
+.dp-modal-order { align-self: flex-end; width: var(--control-h); height: var(--control-h); display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--border-color); border-radius: var(--radius-8); background: transparent; color: var(--text-muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.dp-modal-order:hover { color: var(--text-primary); border-color: var(--text-muted); }
+.dp-modal-order svg { transition: transform 0.2s; }
+.dp-modal-order.is-up svg { transform: rotate(180deg); }
+.dp-modal-order[hidden] { display: none; }
 /* The search box and the party filter side by side: both are a small label over a control, the controls are the same height, and the tops line up, so the labels and the
    controls each sit on one line (the box is 2rem tall, the buttons are stretched to it) */
 .dp-modal-tools .search-field-box > input { height: var(--control-h); }
@@ -12577,6 +12582,10 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-modal-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-12); padding: var(--sp-12) var(--sp-16); border-bottom: 1px solid var(--border-color); }
 .dp-modal-title { font-weight: 600; color: var(--text-primary); }
 .dp-modal-count { margin-left: var(--sp-8); font-weight: 400; font-size: var(--fs-sm); color: var(--text-muted); }
+.dp-modal-toggle { margin-left: var(--sp-8); height: 22px; padding: 0 var(--sp-10); border: 1px solid var(--border-color); border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-sm); font-weight: 500; cursor: pointer; vertical-align: middle; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+.dp-modal-toggle:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-muted); }
+.dp-modal-toggle.active { color: var(--accent-blue); border-color: var(--accent-blue); background: rgba(88, 166, 255, 0.1); }
+.dp-modal-toggle:disabled { opacity: 0.4; cursor: default; }
 .dp-modal-tools { display: flex; flex-wrap: wrap; gap: var(--sp-8); align-items: flex-start; --control-h: 2rem; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
 .dp-modal-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-8) var(--sp-16); }
 .dp-signer { padding: var(--sp-6) 0; border: none; border-bottom: 1px solid var(--border-color); gap: var(--sp-8); }

@@ -6477,7 +6477,7 @@ function openDischargeSigners(id, number, trigger) {
     o.id = 'dp-modal-overlay';
     o.className = 'dp-modal-overlay';
     o.innerHTML = `<div class="dp-modal" role="dialog" aria-modal="true" aria-label="Signers of discharge petition ${number}">
-        <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">✕</button></div>
+        <div class="dp-modal-head"><span class="dp-modal-title">Discharge Petition No. ${number} <span class="dp-modal-count" id="dp-modal-count"></span><button type="button" class="dp-modal-toggle" id="dp-modal-unsigned" aria-pressed="false" disabled title="Show the members who have not signed">Not signed</button></span><button type="button" class="dp-modal-close" id="dp-modal-close" aria-label="Close">✕</button></div>
         <div class="dp-modal-tools">
             <input type="search" id="dp-modal-search" class="dp-modal-search" aria-label="Search signers by name or state" autocomplete="off">
             <div class="bills-sort-bar dp-modal-sort">
@@ -6489,6 +6489,7 @@ function openDischargeSigners(id, number, trigger) {
                     <button type="button" class="bills-sort-btn" data-party="I">I</button>
                 </div>
             </div>
+            <button type="button" class="dp-modal-order" id="dp-modal-order" aria-label="Newest first" title="Newest first"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
         <div class="dp-modal-list" id="dp-modal-list"><div class="loading-indicator" role="status" aria-label="Loading signers"><i></i><i></i><i></i></div></div>
         <div class="dp-modal-foot dp-modal-source">Source: <a href="https://clerk.house.gov/DischargePetition/${escapeHtml(id)}" target="_blank" rel="noopener">Discharge Petition ${number} (House Clerk)</a></div>
@@ -6498,21 +6499,25 @@ function openDischargeSigners(id, number, trigger) {
     o.addEventListener('click', (e) => { if (e.target === o) closeDischargeSigners(); });
     document.getElementById('dp-modal-close').addEventListener('click', closeDischargeSigners);
     document.getElementById('dp-modal-close').focus();
-    let signers = [], party = '';
+    let signers = [], party = '', order = 'new', unsigned = false, absent = [];   // absent: the members who have not signed, from the Clerk's roster
     const letter = (p) => /^R/i.test(p) ? 'R' : /^D/i.test(p) ? 'D' : 'I';
     const draw = () => {
         const q = document.getElementById('dp-modal-search').value.trim().toLowerCase();
-        const rows = signers.filter((s) => (!party || letter(s.party) === party) && (!q || `${s.name} ${s.state} ${s.stateName}`.toLowerCase().includes(q)));
-        document.getElementById('dp-modal-count').textContent = `${rows.length === signers.length ? signers.length : rows.length + ' of ' + signers.length} signer${signers.length === 1 ? '' : 's'}`;
+        const pool = unsigned ? absent : signers;
+        const rows = pool.filter((s) => (!party || letter(s.party) === party) && (!q || `${s.name} ${s.state} ${s.stateName}`.toLowerCase().includes(q)));
+        // signed: by the order they signed (n), newest first unless flipped; not signed: by surname
+        if (!unsigned) rows.sort((a, b) => (order === 'new' ? b.n - a.n : a.n - b.n));
+        const word = unsigned ? 'not signed' : `signer${pool.length === 1 ? '' : 's'}`;
+        document.getElementById('dp-modal-count').textContent = `${rows.length === pool.length ? pool.length : rows.length + ' of ' + pool.length} ${word}`;
         const entries = rows.map((s) => {
             const l = letter(s.party), cls = l === 'R' ? 'republican' : l === 'D' ? 'democrat' : 'independent';
             const loc = s.state + (/^\d+$/.test(s.district) ? '-' + s.district.padStart(2, '0') : '');
             const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
-            return { key: String(s.n), html: `<div class="absentee-member dp-signer">
-                <span class="dp-signer-n">${s.n}</span>
+            return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer">
+                <span class="dp-signer-n">${unsigned ? '' : s.n}</span>
                 <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
                 <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
-                <span class="dp-signer-date">${escapeHtml(dischargeDate(s.date))}</span>
+                <span class="dp-signer-date">${unsigned ? '' : escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
         });
         if (!entries.length) entries.push({ key: 'none', html: '<div class="empty-note">No matching signers</div>' });
@@ -6520,6 +6525,32 @@ function openDischargeSigners(id, number, trigger) {
     };
     const searchField = SearchField.mount(document.getElementById('dp-modal-search'), { fields: ['Name', 'State'] });
     document.getElementById('dp-modal-search').addEventListener('input', draw);
+    document.getElementById('dp-modal-order').addEventListener('click', (e) => {
+        order = order === 'new' ? 'old' : 'new';
+        const t = order === 'new' ? 'Newest first' : 'Oldest first';
+        e.currentTarget.classList.toggle('is-up', order === 'old');
+        e.currentTarget.title = t; e.currentTarget.setAttribute('aria-label', t);
+        draw();
+    });
+    // Who has NOT signed: every sitting member of the Clerk's roster whose bioguide id is not among the signers
+    const toggle = document.getElementById('dp-modal-unsigned');
+    toggle.addEventListener('click', async () => {
+        unsigned = !unsigned;
+        toggle.classList.toggle('active', unsigned);
+        toggle.setAttribute('aria-pressed', String(unsigned));
+        document.getElementById('dp-modal-order').hidden = unsigned;
+        if (unsigned && !absent.length) {
+            try {
+                const doc = new DOMParser().parseFromString(await getMemberXml(), 'text/xml');
+                const have = new Set(signers.map((x) => x.id));
+                absent = [...doc.querySelectorAll('member')].map(memberMatchFromElement)
+                    .filter((m) => m.bioguideId && m.lastName && !have.has(m.bioguideId) && !['DC', 'PR', 'GU', 'VI', 'AS', 'MP'].includes(m.state))   // Delegates and the Resident Commissioner cannot sign
+                    .map((m) => ({ id: m.bioguideId, name: m.fullName, last: m.lastName, state: m.state, stateName: '', district: m.district, party: m.party }))
+                    .sort((a, b) => a.last.localeCompare(b.last) || a.name.localeCompare(b.name));
+            } catch { unsigned = false; toggle.classList.remove('active'); toggle.setAttribute('aria-pressed', 'false'); document.getElementById('dp-modal-order').hidden = false; }
+        }
+        draw();
+    });
     document.getElementById('dp-modal-filters').addEventListener('click', (e) => {
         const b = e.target.closest('[data-party]'); if (!b) return;
         party = Segmented.next('filter', party, b.dataset.party, '');   // a filter: the option on again goes back to All
@@ -6535,6 +6566,7 @@ function openDischargeSigners(id, number, trigger) {
         .then((d) => {
             if (!document.contains(o)) return;
             signers = d.signers || [];
+            document.getElementById('dp-modal-unsigned').disabled = false;
             document.getElementById('dp-modal-list')?.classList.add('is-filled');
             draw();
             // examples out of the list itself: signers' names and the states they come from
