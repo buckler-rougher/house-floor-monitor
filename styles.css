@@ -10873,7 +10873,7 @@ body.all-mode .floor-grid-panel {
   .approps-legend .short { display: inline; }
 }
 
-/* "Also expires 11 December 2026": the programs the continuing resolution extends to its end date, under its band */
+/* "Also extended through 11 Dec 2026": the programs the continuing resolution extends to its end date, under its band */
 .cr-expires { padding: var(--sp-10) var(--sp-32) var(--sp-14); border-bottom: 1px solid var(--border-color); }
 .cr-expires[hidden] { display: none; }
 .cr-expires-head { font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-6); }
