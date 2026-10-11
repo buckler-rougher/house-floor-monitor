@@ -1730,12 +1730,12 @@ PipelinePanel.mount({ base: API, board: 'senate' });
 // The contents list at the left of the page (lib/toc.js), where there is room for it. The top item is the live floor, today's sitting or the last sitting day.
 Toc.mount({
   items: [
-    { id: '', label: 'Last sitting day' }, { id: 'caucus-notices', label: 'Dem Caucus notices' }, { id: 'absentee', label: 'Missing senators' }, { id: 'proceedings', label: 'Recent floor activity' },
+    { id: '', label: 'Adjourned' }, { id: 'caucus-notices', label: 'Dem Caucus notices' }, { id: 'absentee', label: 'Missing senators' }, { id: 'proceedings', label: 'Recent floor activity' },
     { id: 'senate-floor-schedule', label: 'On the floor' }, { id: 'senate-stages', label: 'Procedural stages' }, { id: 'nominations', label: 'Nominations' }, { id: 'twitter', label: 'Reporters' },
     { id: 'voting-calendar', label: 'Senate calendar' }, { id: 'airport-delays', label: 'Airport delays' }, { id: 'party-breakdown', label: 'Balance of power' },
     { id: 'senate-committees', label: 'Committee meetings' }, { id: 'pipeline', label: 'Waiting for the floor' }, { id: 'appropriations', label: 'Appropriations' }, { id: 'senate-treaties', label: 'Treaties' }, { id: 'data-sources', label: 'Sources' },
   ],
-  topLabel: () => Toc.topLabel({ live: !document.body.classList.contains('recess-mode'), todayLabel: '', session: document.getElementById('session-text')?.textContent }),
+  topLabel: () => Toc.topLabel({ live: !document.body.classList.contains('recess-mode'), todayLabel: '', session: document.getElementById('session-text')?.textContent, idle: 'Adjourned' }),
 });
 SenateTreaties.mount({ base: API });
 updateTimestamp();

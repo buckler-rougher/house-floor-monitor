@@ -52,6 +52,8 @@ ok('the top item\'s name: live floor, today\'s sitting, or the last sitting day'
   assert.strictEqual(T.topLabel({ live: true, todayLabel: 'LAST SITTING DAY' }), 'Happening now');
   assert.strictEqual(T.topLabel({ live: false, todayLabel: 'TODAY IN THE HOUSE' }), 'Today on the floor');
   assert.strictEqual(T.topLabel({ live: false, todayLabel: 'LAST SITTING DAY' }), 'Last sitting day');
+  assert.strictEqual(T.topLabel({ live: false, session: 'ADJOURNED', idle: 'Adjourned' }), 'Adjourned');
+  assert.strictEqual(T.topLabel({ live: false, session: 'IN SESSION', idle: 'Adjourned' }), 'Today on the floor');
   assert.strictEqual(T.topLabel({ live: false, todayLabel: '', session: 'IN SESSION' }), 'Today on the floor', 'the Senate has no panel of its own: the header says');
   assert.strictEqual(T.topLabel({ live: false, todayLabel: '', session: 'ADJOURNED' }), 'Last sitting day');
   assert.strictEqual(T.topLabel({}), 'Last sitting day');
