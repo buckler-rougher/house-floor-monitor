@@ -69,11 +69,18 @@ ok('status: a resolution in date is a countdown, to the day itself', () => {
   assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-11' }), { kind: 'cr', left: 0 });
 });
 
-ok('status: an omnibus enacting all twelve while the resolution still has days left ends the band, and a partial enactment does not', () => {
-  assert.strictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 0 }), null, 'full-year funding: no countdown to a stopgap');
+ok('status: all twelve enacted (an omnibus got through) is full-year funding, counting down to 30 September, the next deadline; a partial enactment keeps the resolution', () => {
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 0 }), { kind: 'full', left: 299, through: '2027-09-30', fiscalYear: 2027 });
+  assert.deepStrictEqual(FD.status({ ...base, today: '2027-09-30', unfunded: 0 }), { kind: 'full', left: 0, through: '2027-09-30', fiscalYear: 2027 });
+  assert.strictEqual(FD.status({ ...base, today: '2027-10-01', unfunded: 0 }), null, 'the year is over');
   assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 3 }), { kind: 'cr', left: 6 }, 'nine of twelve enacted: the resolution still covers the other three');
-  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: undefined }), { kind: 'cr', left: 6 }, 'no count yet (rows not drawn): the resolution is not hidden on a guess');
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: undefined }), { kind: 'cr', left: 6 }, 'no count yet (rows not drawn): not guessed');
   assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-05', unfunded: 0, listYear: 2028 }), { kind: 'cr', left: 6 }, 'the count is of another year\'s bills: not used');
+});
+
+ok('status: all twelve enacted with no resolution at all (they passed before 1 October) is the same, from the Worker\'s year', () => {
+  assert.deepStrictEqual(FD.status({ funding: null, checked: true, fundingYear: 2027, listYear: 2027, today: '2026-10-10', unfunded: 0 }), { kind: 'full', left: 355, through: '2027-09-30', fiscalYear: 2027 });
+  assert.strictEqual(FD.status({ funding: null, checked: true, fundingYear: null, listYear: 2027, today: '2026-10-10', unfunded: 0 }), null, 'no year known: nothing claimed');
 });
 
 ok('status: the day after the date, with bills not enacted, is a lapse that began that day, counted in days', () => {
@@ -81,8 +88,8 @@ ok('status: the day after the date, with bills not enacted, is a lapse that bega
   assert.deepStrictEqual(FD.status(base), { kind: 'lapse', since: '2026-12-12', days: 3, why: 'ended' });
 });
 
-ok('status: the date passed but every bill is enacted (an omnibus got through), or none are unfunded: nothing is said', () => {
-  assert.strictEqual(FD.status({ ...base, unfunded: 0 }), null);
+ok('status: the date passed and every bill is enacted: not a lapse; it is the full-year funding, as above', () => {
+  assert.strictEqual(FD.status({ ...base, unfunded: 0 }).kind, 'full');
 });
 
 ok('status: a lapse is never asserted about a different year than the list (the count would be another year\'s bills)', () => {
@@ -94,7 +101,7 @@ ok('status: no resolution found for the year, the year begun, bills not enacted:
   assert.deepStrictEqual(FD.status(none), { kind: 'lapse', since: '2027-10-01', days: 3, why: 'none' });
   assert.strictEqual(FD.status({ ...none, checked: false }), null, 'a lookup that failed is not "none"');
   assert.strictEqual(FD.status({ ...none, today: '2027-09-30', fundingYear: 2027, listYear: 2027 }), null, 'a year with no resolution found and 365 days gone is a missed law, not a 365-day shutdown');
-  assert.strictEqual(FD.status({ ...none, unfunded: 0 }), null);
+  assert.strictEqual(FD.status({ ...none, unfunded: 0 }).kind, 'full', 'every bill enacted: not a lapse, the year is funded to its end');
   assert.strictEqual(FD.status({ ...none, listYear: 2027 }), null);
 });
 
