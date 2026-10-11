@@ -10913,14 +10913,31 @@ body.all-mode .floor-grid-panel {
 .toc-title { margin: 0 0 var(--sp-10) var(--sp-14); font-size: var(--fs-md); font-weight: 600; letter-spacing: 0.01em; color: var(--text-muted); }
 .toc-list { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--border-color); }
 .toc-list li[hidden] { display: none; }
-.toc a { position: relative; display: block; padding: 6px var(--sp-8) 6px var(--sp-14); font-size: var(--fs-lg); line-height: 1.35; font-weight: 450; color: var(--text-muted); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur-150) ease, font-weight var(--dur-200, 0.2s) ease; }
-.toc a::after { content: ''; position: absolute; left: -1px; top: 5px; bottom: 5px; width: 2px; border-radius: 2px; background: var(--accent-blue); opacity: 0; transition: opacity var(--dur-150) ease; }
-.toc a:hover { color: var(--text-secondary); }
-.toc a.is-active { color: var(--text-primary); font-weight: 700; }
-.toc a.is-active::after { opacity: 1; }
-.toc a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; border-radius: var(--radius-4); }
-@media (prefers-reduced-motion: reduce) { .toc a, .toc a::after { transition: none; } }
-@media print { .toc-rail { display: none; } }
+.toc a, .toc-card a { position: relative; display: block; padding: 6px var(--sp-8) 6px var(--sp-14); font-size: var(--fs-lg); line-height: 1.35; font-weight: 450; color: var(--text-muted); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color var(--dur-150) ease, font-weight var(--dur-200, 0.2s) ease; }
+.toc a::after, .toc-card a::after { content: ''; position: absolute; left: -1px; top: 5px; bottom: 5px; width: 2px; border-radius: 2px; background: var(--accent-blue); opacity: 0; transition: opacity var(--dur-150) ease; }
+.toc a:hover, .toc-card a:hover { color: var(--text-secondary); }
+.toc a.is-active, .toc-card a.is-active { color: var(--text-primary); font-weight: 700; }
+.toc a.is-active::after, .toc-card a.is-active::after { opacity: 1; }
+.toc a:focus-visible, .toc-card a:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: -2px; border-radius: var(--radius-4); }
+@media (prefers-reduced-motion: reduce) { .toc a, .toc a::after, .toc-card a, .toc-card a::after, .toc-dot { transition: none; } .toc-card { animation: none; } }
+@media print { .toc-rail, .toc-mini, .toc-sheet { display: none; } }
+
+/* CONTENTS where the side list does not fit: a strip of dots at the screen's edge (where you are, no words) that opens the list as a card on top of the page */
+.toc-mini { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 40; }
+.toc-mini[hidden], .toc-sheet[hidden], .toc-dot[hidden] { display: none; }
+.toc-dots { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 12px 4px 12px 5px; border: 1px solid var(--border-color); border-right: 0; border-radius: 12px 0 0 12px; background: color-mix(in srgb, var(--bg-card) 78%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); cursor: pointer; padding-right: max(4px, env(safe-area-inset-right)); }
+.toc-dots:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.toc-dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted); opacity: 0.45; transition: transform var(--dur-150) ease, opacity var(--dur-150) ease, background var(--dur-150) ease; }
+.toc-dot.is-active { background: var(--accent-blue); opacity: 1; transform: scale(1.7); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 22%, transparent); }
+.toc-sheet { position: fixed; inset: 0; z-index: 1150; }   /* above the floating feed (1099 to 1100), below the bill modal (1200) */
+.toc-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); }
+.toc-card { position: absolute; right: 10px; width: min(280px, calc(100vw - 20px)); box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; padding: var(--sp-14) var(--sp-10) var(--sp-10); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-14); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); font-family: var(--font-sans); animation: toc-in 0.16s ease-out; }
+.toc-card .toc-title { margin-left: var(--sp-10); }
+.toc-card .toc-list { border-left: 0; }
+.toc-card a { padding: 11px var(--sp-12); font-size: var(--fs-2xl); border-radius: var(--radius-8); }
+.toc-card a::after { left: 0; top: 9px; bottom: 9px; }
+.toc-card a.is-active { background: color-mix(in srgb, var(--accent-blue) 10%, transparent); }
+@keyframes toc-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
