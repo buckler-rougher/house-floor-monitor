@@ -10246,6 +10246,7 @@ body.all-mode .floor-grid-panel {
 .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
 .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
 .lead-top.is-pair { grid-template-columns: 1fr 1fr; }
+.lead-seal { margin-left: var(--sp-4); flex: 0 0 auto; width: 64px; height: 64px; object-fit: contain; }
 .lead-card.is-empty { visibility: hidden; }
 }
 
