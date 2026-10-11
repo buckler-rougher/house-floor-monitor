@@ -5928,8 +5928,16 @@ font-family: var(--font-mono);
   .approps-count.is-law b { color: var(--accent-green); }
   .approps-fy { padding: var(--sp-12) var(--sp-32) 0; font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
   .approps-fy:empty { display: none; }
+  .approps-legend { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-4); padding: var(--sp-6) var(--sp-32) 0; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+  .approps-legend span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .approps-legend b { font-weight: 600; }
+  .approps-legend .short { display: none; }
+  .approps-legend:empty { display: none; }
   @media (max-width: 768px) {
     .approps-fy { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+    .approps-legend { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+    .approps-legend .long { display: none; }
+    .approps-legend .short { display: inline; }
   }
 }
 .main-display > * {
@@ -6821,7 +6829,10 @@ a.source-link.has-manifest:not(.has-tail)::after, a.source-link.has-manifest .so
   .committee-item { grid-template-columns: 4.2rem 1fr; }
   .committee-room { grid-column: 2; }
 }
-.approps-list { padding: var(--sp-12) var(--sp-24) var(--sp-16); display: grid; gap: var(--sp-16); }
+.approps-list { padding: var(--sp-12) var(--sp-32) var(--sp-16); display: grid; gap: var(--sp-16); }
+@media (max-width: 768px) {
+  .approps-list { padding-left: var(--sp-16); padding-right: var(--sp-16); }
+}
 @media (max-width: 640px) {
   .approps-list { padding: var(--sp-12) var(--sp-16); }
 }
