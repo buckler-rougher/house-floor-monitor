@@ -1726,6 +1726,7 @@ initAirportDelays();
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-bill-open]'); if (b) openSenateBillModal(b.dataset.billOpen, b); });
 AppropsPanel.mount({ base: API });
 SenateCommittees.mount({ base: API });
+SenateAmendments.mount({ base: API });
 SenateTreaties.mount({ base: API });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
@@ -1842,6 +1843,7 @@ SenateQuorum.init({ photoUrlFor });
     if (id === _debateBill) return;
     _debateBill = id;
     DebatePanel.bare({ id, title: cur.title || '' });
+    SenateAmendments.show(id);   // the Amendments tab, from Congress.gov (lib/senate-amendments.js); hidden when the measure has none
     if (src) { src.href = 'https://www.congress.gov'; src.textContent = 'Congress.gov'; }
     if (!id) return;
     fetchSenateBill(id).then((entry) => {
@@ -1890,7 +1892,7 @@ SenateQuorum.init({ photoUrlFor });
     }
     if (mode === 'leader') { setText('leader-time', time(cur.since)); paintLeader(cur); }
     if (mode === 'debate') paintDebate(cur);
-    else _debateBill = null;
+    else { if (_debateBill) SenateAmendments.show(null); _debateBill = null; }
   };
   document.addEventListener('senate-mode', (e) => {
     told = { mode: e.detail && e.detail.mode, at: Date.now() };
