@@ -1,0 +1,970 @@
+{
+ "at": 1791682559692,
+ "bill": "s4668",
+ "count": 74,
+ "pending": 0,
+ "amendments": [
+  {
+   "num": 6744,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-05",
+   "sponsor": {
+    "name": "Hawley",
+    "party": "R",
+    "state": "MO"
+   }
+  },
+  {
+   "num": 6752,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-06",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6753,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-06",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6754,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-06",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6755,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-06",
+   "sponsor": {
+    "name": "Lee",
+    "party": "R",
+    "state": "UT"
+   }
+  },
+  {
+   "num": 6756,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Blackburn",
+    "party": "R",
+    "state": "TN"
+   }
+  },
+  {
+   "num": 6757,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Paul",
+    "party": "R",
+    "state": "KY"
+   }
+  },
+  {
+   "num": 6758,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Not agreed 1-94",
+   "kind": "failed",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Paul",
+    "party": "R",
+    "state": "KY"
+   }
+  },
+  {
+   "num": 6759,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Kennedy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6760,
+   "type": "SAMDT",
+   "summary": "To limit price increases for college athletics tickets.",
+   "status": "Not agreed 42-54",
+   "kind": "failed",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Kennedy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6761,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Kennedy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6762,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Cassidy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6763,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Cassidy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6768,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-08-07",
+   "sponsor": {
+    "name": "Cruz",
+    "party": "R",
+    "state": "TX"
+   }
+  },
+  {
+   "num": 6770,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-14",
+   "sponsor": {
+    "name": "Tuberville",
+    "party": "R",
+    "state": "AL"
+   }
+  },
+  {
+   "num": 6773,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-16",
+   "sponsor": {
+    "name": "Husted",
+    "party": "R",
+    "state": "OH"
+   }
+  },
+  {
+   "num": 6774,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-16",
+   "sponsor": {
+    "name": "Murphy",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6775,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Gillibrand",
+    "party": "D",
+    "state": "NY"
+   }
+  },
+  {
+   "num": 6776,
+   "type": "SAMDT",
+   "summary": "In the nature of a substitute.",
+   "status": "Agreed 77-23",
+   "kind": "adopted",
+   "date": "2026-09-24",
+   "sponsor": {
+    "name": "Cruz",
+    "party": "R",
+    "state": "TX"
+   }
+  },
+  {
+   "num": 6777,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Tabled (voice)",
+   "kind": "failed",
+   "date": "2026-09-24",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6778,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Fell",
+   "kind": "failed",
+   "date": "2026-09-24",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6779,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Tabled (voice)",
+   "kind": "failed",
+   "date": "2026-09-24",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6780,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Fell",
+   "kind": "failed",
+   "date": "2026-09-24",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6781,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Fell",
+   "kind": "failed",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6782,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Fell",
+   "kind": "failed",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6783,
+   "type": "SAMDT",
+   "summary": "To improve the bill.",
+   "status": "Fell",
+   "kind": "failed",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Thune",
+    "party": "R",
+    "state": "SD"
+   }
+  },
+  {
+   "num": 6784,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Baldwin",
+    "party": "D",
+    "state": "WI"
+   }
+  },
+  {
+   "num": 6785,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Baldwin",
+    "party": "D",
+    "state": "WI"
+   }
+  },
+  {
+   "num": 6786,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Baldwin",
+    "party": "D",
+    "state": "WI"
+   }
+  },
+  {
+   "num": 6787,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6788,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6789,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6790,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6793,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6794,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Murphy",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6795,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-17",
+   "sponsor": {
+    "name": "Murphy",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6796,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Hirono",
+    "party": "D",
+    "state": "HI"
+   }
+  },
+  {
+   "num": 6797,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Hirono",
+    "party": "D",
+    "state": "HI"
+   }
+  },
+  {
+   "num": 6798,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Hirono",
+    "party": "D",
+    "state": "HI"
+   }
+  },
+  {
+   "num": 6799,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Warnock",
+    "party": "D",
+    "state": "GA"
+   }
+  },
+  {
+   "num": 6800,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6801,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6802,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6803,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6804,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6805,
+   "type": "SAMDT",
+   "summary": "To increase the limitation on funding for post-eligibility insurance and catastrophic injury for student athletes.",
+   "status": "Not agreed 49-50",
+   "kind": "failed",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6806,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Britt",
+    "party": "R",
+    "state": "AL"
+   }
+  },
+  {
+   "num": 6807,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6808,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6809,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Tuberville",
+    "party": "R",
+    "state": "AL"
+   }
+  },
+  {
+   "num": 6810,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Tuberville",
+    "party": "R",
+    "state": "AL"
+   }
+  },
+  {
+   "num": 6811,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Kennedy",
+    "party": "R",
+    "state": "LA"
+   }
+  },
+  {
+   "num": 6812,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Armstrong",
+    "party": "R",
+    "state": "OK"
+   }
+  },
+  {
+   "num": 6813,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6814,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6815,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6816,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6817,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6818,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6819,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blumenthal",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6820,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blumenthal",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6821,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blumenthal",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6822,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blumenthal",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6823,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blumenthal",
+    "party": "D",
+    "state": "CT"
+   }
+  },
+  {
+   "num": 6824,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-22",
+   "sponsor": {
+    "name": "Blackburn",
+    "party": "R",
+    "state": "TN"
+   }
+  },
+  {
+   "num": 6825,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-23",
+   "sponsor": {
+    "name": "Warnock",
+    "party": "D",
+    "state": "GA"
+   }
+  },
+  {
+   "num": 6826,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-23",
+   "sponsor": {
+    "name": "Baldwin",
+    "party": "D",
+    "state": "WI"
+   }
+  },
+  {
+   "num": 6827,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-23",
+   "sponsor": {
+    "name": "Merkley",
+    "party": "D",
+    "state": "OR"
+   }
+  },
+  {
+   "num": 6828,
+   "type": "SAMDT",
+   "summary": "To modify the provision relating to the relationship of this Act to existing law.",
+   "status": "Agreed 96-1",
+   "kind": "adopted",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Baldwin",
+    "party": "D",
+    "state": "WI"
+   }
+  },
+  {
+   "num": 6829,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-23",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6830,
+   "type": "SAMDT",
+   "summary": "To require the disclosure of foreign financing of intercollegiate athletics.",
+   "status": "Agreed (voice)",
+   "kind": "adopted",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  },
+  {
+   "num": 6831,
+   "type": "SAMDT",
+   "summary": "To modify the prohibition on certain conference mergers and acquisitions.",
+   "status": "Agreed (voice)",
+   "kind": "adopted",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Moody",
+    "party": "R",
+    "state": "FL"
+   }
+  },
+  {
+   "num": 6835,
+   "type": "SAMDT",
+   "summary": "To establish certain standards with respect to coaches of varsity sports teams.",
+   "status": "Not agreed 47-52",
+   "kind": "failed",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Booker",
+    "party": "D",
+    "state": "NJ"
+   }
+  },
+  {
+   "num": 6836,
+   "type": "SAMDT",
+   "summary": "",
+   "status": "Submitted",
+   "kind": "submitted",
+   "date": "2026-09-28",
+   "sponsor": {
+    "name": "Scott",
+    "party": "R",
+    "state": "SC"
+   }
+  }
+ ]
+}

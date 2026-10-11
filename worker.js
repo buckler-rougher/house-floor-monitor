@@ -21,6 +21,7 @@ import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
 import './lib/senate-treaties.js';
+import './lib/senate-amendments.js';
 import './lib/funding-deadline.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
@@ -4259,6 +4260,52 @@ async function handleSenateNominationHearings(env) {
   }, 300, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
 }
 
+// The amendments offered to a measure the Senate is on (lib/senate-amendments.js), from Congress.gov: the bill's amendments list (numbers, and for most a purpose and latest
+// action) and, for the sponsor and anything the list left out, each amendment's own record, read thirty a run and kept in KV by amendment and update time (a record is read
+// again only when its update time moves). `pending` is how many are still to read; the board asks again until none are. S.4668 had 74 on 30 September, 59 with no action yet.
+async function handleSenateAmendments(env, billId) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const parsed = billIdToCongressType(billId || '');
+  if (!parsed) return fail(400, 'unrecognised measure id');
+  if (!_congressApiKey) return fail(503, 'amendments: no Congress.gov key configured');
+  const { type, number } = parsed;
+  return kvCache(env, `senate-amendments-v1-${CURRENT_CONGRESS}-${type}-${number}`, 120, async () => {
+    const SA = globalThis.SenateAmendments;
+    try {
+      const key = `senate-amendments-state-v1-${CURRENT_CONGRESS}-${type}-${number}`;
+      let st = {};
+      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+      const items = [];
+      let next = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}/amendments?limit=250`;
+      for (let page = 0; next && page < 4; page++) {
+        const json = await congressCall(next.replace(/[?&](format|api_key)=[^&]*/g, ''));
+        if (!json) break;
+        items.push(...(json.amendments || []).filter((a) => /^S/i.test(a.type || '')));
+        next = json.pagination?.next || null;
+      }
+      const todo = items.filter((a) => !st[a.number] || st[a.number].u !== a.updateDate);
+      const batch = todo.slice(0, 30);
+      for (let i = 0; i < batch.length; i += 6) {
+        await Promise.all(batch.slice(i, i + 6).map(async (a) => {
+          try {
+            const rec = await congressCall(`https://api.congress.gov/v3/amendment/${CURRENT_CONGRESS}/${String(a.type).toLowerCase()}/${a.number}`);
+            const d = rec?.amendment;
+            if (d) st[a.number] = { u: a.updateDate, d: { number: d.number, type: d.type, purpose: d.purpose, proposedDate: d.proposedDate, submittedDate: d.submittedDate, latestAction: d.latestAction ? { actionDate: d.latestAction.actionDate, text: d.latestAction.text } : null, sponsors: (d.sponsors || []).slice(0, 1).map((s) => ({ fullName: s.fullName, lastName: s.lastName, party: s.party, state: s.state })) } };
+          } catch { /* read again next run */ }
+        }));
+      }
+      const live = new Set(items.map((a) => String(a.number)));
+      for (const k of Object.keys(st)) if (!live.has(k)) delete st[k];
+      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      const amendments = items.map((a) => SA.shape(a, (st[a.number] || {}).d)).filter(Boolean).sort((a, b) => a.num - b.num);
+      const pending = Math.max(0, todo.length - batch.length) + batch.filter((a) => !st[a.number] || st[a.number].u !== a.updateDate).length;
+      return new Response(JSON.stringify({ at: Date.now(), bill: `${type}${number}`, count: amendments.length, pending, amendments }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${pending ? 10 : 120}` },
+      });
+    } catch (e) { return fail(502, e.message); }
+  }, 120, { browserSeconds: 20, ttlOf: (b) => { try { return JSON.parse(b).pending ? 15 : 0; } catch { return 0; } } });
+}
+
 // The treaties before the Senate (lib/senate-treaties.js): those received in this Congress and the last, each with its actions, from Congress.gov's treaty API.
 async function handleSenateTreaties(env) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -6774,6 +6821,8 @@ async function handleRequest(request, env) {
     return await handleSenateCommitteeMeetings(env);
   } else if (path === '/api/senate/nomination-hearings' && request.method === 'GET') {
     return await handleSenateNominationHearings(env);
+  } else if (path === '/api/senate/amendments' && request.method === 'GET') {
+    return await handleSenateAmendments(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/treaties' && request.method === 'GET') {
     return await handleSenateTreaties(env);
   } else if (path === '/api/committee-meetings' && request.method === 'GET') {
