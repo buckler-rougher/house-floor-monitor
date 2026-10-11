@@ -10177,7 +10177,7 @@ body.all-mode .floor-grid-panel {
   .pipe-col + .pipe-col { border-top: 1px solid var(--border-color); }
 }
 
-.toc-rail { position: absolute; z-index: 30; pointer-events: none; }
+.toc-rail { position: absolute; top: 0; bottom: 0; z-index: 30; pointer-events: none; margin: 0 !important; }
 .toc-rail[hidden] { display: none; }
 .toc { position: sticky; pointer-events: auto; font-family: var(--font-sans); overflow-y: auto; scrollbar-width: none; }
 .toc::-webkit-scrollbar { display: none; }
