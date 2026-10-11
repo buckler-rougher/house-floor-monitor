@@ -43,4 +43,18 @@ ok('with two convenings in a day the first is when it met', () => {
   assert.strictEqual(W.summarize({ items: [second, convene] }).convened.at, Date.parse('2026-10-09T16:30:00.000Z'));
 });
 
+ok('the next meeting as a day and a clock, from the Clerk\'s sentence: p.m., a.m., noon and a minute, in any month', () => {
+  assert.deepStrictEqual(W.parseNext('1:30 p.m. on October 13, 2026'), { day: '2026-10-13', hour: 13, minute: 30 });
+  assert.deepStrictEqual(W.parseNext('10:00 a.m. on September 4, 2026'), { day: '2026-09-04', hour: 10, minute: 0 });
+  assert.deepStrictEqual(W.parseNext('noon on January 5, 2027'), { day: '2027-01-05', hour: 12, minute: 0 });
+  assert.deepStrictEqual(W.parseNext('12:00 noon on January 5, 2027'), { day: '2027-01-05', hour: 12, minute: 0 }, 'the Clerk sometimes writes both');
+  assert.deepStrictEqual(W.parseNext('12:15 a.m. on March 2, 2027'), { day: '2027-03-02', hour: 0, minute: 15 }, 'a quarter past midnight is hour 0, not 12');
+  assert.deepStrictEqual(W.parseNext('12:30 p.m. on March 2, 2027'), { day: '2027-03-02', hour: 12, minute: 30 });
+  assert.deepStrictEqual(W.parseNext('6 p.m. on December 31, 2026'), { day: '2026-12-31', hour: 18, minute: 0 });
+});
+
+ok('a sentence it does not know is null (the board then shows the Clerk\'s words as sent): no date, no clock, an impossible clock, a month that is not one', () => {
+  for (const bad of ['', null, 'at the call of the Chair', '1:30 p.m. tomorrow', 'on October 13, 2026', '13:30 p.m. on October 13, 2026', '1:75 p.m. on October 13, 2026', '1:30 p.m. on Octember 13, 2026']) assert.strictEqual(W.parseNext(bad), null, String(bad));
+});
+
 console.log(`\n${n} passed`);
