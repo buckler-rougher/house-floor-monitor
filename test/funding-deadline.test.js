@@ -53,4 +53,12 @@ ok('days counts whole days to the date', () => {
   assert.strictEqual(FD.days('2026-12-11', '2026-12-12'), -1);
 });
 
+ok('fiscalYear: the year that is running today; it rolls on 1 October', () => {
+  assert.strictEqual(FD.fiscalYear('2026-10-10'), 2027);
+  assert.strictEqual(FD.fiscalYear('2026-09-30'), 2026);
+  assert.strictEqual(FD.fiscalYear('2026-10-01'), 2027);
+  assert.strictEqual(FD.fiscalYear('2027-04-15'), 2027, 'next spring, when the list has moved on to FY2028, the funding is still FY2027\'s');
+  assert.strictEqual(FD.fiscalYear('2027-12-31'), 2028);
+});
+
 console.log(`\n${n} passed`);
