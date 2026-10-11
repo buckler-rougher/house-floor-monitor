@@ -61,4 +61,47 @@ ok('fiscalYear: the year that is running today; it rolls on 1 October', () => {
   assert.strictEqual(FD.fiscalYear('2027-12-31'), 2028);
 });
 
+const cr = { through: '2026-12-11', fiscalYear: 2027 };
+const base = { funding: cr, fundingYear: 2027, listYear: 2027, today: '2026-12-14', unfunded: 9 };
+
+ok('status: a resolution in date is a countdown, to the day itself', () => {
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-10-10' }), { kind: 'cr', left: 62 });
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-11' }), { kind: 'cr', left: 0 });
+});
+
+ok('status: the day after the date, with bills not enacted, is a lapse that began that day, counted in days', () => {
+  assert.deepStrictEqual(FD.status({ ...base, today: '2026-12-12' }), { kind: 'lapse', since: '2026-12-12', days: 1, why: 'ended' });
+  assert.deepStrictEqual(FD.status(base), { kind: 'lapse', since: '2026-12-12', days: 3, why: 'ended' });
+});
+
+ok('status: the date passed but every bill is enacted (an omnibus got through), or none are unfunded: nothing is said', () => {
+  assert.strictEqual(FD.status({ ...base, unfunded: 0 }), null);
+});
+
+ok('status: a lapse is never asserted about a different year than the list (the count would be another year\'s bills)', () => {
+  assert.strictEqual(FD.status({ ...base, listYear: 2028 }), null);
+});
+
+ok('status: no resolution found for the year, the year begun, bills not enacted: a lapse since 1 October; before the year begins, or if the lookup could not say, nothing', () => {
+  const none = { funding: null, checked: true, fundingYear: 2028, listYear: 2028, today: '2027-10-03', unfunded: 12 };
+  assert.deepStrictEqual(FD.status(none), { kind: 'lapse', since: '2027-10-01', days: 3, why: 'none' });
+  assert.strictEqual(FD.status({ ...none, checked: false }), null, 'a lookup that failed is not "none"');
+  assert.strictEqual(FD.status({ ...none, today: '2027-09-30', fundingYear: 2027, listYear: 2027 }), null, 'a year with no resolution found and 365 days gone is a missed law, not a 365-day shutdown');
+  assert.strictEqual(FD.status({ ...none, unfunded: 0 }), null);
+  assert.strictEqual(FD.status({ ...none, listYear: 2027 }), null);
+});
+
+ok('status: a lapse past 120 days is not asserted, from either branch', () => {
+  assert.strictEqual(FD.status({ ...base, today: '2027-04-10' }).days, 120, 'day 120 still says so');
+  assert.strictEqual(FD.status({ ...base, today: '2027-04-11' }), null, 'day 121 does not');
+  assert.strictEqual(FD.status({ ...base, today: '2026-12-12' }).days, 1);
+  assert.strictEqual(FD.status({ ...base, today: '2027-04-10', funding: { through: '2027-03-01', fiscalYear: 2027 } }).days, 40);
+});
+
+ok('status: nothing to go on is null', () => {
+  assert.strictEqual(FD.status({}), null);
+  assert.strictEqual(FD.status(null), null);
+  assert.strictEqual(FD.status({ funding: null, checked: false }), null);
+});
+
 console.log(`\n${n} passed`);
