@@ -10981,9 +10981,8 @@ body.all-mode .floor-grid-panel {
 
 /* ───────────── The time machine (lib/replay-ui.js, lib/replay-shim.js) ───────────── */
 /* the header button, set like the suggestion box beside it */
-#replay-btn { display: none; }
-html.tm-on #replay-btn, html.replay-mode #replay-btn { display: inline-flex; }
 #replay-btn {
+    display: inline-flex;
     position: relative;
     font-size: var(--fs-sm);
     font-weight: 600;
