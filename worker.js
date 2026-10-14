@@ -444,7 +444,9 @@ function parseViewFloorActionsHtml(html) {
       // Parse datetime: "05/15/2026 11:41:57" -> ISO
       const [datePart, timePart] = datetimeStr.split(' ');
       const [month, day, year] = datePart.split('/');
-      const pubDate = new Date(`${year}-${month}-${day}T${timePart}-04:00`).toISOString();
+      // Eastern, whichever side of the clock change the day is on (this was a fixed -04:00, an hour wrong from November to March: the time machine reads old days)
+      const pubMs = globalThis.Replay.etMs(`${year}-${month}-${day}T${timePart}`);
+      const pubDate = new Date(Number.isNaN(pubMs) ? new Date(`${year}-${month}-${day}T${timePart}-04:00`).getTime() : pubMs).toISOString();
       // Extract time display from the nowrap span
       const timeMatch = row.match(/<span class="nowrap">([\d:]+ [AP]M)<\/span>/);
       const timeDisplay = timeMatch ? timeMatch[1] : timePart;

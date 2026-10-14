@@ -6191,6 +6191,7 @@ font-family: var(--font-mono);
   .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
   .lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .lead-card.is-empty { visibility: hidden; }
+  .tm-moment-time { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 }
 .main-display > * {
     margin-bottom: 0;
