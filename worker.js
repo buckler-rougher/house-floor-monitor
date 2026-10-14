@@ -29,6 +29,7 @@ import './lib/discharge-calendar.js';
 import './lib/cra-rule.js';
 import './lib/appropriations.js';
 import './lib/leadership.js';
+import './lib/replay.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
@@ -6242,6 +6243,58 @@ async function handleLastSessionDate(request) {
 }
 
 
+// ── The time machine: a past day's video and captions ───────────────────────────────────────────
+// The House's own broadcast API (the one /api/hls-url asks for today) answers for ANY past date back to 2020 with the day's archived HLS video and its caption file; both are on a
+// public CDN with open CORS, so the browser plays and reads them directly. This route only finds them (that API sends no CORS header, and hangs for a day with no broadcast).
+// lib/replay.js `pickFiles` says which of its many file entries to take. Past days never change: kept six hours in memory and a month in KV.
+async function fetchBroadcastEventLong(dateId, ms = 8000) {
+  try {
+    const resp = await fetch(`https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${dateId}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(ms) });
+    if (!resp.ok) return null;
+    const text = await resp.text();
+    const data = text && text.trim() ? JSON.parse(text) : null;
+    return Array.isArray(data) && data.length ? data[0] : null;
+  } catch { return null; }
+}
+
+async function handleReplayDay(request, env) {
+  const date = new URL(request.url).searchParams.get('date') || '';
+  const jsonHdr = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  if (!/^\d{8}$/.test(date)) return new Response(JSON.stringify({ error: 'date=YYYYMMDD' }), { status: 400, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
+  const today = getTodayDateET();
+  if (date > today) return new Response(JSON.stringify({ error: 'that day has not happened' }), { status: 404, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
+  const past = date < today;
+  return kvCache(env, `replay-day-v1-${date}`, past ? 6 * 3600 : 60, async () => {
+    const event = await fetchBroadcastEventLong(date);
+    const f = event && globalThis.Replay.pickFiles(event);
+    if (!f) return new Response(JSON.stringify({ error: 'no video archive for that day' }), { status: 404, headers: { ...jsonHdr, 'Cache-Control': 'public, max-age=300' } });
+    return new Response(JSON.stringify({ date, ...f }), { headers: { ...jsonHdr, 'Cache-Control': `public, max-age=${past ? 3600 : 30}` } });
+  }, past ? 30 * 86400 : 60);
+}
+
+// Which days of a month have an archive, for the date picker. One probe a day, in parallel (a month is under the 50-subrequest limit, and a day with no broadcast only costs its timeout).
+async function handleReplayMonth(request, env) {
+  const month = new URL(request.url).searchParams.get('month') || '';   // YYYYMM
+  const jsonHdr = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  const m = /^(\d{4})(\d\d)$/.exec(month);
+  if (!m || +m[2] < 1 || +m[2] > 12 || +m[1] < 2019) return new Response(JSON.stringify({ error: 'month=YYYYMM' }), { status: 400, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
+  const today = getTodayDateET();
+  const current = month === today.slice(0, 6);
+  if (month > today.slice(0, 6)) return new Response(JSON.stringify({ month, days: {} }), { headers: { ...jsonHdr, 'Cache-Control': 'public, max-age=3600' } });
+  return kvCache(env, `replay-month-v1-${month}`, current ? 1800 : 6 * 3600, async () => {
+    const last = new Date(Date.UTC(+m[1], +m[2], 0)).getUTCDate();
+    const ids = [];
+    for (let d = 1; d <= last; d++) { const id = `${month}${String(d).padStart(2, '0')}`; if (id <= today) ids.push(id); }
+    const got = await Promise.all(ids.map((id) => fetchBroadcastEventLong(id, 6000).then((e) => [id, e])));
+    const days = {};
+    for (const [id, e] of got) {
+      const f = e && globalThis.Replay.pickFiles(e);
+      if (f) days[`${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`] = { name: f.name, startMs: f.startMs, endMs: f.endMs };
+    }
+    return new Response(JSON.stringify({ month, days }), { headers: { ...jsonHdr, 'Cache-Control': `public, max-age=${current ? 600 : 3600}` } });
+  }, current ? 1800 : 30 * 86400);
+}
+
 async function handleAmendments(request, env) {
   const url = new URL(request.url);
   const slug = url.searchParams.get('bill'); // e.g. "hr-1041"
@@ -7019,6 +7072,10 @@ async function handleRequest(request, env) {
     return await handleHouseCalendar(env);
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
+  } else if (path === '/api/replay-day' && request.method === 'GET') {
+    return await handleReplayDay(request, env);
+  } else if (path === '/api/replay-month' && request.method === 'GET') {
+    return await handleReplayMonth(request, env);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
     return await handleRollLogGet(env);
   } else if (path === '/api/cold-start-bundle' && request.method === 'GET') {
