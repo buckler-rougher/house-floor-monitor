@@ -6634,7 +6634,7 @@ function renderProceedingsFeedPanel(items) {
         });
         const agoStr = proceedingsAgo(pubDate.getTime());
         return `
-        <div class="proceedings-item">
+        <div class="proceedings-item" data-ts="${item.timestamp || ''}">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>
                 ${linkifyBillNumbers(decodeHtml(item.description))}
@@ -10353,7 +10353,7 @@ async function updateQuorumStatus() {
 // Moved to lib/floor-feed.js so the Senate board can use the same player when a
 // Senate floor video source exists. Behaviour is unchanged; only the stream
 // endpoint became an argument.
-FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url' });
+FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url', ...(window.__replay ? window.__replay.floorFeedOpts : {}) });
 
 // ── Current floor speaker ─────────────────────────────────────────────────────
 // The House caption feed labels every turn "UNIDENTIFIED SPEAKER:" and the floor

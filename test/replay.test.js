@@ -108,6 +108,21 @@ test('snap: the matching caption line nearest the estimate, inside the window', 
   assert.strictEqual(R.snap(cues, 650, (x) => /9999/.test(x), 600), null);
 });
 
+test('bill numbers as the captioner spells them: digits split by a full stop, number words, a number across a cue boundary', () => {
+  const t = (id, text) => R.billMentions([id])(text);
+  assert.ok(t('7834', 'UNIDENTIFIED SPEAKER: H.R. 7834, AS AMENDED.'));
+  assert.ok(t('9576', 'H.R. 95. 76 A BILL TO ESTABLISH'));
+  assert.ok(t('9576', 'ON PASSAGE OF H.R. 9576, ON'));
+  assert.ok(t('10326', 'ON THE PASSAGE OF H.R. TEN 326, ON WHICH'));
+  assert.ok(t('213', 'THE VOTE ON H.J. RES. TWO 13, ON WHICH THE YEAS'));
+  assert.ok(!t('213', 'ON PASSAGE OF H.R. 9576, ON'));
+  assert.ok(!t('213', 'H.R. 2134 AS AMENDED'), 'a longer number is another bill');
+  assert.ok(!t('78', 'H.R. 7834'), 'a prefix is not the number');
+  assert.ok(!t('213', 'THE HOUSE WILL COME TO ORDER 213'), 'no bill type, no bill');
+  const cues = [{ t: 100, text: 'UNFINISHED BUSINESS IS THE VOTE ON H.R.' }, { t: 103, text: 'TEN 326, ON WHICH THE YEAS' }];
+  assert.strictEqual(R.snap(cues, 100, R.billMentions(['10326']), 60).t, 100, 'found across the cue boundary');
+});
+
 test('clip: the Clerk entries that had happened by then', () => {
   const items = [{ timestamp: 300, d: 'c' }, { timestamp: 200, d: 'b' }, { timestamp: 100, d: 'a' }];
   assert.deepStrictEqual(R.clip(items, 250).map((x) => x.d), ['b', 'a']);
