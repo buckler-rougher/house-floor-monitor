@@ -10297,6 +10297,9 @@ html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 
 .tm-cal-loading { grid-column: 1 / -1; color: var(--text-muted); font-size: var(--fs-md); text-align: center; padding: var(--sp-32) 0; }
 .tm-day { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border-radius: 50%; border: 1px solid transparent; font-family: var(--font-mono); font-size: var(--fs-md); font-variant-numeric: tabular-nums; color: var(--text-muted); opacity: .38; background: none; padding: 0; }
 .tm-day.is-blank { opacity: 0; }
+.tm-day.is-checking { animation: tm-check 1.1s ease-in-out infinite; }
+@keyframes tm-check { 50% { opacity: .15; } }
+@media (prefers-reduced-motion: reduce) { .tm-day.is-checking { animation: none; } }
 .tm-day.has-video { opacity: 1; color: var(--text-primary); border-color: rgba(63, 185, 80, .55); background: rgba(63, 185, 80, .09); cursor: pointer; transition: all .15s ease; }
 .tm-day.has-video:hover { background: rgba(63, 185, 80, .24); box-shadow: 0 0 10px rgba(63, 185, 80, .3); }
 .tm-day.is-today { box-shadow: inset 0 0 0 1px var(--text-muted); }
@@ -10336,8 +10339,8 @@ html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 
 
 .tm-bar { display: none; }
 html.replay-mode .tm-bar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1010; padding: var(--sp-10) var(--sp-24) var(--sp-12); background: var(--bg-header); backdrop-filter: blur(18px); border-top: 1px solid var(--border-color); box-shadow: 0 -10px 36px rgba(0, 0, 0, .45); }
-html.replay-mode body { padding-bottom: 92px; }
-html.replay-mode .floor-feed { bottom: 104px; }
+html.replay-mode body { padding-bottom: 126px; }
+html.replay-mode .floor-feed { bottom: 138px; }
 html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 22px rgba(63, 185, 80, .12); }
 .tm-bar-row { display: flex; align-items: center; gap: var(--sp-16); max-width: 1400px; margin: 0 auto; }
 .tm-transport { display: flex; align-items: center; gap: var(--sp-6); }
@@ -10358,7 +10361,20 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-mark:hover i { height: 24px; margin-top: 2px; }
 .tm-mark-gavel i { background: var(--accent-green); height: 20px; margin-top: 4px; }
 .tm-mark-adjourn i { background: var(--accent-red); height: 20px; margin-top: 4px; }
-.tm-mark-recess i { background: var(--accent-amber); }
+.tm-mark-recess i, .tm-mark-other i { background: var(--accent-amber); }
+.tm-mark-debate i { background: var(--accent-purple, #a371f7); height: 10px; margin-top: 9px; }
+.tm-mark-speech i { background: var(--text-secondary); height: 10px; margin-top: 9px; }
+.tm-marks.hide-debate .tm-mark-debate, .tm-marks.hide-vote .tm-mark-vote, .tm-marks.hide-speech .tm-mark-speech, .tm-marks.hide-other .tm-mark-other { display: none; }
+.tm-filter-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-8) var(--sp-16); max-width: 1400px; margin: 2px auto 0; font-size: var(--fs-sm); color: var(--text-muted); }
+.tm-legend { display: inline-flex; flex-wrap: wrap; gap: var(--sp-6); }
+.tm-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); border-radius: 999px; background: none; color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); padding: 2px 10px; cursor: pointer; }
+.tm-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.tm-chip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.tm-chip-debate i { background: var(--accent-purple, #a371f7); }
+.tm-chip-vote i { background: var(--accent-blue); }
+.tm-chip-other i { background: var(--accent-amber); }
+.tm-outside { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.tm-outside input { accent-color: var(--accent-green); }
 .tm-mark-vote.is-yea i { background: var(--accent-blue); }
 .tm-mark-vote.is-nay i { background: var(--accent-red); opacity: .8; }
 .tm-range { --fill: 0%; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
@@ -10382,12 +10398,14 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
     .tm-scrub { order: 5; flex: 1 1 100%; }
     .tm-speed { display: none; }
     .tm-moment { min-width: 0; flex: 1; }
-    html.replay-mode body { padding-bottom: 150px; }
-    html.replay-mode .floor-feed { bottom: 160px; }
+    html.replay-mode body { padding-bottom: 200px; }
+    html.replay-mode .floor-feed { bottom: 210px; }
 }
 
 html.replay-mode .proceedings-item[data-ts] { cursor: pointer; transition: background .15s ease; border-radius: var(--radius-6); }
 html.replay-mode .proceedings-item[data-ts]:hover { background: rgba(63, 185, 80, .08); }
+html.replay-mode .proceedings-item.is-future { opacity: .34; }
+html.replay-mode .proceedings-item.is-future:hover { opacity: .75; }
 html.replay-mode .proceedings-item.is-here { background: rgba(63, 185, 80, .14); box-shadow: inset 2px 0 0 var(--accent-green); }
 
 html.replay-mode #whip-updates, html.replay-mode #absentee, html.replay-mode #bills, html.replay-mode #twitter, html.replay-mode #airport-delays,
