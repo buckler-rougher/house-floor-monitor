@@ -4119,14 +4119,32 @@ async function handleHouseRolls(request, env) {
   const iso = (d) => `${d.slice(6)}-${d.slice(0, 2)}-${d.slice(3, 5)}`;
   const today = getTodayDateET();   // YYYYMMDD
   const isToday = iso(date).replace(/-/g, '') === today;
-  return kvCache(env, `house-rolls-v1-${date}`, isToday ? 120 : 6 * 3600, async () => {
+  return kvCache(env, `house-rolls-v2-${date}`, isToday ? 120 : 6 * 3600, async () => {
     try {
       const rolls = [];
       const nums = globalThis.ClerkVotes.parseRolls(await fetchRSSFeed(globalThis.ClerkVotes.listUrl(year)), year);
       if (!nums.length) throw new Error('the Clerk vote listing had no roll calls (has the page changed?)');
-      for (let n = Number(nums[0].rollNumber), seen = 0; n >= 1 && seen < 60; n--, seen++) {
+      const memo = new Map();
+      const fetchRoll = async (n) => {
+        if (memo.has(n)) return memo.get(n);
         const roll = globalThis.ClerkVotes.parseRoll(await fetchRSSFeed(`https://clerk.house.gov/evs/${year}/roll${String(n).padStart(3, '0')}.xml`));
         if (!roll || !roll.date) throw new Error(`roll ${n} was not a roll call file`);
+        memo.set(n, roll);
+        return roll;
+      };
+      const latest = Number(nums[0].rollNumber);
+      let from = latest;
+      // a past day is a long way back from the latest roll: roll numbers rise with the date, so find the day's last roll by halving, then read back from it
+      if (iso((await fetchRoll(latest)).date) > iso(date)) {
+        let lo = 1, hi = latest;   // the last roll dated on or before the day
+        while (lo < hi) {
+          const mid = Math.ceil((lo + hi) / 2);
+          if (iso((await fetchRoll(mid)).date) <= iso(date)) lo = mid; else hi = mid - 1;
+        }
+        from = lo;
+      }
+      for (let n = from, seen = 0; n >= 1 && seen < 80; n--, seen++) {
+        const roll = await fetchRoll(n);
         if (roll.date === date) rolls.push(roll);
         else if (iso(roll.date) < iso(date)) break;   // older than the day: no more to find
       }
