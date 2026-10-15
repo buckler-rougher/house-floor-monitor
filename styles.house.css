@@ -10299,7 +10299,7 @@ html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 
 
 .tm-day { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 6px 8px 7px; border-radius: 10px; border: 1px solid transparent; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); opacity: .38; background: none; text-align: left; overflow: hidden; }
 .tm-day b { font-weight: 500; font-size: var(--fs-md); line-height: 1; }
-.tm-day i { font-style: normal; font-size: var(--fs-xs); color: var(--text-muted); line-height: 1; letter-spacing: var(--track-wide); }
+.tm-day i { white-space: nowrap; font-style: normal; font-size: var(--fs-xs); color: var(--text-muted); line-height: 1; letter-spacing: var(--track-wide); }
 .tm-day u { position: absolute; left: 0; bottom: 0; height: 3px; border-radius: 0 3px 0 0; background: var(--accent-green); text-decoration: none; opacity: .75; }
 .tm-day.is-blank { opacity: 0; }
 .tm-day.is-checking { animation: tm-check 1.1s ease-in-out infinite; }
