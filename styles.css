@@ -11078,8 +11078,8 @@ html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 
 /* once there: the bar, the room it needs, and what a replay hides or says it does not have */
 .tm-bar { display: none; }
 html.replay-mode .tm-bar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1010; padding: var(--sp-10) var(--sp-24) var(--sp-12); background: var(--bg-header); backdrop-filter: blur(18px); border-top: 1px solid var(--border-color); box-shadow: 0 -10px 36px rgba(0, 0, 0, .45); }
-html.replay-mode body { padding-bottom: 150px; }
-html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 162px; }   /* (expanded, it is centred: a bottom offset would stretch it) */
+html.replay-mode body { padding-bottom: 184px; }
+html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 196px; }   /* (expanded, it is centred: a bottom offset would stretch it) */
 html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 22px rgba(63, 185, 80, .12); }
 .tm-bar-row { display: flex; align-items: center; gap: var(--sp-16); max-width: 1400px; margin: 0 auto; }
 .tm-transport { display: flex; align-items: center; gap: var(--sp-6); }
@@ -11093,7 +11093,8 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-moment { display: grid; min-width: 140px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .tm-moment-time { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .tm-moment-date { font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); }
-.tm-scrub { position: relative; flex: 1; height: 50px; min-width: 120px; }
+.tm-scrubcol { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 2px; }
+.tm-scrub { position: relative; flex: none; width: 100%; height: 50px; }
 .tm-marks { position: absolute; inset: 0; pointer-events: none; }
 .tm-mark { position: absolute; top: 50%; width: 14px; height: 28px; transform: translate(-50%, -50%); padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; }
 .tm-mark i { display: block; width: 3px; height: 14px; margin: 7px auto 0; border-radius: 2px; background: var(--text-muted); transition: height .15s ease, background .15s ease; }
@@ -11194,13 +11195,13 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 @media (max-width: 760px) {
     html.replay-mode .tm-bar { padding: var(--sp-8) var(--sp-12) calc(var(--sp-8) + env(safe-area-inset-bottom)); }
     .tm-bar-row { flex-wrap: wrap; gap: var(--sp-8) var(--sp-12); }
-    .tm-scrub { order: 5; flex: 1 1 100%; }
+    .tm-scrubcol { order: 5; flex: 1 1 100%; }
     .tm-speed { display: none; }
     .tm-moment { white-space: nowrap; }
     .tm-leave { padding: 6px 8px; font-size: var(--fs-xs, 0.7rem); }
     .tm-moment { min-width: 0; flex: 1; }
-    html.replay-mode body { padding-bottom: 226px; }
-    html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 236px; }
+    html.replay-mode body { padding-bottom: 262px; }
+    html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 272px; }
 }
 
 /* a line of the floor log you can click */
@@ -12902,3 +12903,19 @@ body.recess-mode .today-house.has-data { display: block; }
 .tm-scrub.is-off .tm-range::-webkit-slider-thumb { opacity: 0; }
 .tm-scrub.is-off .tm-range::-moz-range-thumb { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .tm-segs.is-stretch { animation: none; } }
+
+/* the closer look: a second track under the day for the item the moment is in */
+.tm-detail { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tm-detail[hidden] { display: none; }
+.tm-d-track { position: relative; height: 26px; }
+.tm-d-track::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 8px; margin-top: -4px; border-radius: 4px; background: rgba(255, 255, 255, .09); }
+.tm-d-fill { position: absolute; left: 0; top: 50%; height: 8px; margin-top: -4px; width: var(--fill, 0%); border-radius: 4px; background: rgba(63, 185, 80, .6); pointer-events: none; }
+.tm-d-ticks i { position: absolute; top: 50%; width: 1px; height: 16px; margin-top: -8px; background: rgba(255, 255, 255, .3); pointer-events: none; }
+.tm-d-votes i { position: absolute; top: 50%; height: 8px; margin-top: -4px; min-width: 4px; border-radius: 3px; pointer-events: none; }
+.tm-d-votes i.is-yea { background: var(--accent-blue); }
+.tm-d-votes i.is-nay { background: var(--accent-red); }
+.tm-range2 { position: absolute; left: 0; right: 0; top: 0; width: 100%; height: 100%; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.tm-range2::-webkit-slider-runnable-track { height: 26px; background: transparent; }
+.tm-range2::-moz-range-track { height: 26px; background: transparent; }
+.tm-range2::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: 6px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); box-shadow: 0 0 8px rgba(63, 185, 80, .6); }
+.tm-range2::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); box-shadow: 0 0 8px rgba(63, 185, 80, .6); }
