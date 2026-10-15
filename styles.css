@@ -12922,11 +12922,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-ag-title { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-secondary); }
 .tm-ag-tools { --control-h: 2rem; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
 
-/* the kind filter: the track fades what is not the kind chosen */
-.tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg { opacity: .28; }
-.tm-segs[data-only="debate"] .tm-vote, .tm-segs[data-only="speech"] .tm-vote, .tm-segs[data-only="other"] .tm-vote { opacity: .28; }
-/* what is chosen shows in its full colour */
-.tm-segs[data-only="debate"] .tm-seg-debate { background: var(--accent-purple); }
-.tm-segs[data-only="speech"] .tm-seg-speech { background: var(--text-secondary); }
-.tm-segs[data-only="other"] .tm-seg-other { background: var(--accent-amber); }
+/* the kind filter: the kind chosen shows in its full colour, brighter, and what is not it recedes (greyed and faint); the shade over what is still to come is dropped while filtering so it cannot dull the chosen kind */
+.tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg,
+.tm-segs[data-only="debate"] .tm-vote, .tm-segs[data-only="speech"] .tm-vote, .tm-segs[data-only="other"] .tm-vote { opacity: .2; filter: grayscale(.8); }
+.tm-segs[data-only="debate"] .tm-seg-debate { background: var(--accent-purple); filter: brightness(1.2); }
+.tm-segs[data-only="speech"] .tm-seg-speech { background: var(--text-secondary); filter: brightness(1.2); }
+.tm-segs[data-only="other"] .tm-seg-other { background: var(--accent-amber); filter: brightness(1.2); }
+.tm-segs[data-only="vote"] .tm-vote { filter: brightness(1.25) saturate(1.2); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .85); z-index: 2; }
+.tm-scrub.is-filtered .tm-future { display: none; }
 .tm-kinds { display: inline-flex; flex-wrap: wrap; gap: var(--sp-8); }   /* the Dem whip notices' filter chips, in the colours the track uses */
