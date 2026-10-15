@@ -27,6 +27,13 @@ globalThis.fetch = async (u) => {
     if (m[1] === '308') return new Response('<html><body>Page not found</body></html>', { status: 200 });
     return new Response(base.replace(/<rollcall-num>\d+</, `<rollcall-num>${Number(m[1])}<`).replace(/<action-date>[^<]*</, `<action-date>${dateOf(Number(m[1]))}<`), { status: 200 });
   }
+  const o = u.match(/evs\/2022\/roll(\d+)\.xml(?:\?|$)/);   // 2022 has 450 rolls: 400 to 402 on 12 August, 399 and below on 11 August or earlier; later ones are not there
+  if (o) {
+    const n = Number(o[1]);
+    files.push(n);
+    if (n > 450) return new Response('<html><body>Page not found</body></html>', { status: 200 });
+    return new Response(base.replace(/<rollcall-num>\d+</, `<rollcall-num>${n}<`).replace(/<action-date>[^<]*</, `<action-date>${n >= 400 && n <= 402 ? '12-Aug-2022' : n > 402 ? '15-Sep-2022' : '11-Aug-2022'}<`), { status: 200 });
+  }
   return new Response('', { status: 404 });
 };
 const store = new Map();
@@ -68,6 +75,13 @@ await ok('a file that is not a roll call is an error, not an empty day', async (
 
 await ok('a date that is not MM/DD/YYYY is a 400', async () => {
   assert.strictEqual((await get('2026-09-16')).status, 400);
+});
+
+await ok('an earlier year is searched by halving, not read back from the latest: the day\'s rolls, and few files', async () => {
+  const r = await get('08/12/2022');
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.body.rolls.map((x) => x.roll), ['400', '401', '402']);
+  assert.ok(r.files.length < 25, `read ${r.files.length} files`);
 });
 
 console.log(`\n${n} passed`);

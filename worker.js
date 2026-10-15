@@ -4122,7 +4122,9 @@ async function handleHouseRolls(request, env) {
   return kvCache(env, `house-rolls-v2-${date}`, isToday ? 120 : 6 * 3600, async () => {
     try {
       const rolls = [];
-      const nums = globalThis.ClerkVotes.parseRolls(await fetchRSSFeed(globalThis.ClerkVotes.listUrl(year)), year);
+      const thisYear = Number(today.slice(0, 4));
+      // the listing is of the current session; an earlier year's roll numbers are found in the files themselves (there are fewer than 1200 a year)
+      const nums = year === thisYear ? globalThis.ClerkVotes.parseRolls(await fetchRSSFeed(globalThis.ClerkVotes.listUrl(year)), year) : [{ rollNumber: '1200' }];
       if (!nums.length) throw new Error('the Clerk vote listing had no roll calls (has the page changed?)');
       const memo = new Map();
       const fetchRoll = async (n) => {
@@ -4134,12 +4136,14 @@ async function handleHouseRolls(request, env) {
       };
       const latest = Number(nums[0].rollNumber);
       let from = latest;
+      // a roll that is past the day: dated after it, or (for a guessed upper bound) not there
+      const after = async (n) => { try { return iso((await fetchRoll(n)).date) > iso(date); } catch (e) { if (year === thisYear) throw e; return true; } };
       // a past day is a long way back from the latest roll: roll numbers rise with the date, so find the day's last roll by halving, then read back from it
-      if (iso((await fetchRoll(latest)).date) > iso(date)) {
+      if (await after(latest)) {
         let lo = 1, hi = latest;   // the last roll dated on or before the day
         while (lo < hi) {
           const mid = Math.ceil((lo + hi) / 2);
-          if (iso((await fetchRoll(mid)).date) <= iso(date)) lo = mid; else hi = mid - 1;
+          if (!(await after(mid))) lo = mid; else hi = mid - 1;
         }
         from = lo;
       }
@@ -4155,7 +4159,7 @@ async function handleHouseRolls(request, env) {
     } catch (e) {
       return fail(502, e.message);
     }
-  });
+  }, isToday ? 120 : 30 * 86400);
 }
 
 // The House's committee meetings for a day, from the Clerk's Committee Repository calendar (docs.house.gov), parsed by lib/committee-meetings.js.
