@@ -6192,6 +6192,7 @@ font-family: var(--font-mono);
   .lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .lead-card.is-empty { visibility: hidden; }
   .tm-moment-time { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+  .tm-ag-time { flex: 0 0 5.2em; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
 }
 .main-display > * {
     margin-bottom: 0;
