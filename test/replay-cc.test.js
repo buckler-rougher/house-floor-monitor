@@ -27,4 +27,13 @@ ok('the rendition path comes from the start of its playlist', () => {
   assert.strictEqual(CC.rendition('nothing'), null);
 });
 
+ok('playlists: the smallest rendition, and a media playlist as segments (newer days: 2 s files; older: byte ranges of one file)', () => {
+  assert.strictEqual(CC.lowest('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=2128000,X=1\nvideo_0.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=273000,X=1\nvideo_4.m3u8\n'), 'video_4.m3u8');
+  const a = CC.playlist('#EXTM3U\n#EXT-X-MAP:URI="h264/145000/init.mp4"\n#EXTINF:2.0,\nh264/145000/segment_0.m4s\n#EXTINF:0.07,\nh264/145000/segment_1.m4s\n');
+  assert.deepStrictEqual(a.segs.map((x) => [x.t0, x.dur, x.uri, x.range]), [[0, 2, 'h264/145000/segment_0.m4s', null], [2, 0.07, 'h264/145000/segment_1.m4s', null]]);
+  const b = CC.playlist('#EXT-X-MAP:URI="v.mp4",BYTERANGE="874@0"\n#EXTINF:6.000,\n#EXT-X-BYTERANGE:875796@65706\nv.mp4\n#EXTINF:6.000,\n#EXT-X-BYTERANGE:1087891\nv.mp4\n');
+  assert.deepStrictEqual(b.map, { uri: 'v.mp4', range: [0, 874] });
+  assert.deepStrictEqual(b.segs.map((x) => x.range), [[65706, 875796], [941502, 1087891]]);
+});
+
 console.log(`replay-cc: ${n} passed`);
