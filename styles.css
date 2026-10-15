@@ -11129,6 +11129,8 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
     .tm-bar-row { flex-wrap: wrap; gap: var(--sp-8) var(--sp-12); }
     .tm-scrub { order: 5; flex: 1 1 100%; }
     .tm-speed { display: none; }
+    .tm-moment { white-space: nowrap; }
+    .tm-leave { padding: 6px 8px; font-size: var(--fs-xs, 0.7rem); }
     .tm-moment { min-width: 0; flex: 1; }
     html.replay-mode body { padding-bottom: 200px; }
     html.replay-mode .floor-feed { bottom: 210px; }
