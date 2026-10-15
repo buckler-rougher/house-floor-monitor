@@ -11071,8 +11071,8 @@ html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 
 /* once there: the bar, the room it needs, and what a replay hides or says it does not have */
 .tm-bar { display: none; }
 html.replay-mode .tm-bar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1010; padding: var(--sp-10) var(--sp-24) var(--sp-12); background: var(--bg-header); backdrop-filter: blur(18px); border-top: 1px solid var(--border-color); box-shadow: 0 -10px 36px rgba(0, 0, 0, .45); }
-html.replay-mode body { padding-bottom: 126px; }
-html.replay-mode .floor-feed { bottom: 138px; }
+html.replay-mode body { padding-bottom: 150px; }
+html.replay-mode .floor-feed { bottom: 162px; }
 html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 22px rgba(63, 185, 80, .12); }
 .tm-bar-row { display: flex; align-items: center; gap: var(--sp-16); max-width: 1400px; margin: 0 auto; }
 .tm-transport { display: flex; align-items: center; gap: var(--sp-6); }
@@ -11097,6 +11097,15 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-mark-debate i { background: var(--accent-purple, #a371f7); height: 10px; margin-top: 9px; }
 .tm-mark-speech i { background: var(--text-secondary); height: 10px; margin-top: 9px; }
 .tm-marks.hide-debate .tm-mark-debate, .tm-marks.hide-vote .tm-mark-vote, .tm-marks.hide-speech .tm-mark-speech, .tm-marks.hide-other .tm-mark-other { display: none; }
+.tm-now { display: block; width: 100%; max-width: 1400px; margin: 4px auto 0; padding: 0 0 0 14px; border: 0; background: none; text-align: left; font: inherit; font-size: var(--fs-md); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; position: relative; }
+.tm-now[hidden] { display: none; }
+.tm-now::before { content: ''; position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--text-muted); }
+.tm-now-debate::before { background: var(--accent-purple, #a371f7); }
+.tm-now-vote::before { background: var(--accent-blue); }
+.tm-now-other::before, .tm-now-recess::before { background: var(--accent-amber); }
+.tm-now-gavel::before { background: var(--accent-green); }
+.tm-now-adjourn::before { background: var(--accent-red); }
+.tm-now:hover { color: var(--accent-green); }
 .tm-filter-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-8) var(--sp-16); max-width: 1400px; margin: 2px auto 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .tm-legend { display: inline-flex; flex-wrap: wrap; gap: var(--sp-6); }
 .tm-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); border-radius: 999px; background: none; color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); padding: 2px 10px; cursor: pointer; }
@@ -11132,8 +11141,8 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
     .tm-moment { white-space: nowrap; }
     .tm-leave { padding: 6px 8px; font-size: var(--fs-xs, 0.7rem); }
     .tm-moment { min-width: 0; flex: 1; }
-    html.replay-mode body { padding-bottom: 200px; }
-    html.replay-mode .floor-feed { bottom: 210px; }
+    html.replay-mode body { padding-bottom: 226px; }
+    html.replay-mode .floor-feed { bottom: 236px; }
 }
 
 /* a line of the floor log you can click */
