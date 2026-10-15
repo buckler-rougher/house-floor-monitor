@@ -62,6 +62,8 @@ await ok('the probe: days with an archive are marked, each kept so it is asked o
   assert.deepStrictEqual(Object.keys(r.body.days).filter((k) => r.body.days[k].has).sort(), ['20240319', '20260916']);
   assert.strictEqual(r.body.days['20260916'].name, 'LEGISLATIVE DAY OF SEPTEMBER 16, 2026');
   assert.strictEqual(r.asked.length, 4);
+  assert.strictEqual(r.body.days['20260916'].congress, 119);
+  assert.strictEqual(r.body.days['20260916'].session, 2);
   const again = await call('/replay-probe?ids=20260916,20260917');
   assert.deepStrictEqual(again.asked, []);
   assert.strictEqual((await call('/replay-probe?ids=2026')).status, 400);

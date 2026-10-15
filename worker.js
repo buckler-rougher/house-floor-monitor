@@ -6300,7 +6300,7 @@ async function handleReplayDay(request, env) {
 // by separate requests (a request may hold only six connections open) and each answer is kept per day: a day that has a recording always will, and a day with
 // none answers in a moment, while a day the Clerk's API has no record of keeps it waiting until it gives up, so the wait is capped.
 async function probeReplayDay(env, id, today) {
-  const key = `replay-probe-v1-${id}`;
+  const key = `replay-probe-v2-${id}`;
   try { const raw = await env?.HLS_CACHE?.get(key); if (raw) return JSON.parse(raw); } catch {}
   let out = { has: false }, slow = false;
   try {
@@ -6309,7 +6309,7 @@ async function probeReplayDay(env, id, today) {
       const text = await resp.text();
       const data = text && text.trim() ? JSON.parse(text) : null;
       const f = Array.isArray(data) && data.length ? globalThis.Replay.pickFiles(data[0]) : null;
-      if (f) out = { has: true, name: f.name, startMs: f.startMs, endMs: f.endMs };
+      if (f) out = { has: true, name: f.name, startMs: f.startMs, endMs: f.endMs, congress: f.congress, session: f.session };
     }
   } catch { slow = true; }
   // today and yesterday may simply not be posted yet; a timeout is retried within the week
