@@ -11897,6 +11897,6 @@ body.recess-mode .today-house.has-data { display: block; }
 .tm-scrub.is-off .tm-range::-moz-range-thumb { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .tm-segs.is-stretch { animation: none; } }
 
-.tm-fine { position: absolute; top: 0; height: 14px; transform: translateX(-50%); display: flex; align-items: center; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); white-space: nowrap; pointer-events: none; z-index: 3; }
+.tm-fine { position: absolute; top: -9px; height: 14px; transform: translateX(-50%); display: flex; align-items: center; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); white-space: nowrap; pointer-events: none; z-index: 3; }
 .tm-fine[hidden] { display: none; }
 .tm-fine.is-on { color: var(--accent-green); font-weight: 700; font-size: var(--fs-sm); }
