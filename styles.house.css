@@ -11903,3 +11903,6 @@ body.recess-mode .today-house.has-data { display: block; }
 
 .tm-bar, .tm-scrub, .tm-hit, .tm-tip { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; user-select: none !important; cursor: ns-resize !important; }
+
+.tm-hoverline { position: absolute; top: 13px; width: 1px; height: 32px; background: rgba(255, 255, 255, .42); pointer-events: none; z-index: 1; }
+.tm-hoverline[hidden] { display: none; }
