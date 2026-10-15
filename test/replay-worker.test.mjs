@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 //
-// The Worker's /api/replay-day and /api/replay-month: where a past day's archived House video and captions are. The House's broadcast API is a mock (the real record of 16 September
+// The Worker's /api/replay-day and /api/replay-probe: where a past day's archived House video and captions are. The House's broadcast API is a mock (the real record of 16 September
 // 2026 and of 19 March 2024 are saved in test/replay/). What is pinned: the east HLS and caption URLs are picked, a day with no broadcast is a 404 and not a hang or a 500, a day
-// that has not happened is refused without asking anyone, a bad date is a 400, and the month listing marks exactly the days that have an archive. No network.
+// that has not happened is refused without asking anyone, a bad date is a 400, and the probe marks exactly the days that have an archive. No network.
 
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -56,15 +56,16 @@ await ok('a day that has not happened is refused without asking the House; a bad
   assert.strictEqual((await call('/replay-day')).status, 400);
 });
 
-await ok('a month: only the days with an archive, one probe each', async () => {
-  const r = await call('/replay-month?month=202603');
+await ok('the probe: days with an archive are marked, each kept so it is asked once', async () => {
+  const r = await call('/replay-probe?ids=20260915,20260916,20240319,20260917');
   assert.strictEqual(r.status, 200);
-  assert.deepStrictEqual(Object.keys(r.body.days), []);
-  assert.strictEqual(r.asked.length, 31);
-  const s = await call('/replay-month?month=202609');
-  assert.deepStrictEqual(Object.keys(s.body.days), ['2026-09-16']);
-  assert.strictEqual(s.body.days['2026-09-16'].name, 'LEGISLATIVE DAY OF SEPTEMBER 16, 2026');
-  assert.strictEqual((await call('/replay-month?month=2026')).status, 400);
+  assert.deepStrictEqual(Object.keys(r.body.days).filter((k) => r.body.days[k].has).sort(), ['20240319', '20260916']);
+  assert.strictEqual(r.body.days['20260916'].name, 'LEGISLATIVE DAY OF SEPTEMBER 16, 2026');
+  assert.strictEqual(r.asked.length, 4);
+  const again = await call('/replay-probe?ids=20260916,20260917');
+  assert.deepStrictEqual(again.asked, []);
+  assert.strictEqual((await call('/replay-probe?ids=2026')).status, 400);
+  assert.strictEqual((await call('/replay-probe?ids=20991231')).body.days['20991231'].has, false);
 });
 
 console.log(`replay-worker: ${n} passed`);

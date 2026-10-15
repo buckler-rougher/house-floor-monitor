@@ -6274,27 +6274,39 @@ async function handleReplayDay(request, env) {
   }, past ? 30 * 86400 : 60);
 }
 
-// Which days of a month have an archive, for the date picker. One probe a day, in parallel (a month is under the 50-subrequest limit, and a day with no broadcast only costs its timeout).
-async function handleReplayMonth(request, env) {
-  const month = new URL(request.url).searchParams.get('month') || '';   // YYYYMM
-  const jsonHdr = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-  const m = /^(\d{4})(\d\d)$/.exec(month);
-  if (!m || +m[2] < 1 || +m[2] > 12 || +m[1] < 2019) return new Response(JSON.stringify({ error: 'month=YYYYMM' }), { status: 400, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
-  const today = getTodayDateET();
-  const current = month === today.slice(0, 6);
-  if (month > today.slice(0, 6)) return new Response(JSON.stringify({ month, days: {} }), { headers: { ...jsonHdr, 'Cache-Control': 'public, max-age=3600' } });
-  return kvCache(env, `replay-month-v1-${month}`, current ? 1800 : 6 * 3600, async () => {
-    const last = new Date(Date.UTC(+m[1], +m[2], 0)).getUTCDate();
-    const ids = [];
-    for (let d = 1; d <= last; d++) { const id = `${month}${String(d).padStart(2, '0')}`; if (id <= today) ids.push(id); }
-    const got = await Promise.all(ids.map((id) => fetchBroadcastEventLong(id, 6000).then((e) => [id, e])));
-    const days = {};
-    for (const [id, e] of got) {
-      const f = e && globalThis.Replay.pickFiles(e);
-      if (f) days[`${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`] = { name: f.name, startMs: f.startMs, endMs: f.endMs };
+// Which of up to six days have an archive, for the date picker. The picker asks for a month as several of these at once, so the days are probed in parallel
+// by separate requests (a request may hold only six connections open) and each answer is kept per day: a day that has a recording always will, and a day with
+// none answers in a moment, while a day the Clerk's API has no record of keeps it waiting until it gives up, so the wait is capped.
+async function probeReplayDay(env, id, today) {
+  const key = `replay-probe-v1-${id}`;
+  try { const raw = await env?.HLS_CACHE?.get(key); if (raw) return JSON.parse(raw); } catch {}
+  let out = { has: false }, slow = false;
+  try {
+    const resp = await fetch(`https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${id}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(4000) });
+    if (resp.ok) {
+      const text = await resp.text();
+      const data = text && text.trim() ? JSON.parse(text) : null;
+      const f = Array.isArray(data) && data.length ? globalThis.Replay.pickFiles(data[0]) : null;
+      if (f) out = { has: true, name: f.name, startMs: f.startMs, endMs: f.endMs };
     }
-    return new Response(JSON.stringify({ month, days }), { headers: { ...jsonHdr, 'Cache-Control': `public, max-age=${current ? 600 : 3600}` } });
-  }, current ? 1800 : 30 * 86400);
+  } catch { slow = true; }
+  // today and yesterday may simply not be posted yet; a timeout is retried within the week
+  const ttl = id >= prevDayId(today) ? 900 : slow ? 7 * 86400 : 365 * 86400;
+  try { await env?.HLS_CACHE?.put(key, JSON.stringify(out), { expirationTtl: ttl }); } catch {}
+  return out;
+}
+const prevDayId = (id) => { const d = new Date(Date.UTC(+id.slice(0, 4), +id.slice(4, 6) - 1, +id.slice(6, 8) - 1)); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
+async function handleReplayProbe(request, env) {
+  const hdr = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  const ids = (new URL(request.url).searchParams.get('ids') || '').split(',').filter((x) => /^\d{8}$/.test(x)).slice(0, 6);
+  if (!ids.length) return new Response(JSON.stringify({ error: 'ids=YYYYMMDD,...' }), { status: 400, headers: { ...hdr, 'Cache-Control': 'no-store' } });
+  const today = getTodayDateET();
+  const days = {};
+  await Promise.all(ids.map(async (id) => {
+    if (id > today || id < '20190101') { days[id] = { has: false }; return; }
+    days[id] = await probeReplayDay(env, id, today);
+  }));
+  return new Response(JSON.stringify({ days }), { headers: { ...hdr, 'Cache-Control': 'public, max-age=300' } });
 }
 
 async function handleAmendments(request, env) {
@@ -7076,8 +7088,8 @@ async function handleRequest(request, env) {
     return await handleLastSessionDate(request);
   } else if (path === '/api/replay-day' && request.method === 'GET') {
     return await handleReplayDay(request, env);
-  } else if (path === '/api/replay-month' && request.method === 'GET') {
-    return await handleReplayMonth(request, env);
+  } else if (path === '/api/replay-probe' && request.method === 'GET') {
+    return await handleReplayProbe(request, env);
   } else if (path === '/api/roll-log' && request.method === 'GET') {
     return await handleRollLogGet(env);
   } else if (path === '/api/cold-start-bundle' && request.method === 'GET') {

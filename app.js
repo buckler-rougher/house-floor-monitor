@@ -1046,7 +1046,7 @@ function startSSEStreaming() {
                 const data = JSON.parse(event.data);
                 if (Array.isArray(data.items)) {
                     proceedingsData = data.items;
-                    renderProceedingsFeedPanel(data.items); // update the visible panel
+                    renderProceedingsFeedPanel(data.items, data.future); // update the visible panel
                     autoSwitchModeFromProceedings(data.items);
                     updateBillStatusFromProceedings(data.items);
                     // Both updaters run; one redraw if either changed anything.
@@ -6609,17 +6609,18 @@ document.addEventListener('click', (e) => {
     if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });
 
-function renderProceedingsFeedPanel(items) {
+function renderProceedingsFeedPanel(items, future) {
     if (!elements.proceedingsFeed) return;
-    if (!items || items.length === 0) {
+    if ((!items || items.length === 0) && !(future && future.length)) {
         setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
         return;
     }
+    items = items || [];
     setProceedingsManifest(items);
     renderTodayInHouse(items);
     const proceedingsDate = proceedingsDateOverride
         ? new Date(proceedingsDateOverride)
-        : new Date(items[0]?.pubDate || new Date());
+        : new Date(items[0]?.pubDate || (future && future[0] && future[0].pubDate) || new Date());
     const dateStr = fmtDate(proceedingsDate);
     const timelineText = floorData.timeline?.first_votes?.text || '';
     const timelineHtml = timelineText ? `
@@ -6627,14 +6628,15 @@ function renderProceedingsFeedPanel(items) {
             <span class="proceedings-next-label">NEXT</span>
             <span class="proceedings-next-text">${escapeHtml(timelineText)}</span>
         </div>` : '';
-    const html = items.map(item => {
+    // Time machine only: the entries that have not happened yet at the moment shown, greyed, ahead of the rest (lib/replay-shim.js)
+    const html = [...(future || []).map(i => ({ ...i, _future: true })), ...items].map(item => {
         const pubDate = new Date(item.pubDate);
         const timeStr = pubDate.toLocaleTimeString('en-US', {
             hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
         });
         const agoStr = proceedingsAgo(pubDate.getTime());
         return `
-        <div class="proceedings-item" data-ts="${item.timestamp || ''}">
+        <div class="proceedings-item${item._future ? ' is-future' : ''}" data-ts="${item.timestamp || ''}">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>
                 ${linkifyBillNumbers(decodeHtml(item.description))}
@@ -6672,12 +6674,13 @@ async function updateProceedingsFeed() {
         }
 
         if (!data.items || data.items.length === 0) {
-            setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+            if (data.future && data.future.length) renderProceedingsFeedPanel([], data.future);
+            else setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
             return;
         }
 
         // Render the panel (HTML + date header)
-        renderProceedingsFeedPanel(data.items);
+        renderProceedingsFeedPanel(data.items, data.future);
 
         // Store items globally so debate/mode sections can re-render after bills load
         proceedingsData = data.items;
