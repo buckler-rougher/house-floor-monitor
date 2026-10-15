@@ -11172,8 +11172,8 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-range { --fill: 0%; position: absolute; left: 0; right: 0; top: 14px; width: 100%; height: 22px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; pointer-events: none; }
 .tm-range::-webkit-slider-runnable-track { height: 22px; background: transparent; }
 .tm-range::-moz-range-track { height: 22px; background: transparent; }
-.tm-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); box-shadow: 0 0 10px rgba(63, 185, 80, .7); }
-.tm-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-green); box-shadow: 0 0 10px rgba(63, 185, 80, .7); }
+.tm-range::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 30px; margin-top: -4px; border-radius: 2px; background: #fff; border: 0; box-shadow: 0 0 0 1px rgba(63, 185, 80, .9), 0 0 10px rgba(63, 185, 80, .7); }
+.tm-range::-moz-range-thumb { width: 3px; height: 30px; border-radius: 2px; background: #fff; border: 0; box-shadow: 0 0 0 1px rgba(63, 185, 80, .9), 0 0 10px rgba(63, 185, 80, .7); }
 .tm-tip { position: fixed; z-index: 1020; display: grid; gap: 6px; padding: 6px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, .5); pointer-events: none; width: max-content; max-width: min(380px, calc(100vw - 16px)); }
 .tm-tip[hidden] { display: none; }
 .tm-tip-text { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-primary); white-space: pre-line; text-align: left; overflow-wrap: anywhere; padding: 2px 4px 3px; }
@@ -12905,3 +12905,8 @@ body.recess-mode .today-house.has-data { display: block; }
 .tm-scrub.is-off .tm-range::-moz-range-thumb { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .tm-segs.is-stretch { animation: none; } }
 
+
+/* the headroom above the track: an invitation to fine scrub, which becomes the speed while one is going on */
+.tm-fine { position: absolute; top: 0; height: 14px; transform: translateX(-50%); display: flex; align-items: center; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); white-space: nowrap; pointer-events: none; z-index: 3; }
+.tm-fine[hidden] { display: none; }
+.tm-fine.is-on { color: var(--accent-green); font-weight: 700; font-size: var(--fs-sm); }
