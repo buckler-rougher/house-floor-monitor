@@ -11137,6 +11137,10 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 /* a line of the floor log you can click */
 html.replay-mode .proceedings-item[data-ts] { cursor: pointer; transition: background .15s ease; border-radius: var(--radius-6); }
 html.replay-mode .proceedings-item[data-ts]:hover { background: rgba(63, 185, 80, .08); }
+/* until the video has been put on the moment asked for, it shows (and says) nothing: a picture from somewhere else would be a lie */
+html.tm-syncing .floor-feed-video { position: relative; }
+html.tm-syncing .floor-feed-video > video, html.tm-syncing .floor-feed-video > img, html.tm-syncing .floor-feed-overlay { visibility: hidden; }
+html.tm-syncing .floor-feed-video::after { content: 'FINDING THE MOMENT'; position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background: var(--bg-card); color: var(--text-muted); font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); animation: tm-check 1.2s ease-in-out infinite; }
 html.replay-mode .proceedings-item.is-future { opacity: .34; }
 html.replay-mode .proceedings-item.is-future:hover { opacity: .75; }
 html.replay-mode .proceedings-item.is-here { background: rgba(63, 185, 80, .14); box-shadow: inset 2px 0 0 var(--accent-green); }
