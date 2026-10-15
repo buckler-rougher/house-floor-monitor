@@ -12910,3 +12910,7 @@ body.recess-mode .today-house.has-data { display: block; }
 .tm-fine { position: absolute; top: -9px; height: 14px; transform: translateX(-50%); display: flex; align-items: center; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); white-space: nowrap; pointer-events: none; z-index: 3; }
 .tm-fine[hidden] { display: none; }
 .tm-fine.is-on { color: var(--accent-green); font-weight: 700; font-size: var(--fs-sm); }
+
+/* dragging the scrubber must never select text (Safari does when the drag leaves the track) */
+.tm-bar, .tm-scrub, .tm-hit, .tm-tip { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; user-select: none !important; cursor: ns-resize !important; }
