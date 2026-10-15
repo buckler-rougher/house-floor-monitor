@@ -10411,18 +10411,18 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-mark i { height: 12px; margin: 0 auto; width: 3px; }
 .tm-mark:hover i { height: 16px; margin-top: 0; }
 .tm-segs { position: absolute; left: 0; right: 0; top: 17px; height: 16px; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, .06); pointer-events: none; }
-.tm-seg { position: absolute; top: 0; bottom: 0; background: rgba(139, 148, 158, .35); border-radius: 3px; box-shadow: inset 0 0 0 .5px var(--bg-header), inset -1.5px 0 0 var(--bg-header); }
-.tm-seg-debate { background: rgba(163, 113, 247, .75); }
-.tm-seg-debate.is-b { background: rgba(163, 113, 247, .45); }
-.tm-seg-speech { background: rgba(139, 148, 158, .5); }
-.tm-seg-other { background: rgba(210, 153, 34, .55); }
-.tm-seg-gavel { background: rgba(63, 185, 80, .45); }
+.tm-seg { position: absolute; top: 0; bottom: 0; background: rgba(139, 148, 158, .55); border-radius: 3px; box-shadow: inset 0 0 0 .5px var(--bg-header), inset -1.5px 0 0 var(--bg-header); }
+.tm-seg-debate { background: rgba(163, 113, 247, .95); }
+.tm-seg-debate.is-b { background: rgba(163, 113, 247, .66); }
+.tm-seg-speech { background: rgba(139, 148, 158, .72); }
+.tm-seg-other { background: rgba(210, 153, 34, .85); }
+.tm-seg-gavel { background: rgba(63, 185, 80, .75); }
 .tm-vote { position: absolute; top: 0; bottom: 0; min-width: 5px; border-radius: 3px; box-shadow: 0 0 0 1.5px var(--bg-header); }
 .tm-vote.is-yea { background: var(--accent-blue); }
 .tm-vote.is-nay { background: var(--accent-red); }
 .tm-segs.has-q .tm-seg:not(.is-match) { opacity: .2; }
 .tm-segs.has-q .tm-seg.is-match { background: var(--accent-purple, #a371f7); }
-.tm-future { position: absolute; left: var(--fill, 0%); right: 0; top: 17px; height: 16px; background: rgba(13, 17, 23, .55); border-radius: 0 8px 8px 0; pointer-events: none; }
+.tm-future { position: absolute; left: var(--fill, 0%); right: 0; top: 17px; height: 16px; background: rgba(13, 17, 23, .36); border-radius: 0 8px 8px 0; pointer-events: none; }
 .tm-filter-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sp-8) var(--sp-16); max-width: 1400px; margin: 2px auto 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .tm-legend { display: inline-flex; flex-wrap: wrap; gap: var(--sp-6); }
 .tm-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); border-radius: 999px; background: none; color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); padding: 2px 10px; cursor: pointer; }
@@ -11909,6 +11909,10 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-ag-title { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-secondary); }
 .tm-ag-tools { --control-h: 2rem; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
 
-.tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg { opacity: .16; }
-.tm-segs[data-only="debate"] .tm-vote, .tm-segs[data-only="speech"] .tm-vote, .tm-segs[data-only="other"] .tm-vote { opacity: .16; }
+.tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg { opacity: .28; }
+.tm-segs[data-only="debate"] .tm-vote, .tm-segs[data-only="speech"] .tm-vote, .tm-segs[data-only="other"] .tm-vote { opacity: .28; }
+
+.tm-segs[data-only="debate"] .tm-seg-debate { background: var(--accent-purple); }
+.tm-segs[data-only="speech"] .tm-seg-speech { background: var(--text-secondary); }
+.tm-segs[data-only="other"] .tm-seg-other { background: var(--accent-amber); }
 .tm-kinds { display: inline-flex; flex-wrap: wrap; gap: var(--sp-8); }
