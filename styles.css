@@ -11185,10 +11185,8 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-scale-btn[aria-pressed="false"] { opacity: 1; text-decoration: none; }
 .tm-zoom-ends { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); pointer-events: none; }
 .tm-zoom-ends[hidden] { display: none; }
-.tm-speed { display: inline-flex; border: 1px solid var(--border-color); border-radius: var(--radius-6); background: rgba(255, 255, 255, .04); padding: 2px; gap: 1px; }
-.tm-sp { border: 0; background: none; color: var(--text-muted); font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; padding: 5px 9px; border-radius: 4px; cursor: pointer; }
-.tm-sp.is-on { background: rgba(63, 185, 80, .18); color: var(--accent-green); }
-.tm-sp:hover:not(.is-on) { color: var(--text-primary); }
+/* the speed selector is the board's shared segmented control (`.bills-sort-switcher`, `.bills-sort-btn`), in green instead of blue */
+.tm-speed .bills-sort-btn.active { color: var(--accent-green); background: rgba(63, 185, 80, 0.12); }
 .tm-leave { border: 1px solid var(--border-color); border-radius: var(--radius-6); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
 .tm-leave:hover { color: var(--text-primary); border-color: var(--text-muted); }
 .tm-status { max-width: 1400px; margin: 4px auto 0; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--accent-amber); letter-spacing: var(--track-wide); text-transform: uppercase; }
