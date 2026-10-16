@@ -7141,7 +7141,8 @@ function updateSilenceSection(items) {
 }
 
 function updatePrayerSection(items) {
-    if (!elements.prayerLeaderTitle || !items || items.length === 0) return;
+    if (!elements.prayerLeaderTitle || !items) return;
+    if (items.length === 0 && !window.__captionLive?.('prayer')) return;   // nothing from the Clerk yet; the captions may have it first
 
     // Search for prayer-related proceedings
     const prayerItem = items.find(item => {
@@ -7336,7 +7337,8 @@ function updatePrayerSection(items) {
 
 // Update pledge section with pledge leader information
 function updatePledgeSection(items) {
-    if (!elements.pledgeLeaderTitle || !items || items.length === 0) return;
+    if (!elements.pledgeLeaderTitle || !items) return;
+    if (items.length === 0 && !window.__captionLive?.('pledge')) return;   // nothing from the Clerk yet; the captions may have it first
 
     // Search for pledge-related proceedings
     const pledgeItem = items.find(item => {
@@ -7628,7 +7630,8 @@ const photoUrl = buildBioguidePhotoUrl(match.bioguideId);
 }
 
 function updateSpeakerSection(items) {
-    if (!elements.speakerMemberTitle || !items || items.length === 0) return;
+    if (!elements.speakerMemberTitle || !items) return;
+    if (items.length === 0 && !window.__captionLive?.('speaker')) return;   // nothing from the Clerk yet; the captions may have it first
 
     const speakerItem = items.find(item => {
         const desc = item.description.toLowerCase();
