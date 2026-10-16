@@ -5874,7 +5874,7 @@ function autoSwitchModeFromProceedings(items) {
     // Either kind of Rule IX privilege. They share the panel; whichever is newer
     // is the one being shown. See PRIVILEGE_KINDS.
     let ppItem = null, ppKind = null, ppIndex = -1;
-    for (const kind of [PRIVILEGE_KINDS.personal, PRIVILEGE_KINDS.house]) {
+    for (const kind of [PRIVILEGE_KINDS.personal, PRIVILEGE_KINDS.house, PRIVILEGE_KINDS.notice]) {
         const hit = candidateItems.find(i => kind.match.test(i.description.trim()));
         if (!hit) continue;
         if (!ppItem || itemTime(hit) > itemTime(ppItem)) { ppItem = hit; ppKind = kind; }
@@ -7770,6 +7770,17 @@ const PRIVILEGE_KINDS = {
         empty: 'A Member has risen to a question of the privileges of the House.',
         pills: ['Privileged resolution', 'Takes precedence over pending business'],
     },
+    // Not a mode of its own: a Member gives notice that they will offer a privileged resolution (it can be offered after two legislative days),
+    // which is the nearest thing the board has to the question of the privileges of the House, so it is shown there under its own heading.
+    notice: {
+        mode: 'house-privilege',
+        help: 'privileges-of-the-house',
+        tag: 'NOTICE OF PRIVILEGED RESOLUTION',
+        match: /^NOTIFICATION\s+OF\s+INTENT\s+TO\s+OFFER\b/i,
+        empty: 'A Member has given notice of a privileged resolution.',
+        pills: ['Notice only', 'Can be offered after two legislative days'],
+        noResolution: true,
+    },
 };
 
 // The resolution a question of the privileges of the House was offered on, and
@@ -7831,7 +7842,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     }
 
     const desc = decodeHtml(ppItem.description)
-        .replace(/^(?:POINT OF PERSONAL PRIVILEGE|QUESTION OF THE PRIVILEGES OF THE HOUSE)\s*[-–—]\s*/i, '')
+        .replace(/^(?:POINT OF PERSONAL PRIVILEGE|QUESTION OF THE PRIVILEGES OF THE HOUSE|NOTIFICATION OF INTENT TO OFFER[A-Z ]*?)\s*[-–—]\s*/i, '')
         .replace(/<[^>]+>/g, '')
         .trim();
     if (elements.privilegeDescription) elements.privilegeDescription.textContent = desc;
@@ -7845,7 +7856,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     }
 
     // Only the House kind has a resolution, and only when the Clerk has posted it.
-    const res = (k.mode === 'house-privilege' && items) ? findPrivilegeResolution(items, index) : null;
+    const res = (k.mode === 'house-privilege' && !k.noResolution && items) ? findPrivilegeResolution(items, index) : null;
     if (elements.privilegeResolution) {
         const show = !!(res && res.id);
         elements.privilegeResolution.hidden = !show;
@@ -7861,7 +7872,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
 
     // Surname, plus the "of <State>" the Clerk adds when the surname alone would
     // be ambiguous ("Mr. Scott of Virginia rose...").
-    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+rose\b/i);
+    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+(?:rose|notified)\b/i);
     const raw = who ? who[1].trim() : '';
     // Two spellings of the same thing: "Mr. Scott of Virginia" and "Mr. Green (TX)".
     // The Clerk uses the parenthesis on the privileges-of-the-House heading.
@@ -9068,7 +9079,7 @@ const SOURCE_ENTRY = {
     'joint-meeting': [/^joint meeting\b/i, 'joint-meeting-section'],
     'committee-chair': [/act as chair/i, 'committee-chair-section'],
     'privilege': [/^point of personal privilege/i, 'privilege-section'],
-    'house-privilege': [/^question of the privileges of the house/i, 'privilege-section']
+    'house-privilege': [/^(?:question of the privileges of the house|notification of intent to offer)/i, 'privilege-section']
 };
 function updateSourceManifest(mode) {
     if (!globalThis.SourcePop) return;
