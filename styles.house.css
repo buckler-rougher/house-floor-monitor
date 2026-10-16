@@ -8226,10 +8226,12 @@ body.joint-meeting-mode .joint-meeting-section {
 
 .privilege-section { display: none; }
 
-body.privilege-mode .privilege-section,
-body.house-privilege-mode .privilege-section { display: block; }
+body.privilege-mode .privilege-section:not(.is-notice),
+body.house-privilege-mode .privilege-section:not(.is-notice),
+body.privilege-notice-mode .privilege-section.is-notice { display: block; }
 
-.privilege-section.is-house .privilege-tag { background: #3b3f7a; }
+.privilege-section.is-house .privilege-tag,
+.privilege-section.is-notice .privilege-tag { background: #3b3f7a; }
 
 .privilege-resolution {
     padding-top: var(--sp-16);

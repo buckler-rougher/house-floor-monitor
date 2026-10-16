@@ -1655,6 +1655,16 @@ const elements = {
     privilegeResolutionId: document.getElementById('privilege-resolution-id'),
     privilegeResolutionTitle: document.getElementById('privilege-resolution-title'),
     privilegeResolutionOutcome: document.getElementById('privilege-resolution-outcome'),
+    privilegeNoticeSection: document.getElementById('privilege-notice-section'),
+    privilegeNoticeTime: document.getElementById('privilege-notice-time'),
+    privilegeNoticeDescription: document.getElementById('privilege-notice-description'),
+    privilegeNoticeCard: document.getElementById('privilege-notice-card'),
+    privilegeNoticeImage: document.getElementById('privilege-notice-image'),
+    privilegeNoticeMemberName: document.getElementById('privilege-notice-member-name'),
+    privilegeNoticePartyTag: document.getElementById('privilege-notice-party-tag'),
+    privilegeNoticeMemberDetails: document.getElementById('privilege-notice-member-details'),
+    privilegeNoticeMemberAdditional: document.getElementById('privilege-notice-member-additional'),
+    privilegeNoticeMemberWebsite: document.getElementById('privilege-notice-member-website'),
     oneMinuteTime: document.getElementById('one-minute-time'),
     oneMinuteDescriptionLine: document.getElementById('one-minute-description-line'),
     specialOrderTime: document.getElementById('special-order-time'),
@@ -5874,7 +5884,7 @@ function autoSwitchModeFromProceedings(items) {
     // Either kind of Rule IX privilege. They share the panel; whichever is newer
     // is the one being shown. See PRIVILEGE_KINDS.
     let ppItem = null, ppKind = null, ppIndex = -1;
-    for (const kind of [PRIVILEGE_KINDS.personal, PRIVILEGE_KINDS.house, PRIVILEGE_KINDS.notice]) {
+    for (const kind of [PRIVILEGE_KINDS.personal, PRIVILEGE_KINDS.house]) {
         const hit = candidateItems.find(i => kind.match.test(i.description.trim()));
         if (!hit) continue;
         if (!ppItem || itemTime(hit) > itemTime(ppItem)) { ppItem = hit; ppKind = kind; }
@@ -5886,6 +5896,8 @@ function autoSwitchModeFromProceedings(items) {
     // lockMode('all'), which is how these get inspected, showed it blank next to
     // twenty-two populated ones.
     if (ppItem) updatePrivilegeSection(ppItem, ppKind, items, ppIndex);
+    const noticeItem = candidateItems.find(i => /^NOTIFICATION\s+OF\s+INTENT\s+TO\s+OFFER\b/i.test(i.description.trim()));
+    if (noticeItem) updatePrivilegeNoticeSection(noticeItem);
 
     const soItem = candidateItems.find(i => {
         const d = i.description.toLowerCase();
@@ -5908,6 +5920,7 @@ function autoSwitchModeFromProceedings(items) {
     // Tiebreak 2: raised DURING business, so when its timestamp ties with the debate
     // it interrupted, the interruption is what the floor is actually doing.
     if (ppItem && episodicStillOpen(ppItem)) candidates.push({ mode: ppKind.mode, item: ppItem, tiebreak: 2 });
+    if (noticeItem && episodicStillOpen(noticeItem)) candidates.push({ mode: 'privilege-notice', item: noticeItem, tiebreak: 2 });
     if (soItem && episodicStillOpen(soItem)) candidates.push({ mode: 'special-order', item: soItem, tiebreak: 0 });
     if (omItem && episodicStillOpen(omItem)) candidates.push({ mode: 'one-minute',    item: omItem, tiebreak: 0 });
     if (mhItem && episodicStillOpen(mhItem)) candidates.push({ mode: 'morning-hour',  item: mhItem, tiebreak: 0 });
@@ -5915,7 +5928,7 @@ function autoSwitchModeFromProceedings(items) {
     if (candidates.length > 0) {
         candidates.sort((a, b) => (itemTime(b.item) - itemTime(a.item)) || (b.tiebreak - a.tiebreak));
         const winner = candidates[0];
-        if (winner.mode === 'privilege' || winner.mode === 'house-privilege') {
+        if (winner.mode === 'privilege' || winner.mode === 'house-privilege' || winner.mode === 'privilege-notice') {
             window.setMode(winner.mode);
         } else if (winner.mode === 'debate') {
             window.setMode('debate');
@@ -7770,18 +7783,6 @@ const PRIVILEGE_KINDS = {
         empty: 'A Member has risen to a question of the privileges of the House.',
         pills: ['Privileged resolution', 'Takes precedence over pending business'],
     },
-    // Not a mode of its own: a Member gives notice that they will offer a privileged resolution, which is the nearest thing the board has to the
-    // question of the privileges of the House, so it is shown there under its own heading. No pills: CRS 98-411 (v12) says nothing about the notice,
-    // so nothing is claimed beyond the Clerk's own wording.
-    notice: {
-        mode: 'house-privilege',
-        help: 'privileges-of-the-house',
-        tag: 'NOTICE OF PRIVILEGED RESOLUTION',
-        match: /^NOTIFICATION\s+OF\s+INTENT\s+TO\s+OFFER\b/i,
-        empty: 'A Member has given notice of a privileged resolution.',
-        pills: [],
-        noResolution: true,
-    },
 };
 
 // The resolution a question of the privileges of the House was offered on, and
@@ -7822,6 +7823,32 @@ function findPrivilegeResolution(items, i) {
 // chair recognises them as the gentleman from their state, one of however many.
 // So this is the one mode where the section can show a face without inferring it
 // from the speech.
+// A Member's notice that they will offer a privileged resolution: the Clerk's "NOTIFICATION OF INTENT TO OFFER RESOLUTION - Mr. Massie notified the House
+// of his intent to offer a privileged resolution ...". Its own panel and its own wording; the Member is named in the sentence, so the card is drawn as the
+// privilege panel's is.
+function updatePrivilegeNoticeSection(item) {
+    if (!item || !elements.privilegeNoticeSection) return;
+    if (item.pubDate && elements.privilegeNoticeTime) {
+        elements.privilegeNoticeTime.textContent = new Date(item.pubDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
+        });
+    }
+    const desc = decodeHtml(item.description).replace(/<[^>]+>/g, '').replace(/^NOTIFICATION OF INTENT TO OFFER[A-Z ]*?\s*[-–—]\s*/i, '').trim();
+    if (elements.privilegeNoticeDescription) elements.privilegeNoticeDescription.textContent = desc;
+    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+notified\b/i);
+    const raw = who ? who[1].trim() : '';
+    const paren = raw.match(/^(.*?)\s*\(([A-Z]{2})\)$/);
+    const ofState = raw.match(/^(.*?)\s+of\s+(.+)$/i);
+    const surname = (paren ? paren[1] : ofState ? ofState[1] : raw).trim();
+    const stateName = paren ? (POSTAL_TO_STATE_NAME[paren[2]] || '') : ofState ? ofState[2].trim() : '';
+    if (raw && elements.privilegeNoticeMemberName) elements.privilegeNoticeMemberName.textContent = raw;
+    if (elements.privilegeNoticeCard) elements.privilegeNoticeCard.hidden = !raw;
+    if (surname) fetchPrivilegeMemberInfo(surname, stateName, {
+        name: elements.privilegeNoticeMemberName, details: elements.privilegeNoticeMemberDetails, party: elements.privilegeNoticePartyTag,
+        additional: elements.privilegeNoticeMemberAdditional, website: elements.privilegeNoticeMemberWebsite, image: elements.privilegeNoticeImage,
+    });
+}
+
 function updatePrivilegeSection(ppItem, kind, items, index) {
     if (!ppItem) return;
     const k = kind || PRIVILEGE_KINDS.personal;
@@ -7843,7 +7870,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     }
 
     const desc = decodeHtml(ppItem.description)
-        .replace(/^(?:POINT OF PERSONAL PRIVILEGE|QUESTION OF THE PRIVILEGES OF THE HOUSE|NOTIFICATION OF INTENT TO OFFER[A-Z ]*?)\s*[-–—]\s*/i, '')
+        .replace(/^(?:POINT OF PERSONAL PRIVILEGE|QUESTION OF THE PRIVILEGES OF THE HOUSE)\s*[-–—]\s*/i, '')
         .replace(/<[^>]+>/g, '')
         .trim();
     if (elements.privilegeDescription) elements.privilegeDescription.textContent = desc;
@@ -7857,7 +7884,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     }
 
     // Only the House kind has a resolution, and only when the Clerk has posted it.
-    const res = (k.mode === 'house-privilege' && !k.noResolution && items) ? findPrivilegeResolution(items, index) : null;
+    const res = (k.mode === 'house-privilege' && items) ? findPrivilegeResolution(items, index) : null;
     if (elements.privilegeResolution) {
         const show = !!(res && res.id);
         elements.privilegeResolution.hidden = !show;
@@ -7873,7 +7900,7 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
 
     // Surname, plus the "of <State>" the Clerk adds when the surname alone would
     // be ambiguous ("Mr. Scott of Virginia rose...").
-    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+(?:rose|notified)\b/i);
+    const who = desc.match(/^(?:Mr|Mrs|Ms|Miss|Dr)\.?\s+(.+?)\s+rose\b/i);
     const raw = who ? who[1].trim() : '';
     // Two spellings of the same thing: "Mr. Scott of Virginia" and "Mr. Green (TX)".
     // The Clerk uses the parenthesis on the privileges-of-the-House heading.
@@ -7892,7 +7919,9 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     if (surname) fetchPrivilegeMemberInfo(surname, stateName);
 }
 
-async function fetchPrivilegeMemberInfo(surname, stateName) {
+async function fetchPrivilegeMemberInfo(surname, stateName, to) {
+    // `to` names the card to fill (the notice panel has one of its own); by default it is the privilege panel's
+    const t = to || { name: elements.privilegeMemberName, details: elements.privilegeMemberDetails, party: elements.privilegePartyTag, additional: elements.privilegeMemberAdditional, website: elements.privilegeMemberWebsite, image: elements.privilegeImage };
     try {
         const state = stateName ? (STATE_NAME_TO_ABBR[stateName] || '') : '';
         const xmlDoc = parseMemberDataXml(await getMemberDataXml());
@@ -7929,24 +7958,24 @@ async function fetchPrivilegeMemberInfo(surname, stateName) {
         if (hits.length !== 1) return;
         const m = hits[0];
 
-        if (elements.privilegeMemberName) elements.privilegeMemberName.textContent = m.fullName;
-        if (elements.privilegeMemberDetails) {
-            elements.privilegeMemberDetails.textContent = `${m.state}-${normalizeDistrict(m.district)}`;
+        if (t.name) t.name.textContent = m.fullName;
+        if (t.details) {
+            t.details.textContent = `${m.state}-${normalizeDistrict(m.district)}`;
         }
-        if (elements.privilegePartyTag) {
-            elements.privilegePartyTag.textContent = m.party || '';
-            elements.privilegePartyTag.className = 'privilege-party-tag';
-            if (m.party === 'R') elements.privilegePartyTag.classList.add('republican');
-            else if (m.party === 'D') elements.privilegePartyTag.classList.add('democrat');
-            else elements.privilegePartyTag.classList.add('independent');
+        if (t.party) {
+            t.party.textContent = m.party || '';
+            t.party.className = 'privilege-party-tag';
+            if (m.party === 'R') t.party.classList.add('republican');
+            else if (m.party === 'D') t.party.classList.add('democrat');
+            else t.party.classList.add('independent');
         }
-        if (elements.privilegeMemberAdditional) {
-            elements.privilegeMemberAdditional.textContent = m.town ? `from ${m.town}, ${m.state}` : '';
+        if (t.additional) {
+            t.additional.textContent = m.town ? `from ${m.town}, ${m.state}` : '';
         }
-        setMemberProfileLink(elements.privilegeMemberWebsite, buildCongressProfileUrl(m.bioguideId));
-        if (elements.privilegeMemberWebsite) elements.privilegeMemberWebsite.hidden = false;
+        setMemberProfileLink(t.website, buildCongressProfileUrl(m.bioguideId));
+        if (t.website) t.website.hidden = false;
 
-        setMemberPhoto(elements.privilegeImage, buildBioguidePhotoUrl(m.bioguideId), m.fullName);
+        setMemberPhoto(t.image, buildBioguidePhotoUrl(m.bioguideId), m.fullName);
     } catch (e) {
         console.error('fetchPrivilegeMemberInfo error:', e);
     }
@@ -9038,7 +9067,7 @@ window.clearDate = function() {
 
 // Global mode switch function for console access
 window.setMode = function(mode) {
-    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'tellers', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair', 'privilege', 'house-privilege'];
+    const validModes = ['vote', 'recess', 'debate', 'prayer', 'silence', 'oath', 'speaker', 'pledge', 'journal', 'morning-hour', 'one-minute', 'special-order', 'joint-meeting', 'tellers', 'message', 'cert-election', 'cert-electoral', 'sine-die', 'new-session', 'admin-oath', 'joint-session', 'committee-chair', 'privilege', 'house-privilege', 'privilege-notice'];
     if (!validModes.includes(mode)) {
         console.error(`Invalid mode: ${mode}. Valid modes are: ${validModes.join(', ')}`);
         return;
@@ -9080,7 +9109,8 @@ const SOURCE_ENTRY = {
     'joint-meeting': [/^joint meeting\b/i, 'joint-meeting-section'],
     'committee-chair': [/act as chair/i, 'committee-chair-section'],
     'privilege': [/^point of personal privilege/i, 'privilege-section'],
-    'house-privilege': [/^(?:question of the privileges of the house|notification of intent to offer)/i, 'privilege-section']
+    'house-privilege': [/^question of the privileges of the house/i, 'privilege-section'],
+    'privilege-notice': [/^notification of intent to offer/i, 'privilege-notice-section']
 };
 function updateSourceManifest(mode) {
     if (!globalThis.SourcePop) return;
@@ -9154,13 +9184,13 @@ function initModeToggle() {
 
 function updateModeClasses(mode) {
     // Remove all mode classes (including all-mode debug class)
-    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode', 'house-privilege-mode', 'all-mode');
+    document.body.classList.remove('recess-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode', 'house-privilege-mode', 'privilege-notice-mode', 'all-mode');
 
     // Special: show every panel simultaneously (lockMode('all') debug helper).
     // all-mode CSS (last in stylesheet) overrides the !important vote-display
     // hiding that each individual mode class applies.
     if (mode === 'all') {
-        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode', 'house-privilege-mode');
+        document.body.classList.add('all-mode', 'debate-mode', 'prayer-mode', 'silence-mode', 'oath-mode', 'speaker-mode', 'pledge-mode', 'journal-mode', 'morning-hour-mode', 'one-minute-mode', 'special-order-mode', 'joint-meeting-mode', 'tellers-mode', 'message-mode', 'cert-election-mode', 'cert-electoral-mode', 'sine-die-mode', 'new-session-mode', 'admin-oath-mode', 'joint-session-mode', 'committee-chair-mode', 'privilege-mode', 'house-privilege-mode', 'privilege-notice-mode');
         return;
     }
 
@@ -9189,7 +9219,7 @@ function updateModeClasses(mode) {
         document.body.classList.add('special-order-mode');
     } else if (mode === 'joint-meeting') {
         document.body.classList.add('joint-meeting-mode');
-    } else if (mode === 'privilege' || mode === 'house-privilege') {
+    } else if (mode === 'privilege' || mode === 'house-privilege' || mode === 'privilege-notice') {
         document.body.classList.add(mode + '-mode');
     } else if (mode === 'tellers') {
         document.body.classList.add('tellers-mode');
