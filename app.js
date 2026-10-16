@@ -5957,7 +5957,11 @@ function autoSwitchModeFromProceedings(items) {
         latestDesc.includes('approval of the journal') ||
         latestDesc.includes('approved the journal') ||
         latestDesc.includes('announced approval of the journal');
-    if (latestIsJournal) window.setMode('journal');
+    if (latestIsJournal) { window.setMode('journal'); return; }
+
+    // Nothing above applies to the newest entry (a Member's notice, a message from the Senate that is not yet a mode, a routine action): the page goes back to its resting panel.
+    // Without this the mode before it simply stayed: PLEDGE stood on screen through Mr. Massie's notice, an hour after the pledge was said.
+    window.setMode('vote');
 }
 
 // Render the proceedings panel from an items array (no fetch — pure DOM update).
