@@ -11183,12 +11183,12 @@ html.replay-mode .proceedings-item.is-future:hover { opacity: .75; }
 html.replay-mode .proceedings-item.is-here { background: rgba(63, 185, 80, .14); box-shadow: inset 2px 0 0 var(--accent-green); }
 
 /* the panels that are about NOW and have no history say so, over a dimmed copy of themselves */
-html.replay-mode #whip-updates, html.replay-mode #absentee, html.replay-mode #bills, html.replay-mode #twitter, html.replay-mode #airport-delays,
-html.replay-mode #party-breakdown, html.replay-mode #discharge-petitions, html.replay-mode #pipeline, html.replay-mode #appropriations, html.replay-mode #vote-series-panel { position: relative; }
-html.replay-mode #whip-updates > *, html.replay-mode #absentee > *, html.replay-mode #bills > *, html.replay-mode #twitter > *, html.replay-mode #airport-delays > *,
-html.replay-mode #party-breakdown > *, html.replay-mode #discharge-petitions > *, html.replay-mode #pipeline > *, html.replay-mode #appropriations > *, html.replay-mode #vote-series-panel > * { opacity: .12; filter: grayscale(1); pointer-events: none; }
-html.replay-mode #whip-updates::after, html.replay-mode #absentee::after, html.replay-mode #bills::after, html.replay-mode #twitter::after, html.replay-mode #airport-delays::after,
-html.replay-mode #party-breakdown::after, html.replay-mode #discharge-petitions::after, html.replay-mode #pipeline::after, html.replay-mode #appropriations::after, html.replay-mode #vote-series-panel::after {
+html.replay-mode #twitter, html.replay-mode #airport-delays,
+html.replay-mode #party-breakdown, html.replay-mode #discharge-petitions, html.replay-mode #pipeline, html.replay-mode #appropriations { position: relative; }
+html.replay-mode #twitter > *, html.replay-mode #airport-delays > *,
+html.replay-mode #party-breakdown > *, html.replay-mode #discharge-petitions > *, html.replay-mode #pipeline > *, html.replay-mode #appropriations > * { opacity: .12; filter: grayscale(1); pointer-events: none; }
+html.replay-mode #twitter::after, html.replay-mode #airport-delays::after,
+html.replay-mode #party-breakdown::after, html.replay-mode #discharge-petitions::after, html.replay-mode #pipeline::after, html.replay-mode #appropriations::after {
     content: "NOT AVAILABLE FOR THIS DATE"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: flex-start; justify-content: center; padding-top: 64px;
     font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: var(--track-wider); color: var(--text-muted); text-align: center; pointer-events: none;
 }
