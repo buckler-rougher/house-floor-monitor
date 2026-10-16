@@ -3267,10 +3267,6 @@ body.tellers-mode .tellers-column { display: flex; }
 .whip-filter-chip.whip-type-daily   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
 .whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 .whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
-.whip-filter-chip.whip-type-debate   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
-.whip-filter-chip.whip-type-vote     { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
-.whip-filter-chip.whip-type-speech   { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 12%, transparent); }
-.whip-filter-chip.whip-type-other    { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
 .whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
 .whip-filter-chip.whip-type-wrap-up  { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 
@@ -11902,7 +11898,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-hoverline[hidden] { display: none; }
 
 .tm-ag-tools { padding-right: var(--sp-16); }
-.tm-ag-kinds { flex: 1 0 100%; }
+.tm-ag-tools .search-field { flex: 1 0 100%; }
+.tm-ag-kinds { width: max-content; max-width: 100%; }
 
 .tm-ag-tag { align-self: flex-start; margin-bottom: 1px; padding: 1px 6px; border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
 .tm-ag-tag-debate { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
@@ -11917,7 +11914,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-segs[data-only="other"] .tm-seg-other { background: var(--tm-other); filter: brightness(1.2); }
 .tm-segs[data-only="vote"] .tm-vote { filter: brightness(1.25) saturate(1.2); }
 .tm-scrub.is-filtered .tm-future { display: none; }
-.tm-kinds { display: inline-flex; flex-wrap: wrap; gap: var(--sp-8); }
 
 .tm-range { z-index: 4; }
 .tm-hoverline { z-index: 3; }
@@ -11925,3 +11921,14 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-hit { z-index: 7; }
 .tm-seg, .tm-vote { transition: opacity .3s ease, filter .3s ease, background-color .3s ease; }
 @media (prefers-reduced-motion: reduce) { .tm-seg, .tm-vote { transition: none; } }
+
+.tm-kinds { flex-wrap: wrap; }
+.tm-kinds .bills-sort-btn[data-kind="debate"] { color: var(--accent-green); }
+.tm-kinds .bills-sort-btn[data-kind="vote"] { color: var(--accent-blue); }
+.tm-kinds .bills-sort-btn[data-kind="speech"] { color: var(--accent-yellow); }
+.tm-kinds .bills-sort-btn[data-kind="other"] { color: var(--tm-other); }
+.tm-kinds .bills-sort-btn[data-kind="debate"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="vote"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="speech"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="other"]:hover:not(.active) { color: inherit; filter: brightness(1.15); }
+.tm-kinds .bills-sort-btn[data-kind="debate"].active { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 14%, transparent); }
+.tm-kinds .bills-sort-btn[data-kind="vote"].active { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 14%, transparent); }
+.tm-kinds .bills-sort-btn[data-kind="speech"].active { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }
+.tm-kinds .bills-sort-btn[data-kind="other"].active { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
