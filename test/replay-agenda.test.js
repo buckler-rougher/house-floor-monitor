@@ -47,6 +47,13 @@ ok('a debate that ended by voice vote says so; one settled by a roll call does n
   assert.strictEqual(by(/^H\.R\. 9576/).voice, false);
 });
 
+ok('a notification of intent to offer a resolution is a speech; other capitalised headings are rows of their own', () => {
+  const rs = A.build([{ timestamp: 1, description: 'The House convened, starting a new legislative day.' }, { timestamp: 2, description: 'NOTIFICATION OF INTENT TO OFFER RESOLUTION - Mr. Green (TX) gave notice of his intent to offer a resolution.' }, { timestamp: 3, description: 'MOMENT OF SILENCE - The House observed a moment of silence.' }], []);
+  assert.deepStrictEqual(rs.map((x) => x.kind), ['gavel', 'speech', 'other']);
+  assert.strictEqual(rs[1].title, 'Notification of intent to offer resolution');
+  assert.strictEqual(rs[2].title, 'Moment of silence');
+});
+
 ok('a roll call no debate accounts for is a row of its own', () => {
   const x = rows.find((y) => y.kind === 'vote');
   assert.ok(x && x.vote && /9340/.test(x.title));
