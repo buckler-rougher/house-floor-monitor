@@ -7188,7 +7188,7 @@ function updatePrayerSection(items) {
             elements.prayerLeaderName.textContent = named;
             elements.prayerLeaderDescription.textContent =
                 'Announced on the floor. The Clerk\'s record follows in a few minutes.';
-            elements.prayerTime.textContent = '';
+            elements.prayerTime.textContent = window.__captionTime?.('prayer') || '';
             if (elements.prayerLeaderWebsite) {
                 elements.prayerLeaderWebsite.href = guest
                     ? 'https://chaplain.house.gov/chaplaincy/guest_chaplains.html'
@@ -7203,7 +7203,7 @@ function updatePrayerSection(items) {
         elements.prayerLeaderDescription.textContent = live
             ? 'Heard in the live captions. The Clerk\'s record follows in a few minutes.'
             : 'No prayer information available in current proceedings.';
-        elements.prayerTime.textContent = '';
+        elements.prayerTime.textContent = window.__captionTime?.('prayer') || '';
         if (elements.prayerLeaderWebsite) {
             elements.prayerLeaderWebsite.href = 'https://chaplain.house.gov/chaplaincy/index.html';
             elements.prayerLeaderWebsite.textContent = 'https://chaplain.house.gov';
@@ -7352,7 +7352,7 @@ function updatePledgeSection(items) {
         elements.pledgePartyTag.textContent = '';
         elements.pledgeLeaderDetails.textContent = '';
         elements.pledgeLeaderAdditional.textContent = '';
-        elements.pledgeTime.textContent = '';
+        elements.pledgeTime.textContent = window.__captionTime?.('pledge') || '';
         return;
     }
 
@@ -7657,7 +7657,7 @@ function updateSpeakerSection(items) {
             elements.speakerMemberTitle.textContent = 'Speaker Pro Tempore';
             elements.speakerMemberName.textContent = named;
             elements.speakerPartyTag.textContent = '';
-            elements.speakerTime.textContent = '';
+            elements.speakerTime.textContent = window.__captionTime?.('speaker') || '';
             fetchSpeakerMemberInfo(named);
             return;
         }
@@ -7668,7 +7668,7 @@ function updateSpeakerSection(items) {
         elements.speakerMemberDetails.textContent = '';
         elements.speakerMemberAdditional.textContent = '';
         elements.speakerMemberDescription.textContent = '';
-        elements.speakerTime.textContent = '';
+        elements.speakerTime.textContent = window.__captionTime?.('speaker') || '';
         return;
     }
 
@@ -10319,11 +10319,28 @@ async function updateQuorumStatus() {
     let day = '';
 
     const el = (key) => document.getElementById(`${key}-live`);
+    // The time the captions gave the event, in the Clerk's own format, and the
+    // source the panel names while that is all there is. The Clerk's entry
+    // replaces both: its time differs from ours, so it reads as reported.
+    const stamp = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+    const sourceLink = (key) => document.querySelector(`.${key}-source a`);
+    const CLERK_SOURCE = { text: 'Legislative Activity (House Clerk)', href: 'https://clerk.house.gov/FloorSummary' };
+    const showCaptionSource = (key, on) => {
+        const a = sourceLink(key);
+        if (!a) return;
+        a.textContent = on ? 'Captions' : CLERK_SOURCE.text;
+        a.href = on ? 'https://live.house.gov' : CLERK_SOURCE.href;
+    };
     const clerkReported = (key) => {
-        // The -time span stays empty until the feed carries the event. Once it
-        // does, the Clerk is the record and the marker steps aside.
         const t = document.getElementById(`${key}-time`);
-        return !!(t && t.textContent.trim());
+        const seen = state.get(key);
+        const text = t ? t.textContent.trim() : '';
+        return !!text && !(seen && text === seen.time);
+    };
+    window.__captionTime = (key) => {
+        const seen = state.get(key);
+        const node = el(key);
+        return seen && seen.time && node && !node.hidden ? seen.time : '';
     };
 
     function tick() {
@@ -10343,13 +10360,21 @@ async function updateQuorumStatus() {
                 // and lighting the marker would flash NOW over an event the
                 // Clerk has already timestamped.
                 if (clerkReported(ev.key)) { state.set(ev.key, { firedAt: now }); continue; }
-                state.set(ev.key, { firedAt: now });
+                state.set(ev.key, { firedAt: now, time: stamp(now) });
+                const tm = document.getElementById(`${ev.key}-time`);
+                if (tm) tm.textContent = stamp(now);
+                showCaptionSource(ev.key, true);
                 node.hidden = false;
                 revealSection(ev);
                 continue;
             }
             if (seen && !node.hidden) {
-                if (clerkReported(ev.key) || now - seen.firedAt > MAX_VISIBLE_MS) node.hidden = true;
+                if (clerkReported(ev.key) || now - seen.firedAt > MAX_VISIBLE_MS) {
+                    node.hidden = true;
+                    showCaptionSource(ev.key, false);
+                    const tm = document.getElementById(`${ev.key}-time`);
+                    if (tm && tm.textContent.trim() === seen.time) tm.textContent = '';
+                }
             }
         }
     }
