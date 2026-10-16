@@ -52,4 +52,10 @@ ok('every row can be found by its measure number however it is typed', () => {
   assert.ok(x.find.replace(/[^a-z0-9]+/g, '').includes('hr9497'));
 });
 
+ok('a morning-hour debate is a speech hour, with the hyphen the Clerk writes', () => {
+  const rs = A.build([{ timestamp: 1, description: 'The House convened, starting a new legislative day.' }, { timestamp: 2, description: 'MORNING-HOUR DEBATE - The House proceeded with morning-hour debate.' }, { timestamp: 3, description: 'ONE-MINUTE SPEECHES - The House proceeded with one minute speeches.' }], []);
+  assert.deepStrictEqual(rs.map((x) => x.kind), ['gavel', 'speech', 'speech']);
+  assert.strictEqual(rs[1].title, 'Morning-hour debate');
+});
+
 console.log(`replay-agenda: ${n} passed`);
