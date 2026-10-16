@@ -10379,7 +10379,6 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-ag-body u { text-decoration: none; font-size: var(--fs-sm); color: var(--accent-green); font-family: var(--font-mono); }
 .tm-ag-row.is-future { opacity: .5; }
 .tm-ag-row.is-now { background: rgba(63, 185, 80, .14); opacity: 1; }
-.tm-ag-none { color: var(--text-muted); padding: var(--sp-16); margin: 0; }
 .tm-mark { top: 0; height: 16px; transform: translateX(-50%); }
 .tm-mark i { height: 12px; margin: 0 auto; width: 3px; }
 .tm-mark:hover i { height: 16px; margin-top: 0; }
