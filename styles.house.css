@@ -6668,6 +6668,8 @@ body:is(
     .one-minute-mode,
     .pledge-mode,
     .privilege-mode,
+    .house-privilege-mode,
+    .privilege-notice-mode,
     .prayer-mode,
     .recess-mode,
     .silence-mode,
