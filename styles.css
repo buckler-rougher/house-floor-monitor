@@ -3564,27 +3564,6 @@ body.tellers-mode .tellers-column { display: flex; }
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-elevated);
 }
-.whip-filter-chip {
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: var(--track-wide);
-  padding: 2px 8px;
-  border-radius: var(--radius-4);
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: filter var(--dur-120);
-}
-.whip-filter-chip:hover { filter: brightness(1.2); }
-.whip-filter-chip.active { border-color: currentColor; }
-/* Mirror type badge colors */
-.whip-filter-chip.whip-type-all    { color: var(--text-secondary); background: color-mix(in srgb, var(--text-muted) 10%, transparent); }
-.whip-filter-chip.whip-type-floor   { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
-.whip-filter-chip.whip-type-daily   { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
-.whip-filter-chip.whip-type-nightly { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
-.whip-filter-chip.whip-type-weekly  { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
-.whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
-.whip-filter-chip.whip-type-wrap-up  { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
 
 /* (?) hover tooltip */
 .whip-label-group {
@@ -11122,9 +11101,9 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-agenda-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--accent-green); border-radius: var(--radius-6); background: rgba(63, 185, 80, .1); color: var(--accent-green); font: inherit; font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; padding: 3px 12px; cursor: pointer; }
 .tm-agenda-btn svg { width: 14px; height: 14px; fill: currentColor; }
 .tm-agenda-btn:hover, .tm-agenda-btn.is-on { background: var(--accent-green); color: var(--bg-card); }
-.tm-agenda { position: fixed; left: 50%; transform: translateX(-50%); z-index: 1012; width: min(780px, calc(100vw - 24px)); max-height: min(62vh, 640px); display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-color); border-bottom: 0; border-radius: 12px 12px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .55); }
-.tm-agenda[hidden] { display: none; }
-.tm-ag-list { overflow-y: auto; padding: var(--sp-4) 0; overscroll-behavior: contain; }
+.tm-ag-overlay[hidden] { display: none; }
+.tm-ag-modal { width: min(680px, 100%); }
+.tm-ag-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-4) 0; overscroll-behavior: contain; }
 .tm-ag-row { display: flex; gap: var(--sp-12); width: 100%; text-align: left; border: 0; background: none; color: var(--text-primary); font: inherit; padding: 8px var(--sp-12); cursor: pointer; }
 .tm-ag-row:hover { background: rgba(63, 185, 80, .08); }
 .tm-ag-time { flex: 0 0 5.2em; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
@@ -11144,7 +11123,7 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-seg-debate.is-b { background: rgba(63, 185, 80, .62); }
 .tm-seg-speech { background: color-mix(in srgb, var(--accent-yellow) 92%, transparent); }
 .tm-seg-other { background: color-mix(in srgb, var(--tm-other) 92%, transparent); }
-.tm-seg-gavel { background: rgba(63, 185, 80, .5); }
+.tm-seg-gavel { background: color-mix(in srgb, var(--tm-other) 92%, transparent); }
 .tm-vote { position: absolute; top: 0; bottom: 0; min-width: 5px; border-radius: 3px; box-shadow: 0 0 0 1.5px var(--bg-header); }
 .tm-vote.is-yea { background: var(--accent-blue); }
 .tm-vote.is-nay { background: var(--accent-blue); }   /* one colour for every vote: how it came out is in the label */
@@ -12918,7 +12897,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-ag-tag-debate { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
 .tm-ag-tag-vote { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }
 .tm-ag-tag-speech { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 12%, transparent); }
-.tm-ag-tag-recess, .tm-ag-tag-other { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
+.tm-ag-tag-recess, .tm-ag-tag-other, .tm-ag-tag-gavel, .tm-ag-tag-adjourn { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
 
 /* the kind filter: the kind chosen shows in its full colour, brighter, and what is not it recedes (greyed and faint); the shade over what is still to come is dropped while filtering so it cannot dull the chosen kind */
 .tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg,
@@ -12937,18 +12916,17 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-seg, .tm-vote { transition: opacity .3s ease, filter .3s ease, background-color .3s ease; }
 @media (prefers-reduced-motion: reduce) { .tm-seg, .tm-vote { transition: none; } }
 
-/* the kind filter is the board's shared filter control (`.bills-sort-switcher`): each option's text is its own colour, washed out until chosen (full colour, and a wash of it behind, when it is); ALL stays white and grey */
-.tm-kinds { flex-wrap: wrap; }
-.tm-kinds .bills-sort-btn[data-kind="all"].active { color: var(--text-primary); background: rgba(255, 255, 255, 0.1); }
-.tm-kinds .bills-sort-btn[data-kind="debate"] { color: color-mix(in srgb, var(--accent-green) 60%, var(--text-muted)); }
-.tm-kinds .bills-sort-btn[data-kind="vote"] { color: color-mix(in srgb, var(--accent-blue) 60%, var(--text-muted)); }
-.tm-kinds .bills-sort-btn[data-kind="speech"] { color: color-mix(in srgb, var(--accent-yellow) 60%, var(--text-muted)); }
-.tm-kinds .bills-sort-btn[data-kind="other"] { color: color-mix(in srgb, var(--tm-other) 60%, var(--text-muted)); }
-.tm-kinds .bills-sort-btn[data-kind="debate"]:hover:not(.active) { color: var(--accent-green); }
-.tm-kinds .bills-sort-btn[data-kind="vote"]:hover:not(.active) { color: var(--accent-blue); }
-.tm-kinds .bills-sort-btn[data-kind="speech"]:hover:not(.active) { color: var(--accent-yellow); }
-.tm-kinds .bills-sort-btn[data-kind="other"]:hover:not(.active) { color: var(--tm-other); }
-.tm-kinds .bills-sort-btn[data-kind="debate"].active { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 14%, transparent); }
-.tm-kinds .bills-sort-btn[data-kind="vote"].active { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 14%, transparent); }
-.tm-kinds .bills-sort-btn[data-kind="speech"].active { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }
-.tm-kinds .bills-sort-btn[data-kind="other"].active { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
+/* A filter whose options each have a colour (the Dem whip notices, the Dem Caucus notices, the time machine's kinds): the board's shared filter control with each option's text in its own colour (`data-tone`), washed out until it is chosen, then in full with a wash of that colour behind it. ALL is white and grey. */
+.tone-switcher { flex-wrap: wrap; }
+.tone-switcher .bills-sort-btn { color: color-mix(in srgb, var(--tone, var(--text-muted)) 60%, var(--text-muted)); }
+.tone-switcher .bills-sort-btn:hover:not(.active) { color: var(--tone, var(--text-secondary)); }
+.tone-switcher .bills-sort-btn.active { color: var(--tone, var(--text-primary)); background: color-mix(in srgb, var(--tone, #ffffff) 14%, transparent); }
+.tone-switcher .bills-sort-btn[data-tone="all"] { color: var(--text-muted); }
+.tone-switcher .bills-sort-btn[data-tone="all"]:hover:not(.active) { color: var(--text-secondary); }
+.tone-switcher .bills-sort-btn[data-tone="all"].active { color: var(--text-primary); background: rgba(255, 255, 255, 0.1); }
+.tone-switcher .bills-sort-btn[data-tone="floor"], .tone-switcher .bills-sort-btn[data-tone="schedule"], .tone-switcher .bills-sort-btn[data-tone="vote"] { --tone: var(--accent-blue); }
+.tone-switcher .bills-sort-btn[data-tone="daily"], .tone-switcher .bills-sort-btn[data-tone="debate"] { --tone: var(--accent-green); }
+.tone-switcher .bills-sort-btn[data-tone="nightly"], .tone-switcher .bills-sort-btn[data-tone="wrap-up"] { --tone: var(--accent-purple); }
+.tone-switcher .bills-sort-btn[data-tone="weekly"] { --tone: var(--accent-amber); }
+.tone-switcher .bills-sort-btn[data-tone="speech"] { --tone: var(--accent-yellow); }
+.tone-switcher .bills-sort-btn[data-tone="other"] { --tone: var(--tm-other); }

@@ -807,11 +807,11 @@ function renderNoticeFilter() {
     if (!dd) return;
     const counts = { all: _notices.length };
     for (const n of _notices) counts[n.type] = (counts[n.type] || 0) + 1;
-    // whip-type-${key} carries the chip's colour, matching its badge in the feed.
-    const chip = (key, label) => `<button class="whip-filter-chip whip-type-${key}${_noticeFilter === key ? ' active' : ''}" data-notice-filter="${key}">${label}${counts[key] ? ` (${counts[key]})` : ''}</button>`;
-    dd.innerHTML = `<div class="whip-filter-inner">${
+    // The shared filter control, each option in its type's colour (`data-tone`), washed out until chosen
+    const chip = (key, label) => `<button class="bills-sort-btn${_noticeFilter === key ? ' active' : ''}" data-notice-filter="${key}" data-tone="${key}">${label}${counts[key] ? ` (${counts[key]})` : ''}</button>`;
+    dd.innerHTML = `<div class="whip-filter-inner"><div class="bills-sort-switcher tone-switcher">${
         [chip('all', 'ALL'), ...Object.entries(NOTICE_TYPES).map(([k, v]) => chip(k, v.label))].join('')
-    }</div>`;
+    }</div></div>`;
 }
 
 function initNoticeFilter() {
