@@ -5623,7 +5623,17 @@ function autoSwitchModeFromProceedings(items) {
     // Placed after the vote-mode guard above on purpose: an active vote always
     // wins over a caption assertion.
     const cm = window.__captionMode;
-    if (cm && cm.until > Date.now() && !cm.needles.some(n => latest.includes(n))) return;
+    // ...and lets go once the Clerk has reported the event, even if a newer entry has since taken its place at the top (a Member's notice posted right after the pledge left the board
+    // on PLEDGE for the rest of the five minutes, because only the NEWEST entry was looked at).
+    if (cm && cm.until > Date.now()) {
+        const caughtUp = items.some(i => {
+            const t = Number(i.timestamp) || Date.parse(i.pubDate) || 0;
+            const d = (i.description || '').toLowerCase();
+            return t >= (cm.at || 0) - 60_000 && cm.needles.some(n => d.includes(n));
+        });
+        if (!caughtUp && !cm.needles.some(n => latest.includes(n))) return;
+        if (caughtUp) window.__captionMode = null;
+    }
 
     // If the most recent proceeding is a recess or adjournment, stay in recess.
     if (latest.includes('adjourn') ||
@@ -10280,7 +10290,7 @@ async function updateQuorumStatus() {
         const sseIsLive  = lastSseTallyAt > 0 && (Date.now() - lastSseTallyAt) < 90_000;
         if (document.body.classList.contains('vote-mode') ||
             liveStatus === 'vote' || liveStatus === 'voting' || sseIsLive) return;
-        window.__captionMode = { needles: ev.needles, until: Date.now() + MAX_VISIBLE_MS };
+        window.__captionMode = { needles: ev.needles, at: Date.now(), until: Date.now() + MAX_VISIBLE_MS };
         try { window.setMode(ev.mode); } catch (_) {}
         // Render immediately rather than waiting on the next proceedings poll.
         // The renderers read the caption text themselves for what the Clerk has
