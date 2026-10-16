@@ -7347,6 +7347,29 @@ function updatePledgeSection(items) {
 
     if (!pledgeItem) {
         const live = window.__captionLive?.('pledge');
+        // The Chair names the leader aloud, in one of two forms (15 Sep, 16 Sep, 8 Sep 2026):
+        //   THE PLEDGE OF ALLEGIANCE WILL BE LED BY THE GENTLEMAN FROM SOUTH CAROLINA, MR. WILSON.
+        //   THE CHAIR WILL LEAD THE HOUSE IN THE PLEDGE OF ALLEGIANCE.
+        // The first is turned into the Clerk's own form ("Mr. Wilson of South Carolina") so it resolves the same way.
+        const capText = live && typeof window.__liveCaptionText === 'function' ? window.__liveCaptionText() : '';
+        const led = capText && capText.match(/pledge\s+of\s+allegiance\s+will\s+be\s+led\s+by\s+the\s+gentle(?:man|woman|lady)\s+from\s+([A-Za-z ]+?),\s+(M[rs]s?|Miss)\.?\s+([A-Za-z'-]+(?:\s+[A-Za-z'-]+)?)\s*[.,]/i);
+        if (led) {
+            const named = `${spokenNameCase(led[2])}. ${spokenNameCase(led[3])} of ${spokenNameCase(led[1])}`;
+            elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+            elements.pledgeLeaderName.textContent = named.replace(/ of .*$/, '');
+            elements.pledgeTime.textContent = window.__captionTime?.('pledge') || '';
+            fetchMemberPhotoFromClerkData(named);
+            return;
+        }
+        if (live && capText && /the\s+chair\s+will\s+lead\s+the\s+house\s+in\s+the\s+pledge/i.test(capText)) {
+            elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
+            elements.pledgeLeaderName.textContent = 'The Chair';
+            elements.pledgePartyTag.textContent = '';
+            elements.pledgeLeaderDetails.textContent = '';
+            elements.pledgeLeaderAdditional.textContent = '';
+            elements.pledgeTime.textContent = window.__captionTime?.('pledge') || '';
+            return;
+        }
         elements.pledgeLeaderTitle.textContent = live
             ? 'Pledge under way' : 'No Pledge Information';
         elements.pledgeLeaderName.textContent = '--';
