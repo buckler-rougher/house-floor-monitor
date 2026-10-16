@@ -20,6 +20,9 @@ globalThis.fetch = async (u) => {
   if (m) { asked.push(m[1]); return new Response(events[m[1]] || '[]', { status: 200 }); }
   return new Response('', { status: 404 });
 };
+// the probe is kept in the colo's cache (not KV, whose free writes the live board shares)
+const kept = new Map();
+globalThis.caches = { default: { match: async (r) => { const v = kept.get(r.url); return v ? new Response(v) : undefined; }, put: async (r, res) => { kept.set(r.url, await res.text()); } } };
 const store = new Map();
 const env = { HLS_CACHE: { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); }, delete: async () => {} } };
 const call = async (path) => { asked = []; const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api' + path), env); return { status: r.status, body: await r.json(), asked: [...asked] }; };
