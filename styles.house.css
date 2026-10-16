@@ -11915,3 +11915,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-ag-modal { position: fixed; z-index: 1008; left: 24px; bottom: calc(var(--tm-bar-h, 180px) + 12px); width: min(640px, calc(100vw - 24px - 24px - max(220px, calc((100vw - 1000px) / 2 - var(--sp-32))) - 16px)); height: min(640px, calc(100vh - var(--tm-bar-h, 180px) - 100px)); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6); }
 .tm-ag-modal[hidden] { display: none; }
 @media (max-width: 900px) { .tm-ag-modal { left: 12px; width: calc(100vw - 24px); z-index: 1100; } }
+
+.pip-live-dot.is-recorded { background: var(--text-muted); animation: none; box-shadow: none; opacity: .7; }
