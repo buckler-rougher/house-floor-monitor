@@ -10397,19 +10397,13 @@ html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 
 .tm-agenda { position: fixed; left: 50%; transform: translateX(-50%); z-index: 1012; width: min(780px, calc(100vw - 24px)); max-height: min(62vh, 640px); display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-color); border-bottom: 0; border-radius: 12px 12px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .55); }
 .tm-agenda[hidden] { display: none; }
 .tm-ag-list { overflow-y: auto; padding: var(--sp-4) 0; overscroll-behavior: contain; }
-.tm-ag-row { display: flex; gap: var(--sp-12); width: 100%; text-align: left; border: 0; border-left: 3px solid transparent; background: none; color: var(--text-primary); font: inherit; padding: 8px var(--sp-12); cursor: pointer; }
+.tm-ag-row { display: flex; gap: var(--sp-12); width: 100%; text-align: left; border: 0; background: none; color: var(--text-primary); font: inherit; padding: 8px var(--sp-12); cursor: pointer; }
 .tm-ag-row:hover { background: rgba(63, 185, 80, .08); }
 .tm-ag-time { flex: 0 0 5.2em; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
 .tm-ag-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tm-ag-body b { font-weight: 500; font-size: var(--fs-md); line-height: 1.35; }
 .tm-ag-body i { font-style: normal; font-size: var(--fs-sm); color: var(--text-muted); }
 .tm-ag-body u { text-decoration: none; font-size: var(--fs-sm); color: var(--accent-green); font-family: var(--font-mono); }
-.tm-ag-debate { border-left-color: var(--accent-green); }
-.tm-ag-speech { border-left-color: var(--accent-yellow); }
-.tm-ag-vote { border-left-color: var(--accent-blue); }
-.tm-ag-recess, .tm-ag-other { border-left-color: var(--tm-other); }
-.tm-ag-gavel { border-left-color: var(--accent-green); }
-.tm-ag-adjourn { border-left-color: var(--accent-red); }
 .tm-ag-row.is-future { opacity: .5; }
 .tm-ag-row.is-now { background: rgba(63, 185, 80, .14); opacity: 1; }
 .tm-ag-none { color: var(--text-muted); padding: var(--sp-16); margin: 0; }
@@ -11907,9 +11901,14 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-hoverline { position: absolute; top: 13px; width: 1px; height: 32px; background: rgba(255, 255, 255, .42); pointer-events: none; z-index: 1; }
 .tm-hoverline[hidden] { display: none; }
 
-.tm-ag-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-12); padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
-.tm-ag-title { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-secondary); }
-.tm-ag-tools { --control-h: 2rem; padding: var(--sp-8) var(--sp-16); border-bottom: 1px solid var(--border-color); }
+.tm-ag-tools { padding-right: var(--sp-16); }
+.tm-ag-kinds { flex: 1 0 100%; }
+
+.tm-ag-tag { align-self: flex-start; margin-bottom: 1px; padding: 1px 6px; border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+.tm-ag-tag-debate { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 12%, transparent); }
+.tm-ag-tag-vote { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }
+.tm-ag-tag-speech { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 12%, transparent); }
+.tm-ag-tag-recess, .tm-ag-tag-other { color: var(--tm-other); background: color-mix(in srgb, var(--tm-other) 14%, transparent); }
 
 .tm-segs[data-only="debate"] .tm-seg:not(.tm-seg-debate), .tm-segs[data-only="speech"] .tm-seg:not(.tm-seg-speech), .tm-segs[data-only="other"] .tm-seg:not(.tm-seg-other):not(.tm-seg-gavel), .tm-segs[data-only="vote"] .tm-seg,
 .tm-segs[data-only="debate"] .tm-vote, .tm-segs[data-only="speech"] .tm-vote, .tm-segs[data-only="other"] .tm-vote { opacity: .2; filter: grayscale(.8); }
