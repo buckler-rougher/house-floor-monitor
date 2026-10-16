@@ -2202,7 +2202,7 @@
   .whip-filter-chip.whip-type-weekly { color: var(--accent-amber);  background: color-mix(in srgb, var(--accent-amber)  12%, transparent); }
   .whip-filter-chip.whip-type-debate { color: var(--accent-green);  background: color-mix(in srgb, var(--accent-green)  12%, transparent); }
   .whip-filter-chip.whip-type-vote { color: var(--accent-blue);   background: color-mix(in srgb, var(--accent-blue)   12%, transparent); }
-  .whip-filter-chip.whip-type-speech { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 12%, transparent); }
+  .whip-filter-chip.whip-type-speech { color: var(--text-primary); background: color-mix(in srgb, var(--text-primary) 12%, transparent); }
   .whip-filter-chip.whip-type-other { color: var(--accent-orange); background: color-mix(in srgb, var(--accent-orange) 12%, transparent); }
   .whip-filter-chip.whip-type-schedule { color: var(--accent-blue);  background: color-mix(in srgb, var(--accent-blue)  12%, transparent); }
   .whip-filter-chip.whip-type-wrap-up { color: var(--accent-purple); background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
