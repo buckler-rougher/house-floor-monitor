@@ -11087,14 +11087,17 @@ html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 162px; }   /* (expande
 html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 22px rgba(63, 185, 80, .12); }
 .tm-bar-row { display: flex; align-items: center; gap: var(--sp-16); max-width: 1400px; margin: 0 auto; }
 :root { --tm-other: color-mix(in srgb, var(--accent-orange) 55%, var(--accent-red)); }   /* recesses and other: a red-orange, clear of the yellow of the speeches */
-.tm-transport { display: flex; align-items: center; gap: var(--sp-6); }
-.tm-btn { position: relative; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: all .15s ease; }
-.tm-btn svg { width: 18px; height: 18px; fill: currentColor; }
-.tm-btn span { position: absolute; font-family: var(--font-mono); font-size: 8px; font-weight: 700; top: 50%; left: 50%; transform: translate(-50%, -40%); }
-.tm-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
-.tm-play { width: 46px; height: 46px; color: var(--accent-green); border-color: rgba(63, 185, 80, .55); background: rgba(63, 185, 80, .12); }
-.tm-play svg { width: 22px; height: 22px; }
-.tm-play:hover { color: #fff; background: rgba(63, 185, 80, .3); box-shadow: 0 0 14px rgba(63, 185, 80, .4); }
+.tm-transport { display: flex; align-items: center; gap: var(--sp-10); }
+/* the skip buttons are quiet rings that fill on hover; play is the one solid thing in the bar */
+.tm-btn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: background var(--dur-150) ease, color var(--dur-150) ease, transform var(--dur-150) ease, box-shadow var(--dur-150) ease; }
+.tm-btn svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tm-btn svg text { fill: currentColor; stroke: none; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; text-anchor: middle; }
+.tm-btn:hover { background: rgba(255, 255, 255, 0.11); color: var(--text-primary); }
+.tm-btn:active { transform: scale(0.94); }
+.tm-btn:focus-visible { outline: 2px solid var(--accent-green); outline-offset: 2px; }
+.tm-play { width: 52px; height: 52px; background: var(--accent-green); color: var(--bg-card); box-shadow: 0 0 0 4px rgba(63, 185, 80, 0.14), 0 4px 16px rgba(63, 185, 80, 0.28); }
+.tm-play svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.tm-play:hover { background: var(--accent-green); color: var(--bg-card); filter: brightness(1.12); box-shadow: 0 0 0 5px rgba(63, 185, 80, 0.2), 0 6px 20px rgba(63, 185, 80, 0.4); }
 .tm-moment { display: grid; min-width: 140px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .tm-moment-time { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .tm-moment-date { font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); }
