@@ -80,9 +80,19 @@ function setMemberPhoto(img, url, alt, placeholder) {
 
 function setMemberProfileLink(el, url) {
     if (!el) return;
-    if (!url || url === '#') { el.href = '#'; el.textContent = '--'; return; }
+    const words = (t) => (globalThis.SourcePop && el.classList.contains('source-link') ? SourcePop.retext(el, t) : (el.textContent = t));
+    if (!url || url === '#') {
+        el.href = '#';
+        el.classList.remove('source-link', 'has-tail', 'ext');
+        delete el.dataset.tied;
+        el.textContent = '--';
+        return;
+    }
     el.href = url;
-    el.textContent = url.includes('congress.gov') ? 'View on Congress.gov →' : 'View profile →';
+    // the link-out arrow is the board's own (lib/source-pop.js), not a typed one
+    el.classList.add('ext');
+    if (!el.classList.contains('source-link')) { el.textContent = url.includes('congress.gov') ? 'View on Congress.gov' : 'View profile'; globalThis.SourcePop?.decorateExt(el.parentNode); }
+    else words(url.includes('congress.gov') ? 'View on Congress.gov' : 'View profile');
 }
 
 const DEBUG_LOG_ALLOW = [
@@ -6958,10 +6968,10 @@ function updateDebateSection(items) {
         if (!a) return;
         if (panel === 'amendments' && rulesSlug) {
             a.href = `https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}`;
-            a.textContent = 'House Rules Committee';
+            SourcePop.retext(a, 'House Rules Committee');
         } else {
             a.href = 'https://clerk.house.gov/FloorSummary';
-            a.textContent = 'Legislative Activity (House Clerk)';
+            SourcePop.retext(a, 'Legislative Activity (House Clerk)');
         }
     };
     if (elements.debatePanelNav) {
@@ -10378,7 +10388,7 @@ async function updateQuorumStatus() {
         const a = sourceLink(key);
         if (!a) return;
         const file = window.__captionsUrl || '';
-        a.textContent = on ? 'Captions' : CLERK_SOURCE.text;
+        SourcePop.retext(a, on ? 'Captions' : CLERK_SOURCE.text);
         a.href = on ? (file || 'https://live.house.gov') : CLERK_SOURCE.href;
         const section = document.getElementById(`${key}-section`);
         if (!section || !globalThis.SourcePop) return;
