@@ -7187,8 +7187,7 @@ function updatePrayerSection(items) {
                 ? _lastChaplainName : spoken;
             elements.prayerLeaderTitle.textContent = guest ? 'Guest Chaplain' : CHAMBER.chaplainTitle;
             elements.prayerLeaderName.textContent = named;
-            elements.prayerLeaderDescription.textContent =
-                'Announced on the floor. The Clerk\'s record follows in a few minutes.';
+            elements.prayerLeaderDescription.textContent = '';
             elements.prayerTime.textContent = window.__captionTime?.('prayer') || '';
             if (elements.prayerLeaderWebsite) {
                 elements.prayerLeaderWebsite.href = guest
@@ -7202,7 +7201,7 @@ function updatePrayerSection(items) {
             ? 'Prayer under way' : 'No Prayer Information';
         elements.prayerLeaderName.textContent = '--';
         elements.prayerLeaderDescription.textContent = live
-            ? 'Heard in the live captions. The Clerk\'s record follows in a few minutes.'
+            ? ''
             : 'No prayer information available in current proceedings.';
         elements.prayerTime.textContent = window.__captionTime?.('prayer') || '';
         if (elements.prayerLeaderWebsite) {
@@ -7665,7 +7664,7 @@ function updateSpeakerSection(items) {
             return;
         }
         elements.speakerMemberTitle.textContent = capLive
-            ? 'Announced on the floor' : 'No Speaker Pro Tempore Information';
+            ? 'Speaker Pro Tempore' : 'No Speaker Pro Tempore Information';
         elements.speakerMemberName.textContent = '--';
         elements.speakerPartyTag.textContent = '';
         elements.speakerMemberDetails.textContent = '';
