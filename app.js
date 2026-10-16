@@ -10304,7 +10304,7 @@ async function updateQuorumStatus() {
             const render = { speaker: typeof updateSpeakerSection === 'function' ? updateSpeakerSection : null,
                              prayer:  typeof updatePrayerSection  === 'function' ? updatePrayerSection  : null,
                              pledge:  typeof updatePledgeSection  === 'function' ? updatePledgeSection  : null }[ev.key];
-            if (render && typeof proceedingsData !== 'undefined' && proceedingsData?.length) render(proceedingsData);
+            if (render) render(typeof proceedingsData !== 'undefined' && proceedingsData ? proceedingsData : []);   // before the Clerk has anything, the panel still has the captions to show
         } catch (_) {}
     };
 
