@@ -4829,9 +4829,9 @@ async function handleCongressIndex() {
 }
 
 
-async function handleRollCall(rollNumber) {
+async function handleRollCall(rollNumber, year) {
   try {
-    const currentYear = new Date().getFullYear();
+    const currentYear = /^20\d\d$/.test(year || '') ? year : new Date().getFullYear();   // an earlier year for the time machine
     const rollUrl = `https://clerk.house.gov/evs/${currentYear}/roll${rollNumber}.xml`;
     const xmlText = await fetchRSSFeed(rollUrl);
     
@@ -6660,7 +6660,7 @@ const FIRESTORE_PROJECT = 'pacific-castle-135023';
 const FIRESTORE_RUN_QUERY = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`;
 
 // Generic Firestore query for a single-field-filtered ActivityFeeds collection.
-function whipFeedQuery({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
+function whipFeedQuery({ collectionId = 'ActivityFeeds', noticeType, limit = 10, before } = {}) {
   // Floor feed uses only the office filter; typed feeds add a 'type' field filter.
   const where = noticeType
     ? {
@@ -6674,10 +6674,14 @@ function whipFeedQuery({ collectionId = 'ActivityFeeds', noticeType, limit = 10 
       }
     : { fieldFilter: { field: { fieldPath: 'Office.id' }, op: 'EQUAL', value: { stringValue: 'C001101' } } };
 
+  // `before` (an ISO time) asks for what had been published by then: the Firestore collection keeps its history (back to at least 2023), it was only ever asked for the newest ten
+  const bounded = before
+    ? { compositeFilter: { op: 'AND', filters: [...(where.compositeFilter ? where.compositeFilter.filters : [where]), { fieldFilter: { field: { fieldPath: 'publishedAt' }, op: 'LESS_THAN_OR_EQUAL', value: { timestampValue: before } } }] } }
+    : where;
   const query = {
     structuredQuery: {
       from: [{ collectionId }],
-      where,
+      where: bounded,
       orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
       limit,
     },
@@ -6685,8 +6689,8 @@ function whipFeedQuery({ collectionId = 'ActivityFeeds', noticeType, limit = 10 
   return query;
 }
 
-async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit = 10 } = {}) {
-  const query = whipFeedQuery({ collectionId, noticeType, limit });
+async function queryWhipFeed({ collectionId = 'ActivityFeeds', noticeType, limit = 10, before } = {}) {
+  const query = whipFeedQuery({ collectionId, noticeType, limit, before });
   const resp = await fetch(FIRESTORE_RUN_QUERY, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -6744,7 +6748,18 @@ async function handleWhipSource(env) {
   });
 }
 
-async function handleWhipFloorUpdates(env) {
+async function handleWhipFloorUpdates(env, asof) {
+  // As of a past moment (the time machine): what the Whip had put out by then. A past day does not change, so it is kept a month.
+  if (asof && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(asof)) {
+    return kvCache(env, `whip-floor-asof-v1-${asof.slice(0, 13)}`, 3600, async () => {
+      try {
+        const raw = await queryWhipFeed({ limit: 60, before: asof });
+        return new Response(JSON.stringify({ items: raw.map((it) => ({ ...it, noticeType: 'floor' })) }), { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=3600' } });
+      } catch (err) {
+        return new Response(JSON.stringify({ items: [], error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
+      }
+    }, 30 * 86400);
+  }
   // In-memory 60s (fast path); KV freshness 5 min — floor updates can arrive during
   // active session but rarely faster than once a minute.
   return kvCache(env, 'whip-floor-updates-v1', 60, async () => {
@@ -6771,12 +6786,13 @@ async function handleWhipFloorUpdates(env) {
 //   postedAt    → publishedAt
 //   sourceText  → body        (HTML)
 //   publishDate used to construct a display title
-async function handleWhipNoticesFeed(env) {
+async function handleWhipNoticesFeed(env, asof) {
+  const cursor = asof && /^\d{4}-\d\d-\d\d(T[\d:.]+Z)?$/.test(asof) ? asof : null;   // as of a past day (the time machine): DomeWatch pages back by `cursor`
   // In-memory 60s (fast path); KV freshness 10 min — notices post a few times daily;
   // cold isolates can safely re-use KV for up to 10 min before re-fetching DomeWatch.
-  return kvCache(env, 'whip-notices-feed-v1', 60, async () => {
+  return kvCache(env, cursor ? `whip-notices-asof-v1-${cursor.slice(0, 10)}` : 'whip-notices-feed-v1', cursor ? 3600 : 60, async () => {
     try {
-      const resp = await fetch('https://data.domewatch.us/v1/whip-notices?limit=8', {
+      const resp = await fetch(`https://data.domewatch.us/v1/whip-notices?limit=${cursor ? 14 : 8}${cursor ? `&cursor=${cursor}` : ''}`, {
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(8000),
       });
@@ -6815,7 +6831,7 @@ async function handleWhipNoticesFeed(env) {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
       });
     }
-  }, 60 * 60); // kvFreshTtl=60 min — cold isolates re-use KV for up to 1 hour before re-fetching
+  }, cursor ? 30 * 86400 : 60 * 60); // kvFreshTtl=60 min — cold isolates re-use KV for up to 1 hour before re-fetching (a past day: a month)
 }
 
 // ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────
@@ -7091,9 +7107,9 @@ async function handleRequest(request, env) {
   } else if (path === '/api/rules' && request.method === 'GET') {
     return await handleRules(request, env);
   } else if (path === '/api/whip-floor-updates' && request.method === 'GET') {
-    return await handleWhipFloorUpdates(env);
+    return await handleWhipFloorUpdates(env, url.searchParams.get('asof'));
   } else if (path === '/api/whip-notices-feed' && request.method === 'GET') {
-    return await handleWhipNoticesFeed(env);
+    return await handleWhipNoticesFeed(env, url.searchParams.get('asof'));
   } else if (path === '/api/whip-notices-raw' && request.method === 'GET') {
     return await handleWhipNoticesRaw(env);
   } else if (path === '/api/whip-notices' && request.method === 'GET') {
@@ -7238,7 +7254,7 @@ async function handleRequest(request, env) {
     if (!/^\d{1,6}$/.test(rollNumber)) {
       return new Response('Bad request', { status: 400, headers: CORS_HEADERS });
     }
-    return await handleRollCall(rollNumber);
+    return await handleRollCall(rollNumber, url.searchParams.get('year'));
   } else if (path === '/api/status' && request.method === 'GET') {
     return handleSourceStatus(env);
   } else if (path === '/api/health' && request.method === 'GET') {
