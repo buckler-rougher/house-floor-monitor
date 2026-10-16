@@ -12937,13 +12937,17 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-seg, .tm-vote { transition: opacity .3s ease, filter .3s ease, background-color .3s ease; }
 @media (prefers-reduced-motion: reduce) { .tm-seg, .tm-vote { transition: none; } }
 
-/* the kind filter is the board's shared filter control (`.bills-sort-switcher`): each option's text is its own colour, and the one chosen takes a wash of that colour, the way the shared control washes blue */
+/* the kind filter is the board's shared filter control (`.bills-sort-switcher`): each option's text is its own colour, washed out until chosen (full colour, and a wash of it behind, when it is); ALL stays white and grey */
 .tm-kinds { flex-wrap: wrap; }
-.tm-kinds .bills-sort-btn[data-kind="debate"] { color: var(--accent-green); }
-.tm-kinds .bills-sort-btn[data-kind="vote"] { color: var(--accent-blue); }
-.tm-kinds .bills-sort-btn[data-kind="speech"] { color: var(--accent-yellow); }
-.tm-kinds .bills-sort-btn[data-kind="other"] { color: var(--tm-other); }
-.tm-kinds .bills-sort-btn[data-kind="debate"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="vote"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="speech"]:hover:not(.active), .tm-kinds .bills-sort-btn[data-kind="other"]:hover:not(.active) { color: inherit; filter: brightness(1.15); }
+.tm-kinds .bills-sort-btn[data-kind="all"].active { color: var(--text-primary); background: rgba(255, 255, 255, 0.1); }
+.tm-kinds .bills-sort-btn[data-kind="debate"] { color: color-mix(in srgb, var(--accent-green) 60%, var(--text-muted)); }
+.tm-kinds .bills-sort-btn[data-kind="vote"] { color: color-mix(in srgb, var(--accent-blue) 60%, var(--text-muted)); }
+.tm-kinds .bills-sort-btn[data-kind="speech"] { color: color-mix(in srgb, var(--accent-yellow) 60%, var(--text-muted)); }
+.tm-kinds .bills-sort-btn[data-kind="other"] { color: color-mix(in srgb, var(--tm-other) 60%, var(--text-muted)); }
+.tm-kinds .bills-sort-btn[data-kind="debate"]:hover:not(.active) { color: var(--accent-green); }
+.tm-kinds .bills-sort-btn[data-kind="vote"]:hover:not(.active) { color: var(--accent-blue); }
+.tm-kinds .bills-sort-btn[data-kind="speech"]:hover:not(.active) { color: var(--accent-yellow); }
+.tm-kinds .bills-sort-btn[data-kind="other"]:hover:not(.active) { color: var(--tm-other); }
 .tm-kinds .bills-sort-btn[data-kind="debate"].active { color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 14%, transparent); }
 .tm-kinds .bills-sort-btn[data-kind="vote"].active { color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 14%, transparent); }
 .tm-kinds .bills-sort-btn[data-kind="speech"].active { color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }
