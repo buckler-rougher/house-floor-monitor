@@ -10360,7 +10360,7 @@ async function updateQuorumStatus() {
         for (const block of vtt.split(/\r?\n\r?\n/)) {
             const lines = block.split(/\r?\n/); const at = lines.findIndex((l) => l.includes('-->'));
             if (at < 0) continue;
-            cues.push({ time: lines[at].trim(), text: COLLAPSE(lines.slice(at + 1).join(' ').replace(/^UNIDENTIFIED SPEAKER:\s*/i, '')) });
+            cues.push({ time: lines[at].trim(), raw: lines.slice(at + 1).join('\n').trim(), text: COLLAPSE(lines.slice(at + 1).join(' ').replace(/^UNIDENTIFIED SPEAKER:\s*/i, '')) });
         }
         let joined = '', marks = [];
         for (const c of cues) { marks.push(joined.length); joined += c.text + ' '; }
@@ -10370,7 +10370,9 @@ async function updateQuorumStatus() {
         if (from < 0) return null;
         const idx = (pos) => { let k = 0; while (k + 1 < marks.length && marks[k + 1] <= pos) k++; return k; };
         const a = idx(from), z = idx(from + len - 1);
-        return `${cues[a].time.split('-->')[0].trim()} --> ${cues[z].time.split('-->')[1].trim().split(' ')[0]}`;
+        // the cues the words are in, with the one before and the one after, laid out as the file has them
+        const raw = (c) => `${c.time}\n${c.raw}`;
+        return cues.slice(Math.max(0, a - 1), z + 2).map(raw).join('\n\n');
     }
     const showCaptionSource = (key, on, heard, at, phrase) => {
         const a = sourceLink(key);
@@ -10383,8 +10385,7 @@ async function updateQuorumStatus() {
         const manifest = (cue) => ({
             title: 'What the captions said',
             request: file ? `GET ${file}` : 'House floor video, caption track (CEA-608)',
-            json: cue ? { heardAt: at, cue, text: heard } : { heardAt: at, text: heard },
-            note: 'Read from the video before the Clerk\'s entry is published. The Clerk\'s entry replaces this when it arrives.',
+            ...(cue ? { vtt: cue } : { json: { heardAt: at, text: heard } }),
         });
         SourcePop.set(section, on ? manifest(null) : null);
         if (on && file) cueOf(file, heard, phrase).then((cue) => { if (cue && state.get(key) && !el(key).hidden) SourcePop.set(section, manifest(cue)); }).catch(() => {});
