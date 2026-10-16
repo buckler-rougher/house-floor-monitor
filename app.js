@@ -9066,6 +9066,7 @@ function updateSourceManifest(mode) {
     if (!spec) return;
     const section = document.getElementById(spec[1]);
     if (!section) return;
+    if (window.__captionLive?.(mode)) return;   // the captions' own manifest is up (see the morning-business block)
     const list = proceedingsData || [];
     const at = list.findIndex((i) => spec[0].test((i.description || '').replace(/<[^>]+>/g, '').trim()));
     if (at < 0) { SourcePop.set(section, null); return; }
@@ -10350,11 +10351,20 @@ async function updateQuorumStatus() {
     const stamp = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
     const sourceLink = (key) => document.querySelector(`.${key}-source a`);
     const CLERK_SOURCE = { text: 'Legislative Activity (House Clerk)', href: 'https://clerk.house.gov/FloorSummary' };
-    const showCaptionSource = (key, on) => {
+    // The words the captions gave, as the source manifest every other panel has (lib/source-pop.js), so "Captions" can be opened and read.
+    const showCaptionSource = (key, on, heard, at) => {
         const a = sourceLink(key);
         if (!a) return;
         a.textContent = on ? 'Captions' : CLERK_SOURCE.text;
         a.href = on ? 'https://live.house.gov' : CLERK_SOURCE.href;
+        const section = document.getElementById(`${key}-section`);
+        if (!section || !globalThis.SourcePop) return;
+        SourcePop.set(section, on ? {
+            title: 'What the captions said',
+            request: 'House floor video, caption track (CEA-608)',
+            json: { heardAt: at, text: heard },
+            note: 'Read from the video before the Clerk\'s entry is published. The Clerk\'s entry replaces this when it arrives.',
+        } : null);
     };
     const clerkReported = (key) => {
         const t = document.getElementById(`${key}-time`);
@@ -10388,7 +10398,9 @@ async function updateQuorumStatus() {
                 state.set(ev.key, { firedAt: now, time: stamp(now) });
                 const tm = document.getElementById(`${ev.key}-time`);
                 if (tm) tm.textContent = stamp(now);
-                showCaptionSource(ev.key, true);
+                const hit = ev.re.exec(text);
+                const heard = text.slice(Math.max(0, hit.index - 80), hit.index + hit[0].length + 120).replace(/\s+/g, ' ').trim();
+                showCaptionSource(ev.key, true, heard, stamp(now));
                 node.hidden = false;
                 revealSection(ev);
                 continue;
@@ -10397,6 +10409,7 @@ async function updateQuorumStatus() {
                 if (clerkReported(ev.key) || now - seen.firedAt > MAX_VISIBLE_MS) {
                     node.hidden = true;
                     showCaptionSource(ev.key, false);
+                    try { updateSourceManifest(ev.mode); } catch (_) {}   // the Clerk's entry takes the manifest back
                     const tm = document.getElementById(`${ev.key}-time`);
                     if (tm && tm.textContent.trim() === seen.time) tm.textContent = '';
                 }
