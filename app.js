@@ -10352,19 +10352,42 @@ async function updateQuorumStatus() {
     const sourceLink = (key) => document.querySelector(`.${key}-source a`);
     const CLERK_SOURCE = { text: 'Legislative Activity (House Clerk)', href: 'https://clerk.house.gov/FloorSummary' };
     // The words the captions gave, as the source manifest every other panel has (lib/source-pop.js), so "Captions" can be opened and read.
-    const showCaptionSource = (key, on, heard, at) => {
+    // It names the caption file the words are in (captions.vtt beside the stream's playlist) and the cue they sit in, as that file writes it.
+    const COLLAPSE = (x) => String(x).replace(/\s+/g, ' ').trim().toUpperCase();
+    async function cueOf(url, heard, phrase) {
+        const vtt = await (await fetch(url)).text();
+        const cues = [];
+        for (const block of vtt.split(/\r?\n\r?\n/)) {
+            const lines = block.split(/\r?\n/); const at = lines.findIndex((l) => l.includes('-->'));
+            if (at < 0) continue;
+            cues.push({ time: lines[at].trim(), text: COLLAPSE(lines.slice(at + 1).join(' ').replace(/^UNIDENTIFIED SPEAKER:\s*/i, '')) });
+        }
+        let joined = '', marks = [];
+        for (const c of cues) { marks.push(joined.length); joined += c.text + ' '; }
+        let from = joined.lastIndexOf(COLLAPSE(heard));
+        let len = COLLAPSE(heard).length;
+        if (from < 0) { from = joined.lastIndexOf(COLLAPSE(phrase)); len = COLLAPSE(phrase).length; }
+        if (from < 0) return null;
+        const idx = (pos) => { let k = 0; while (k + 1 < marks.length && marks[k + 1] <= pos) k++; return k; };
+        const a = idx(from), z = idx(from + len - 1);
+        return `${cues[a].time.split('-->')[0].trim()} --> ${cues[z].time.split('-->')[1].trim().split(' ')[0]}`;
+    }
+    const showCaptionSource = (key, on, heard, at, phrase) => {
         const a = sourceLink(key);
         if (!a) return;
+        const file = window.__captionsUrl || '';
         a.textContent = on ? 'Captions' : CLERK_SOURCE.text;
-        a.href = on ? 'https://live.house.gov' : CLERK_SOURCE.href;
+        a.href = on ? (file || 'https://live.house.gov') : CLERK_SOURCE.href;
         const section = document.getElementById(`${key}-section`);
         if (!section || !globalThis.SourcePop) return;
-        SourcePop.set(section, on ? {
+        const manifest = (cue) => ({
             title: 'What the captions said',
-            request: 'House floor video, caption track (CEA-608)',
-            json: { heardAt: at, text: heard },
+            request: file ? `GET ${file}` : 'House floor video, caption track (CEA-608)',
+            json: cue ? { heardAt: at, cue, text: heard } : { heardAt: at, text: heard },
             note: 'Read from the video before the Clerk\'s entry is published. The Clerk\'s entry replaces this when it arrives.',
-        } : null);
+        });
+        SourcePop.set(section, on ? manifest(null) : null);
+        if (on && file) cueOf(file, heard, phrase).then((cue) => { if (cue && state.get(key) && !el(key).hidden) SourcePop.set(section, manifest(cue)); }).catch(() => {});
     };
     const clerkReported = (key) => {
         const t = document.getElementById(`${key}-time`);
@@ -10400,7 +10423,7 @@ async function updateQuorumStatus() {
                 if (tm) tm.textContent = stamp(now);
                 const hit = ev.re.exec(text);
                 const heard = text.slice(Math.max(0, hit.index - 80), hit.index + hit[0].length + 120).replace(/\s+/g, ' ').trim();
-                showCaptionSource(ev.key, true, heard, stamp(now));
+                showCaptionSource(ev.key, true, heard, stamp(now), hit[0]);
                 node.hidden = false;
                 revealSection(ev);
                 continue;
