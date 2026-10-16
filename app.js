@@ -2150,15 +2150,15 @@ function renderWhipFilterDropdown() {
     const presentTypes = [...new Set(whipFloorItems.map(it => (it.noticeType || 'floor').toLowerCase()))];
     const allTypes = ['floor', 'daily', 'nightly', 'weekly'].filter(t => presentTypes.includes(t));
 
+    // The shared filter control (`.bills-sort-switcher`), each option in its notice type's own colour (`data-tone`): washed out until chosen
     const chips = [
-        `<button class="whip-filter-chip whip-type-all${whipNoticeFilter === null ? ' active' : ''}" data-filter-type="all">ALL</button>`,
+        `<button class="bills-sort-btn${whipNoticeFilter === null ? ' active' : ''}" data-filter-type="all" data-tone="all">ALL</button>`,
         ...allTypes.map(t => {
             const label = WHIP_NOTICE_TYPE_LABEL[t] || t.toUpperCase();
-            const isActive = whipNoticeFilter === t;
-            return `<button class="whip-filter-chip whip-type-${t}${isActive ? ' active' : ''}" data-filter-type="${t}">${label}</button>`;
+            return `<button class="bills-sort-btn${whipNoticeFilter === t ? ' active' : ''}" data-filter-type="${t}" data-tone="${t}">${label}</button>`;
         }),
     ];
-    dropdown.innerHTML = `<div class="whip-filter-inner">${chips.join('')}</div>`;
+    dropdown.innerHTML = `<div class="whip-filter-inner"><div class="bills-sort-switcher tone-switcher">${chips.join('')}</div></div>`;
     dropdown.hidden = false;
 }
 
