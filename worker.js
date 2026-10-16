@@ -6300,8 +6300,11 @@ async function handleReplayDay(request, env) {
 // by separate requests (a request may hold only six connections open) and each answer is kept per day: a day that has a recording always will, and a day with
 // none answers in a moment, while a day the Clerk's API has no record of keeps it waiting until it gives up, so the wait is capped.
 async function probeReplayDay(env, id, today) {
-  const key = `replay-probe-v2-${id}`;
-  try { const raw = await env?.HLS_CACHE?.get(key); if (raw) return JSON.parse(raw); } catch {}
+  // Kept in the colo's cache, not in KV: the picker probes a month at a time, and a year of days in KV is hundreds of writes against a free cap of 1,000 a day
+  // that the live board shares (16 October: 275 writes in an hour from browsing months).
+  const key = new Request(`https://replay-probe.invalid/v2/${id}`);
+  const store = typeof caches !== 'undefined' ? caches.default : null;
+  try { const hit = store && await store.match(key); if (hit) return await hit.json(); } catch {}
   let out = { has: false }, slow = false;
   try {
     const resp = await fetch(`https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${id}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(4000) });
@@ -6314,7 +6317,7 @@ async function probeReplayDay(env, id, today) {
   } catch { slow = true; }
   // today and yesterday may simply not be posted yet; a timeout is retried within the week
   const ttl = id >= prevDayId(today) ? 900 : slow ? 7 * 86400 : 365 * 86400;
-  try { await env?.HLS_CACHE?.put(key, JSON.stringify(out), { expirationTtl: ttl }); } catch {}
+  try { if (store) await store.put(key, new Response(JSON.stringify(out), { headers: { 'Cache-Control': `public, max-age=${ttl}` } })); } catch {}
   return out;
 }
 const prevDayId = (id) => { const d = new Date(Date.UTC(+id.slice(0, 4), +id.slice(4, 6) - 1, +id.slice(6, 8) - 1)); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
