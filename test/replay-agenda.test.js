@@ -42,6 +42,11 @@ ok('a joint resolution is a measure, not a rule; a title goes to the measure nam
   assert.ok(senate && !/Fraud Enforcement/.test(senate.title), 'H. Res. 1530 and H.R. 5334 are in one entry; the title in the next entry is not theirs');
 });
 
+ok('a debate that ended by voice vote says so; one settled by a roll call does not', () => {
+  assert.strictEqual(by(/^H\.R\. 1342/).voice, true);
+  assert.strictEqual(by(/^H\.R\. 9576/).voice, false);
+});
+
 ok('a roll call no debate accounts for is a row of its own', () => {
   const x = rows.find((y) => y.kind === 'vote');
   assert.ok(x && x.vote && /9340/.test(x.title));
