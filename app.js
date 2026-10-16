@@ -7770,15 +7770,16 @@ const PRIVILEGE_KINDS = {
         empty: 'A Member has risen to a question of the privileges of the House.',
         pills: ['Privileged resolution', 'Takes precedence over pending business'],
     },
-    // Not a mode of its own: a Member gives notice that they will offer a privileged resolution (it can be offered after two legislative days),
-    // which is the nearest thing the board has to the question of the privileges of the House, so it is shown there under its own heading.
+    // Not a mode of its own: a Member gives notice that they will offer a privileged resolution, which is the nearest thing the board has to the
+    // question of the privileges of the House, so it is shown there under its own heading. No pills: CRS 98-411 (v12) says nothing about the notice,
+    // so nothing is claimed beyond the Clerk's own wording.
     notice: {
         mode: 'house-privilege',
         help: 'privileges-of-the-house',
         tag: 'NOTICE OF PRIVILEGED RESOLUTION',
         match: /^NOTIFICATION\s+OF\s+INTENT\s+TO\s+OFFER\b/i,
         empty: 'A Member has given notice of a privileged resolution.',
-        pills: ['Notice only', 'Can be offered after two legislative days'],
+        pills: [],
         noResolution: true,
     },
 };
