@@ -12599,7 +12599,9 @@ a.source-link:not(.has-manifest):is(:hover, :focus-visible) .source-tail::after 
 /* Every source link, the CRS reports in the explanations' notes included: flat, underlined when hovered or focused. One that opens a popover (the caret) is a control, not a link
    out, and is never underlined. This is the only place a source link is underlined; the panels no longer carry a copy each. */
 a.source-link { text-decoration: none; }
-a.source-link:not(.has-manifest):is(:hover, :focus-visible) { text-decoration: underline; }
+/* A link out that is drawn as a button (the bill modal's View ... links, the amendment PDF button, the tweet's open icon) keeps its arrow but is not underlined: a button's own
+   hover is its border and fill. */
+a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.tweet-ext-link):is(:hover, :focus-visible) { text-decoration: underline; }
 .source-pop {
     position: fixed;
     z-index: 1250;
