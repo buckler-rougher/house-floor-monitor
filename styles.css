@@ -2590,6 +2590,8 @@ body.tellers-mode .tellers-column { display: flex; }
   font: inherit;
   color: var(--accent-blue);
   cursor: pointer;
+}
+a.proc-bill-link {
   text-decoration: underline;
   text-underline-offset: 2px;
   text-decoration-color: rgba(88, 166, 255, 0.35);
@@ -6638,7 +6640,8 @@ font-family: var(--font-mono);
     cursor: pointer;
     transition: color var(--dur-120);
 }
-.amdt-member-btn:hover { color: var(--text-primary); text-decoration: underline; }
+.amdt-member-btn { border-radius: var(--radius-3); padding: 0 var(--sp-4); margin: 0 calc(var(--sp-4) * -1); transition: background var(--dur-120), color var(--dur-120); }
+.amdt-member-btn:hover, .amdt-member-btn:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); }
 .amdt-member-btn.active { color: var(--accent-blue); font-weight: 600; }
 
 .amdt-pdf-cell {
@@ -12386,19 +12389,28 @@ html.ai-off .ai-block:not(.is-plain) { display: none !important; }   /* a summar
 button.site-footer-license {
     background: none;
     border: 0;
-    padding: 0;
+    padding: var(--sp-2) var(--sp-8);
+    margin-left: calc(var(--sp-8) * -1);   /* the words stay in line with the links above and below */
+    border-radius: var(--radius-3);
     cursor: pointer;
+    transition: background var(--dur-120), color var(--dur-120);
 }
+button.site-footer-license:hover, button.site-footer-license:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 /* Hidden with its panel's explanation, the split (?) on a bill link leaves the button square on that side. */
 html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
     border-bottom-right-radius: var(--radius-6);
 }
 
+/* A button that is only text (hide AI summaries, witnesses and documents, the footer's AI switch, an amendment's sponsor filter) gets a fill when pointed at and never an underline:
+   an underline says link. The fill is the close X's. */
+.committee-more:hover, .committee-more:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
+
 /* Links inside the board that open a modal (a bill number): the underline is drawn left to right when hovered and erased left to right when left, along every row of a link
    that wraps. The method is the CDN's underlines.js: the line is the link's own background, which an inline box lays out end to end across its rows, so one animation runs
    along the first row and on to the next; the anchor jumps to the right edge when the line is full width, so it leaves from the left. External links do not animate. */
 .bill-open,
+button.proc-bill-link,
 .vrec-row-label.clickable {
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
@@ -12408,12 +12420,13 @@ html.ai-off .bill-link-group > .bill-modal-link {
     transition: background-size 0.4s cubic-bezier(0.75, 0, 0.25, 1), color var(--dur-120);
 }
 .bill-open:is(:hover, :focus-visible),
+button.proc-bill-link:is(:hover, :focus-visible),
 .vrec-row-label.clickable:is(:hover, :focus-visible) {
     background-size: 100% 1px;
     background-position: 0 100%;
 }
 @media (prefers-reduced-motion: reduce) {
-    .bill-open, .vrec-row-label.clickable { transition: none; }
+    .bill-open, button.proc-bill-link, .vrec-row-label.clickable { transition: none; }
 }
 
 /* The beta notice at the top of the Senate board. */
@@ -12685,8 +12698,7 @@ body.recess-mode .today-house.has-data { display: block; }
 .committee-title { color: var(--text-primary); font-size: var(--fs-md); line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
 .committee-title:hover { text-decoration: underline; }
 .committee-name { font-size: var(--fs-sm); color: var(--text-muted); }
-.committee-more { justify-self: start; text-align: left; margin-top: var(--sp-4); padding: 0; background: none; border: none; font: inherit; font-size: var(--fs-sm); color: var(--accent-blue); cursor: pointer; }
-.committee-more:hover { text-decoration: underline; }
+.committee-more { justify-self: start; text-align: left; margin: var(--sp-2) 0 0 calc(var(--sp-8) * -1); padding: var(--sp-4) var(--sp-8); background: none; border: none; border-radius: var(--radius-3); font: inherit; font-size: var(--fs-sm); color: var(--text-secondary); cursor: pointer; transition: background var(--dur-120), color var(--dur-120); }
 .committee-detail { grid-column: 2 / -1; display: grid; gap: var(--sp-6); padding-top: var(--sp-4); }
 .committee-detail-head { margin-top: var(--sp-6); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
 .committee-detail-note { font-size: var(--fs-sm); color: var(--text-muted); }
