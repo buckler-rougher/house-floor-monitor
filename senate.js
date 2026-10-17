@@ -1148,9 +1148,9 @@ function nominationModalContent(n, id, vote) {
         </div>` : '';
 
     const links = [
-        vote?.url ? `<a href="${escapeHtml(vote.url)}" class="bill-modal-link senate" target="_blank" rel="noopener">Roll call vote</a>` : '',
-        hearing && hearing.video ? `<a href="${escapeHtml(hearing.video)}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing video</a>` : '',
-        hearing ? `<a href="${escapeHtml(hearing.url)}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing on Congress.gov</a>` : '',
+        vote?.url ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(vote.url))}" class="bill-modal-link senate" target="_blank" rel="noopener">Roll call vote</a>` : '',
+        hearing && hearing.video ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(hearing.video))}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing video</a>` : '',
+        hearing ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(hearing.url))}" class="bill-modal-link senate ext" target="_blank" rel="noopener">Hearing on Congress.gov</a>` : '',
     ].filter(Boolean).join('');
 
     return `
@@ -1176,7 +1176,7 @@ function nominationModalContent(n, id, vote) {
                         <div class="bill-modal-section-label">RESOURCES</div>
                         <div class="bill-doc-links">${links}</div>
                     </div>
-                    <div class="bill-modal-source">Source: <a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" target="_blank" rel="noopener">Nominations (Senate)</a>${hearing ? ` · Hearing: <a href="${escapeHtml(hearing.url)}" target="_blank" rel="noopener">Committee Meetings (Congress.gov)</a>` : ''}</div>
+                    <div class="bill-modal-source">Source: <a href="https://www.senate.gov/general/common/generic/XML_Availability.htm" target="_blank" rel="noopener">Nominations (Senate)</a>${hearing ? ` · Hearing: <a href="${escapeHtml(globalThis.BoardUtil.safeHref(hearing.url))}" target="_blank" rel="noopener">Committee Meetings (Congress.gov)</a>` : ''}</div>
                 </div>
             </div>
         </div>`;

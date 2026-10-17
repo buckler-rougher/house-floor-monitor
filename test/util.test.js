@@ -93,4 +93,9 @@ test('show hides the node with no target and shows it with one', () => {
   SC.show(null, new Date());                 // a missing node is not an error
 });
 
+test('safeHref lets http, https, mailto and relative addresses through and nothing a browser would run', () => {
+  for (const ok of ['https://ok.example/x?a=1', 'http://ok.example', 'mailto:a@b.example', '/legal', 'legal.html', '//cdn.example/x', '#top', ' https://ok.example ']) assert.strictEqual(U.safeHref(ok), ok.trim(), ok);
+  for (const bad of ['javascript:alert(1)', ' JaVaScRiPt:alert(1)', 'jav\tascript:alert(1)', 'java\nscript:alert(1)', 'jav&#x09;ascript:alert(1)'.replace('&#x09;', '\t'), 'data:text/html,<script>1</script>', 'vbscript:x', 'file:///etc/passwd', 'blob:https://x/1', '', null, undefined]) assert.strictEqual(U.safeHref(bad), '', String(bad));
+});
+
 console.log(`\n${n} passed`);

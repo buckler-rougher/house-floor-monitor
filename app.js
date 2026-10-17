@@ -3086,9 +3086,9 @@ function renderVoteTimeline(items) {
         // Amendment-vote items (e.g. "Boebert #1") carry no billId of their own (see
         // parseVoteItemsFromHtml) but amdtBillId links to the bill's Amendments tab,
         // narrowed to the exact amendment (or en bloc group) via amdtNum/amdtEnBlocNums.
-        const amdtArgs = `${amdtNum != null ? amdtNum : 'null'}, ${amdtEnBlocNums ? JSON.stringify(amdtEnBlocNums) : 'null'}`;
-        const clickAttr = billId ? ` onclick="openBillModal('${escapeHtml(billId)}')"`
-                         : amdtBillId ? ` onclick="openBillModalToAmendments('${escapeHtml(amdtBillId)}', ${amdtArgs})"`
+        const amdtArgs = [amdtBillId, amdtNum != null ? amdtNum : null, amdtEnBlocNums || null];
+        const clickAttr = billId ? ` data-act="openBillModal" data-args="${escapeHtml(JSON.stringify([billId]))}"`
+                         : amdtBillId ? ` data-act="openBillModalToAmendments" data-args="${escapeHtml(JSON.stringify(amdtArgs))}"`
                          : '';
         return `
             <div class="vote-tl-item${extraClass}"${billAttr}${actionAttr}>
@@ -3260,10 +3260,10 @@ function renderVoteRecsPrefs() {
         return `<div class="vrec-pref-row">
             <span class="vrec-pref-label">${label}</span>
             <div class="bills-sort-switcher" data-pref-key="${k}">
-                <button class="bills-sort-btn${cls('null')}"    data-pref-val="null"    onclick="setVrecPref('${k}',null)"     >—</button>
-                <button class="bills-sort-btn${cls('YES')}"     data-pref-val="YES"     onclick="setVrecPref('${k}','YES')"    >Yes</button>
-                <button class="bills-sort-btn${cls('NO')}"      data-pref-val="NO"      onclick="setVrecPref('${k}','NO')"     >No</button>
-                <button class="bills-sort-btn${cls('PRESENT')}" data-pref-val="PRESENT" onclick="setVrecPref('${k}','PRESENT')">Pres</button>
+                <button class="bills-sort-btn${cls('null')}"    data-pref-val="null"    data-act="setVrecPref" data-args="${escapeHtml(JSON.stringify([prefKey,null]))}" >—</button>
+                <button class="bills-sort-btn${cls('YES')}"     data-pref-val="YES"     data-act="setVrecPref" data-args="${escapeHtml(JSON.stringify([prefKey,"YES"]))}" >Yes</button>
+                <button class="bills-sort-btn${cls('NO')}"      data-pref-val="NO"      data-act="setVrecPref" data-args="${escapeHtml(JSON.stringify([prefKey,"NO"]))}" >No</button>
+                <button class="bills-sort-btn${cls('PRESENT')}" data-pref-val="PRESENT" data-act="setVrecPref" data-args="${escapeHtml(JSON.stringify([prefKey,"PRESENT"]))}" >Pres</button>
             </div>
         </div>`;
     }
@@ -3276,9 +3276,9 @@ function renderVoteRecsPrefs() {
         <div class="vrec-follow-whip-row">
             <span class="vrec-pref-label">Dem Whip</span>
             <div class="bills-sort-switcher" data-pref-key="followWhip">
-                <button class="bills-sort-btn${fwCls('null')}"   data-pref-val="null"   onclick="setVrecPref('followWhip',null)"     >—</button>
-                <button class="bills-sort-btn${fwCls('follow')}" data-pref-val="follow" onclick="setVrecPref('followWhip','follow')" >Follow</button>
-                <button class="bills-sort-btn${fwCls('oppose')}" data-pref-val="oppose" onclick="setVrecPref('followWhip','oppose')" >Oppose</button>
+                <button class="bills-sort-btn${fwCls('null')}"   data-pref-val="null"   data-act="setVrecPref" data-args='["followWhip",null]' >—</button>
+                <button class="bills-sort-btn${fwCls('follow')}" data-pref-val="follow" data-act="setVrecPref" data-args='["followWhip","follow"]' >Follow</button>
+                <button class="bills-sort-btn${fwCls('oppose')}" data-pref-val="oppose" data-act="setVrecPref" data-args='["followWhip","oppose"]' >Oppose</button>
             </div>
         </div>
         ${prefToggle('pq',           'Previous Question')}
@@ -3337,7 +3337,7 @@ function renderVoteRecsRows() {
         const safeKey = escapeHtml(key);
         // Label is clickable if there's a bill to look up
         const labelEl = billId
-            ? `<button class="vrec-row-label clickable" onclick="openBillModal('${escapeHtml(billId)}')">${escapeHtml(label)}</button>`
+            ? `<button class="vrec-row-label clickable" data-act="openBillModal" data-args="${escapeHtml(JSON.stringify([billId]))}">${escapeHtml(label)}</button>`
             : `<span class="vrec-row-label">${escapeHtml(label)}</span>`;
         // data-sel on the container drives the CSS highlight — no sel-* classes needed
         return `<div class="vrec-row" data-vrec-key="${safeKey}">
@@ -3347,14 +3347,14 @@ function renderVoteRecsRows() {
                 ${whipChip}
             </div>
             <div class="vrec-vote-btns" data-sel="${escapeHtml(entry.vote || '')}">
-                <button class="vrec-vote-btn" data-vote="YES"     onclick="setVoteRec('${safeKey}','YES')">YES</button>
-                <button class="vrec-vote-btn" data-vote="NO"      onclick="setVoteRec('${safeKey}','NO')">NO</button>
-                <button class="vrec-vote-btn" data-vote="PRESENT" onclick="setVoteRec('${safeKey}','PRESENT')">PRESENT</button>
-                <button class="vrec-vote-btn" data-vote=""        onclick="setVoteRec('${safeKey}',null)" aria-label="No recommendation" title="No recommendation">—</button>
+                <button class="vrec-vote-btn" data-vote="YES"     data-act="setVoteRec" data-args="${escapeHtml(JSON.stringify([key,"YES"]))}">YES</button>
+                <button class="vrec-vote-btn" data-vote="NO"      data-act="setVoteRec" data-args="${escapeHtml(JSON.stringify([key,"NO"]))}">NO</button>
+                <button class="vrec-vote-btn" data-vote="PRESENT" data-act="setVoteRec" data-args="${escapeHtml(JSON.stringify([key,"PRESENT"]))}">PRESENT</button>
+                <button class="vrec-vote-btn" data-vote=""        data-act="setVoteRec" data-args="${escapeHtml(JSON.stringify([key,null]))}" aria-label="No recommendation" title="No recommendation">—</button>
             </div>
             <input class="vrec-note-input" type="text" placeholder="Note (optional)"
                 value="${escapeHtml(entry.note || '')}"
-                oninput="setVoteRecNote('${safeKey}', this.value)">
+                data-act-input="setVoteRecNote" data-args="${escapeHtml(JSON.stringify([key]))}">
         </div>`;
     }).join('');
     updateVrecCount();
@@ -4616,7 +4616,7 @@ function createBillCard(bill, procedure) {
         const mtrHelpKey = (InfoPopup.has('motion-to-recommit') || inFixtures()) ? 'motion-to-recommit' : null;
         const mtrIcon = StatusMarks.chip(mtr.status);
         mtrBlockHtml = `
-        <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}" role="button" tabindex="0">
+        <div class="mtr-card mtr-${mtr.status}" data-bill-id="${bill.id}">
             <span class="mtr-circle" aria-hidden="true">${mtrIcon}</span>
             <span class="mtr-label">${mtrLabel}</span>${mtrHelpKey ? helpButtonHtml(mtrHelpKey, 'About the motion to recommit', 'mtr-help') : ''}
         </div>
@@ -4780,9 +4780,9 @@ function openBillModal(billId) {
     const congressUrl = billIdToCongressUrl(bill.id);
     let actionSourceHtml = '';
     if (bill.actionSource === 'bluesky' && bill.actionSourceUrl) {
-        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">Bluesky</a>`;
+        actionSourceHtml = ` <a href="${escapeHtml(globalThis.BoardUtil.safeHref(bill.actionSourceUrl))}" class="bill-modal-source-link" target="_blank" rel="noopener">Bluesky</a>`;
     } else if (bill.actionSource === 'proceedings' && bill.actionSourceUrl) {
-        actionSourceHtml = ` <a href="${bill.actionSourceUrl}" class="bill-modal-source-link" target="_blank" rel="noopener">House Clerk</a>`;
+        actionSourceHtml = ` <a href="${escapeHtml(globalThis.BoardUtil.safeHref(bill.actionSourceUrl))}" class="bill-modal-source-link" target="_blank" rel="noopener">House Clerk</a>`;
     } else if (bill.actionSource === 'congress' && congressUrl) {
         actionSourceHtml = ` <a href="${congressUrl}/actions" class="bill-modal-source-link" target="_blank" rel="noopener">Congress.gov</a>`;
     }
@@ -5109,10 +5109,10 @@ function renderAmendmentsTable({ amendments }, body) {
         const chips = (a._enrichedSponsors || []).map(s => {
             const isActive = amendmentsMemberFilter === s.name;
             const safeAttr = s.name.replace(/"/g, '&quot;');
-            const imgHtml = s.photoUrl ? `<img class="amdt-sponsor-photo" src="${s.photoUrl}" alt="" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : '';
+            const imgHtml = s.photoUrl ? `<img class="amdt-sponsor-photo" src="${s.photoUrl}" alt="" data-img="fade">` : '';
             const wrapHtml = `<div class="amdt-sponsor-photo-wrap"><div class="amdt-sponsor-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${imgHtml}</div>`;
             const photoHtml = s.profileUrl
-                ? `<a href="${s.profileUrl}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>`
+                ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(s.profileUrl))}" target="_blank" rel="noopener" class="amdt-sponsor-photo-link">${wrapHtml}</a>`
                 : wrapHtml;
             return `<div class="amdt-sponsor-chip">
                 ${photoHtml}
@@ -5142,7 +5142,7 @@ function renderAmendmentsTable({ amendments }, body) {
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
                     <td class="amdt-summary">${escapeHtml(a.summary ?? '')}</td>
                     <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${escapeHtml(a.status ?? '')}</span></td>
-                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${a.pdfUrl}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF">↗</a>` : ''}</td>
+                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(a.pdfUrl))}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF">↗</a>` : ''}</td>
                 </tr>`).join('')}
             </tbody>
         </table>` : '<div class="bill-amendments-empty">No amendments match this filter.</div>';
@@ -6008,6 +6008,18 @@ function proceedingsAgo(ms) {
 
 // Wrap bill number mentions in proceedings text with buttons that open the bill modal.
 // Longer patterns must come first so H.J.Res. isn't partially matched as H. etc.
+// The Clerk's entries carry their own links to a bill. linkifyBillNumbers then links the same number again, and a link inside a link is not HTML: the parser closes the outer
+// one empty, so every bill number was preceded by a link with nothing in it (78 on one day), which a screen reader reads as "link" and a keyboard stops on. The Clerk's bill
+// links give way to ours, which open the board's own modal or go to Congress.gov.
+function unlinkClerkBills(html) {
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    t.content.querySelectorAll('a').forEach((a) => {
+        if (a.getAttribute('rel') === 'bill' || /congress\.gov\/(?:\d+\/)?bill/i.test(a.getAttribute('href') || '')) a.replaceWith(a.textContent);
+    });
+    return t.innerHTML;
+}
+
 function linkifyBillNumbers(text) {
     // Clerk proceedings use "H. Res." (space after H.) — allow optional spaces throughout
     return text.replace(
@@ -6029,7 +6041,7 @@ function linkifyBillNumbers(text) {
             }
             const url = billIdToCongressUrl(billId);
             if (url) {
-                return `<a class="proc-bill-link proc-bill-external" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(match)}</a>`;
+                return `<a class="proc-bill-link proc-bill-external" href="${escapeHtml(globalThis.BoardUtil.safeHref(url))}" target="_blank" rel="noopener">${escapeHtml(match)}</a>`;
             }
             return escapeHtml(match);
         }
@@ -6289,7 +6301,7 @@ function renderCommitteeMeetings() {
         <div class="committee-item">
             <span class="committee-time">${escapeHtml(e.time)}</span>
             <div class="committee-what">
-                <a class="committee-title" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
+                <a class="committee-title" href="${escapeHtml(globalThis.BoardUtil.safeHref(e.url))}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
                 <span class="committee-name">${escapeHtml(e.committee)}</span>
                 <button type="button" class="committee-more" data-committee-detail="${escapeHtml(e.id)}" aria-expanded="${_committeeOpen.has(e.id)}">${_committeeOpen.has(e.id) ? 'Hide details' : 'Witnesses and documents'}</button>
             </div>
@@ -6314,7 +6326,7 @@ function committeeDetailHtml(x) {
     if (!x || x === 'loading') return '<div class="committee-detail"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>';
     if (x === 'error') return '<div class="committee-detail"><span class="committee-detail-note">Details unavailable</span></div>';
     const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
-    const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(i.url)}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
+    const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(i.url))}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
     const witnesses = x.witnesses.length ? `<div class="committee-detail-head">Witnesses</div>${x.witnesses.map((w) => `
         <div class="committee-witness"><span class="committee-witness-name">${escapeHtml(w.name)}</span><span class="committee-witness-role">${escapeHtml(w.role)}</span>
         ${w.docs.length ? `<span class="committee-docs">${w.docs.map(doc).join('')}</span>` : ''}</div>`).join('')}` : '';
@@ -6398,7 +6410,7 @@ function dischargeSponsorHtml(p) {
     const loc = seat ? seat.state + (/^\d+$/.test(seat.district || '') ? '-' + String(seat.district).padStart(2, '0') : '') : '';
     const photo = p.sponsorId ? buildBioguidePhotoUrl(p.sponsorId) : null;
     return `<div class="absentee-member dp-sponsor" title="Sponsor">
-        <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
+        <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
         <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">Sponsor</span></div>
     </div>`;
 }
@@ -6439,7 +6451,7 @@ function renderDischargePetitions() {
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
-                <a class="ext" href="${escapeHtml(url)}" target="_blank" rel="noopener">View petition</a>
+                <a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(url))}" target="_blank" rel="noopener">View petition</a>
             </div>
             ${isDone && p.action ? `<div class="dp-action"><span title="From Congress.gov">Latest action${p.action.date ? `, ${escapeHtml(dischargeDate(p.action.date.slice(5, 7) + '/' + p.action.date.slice(8, 10) + '/' + p.action.date.slice(0, 4)))}` : ''}:</span> ${escapeHtml(p.action.text)}</div>` : ''}
             <div class="dp-people">
@@ -6578,7 +6590,7 @@ function openDischargeSigners(id, number, trigger) {
             const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
             return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer">
                 <span class="dp-signer-n">${unsigned ? '' : s.n}</span>
-                <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : ''}</div>
+                <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
                 <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
                 <span class="dp-signer-date">${unsigned ? '' : escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
@@ -6685,7 +6697,7 @@ function renderProceedingsFeedPanel(items, future) {
         <div class="proceedings-item${item._future ? ' is-future' : ''}" data-ts="${item.timestamp || ''}">
             <div class="proceedings-text">
                 <span class="proceedings-time">${timeStr}</span>
-                ${linkifyBillNumbers(decodeHtml(item.description))}
+                ${linkifyBillNumbers(unlinkClerkBills(decodeHtml(item.description)))}
             </div>
         </div>`;
     }).join('');
@@ -8785,8 +8797,9 @@ function sanitizeHtml(dirty) {
         (ALLOWED_ATTRS[node.tagName] || []).forEach(attr => {
             if (!node.hasAttribute(attr)) return;
             const val = node.getAttribute(attr);
-            if (attr === 'href' && /^\s*javascript:/i.test(val)) return; // block JS URLs
-            el.setAttribute(attr, val);
+            const href = attr === 'href' ? globalThis.BoardUtil.safeHref(val) : val;   // http, https, mailto and relative only: a scheme is read the way a browser reads it
+            if (!href) return;
+            el.setAttribute(attr, href);
         });
         if (node.tagName === 'A') {
             el.setAttribute('rel', 'noopener noreferrer');
@@ -8801,11 +8814,6 @@ function sanitizeHtml(dirty) {
     return tmp.innerHTML;
 }
 
-// Return a safe URL string, or '' if it could be a javascript: injection.
-function safeUrl(url) {
-    if (!url || typeof url !== 'string') return '';
-    return /^\s*javascript:/i.test(url) ? '' : url;
-}
 
 // House Makeup Functions
 async function fetchHouseMakeup(preData = null) {
@@ -9320,7 +9328,7 @@ function renderHouseCalendar() {
 
     // In the card header, outside the clamped text, so the fade never hides it.
     const source = _calendar.source
-        ? `Source: <a class="ext" href="${escapeHtml(_calendar.source)}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
+        ? `Source: <a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(_calendar.source))}" target="_blank" rel="noopener">House Calendar (GPO)</a>` : '';
     const setSource = (n) => { const s = n && n.querySelector('.calendar-card-source'); if (s) setIfChanged(s, source); };
     // The orders agreed for today. Shown on every sitting day the Calendar could be read: a clamped blurb
     // that opens, as the policy cards do. `orders: null` means the page had a shape this could not read,
@@ -10608,7 +10616,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
         lastPhotoId = bioguideId;
         const url = bioguideId ? buildBioguidePhotoUrl(bioguideId) : '';
         photo.innerHTML = `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>` +
-            (url ? `<img class="pip-speaker-photo" src="${url}" alt="" onload="this.style.opacity='1';" onerror="this.style.display='none';">` : '');
+            (url ? `<img class="pip-speaker-photo" src="${url}" alt="" data-img="fade">` : '');
     }
 
     function render(data) {
