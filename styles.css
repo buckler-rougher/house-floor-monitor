@@ -401,11 +401,11 @@ body {
 }
 
 .site-footer-brand {
-    font-size: var(--fs-lg);
+    font-size: var(--fs-md);
     font-weight: 600;
     color: var(--text-secondary);
-    font-family: var(--font-sans);   /* the footer is words, so it is set in Grotesk; the column heads stay in the board's mono */
-    letter-spacing: 0;
+    font-family: var(--font-mono);   /* the name is the board's own mark, in its mono; the rest of the footer is words, in Grotesk */
+    letter-spacing: 0.3px;
 }
 
 .site-footer-grid {
@@ -430,7 +430,7 @@ body {
     opacity: 0.7;
     font-family: var(--font-mono);
 }
-.site-footer-col .site-footer-copy { font-size: var(--fs-base); opacity: 0.7; }
+.site-footer-about .site-footer-copy { opacity: 0.7; }
 /* The floating feed sits in the margin beside the panels where there is one (about 1480px and wider); narrower than that it overlaps the page's right side, and the footer is the last
    thing on the page, so it leaves room beneath it to be scrolled clear of the feed. */
 @media (max-width: 1479px) {
