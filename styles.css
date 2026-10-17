@@ -401,12 +401,14 @@ body {
 }
 
 .site-footer-brand {
-    font-size: var(--fs-md);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-family: var(--font-mono);   /* the name is the board's own mark, in its mono; the rest of the footer is words, in Grotesk */
-    letter-spacing: 0.3px;
+    /* the header's wordmark (.brand-text), the same three stacked lines in the same mono, only smaller */
+    font-family: var(--font-mono);
+    font-size: var(--fs-lg);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text-primary);
 }
+.site-footer-brand .brand-nl { display: inline; }   /* the header folds to one line on a phone; the footer keeps its three */
 
 .site-footer-grid {
     display: grid;
