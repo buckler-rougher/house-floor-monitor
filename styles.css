@@ -12398,7 +12398,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
     border-radius: var(--radius-6);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background var(--dur-120), color var(--dur-120), border-color var(--dur-120);
+    transition: background var(--dur-120), border-color var(--dur-120);   /* not the colour: a button is black until its class applies, and a colour transition would fade it in from there */
 }
 .ai-off-btn:hover, .ai-off-btn:focus-visible,
 .committee-more:hover, .committee-more:focus-visible,
