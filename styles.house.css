@@ -353,7 +353,7 @@ body {
 .site-footer-about .site-footer-copy { opacity: 0.7; }
 
 @media (max-width: 1479px) {
-    html:has(.floor-feed.pip-active) .site-footer { padding-bottom: 232px; }
+    html:has(.floor-feed.pip-active) .site-footer-grid { padding-right: max(var(--sp-24), calc(752px - 50vw)); }
 }
 @media (max-width: 640px) {
     .site-footer-grid { grid-template-columns: 1fr 1fr; padding-inline: var(--sp-16); }
@@ -11585,6 +11585,36 @@ html.ai-off .bill-link-group > .bill-modal-link {
 }
 @media (prefers-reduced-motion: reduce) {
     .bill-open, .vrec-row-label.clickable { transition: none; }
+}
+
+.beta-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-12);
+    margin-bottom: var(--sp-16);
+    padding: var(--sp-10) var(--sp-16);
+    border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent);
+    border-radius: var(--radius-8);
+    background: color-mix(in srgb, var(--accent-amber) 8%, transparent);
+    font-size: var(--fs-base);
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+.beta-banner-tag {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: var(--tag-height);
+    padding: 0 var(--sp-10);
+    border-radius: var(--radius-4);
+    background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
+    color: var(--accent-amber);
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    font-weight: 700;
+    letter-spacing: var(--track-wide);
+    text-transform: uppercase;
 }
 
 .source-tail { white-space: nowrap; }
