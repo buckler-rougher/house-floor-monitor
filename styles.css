@@ -12379,6 +12379,8 @@ html.ai-off .ai-block:not(.is-plain) { display: none !important; }   /* a summar
 /* a button, not a link: on hover it gets the fill every small control here gets (the close X, the transport skips), and no underline */
 .ai-block.is-plain .ai-off-btn { display: none; }   /* nothing AI wrote here, so nothing to hide */
 button.site-footer-license { font-size: var(--fs-base); }
+/* last in its column, set apart from the links, its outline hanging into the gutter so the words line up with theirs */
+.site-footer-col > .site-footer-license.ai-toggle { margin: var(--sp-6) 0 0 calc(-1 * (var(--sp-10) + 1px)); }
 /* Hidden with its panel's explanation, the split (?) on a bill link leaves the button square on that side. */
 html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
