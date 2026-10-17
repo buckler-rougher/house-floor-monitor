@@ -6303,7 +6303,7 @@ function renderCommitteeMeetings() {
             <div class="committee-what">
                 <a class="committee-title" href="${escapeHtml(globalThis.BoardUtil.safeHref(e.url))}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
                 <span class="committee-name">${escapeHtml(e.committee)}</span>
-                <button type="button" class="committee-more" data-committee-detail="${escapeHtml(e.id)}" aria-expanded="${_committeeOpen.has(e.id)}">${_committeeOpen.has(e.id) ? 'Hide details' : 'Witnesses and documents'}</button>
+                <button type="button" class="committee-more" data-committee-detail="${escapeHtml(e.id)}" aria-expanded="${_committeeOpen.has(e.id)}">${_committeeOpen.has(e.id) ? 'Hide details' : 'Show witnesses and documents'}</button>
             </div>
             <span class="committee-room">${escapeHtml(e.location)}</span>
             ${_committeeOpen.has(e.id) ? committeeDetailHtml(_committeeDetail[e.id]) : ''}
