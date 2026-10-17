@@ -10048,7 +10048,7 @@ function updateVoteThresholdPill(question) {
     if (!pill) return;
     const suspension = /suspend/i.test(question || '');
     const needed = getVotesNeeded(suspension);
-    pill.textContent = needed > 0 ? `${suspension ? 'Two-thirds' : 'Majority'} · ${needed} needed` : '';
+    pill.textContent = needed > 0 ? `${suspension ? '2/3' : '1/2'} needed` : '';   // of those voting
 }
 
 function updateThresholdAnalysis() {
