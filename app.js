@@ -6282,7 +6282,6 @@ function renderTodayInHouse(items) {
 // Asked for today only: a day with nothing on (a recess, a weekend) says so, and no other day is shown in its place. Titles, committees, times and rooms are the Clerk's own words;
 // a markup's title is the bills it takes up.
 let _committee = null;
-let _committeeJustOpened = null;
 const _committeeOpen = new Set();   // meetings whose details are open
 const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
 const COMMITTEE_SHOWN = 5;
@@ -6311,10 +6310,6 @@ function renderCommitteeMeetings() {
         </div>` }));
         ListSync.sync(list, entries);
         list._clamp?.refresh();
-        if (_committeeJustOpened && _committeeDetail[_committeeJustOpened] !== 'loading') {   // the loaded details replace the spinner, so they are what grows
-            const id = _committeeJustOpened; _committeeJustOpened = null;
-            ClampList.reveal(list.querySelector(`[data-committee-detail="${CSS.escape(id)}"]`)?.closest('.committee-item')?.querySelector('.committee-detail'), true);
-        }
     }
     const link = document.getElementById('committee-source-link');
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
@@ -6339,21 +6334,18 @@ function committeeDetailHtml(x) {
     return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? '<span class="committee-detail-note">Nothing posted yet</span>' : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
 }
 function toggleCommitteeDetail(id) {
-    if (_committeeOpen.has(id)) {
-        const el = document.querySelector(`[data-committee-detail="${CSS.escape(id)}"]`)?.closest('.committee-item')?.querySelector('.committee-detail');
-        ClampList.reveal(el, false).then(() => { _committeeOpen.delete(id); renderCommitteeMeetings(); });
-        return;
-    }
+    const list = document.getElementById('committee-list');
+    if (_committeeOpen.has(id)) { _committeeOpen.delete(id); renderCommitteeMeetings(); ClampList.follow(list); return; }
     _committeeOpen.add(id);
-    _committeeJustOpened = id;
     if (!_committeeDetail[id] || _committeeDetail[id] === 'error') {
         _committeeDetail[id] = 'loading';
         fetch(`https://api.evanhollander.org/house-floor/api/committee-event?id=${encodeURIComponent(id)}`)
             .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then((d) => { _committeeDetail[id] = d; renderCommitteeMeetings(); })
-            .catch(() => { _committeeDetail[id] = 'error'; renderCommitteeMeetings(); });
+            .then((d) => { _committeeDetail[id] = d; renderCommitteeMeetings(); ClampList.follow(list); })
+            .catch(() => { _committeeDetail[id] = 'error'; renderCommitteeMeetings(); ClampList.follow(list); });
     }
     renderCommitteeMeetings();
+    ClampList.follow(list);
 }
 function loadCommitteeMeetings() {
     const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
