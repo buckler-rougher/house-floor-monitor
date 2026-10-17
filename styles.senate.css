@@ -7121,7 +7121,7 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .approps-ms-row { display: grid; grid-template-columns: 5.2rem 1fr; gap: var(--sp-8); align-items: baseline; font-size: var(--fs-sm); }
 .approps-ms-date { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
 .approps-ms-what { color: var(--text-primary); line-height: 1.4; }
-.approps-ms-what span { color: var(--text-muted); }
+.approps-ms-what > span:not(.approps-ms-links) { color: var(--text-muted); }
 .approps-ms-links { display: inline-flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-12); margin-left: var(--sp-8); }
 .approps-ms-links a { color: var(--accent-blue); text-decoration: none; }
 .approps-ms-links a:hover { text-decoration: underline; }
