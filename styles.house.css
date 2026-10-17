@@ -7368,7 +7368,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--text-secondary);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -11090,6 +11090,18 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .panel-header:has(> .vote-type-tag) > .panel-label,
 .panel-header:has(> .vote-id) > .panel-label {
     align-self: center;
+}
+
+.panel-header > .vote-id {
+    height: auto;
+    padding: var(--sp-6) var(--sp-12);
+    background: var(--accent-blue);
+    color: var(--on-accent);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    line-height: normal;
 }
 
 @media (max-width: 640px) {

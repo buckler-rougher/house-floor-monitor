@@ -7901,7 +7901,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--text-secondary);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -12025,6 +12025,18 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     align-self: center;
 }
 
+/* The roll call number is the vote panel's tag, the one every other panel has beside HAPPENING NOW: the same size, weight, caps and tracking (the .debate-tag's), not the small outlined badge. */
+.panel-header > .vote-id {
+    height: auto;
+    padding: var(--sp-6) var(--sp-12);
+    background: var(--accent-blue);
+    color: var(--on-accent);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    letter-spacing: var(--track-wide);
+    line-height: normal;
+}
 /* Phone: the header wraps to two rows (label and badges, then the source). The
    10px padding left the first row hugging the top edge; give it room. */
 @media (max-width: 640px) {
