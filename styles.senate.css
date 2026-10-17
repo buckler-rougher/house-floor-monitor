@@ -6837,6 +6837,7 @@ html.ai-off .ai-block:not(.is-plain) { display: none !important; }
 .ai-block > .ai-off-btn { align-self: flex-end; }
 .ai-block.is-plain .ai-off-btn { display: none; }
 button.site-footer-license { font-size: var(--fs-base); }
+.site-footer-col > .site-footer-license.ai-toggle { margin: var(--sp-6) 0 0 calc(-1 * (var(--sp-10) + 1px)); }
 html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
     border-bottom-right-radius: var(--radius-6);
