@@ -8275,7 +8275,12 @@ body.committee-chair-mode .committee-chair-section {
     text-decoration: none;
 }
 
-.pledge-constitution-source a:hover {
+.pledge-constitution-source a:hover,
+.journal-constitution-source a:hover,
+.cert-election-constitution-source a:hover,
+.cert-electoral-constitution-source a:hover,
+.sine-die-constitution-source a:hover,
+.new-session-constitution-source a:hover {
     text-decoration: underline;
 }
 
