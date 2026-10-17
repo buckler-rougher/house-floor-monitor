@@ -11358,7 +11358,7 @@ button.site-footer-license {
     margin-left: calc(var(--sp-8) * -1);
     border-radius: var(--radius-3);
     cursor: pointer;
-    transition: background var(--dur-120), color var(--dur-120);
+    transition: background var(--dur-120);
 }
 button.site-footer-license:hover, button.site-footer-license:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 
