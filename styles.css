@@ -12040,6 +12040,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 /* The vote panel's pills, under its header like the other panels' pills: the kind of question and the threshold it needs. */
 .vote-pills {
+    align-self: stretch;
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-8);
