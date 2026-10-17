@@ -81,7 +81,25 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Origin': 'https://house-floor.evanhollander.org',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
+  'X-Content-Type-Options': 'nosniff',
 };
+
+// Answers keyed by something the visitor chooses (a date, an id) go in the colo's cache, not in KV: KV's free tier allows 1,000 writes a day, shared with the whole board, so a
+// visitor asking for a thousand different dates would use them all. The Cache API has no such cap. kvCache only reads with get(key) and writes with put(key, text, { expirationTtl }).
+function edgeKv() {
+  const store = typeof caches !== 'undefined' ? caches.default : null;
+  const req = (k) => new Request(`https://edge-kv.invalid/${encodeURIComponent(k)}`);
+  return {
+    async get(k) { if (!store) return null; const hit = await store.match(req(k)); return hit ? await hit.text() : null; },
+    async put(k, v, o = {}) { if (store) await store.put(req(k), new Response(v, { headers: { 'Cache-Control': `public, max-age=${o.expirationTtl || 3600}` } })); },
+    async delete() {},
+  };
+}
+const edgeEnv = (env) => ({ ...env, HLS_CACHE: edgeKv() });
+// The years a visitor may ask about (the House's video archive begins in 2019); a date outside them is a 400, not another answer to fetch and keep.
+const boardYearOk = (y) => Number(y) >= 2019 && Number(y) <= new Date().getUTCFullYear() + 1;
+const boardDateOk = (s) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s || ''); return !!m && +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 && boardYearOk(m[3]); };
+const badRequest = (error) => new Response(JSON.stringify({ error }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 // Alias kept for DO code that references CORS_HEADERS_DEFAULT explicitly.
 const CORS_HEADERS_DEFAULT = CORS_HEADERS;
 
@@ -471,6 +489,7 @@ async function handleProceedings(request, env) {
     const url = new URL(request.url);
     const date = url.searchParams.get('date'); // expected: mm/dd/yyyy
 
+    if (date && !boardDateOk(date)) return badRequest('date must be MM/DD/YYYY, 2019 or later');
     if (date) {
       // Today's data accumulates throughout the session; past dates are immutable.
       // ttlSeconds controls how often we re-fetch from origin AND the KV freshness window.
@@ -486,7 +505,7 @@ async function handleProceedings(request, env) {
       //             7200s past (re-check every 2hr; compare always skips write — data never changes).
       const dateTtl = isToday ? 15 : 2 * 3600;
       const dateKvFresh = isToday ? 15 : 2 * 3600;
-      return kvCache(env, `proceedings-date:${date}`, dateTtl, async () => {
+      return kvCache(edgeEnv(env), `proceedings-date:${date}`, dateTtl, async () => {
         const encodedDate = encodeURIComponent(date);
         const actionsUrl = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodedDate}`;
         const response = await fetch(actionsUrl, {
@@ -566,7 +585,7 @@ function parseTweetDescription(html, instance) {
     // Extract the URL of the quoted tweet from the main tweet body —
     // nitter appends a link to the quoted status at the end of mainPart before <hr/>
     const allStatusLinks = [...mainPart.matchAll(/href="([^"]*\/status\/[^"#]+)"/gi)];
-    if (allStatusLinks.length) quoteUrl = rewriteUrl(allStatusLinks[allStatusLinks.length - 1][1]);
+    if (allStatusLinks.length) { const q = rewriteUrl(allStatusLinks[allStatusLinks.length - 1][1]); quoteUrl = /^https:\/\/twitter\.com\/\w{1,15}\/status\/\d+$/.test(q) ? q : null; }
   }
 
   return { tweetHtml, tweetImages, cardImage: cardImageArr[0] || null, quoteAuthor, quoteHtml, quoteUrl };
@@ -636,7 +655,9 @@ function parseTweetFeed(rawXml, usedInstance, fallbackHandle) {
     const creator = getTag('dc:creator', itemXml);
     let title = getTag('title', itemXml);
     const description = getTag('description', itemXml);
-    const link = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
+    const rawLink = getTag('link', itemXml).replace(/^https?:\/\/[^/]+\//, 'https://twitter.com/').replace(/#m$/, '');
+    // a feed is someone else's: a tweet's link is a tweet's link, or it is nothing (it goes into an href)
+    const link = /^https:\/\/twitter\.com\/\w{1,15}\/status\/\d+$/.test(rawLink) ? rawLink : '';
     const pubDate = getTag('pubDate', itemXml);
 
     // RT and reply detection
@@ -647,8 +668,9 @@ function parseTweetFeed(rawXml, usedInstance, fallbackHandle) {
     if (replyM) { isReply = true; replyTo = replyM[1]; title = title.slice(replyM[0].length); }
 
     // Handle from the link, else whatever the caller says a nameless post is
-    const hM = link.match(/twitter\.com\/([^/]+)\/status\//);
-    const handle = hM ? `@${hM[1]}` : fallbackHandle(creator);
+    const hM = link.match(/twitter\.com\/(\w{1,15})\/status\/\d+/);
+    const fallback = String(fallbackHandle(creator) || '');
+    const handle = hM ? `@${hM[1]}` : (/^@\w{1,15}$/.test(fallback) ? fallback : '');   // it goes into an href and an img src on the board
 
     let relativeTime = '';
     try {
@@ -693,7 +715,11 @@ async function handleImageProxy(request) {
   let fetchUrl;
   const picMatch = imageUrl.match(/\/pic\/(.+)$/);
   if (picMatch) {
-    fetchUrl = `https://pbs.twimg.com/${decodeURIComponent(picMatch[1])}`;
+    let path;
+    try { path = decodeURIComponent(picMatch[1]); } catch (_) { return new Response('Bad request', { status: 400, headers: CORS_HEADERS }); }
+    // only the places Twitter keeps pictures: this is a picture proxy, not a way to read any path on its host
+    if (!/^(media|card_img|tweet_video_thumb|amplify_video_thumb|ext_tw_video_thumb|profile_images)\/[\w./%~:=?&@-]*$/.test(path) || path.includes('..')) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+    fetchUrl = `https://pbs.twimg.com/${path}`;
   } else {
     // Fallback: only allow known nitter hostnames
     let allowed = false;
@@ -704,8 +730,11 @@ async function handleImageProxy(request) {
 
   try {
     const resp = await fetch(fetchUrl, { signal: AbortSignal.timeout(8000) });
+    const type = resp.headers.get('content-type') || '';
+    // an upstream error or a page that is not a picture is not passed on as one (it used to go out as a 200 and be kept for a day)
+    if (!resp.ok || !/^image\//i.test(type)) return new Response('Failed', { status: 502, headers: { ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
     return new Response(resp.body, {
-      headers: { ...CORS_HEADERS, 'Content-Type': resp.headers.get('content-type') || 'image/jpeg', 'Cache-Control': 'public, max-age=86400' }
+      headers: { ...CORS_HEADERS, 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' }
     });
   } catch (e) { return new Response('Failed', { status: 502, headers: CORS_HEADERS }); }
 }
@@ -1045,7 +1074,7 @@ function billIdToCongressType(billId) {
     's.j.res.': 'sjres', 's.res.': 'sres',
   };
   const slug = typeMap[m[1].toLowerCase()];
-  return slug ? { type: slug, number: m[2] } : null;
+  return slug && Number(m[2]) >= 1 && Number(m[2]) <= 20000 ? { type: slug, number: String(Number(m[2])) } : null;   // a Congress holds well under 20,000 of a type
 }
 
 // GovInfo "link service" → redirects to the latest official version PDF of a bill
@@ -1732,7 +1761,8 @@ async function handleCasualtyList(env) {
 // the week before.
 async function handleBillsSource(request, env) {
   const dateParam = new URL(request.url).searchParams.get('date') || '';
-  return kvCache(env, `bills-source-v1-${dateParam || 'now'}`, 600, async () => {
+  if (dateParam && !boardDateOk(dateParam)) return badRequest('date must be MM/DD/YYYY, 2019 or later');
+  return kvCache(dateParam ? edgeEnv(env) : env, `bills-source-v1-${dateParam || 'now'}`, 600, async () => {
     try {
       const xml = await fetchRSSFeed(RSS_FEEDS.bills, 20000);
       const entries = xml.match(/<entry[^>]*>[\s\S]*?<\/entry>/g) || [];
@@ -1796,7 +1826,11 @@ async function handleBills(request, env) {
   const url = new URL(request.url);
   const quick = url.searchParams.has('quick');
   const dateParam = url.searchParams.get('date');
-  if (dateParam) return _fetchBills(request, env);
+  if (dateParam) {
+    // a past week for the time machine: each one reads the whole 38 MB Atom feed, so it is checked and kept (an hour, in the colo's cache)
+    if (!boardDateOk(dateParam)) return badRequest('date must be MM/DD/YYYY, 2019 or later');
+    return kvCache(edgeEnv(env), `bills-date-v1-${dateParam}${quick ? '-quick' : ''}`, 3600, () => _fetchBills(request, env), 3600);
+  }
   // v10: the same poisoning, a different cause. Bumping the per-bill enrichment
   // key twice invalidated all 78 bills at once and the stampede exhausted the
   // Congress.gov quota, so a payload was computed with almost no committee data
@@ -3940,7 +3974,9 @@ async function handleSenateSessionDaysSource(request, env) {
   const q = new URL(request.url).searchParams;
   const from = q.get('from') || '', to = q.get('to') || '';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return senateSourceFail(400, 'from and to must be YYYY-MM-DD');
-  return kvCache(env, `senate-days-source-v1-${from}-${to}`, 600, async () => {
+  const spanDays = (Date.parse(to + 'T00:00:00Z') - Date.parse(from + 'T00:00:00Z')) / 86400000;
+  if (!boardYearOk(from.slice(0, 4)) || !boardYearOk(to.slice(0, 4)) || !(spanDays >= 0 && spanDays <= 400)) return senateSourceFail(400, 'from and to must be within 2019 and next year, at most 400 days apart');
+  return kvCache(edgeEnv(env), `senate-days-source-v1-${from}-${to}`, 600, async () => {
     try {
       const floorUrl = 'https://www.senate.gov/legislative/schedule/floor_schedule.xml';
       const floor = await fetchSource(floorUrl, 'floor schedule', { xml: true });
@@ -4114,12 +4150,12 @@ async function handleHouseRolls(request, env) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
     status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) return fail(400, 'date must be MM/DD/YYYY');
+  if (!boardDateOk(date)) return fail(400, 'date must be MM/DD/YYYY, 2019 or later');
   const year = Number(date.slice(6));
   const iso = (d) => `${d.slice(6)}-${d.slice(0, 2)}-${d.slice(3, 5)}`;
   const today = getTodayDateET();   // YYYYMMDD
   const isToday = iso(date).replace(/-/g, '') === today;
-  return kvCache(env, `house-rolls-v2-${date}`, isToday ? 120 : 6 * 3600, async () => {
+  return kvCache(edgeEnv(env), `house-rolls-v2-${date}`, isToday ? 120 : 6 * 3600, async () => {
     try {
       const rolls = [];
       const thisYear = Number(today.slice(0, 4));
@@ -4170,7 +4206,7 @@ async function handleHouseRolls(request, env) {
 async function handleCommitteeEvent(env, id) {
   const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   if (!/^\d{3,8}$/.test(id || '')) return fail(400, 'an event id is required');
-  return kvCache(env, `committee-event-v1-${id}`, 600, async () => {
+  return kvCache(edgeEnv(env), `committee-event-v1-${id}`, 600, async () => {
     try {
       const url = `https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=${id}`;
       const e = globalThis.CommitteeMeetings.parseEvent(await fetchSource(url, `committee meeting ${id}`));
@@ -4186,10 +4222,10 @@ async function handleCommitteeMeetings(request, env) {
     status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
   const m = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12 || Number(m[2]) < 1 || Number(m[2]) > 31) return fail(400, 'date must be MM/DD/YYYY');
+  if (!m || !boardDateOk(date)) return fail(400, 'date must be MM/DD/YYYY, 2019 or later');
   const isToday = `${m[3]}${m[1]}${m[2]}` === getTodayDateET();
   // the one day asked for: a day with nothing on is an empty list, never another day's meetings
-  return kvCache(env, `committee-meetings-v1-${date}`, isToday ? 300 : 3600, async () => {
+  return kvCache(edgeEnv(env), `committee-meetings-v1-${date}`, isToday ? 300 : 3600, async () => {
     try {
       const html = await fetchSource(`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${date.replace(/\//g, '')}`, 'committee calendar');
       const parsed = globalThis.CommitteeMeetings.parseDay(html);
@@ -4488,7 +4524,7 @@ async function handleDischargePetition(env, id) {
   if (!/^\d{6,12}$/.test(id || '')) {
     return new Response(JSON.stringify({ error: 'a petition id is required' }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
-  return kvCache(env, `discharge-signers-v1-${id}`, 600, async () => {
+  return kvCache(edgeEnv(env), `discharge-signers-v1-${id}`, 600, async () => {
     try {
       const sig = globalThis.DischargePetitions.parseSignatures(await fetchSource(`https://clerk.house.gov/DischargePetition/${id}`, `petition ${id}`, { timeout: 30_000 }));
       if (!sig) throw new Error('the petition page had no signature table (has the page changed?)');
@@ -4660,11 +4696,12 @@ async function handleApproMarkups(env, url) {
   const day = (s) => (/^\d{4}-\d\d-\d\d$/.test(s || '') && !Number.isNaN(Date.parse(s + 'T00:00:00Z')) ? s : null);
   const from = day(q.get('from')), to = day(q.get('to')), fy = /^\d{4}$/.test(q.get('fy') || '') ? q.get('fy') : null;
   if (!from || !to || !fy) return fail(400, 'from, to (YYYY-MM-DD) and fy (YYYY) are required');
+  if (!boardYearOk(from.slice(0, 4)) || !boardYearOk(to.slice(0, 4)) || !boardYearOk(fy)) return fail(400, 'from, to and fy must be within 2019 and next year');
   const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
   const ms = (s) => Date.parse(s + 'T00:00:00Z');
   const todayMs = ms(`${getTodayDateET().slice(0, 4)}-${getTodayDateET().slice(4, 6)}-${getTodayDateET().slice(6, 8)}`);
   if (ms(to) < ms(from) || ms(to) - ms(from) > 400 * 86400000 || ms(to) > todayMs + 30 * 86400000) return fail(400, 'a range of at most 400 days, ending within 30 days of today');
-  return kvCache(env, `approps-markups-v1-${fy}-${from}-${to}`, 30, async () => {
+  return kvCache(edgeEnv(env), `approps-markups-v1-${fy}-${from}-${to}`, 30, async () => {
     const AP = globalThis.Appropriations, CM = globalThis.CommitteeMeetings;
     const key = `approps-markups-state-v1-${fy}`;
     let st = null;
@@ -6278,9 +6315,10 @@ async function handleReplayDay(request, env) {
   const jsonHdr = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
   if (!/^\d{8}$/.test(date)) return new Response(JSON.stringify({ error: 'date=YYYYMMDD' }), { status: 400, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
   const today = getTodayDateET();
+  if (date < '20190101') return new Response(JSON.stringify({ error: 'the archive begins in 2019' }), { status: 404, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
   if (date > today) return new Response(JSON.stringify({ error: 'that day has not happened' }), { status: 404, headers: { ...jsonHdr, 'Cache-Control': 'no-store' } });
   const past = date < today;
-  return kvCache(env, `replay-day-v1-${date}`, past ? 6 * 3600 : 60, async () => {
+  return kvCache(edgeEnv(env), `replay-day-v1-${date}`, past ? 6 * 3600 : 60, async () => {
     const event = await fetchBroadcastEventLong(date);
     const f = event && globalThis.Replay.pickFiles(event);
     if (!f) return new Response(JSON.stringify({ error: 'no video archive for that day' }), { status: 404, headers: { ...jsonHdr, 'Cache-Control': 'public, max-age=300' } });
@@ -6330,7 +6368,7 @@ async function handleAmendments(request, env) {
   const url = new URL(request.url);
   const slug = url.searchParams.get('bill'); // e.g. "hr-1041"
   const congress = url.searchParams.get('congress') || '119';
-  if (!slug || !/^[a-z0-9-]+$/.test(slug) || !/^\d+$/.test(congress)) {
+  if (!slug || slug.length > 40 || !/^[a-z0-9-]+$/.test(slug) || !/^\d{3}$/.test(congress)) {
     return new Response(JSON.stringify({ amendments: [], error: 'Missing or invalid bill slug' }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
     });
@@ -6339,7 +6377,7 @@ async function handleAmendments(request, env) {
   const cacheKey = `amendments_${congress}_${slug}`;
   // in-memory 10 min; KV re-checked hourly; write-on-change (via kvCache) only
   // writes when the amendment list actually changes, instead of every 10 min.
-  return kvCache(env, cacheKey, 600, async () => {
+  return kvCache(edgeEnv(env), cacheKey, 600, async () => {
     try {
       const resp = await fetch(`https://rules.house.gov/bill/${congress}/${slug}`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0)' }
