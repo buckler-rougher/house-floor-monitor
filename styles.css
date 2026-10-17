@@ -12038,6 +12038,35 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 .vote-id-num { font-size: var(--fs-sm); font-weight: 400; margin-left: var(--sp-8); }
 
+/* The vote panel's pills, under its header like the other panels' pills: the kind of question and the threshold it needs. */
+.vote-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-8);
+    padding: var(--sp-12) var(--sp-32) 0;
+}
+.vote-pills .vote-pill,
+.vote-pills .vote-type-tag {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    padding: var(--sp-4) var(--sp-10);
+    border-radius: var(--radius-12);
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.vote-pills .vote-pill:empty,
+.vote-pills .vote-type-tag:empty { display: none; }
+.vote-pills .vote-pill { background: rgba(88, 166, 255, 0.12); border-color: rgba(88, 166, 255, 0.35); color: var(--accent-blue); }
+.vote-pills .vtt-green  { border-color: rgba(63, 185, 80, 0.4); }
+.vote-pills .vtt-amber  { border-color: rgba(210, 153, 34, 0.4); }
+.vote-pills .vtt-red    { border-color: rgba(248, 81, 73, 0.4); }
+.vote-pills .vtt-blue   { border-color: rgba(88, 166, 255, 0.4); }
+.vote-pills .vtt-muted  { border-color: rgba(139, 148, 158, 0.35); }
+@media (max-width: 640px) { .vote-pills { padding: var(--sp-12) var(--sp-16) 0; } }
+
 /* Phone: the header wraps to two rows (label and badges, then the source). The
    10px padding left the first row hugging the top edge; give it room. */
 @media (max-width: 640px) {
