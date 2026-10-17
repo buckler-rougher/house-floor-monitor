@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261017d">
+    <link rel="stylesheet" href="styles.house.css?v=20261017e">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1216,11 +1216,14 @@
             <div class="vote-display">
                 <div class="panel-header">
                     <span class="panel-label">Happening Now</span>
-                    <span id="vote-type-tag" class="vote-type-tag"></span>
                     <span class="vote-id" id="vote-id">--</span><button class="info-btn" type="button" data-info="forms-of-vote" aria-label="About how votes are taken" hidden>?</button>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://domewatch.us" target="_blank" rel="noopener">DomeWatch</a></span>
                     </div>
+                </div>
+                <div class="vote-pills" id="vote-pills">
+                    <span id="vote-type-tag" class="vote-type-tag"></span>
+                    <span id="vote-threshold-pill" class="vote-pill"></span>
                 </div>
                 <div class="vote-header">
                     <h1 class="vote-title" id="vote-title">Loading...</h1>
@@ -1995,7 +1998,7 @@
     <script defer src="lib/missing-members.js?v=20261011b"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
     <script defer src="lib/caption-panels.js?v=20261017a"></script>
-    <script defer src="app.js?v=20261017a"></script>
+    <script defer src="app.js?v=20261017b"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
