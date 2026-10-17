@@ -11105,6 +11105,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .vote-id-num { font-size: var(--fs-sm); font-weight: 400; margin-left: var(--sp-8); }
 
 .vote-pills {
+    align-self: stretch;
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-8);
