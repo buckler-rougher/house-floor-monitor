@@ -570,9 +570,6 @@
     color: var(--accent-blue);
     text-decoration: none;
 }
-  .morning-hour-source a:hover, .prayer-source a:hover, .speaker-source a:hover, .pledge-source a:hover {
-    text-decoration: underline;
-}
   .morning-hour-content, .prayer-content, .speaker-content, .pledge-content {
     padding: var(--sp-16) var(--sp-24);
     background: transparent;
@@ -1576,7 +1573,7 @@
   opacity: 0.9;
   transition: opacity var(--dur-200) ease;
 }
-  .floor-feed-source a:hover { opacity: 1; text-decoration: underline; }
+  .floor-feed-source a:hover { opacity: 1; }
   .floor-feed.is-idle .pip-speaker {
     display: none !important;
 }
@@ -2975,10 +2972,7 @@
     opacity: 0.9;
     transition: opacity var(--dur-200) ease;
 }
-  .panel-source a:hover {
-    opacity: 1;
-    text-decoration: underline;
-}
+  .panel-source a:hover { opacity: 1; }
   .party-breakdown-time {
     font-size: var(--fs-sm);
     font-weight: 500;
@@ -3347,7 +3341,6 @@ font-family: var(--font-mono);
     color: var(--accent-blue);
     text-decoration: none;
 }
-  .bill-modal-source > a:hover { text-decoration: underline; }
   .section-tag-wrap {
     display: flex;
     align-items: center;
@@ -3525,7 +3518,6 @@ font-family: var(--font-mono);
 }
   .info-popup-source a {
     color: inherit;
-    text-decoration: underline;
 }
   .bills-list {
     display: flex;
@@ -4764,7 +4756,7 @@ font-family: var(--font-mono);
     text-decoration: none;
     opacity: 0.9;
 }
-  .debate-source a:hover { opacity: 1; text-decoration: underline; }
+  .debate-source a:hover { opacity: 1; }
   .debate-tag {
     display: inline-flex;
     align-items: center;
@@ -4925,7 +4917,6 @@ font-family: var(--font-mono);
 }
   .speech-mode-ai-note a {
     color: inherit;
-    text-decoration: underline;
 }
   .prayer-section {
     display: none;
@@ -4983,9 +4974,6 @@ font-family: var(--font-mono);
   .prayer-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-  .prayer-source a:hover {
-    text-decoration: underline;
 }
   .silence-tag-time {
     font-size: var(--fs-sm);
@@ -5088,9 +5076,6 @@ font-family: var(--font-mono);
   .prayer-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-  .prayer-source a:hover {
-    text-decoration: underline;
 }
   .pledge-section {
 
@@ -5235,9 +5220,6 @@ font-family: var(--font-mono);
     color: var(--accent-blue);
     text-decoration: none;
 }
-  .pledge-source a:hover {
-    text-decoration: underline;
-}
   .pledge-constitution-source {
     font-size: var(--fs-md);
     color: var(--text-muted);
@@ -5245,9 +5227,6 @@ font-family: var(--font-mono);
   .pledge-constitution-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-  .pledge-constitution-source a:hover {
-    text-decoration: underline;
 }
   .oath-tag-time {
     font-size: var(--fs-sm);
@@ -5312,9 +5291,6 @@ font-family: var(--font-mono);
   .speaker-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-  .speaker-source a:hover {
-    text-decoration: underline;
 }
   .speaker-content {
     background: var(--bg-card);
@@ -6926,7 +6902,8 @@ a.source-link.has-manifest:not(.has-tail)::after, a.source-link.has-manifest .so
     -webkit-mask-image: var(--source-icon-more);
     mask-image: var(--source-icon-more);
 }
-a.source-link.has-manifest:hover, a.source-link.has-manifest:focus-visible { text-decoration: none; }
+a.source-link { text-decoration: none; }
+a.source-link:not(.has-manifest):is(:hover, :focus-visible) { text-decoration: underline; }
 a.source-link:not(.has-tail)::after, a.source-link .source-tail::after {
     transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1);
 }
@@ -6988,7 +6965,6 @@ a.source-link.has-manifest:is(:hover, :focus-visible):not(.has-tail)::after, a.s
     color: var(--accent-blue);
     text-decoration: none;
 }
-.source-pop-link:hover { text-decoration: underline; }
 .source-pop.has-json { max-width: 560px; }
 .source-pop-request {
     font-family: var(--font-mono);
