@@ -6267,8 +6267,8 @@ function renderTodayInHouse(items) {
 }
 
 // COMMITTEE MEETINGS: the day's hearings and markups from the Clerk's Committee Repository (docs.house.gov), through the Worker's /api/committee-meetings.
-// Asked for today with `scan`, so on a day with nothing on (a recess, a weekend) it shows the next day that has something, and says which day that is; with
-// nothing in the next week it says so. Titles, committees, times and rooms are the Clerk's own words; a markup's title is the bills it takes up.
+// Asked for today only: a day with nothing on (a recess, a weekend) says so, and no other day is shown in its place. Titles, committees, times and rooms are the Clerk's own words;
+// a markup's title is the bills it takes up.
 let _committee = null;
 const _committeeOpen = new Set();   // meetings whose details are open
 const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
@@ -6282,7 +6282,7 @@ function renderCommitteeMeetings() {
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
     if (!d.events.length) {
-        setIfChanged(list, '<div class="empty-note">No committee meetings scheduled in the next week</div>');
+        setIfChanged(list, '<div class="empty-note">No committee meetings today</div>');
     } else {
         if (!list._clamp) { list.innerHTML = ''; ClampList.mount(list, { keep: COMMITTEE_SHOWN }); }
         const entries = d.events.map((e) => ({ key: e.id, html: `
@@ -6335,7 +6335,7 @@ function toggleCommitteeDetail(id) {
 }
 function loadCommitteeMeetings() {
     const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
-    fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?scan=1&date=' + encodeURIComponent(today))
+    fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?date=' + encodeURIComponent(today))
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _committee = d; renderCommitteeMeetings(); })
         .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), '<div class="proceedings-error">COMMITTEE MEETINGS UNAVAILABLE</div>'); });
