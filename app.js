@@ -6282,6 +6282,7 @@ function renderTodayInHouse(items) {
 // Asked for today only: a day with nothing on (a recess, a weekend) says so, and no other day is shown in its place. Titles, committees, times and rooms are the Clerk's own words;
 // a markup's title is the bills it takes up.
 let _committee = null;
+let _committeeJustOpened = null;
 const _committeeOpen = new Set();   // meetings whose details are open
 const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
 const COMMITTEE_SHOWN = 5;
@@ -6310,6 +6311,10 @@ function renderCommitteeMeetings() {
         </div>` }));
         ListSync.sync(list, entries);
         list._clamp?.refresh();
+        if (_committeeJustOpened) {
+            const id = _committeeJustOpened; _committeeJustOpened = null;
+            ClampList.reveal(list.querySelector(`[data-committee-detail="${CSS.escape(id)}"]`)?.closest('.committee-item')?.querySelector('.committee-detail'), true);
+        }
     }
     const link = document.getElementById('committee-source-link');
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
@@ -6334,8 +6339,13 @@ function committeeDetailHtml(x) {
     return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? '<span class="committee-detail-note">Nothing posted yet</span>' : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
 }
 function toggleCommitteeDetail(id) {
-    if (_committeeOpen.has(id)) { _committeeOpen.delete(id); renderCommitteeMeetings(); return; }
+    if (_committeeOpen.has(id)) {
+        const el = document.querySelector(`[data-committee-detail="${CSS.escape(id)}"]`)?.closest('.committee-item')?.querySelector('.committee-detail');
+        ClampList.reveal(el, false).then(() => { _committeeOpen.delete(id); renderCommitteeMeetings(); });
+        return;
+    }
     _committeeOpen.add(id);
+    _committeeJustOpened = id;
     if (!_committeeDetail[id] || _committeeDetail[id] === 'error') {
         _committeeDetail[id] = 'loading';
         fetch(`https://api.evanhollander.org/house-floor/api/committee-event?id=${encodeURIComponent(id)}`)

@@ -2704,6 +2704,7 @@ a.proc-bill-link {
 .clamp.is-short { padding-bottom: 0; }
 .clamp-body { position: relative; overflow: hidden; transition: max-height 0.32s ease; }
 .clamp-body > * { position: relative; }
+.clamp.is-following .clamp-body { transition: none; }
 /* the fade is an overlay that changes opacity, not a mask: a gradient mask cannot be animated */
 .clamp-body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3.5rem; background: linear-gradient(to bottom, transparent, var(--bg-card)); opacity: 1; transition: opacity 0.32s ease; pointer-events: none; }
 .clamp.is-open .clamp-body::after, .clamp.is-short .clamp-body::after { opacity: 0; }
