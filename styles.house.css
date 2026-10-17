@@ -11340,7 +11340,9 @@ html.ai-off .ai-block { display: none !important; }
     color: var(--text-muted);
     cursor: pointer;
 }
-.ai-off-btn:hover, .ai-off-btn:focus-visible { opacity: 1; color: var(--text-primary); text-decoration: underline; }
+
+.ai-off-btn { transition: background var(--dur-120), color var(--dur-120); }
+.ai-off-btn:hover, .ai-off-btn:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); }
 button.site-footer-license {
     background: none;
     border: 0;
