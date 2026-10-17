@@ -349,6 +349,10 @@ body {
     font-family: var(--font-mono);
 }
 .site-footer-col .site-footer-copy { font-size: var(--fs-base); opacity: 0.7; }
+
+@media (max-width: 1479px) {
+    html:has(.floor-feed.pip-active) .site-footer { padding-bottom: 232px; }
+}
 @media (max-width: 640px) {
     .site-footer-grid { grid-template-columns: 1fr 1fr; padding-inline: var(--sp-16); }
     .site-footer-about { grid-column: 1 / -1; }
