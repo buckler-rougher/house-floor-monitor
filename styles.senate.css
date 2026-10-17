@@ -43,7 +43,6 @@
     --accent-yellow:     #e3b341;
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
-  --on-accent: #0d1117;
 
     --party-d:           #58a6ff;
     --party-r:           #ff4d4f;
@@ -4768,12 +4767,12 @@ font-family: var(--font-mono);
   .debate-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-green);
-    color: var(--on-accent);
-    padding: var(--sp-6) var(--sp-12);
+    background: color-mix(in srgb, var(--accent-green) 14%, transparent);
+    color: var(--accent-green);
+    padding: 5px var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
     font-family: var(--font-mono);
@@ -4865,12 +4864,12 @@ font-family: var(--font-mono);
   .morning-hour-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-yellow);
-    color: var(--on-accent);
-    padding: var(--sp-6) var(--sp-12);
+    background: color-mix(in srgb, var(--accent-yellow) 14%, transparent);
+    color: var(--accent-yellow);
+    padding: 5px var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
     font-family: var(--font-mono);
@@ -4954,12 +4953,12 @@ font-family: var(--font-mono);
   .prayer-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-purple);
-    color: var(--on-accent);
-    padding: var(--sp-6) var(--sp-12);
+    background: color-mix(in srgb, var(--accent-purple) 14%, transparent);
+    color: color-mix(in srgb, var(--accent-purple) 80%, white);
+    padding: 5px var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
     font-family: var(--font-mono);
@@ -5092,12 +5091,12 @@ font-family: var(--font-mono);
   .pledge-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-red);
-    color: var(--on-accent);
-    padding: var(--sp-6) var(--sp-12);
+    background: color-mix(in srgb, var(--accent-red) 14%, transparent);
+    color: var(--accent-red);
+    padding: 5px var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
     font-family: var(--font-mono);
@@ -5279,12 +5278,12 @@ font-family: var(--font-mono);
   .speaker-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-amber);
-    color: var(--on-accent);
-    padding: var(--sp-6) var(--sp-12);
+    background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
+    color: var(--accent-amber);
+    padding: 5px var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--track-wide);
     font-family: var(--font-mono);
@@ -6704,12 +6703,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 .panel-header > .vote-id {
     height: auto;
-    padding: var(--sp-6) var(--sp-12);
-    background: var(--accent-blue);
-    color: var(--on-accent);
+    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
+    color: var(--accent-blue);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: var(--track-wide);
     line-height: normal;
 }

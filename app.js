@@ -1381,9 +1381,9 @@ function updateFloorDisplay(status = null) {
     if (elements.voteId && floorData.rollCall) {
         const rollCallNumber = floorData.rollCall.number || '';
         if (rollCallNumber) {
-            elements.voteId.textContent = `Roll Call ${rollCallNumber}`;
+            elements.voteId.innerHTML = `Roll Call<span class="vote-id-num">${escapeHtml(String(rollCallNumber))}</span>`;
         } else {
-            elements.voteId.textContent = 'Roll Call --';
+            elements.voteId.innerHTML = 'Roll Call<span class="vote-id-num">--</span>';
         }
         updateVoteTypeTag(floorData.rollCall.question);
         updateVoteThresholdPill(floorData.rollCall.question);
