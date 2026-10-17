@@ -11059,6 +11059,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     align-items: center;
 }
 .panel-header > .vote-type-tag,
+.panel-header > .vote-pill,
 .panel-header > .vote-id {
     box-sizing: border-box;
     display: inline-flex;
