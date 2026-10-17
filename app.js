@@ -7199,15 +7199,10 @@ function updatePrayerSection(items) {
         // surname is only ever shown as spoken, never matched to a roster.
         const capText = live && typeof window.__liveCaptionText === 'function'
             ? window.__liveCaptionText() : '';
-        const guest = capText && (
-            capText.match(/offered\s+by\s+(?:the\s+)?guest\s+chaplain,?\s+([^.,]{2,60})/i) ||
-            // The Clerk's published form drops the words "guest chaplain" and
-            // leads with the honorific, so captions sometimes do too.
-            capText.match(/offered\s+by\s+((?:most\s+reverend|reverend|rev|father|rabbi|imam|pastor|cantor|doctor|dr|bishop|monsignor|sister|brother|elder)\.?\s+[^.,]{2,50})/i));
-        const house = !guest && capText &&
-            capText.match(/offered\s+by\s+(?:the\s+)?(?:house\s+)?chaplain,?\s+(?:chaplain\s+)?([^.,]{2,60})/i);
+        const leader = CaptionPanels.prayerLeader(capText);
+        const guest = leader && leader.guest ? leader : null, house = leader && !leader.guest ? leader : null;
         if (guest || house) {
-            const spoken = spokenNameCase((guest || house)[1]);
+            const spoken = spokenNameCase((guest || house).name);
             // A surname the Clerk has already published is the better rendering
             // of the same person: captions say KIBBEN, the Clerk says Margaret
             // Grun Kibben. Only an exact surname match upgrades, so a drifted
@@ -7383,16 +7378,17 @@ function updatePledgeSection(items) {
         //   THE CHAIR WILL LEAD THE HOUSE IN THE PLEDGE OF ALLEGIANCE.
         // The first is turned into the Clerk's own form ("Mr. Wilson of South Carolina") so it resolves the same way.
         const capText = live && typeof window.__liveCaptionText === 'function' ? window.__liveCaptionText() : '';
-        const led = capText && capText.match(/pledge\s+of\s+allegiance\s+will\s+be\s+led\s+by\s+the\s+gentle(?:man|woman|lady)\s+from\s+([A-Za-z ]+?),\s+(M[rs]s?|Miss)\.?\s+([A-Za-z'-]+(?:\s+[A-Za-z'-]+)?)\s*[.,]/i);
+        const leader = CaptionPanels.pledgeLeader(capText);
+        const led = leader && !leader.chair ? leader : null;
         if (led) {
-            const named = `${spokenNameCase(led[2])}. ${spokenNameCase(led[3])} of ${spokenNameCase(led[1])}`;
+            const named = `${spokenNameCase(led.honorific)}. ${spokenNameCase(led.surname)} of ${spokenNameCase(led.state)}`;
             elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
             elements.pledgeLeaderName.textContent = named.replace(/ of .*$/, '');
             elements.pledgeTime.textContent = window.__captionTime?.('pledge') || '';
             fetchMemberPhotoFromClerkData(named);
             return;
         }
-        if (live && capText && /the\s+chair\s+will\s+lead\s+the\s+house\s+in\s+the\s+pledge/i.test(capText)) {
+        if (leader && leader.chair) {
             elements.pledgeLeaderTitle.textContent = 'Pledge Leader';
             elements.pledgeLeaderName.textContent = 'The Chair';
             elements.pledgePartyTag.textContent = '';
@@ -7705,11 +7701,9 @@ function updateSpeakerSection(items) {
         const capLive = window.__captionLive?.('speaker');
         const capText = capLive && typeof window.__liveCaptionText === 'function'
             ? window.__liveCaptionText() : '';
-        const capName = capText && (
-            capText.match(/appoint\s+the\s+honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i) ||
-            capText.match(/honorable\s+(.+?)\s+to\s+act\s+as\s+speaker\s+pro\s+tempore/i));
+        const capName = CaptionPanels.speakerProTem(capText);
         if (capName) {
-            const named = spokenNameCase(capName[1]);
+            const named = spokenNameCase(capName);
             elements.speakerMemberTitle.textContent = 'Speaker Pro Tempore';
             elements.speakerMemberName.textContent = named;
             elements.speakerPartyTag.textContent = '';
@@ -7851,10 +7845,7 @@ function updatePrivilegeNoticeSection(item) {
     const stateName = paren ? (POSTAL_TO_STATE_NAME[paren[2]] || '') : ofState ? ofState[2].trim() : '';
     if (raw && elements.privilegeNoticeMemberName) elements.privilegeNoticeMemberName.textContent = raw;
     if (elements.privilegeNoticeCard) elements.privilegeNoticeCard.hidden = !raw;
-    if (surname) fetchPrivilegeMemberInfo(surname, stateName, {
-        name: elements.privilegeNoticeMemberName, details: elements.privilegeNoticeMemberDetails, party: elements.privilegeNoticePartyTag,
-        additional: elements.privilegeNoticeMemberAdditional, website: elements.privilegeNoticeMemberWebsite, image: elements.privilegeNoticeImage,
-    });
+    if (surname) fetchPrivilegeMemberInfo(surname, stateName, 'privilegeNotice');
 }
 
 function updatePrivilegeSection(ppItem, kind, items, index) {
@@ -7927,9 +7918,11 @@ function updatePrivilegeSection(ppItem, kind, items, index) {
     if (surname) fetchPrivilegeMemberInfo(surname, stateName);
 }
 
-async function fetchPrivilegeMemberInfo(surname, stateName, to) {
-    // `to` names the card to fill (the notice panel has one of its own); by default it is the privilege panel's
-    const t = to || { name: elements.privilegeMemberName, details: elements.privilegeMemberDetails, party: elements.privilegePartyTag, additional: elements.privilegeMemberAdditional, website: elements.privilegeMemberWebsite, image: elements.privilegeImage };
+// The member card of the privilege panel ('privilege') or of the notice panel ('privilegeNotice'), by the prefix of their `elements` keys.
+const privilegeCard = (prefix) => ({ name: elements[`${prefix}MemberName`], details: elements[`${prefix}MemberDetails`], party: elements[`${prefix}PartyTag`], additional: elements[`${prefix}MemberAdditional`], website: elements[`${prefix}MemberWebsite`], image: elements[`${prefix}Image`] });
+
+async function fetchPrivilegeMemberInfo(surname, stateName, prefix = 'privilege') {
+    const t = privilegeCard(prefix);
     try {
         const state = stateName ? (STATE_NAME_TO_ABBR[stateName] || '') : '';
         const xmlDoc = parseMemberDataXml(await getMemberDataXml());
@@ -10351,20 +10344,7 @@ async function updateQuorumStatus() {
 (function initMorningBusinessFromCaptions() {
     // Anchored phrases, not keywords: "prayer" alone shows up in debate. These
     // are the same patterns dev/caption-lead.mjs was scored on.
-    const EVENTS = [
-        { key: 'prayer',   mode: 'prayer',
-          re: /prayer will be\s+offered|offered the following prayer|offered by (?:the )?chaplain|chaplain[^.]{0,30}offered/i,
-          needles: ['prayer', 'chaplain'] },
-        { key: 'pledge',   mode: 'pledge',
-          re: /pledge of allegiance/i,
-          needles: ['pledge', 'allegiance'] },
-        { key: 'speaker',  mode: 'speaker',
-          re: /hereby appoint the honorable|to act as speaker pro tempore/i,
-          needles: ['pro tempore'] },
-        { key: 'one-minute', mode: 'one-minute',
-          re: /recognized for one minute|one[- ]minute speech/i,
-          needles: ['one-minute speech', 'one minute speech'] },
-    ];
+    const EVENTS = CaptionPanels.EVENTS;
 
     // Showing the marker is not enough. Each of these sections lives in a
     // .mode-column that is display:none unless the body carries its mode class,
@@ -10401,10 +10381,9 @@ async function updateQuorumStatus() {
     const MAX_VISIBLE_MS = 5 * 60 * 1000;
     const POLL_MS = 2000;
 
-    const state = new Map();   // key -> { firedAt }
+    const state = new Map();   // key -> { firedAt, time, live }: `live` while the captions are all the board has for it
     let day = '';
 
-    const el = (key) => document.getElementById(`${key}-live`);
     // The time the captions gave the event, in the Clerk's own format, and the
     // source the panel names while that is all there is. The Clerk's entry
     // replaces both: its time differs from ours, so it reads as reported.
@@ -10413,27 +10392,7 @@ async function updateQuorumStatus() {
     const CLERK_SOURCE = { text: 'Legislative Activity (House Clerk)', href: 'https://clerk.house.gov/FloorSummary' };
     // The words the captions gave, as the source manifest every other panel has (lib/source-pop.js), so "Captions" can be opened and read.
     // It names the caption file the words are in (captions.vtt beside the stream's playlist) and the cue they sit in, as that file writes it.
-    const COLLAPSE = (x) => String(x).replace(/\s+/g, ' ').trim().toUpperCase();
-    async function cueOf(url, heard, phrase) {
-        const vtt = await (await fetch(url)).text();
-        const cues = [];
-        for (const block of vtt.split(/\r?\n\r?\n/)) {
-            const lines = block.split(/\r?\n/); const at = lines.findIndex((l) => l.includes('-->'));
-            if (at < 0) continue;
-            cues.push({ time: lines[at].trim(), raw: lines.slice(at + 1).join('\n').trim(), text: COLLAPSE(lines.slice(at + 1).join(' ').replace(/^UNIDENTIFIED SPEAKER:\s*/i, '')) });
-        }
-        let joined = '', marks = [];
-        for (const c of cues) { marks.push(joined.length); joined += c.text + ' '; }
-        let from = joined.lastIndexOf(COLLAPSE(heard));
-        let len = COLLAPSE(heard).length;
-        if (from < 0) { from = joined.lastIndexOf(COLLAPSE(phrase)); len = COLLAPSE(phrase).length; }
-        if (from < 0) return null;
-        const idx = (pos) => { let k = 0; while (k + 1 < marks.length && marks[k + 1] <= pos) k++; return k; };
-        const a = idx(from), z = idx(from + len - 1);
-        // the cues the words are in, with the one before and the one after, laid out as the file has them
-        const raw = (c) => `${c.time}\n${c.raw}`;
-        return cues.slice(Math.max(0, a - 1), z + 2).map(raw).join('\n\n');
-    }
+    const cueOf = async (url, heard, phrase) => CaptionPanels.cueBlock(await (await fetch(url)).text(), heard, phrase);
     const showCaptionSource = (key, on, heard, at, phrase) => {
         const a = sourceLink(key);
         if (!a) return;
@@ -10448,7 +10407,7 @@ async function updateQuorumStatus() {
             ...(cue ? { vtt: cue } : { json: { heardAt: at, text: heard } }),
         });
         SourcePop.set(section, on ? manifest(null) : null);
-        if (on && file) cueOf(file, heard, phrase).then((cue) => { if (cue && state.get(key) && !el(key).hidden) SourcePop.set(section, manifest(cue)); }).catch(() => {});
+        if (on && file) cueOf(file, heard, phrase).then((cue) => { if (cue && state.get(key) && state.get(key).live) SourcePop.set(section, manifest(cue)); }).catch(() => {});
     };
     const clerkReported = (key) => {
         const t = document.getElementById(`${key}-time`);
@@ -10458,40 +10417,35 @@ async function updateQuorumStatus() {
     };
     window.__captionTime = (key) => {
         const seen = state.get(key);
-        const node = el(key);
-        return seen && seen.time && node && !node.hidden ? seen.time : '';
+        return seen && seen.live ? seen.time : '';
     };
 
     function tick() {
         const today = new Date().toDateString();
-        if (today !== day) { day = today; state.clear(); EVENTS.forEach(e => { const n = el(e.key); if (n) n.hidden = true; }); }
+        if (today !== day) { day = today; state.clear(); }
 
         const text = typeof window.__liveCaptionText === 'function' ? window.__liveCaptionText() : '';
         const now = Date.now();
 
         for (const ev of EVENTS) {
-            const node = el(ev.key);
-            if (!node) continue;
             const seen = state.get(ev.key);
 
             if (!seen && text && ev.re.test(text)) {
-                // Already in the feed? Then there is nothing to be early about,
-                // and lighting the marker would flash NOW over an event the
-                // Clerk has already timestamped.
-                if (clerkReported(ev.key)) { state.set(ev.key, { firedAt: now }); continue; }
-                state.set(ev.key, { firedAt: now, time: stamp(now) });
+                // Already in the feed? Then there is nothing to be early about:
+                // the Clerk has already timestamped it.
+                if (clerkReported(ev.key)) { state.set(ev.key, { firedAt: now, live: false }); continue; }
+                state.set(ev.key, { firedAt: now, time: stamp(now), live: true });
                 const tm = document.getElementById(`${ev.key}-time`);
                 if (tm) tm.textContent = stamp(now);
                 const hit = ev.re.exec(text);
                 const heard = text.slice(Math.max(0, hit.index - 80), hit.index + hit[0].length + 120).replace(/\s+/g, ' ').trim();
                 showCaptionSource(ev.key, true, heard, stamp(now), hit[0]);
-                node.hidden = false;
                 revealSection(ev);
                 continue;
             }
-            if (seen && !node.hidden) {
+            if (seen && seen.live) {
                 if (clerkReported(ev.key) || now - seen.firedAt > MAX_VISIBLE_MS) {
-                    node.hidden = true;
+                    seen.live = false;
                     showCaptionSource(ev.key, false);
                     try { updateSourceManifest(ev.mode); } catch (_) {}   // the Clerk's entry takes the manifest back
                     const tm = document.getElementById(`${ev.key}-time`);
@@ -10505,8 +10459,8 @@ async function updateQuorumStatus() {
     // and the feed has not caught up, they must not claim there is no
     // information. There is -- it just has not been published yet.
     window.__captionLive = (key) => {
-        const node = el(key);
-        return !!(state.get(key) && node && !node.hidden);
+        const seen = state.get(key);
+        return !!(seen && seen.live);
     };
 
     setInterval(tick, POLL_MS);

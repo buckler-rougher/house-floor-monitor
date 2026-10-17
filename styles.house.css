@@ -46,6 +46,7 @@
     --accent-yellow:     #e3b341;
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
+  --on-accent: #0d1117;
 
     --party-d:           #58a6ff;
     --party-r:           #ff4d4f;
@@ -1384,11 +1385,6 @@ body.tellers-mode .tellers-column { display: flex; }
   flex-direction: column;
   align-items: center;
   gap: var(--sp-10);
-}
-
-.section-live {
-
-  display: none;
 }
 
 .video-loading-bars {
@@ -6777,7 +6773,7 @@ body.debate-mode .debate-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-blue);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7212,7 +7208,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-blue);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7330,7 +7326,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-purple);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7548,7 +7544,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-red);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7740,7 +7736,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-amber);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7902,7 +7898,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-amber);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);

@@ -130,4 +130,24 @@ test('clip: the Clerk entries that had happened by then', () => {
   assert.deepStrictEqual(R.clip(null, 50), []);
 });
 
+test('billsAsOf: a bill reads as passed only once its vote had closed', () => {
+  const bill = (id, status, latestAction, latestActionDate) => ({ id, status, latestAction, latestActionDate, considered: status === 'passed' });
+  const bills = {
+    ruleBills: [bill('H.R. 1', 'passed', 'Passed (Roll Call 301): 216-211', '2026-09-15T00:00:00.000Z'), bill('H.R. 2', 'scheduled', 'Scheduled for consideration', '2026-09-15T00:00:00.000Z')],
+    suspensionBills: [bill('H.R. 3', 'passed', 'Passed (voice vote)', '2026-09-15T00:00:00.000Z'), bill('H.R. 4', 'passed', 'Passed (Roll Call 290)', '2026-09-14T00:00:00.000Z'), bill('H.R. 5', 'passed', 'Passed (Roll Call 311)', '2026-09-16T00:00:00.000Z')],
+    mayBeConsideredBills: [],
+  };
+  const ctx = { iso: '2026-09-15', rolls: [{ roll: '301', ms: 1000 }, { roll: '311', ms: 9000 }], passAt: new Map([['HR3', 2000]]), last: 5000 };
+  const at = (ms) => { const r = R.billsAsOf(bills, ms, ctx); return Object.fromEntries([...r.ruleBills, ...r.suspensionBills].map((b) => [b.id, b.status])); };
+  assert.deepStrictEqual(at(500), { 'H.R. 1': 'scheduled', 'H.R. 2': 'scheduled', 'H.R. 3': 'scheduled', 'H.R. 4': 'passed', 'H.R. 5': 'scheduled' }, 'an earlier day stays passed, a later one is not yet');
+  assert.strictEqual(at(1500)['H.R. 1'], 'passed', 'a roll call passes when its vote closes (the roll number is text in the data)');
+  assert.strictEqual(at(1500)['H.R. 3'], 'scheduled', 'a voice vote is not yet');
+  assert.strictEqual(at(2500)['H.R. 3'], 'passed');
+  assert.strictEqual(at(6000)['H.R. 5'], 'scheduled', 'a bill dated after the day never passes within it');
+  assert.strictEqual(R.billsAsOf(null, 1, ctx), null);
+  const none = R.billsAsOf({ ruleBills: [bill('H.R. 9', 'passed', 'Passed (voice vote)', '2026-09-15T00:00:00.000Z')] }, 4000, ctx).ruleBills[0];
+  assert.strictEqual(none.status, 'scheduled', 'a voice vote nothing places counts only once the log has ended');
+  assert.strictEqual(R.billsAsOf({ ruleBills: [bill('H.R. 9', 'passed', 'Passed (voice vote)', '2026-09-15T00:00:00.000Z')] }, 6000, ctx).ruleBills[0].status, 'passed');
+});
+
 console.log(`replay: ${n} passed`);
