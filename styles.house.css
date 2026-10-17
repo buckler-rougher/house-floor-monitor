@@ -11636,6 +11636,9 @@ a.source-link.has-manifest .source-tail::after {
     mask-image: var(--source-icon-more);
 }
 
+a.source-link.has-manifest:hover,
+a.source-link.has-manifest:focus-visible { text-decoration: none; }
+
 a.source-link:not(.has-tail)::after,
 a.source-link .source-tail::after {
     transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1);
