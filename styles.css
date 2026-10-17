@@ -64,6 +64,7 @@
     --accent-yellow:     #e3b341;
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
+  --tag-height:        26.5px;   /* every Happening Now tag: the IN PLAY tag's height */
 
     /* Party identity. Deliberately not the accents: --accent-red also means
        "failed" and --accent-blue means "link", and a party is neither. Values
@@ -7288,7 +7289,9 @@ body.debate-mode .debate-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-green) 14%, transparent);
     color: var(--accent-green);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7404,7 +7407,9 @@ body.one-minute-mode .one-minute-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-yellow) 14%, transparent);
     color: var(--accent-yellow);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7501,7 +7506,9 @@ body.special-order-mode .special-order-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-yellow) 14%, transparent);
     color: var(--accent-yellow);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7598,7 +7605,9 @@ body.morning-hour-mode .morning-hour-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-yellow) 14%, transparent);
     color: var(--accent-yellow);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7733,7 +7742,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
     color: var(--accent-blue);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7852,7 +7863,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-purple) 14%, transparent);
     color: color-mix(in srgb, var(--accent-purple) 80%, white);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -7901,7 +7914,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--text-secondary) 14%, transparent);
     color: var(--text-secondary);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8078,7 +8093,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-red) 14%, transparent);
     color: var(--accent-red);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8274,7 +8291,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
     color: var(--accent-amber);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8436,7 +8455,9 @@ body.committee-chair-mode .committee-chair-section {
     align-items: center;
     background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
     color: var(--accent-amber);
-    padding: 5px var(--sp-10);
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8592,9 +8613,11 @@ body.message-mode .message-section {
 .message-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #8ebfd7 14%, transparent);
-    color: #8ebfd7;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #519cc2 14%, transparent);
+    color: #519cc2;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8671,9 +8694,11 @@ body.joint-meeting-mode .joint-meeting-section {
 .joint-meeting-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #d88dcc 14%, transparent);
-    color: #d88dcc;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #cf72c0 14%, transparent);
+    color: #cf72c0;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8733,9 +8758,11 @@ body.joint-meeting-mode .joint-meeting-section {
 .journal-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #a590d5 14%, transparent);
-    color: #a590d5;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #9f8ad0 14%, transparent);
+    color: #9f8ad0;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -8784,7 +8811,7 @@ body.privilege-notice-mode .privilege-section.is-notice { display: block; }
    censure and impeachment reach the floor. Indigo rather than the teal, so the
    two are not mistaken for each other at a glance. */
 .privilege-section.is-house .privilege-tag,
-.privilege-section.is-notice .privilege-tag { background: color-mix(in srgb, #9094d5 14%, transparent); color: #9094d5; }
+.privilege-section.is-notice .privilege-tag { background: color-mix(in srgb, #8d91ce 14%, transparent); color: #8d91ce; }
 
 /* The resolution it was offered on, and what became of it. Only the House kind
    has one; the personal kind leaves this hidden. */
@@ -8850,9 +8877,11 @@ body.privilege-notice-mode .privilege-section.is-notice { display: block; }
 .privilege-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #7be6ea 14%, transparent);
-    color: #7be6ea;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #1caab0 14%, transparent);
+    color: #1caab0;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9051,9 +9080,11 @@ body.privilege-notice-mode .privilege-section.is-notice { display: block; }
 .tellers-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #d590b1 14%, transparent);
-    color: #d590b1;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #c87ea2 14%, transparent);
+    color: #c87ea2;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9373,9 +9404,11 @@ body.joint-session-mode .joint-session-section {
 .joint-session-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #ffb966 14%, transparent);
-    color: #ffb966;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #d27f1e 14%, transparent);
+    color: #d27f1e;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9441,9 +9474,11 @@ body.joint-session-mode .joint-session-section {
 .cert-election-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #89b4dc 14%, transparent);
-    color: #89b4dc;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #5e98cf 14%, transparent);
+    color: #5e98cf;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9556,9 +9591,11 @@ body.joint-session-mode .joint-session-section {
 .cert-electoral-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #e28383 14%, transparent);
-    color: #e28383;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #de7272 14%, transparent);
+    color: #de7272;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9681,9 +9718,11 @@ body.joint-session-mode .joint-session-section {
 .sine-die-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #90abd5 14%, transparent);
-    color: #90abd5;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #7795c5 14%, transparent);
+    color: #7795c5;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9775,9 +9814,11 @@ body.joint-session-mode .joint-session-section {
 .new-session-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #85e0b5 14%, transparent);
-    color: #85e0b5;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #2aa76c 14%, transparent);
+    color: #2aa76c;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -9875,9 +9916,11 @@ body.admin-oath-mode .admin-oath-section {
 .admin-oath-tag {
     display: inline-flex;
     align-items: center;
-    background: color-mix(in srgb, #a98ed7 14%, transparent);
-    color: #a98ed7;
-    padding: 5px var(--sp-10);
+    background: color-mix(in srgb, #a486d5 14%, transparent);
+    color: #a486d5;
+    min-height: var(--tag-height);
+    box-sizing: border-box;
+    padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
@@ -12026,15 +12069,15 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 /* The roll call is the vote panel's tag, the one every other panel has beside HAPPENING NOW: the IN PLAY style (colour text on a tint of itself), the label in bold and the number thin like the timestamps in the other tags. */
 .panel-header > .vote-id {
-    height: auto;
-    padding: 5px var(--sp-10);
+    height: var(--tag-height);
+    padding: 0 var(--sp-10);
     background: color-mix(in srgb, var(--accent-blue) 14%, transparent);
     color: var(--accent-blue);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
     font-weight: 700;
     letter-spacing: var(--track-wide);
-    line-height: normal;
+    line-height: 1;
 }
 .vote-id-num { font-size: var(--fs-sm); font-weight: 400; margin-left: var(--sp-8); }
 
@@ -12044,6 +12087,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-8);
+    margin-top: var(--sp-16);   /* the header pulls the next row up by 16px */
     padding: var(--sp-12) var(--sp-32) 0;
 }
 .vote-pills .vote-pill,
@@ -12067,6 +12111,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .vote-pills .vtt-blue   { border-color: rgba(88, 166, 255, 0.4); }
 .vote-pills .vtt-muted  { border-color: rgba(139, 148, 158, 0.35); }
 @media (max-width: 640px) { .vote-pills { padding: var(--sp-12) var(--sp-16) 0; } }
+.vote-pills + .vote-header { margin-top: var(--sp-12); }
 
 /* Phone: the header wraps to two rows (label and badges, then the source). The
    10px padding left the first row hugging the top edge; give it room. */
