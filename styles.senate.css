@@ -6935,7 +6935,7 @@ a.source-link:not(.has-manifest):is(:hover, :focus-visible):not(.has-tail)::afte
   a.source-link:not(.has-tail)::after, a.source-link .source-tail::after { transition: none; }
 }
 a.source-link { text-decoration: none; }
-a.source-link:not(.has-manifest):is(:hover, :focus-visible) { text-decoration: underline; }
+a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.tweet-ext-link):is(:hover, :focus-visible) { text-decoration: underline; }
 .source-pop {
     position: fixed;
     z-index: 1250;
