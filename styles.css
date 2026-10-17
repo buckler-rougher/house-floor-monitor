@@ -12574,7 +12574,22 @@ a.source-link.has-manifest .source-tail::after {
 /* Every source link, the CRS reports in the explanations' notes included: flat, underlined when hovered or focused. One that opens a popover (the caret) is a control, not a link
    out, and is never underlined. This is the only place a source link is underlined; the panels no longer carry a copy each. */
 a.source-link { text-decoration: none; }
-a.source-link:not(.has-manifest):is(:hover, :focus-visible) { text-decoration: underline; }
+/* The underline is drawn left to right when the link is hovered and erased left to right when it is left, along every row of a link that wraps (the CDN's underlines.js
+   explains the method: the line is the link's own background, which an inline box lays out end to end across its rows, so one animation runs along the first row and on
+   to the next). The anchor jumps to the right edge when the line is full width, so it leaves from the left. */
+a.source-link:not(.has-manifest) {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-size: 0 1px;
+    background-position: 100% 100%;
+    padding-bottom: 1px;
+    transition: background-size 0.4s cubic-bezier(0.75, 0, 0.25, 1);
+}
+a.source-link:not(.has-manifest):is(:hover, :focus-visible) {
+    background-size: 100% 1px;
+    background-position: 0 100%;
+}
+@media (prefers-reduced-motion: reduce) { a.source-link:not(.has-manifest) { transition: none; } }
 /* The arrow pops a little way in the direction it points when its link is hovered or focused: out and up for the link-out arrow, down for the caret. */
 a.source-link:not(.has-tail)::after,
 a.source-link .source-tail::after {
