@@ -750,29 +750,6 @@ body.tellers-mode .tellers-column { display: flex; }
     gap: var(--sp-12);
 }
 
-.one-minute-source, .special-order-source, .morning-hour-source, .prayer-source,
-.silence-source, .oath-source, .speaker-source, .committee-chair-source,
-.pledge-source, .message-source, .joint-meeting-source, .journal-source,
-.joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source,
-.tellers-source {
-    font-size: var(--fs-2xs);
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: var(--track-wide);
-    opacity: 0.8;
-}
-
-.one-minute-source a, .special-order-source a, .morning-hour-source a, .prayer-source a,
-.silence-source a, .oath-source a, .speaker-source a, .committee-chair-source a,
-.pledge-source a, .message-source a, .joint-meeting-source a, .journal-source a,
-.joint-session-source a, .cert-election-source a, .cert-electoral-source a,
-.sine-die-source a, .new-session-source a, .admin-oath-source a, .privilege-source a,
-.tellers-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .one-minute-content, .special-order-content, .morning-hour-content,
 .prayer-content, .silence-content, .oath-content, .speaker-content,
 .committee-chair-content, .pledge-content, .message-content,
@@ -6765,21 +6742,6 @@ body.debate-mode .debate-section {
 }
 
 .debate-section.is-planned .debate-tags-row::before { content: "ON THE FLOOR TODAY"; }
-.debate-source {
-    margin-left: auto;
-    font-size: var(--fs-2xs);
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: var(--track-wide);
-    opacity: 0.8;
-    white-space: nowrap;
-}
-.debate-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-    opacity: 0.9;
-}
-.debate-source a:hover { opacity: 1; }
 .debate-tag {
     display: inline-flex;
     align-items: center;
@@ -6921,16 +6883,6 @@ body.one-minute-mode .one-minute-section {
     justify-content: flex-end;
 }
 
-.one-minute-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.one-minute-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .one-minute-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -7018,16 +6970,6 @@ body.special-order-mode .special-order-section {
     justify-content: flex-end;
 }
 
-.special-order-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.special-order-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .special-order-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -7113,16 +7055,6 @@ body.morning-hour-mode .morning-hour-section {
 .morning-hour-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.morning-hour-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.morning-hour-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .morning-hour-content {
@@ -7250,11 +7182,6 @@ body.committee-chair-mode .committee-chair-section {
     justify-content: flex-end;
 }
 
-.committee-chair-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .committee-chair-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -7366,11 +7293,6 @@ body.committee-chair-mode .committee-chair-section {
     justify-content: flex-end;
 }
 
-.prayer-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .silence-section-header {
     display: flex;
     justify-content: space-between;
@@ -7404,11 +7326,6 @@ body.committee-chair-mode .committee-chair-section {
 .silence-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.silence-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .silence-content {
@@ -7537,11 +7454,6 @@ body.committee-chair-mode .committee-chair-section {
 
 .prayer-leader-website:hover {
     text-decoration: underline;
-}
-
-.prayer-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .pledge-section {
@@ -7712,11 +7624,6 @@ body.committee-chair-mode .committee-chair-section {
     margin-right: var(--sp-12);
 }
 
-.pledge-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .pledge-constitution-source {
     font-size: var(--fs-md);
     color: var(--text-muted);
@@ -7760,11 +7667,6 @@ body.committee-chair-mode .committee-chair-section {
 .oath-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.oath-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .oath-content {
@@ -7918,11 +7820,6 @@ body.committee-chair-mode .committee-chair-section {
     justify-content: flex-end;
 }
 
-.speaker-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .speaker-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -8071,16 +7968,6 @@ body.message-mode .message-section {
     justify-content: flex-end;
 }
 
-.message-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.message-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .message-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -8150,16 +8037,6 @@ body.joint-meeting-mode .joint-meeting-section {
     justify-content: flex-end;
 }
 
-.joint-meeting-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.joint-meeting-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .joint-meeting-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -8210,16 +8087,6 @@ body.joint-meeting-mode .joint-meeting-section {
 .journal-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.journal-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.journal-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .privilege-section { display: none; }
@@ -8497,11 +8364,6 @@ body.privilege-notice-mode .privilege-section.is-notice { display: block; }
 
 body.tellers-mode .tellers-section {
     display: block;
-}
-
-.tellers-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .tellers-list {
@@ -8813,16 +8675,6 @@ body.joint-session-mode .joint-session-section {
     justify-content: flex-end;
 }
 
-.joint-session-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.joint-session-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .joint-session-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -8879,16 +8731,6 @@ body.joint-session-mode .joint-session-section {
 .cert-election-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.cert-election-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.cert-election-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .cert-election-approval-container {
@@ -8994,16 +8836,6 @@ body.joint-session-mode .joint-session-section {
 .cert-electoral-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.cert-electoral-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.cert-electoral-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .cert-electoral-approval-container {
@@ -9121,16 +8953,6 @@ body.joint-session-mode .joint-session-section {
     justify-content: flex-end;
 }
 
-.sine-die-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.sine-die-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
-}
-
 .sine-die-content {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -9213,16 +9035,6 @@ body.joint-session-mode .joint-session-section {
 .new-session-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.new-session-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.new-session-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .new-session-content {
@@ -9313,16 +9125,6 @@ body.admin-oath-mode .admin-oath-section {
 .admin-oath-header-right {
     display: flex;
     justify-content: flex-end;
-}
-
-.admin-oath-source {
-    font-size: var(--fs-md);
-    color: var(--text-muted);
-}
-
-.admin-oath-source a {
-    color: var(--accent-blue);
-    text-decoration: none;
 }
 
 .admin-oath-administered-by {
@@ -10495,15 +10297,6 @@ html.replay-mode .weather-panel { display: none; }
     margin: 0;
 }
 
-.one-minute-source, .special-order-source, .morning-hour-source, .prayer-source,
-.silence-source, .oath-source, .speaker-source, .committee-chair-source,
-.pledge-source, .message-source, .joint-meeting-source, .journal-source,
-.joint-session-source, .cert-election-source, .cert-electoral-source,
-.sine-die-source, .new-session-source, .admin-oath-source, .privilege-source,
-.tellers-source {
-    font-size: var(--fs-2xs);
-}
-
 .one-minute-content, .special-order-content, .morning-hour-content,
 .prayer-content, .silence-content, .oath-content, .speaker-content,
 .committee-chair-content, .pledge-content, .message-content,
@@ -11609,6 +11402,8 @@ html.ai-off .bill-link-group > .bill-modal-link {
 }
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.debate-source { margin-left: auto; white-space: nowrap; }
 
 .source-tail { white-space: nowrap; }
 a.source-link:not(.has-tail)::after,
