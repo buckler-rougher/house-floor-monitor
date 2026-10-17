@@ -6928,7 +6928,8 @@ a.source-link:not(.has-manifest):is(:hover, :focus-visible) {
   a.source-link:not(.has-manifest) { transition: none; }
 }
 a.source-link:not(.has-manifest):not(.has-tail)::after, a.source-link:not(.has-manifest) .source-tail::after {
-    transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1);
+
+    transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1) 0.28s;
 }
 a.source-link:not(.has-manifest):is(:hover, :focus-visible):not(.has-tail)::after, a.source-link:not(.has-manifest):is(:hover, :focus-visible) .source-tail::after {
     transform: translate(0.14em, -0.14em);
