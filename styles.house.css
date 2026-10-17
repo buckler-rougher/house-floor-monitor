@@ -741,15 +741,6 @@ body.tellers-mode .tellers-column { display: flex; }
     text-decoration: none;
 }
 
-.one-minute-source a:hover, .special-order-source a:hover, .morning-hour-source a:hover, .prayer-source a:hover,
-.silence-source a:hover, .oath-source a:hover, .speaker-source a:hover, .committee-chair-source a:hover,
-.pledge-source a:hover, .message-source a:hover, .joint-meeting-source a:hover, .journal-source a:hover,
-.joint-session-source a:hover, .cert-election-source a:hover, .cert-electoral-source a:hover,
-.sine-die-source a:hover, .new-session-source a:hover, .admin-oath-source a:hover, .privilege-source a:hover,
-.tellers-source a:hover {
-    text-decoration: underline;
-}
-
 .one-minute-content, .special-order-content, .morning-hour-content,
 .prayer-content, .silence-content, .oath-content, .speaker-content,
 .committee-chair-content, .pledge-content, .message-content,
@@ -2057,7 +2048,7 @@ body.tellers-mode .tellers-column { display: flex; }
   transition: opacity var(--dur-200) ease;
 }
 
-.floor-feed-source a:hover { opacity: 1; text-decoration: underline; }
+.floor-feed-source a:hover { opacity: 1; }
 
 .floor-feed.is-idle .pip-speaker {
     display: none !important;
@@ -4148,10 +4139,7 @@ a.tweet-quote:hover {
     transition: opacity var(--dur-200) ease;
 }
 
-.panel-source a:hover {
-    opacity: 1;
-    text-decoration: underline;
-}
+.panel-source a:hover { opacity: 1; }
 
 .party-breakdown-time {
     font-size: var(--fs-sm);
@@ -4646,7 +4634,6 @@ font-family: var(--font-mono);
     color: var(--accent-blue);
     text-decoration: none;
 }
-.bill-modal-source > a:hover { text-decoration: underline; }
 
 .section-tag-wrap {
     display: flex;
@@ -4836,7 +4823,6 @@ font-family: var(--font-mono);
 }
 .info-popup-source a {
     color: inherit;
-    text-decoration: underline;
 }
 
 .bills-list {
@@ -6767,8 +6753,7 @@ body.debate-mode .debate-section {
     text-decoration: none;
     opacity: 0.9;
 }
-.debate-source a:hover { opacity: 1; text-decoration: underline; }
-
+.debate-source a:hover { opacity: 1; }
 .debate-tag {
     display: inline-flex;
     align-items: center;
@@ -7165,7 +7150,6 @@ body.morning-hour-mode .morning-hour-section {
 
 .speech-mode-ai-note a {
     color: inherit;
-    text-decoration: underline;
 }
 
 .prayer-section {
@@ -7243,10 +7227,6 @@ body.committee-chair-mode .committee-chair-section {
 .committee-chair-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.committee-chair-source a:hover {
-    text-decoration: underline;
 }
 
 .committee-chair-content {
@@ -7365,10 +7345,6 @@ body.committee-chair-mode .committee-chair-section {
     text-decoration: none;
 }
 
-.prayer-source a:hover {
-    text-decoration: underline;
-}
-
 .silence-section-header {
     display: flex;
     justify-content: space-between;
@@ -7407,10 +7383,6 @@ body.committee-chair-mode .committee-chair-section {
 .silence-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.silence-source a:hover {
-    text-decoration: underline;
 }
 
 .silence-content {
@@ -7544,10 +7516,6 @@ body.committee-chair-mode .committee-chair-section {
 .prayer-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.prayer-source a:hover {
-    text-decoration: underline;
 }
 
 .pledge-section {
@@ -7723,10 +7691,6 @@ body.committee-chair-mode .committee-chair-section {
     text-decoration: none;
 }
 
-.pledge-source a:hover {
-    text-decoration: underline;
-}
-
 .pledge-constitution-source {
     font-size: var(--fs-md);
     color: var(--text-muted);
@@ -7735,15 +7699,6 @@ body.committee-chair-mode .committee-chair-section {
 .pledge-constitution-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.pledge-constitution-source a:hover,
-.journal-constitution-source a:hover,
-.cert-election-constitution-source a:hover,
-.cert-electoral-constitution-source a:hover,
-.sine-die-constitution-source a:hover,
-.new-session-constitution-source a:hover {
-    text-decoration: underline;
 }
 
 .oath-section-header {
@@ -7784,10 +7739,6 @@ body.committee-chair-mode .committee-chair-section {
 .oath-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.oath-source a:hover {
-    text-decoration: underline;
 }
 
 .oath-content {
@@ -7879,10 +7830,6 @@ body.committee-chair-mode .committee-chair-section {
     text-decoration: none;
 }
 
-.oath-source-inline a:hover {
-    text-decoration: underline;
-}
-
 .pledge-text-container {
     display: flex;
     flex-direction: column;
@@ -7948,10 +7895,6 @@ body.committee-chair-mode .committee-chair-section {
 .speaker-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.speaker-source a:hover {
-    text-decoration: underline;
 }
 
 .speaker-content {
@@ -8533,10 +8476,6 @@ body.tellers-mode .tellers-section {
 .tellers-source a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.tellers-source a:hover {
-    text-decoration: underline;
 }
 
 .tellers-list {
@@ -9401,10 +9340,6 @@ body.admin-oath-mode .admin-oath-section {
 .admin-oath-source-inline a {
     color: var(--accent-blue);
     text-decoration: none;
-}
-
-.admin-oath-source-inline a:hover {
-    text-decoration: underline;
 }
 
 @media (max-width: 640px) {
@@ -11276,7 +11211,6 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     color: var(--text-muted);
 }
 .calendar-card-source a { color: var(--accent-blue); text-decoration: none; }
-.calendar-card-source a:hover { text-decoration: underline; }
 .calendar-card-toggle {
     position: absolute;
     left: 50%;
@@ -11636,8 +11570,8 @@ a.source-link.has-manifest .source-tail::after {
     mask-image: var(--source-icon-more);
 }
 
-a.source-link.has-manifest:hover,
-a.source-link.has-manifest:focus-visible { text-decoration: none; }
+a.source-link { text-decoration: none; }
+a.source-link:not(.has-manifest):is(:hover, :focus-visible) { text-decoration: underline; }
 
 a.source-link:not(.has-tail)::after,
 a.source-link .source-tail::after {
@@ -11705,7 +11639,6 @@ a.source-link.has-manifest:is(:hover, :focus-visible) .source-tail::after {
     color: var(--accent-blue);
     text-decoration: none;
 }
-.source-pop-link:hover { text-decoration: underline; }
 
 .source-pop.has-json { max-width: 560px; }
 .source-pop-request {
