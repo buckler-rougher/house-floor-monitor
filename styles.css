@@ -12581,6 +12581,21 @@ a.source-link.has-manifest .source-tail::after {
     -webkit-mask-image: var(--source-icon-more);
     mask-image: var(--source-icon-more);
 }
+/* The link-out arrow pops a little way up and to the right, the way it points, when its link is hovered or focused. The caret does not move: it points down, and a popover can
+   open above or below the link depending on where the page is scrolled. */
+a.source-link:not(.has-manifest):not(.has-tail)::after,
+a.source-link:not(.has-manifest) .source-tail::after {
+    transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1);
+}
+a.source-link:not(.has-manifest):is(:hover, :focus-visible):not(.has-tail)::after,
+a.source-link:not(.has-manifest):is(:hover, :focus-visible) .source-tail::after {
+    transform: translate(0.14em, -0.14em);
+}
+@media (prefers-reduced-motion: reduce) {
+    a.source-link:not(.has-tail)::after,
+    a.source-link .source-tail::after { transition: none; }
+}
+
 /* Every source link, the CRS reports in the explanations' notes included: flat, underlined when hovered or focused. One that opens a popover (the caret) is a control, not a link
    out, and is never underlined. This is the only place a source link is underlined; the panels no longer carry a copy each. */
 a.source-link { text-decoration: none; }
