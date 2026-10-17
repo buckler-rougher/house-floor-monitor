@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 //
-// The Worker's /api/committee-meetings and /api/discharge-petitions, against a mocked Clerk (no network). What is pinned: the committee scan finds the
-// next day with anything on and says which day, and a page that is not the calendar is an error rather than an empty day; the petition counts come from
+// The Worker's /api/committee-meetings and /api/discharge-petitions, against a mocked Clerk (no network). What is pinned: the committee meetings are the one day asked for (an empty day is an empty list), and a page that is not the calendar is an error rather than an empty day; the petition counts come from
 // each petition's own page, a petition that reached 218 is read once and never again, and a bad date is a 400.
 
 import assert from 'node:assert';
@@ -97,19 +96,14 @@ await ok('a day with meetings returns them, from the Clerk\'s table', async () =
   assert.ok(r.body.table.includes('EventID=119566'));
 });
 
-await ok('scan looks forward for the next day with meetings and says which day it found', async () => {
-  const r = await get('committee-meetings?date=' + encodeURIComponent('09/14/2026') + '&scan=1');
-  assert.strictEqual(r.body.asked, '09/14/2026');
-  assert.strictEqual(r.body.date, '09/16/2026');
-  assert.strictEqual(r.body.events.length, 3);
-  assert.strictEqual(r.fetched.length, 3, 'the 14th, the 15th, the 16th');
-});
-
-await ok('a week with nothing on is an empty answer for the last day looked at, not an error', async () => {
-  const r = await get('committee-meetings?date=' + encodeURIComponent('10/09/2026') + '&scan=1');
+await ok('a day with nothing on is an empty list for that day, and the neighbouring days are not looked at', async () => {
+  const r = await get('committee-meetings?date=' + encodeURIComponent('09/14/2026'));
   assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.date, '09/14/2026');
   assert.deepStrictEqual(r.body.events, []);
-  assert.strictEqual(r.fetched.length, 7);
+  assert.strictEqual(r.fetched.length, 1);
+  const stillAsked = await get('committee-meetings?date=' + encodeURIComponent('09/14/2026') + '&scan=1');
+  assert.strictEqual(stillAsked.body.date, '09/14/2026', 'the old scan option is ignored');
 });
 
 await ok('a page that is not the calendar is an error, and a bad date is a 400', async () => {

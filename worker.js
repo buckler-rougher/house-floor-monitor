@@ -4181,28 +4181,20 @@ async function handleCommitteeEvent(env, id) {
 }
 
 async function handleCommitteeMeetings(request, env) {
-  const q = new URL(request.url).searchParams;
-  const date = q.get('date') || '';
-  const scan = q.has('scan');
+  const date = new URL(request.url).searchParams.get('date') || '';
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
     status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
   const m = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m || Number(m[1]) < 1 || Number(m[1]) > 12 || Number(m[2]) < 1 || Number(m[2]) > 31) return fail(400, 'date must be MM/DD/YYYY');
   const isToday = `${m[3]}${m[1]}${m[2]}` === getTodayDateET();
-  return kvCache(env, `committee-meetings-v1-${date}${scan ? '-scan' : ''}`, isToday ? 300 : 3600, async () => {
+  // the one day asked for: a day with nothing on is an empty list, never another day's meetings
+  return kvCache(env, `committee-meetings-v1-${date}`, isToday ? 300 : 3600, async () => {
     try {
-      let found = null, day = date;
-      for (let i = 0; i < (scan ? 7 : 1); i++) {
-        const d = new Date(Date.UTC(Number(m[3]), Number(m[1]) - 1, Number(m[2]) + i));
-        day = `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}/${d.getUTCFullYear()}`;
-        const html = await fetchSource(`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${day.replace(/\//g, '')}`, 'committee calendar');
-        const parsed = globalThis.CommitteeMeetings.parseDay(html);
-        if (!parsed) throw new Error('the committee calendar page had no meetings table (has it changed?)');
-        found = parsed;
-        if (parsed.events.length) break;
-      }
-      return new Response(JSON.stringify({ at: Date.now(), asked: date, date: day, events: found.events, table: found.table }), {
+      const html = await fetchSource(`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${date.replace(/\//g, '')}`, 'committee calendar');
+      const parsed = globalThis.CommitteeMeetings.parseDay(html);
+      if (!parsed) throw new Error('the committee calendar page had no meetings table (has it changed?)');
+      return new Response(JSON.stringify({ at: Date.now(), asked: date, date, events: parsed.events, table: parsed.table }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${isToday ? 300 : 3600}` },
       });
     } catch (e) {

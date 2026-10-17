@@ -60,7 +60,7 @@
   // a tally arrived and stepped two seconds at a time with the centiseconds
   // pinned at .00 -- it read as jumping rather than running. Snapshot captures
   // still freeze; they pass ?fixtures, not ?demo. An explicit ?freeze= still wins.
-  if (freezeArg !== '0' && (demo ? freezeArg : (useFixtures || mode || freezeArg))) {
+  if (freezeArg !== '0' && (demo ? freezeArg : (useFixtures || freezeArg))) {   // a bare ?mode= keeps the real clock: it shows live data in the chosen mode, and a frozen clock asked the API for 3 September
     const fixed = Date.parse(freezeArg && freezeArg !== '1' ? freezeArg : FREEZE_DEFAULT);
     if (Number.isFinite(fixed)) {
       const RealDate = Date;
