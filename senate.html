@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261017v">
+    <link rel="stylesheet" href="styles.senate.css?v=20261017w">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1323,25 +1323,24 @@
     </main>
 
     <footer class="site-footer">
-        <div class="site-footer-primary">
-            <span class="site-footer-brand">Monitoring the Senate Floor</span>
-            <span class="site-footer-sep">&middot;</span>
-            <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
-            <span class="site-footer-sep">&middot;</span>
-            <a class="site-footer-license" href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener license">MIT License</a>
-            <span class="site-footer-sep">&middot;</span>
-            <a class="site-footer-license" href="/legal">Legal</a>
-            <span class="site-footer-sep">&middot;</span>
-            <a class="site-footer-license" href="/demo">Demo</a>
-            <span class="site-footer-sep">&middot;</span>
-            <button class="site-footer-license ai-toggle" type="button" data-ai-toggle aria-pressed="true">AI summaries: on</button>
-            <span class="site-footer-sep">&middot;</span>
-            <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the Senate Floor" target="_blank" rel="noopener">Contact</a>
-            <span class="site-footer-sep">&middot;</span>
-            <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source Code</a>
-        </div>
-        <div class="site-footer-secondary">
-            Not affiliated with the U.S. Senate. For informational purposes only.
+        <div class="site-footer-grid">
+            <div class="site-footer-about">
+                <span class="site-footer-brand">Monitoring the Senate Floor</span>
+                <p class="site-footer-secondary">Not affiliated with the U.S. Senate. For informational purposes only.</p>
+            </div>
+            <nav class="site-footer-col" aria-label="The board">
+                <span class="site-footer-head">The board</span>
+                <a class="site-footer-license" href="/legal">Legal</a>
+                <a class="site-footer-license" href="/demo">Demo</a>
+                <button class="site-footer-license ai-toggle" type="button" data-ai-toggle aria-pressed="true">AI summaries: on</button>
+            </nav>
+            <nav class="site-footer-col" aria-label="The project">
+                <span class="site-footer-head">The project</span>
+                <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the Senate Floor" target="_blank" rel="noopener">Contact</a>
+                <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source code</a>
+                <a class="site-footer-license" href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener license">MIT License</a>
+                <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
+            </nav>
         </div>
     </footer>
 
