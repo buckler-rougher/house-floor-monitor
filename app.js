@@ -6311,7 +6311,7 @@ function renderCommitteeMeetings() {
         </div>` }));
         ListSync.sync(list, entries);
         list._clamp?.refresh();
-        if (_committeeJustOpened) {
+        if (_committeeJustOpened && _committeeDetail[_committeeJustOpened] !== 'loading') {   // the loaded details replace the spinner, so they are what grows
             const id = _committeeJustOpened; _committeeJustOpened = null;
             ClampList.reveal(list.querySelector(`[data-committee-detail="${CSS.escape(id)}"]`)?.closest('.committee-item')?.querySelector('.committee-detail'), true);
         }
