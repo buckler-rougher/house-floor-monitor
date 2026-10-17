@@ -11359,7 +11359,6 @@ html.ai-off .bill-link-group > .bill-modal-link {
     border-radius: var(--radius-6);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background var(--dur-120), border-color var(--dur-120);
 }
 .ai-off-btn:hover, .ai-off-btn:focus-visible,
 .committee-more:hover, .committee-more:focus-visible,
@@ -11368,6 +11367,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--text-muted);
     text-decoration: none;
+    transition: background var(--dur-120), border-color var(--dur-120);
 }
 .committee-more::after {
     content: "";
