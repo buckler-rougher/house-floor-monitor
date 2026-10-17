@@ -6847,13 +6847,18 @@ html.ai-off .ai-block:not(.is-plain) { display: none !important; }
 button.site-footer-license {
     background: none;
     border: 0;
-    padding: 0;
+    padding: var(--sp-2) var(--sp-8);
+    margin-left: calc(var(--sp-8) * -1);
+    border-radius: var(--radius-3);
     cursor: pointer;
+    transition: background var(--dur-120), color var(--dur-120);
 }
+button.site-footer-license:hover, button.site-footer-license:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
     border-bottom-right-radius: var(--radius-6);
 }
+.committee-more:hover, .committee-more:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 .bill-open {
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
@@ -7070,8 +7075,7 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .committee-title { color: var(--text-primary); font-size: var(--fs-md); line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
 .committee-title:hover { text-decoration: underline; }
 .committee-name { font-size: var(--fs-sm); color: var(--text-muted); }
-.committee-more { justify-self: start; text-align: left; margin-top: var(--sp-4); padding: 0; background: none; border: none; font: inherit; font-size: var(--fs-sm); color: var(--accent-blue); cursor: pointer; }
-.committee-more:hover { text-decoration: underline; }
+.committee-more { justify-self: start; text-align: left; margin: var(--sp-2) 0 0 calc(var(--sp-8) * -1); padding: var(--sp-4) var(--sp-8); background: none; border: none; border-radius: var(--radius-3); font: inherit; font-size: var(--fs-sm); color: var(--text-secondary); cursor: pointer; transition: background var(--dur-120), color var(--dur-120); }
 .committee-room { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; overflow-wrap: anywhere; }
 #senate-committees .committee-title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .committee-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-8); margin-top: var(--sp-4); }
