@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261016zzz">
+    <link rel="stylesheet" href="styles.house.css?v=20261017c">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -49,7 +49,7 @@
         // the header button is held back (html.tm-on) until the owner has seen it work on the live site: ?tm shows it, and remembers
         try { if (/[?&]tm\b/.test(location.search)) localStorage.setItem('tm-on', '1'); if (localStorage.getItem('tm-on') === '1') document.documentElement.classList.add('tm-on'); } catch (e) { /* no storage */ }
         if (/[?&]replay=\d{8}/.test(location.search)) {
-            document.write('<scr' + 'ipt src="lib/replay.js?v=20261015a"></scr' + 'ipt><scr' + 'ipt src="lib/replay-cc.js?v=20261015b"></scr' + 'ipt><scr' + 'ipt src="lib/replay-shim.js?v=20261017b"></scr' + 'ipt>');
+            document.write('<scr' + 'ipt src="lib/replay.js?v=20261017a"></scr' + 'ipt><scr' + 'ipt src="lib/replay-cc.js?v=20261015b"></scr' + 'ipt><scr' + 'ipt src="lib/replay-shim.js?v=20261017c"></scr' + 'ipt>');
         }
     </script>
     <script src="lib/ai-pref.js?v=20261008a"></script>
@@ -324,7 +324,6 @@
                     <div class="one-minute-tag">
                         <span class="one-minute-tag-text">ONE MINUTE SPEECHES</span>
                         <span class="one-minute-tag-time" id="one-minute-time"></span>
-                            <span class="section-live" id="one-minute-live" hidden>NOW</span>
                     </div>
                     <div class="one-minute-header-right">
                         <span class="one-minute-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
@@ -444,7 +443,6 @@
                         <div class="prayer-tag">
                             <span class="prayer-tag-text">MORNING PRAYER</span>
                             <span class="prayer-tag-time" id="prayer-time"></span>
-                            <span class="section-live" id="prayer-live" hidden>NOW</span>
                         </div>
                     </div>
                     <div class="prayer-header-right">
@@ -566,7 +564,6 @@
                         <div class="speaker-tag">
                             <span class="speaker-tag-text">SPEAKER PRO TEMPORE</span>
                             <span class="speaker-tag-time" id="speaker-time"></span>
-                            <span class="section-live" id="speaker-live" hidden>NOW</span>
                         </div>
                     </div>
                     <div class="speaker-header-right">
@@ -653,7 +650,6 @@
                         <div class="pledge-tag">
                             <span class="pledge-tag-text">PLEDGE OF ALLEGIANCE</span>
                             <span class="pledge-tag-time" id="pledge-time"></span>
-                                <span class="section-live" id="pledge-live" hidden>NOW</span>
                         </div>
                     </div>
                     <div class="pledge-header-right">
@@ -1988,9 +1984,9 @@
     <script defer src="lib/voting-calendar.js?v=20261008a"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
     <script defer src="lib/suggest-box.js?v=20260927a"></script>
-    <script defer src="lib/floor-feed.js?v=20261016a"></script>
+    <script defer src="lib/floor-feed.js?v=20261017a"></script>
     <script defer src="lib/replay-agenda.js?v=20261016c"></script>
-    <script defer src="lib/replay-ui.js?v=20261016s"></script>
+    <script defer src="lib/replay-ui.js?v=20261017a"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
     <script defer src="lib/reporters.js?v=20261013a"></script>
     <script defer src="lib/capcam.js?v=20261005a"></script>
@@ -1998,7 +1994,8 @@
     <script defer src="lib/weather.js?v=20261003a"></script>
     <script defer src="lib/missing-members.js?v=20261011b"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
-    <script defer src="app.js?v=20261016p"></script>
+    <script defer src="lib/caption-panels.js?v=20261017a"></script>
+    <script defer src="app.js?v=20261017a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

@@ -6751,17 +6751,38 @@ async function handleWhipSource(env) {
   });
 }
 
-async function handleWhipFloorUpdates(env, asof) {
+// An "as of" time for the time machine, or null when it is not one: a real instant between 2019 and tomorrow. Anything else is refused, so a visitor cannot make
+// the Worker keep an answer for every second of every year (the free KV cap of 1,000 writes a day is shared with the live board).
+function pastInstant(raw, { dayOnly = false } = {}) {
+  if (!raw || !(dayOnly ? /^\d{4}-\d\d-\d\d(T[\d:.]+Z)?$/ : /^\d{4}-\d\d-\d\dT[\d:.]+Z$/).test(raw)) return null;
+  const t = Date.parse(raw.length === 10 ? `${raw}T00:00:00Z` : raw);
+  if (Number.isNaN(t) || t < Date.UTC(2019, 0, 1) || t > Date.now() + 36 * 3600 * 1000) return null;
+  return dayOnly ? new Date(t).toISOString().slice(0, 10) : new Date(t).toISOString().slice(0, 19) + 'Z';
+}
+
+// A past answer never changes, so it is kept in the colo's cache (free, no write cap), not in KV.
+async function edgeCached(name, ttl, fn) {
+  const store = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(`https://edge-cache.invalid/${name}`);
+  try { const hit = store && await store.match(key); if (hit) return hit; } catch {}
+  const res = await fn();
+  if (res.ok && store) { try { await store.put(key, new Response(await res.clone().text(), { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': `public, max-age=${ttl}` } })); } catch {} }
+  return res;
+}
+
+async function handleWhipFloorUpdates(env, asofRaw) {
+  const asof = pastInstant(asofRaw);
+  if (asofRaw && !asof) return new Response(JSON.stringify({ items: [], error: 'asof must be an ISO time between 2019 and tomorrow' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
   // As of a past moment (the time machine): what the Whip had put out by then. A past day does not change, so it is kept a month.
-  if (asof && /^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(asof)) {
-    return kvCache(env, `whip-floor-asof-v1-${asof.slice(0, 13)}`, 3600, async () => {
+  if (asof) {
+    return edgeCached(`whip-floor-asof/${asof}`, 30 * 86400, async () => {
       try {
         const raw = await queryWhipFeed({ limit: 60, before: asof });
         return new Response(JSON.stringify({ items: raw.map((it) => ({ ...it, noticeType: 'floor' })) }), { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'public, max-age=3600' } });
       } catch (err) {
         return new Response(JSON.stringify({ items: [], error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
       }
-    }, 30 * 86400);
+    });
   }
   // In-memory 60s (fast path); KV freshness 5 min — floor updates can arrive during
   // active session but rarely faster than once a minute.
@@ -6789,11 +6810,14 @@ async function handleWhipFloorUpdates(env, asof) {
 //   postedAt    → publishedAt
 //   sourceText  → body        (HTML)
 //   publishDate used to construct a display title
-async function handleWhipNoticesFeed(env, asof) {
-  const cursor = asof && /^\d{4}-\d\d-\d\d(T[\d:.]+Z)?$/.test(asof) ? asof : null;   // as of a past day (the time machine): DomeWatch pages back by `cursor`
-  // In-memory 60s (fast path); KV freshness 10 min — notices post a few times daily;
-  // cold isolates can safely re-use KV for up to 10 min before re-fetching DomeWatch.
-  return kvCache(env, cursor ? `whip-notices-asof-v1-${cursor.slice(0, 10)}` : 'whip-notices-feed-v1', cursor ? 3600 : 60, async () => {
+async function handleWhipNoticesFeed(env, asofRaw) {
+  const cursor = pastInstant(asofRaw, { dayOnly: true });   // as of a past day (the time machine): DomeWatch pages back by `cursor`
+  if (asofRaw && !cursor) return new Response(JSON.stringify({ items: [], error: 'asof must be a date between 2019 and tomorrow' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' } });
+  if (cursor) return edgeCached(`whip-notices-asof/${cursor}`, 30 * 86400, () => whipNoticesFetch(cursor));
+  return kvCache(env, 'whip-notices-feed-v1', 60, () => whipNoticesFetch(null), 60 * 60); // kvFreshTtl=60 min — cold isolates re-use KV for up to 1 hour before re-fetching
+}
+async function whipNoticesFetch(cursor) {
+  {
     try {
       const resp = await fetch(`https://data.domewatch.us/v1/whip-notices?limit=${cursor ? 14 : 8}${cursor ? `&cursor=${cursor}` : ''}`, {
         headers: { 'Accept': 'application/json' },
@@ -6834,7 +6858,7 @@ async function handleWhipNoticesFeed(env, asof) {
         status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, 'Cache-Control': 'no-store' }
       });
     }
-  }, cursor ? 30 * 86400 : 60 * 60); // kvFreshTtl=60 min — cold isolates re-use KV for up to 1 hour before re-fetching (a past day: a month)
+  }
 }
 
 // ── Raw whip-notices passthrough (inspection endpoint) ───────────────────────

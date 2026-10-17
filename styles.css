@@ -64,6 +64,7 @@
     --accent-yellow:     #e3b341;
     --accent-orange:     #d18135;
     --accent-purple:     #a371f7;
+  --on-accent: #0d1117;   /* text on the bright accent fills (white on blue, purple, red and amber is under 4.5:1) */
 
     /* Party identity. Deliberately not the accents: --accent-red also means
        "failed" and --accent-blue means "link", and a party is neither. Values
@@ -1560,17 +1561,6 @@ body.tellers-mode .tellers-column { display: flex; }
   align-items: center;
   gap: var(--sp-10);
 }
-/* Caption-driven "happening now" marker.
-   The captions see morning business about three minutes before the Clerk's
-   proceedings feed publishes it (measured: captions lead the Clerk's own action
-   time by ~0.5 min, and the feed lags that time by ~2.5 min). This marks the
-   section live in the gap. It is a separate element from the -tag-time span so
-   that the Clerk's timestamp, when it arrives, does not fight with it. */
-.section-live {
-  /* Not drawn: the caption time and the "Captions" source say it. The element stays because app.js uses its hidden attribute as the state. */
-  display: none;
-}
-
 /* five signal bars that wave up in sequence */
 .video-loading-bars {
   display: flex;
@@ -7298,7 +7288,7 @@ body.debate-mode .debate-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-blue);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7743,7 +7733,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-blue);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -7862,7 +7852,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-purple);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -8088,7 +8078,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-red);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -8284,7 +8274,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-amber);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
@@ -8446,7 +8436,7 @@ body.committee-chair-mode .committee-chair-section {
     display: inline-flex;
     align-items: center;
     background: var(--accent-amber);
-    color: white;
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
