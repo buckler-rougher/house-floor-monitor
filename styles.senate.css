@@ -6699,6 +6699,15 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     letter-spacing: var(--track-wide);
     line-height: 1;
 }
+.panel-header > .vote-type-tag {
+    height: var(--tag-height);
+    padding: 0 var(--sp-10);
+    border-radius: var(--radius-4);
+    font-size: var(--fs-md);
+    font-weight: 700;
+    letter-spacing: var(--track-wide);
+    line-height: 1;
+}
 @media (max-width: 640px) {
   .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
         padding: var(--sp-16) var(--sp-16);
@@ -6918,14 +6927,11 @@ a.source-link:not(.has-manifest):is(:hover, :focus-visible) {
 @media (prefers-reduced-motion: reduce) {
   a.source-link:not(.has-manifest) { transition: none; }
 }
-a.source-link:not(.has-tail)::after, a.source-link .source-tail::after {
+a.source-link:not(.has-manifest):not(.has-tail)::after, a.source-link:not(.has-manifest) .source-tail::after {
     transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.64, 1);
 }
-a.source-link:is(:hover, :focus-visible):not(.has-tail)::after, a.source-link:is(:hover, :focus-visible) .source-tail::after {
+a.source-link:not(.has-manifest):is(:hover, :focus-visible):not(.has-tail)::after, a.source-link:not(.has-manifest):is(:hover, :focus-visible) .source-tail::after {
     transform: translate(0.14em, -0.14em);
-}
-a.source-link.has-manifest:is(:hover, :focus-visible):not(.has-tail)::after, a.source-link.has-manifest:is(:hover, :focus-visible) .source-tail::after {
-    transform: translateY(0.16em);
 }
 @media (prefers-reduced-motion: reduce) {
   a.source-link:not(.has-tail)::after, a.source-link .source-tail::after { transition: none; }
