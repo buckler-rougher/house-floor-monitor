@@ -1386,6 +1386,7 @@ function updateFloorDisplay(status = null) {
             elements.voteId.textContent = 'Roll Call --';
         }
         updateVoteTypeTag(floorData.rollCall.question);
+        updateVoteThresholdPill(floorData.rollCall.question);
     }
 
     // Show VIEW BILL button IFF the current vote maps to a bill card
@@ -10039,6 +10040,15 @@ function updateVoteTypeTag(question) {
     else                                                               { label = '';                  cls = '';      }
     tag.textContent = label;
     tag.className = 'vote-type-tag' + (cls ? ` vtt-${cls}` : '');
+}
+
+// The threshold the question needs, always shown beside the kind of question: a simple majority of the whole House, or two thirds for a suspension of the rules.
+function updateVoteThresholdPill(question) {
+    const pill = document.getElementById('vote-threshold-pill');
+    if (!pill) return;
+    const suspension = /suspend/i.test(question || '');
+    const needed = getVotesNeeded(suspension);
+    pill.textContent = needed > 0 ? `${suspension ? 'Two-thirds' : 'Majority'} · ${needed} needed` : '';
 }
 
 function updateThresholdAnalysis() {

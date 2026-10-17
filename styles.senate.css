@@ -4768,7 +4768,7 @@ font-family: var(--font-mono);
   .debate-tag {
     display: inline-flex;
     align-items: center;
-    background: var(--accent-blue);
+    background: var(--accent-green);
     color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
@@ -4865,8 +4865,8 @@ font-family: var(--font-mono);
   .morning-hour-tag {
     display: inline-flex;
     align-items: center;
-    background: #1b6b3a;
-    color: white;
+    background: var(--accent-yellow);
+    color: var(--on-accent);
     padding: var(--sp-6) var(--sp-12);
     border-radius: var(--radius-4);
     font-size: var(--fs-md);
