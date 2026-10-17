@@ -12086,7 +12086,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-8);
-    margin-top: var(--sp-16);   /* the header pulls the next row up by 16px */
+    margin-top: calc(-1 * var(--sp-8));   /* the panel's own gap (40px, 24px on a phone) sits between the rows already */
     padding: var(--sp-12) var(--sp-32) 0;
 }
 .vote-pills .vote-pill,
@@ -12110,7 +12110,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .vote-pills .vtt-blue   { border-color: rgba(88, 166, 255, 0.4); }
 .vote-pills .vtt-muted  { border-color: rgba(139, 148, 158, 0.35); }
 @media (max-width: 640px) { .vote-pills { padding: var(--sp-12) var(--sp-16) 0; } }
-.vote-pills + .vote-header { margin-top: var(--sp-12); }
+.vote-pills + .vote-header { margin-top: calc(-1 * var(--sp-16)); }
 
 /* Phone: the header wraps to two rows (label and badges, then the source). The
    10px padding left the first row hugging the top edge; give it room. */
