@@ -261,12 +261,14 @@
     text-align: center;
 }
   .site-footer-brand {
-    font-size: var(--fs-md);
-    font-weight: 600;
-    color: var(--text-secondary);
+
     font-family: var(--font-mono);
-    letter-spacing: 0.3px;
+    font-size: var(--fs-lg);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text-primary);
 }
+  .site-footer-brand .brand-nl { display: inline; }
   .site-footer-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
