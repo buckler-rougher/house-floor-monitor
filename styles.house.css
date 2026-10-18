@@ -2447,7 +2447,7 @@ body { -webkit-user-select: none; user-select: none; }
 }
 
 video, canvas, img, svg, picture, a.source-link, a.proc-bill-link, button, [role="button"], summary, th,
-.weather-panel, .video-loading, #pip-loading, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
+.weather-panel, .video-loading, #pip-loading, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand *, .brand-text, .brand-nl,
 [class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"], [class*="-badge"],
 [class*="-source-inline"], [class*="-tail"], .placeholder-text, .session-text, .absentee-member.is-empty, .empty-note,
 .site-footer-brand, .site-footer-head, .footer-title, .pipe-head-name, .pipe-sub, .panel-label, .source-pop-label, .source-pop-title, .source-pop-request, .source-pop-fetched, .source-pop-status, .approps-count span,
