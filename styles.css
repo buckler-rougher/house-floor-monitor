@@ -2702,7 +2702,7 @@ a.proc-bill-link {
 /* Selected text: an amber highlighter. A background alone, since Safari ignores a text decoration here and Firefox draws it unevenly */
 ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
 /* The board's furniture is not text to select: controls, headers, tags, labels, sources, and the footer's headings. What it reports (titles, captions, names, speech, numbers) is. */
-button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
+video, canvas, img, svg, picture, .weather-panel, .video-loading, #pip-loading, button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
 [class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"],
 .bills-column-header, .bills-column-title, .vote-series-sub-header, .site-footer-head, .legend-item, .privilege-section-header, .clock-label, .metric-label, .count-label,
 .calendar-card-toggle, .calendar-card-source, .source-category, .source-group, .conn-dash-label, .party-label, .threshold-metric-label {
