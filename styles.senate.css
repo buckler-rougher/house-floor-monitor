@@ -1858,7 +1858,10 @@
   @media (prefers-reduced-motion: reduce) {
     .bill-modal-scroll.is-filled { animation: none; }
   }
-  ::selection { background: rgba(230, 237, 243, 0.16); color: inherit; text-decoration: underline; text-decoration-color: var(--text-primary); text-decoration-thickness: 2.5px; }
+  ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
+  button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .info-btn, .brand, .brand-nl, [class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"], .bills-column-header, .bills-column-title, .site-footer-head, .legend-item, .clock-label, .metric-label, .count-label, .source-category, .source-group, .conn-dash-label, .party-label, .threshold-metric-label {
+  -webkit-user-select: none; user-select: none;
+}
   .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
   .clamp.is-short { padding-bottom: 0; }
   .clamp-body { position: relative; overflow: hidden; transition: max-height 0.32s ease; }
