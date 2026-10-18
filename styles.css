@@ -2699,6 +2699,8 @@ a.proc-bill-link {
 #dp-done-block[hidden] { display: none; }
 #dp-open-head[hidden] { display: none; }
 #dp-done-block { margin-bottom: var(--sp-4); }
+/* Selected text: a pale wash and a thick underline in the page's own text colour, so it reads against any panel and adds no accent of its own */
+::selection { background: rgba(230, 237, 243, 0.16); color: inherit; text-decoration: underline; text-decoration-color: var(--text-primary); text-decoration-thickness: 2.5px; }
 /* A list clipped to its first items and the top of the next, faded out along the bottom, with a + / - on the edge (lib/clamp-list.js): the Orders card's motif */
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }
