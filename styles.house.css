@@ -2435,7 +2435,14 @@ a.proc-bill-link {
 #dp-open-head[hidden] { display: none; }
 #dp-done-block { margin-bottom: var(--sp-4); }
 
-::selection { background: rgba(230, 237, 243, 0.16); color: inherit; text-decoration: underline; text-decoration-color: var(--text-primary); text-decoration-thickness: 2.5px; }
+::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
+
+button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
+[class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"],
+.bills-column-header, .bills-column-title, .vote-series-sub-header, .site-footer-head, .legend-item, .privilege-section-header, .clock-label, .metric-label, .count-label,
+.calendar-card-toggle, .calendar-card-source, .source-category, .source-group, .conn-dash-label, .party-label, .threshold-metric-label {
+  -webkit-user-select: none; user-select: none;
+}
 
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }

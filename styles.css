@@ -2699,8 +2699,15 @@ a.proc-bill-link {
 #dp-done-block[hidden] { display: none; }
 #dp-open-head[hidden] { display: none; }
 #dp-done-block { margin-bottom: var(--sp-4); }
-/* Selected text: a pale wash and a thick underline in the page's own text colour, so it reads against any panel and adds no accent of its own */
-::selection { background: rgba(230, 237, 243, 0.16); color: inherit; text-decoration: underline; text-decoration-color: var(--text-primary); text-decoration-thickness: 2.5px; }
+/* Selected text: an amber highlighter. A background alone, since Safari ignores a text decoration here and Firefox draws it unevenly */
+::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
+/* The board's furniture is not text to select: controls, headers, tags, labels, sources, and the footer's headings. What it reports (titles, captions, names, speech, numbers) is. */
+button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
+[class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"],
+.bills-column-header, .bills-column-title, .vote-series-sub-header, .site-footer-head, .legend-item, .privilege-section-header, .clock-label, .metric-label, .count-label,
+.calendar-card-toggle, .calendar-card-source, .source-category, .source-group, .conn-dash-label, .party-label, .threshold-metric-label {
+  -webkit-user-select: none; user-select: none;
+}
 /* A list clipped to its first items and the top of the next, faded out along the bottom, with a + / - on the edge (lib/clamp-list.js): the Orders card's motif */
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }
