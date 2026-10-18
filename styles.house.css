@@ -2449,7 +2449,7 @@ video, canvas, img, svg, picture, a.source-link, a.proc-bill-link, button, [role
 .airport-section-header, .airport-info, .airport-reason, .airport-status, #airport-delays,
 .vacancies-count, .vacancy-district, .vacancy-date, .committee-time, .committee-room, .dp-group-head, .dp-chip, .dp-rule, .dp-count, .dp-check, .dp-need, .dp-standing, .dp-role,
 .pipe-head-name, .pipe-sub, .cr-badge, .cr-through, .cr-pl, .cr-num, .cr-unit, .cr-expires-head, .approps-fy, .approps-stage, .approps-track, .approps-id, .approps-ms-date,
-.footer-title, .site-footer-brand, .site-footer-copy, .site-footer-head, .site-footer-secondary, .suggest-drawer-title, .suggest-consent, .suggest-data-title, .vrec-modal-title, .tweet-time, .tweet-rt-bar, .debate-bill-id {
+.conn-dash-row, .progress-labels, .quorum-labels, .tweet-avatar, .dp-meta, b.long, b.short, [class$="-member-title"], [class$="-leader-title"], [class$="-chair-title"], .silence-title, a.skip-link, .suggest-success-icon, .suggest-success-msg, [class^="vrec-autofill-note"], a.site-footer-license, .lead-title, .tweet-handle, .proceedings-time, .footer-title, .site-footer-brand, .site-footer-copy, .site-footer-head, .site-footer-secondary, .suggest-drawer-title, .suggest-consent, .suggest-data-title, .vrec-modal-title, .tweet-time, .tweet-rt-bar, .debate-bill-id {
   -webkit-user-select: none; user-select: none;
 }
 
