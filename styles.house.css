@@ -2437,10 +2437,19 @@ a.proc-bill-link {
 
 ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
 
-video, canvas, img, svg, picture, .weather-panel, .video-loading, #pip-loading, button, [role="button"], summary, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
-[class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"],
-.bills-column-header, .bills-column-title, .vote-series-sub-header, .site-footer-head, .legend-item, .privilege-section-header, .clock-label, .metric-label, .count-label,
-.calendar-card-toggle, .calendar-card-source, .source-category, .source-group, .conn-dash-label, .party-label, .threshold-metric-label {
+video, canvas, img, svg, picture, a.source-link, a.proc-bill-link, button, [role="button"], summary, th,
+.weather-panel, .video-loading, #pip-loading, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, .brand, .brand-nl,
+[class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"], [class*="-badge"],
+[class$="-source"], [class*="-source "], [class*="-source-"], [class*="-source-inline"], [class*="-tail"],
+.bills-column-header, .bills-column-title, .vote-series-sub-header, .legend-item, .privilege-section-header, .clock-label, .clock-time, .metric-label, .count-label,
+.calendar-card-toggle, .calendar-card-title, .calendar-card-count, .calendar-line-text, .calendar-mobile-title, .source-category, .source-group, .conn-dash-label, .conn-dash-status, .conn-dash-footer,
+.party-label, .party-value, .threshold-metric-label, .threshold-metric-value, .metric-value, .count-percentage, .cpb-d, .cpb-r, .cpb-i, .cpb-suffix, .flip-digit-char,
+.today-date, .today-time, .today-value, .session-text, .congress-text, .floor-status, .next-session-countdown, .cotw-indicator, .toc-title, .search-field-head, .empty-note, .placeholder-text, .grid-note,
+.vote-timer-value, .vote-not-yet, .lva-title, .lva-roll, .absentee-roll-info, .whip-update-title, .whip-update-time, .this-week-day, .cal-title, .cal-dow, .cal-num, .cal-lbl,
+.airport-section-header, .airport-info, .airport-reason, .airport-status, #airport-delays,
+.vacancies-count, .vacancy-district, .vacancy-date, .committee-time, .committee-room, .dp-group-head, .dp-chip, .dp-rule, .dp-count, .dp-check, .dp-need, .dp-standing, .dp-role,
+.pipe-head-name, .pipe-sub, .cr-badge, .cr-through, .cr-pl, .cr-num, .cr-unit, .cr-expires-head, .approps-fy, .approps-stage, .approps-track, .approps-id, .approps-ms-date,
+.footer-title, .site-footer-brand, .site-footer-copy, .site-footer-head, .site-footer-secondary, .suggest-drawer-title, .suggest-consent, .suggest-data-title, .vrec-modal-title, .tweet-time, .tweet-rt-bar, .debate-bill-id {
   -webkit-user-select: none; user-select: none;
 }
 
