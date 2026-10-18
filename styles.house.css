@@ -2437,23 +2437,8 @@ a.proc-bill-link {
 
 ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
 
-body { -webkit-user-select: none; user-select: none; }
-.proceedings-text, p, li, td, strong, em, blockquote, code, pre, .vote-title, .debate-bill-title, .debate-bill-id, .committee-title, .committee-name, .dp-what, .dp-action, .dp-meta, .approps-action, .approps-name,
-.cr-law-name, .cr-expires-item, .cr-expires-head b, .cr-num, .cr-unit, .cr-pl, .cr-through, .approps-count b, .approps-count i, .approps-stage, .pipe-count, .whip-sched-val, .absentee-explainer, .absentee-name, .absentee-state,
-.tweet-body, .tweet-quote-text, .tweet-display-name, .tweet-quote-author, .tweet-handle, .lead-name, .lead-title, .teller-name, .teller-state, .teller-meta-line, .vacancy-member, .vacancy-district, .vacancy-date, .info-popup-caption,
-.today-date, .today-time, .today-value, .congress-text, .floor-status, .next-session-countdown, .calendar-line-text,
-[class$="-text"], [class$="-name"], [class$="-details"], [class$="-additional"], [class*="-description"], [class*="-explainer"], [class^="site-footer"], .footer-links, .source-pop-body, .source-pop-request, [class^="committee-witness"] {
-  -webkit-user-select: text; user-select: text;
-}
-
-video, canvas, img, svg, picture, a.source-link, a.proc-bill-link, button, [role="button"], summary, th,
-.weather-panel, .video-loading, #pip-loading, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, nav:not(.site-footer-col), nav:not(.site-footer-col) *, [class^="toc"], [class^="toc"] *, .brand, .brand *, .brand-text, .brand-nl,
-[class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"], [class*="-badge"],
-[class*="-source-inline"], [class*="-tail"], .placeholder-text, .session-text, .absentee-member.is-empty, .empty-note,
-[class*="-tag-text"], [class*="-length-text"], .ai-toggle, .ai-off-btn, [class^="cal-"], [class^="cal-"] *, .site-footer-brand, .site-footer-head, .footer-title, .pipe-head-name, .pipe-sub, .panel-label, .source-pop-label, .source-pop-title, .source-pop-fetched, .source-pop-status, .approps-count span,
-.airport-delays-panel, .conn-dash-row, .tweet-rt-bar, .tweet-time, .proceedings-time, .whip-update-title, .whip-update-time, .tweet-avatar {
-  -webkit-user-select: none; user-select: none;
-}
+video, canvas, img, svg, picture, .video-loading, #pip-loading, .brand, .brand *, .site-footer-brand { -webkit-user-select: none; user-select: none; }
+img, svg, picture, .brand, .brand *, .site-footer-brand { -webkit-user-drag: none; user-drag: none; }
 
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }
