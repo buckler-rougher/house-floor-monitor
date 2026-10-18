@@ -2716,7 +2716,7 @@ video, canvas, img, svg, picture, a.source-link, a.proc-bill-link, button, [role
 .weather-panel, .video-loading, #pip-loading, .panel-header, .panel-label, .panel-source, .section-tag-wrap, .ai-pills, .info-btn, nav:not(.site-footer-col), nav:not(.site-footer-col) *, [class^="toc"], [class^="toc"] *, .brand, .brand *, .brand-text, .brand-nl,
 [class$="-pill"], [class*="-pill "], [class$="-tag"], [class*="-tag "], [class$="-label"], [class*="-label "], [class*="-btn"], [class*="-badge"],
 [class*="-source-inline"], [class*="-tail"], .placeholder-text, .session-text, .absentee-member.is-empty, .empty-note,
-.ai-toggle, .ai-off-btn, [class^="cal-"], [class^="cal-"] *, .site-footer-brand, .site-footer-head, .footer-title, .pipe-head-name, .pipe-sub, .panel-label, .source-pop-label, .source-pop-title, .source-pop-fetched, .source-pop-status, .approps-count span,
+[class*="-tag-text"], [class*="-length-text"], .ai-toggle, .ai-off-btn, [class^="cal-"], [class^="cal-"] *, .site-footer-brand, .site-footer-head, .footer-title, .pipe-head-name, .pipe-sub, .panel-label, .source-pop-label, .source-pop-title, .source-pop-fetched, .source-pop-status, .approps-count span,
 .airport-delays-panel, .conn-dash-row, .tweet-rt-bar, .tweet-time, .proceedings-time, .whip-update-title, .whip-update-time, .tweet-avatar {
   -webkit-user-select: none; user-select: none;
 }
