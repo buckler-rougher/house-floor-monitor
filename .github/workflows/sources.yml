@@ -24,7 +24,9 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  # Two jobs because GitHub's failure email shows only the job's name. The first is NEWS (nothing is broken), the second is a fault.
+  revised:
+    name: A cited CRS report has a new version (not a bug, re-read it)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -32,7 +34,20 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Check the cited sources
+      - name: Look for newer versions
         env:
           CONGRESS_API_KEY: ${{ secrets.CONGRESS_API_KEY }}
-        run: node dev/check-sources.mjs
+        run: node dev/check-sources.mjs --mode=revised
+  problems:
+    name: A cited source is broken (a real problem, fix it)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Look for dead links and wrong citations
+        env:
+          CONGRESS_API_KEY: ${{ secrets.CONGRESS_API_KEY }}
+        run: node dev/check-sources.mjs --mode=problems
