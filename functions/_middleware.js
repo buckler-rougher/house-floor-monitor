@@ -53,7 +53,7 @@ const LEGACY_ASSETS = {
   '/favicon.ico':          { house: '/house-favicon.ico',           senate: '/senate-favicon.ico' },
   '/apple-touch-icon.png': { house: '/house-apple-touch-icon.png',  senate: '/senate-apple-touch-icon.png' },
   '/site.webmanifest':     { house: '/house.webmanifest',           senate: '/senate.webmanifest' },
-  '/social.webp':          { house: '/house-social.webp',           senate: '/senate-social.png' },
+  '/social.webp':          { house: '/house-social.webp',           senate: '/senate-social.webp' },
   '/social.svg':           { house: '/house-social.svg',            senate: '/senate-social.svg' },
   '/logo.svg':             { house: '/house-logo.svg',              senate: '/senate-logo.svg' },
 };
