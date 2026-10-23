@@ -10383,13 +10383,16 @@ h1.brand-text {
 
 /* ── lockMode('all') debug override ────────────────────────────────────────
    Must come after all mode-specific rules so it wins the !important battle. */
-body.all-mode .vote-display,
 body.all-mode .progress-section,
-body.all-mode .vote-header,
 body.all-mode .threshold-panel,
 body.all-mode .quorum-panel,
 body.all-mode .floor-grid-panel {
     display: block;
+}
+/* these two are flex in their own rules: shown as block, the vote panel lost its gap (so its header, which pulls the title up by a negative margin, covered the top of the title) and the title row its row layout */
+body.all-mode .vote-display,
+body.all-mode .vote-header {
+    display: flex;
 }
 
 /* Respect reduced-motion preferences */
