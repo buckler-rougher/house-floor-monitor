@@ -4505,7 +4505,7 @@ function updateBillsDisplay() {
                                 <div class="bill-action">${actionText}</div>
                             </div>
                         </div>
-                        <div class="bill-chevron" aria-hidden="true">›</div>
+                        <div class="bill-chevron gi gi-chev-right" aria-hidden="true"></div>
                     </button>
                 `);
             }
@@ -4568,7 +4568,7 @@ function createBillCard(bill, procedure) {
     const tracked = isBillTracked(bill.id);
     const trackTooltip = tracked ? 'Stop tracking this bill' : 'Track this bill';
     const trackBtnHtml = `<button class="bill-track-btn${tracked ? ' tracked' : ''}" data-bill-id="${bill.id}" data-tooltip="${trackTooltip}" type="button" aria-pressed="${tracked}" aria-label="${trackTooltip}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="${tracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="${tracked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.14" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     </button>`;
 
     const cardHtml = `
@@ -4586,7 +4586,7 @@ function createBillCard(bill, procedure) {
                     ${riceSpan}
                 </div>
             </div>
-            <div class="bill-chevron" aria-hidden="true">›</div>
+            <div class="bill-chevron gi gi-chev-right" aria-hidden="true"></div>
         </button>`;
 
     // Live proceedings map wins; fall back to value stored on the bill object (survives daily rollover)
@@ -4842,7 +4842,7 @@ function openBillModal(billId) {
         const sc = modalRule.ruleStatus === 'passed' ? 'rule-tag-passed'
             : modalRule.ruleStatus === 'reported' ? 'rule-tag-reported'
             : 'rule-tag-unknown';
-        return `<button class="bill-rule-tag ${sc} bill-rule-tag-modal" type="button" data-bill-id="hres-${modalRule.hresNum}">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' ✓' : ''}</button>`;
+        return `<button class="bill-rule-tag ${sc} bill-rule-tag-modal" type="button" data-bill-id="hres-${modalRule.hresNum}">${modalRule.hres}${modalRule.ruleStatus === 'passed' ? ' <span class="gi gi-check" role="img" aria-label="passed"></span>' : ''}</button>`;
     })() : fallbackHres ? (() => {
         const hresNum = fallbackHres.match(/(\d+)$/)?.[1];
         if (!hresNum) return `<span class="bill-rule-tag rule-tag-unknown bill-rule-tag-modal">${fallbackHres}</span>`;
@@ -4939,7 +4939,7 @@ function openBillModal(billId) {
             </div>
             <div class="bill-modal-foot">
                 <div class="bill-doc-links">
-                    <a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-modal-link rule" target="_blank" rel="noopener">View on rules.house.gov →</a>
+                    <a href="https://rules.house.gov/bill/${currentCongress || 119}/${rulesSlug}" class="bill-modal-link rule ext" target="_blank" rel="noopener">View on rules.house.gov</a>
                 </div>
             </div>
         </div>` : ''}
@@ -5145,7 +5145,7 @@ function renderAmendmentsTable({ amendments }, body) {
                     <td class="amdt-sponsors">${renderSponsors(a)}</td>
                     <td class="amdt-summary">${escapeHtml(a.summary ?? '')}</td>
                     <td><span class="amdt-status-badge ${amendmentStatusClass(a.status)}">${escapeHtml(a.status ?? '')}</span></td>
-                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(a.pdfUrl))}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF">↗</a>` : ''}</td>
+                    <td class="amdt-pdf-cell">${a.pdfUrl ? `<a href="${escapeHtml(globalThis.BoardUtil.safeHref(a.pdfUrl))}" class="amdt-pdf-btn" target="_blank" rel="noopener" title="Open amendment PDF"><span class="gi gi-out" aria-hidden="true"></span></a>` : ''}</td>
                 </tr>`).join('')}
             </tbody>
         </table>` : '<div class="bill-amendments-empty">No amendments match this filter.</div>';
@@ -6447,7 +6447,7 @@ function renderDischargePetitions() {
         <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${billBtn(bill)}${hasRule ? `<span class="dp-rule">rule ${billBtn(p.billNumber)}</span>` : ''}</span>
-                <span class="dp-count">${isDone ? `<span class="dp-check" aria-hidden="true">✓</span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
+                <span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
             ${bar(p)}

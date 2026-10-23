@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261022j">
+    <link rel="stylesheet" href="styles.senate.css?v=20261022k">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -185,7 +185,7 @@
     <button type="submit" class="suggest-submit" id="suggest-submit">SEND</button>
   </form>
   <div id="suggest-success" class="suggest-success" style="display:none">
-    <div class="suggest-success-icon">✓</div>
+    <div class="suggest-success-icon"><span class="gi gi-check" role="img" aria-label="Sent"></span></div>
     <div class="suggest-success-msg">GOT IT — THANKS.</div>
   </div>
 </div>
@@ -1038,7 +1038,7 @@
                 <button class="reporter-active-chip" id="reporter-active-chip" style="display:none" aria-label="Clear filter"></button>
                 <div class="reporter-cards-row" id="reporter-cards-row"></div>
                 <button class="reporter-search-btn" id="reporter-search-btn" aria-label="Filter by handle" title="Filter by handle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.14" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </button>
             </div>
             <div class="reporter-search-drawer" id="reporter-search-drawer" hidden>
@@ -1047,7 +1047,7 @@
                     <input class="reporter-search-input" id="reporter-search-input" type="text" aria-label="Search reporters by handle or name" autocomplete="off" />
                     <div class="reporter-search-results" id="reporter-search-results" style="display:none"></div>
                 </div>
-                <button class="reporter-search-clear" id="reporter-search-clear" aria-label="Clear"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5 12.5 12.5M12.5 3.5 3.5 12.5"/></svg></button>
+                <button class="reporter-search-clear" id="reporter-search-clear" aria-label="Clear"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5 12.5 12.5M12.5 3.5 3.5 12.5"/></svg></button>
             </div>
             </div>
             <div class="tweets-feed" id="tweets-feed" tabindex="0" role="region" aria-label="Floor reporters">
@@ -1061,9 +1061,9 @@
                 <span class="panel-label" data-icon="calendar">SENATE CALENDAR</span>
                 <div class="panel-header-right">
                     <div class="calendar-desktop-nav" id="calendar-desktop-nav">
-                        <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
+                        <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.43" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
                         <button class="calendar-desktop-today calendar-today-at-current" id="calendar-desktop-today">TODAY</button>
-                        <button class="calendar-desktop-btn" id="calendar-desktop-next" aria-label="Next months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
+                        <button class="calendar-desktop-btn" id="calendar-desktop-next" aria-label="Next months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.43" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
                     </div>
                     <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/schedule/floor_schedule.xml" target="_blank" rel="noopener">Session Days (Senate)</a></span>
                 </div>
@@ -1073,9 +1073,9 @@
                 <div class="this-week-body" id="this-week-body">—</div>
             </div>
             <div class="calendar-mobile-nav" id="calendar-mobile-nav">
-                <button class="calendar-mobile-btn" id="calendar-mobile-prev" aria-label="Previous month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
+                <button class="calendar-mobile-btn" id="calendar-mobile-prev" aria-label="Previous month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.43" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
                 <span class="calendar-mobile-title" id="calendar-mobile-title"></span>
-                <button class="calendar-mobile-btn" id="calendar-mobile-next" aria-label="Next month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
+                <button class="calendar-mobile-btn" id="calendar-mobile-next" aria-label="Next month"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.43" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>
             </div>
             <div class="voting-calendar-wrap" id="voting-calendar-wrap">
                 <div class="voting-calendar-month" id="voting-calendar-prev"></div>
@@ -1233,7 +1233,7 @@
                         <svg class="pip-icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z" opacity="0"/><path d="M3 9v6h4l5 5V4L7 9H3z"/><line x1="16" y1="9" x2="22" y2="15" stroke="currentColor" stroke-width="2"/><line x1="22" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="2"/></svg>
                         <svg class="pip-icon-sound" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
                     </button>
-                    <button class="pip-close-btn" id="pip-close-btn" aria-label="Close">✕</button>
+                    <button class="pip-close-btn" id="pip-close-btn" aria-label="Close"><span class="gi gi-x" aria-hidden="true"></span></button>
                 </div>
             </div>
             <div class="floor-feed-video">
@@ -1396,7 +1396,7 @@
     <script defer src="lib/party-balance.js?v=20261005a"></script>
     <script defer src="lib/leadership.js?v=20261017b"></script>
     <script defer src="lib/committees.js?v=20261017b"></script>
-    <script defer src="lib/bill-sections.js?v=20261017b"></script>
+    <script defer src="lib/bill-sections.js?v=20261022k"></script>
     <script defer src="lib/remote-bill.js?v=20261010c"></script>
     <script defer src="lib/list-sync.js?v=20261010c"></script>
     <script defer src="lib/clamp-list.js?v=20261017i"></script>
@@ -1405,7 +1405,7 @@
     <script defer src="lib/scroll-guard.js?v=20261013b"></script>
     <script defer src="lib/scroll-restore.js?v=20261013a"></script>
     <script defer src="lib/toc.js?v=20261013s"></script>
-    <script defer src="lib/pipeline-panel.js?v=20261013c"></script>
+    <script defer src="lib/pipeline-panel.js?v=20261022k"></script>
     <script defer src="lib/approps-panel.js?v=20261017i"></script>
     <script defer src="lib/senate-amendments.js?v=20261012e"></script>
     <script defer src="lib/senate-committees.js?v=20261017b"></script>
@@ -1430,7 +1430,7 @@
     <script defer src="lib/senate-speaker.js?v=20261017b"></script>
     <script defer src="lib/floor-feed.js?v=20261017b"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>
-    <script defer src="lib/reporters.js?v=20261017c"></script>
+    <script defer src="lib/reporters.js?v=20261022k"></script>
     <script defer src="lib/capcam.js?v=20261005a"></script>
     <script defer src="lib/scroll-fade.js?v=20261003a"></script>
     <script defer src="lib/weather.js?v=20261003a"></script>
