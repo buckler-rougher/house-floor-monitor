@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261022c">
+    <link rel="stylesheet" href="styles.senate.css?v=20261022d">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -448,7 +448,7 @@
             <!-- Vote Panel -->
             <div class="vote-display">
                 <div class="panel-header">
-                    <span class="panel-label">Happening Now</span>
+                    <span class="panel-label" data-icon="live">Happening Now</span>
                     <span class="vote-type-tag"></span>
                     <span class="vote-id" id="vote-id">--</span>
                     <span id="vote-threshold-pill" class="vote-pill"></span><button class="info-btn" type="button" data-info="forms-of-vote" aria-label="About how votes are taken" hidden>?</button>
@@ -577,7 +577,7 @@
             <!-- Quorum Status -->
             <div class="quorum-panel" id="quorum">
                 <div class="panel-header">
-                    <span class="panel-label">HAPPENING NOW</span>
+                    <span class="panel-label" data-icon="live">HAPPENING NOW</span>
                     <span class="vote-type-tag quorum-call-tag" id="vote-type-tag"></span><button class="info-btn" type="button" data-info="quorum" aria-label="About quorum" hidden>?</button>
                     <span class="quorum-indicator" id="quorum-indicator">
                         <span class="indicator-dot"></span>
@@ -686,7 +686,7 @@
             <div class="whip-updates-panel" id="caucus-notices">
                 <div class="panel-header">
                     <div class="whip-label-group">
-                        <span class="panel-label">DEM CAUCUS NOTICES</span>
+                        <span class="panel-label" data-icon="megaphone">DEM CAUCUS NOTICES</span>
                         <span class="whip-info-tip" data-tooltip="We republish Senate Democratic Caucus floor notices for informational purposes only. Republican Cloakroom notices are not publicly available.">?</span>
                     </div>
                     <div class="panel-header-right">
@@ -703,7 +703,7 @@
             <!-- Absentee Tracking -->
             <div class="absentee-panel" id="absentee">
                 <div class="panel-header">
-                    <span class="panel-label">MISSING SENATORS</span>
+                    <span class="panel-label" data-icon="missing">MISSING SENATORS</span>
                     <div class="panel-header-right">
                         <div class="bills-sort-switcher">
                             <button class="bills-sort-btn active" data-filter="all">ALL</button>
@@ -751,7 +751,7 @@
                  title, and below the panels that are live. -->
             <div class="proceedings-panel" id="proceedings">
                 <div class="panel-header">
-                    <span class="panel-label">RECENT FLOOR ACTIVITY</span>
+                    <span class="panel-label" data-icon="log">RECENT FLOOR ACTIVITY</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/LIS/floor_activity/floor_activity.htm" target="_blank" rel="noopener">Recent Floor Activity (Senate)</a></span>
                         <span class="proceedings-time" id="proceedings-last-update"></span>
@@ -805,7 +805,7 @@
                  of cards nobody can use. -->
             <div class="bills-section" id="senate-floor-schedule">
                 <div class="panel-header">
-                    <span class="panel-label">ON THE FLOOR</span>
+                    <span class="panel-label" data-icon="doc">ON THE FLOOR</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.democrats.senate.gov/floor/senate-schedule" target="_blank" rel="noopener">Senate Schedule (Senate Democratic Caucus)</a></span>
                         <span class="bills-last-update" id="senate-floor-when">--</span>
@@ -855,7 +855,7 @@
                  last thing to happen to a measure. -->
             <div class="bills-section" id="senate-stages">
                 <div class="panel-header">
-                    <span class="panel-label">PROCEDURAL STAGES</span>
+                    <span class="panel-label" data-icon="stairs">PROCEDURAL STAGES</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/votes_new.htm" target="_blank" rel="noopener">Roll Call Tables (Senate)</a></span>
                         <span class="bills-last-update" id="senate-stages-when">--</span>
@@ -961,7 +961,7 @@
                  the rest are upstream or finished. -->
             <div class="bills-section" id="nominations">
                 <div class="panel-header">
-                    <span class="panel-label">NOMINATIONS</span>
+                    <span class="panel-label" data-icon="nom">NOMINATIONS</span>
                 </div>
                 <div class="bills-columns">
                     <div class="bills-column">
@@ -1029,7 +1029,7 @@
         <!-- Floor Reporters -->
         <div class="twitter-panel" id="twitter">
             <div class="panel-header">
-                <span class="panel-label">REPORTERS</span>
+                <span class="panel-label" data-icon="chat">REPORTERS</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">Twitter via Nitter</a></span>
                 </div>
@@ -1058,7 +1058,7 @@
         <!-- Voting Days Calendar -->
         <div class="voting-calendar-panel" id="voting-calendar">
             <div class="panel-header">
-                <span class="panel-label">SENATE CALENDAR</span>
+                <span class="panel-label" data-icon="calendar">SENATE CALENDAR</span>
                 <div class="panel-header-right">
                     <div class="calendar-desktop-nav" id="calendar-desktop-nav">
                         <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
@@ -1087,7 +1087,7 @@
         <!-- Airport Delays Display -->
         <div class="airport-delays-panel" id="airport-delays">
                 <div class="panel-header">
-                    <span class="panel-label">AIRPORT DELAYS</span>
+                    <span class="panel-label" data-icon="plane">AIRPORT DELAYS</span>
                     <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
                 </div>
                 <div class="airport-delays-content">
@@ -1100,7 +1100,7 @@
         <!-- Party Breakdown Panel -->
         <div class="party-breakdown-panel" id="party-breakdown">
                 <div class="panel-header">
-                    <span class="panel-label">BALANCE OF POWER</span>
+                    <span class="panel-label" data-icon="scales">BALANCE OF POWER</span>
                     <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://www.senate.gov/general/contact_information/senators_cfm.xml" target="_blank" rel="noopener">Senators of the 119th Congress</a></span>
@@ -1153,7 +1153,7 @@
         <!-- Committee meetings: the next day's hearings, business meetings and markups, from Congress.gov (lib/senate-committees.js) -->
         <div class="proceedings-panel committee-panel" id="senate-committees">
             <div class="panel-header">
-                <span class="panel-label">COMMITTEE MEETINGS</span>
+                <span class="panel-label" data-icon="group">COMMITTEE MEETINGS</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.senate.gov/committees/hearings_meetings.htm" target="_blank" rel="noopener">Committee Meetings (Senate, via Congress.gov)</a></span>
                     <span class="proceedings-time" id="senate-committees-date"></span>
@@ -1165,7 +1165,7 @@
         <!-- Waiting for the floor: bills a committee has reported, and what the other chamber has sent over (lib/pipeline-panel.js) -->
         <div class="proceedings-panel pipeline-panel" id="pipeline">
             <div class="panel-header">
-                <span class="panel-label">WAITING FOR THE FLOOR</span>
+                <span class="panel-label" data-icon="hourglass">WAITING FOR THE FLOOR</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="pipeline-summary"></span>
@@ -1188,7 +1188,7 @@
         <!-- Appropriations: the twelve regular bills of the fiscal year and how far each has got (lib/approps-panel.js) -->
         <div class="proceedings-panel approps-panel" id="appropriations">
             <div class="panel-header">
-                <span class="whip-label-group"><span class="panel-label" id="approps-label">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
+                <span class="whip-label-group"><span class="panel-label" id="approps-label" data-icon="bag">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="approps-summary"></span>
@@ -1204,7 +1204,7 @@
         <!-- Treaties before the Senate: received in this Congress and the last, not yet acted on (lib/senate-treaties.js) -->
         <div class="proceedings-panel treaties-panel" id="senate-treaties">
             <div class="panel-header">
-                <span class="panel-label">TREATIES</span>
+                <span class="panel-label" data-icon="treaty">TREATIES</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/treaties_new.htm" target="_blank" rel="noopener">Treaties (Senate, via Congress.gov)</a></span>
                     <span class="proceedings-time" id="senate-treaties-count"></span>
