@@ -4248,7 +4248,7 @@ async function handleCommitteeMeetings(request, env) {
 async function readSenateMeetings(env, call, { days, key }) {
   const SC = globalThis.SenateCommittees;
   let st = {};
-  try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+  let raw0 = ''; try { raw0 = (env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || ''; st = JSON.parse(raw0 || '{}'); } catch { st = {}; }
   const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 19) + 'Z';
   const listed = [];
   let next = `https://api.congress.gov/v3/committee-meeting/${CURRENT_CONGRESS}/senate?limit=250&fromDateTime=${since}`;
@@ -4271,7 +4271,7 @@ async function readSenateMeetings(env, call, { days, key }) {
   }
   const live = new Set(listed.map((m) => String(m.eventId)));
   for (const id of Object.keys(st)) if (!live.has(id)) delete st[id];
-  if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+  { const out = JSON.stringify(st); if (env?.HLS_CACHE && out !== raw0) { try { await env.HLS_CACHE.put(key, out, { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } } }   // unchanged state is not written back: a poll that learned nothing costs no KV write
   const pending = Math.max(0, todo.length - batch.length) + batch.filter((m) => !st[m.eventId] || st[m.eventId].u !== m.updateDate).length;
   return { meetings: Object.values(st).map((x) => x.e), pending };
 }
@@ -4329,7 +4329,7 @@ async function handleSenateAmendments(env, billId) {
     try {
       const key = `senate-amendments-state-v1-${CURRENT_CONGRESS}-${type}-${number}`;
       let st = {};
-      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || '{}'); } catch { st = {}; }
+      let raw0 = ''; try { raw0 = (env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || ''; st = JSON.parse(raw0 || '{}'); } catch { st = {}; }
       const items = [];
       let next = `https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/${type}/${number}/amendments?limit=250`;
       for (let page = 0; next && page < 4; page++) {
@@ -4356,7 +4356,7 @@ async function handleSenateAmendments(env, billId) {
       }
       const live = new Set(items.map((a) => String(a.number)));
       for (const k of Object.keys(st)) if (!live.has(k)) delete st[k];
-      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      { const out = JSON.stringify(st); if (env?.HLS_CACHE && out !== raw0) { try { await env.HLS_CACHE.put(key, out, { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } } }   // unchanged state is not written back: a poll that learned nothing costs no KV write
       const amendments = items.map((a) => SA.shape(a, (st[a.number] || {}).d)).filter(Boolean).sort((a, b) => a.num - b.num);
       const pending = Math.max(0, todo.length - batch.length) + batch.filter((a) => !st[a.number] || st[a.number].u !== a.updateDate).length;
       return new Response(JSON.stringify({ at: Date.now(), bill: `${type}${number}`, count: amendments.length, pending, amendments }), {
@@ -4379,7 +4379,7 @@ async function handleChamberPipeline(env, board) {
     try {
       const key = `pipeline-state-v1-${CURRENT_CONGRESS}`;
       let st = null;
-      try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { st = null; }
+      let raw0 = ''; try { raw0 = (env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || ''; st = JSON.parse(raw0 || 'null'); } catch { st = null; }
       if (!st || !st.bills) st = { cursors: {}, bills: {} };
       const start = '2025-01-03T00:00:00Z';
       const budget = Number(env?.PIPELINE_PAGES) || 36;   // pages a run may ask for (the subrequest limit is 50; a test lowers it)
@@ -4416,7 +4416,7 @@ async function handleChamberPipeline(env, board) {
         }
         done[type] = ok && processed === offsets.length;
       }
-      if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+      { const out = JSON.stringify(st); if (env?.HLS_CACHE && out !== raw0) { try { await env.HLS_CACHE.put(key, out, { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } } }   // unchanged state is not written back: a poll that learned nothing costs no KV write
       const names = { HR: 'H.R.', S: 'S.', HJRES: 'H.J.Res.', SJRES: 'S.J.Res.' };
       const cols = { calendar: [], from: [] };
       for (const rec of Object.values(st.bills)) {
@@ -4705,7 +4705,7 @@ async function handleApproMarkups(env, url) {
     const AP = globalThis.Appropriations, CM = globalThis.CommitteeMeetings;
     const key = `approps-markups-state-v1-${fy}`;
     let st = null;
-    try { st = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || 'null'); } catch { st = null; }
+    let raw0 = ''; try { raw0 = (env?.HLS_CACHE && await env.HLS_CACHE.get(key)) || ''; st = JSON.parse(raw0 || 'null'); } catch { st = null; }
     // what has been read is one run of days; start again if the wanted range does not touch it
     if (!st || ms(st.scannedTo) < ms(from) - 86400000 || ms(st.scannedFrom) > ms(to) + 86400000) st = { scannedFrom: iso(ms(from)), scannedTo: iso(ms(from) - 86400000), events: [], docs: {} };
     // the last two days, and the days ahead, are still moving (a meeting gets its documents a day later, a new one is scheduled): read again every call
@@ -4749,7 +4749,7 @@ async function handleApproMarkups(env, url) {
       } catch { /* asked again next call */ }
     }));
     st.events = st.events.filter((e) => !(st.docs[e.id] && st.docs[e.id].markup === false));
-    if (env?.HLS_CACHE) { try { await env.HLS_CACHE.put(key, JSON.stringify(st), { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } }
+    { const out = JSON.stringify(st); if (env?.HLS_CACHE && out !== raw0) { try { await env.HLS_CACHE.put(key, out, { expirationTtl: KV_STORAGE_TTL }); } catch { /* read again */ } } }   // unchanged state is not written back: a poll that learned nothing costs no KV write
     const events = st.events.filter((e) => e.date >= from && e.date <= to).sort((a, b) => a.date.localeCompare(b.date)).map((e) => ({ ...e, kind: (st.docs[e.id] && st.docs[e.id].kind) || e.kind, committee: (st.docs[e.id] && st.docs[e.id].committee) || e.committee, docs: st.docs[e.id] || null }));
     return new Response(JSON.stringify({
       at: Date.now(), fiscalYear: Number(fy), from, to, scannedFrom: st.scannedFrom, scannedTo: st.scannedTo,
