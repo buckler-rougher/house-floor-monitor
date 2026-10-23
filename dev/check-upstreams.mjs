@@ -249,11 +249,19 @@ await Promise.all(Array.from({ length: 4 }, async () => {
   }
 }));
 
-let fails = 0, warns = 0;
+// A source that answers 403 to an automated request has put up a bot check (senate.gov did on 23 October 2026: every page and feed, to every client, a browser included). It is an
+// outage and it fails the run, but it is not a change in what the board reads, so it is its own kind: the workflow runs two jobs named for the two kinds, because GitHub's failure
+// email shows only the job's name.
+const MODE = (process.argv.find((a) => a.startsWith('--mode=')) || '--mode=both').slice(7);
+const blocked = (r) => r.fail && /HTTP 403/.test(r.fail);
+let fails = 0, warns = 0, blocks = 0;
 for (const r of results) {
-  const tag = r.fail ? 'FAIL' : r.warn ? 'warn' : 'ok  ';
-  if (r.fail) fails++; else if (r.warn) warns++;
+  const tag = blocked(r) ? 'BLOCK' : r.fail ? 'FAIL' : r.warn ? 'warn' : 'ok  ';
+  if (blocked(r)) blocks++; else if (r.fail) fails++; else if (r.warn) warns++;
   console.log(`${tag}  ${r.name.padEnd(40)} ${String(r.ms).padStart(5)}ms${r.fail ? '  ' + r.fail : r.warn ? '  ' + r.warn : ''}`);
+  if (process.env.GITHUB_ACTIONS && blocked(r)) console.log(`::error title=A source is refusing automated requests (HTTP 403), not a bug in the board::${r.name}: ${r.fail.slice(0, 160)}`);
+  else if (process.env.GITHUB_ACTIONS && r.fail) console.log(`::error title=A source changed or is down::${r.name}: ${r.fail.slice(0, 160)}`);
 }
-console.log(`\n${results.length} checked: ${results.length - fails - warns} ok, ${warns} warn, ${fails} FAIL`);
-process.exit(fails ? 1 : 0);
+console.log(`\n${results.length} checked: ${results.length - fails - warns - blocks} ok, ${warns} warn, ${blocks} blocked (HTTP 403), ${fails} FAIL`);
+if (blocks) console.log('BLOCKED is not a change in what we read: the source is refusing automated clients. Nothing to fix here; the Worker serves the last good answer while it lasts.');
+process.exit((MODE === 'blocked' ? blocks : MODE === 'broken' ? fails : fails + blocks) ? 1 : 0);

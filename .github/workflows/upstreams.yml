@@ -21,7 +21,21 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  # Two jobs because GitHub's failure email shows only the job's name: the first is a source refusing automated clients (an outage, nothing to fix in the board), the second is a
+  # real change (a page gone, a feed in a new shape).
+  blocked:
+    name: A source is refusing automated requests, HTTP 403 (not a bug in the board)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Look for sources that answer 403
+        run: node dev/check-upstreams.mjs --mode=blocked
+  broken:
+    name: A source changed or is down (a real fault, fix it)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -30,4 +44,4 @@ jobs:
         with:
           node-version: '22'
       - name: Check the upstreams
-        run: node dev/check-upstreams.mjs
+        run: node dev/check-upstreams.mjs --mode=broken
