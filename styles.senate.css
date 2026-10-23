@@ -1577,12 +1577,12 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: var(--track-wide);
-  opacity: 0.8;
+  opacity: 0.9;
 }
   .floor-feed-source a {
   color: var(--accent-blue);
   text-decoration: none;
-  opacity: 0.9;
+  opacity: 1;
   transition: opacity var(--dur-200) ease;
 }
   .floor-feed-source a:hover { opacity: 1; }
