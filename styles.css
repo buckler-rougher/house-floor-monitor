@@ -10748,8 +10748,7 @@ body.all-mode .vote-header {
 .pipe-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 .pipe-col { min-width: 0; padding: var(--sp-14) var(--sp-24) var(--sp-16) var(--sp-32); border-right: 1px solid var(--border-color); }
 .pipe-col:last-child { border-right: 0; padding-left: var(--sp-24); padding-right: var(--sp-32); }
-.pipe-head { display: flex; align-items: baseline; gap: var(--sp-8); }
-.pipe-head-name { font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
+.pipe-col > .bills-column-header { margin-bottom: var(--sp-8); }   /* the same column header as BILLS THIS WEEK; the explanation sits right under it */
 .pipe-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); font-weight: 700; color: var(--text-primary); }
 .pipe-sub { margin: var(--sp-2) 0 var(--sp-8); font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
 .pipe-list { max-height: 420px; overflow-y: auto; display: grid; align-content: start; gap: var(--sp-8); padding-bottom: var(--sp-4); }
