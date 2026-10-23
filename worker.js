@@ -1429,17 +1429,25 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
   // removing it. Anything that must not be called N times at once needs its own
   // guard, not this one.
   let response;
-  const inflight = _kvInflight.get(key);
-  if (inflight) {
-    response = (await inflight).clone();
-  } else {
-    const started = fn();
-    _kvInflight.set(key, started);
-    try {
-      response = await started;
-    } finally {
-      _kvInflight.delete(key);
+  try {
+    const inflight = _kvInflight.get(key);
+    if (inflight) {
+      response = (await inflight).clone();
+    } else {
+      const started = fn();
+      _kvInflight.set(key, started);
+      try {
+        response = await started;
+      } finally {
+        _kvInflight.delete(key);
+      }
     }
+  } catch (e) {
+    // A source that THROWS (senate.gov answering 403 to everything from 23 October) is a failed origin like one that answers with an error status: the last good body is served below
+    // rather than the 500 that would otherwise reach the board. With nothing kept there is nothing to serve, so the error goes on as it always did.
+    if (prevBody === null) throw e;
+    console.warn(`[house-floor] kvCache: origin threw for key=${key}: ${e && e.message}`);
+    response = new Response('{"error":"origin failed"}', { status: 502, headers: { 'Content-Type': 'application/json' } });
   }
   if (response.ok) {
     try {
