@@ -1434,12 +1434,13 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
     // ("This ReadableStream is currently locked to a reader"): the first caller's copy was already being streamed to its client when the second one tried to clone it.
     let inflight = _kvInflight.get(key);
     if (!inflight) {
-      inflight = (async () => { const r = await fn(); return { status: r.status, headers: [...r.headers], body: await r.text() }; })();
+      // (some callers' fn return a plain value, a JSON string, instead of a Response: that goes through as it is)
+      inflight = (async () => { const r = await fn(); return r instanceof Response ? { status: r.status, headers: [...r.headers], body: await r.text() } : { value: r }; })();
       _kvInflight.set(key, inflight);
       inflight.then(() => _kvInflight.delete(key), () => _kvInflight.delete(key));
     }
     const snap = await inflight;
-    response = new Response(snap.body, { status: snap.status, headers: snap.headers });
+    response = 'value' in snap ? snap.value : new Response(snap.body, { status: snap.status, headers: snap.headers });
   } catch (e) {
     // A source that THROWS (senate.gov answering 403 to everything from 23 October) is a failed origin like one that answers with an error status: the last good body is served below
     // rather than the 500 that would otherwise reach the board. With nothing kept there is nothing to serve, so the error goes on as it always did.
