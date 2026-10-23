@@ -4260,8 +4260,8 @@ a.tweet-avatar:hover { opacity: 0.8; }
     word-break: break-word;
     padding-left: 46px; /* indent under avatar */
 }
-.tweet-body a { color: var(--accent-blue); text-decoration: none; }
-.tweet-body a:hover { text-decoration: underline; }
+.tweet-body a { color: var(--accent-blue); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }   /* a link inside a sentence is told from it by more than colour */
+.tweet-body a:hover { text-decoration-color: currentColor; }
 .tweet-images {
     display: grid;
     gap: 2px;
@@ -5614,7 +5614,7 @@ font-family: var(--font-mono);
     display: flex;
     align-items: center;
     gap: 7px;
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
     border-radius: var(--radius-6);
     padding: 4px 10px;
     background: transparent;
@@ -5624,7 +5624,7 @@ font-family: var(--font-mono);
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-muted);
-    opacity: 0.55;
+    /* dimmed by its outline, not by opacity: the words stay readable */
     user-select: none;
     transition: background var(--dur-150) ease, border-color var(--dur-150) ease, opacity var(--dur-150) ease;
 }
@@ -5661,7 +5661,7 @@ font-family: var(--font-mono);
     display: flex;
     align-items: center;
     gap: 7px;
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
     border-radius: var(--radius-6);
     padding: 4px 10px;
     background: transparent;
@@ -5671,7 +5671,7 @@ font-family: var(--font-mono);
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-muted);
-    opacity: 0.55;
+    /* dimmed by its outline, not by opacity: the words stay readable */
     user-select: none;
     transition: background var(--dur-150) ease, border-color var(--dur-150) ease, opacity var(--dur-150) ease;
 }
@@ -10457,7 +10457,7 @@ body.all-mode .floor-grid-panel {
 }
 .suggest-label:first-child { margin-top: 0; }
 .suggest-req { color: var(--accent-green); }
-.suggest-opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); opacity: .7; }
+.suggest-opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
 .suggest-textarea, .suggest-input {
     width: 100%;
     background: var(--bg-dark);
