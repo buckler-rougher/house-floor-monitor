@@ -725,6 +725,11 @@
     text-transform: uppercase;
 }
   .vote-type-tag:empty { display: none; }
+  .vtt-green { background: rgba(63, 185, 80, 0.15);   color: var(--accent-green); }
+  .vtt-amber { background: rgba(210, 153, 34, 0.15);  color: var(--accent-amber); }
+  .vtt-red { background: rgba(248, 81, 73, 0.15);   color: var(--accent-red); }
+  .vtt-blue { background: rgba(88, 166, 255, 0.12);  color: var(--accent-blue); }
+  .vtt-muted { background: rgba(139, 148, 158, 0.1);  color: var(--text-muted); }
   .progress-threshold-marker {
     position: absolute;
     top: -5px;
@@ -6640,7 +6645,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
     align-items: center;
 }
-.panel-header > .vote-type-tag, .panel-header > .vote-id {
+.panel-header > .vote-type-tag, .panel-header > .vote-pill, .panel-header > .vote-id {
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
@@ -6663,7 +6668,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     letter-spacing: var(--track-wide);
     line-height: 1;
 }
-.panel-header > .vote-type-tag {
+.panel-header > .vote-type-tag, .panel-header > .vote-pill {
     height: var(--tag-height);
     padding: 0 var(--sp-10);
     border-radius: var(--radius-4);
@@ -6672,6 +6677,14 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     letter-spacing: var(--track-wide);
     line-height: 1;
 }
+.panel-header > .vote-pill {
+    background: color-mix(in srgb, var(--text-secondary) 16%, transparent);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.panel-header > .vote-pill:empty { display: none; }
 @media (max-width: 640px) {
   .panel-header:has(> .vote-type-tag), .panel-header:has(> .vote-id) {
         padding: var(--sp-16) var(--sp-16);
