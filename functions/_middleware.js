@@ -54,6 +54,8 @@ const LEGACY_ASSETS = {
   '/apple-touch-icon.png': { house: '/house-apple-touch-icon.png',  senate: '/senate-apple-touch-icon.png' },
   '/site.webmanifest':     { house: '/house.webmanifest',           senate: '/senate.webmanifest' },
   '/social.webp':          { house: '/house-social.webp',           senate: '/senate-social.webp' },
+  // the Senate card was a .png until 20 October; cards already posted embed that address, so it answers with the .webp
+  '/senate-social.png':    { house: '/senate-social.webp',          senate: '/senate-social.webp' },
   '/social.svg':           { house: '/house-social.svg',            senate: '/senate-social.svg' },
   '/logo.svg':             { house: '/house-logo.svg',              senate: '/senate-logo.svg' },
 };
