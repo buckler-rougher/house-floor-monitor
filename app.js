@@ -3415,6 +3415,7 @@ function setVoteRecsPreset(preset) {
 
 // ── Open / close ─────────────────────────────────────────────────────────────
 
+let _vrecTrap = null;
 function openVoteRecsModal() {
     const overlay = document.getElementById('vrec-overlay');
     if (!overlay) return;
@@ -3433,6 +3434,7 @@ function openVoteRecsModal() {
     overlay.removeAttribute('hidden');
     overlay.onclick = e => { if (e.target === overlay) closeVoteRecsModal(); };
     document.addEventListener('keydown', _vrecEscHandler);
+    if (window.FocusTrap && !_vrecTrap) _vrecTrap = window.FocusTrap.activate(overlay.querySelector('.vrec-modal'), { initial: '.vrec-close-x' });   // Tab stays inside; closing hands focus back
 
     // Push hash so the modal survives reload and can be shared
     if (location.hash !== '#build-vote-recs') {
@@ -3445,6 +3447,7 @@ function closeVoteRecsModal() {
     if (!overlay || overlay.hasAttribute('hidden') || overlay.classList.contains('is-closing')) return;
     hideAfterAnimation(overlay);
     document.removeEventListener('keydown', _vrecEscHandler);
+    if (_vrecTrap) { _vrecTrap.release(); _vrecTrap = null; }
     // Remove hash when modal is closed
     if (location.hash === '#build-vote-recs') {
         history.pushState(null, '', location.pathname + location.search);
@@ -6532,6 +6535,7 @@ function restoreDischargeSigners() {
     const p = id && (_discharge.petitions || []).find((x) => String(x.id) === id);
     if (p) openDischargeSigners(p.id, p.number, null);
 }
+let _dpTrap = null;
 function closeDischargeSigners() {
     const o = document.getElementById('dp-modal-overlay');
     if (o) {
@@ -6539,6 +6543,7 @@ function closeDischargeSigners() {
         if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) o.remove();
         else { o.classList.add('is-closing'); setTimeout(() => o.remove(), 220); }
     }
+    if (_dpTrap) { _dpTrap.release(false); _dpTrap = null; }
     document.removeEventListener('keydown', dischargeModalKey);
     setDischargeParam(null);
     if (_dpModalReturn && document.contains(_dpModalReturn)) _dpModalReturn.focus();
@@ -6575,6 +6580,7 @@ function openDischargeSigners(id, number, trigger) {
     o.addEventListener('click', (e) => { if (e.target === o) closeDischargeSigners(); });
     document.getElementById('dp-modal-close').addEventListener('click', closeDischargeSigners);
     document.getElementById('dp-modal-close').focus();
+    if (window.FocusTrap) _dpTrap = window.FocusTrap.activate(o.querySelector('.dp-modal'), { initial: '#dp-modal-close' });   // Tab stays inside; focus goes back to the trigger below
     if (!trigger) QuietFocus(o);   // reopened by a reload: focused as after a click, not lit
     let signers = [], party = '', order = 'new', unsigned = false, absent = [];   // absent: the members who have not signed, from the Clerk's roster
     const letter = (p) => /^R/i.test(p) ? 'R' : /^D/i.test(p) ? 'D' : 'I';
