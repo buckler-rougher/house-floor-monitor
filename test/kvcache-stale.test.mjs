@@ -35,4 +35,13 @@ await ok('with a good body kept, the same outage serves it, marked stale', async
   assert.strictEqual(j.stale, true);
   assert.deepStrictEqual(j.days, [{ date: '2026-10-22' }]);
 });
+await ok('callers that arrive together on an expired key each get a whole response (no locked stream)', async () => {
+  store.clear();
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; await new Promise((r) => setTimeout(r, 20)); return new Response('<rss></rss>', { status: 200 }); };
+  const rs = await Promise.all([call(), call(), call(), call()]);
+  const texts = await Promise.all(rs.map((r) => r.text()));
+  assert.ok(rs.every((r) => r.status === rs[0].status), 'one answer for all');
+  assert.ok(texts.every((t) => t === texts[0]), 'the same body for all');
+});
 console.log(`\n${n} passed`);
