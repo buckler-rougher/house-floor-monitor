@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Rewrites the inline-script hashes in _headers' Content-Security-Policy-Report-Only from the pages' own inline <script> blocks. Run it after editing an inline script
+// Rewrites the inline-script hashes in _headers' Content-Security-Policy from the pages' own inline <script> blocks. Run it after editing an inline script
 // (the loaders for the dev harness and the time machine in index.html carry a version string, so a version bump there changes the hash); test/csp.test.js fails until you do.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
