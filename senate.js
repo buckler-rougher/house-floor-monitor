@@ -952,8 +952,15 @@ function loadNominationHearings(tries = 0) {
         .catch(() => { /* the modal is right without it */ });
 }
 
+// Keyboard focus for the bill and nomination modals: in on open, Tab stays inside, and closing hands focus back to the card (below).
+let _senateTrap = null;
+function trapSenateModal(overlay) {
+    if (_senateTrap) _senateTrap.release(false);
+    _senateTrap = globalThis.FocusTrap ? globalThis.FocusTrap.activate(overlay, { initial: '#bill-modal-close' }) : null;
+}
 function closeSenateBillModal() {
     const overlay = el('bill-modal-overlay');
+    if (_senateTrap) { _senateTrap.release(false); _senateTrap = null; }
     globalThis.BoardAnimations?.hideAfterAnimation?.(overlay);
     document.removeEventListener('keydown', onSenateBillModalKey);
     if (_billModalTrigger) { _billModalTrigger.focus(); _billModalTrigger = null; }
@@ -1053,6 +1060,7 @@ async function openSenateBillModal(billId, trigger) {
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
     }
     document.addEventListener('keydown', onSenateBillModalKey);
+    trapSenateModal(overlay);
     if (!hit) paint(await fetchSenateBill(billId));
 }
 
@@ -1199,6 +1207,7 @@ async function openSenateNominationModal({ pn, calendarNo, vote }, trigger) {
     overlay.innerHTML = billModalSkeleton(id);
     overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
     document.addEventListener('keydown', onSenateBillModalKey);
+    trapSenateModal(overlay);
 
     // The panel usually has them already; a stage card can be clicked before
     // the nominations request has landed.
