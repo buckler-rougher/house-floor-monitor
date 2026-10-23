@@ -28,7 +28,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261022c">
+    <link rel="stylesheet" href="styles.house.css?v=20261022d">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1217,7 +1217,7 @@
             <!-- Vote Panel -->
             <div class="vote-display">
                 <div class="panel-header">
-                    <span class="panel-label">Happening Now</span>
+                    <span class="panel-label" data-icon="live">Happening Now</span>
                     <span class="vote-id" id="vote-id">--</span>
                     <span id="vote-type-tag" class="vote-type-tag"></span>
                     <span id="vote-threshold-pill" class="vote-pill"></span><button class="info-btn" type="button" data-info="forms-of-vote" aria-label="About how votes are taken" hidden>?</button>
@@ -1407,7 +1407,7 @@
             <!-- The day, once the House is out: when it adjourned, when it meets next, the votes it took (drawn by renderTodayInHouse) -->
             <div class="proceedings-panel today-house" id="today-house">
                 <div class="panel-header">
-                    <span class="panel-label" id="today-house-label">TODAY IN THE HOUSE</span>
+                    <span class="panel-label" id="today-house-label" data-icon="live">TODAY IN THE HOUSE</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
                         <span class="proceedings-time" id="today-house-date"></span>
@@ -1419,7 +1419,7 @@
             <!-- Floor Proceedings -->
             <div class="proceedings-panel" id="proceedings">
                 <div class="panel-header">
-                    <span class="panel-label">FLOOR PROCEEDINGS</span>
+                    <span class="panel-label" data-icon="log">FLOOR PROCEEDINGS</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">Legislative Activity (House Clerk)</a></span>
                         <span class="proceedings-time" id="proceedings-last-update"></span>
@@ -1433,7 +1433,7 @@
             <!-- Vote Series Timeline -->
             <div class="vote-series-panel" id="vote-series-panel">
                 <div class="panel-header">
-                    <span class="panel-label">VOTE SERIES</span>
+                    <span class="panel-label" data-icon="ballot">VOTE SERIES</span>
                     <div class="panel-header-right">
                         <button class="vrec-open-btn" data-act="openVoteRecsModal">Build Vote Recs</button>
                         <span class="panel-source">Source: <a href="https://domewatch.us/whip/floor" target="_blank" rel="noopener">Democratic Whip</a></span>
@@ -1452,7 +1452,7 @@
             <div class="whip-updates-panel" id="whip-updates">
                 <div class="panel-header">
                     <div class="whip-label-group">
-                        <span class="panel-label">DEM WHIP NOTICES</span>
+                        <span class="panel-label" data-icon="megaphone">DEM WHIP NOTICES</span>
                         <span class="whip-info-tip" data-tooltip="We republish Democratic Whip notices for informational purposes only. Republican Whip notices are not publicly available.">?</span>
                     </div>
                     <div class="panel-header-right">
@@ -1469,7 +1469,7 @@
             <!-- Absentee Tracking -->
             <div class="absentee-panel" id="absentee">
                 <div class="panel-header">
-                    <span class="panel-label">MISSING MEMBERS</span>
+                    <span class="panel-label" data-icon="missing">MISSING MEMBERS</span>
                     <div class="panel-header-right">
                         <div class="bills-sort-switcher">
                             <button class="bills-sort-btn active" data-filter="all">ALL</button>
@@ -1512,7 +1512,7 @@
             <!-- Bills This Week Section -->
             <div class="bills-section" id="bills">
                 <div class="panel-header">
-                    <span class="panel-label">BILLS THIS WEEK</span>
+                    <span class="panel-label" data-icon="doc">BILLS THIS WEEK</span>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://docs.house.gov/BillsThisWeek-RSS.xml" target="_blank" rel="noopener">House Docs (House Clerk/Majority Leader)</a></span>
                         <span class="bills-last-update" id="bills-last-update">--:--</span>
@@ -1581,7 +1581,7 @@
         <!-- Floor Reporters -->
         <div class="twitter-panel" id="twitter">
             <div class="panel-header">
-                <span class="panel-label">REPORTERS</span>
+                <span class="panel-label" data-icon="chat">REPORTERS</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://twitter.com/i/lists/1593329859010301953" target="_blank" rel="noopener">Twitter via Nitter</a></span>
                 </div>
@@ -1610,7 +1610,7 @@
         <!-- Voting Days Calendar -->
         <div class="voting-calendar-panel" id="voting-calendar">
             <div class="panel-header">
-                <span class="panel-label">HOUSE CALENDAR</span>
+                <span class="panel-label" data-icon="calendar">HOUSE CALENDAR</span>
                 <div class="panel-header-right">
                     <div class="calendar-desktop-nav" id="calendar-desktop-nav">
                         <button class="calendar-desktop-btn" id="calendar-desktop-prev" aria-label="Previous months"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>
@@ -1639,7 +1639,7 @@
         <!-- Airport Delays Display -->
         <div class="airport-delays-panel" id="airport-delays">
                 <div class="panel-header">
-                    <span class="panel-label">AIRPORT DELAYS</span>
+                    <span class="panel-label" data-icon="plane">AIRPORT DELAYS</span>
                     <span class="panel-source">Source: <a href="https://nasstatus.faa.gov" target="_blank" rel="noopener">National Airspace System Status (FAA)</a></span>
                 </div>
                 <div class="airport-delays-content">
@@ -1652,7 +1652,7 @@
         <!-- Party Breakdown Panel -->
         <div class="party-breakdown-panel" id="party-breakdown">
                 <div class="panel-header">
-                    <span class="panel-label">BALANCE OF POWER</span>
+                    <span class="panel-label" data-icon="scales">BALANCE OF POWER</span>
                     <div id="majority-control-badge" class="majority-badge hidden">-- CONTROL</div>
                     <div class="panel-header-right">
                         <span class="panel-source">Source: <a href="https://clerk.house.gov/xml/lists/MemberData.xml" target="_blank" rel="noopener">House Clerk</a></span>
@@ -1705,7 +1705,7 @@
         <!-- Committee Meetings: the day's hearings and markups from the Clerk's Committee Repository (renderCommitteeMeetings) -->
         <div class="proceedings-panel committee-panel" id="committee-meetings">
             <div class="panel-header">
-                <span class="panel-label">COMMITTEE MEETINGS</span>
+                <span class="panel-label" data-icon="group">COMMITTEE MEETINGS</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a id="committee-source-link" href="https://docs.house.gov/Committee/Calendar/ByDay.aspx" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span>
                     <span class="proceedings-time" id="committee-date"></span>
@@ -1717,7 +1717,7 @@
         <!-- Discharge Petitions: how close each open petition is to the signatures it needs (renderDischargePetitions) -->
         <div class="proceedings-panel discharge-panel" id="discharge-petitions">
             <div class="panel-header">
-                <span class="whip-label-group"><span class="panel-label">DISCHARGE PETITIONS</span><button class="info-btn" type="button" data-info="discharge-petitions" aria-label="About discharge petitions" hidden>?</button></span>
+                <span class="whip-label-group"><span class="panel-label" data-icon="sign">DISCHARGE PETITIONS</span><button class="info-btn" type="button" data-info="discharge-petitions" aria-label="About discharge petitions" hidden>?</button></span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://clerk.house.gov/DischargePetition" target="_blank" rel="noopener">Discharge Petitions (House Clerk)</a></span>
                     <span class="proceedings-time" id="discharge-summary"></span>
@@ -1740,7 +1740,7 @@
         <!-- Waiting for the floor: bills a committee has reported, and what the other chamber has sent over (lib/pipeline-panel.js) -->
         <div class="proceedings-panel pipeline-panel" id="pipeline">
             <div class="panel-header">
-                <span class="panel-label">WAITING FOR THE FLOOR</span>
+                <span class="panel-label" data-icon="hourglass">WAITING FOR THE FLOOR</span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="pipeline-summary"></span>
@@ -1763,7 +1763,7 @@
         <!-- Appropriations: the twelve regular bills of the fiscal year and how far each has got (lib/approps-panel.js) -->
         <div class="proceedings-panel approps-panel" id="appropriations">
             <div class="panel-header">
-                <span class="whip-label-group"><span class="panel-label" id="approps-label">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
+                <span class="whip-label-group"><span class="panel-label" id="approps-label" data-icon="bag">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
                 <div class="panel-header-right">
                     <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="approps-summary"></span>
