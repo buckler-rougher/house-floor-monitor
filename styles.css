@@ -10750,7 +10750,8 @@ body.all-mode .vote-header {
 .pipe-col:last-child { border-right: 0; padding-left: var(--sp-24); padding-right: var(--sp-32); }
 .pipe-col > .bills-column-header { margin-bottom: var(--sp-8); }   /* the same column header as BILLS THIS WEEK; the explanation sits right under it */
 .pipe-count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); font-weight: 700; color: var(--text-primary); }
-.pipe-sub { margin: var(--sp-2) 0 var(--sp-8); font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
+.pipe-sub { margin: var(--sp-2) 0 var(--sp-8); padding: 0 var(--sp-12);   /* the header bar above insets its words by 12px: the line under it starts where they do */
+   font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
 .pipe-list { max-height: 420px; overflow-y: auto; display: grid; align-content: start; gap: var(--sp-8); padding-bottom: var(--sp-4); }
 /* in a half-width column a long action wraps; the date stays whole beside it */
 .pipe-list .bill-meta { align-items: flex-start; }
