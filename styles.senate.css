@@ -7144,6 +7144,8 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
   .committee-item { grid-template-columns: 4.2rem 1fr; }
   .committee-room { grid-column: 2; }
 }
+.dp-action { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
+.dp-action span { color: var(--text-muted); }
 .dp-modal-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: var(--sp-24); background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px); }
 .approps-list { padding: var(--sp-12) var(--sp-32) var(--sp-16); display: grid; gap: var(--sp-16); }
 @media (max-width: 768px) {

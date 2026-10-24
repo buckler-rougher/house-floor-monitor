@@ -5486,7 +5486,7 @@ A presidential message is printed in full in the Journal and the Congressional R
     'oath': {
         title: 'The Oath of Office',
         tags: ['REQUIRED BY THE CONSTITUTION', 'TEXT SET BY STATUTE'],
-        body: `Members of the House take an oath of office. Article VI of the Constitution requires it, and 5 U.S.C. 3331 sets its text.
+        body: `Members of the House take an oath of office. Article VI of the Constitution requires it, and 5 USC 3331 sets its text.
 
 On the first day of a new Congress, the Speaker is sworn in by the dean of the House, the longest-serving Member, then administers the oath to all Members-elect together, including the nonvoting Delegates and the Resident Commissioner. Members who were not present may take it later that day.
 
