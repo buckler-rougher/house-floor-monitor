@@ -3185,16 +3185,40 @@ async function handleSenateStages(env) {
   // handler for what a stale key costs.
   return kvCache(env, `senate-stages-${CURRENT_CONGRESS}-v4`, 1800, async () => {
     const congress = CURRENT_CONGRESS, session = senateSession();
-    const r = await fetch(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
-        signal: AbortSignal.timeout(20_000) });
-    if (!r.ok) throw new Error(`vote menu: HTTP ${r.status}`);
-    // senate.gov answers a path that does not exist with 200 and its own HTML.
-    if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('vote menu: not XML');
-    const built = buildSenateStages(await r.text(), congress, session);
+    const xmlKey = `senate-vote-menu-xml-${congress}-${session}-v1`;
+    let xml, stale = false;
+    try {
+      const r = await fetch(`https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_${congress}_${session}.xml`,
+        { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HouseMonitor/1.0; +https://house-floor.evanhollander.org)' },
+          signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) throw new Error(`vote menu: HTTP ${r.status}`);
+      // senate.gov answers a path that does not exist with 200 and its own HTML.
+      if (!/xml/i.test(r.headers.get('Content-Type') || '')) throw new Error('vote menu: not XML');
+      xml = await r.text();
+      // kept, only when it changed, so a later refusal from senate.gov (HTTP 403 to every automated client from 23 October 2026) has something to build from
+      try { if (env?.HLS_CACHE && (await env.HLS_CACHE.get(xmlKey)) !== xml) await env.HLS_CACHE.put(xmlKey, xml, { expirationTtl: KV_STORAGE_TTL }); } catch { /* not kept */ }
+    } catch (e) {
+      // the menu as last read; failing that, the vote list the votes route kept, which has every field the chains need except each measure's title
+      let kept = null;
+      try { kept = env?.HLS_CACHE ? await env.HLS_CACHE.get(xmlKey) : null; } catch { /* none */ }
+      if (!kept) {
+        try {
+          const w = JSON.parse((env?.HLS_CACHE && await env.HLS_CACHE.get(`senate-votes-${congress}-${session}-v1`)) || 'null');
+          const votes = JSON.parse((w && w.body) || 'null')?.votes;
+          if (Array.isArray(votes) && votes.length) {
+            const t = (tag, v) => `<${tag}>${String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</${tag}>`;
+            kept = votes.map((v) => `<vote>${t('vote_number', v.number)}${t('vote_date', v.date)}${t('issue', v.issue)}${t('question', v.question)}${t('result', v.result)}${t('yeas', v.yeas)}${t('nays', v.nays)}${t('title', '')}</vote>`).join('');
+          }
+        } catch { /* none */ }
+      }
+      if (!kept) throw e;
+      console.warn(`[house-floor] senate stages: vote menu unavailable (${e && e.message}); built from the last copy kept`);
+      xml = kept; stale = true;
+    }
+    const built = buildSenateStages(xml, congress, session);
     const counts = {};
     for (const [k, v] of Object.entries(built.stages)) counts[k] = v.length;
-    return new Response(JSON.stringify({ congress, session, counts, ...built }), {
+    return new Response(JSON.stringify({ congress, session, counts, ...built, ...(stale ? { stale: true, staleAt: new Date().toISOString() } : {}) }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
   });

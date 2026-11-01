@@ -44,4 +44,16 @@ await ok('callers that arrive together on an expired key each get a whole respon
   assert.ok(rs.every((r) => r.status === rs[0].status), 'one answer for all');
   assert.ok(texts.every((t) => t === texts[0]), 'the same body for all');
 });
+await ok('the Senate stages are built from the last vote list kept when senate.gov refuses (stale, titles empty), and from the last menu kept when there is one', async () => {
+  store.clear();
+  globalThis.fetch = async () => new Response('Access Denied', { status: 403 });
+  const mk = (n, issue, question, result) => ({ number: String(n), date: '30-Sep', issue, question, result, yeas: 52, nays: 45 });
+  store.set('senate-votes-119-2-v1', JSON.stringify({ body: JSON.stringify({ congress: 119, session: 2, count: 2, votes: [
+    mk(255, 'S. 4668', 'On the Motion to Proceed', 'Agreed to'), mk(256, 'S. 4668', 'On the Cloture Motion', 'Cloture Motion Agreed to') ] }), cachedAt: Date.now() }));
+  let r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/senate/stages'), env, { waitUntil() {} });
+  assert.strictEqual(r.status, 200);
+  let j = await r.json();
+  assert.strictEqual(j.stale, true);
+  assert.ok(Object.values(j.counts).reduce((a, b) => a + b, 0) >= 1, 'the measure is in a stage');
+});
 console.log(`\n${n} passed`);
