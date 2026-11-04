@@ -4796,7 +4796,7 @@ function openBillModal(billId) {
         name: `${sp.firstName} ${sp.lastName}`,
         party: sp.party,
         loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
-        photoUrl: `https://bioguide.congress.gov/bioguide/photo/${sp.bioguideId.charAt(0)}/${sp.bioguideId}.jpg`,
+        photoUrl: `https://bioguide.congress.gov/photo/${sp.bioguideId}.jpg`,
         placeholder: MEMBER_PHOTO_PLACEHOLDER,
     } : {});
 
@@ -7091,7 +7091,7 @@ function updateDebateSection(items) {
                 name: `${sp.firstName} ${sp.lastName}`,
                 party: sp.party,
                 loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
-                photoUrl: `https://bioguide.congress.gov/bioguide/photo/${sp.bioguideId.charAt(0)}/${sp.bioguideId}.jpg`,
+                photoUrl: `https://bioguide.congress.gov/photo/${sp.bioguideId}.jpg`,
                 placeholder: MEMBER_PHOTO_PLACEHOLDER,
             } : null,
             support: {
@@ -8485,7 +8485,7 @@ async function fetchMemberPhotoFromClerkData(leaderName) {
             
             // Use the official Biographical Directory image path.
             // The photo endpoint is organized by the first letter of the BioGuide ID.
-            const photoUrl = `https://bioguide.congress.gov/bioguide/photo/${bestMatch.bioguideId.charAt(0)}/${bestMatch.bioguideId}.jpg`;
+            const photoUrl = `https://bioguide.congress.gov/photo/${bestMatch.bioguideId}.jpg`;
             setMemberPhoto(elements.pledgeImage, photoUrl, bestMatch.fullName || CHAMBER.presidingTitle);
             return;
         }
@@ -8656,7 +8656,7 @@ function findBestMemberMatchByName(xmlDoc, lastName, state) {
 
 function buildBioguidePhotoUrl(bioguideId) {
     if (!bioguideId) return '';
-    return `https://bioguide.congress.gov/bioguide/photo/${bioguideId.charAt(0)}/${bioguideId}.jpg`;
+    return `https://bioguide.congress.gov/photo/${bioguideId}.jpg`;
 }
 
 function buildCongressProfileUrl(bioguideId) {
