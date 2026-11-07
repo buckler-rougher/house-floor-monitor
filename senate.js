@@ -927,7 +927,8 @@ async function loadNominations() {
         renderNominations();
     } catch (e) {
         const feed = el('nominations-feed');
-        if (feed) setIfChanged(feed, `<div class="whip-updates-loading">Nominations unavailable (${escapeHtml(e.message)}).</div>`);
+        if (feed) setIfChanged(feed, `<div class="whip-updates-loading">${SourceError.text('nominations', 'senate')}</div>`);
+        console.error('Nominations fetch failed:', e);
     }
 }
 
@@ -1047,7 +1048,7 @@ async function openSenateBillModal(billId, trigger) {
     const paint = (entry) => {
         if (overlay.hidden || overlay.dataset.closing) return;
         overlay.innerHTML = entry.error
-            ? billModalSkeleton(billId, `Details unavailable (${entry.error})`)
+            ? billModalSkeleton(billId, SourceError.text('details', 'congress'))
             : billModalContent(entry.bill);
         if (!hit) overlay.querySelector('.bill-modal-scroll')?.classList.add('is-filled');
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
@@ -1317,7 +1318,7 @@ async function loadProceedings() {
         setProceedingsManifest(data);
     } catch (e) {
         if (!feed.querySelector('.proceedings-measure')) {
-            setIfChanged(feed, `<div class="proceedings-error">Floor activity unavailable (${escapeHtml(e.message)}).</div>`);
+            setIfChanged(feed, `<div class="proceedings-error">${SourceError.text('floor activity', 'senate')}</div>`);
         }
         console.error('Proceedings fetch failed:', e);
     }
@@ -1562,7 +1563,7 @@ async function loadStages() {
     } catch (e) {
         for (const key of STAGE_KEYS) {
             const list = el(`stage-list-${key}`);
-            if (list) setIfChanged(list, `<div class="whip-updates-loading">Stages unavailable (${escapeHtml(e.message)}).</div>`);
+            if (list) setIfChanged(list, `<div class="whip-updates-loading">${SourceError.text('procedural stages', 'senate')}</div>`);
         }
         console.error('Stages fetch failed:', e);
     }
@@ -1713,7 +1714,7 @@ async function loadFloorSchedule() {
         renderNotices();
     } catch (e) {
         const summary = el('senate-floor-summary');
-        if (summary) summary.textContent = `Floor schedule unavailable (${e.message}).`;
+        if (summary) summary.textContent = SourceError.text('the floor schedule', 'senate');
         console.error('Floor schedule fetch failed:', e);
     }
 }
