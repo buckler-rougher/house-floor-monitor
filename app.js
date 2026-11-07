@@ -3729,10 +3729,10 @@ async function fetchBillsThisWeek() {
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
-            setIfChanged(elements.ruleBillsList, '<div class="empty-note">Unable to load bills</div>');
+            setIfChanged(elements.ruleBillsList, `<div class="empty-note">${SourceError.text('bills', 'docs')}</div>`);
         }
         if (elements.suspensionBillsList) {
-            setIfChanged(elements.suspensionBillsList, '<div class="empty-note">Unable to load bills</div>');
+            setIfChanged(elements.suspensionBillsList, `<div class="empty-note">${SourceError.text('bills', 'docs')}</div>`);
         }
     }
 }
@@ -5181,7 +5181,7 @@ async function loadAmendments(slug, bodyId = 'amendments-body', countId = 'amend
         document.querySelectorAll('.amdt-filter-btn').forEach(btn =>
             btn.classList.toggle('active', btn.dataset.filter === amendmentsPartyFilter));
     } catch (e) {
-        body.innerHTML = '<div class="bill-amendments-empty">Failed to load amendments.</div>';
+        body.innerHTML = `<div class="bill-amendments-empty">${SourceError.text('amendments', 'congress')}</div>`;
     }
 }
 
@@ -5227,13 +5227,13 @@ async function openRemoteBillModal(billId, trigger) {
         if (overlay.querySelector('.bill-modal')) { _billModalTrapCleanup = trapFocus(overlay); overlay.querySelector('#bill-modal-close')?.focus(); }
     };
     const hit = RemoteBill.cached(billId);
-    overlay.innerHTML = hit ? (hit.error ? RemoteBill.skeleton(billId, `Details unavailable (${hit.error})`) : RemoteBill.content(hit.bill, opts)) : RemoteBill.skeleton(billId);
+    overlay.innerHTML = hit ? (hit.error ? RemoteBill.skeleton(billId, SourceError.text('details', 'congress')) : RemoteBill.content(hit.bill, opts)) : RemoteBill.skeleton(billId);
     wire();
     document.addEventListener('keydown', onBillModalKey);
     if (hit) { if (!hit.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, hit.bill.id || billId, API); } return; }
     const entry = await RemoteBill.fetch(billId, API);
     if (overlay.hidden || overlay.dataset.closing) return;
-    overlay.innerHTML = entry.error ? RemoteBill.skeleton(billId, `Details unavailable (${entry.error})`) : RemoteBill.content(entry.bill, opts);
+    overlay.innerHTML = entry.error ? RemoteBill.skeleton(billId, SourceError.text('details', 'congress')) : RemoteBill.content(entry.bill, opts);
     overlay.querySelector('.bill-modal-scroll')?.classList.add('is-filled');   // the content fades in over the dots
     wire();
     if (!entry.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, entry.bill.id || billId, API); }
@@ -6327,7 +6327,7 @@ function renderCommitteeMeetings() {
 // Clerk's, less the date it appends ("Testimony_Taylor_09.16.2026" -> "Testimony Taylor").
 function committeeDetailHtml(x) {
     if (!x || x === 'loading') return '<div class="committee-detail"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>';
-    if (x === 'error') return '<div class="committee-detail"><span class="committee-detail-note">Details unavailable</span></div>';
+    if (x === 'error') return `<div class="committee-detail"><span class="committee-detail-note">${SourceError.text('details', 'clerk')}</span></div>`;
     const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
     const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(i.url))}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
     const witnesses = x.witnesses.length ? `<div class="committee-detail-head">Witnesses</div>${x.witnesses.map((w) => `
@@ -6659,7 +6659,7 @@ function openDischargeSigners(id, number, trigger) {
             syncExamples();
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
-        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = '<div class="empty-note">Signers unavailable</div>'; });
+        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = `<div class="empty-note">${SourceError.text('signers', 'clerk')}</div>`; });
     requestAnimationFrame(() => requestAnimationFrame(load));
 }
 document.addEventListener('click', (e) => {
