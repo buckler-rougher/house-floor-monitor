@@ -6032,12 +6032,18 @@ font-family: var(--font-mono);
 }
 
 @media (max-width: 1060px) {
+
     .bill-modal-overlay.has-amendments {
-        flex-direction: column;
-        align-items: center;
+        display: grid;
+        grid-template-columns: minmax(0, 720px);
+        grid-template-rows: auto auto;
+        justify-content: center;
+        align-content: start;
+        align-items: stretch;
         padding: var(--sp-16);
         gap: 0;
     }
+    .bill-modal-overlay.has-amendments .bill-panel-nav { grid-row: 1; grid-column: 1; }
     .bill-panel-nav {
         display: flex;
         width: 100%;
@@ -6071,7 +6077,9 @@ font-family: var(--font-mono);
     }
     .bill-modal-overlay.has-amendments .bill-modal,
     .bill-modal-overlay.has-amendments .bill-amendments-panel {
-        display: none;
+        display: flex;
+        grid-row: 2; grid-column: 1;
+        visibility: hidden; pointer-events: none;
         width: 100%;
         max-width: 720px;
         border-radius: 0 0 var(--radius-10) var(--radius-10);
@@ -6079,7 +6087,7 @@ font-family: var(--font-mono);
     }
     .bill-modal-overlay.has-amendments .bill-modal.panel-visible,
     .bill-modal-overlay.has-amendments .bill-amendments-panel.panel-visible {
-        display: flex;
+        visibility: visible; pointer-events: auto;
     }
 }
 

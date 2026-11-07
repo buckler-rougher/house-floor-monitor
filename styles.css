@@ -6512,12 +6512,19 @@ font-family: var(--font-mono);
 
 /* Narrow: one panel at a time with nav */
 @media (max-width: 1060px) {
+    /* one panel at a time under the nav, but both sit in the same cell of a grid, so the cell is as tall as the taller of the two and switching between them never changes the
+       modal's height (the one not shown is only hidden, not taken out) */
     .bill-modal-overlay.has-amendments {
-        flex-direction: column;
-        align-items: center;
+        display: grid;
+        grid-template-columns: minmax(0, 720px);
+        grid-template-rows: auto auto;
+        justify-content: center;
+        align-content: start;
+        align-items: stretch;
         padding: var(--sp-16);
         gap: 0;
     }
+    .bill-modal-overlay.has-amendments .bill-panel-nav { grid-row: 1; grid-column: 1; }
     .bill-panel-nav {
         display: flex;
         width: 100%;
@@ -6551,7 +6558,9 @@ font-family: var(--font-mono);
     }
     .bill-modal-overlay.has-amendments .bill-modal,
     .bill-modal-overlay.has-amendments .bill-amendments-panel {
-        display: none;
+        display: flex;
+        grid-row: 2; grid-column: 1;
+        visibility: hidden; pointer-events: none;
         width: 100%;
         max-width: 720px;
         border-radius: 0 0 var(--radius-10) var(--radius-10);
@@ -6559,7 +6568,7 @@ font-family: var(--font-mono);
     }
     .bill-modal-overlay.has-amendments .bill-modal.panel-visible,
     .bill-modal-overlay.has-amendments .bill-amendments-panel.panel-visible {
-        display: flex;
+        visibility: visible; pointer-events: auto;
     }
 }
 
