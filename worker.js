@@ -3322,7 +3322,11 @@ async function syncBillChanges(env) {
     }
     let deletes = 0;
     for (const k of kept) {
-      if (changed.has(k.id) && deletes < 40) { await env.HLS_CACHE.delete(k.name); _mem.delete(k.name); deletes++; }
+      if (changed.has(k.id) && deletes < 40) {
+        await env.HLS_CACHE.delete(k.name); _mem.delete(k.name); deletes++;
+        // and the sections kept beside the answer (bill-part-...), so the next opening reads the bill afresh
+        try { await env.HLS_CACHE.delete(`bill-parts-${CURRENT_CONGRESS}-${k.id}`); } catch { /* aged out by itself */ }
+      }
     }
     // two minutes of overlap, so a change that landed while we were asking is not missed
     await env.HLS_CACHE.put(checkpointKey, JSON.stringify({ checked: new Date(started - 120_000).toISOString().slice(0, 19) + 'Z' }), { expirationTtl: KV_STORAGE_TTL });
@@ -3379,18 +3383,27 @@ async function handleSenateBill(env, billId) {
     // Any call to Congress.gov can run long (measured 7 Nov 2026: the bill's own record and, for other bills, every one of the calls, at 20 to 40 seconds or never), and the
     // answer waits for the slowest. So every call gets one short try. One that fails carries on in the background and is kept, and the copy kept from an earlier answer stands
     // in; failing that its section is left empty and the answer is marked partial (served, not kept, so the next opening asks again and finds what has arrived by then).
-    const partKey = (path) => `bill-part-${CURRENT_CONGRESS}-${type}-${number}-${path.replace(/[^a-z0-9]+/gi, '_') || 'record'}`;
-    const keepPart = async (path, json) => { try { if (json && env?.HLS_CACHE) await env.HLS_CACHE.put(partKey(path), JSON.stringify(json), { expirationTtl: 14 * 24 * 3600 }); } catch { /* the next opening asks again */ } };
-    const part = (path) => callOnce(path, 4500).then((j) => { keepPart(path, j); return j; }).catch(async () => {
-      if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil(callOnce(path, 40000).then((j) => keepPart(path, j)).catch(() => {}));
-      try { const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(partKey(path)) : null; if (raw) return JSON.parse(raw); } catch { /* none kept */ }
-      degraded = true;
-      return null;
-    });
+    // All of a bill's sections are kept in ONE entry ({ path: { at, json } }), read once and written once per request that learned something: the free KV plan allows a thousand writes a day.
+    const bagKey = `bill-parts-${CURRENT_CONGRESS}-${type}-${number}`;
+    let bag = {};
+    try { const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(bagKey) : null; if (raw) bag = JSON.parse(raw) || {}; } catch { bag = {}; }
+    let bagChanged = false;
+    const pending = [];   // the slow calls still running in the background
+    const flushBag = () => { if (!bagChanged || !env?.HLS_CACHE) return Promise.resolve(); bagChanged = false; return env.HLS_CACHE.put(bagKey, JSON.stringify(bag), { expirationTtl: 14 * 24 * 3600 }).catch(() => {}); };
+    // The kept copy first, whatever Congress.gov is doing: a section read before is on screen at once (a copy over six hours old is read again in the background). Only a section never
+    // read waits, and only for one short try; if that fails it carries on in the background and is kept for the next opening.
+    const part = async (path) => {
+      const kept = bag[path];
+      const background = (ms) => { pending.push(callOnce(path, ms).then((j) => { if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } }).catch(() => {})); };
+      if (kept && kept.json) { if (Date.now() - kept.at > 6 * 3600 * 1000) background(40000); return kept.json; }
+      try { const j = await callOnce(path, 4500); if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } return j; } catch { background(40000); degraded = true; return null; }
+    };
     const [record, summaries, cosponsors, committees, actions, sapRaw, textVersions, titles] = await Promise.all([
       part(''), part('/summaries?limit=5'), part('/cosponsors?limit=250'), part('/committees'),
       part('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), part('/text?limit=20'), part('/titles?limit=10'),
     ]);
+    // keep what was learned now; and, once the slow ones have finished, what they learned
+    if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil((async () => { await flushBag(); if (pending.length) { await Promise.all(pending); await flushBag(); } })());
     // More than 250 cosponsors: the rest, so the support bar counts them all.
     const moreCo = await moreCosponsorPages(base, cosponsors, (path) => part(path));
     const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
