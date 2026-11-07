@@ -32,8 +32,9 @@ globalThis.fetch = async (u) => {
   if (m) {
     // H.R. 7009 is H.R. 7008's payloads under another number, so a test can ask for a bill the
     // Worker has not cached (it holds each for a day, which is the point of it).
-    const num = m[1] === 'hr' && (m[2] === '7009' || m[2] === '7010' || m[2] === '7011') ? '7008' : m[2];
+    const num = m[1] === 'hr' && (m[2] === '7009' || m[2] === '7010' || m[2] === '7011' || m[2] === '7012') ? '7008' : m[2];
     if (recordTitle && m[1] === 'hr' && m[2] === '7011' && !m[3]) { const j = JSON.parse(f('hr-7008-record.json')); j.bill.title = recordTitle; return new Response(JSON.stringify(j), { status: 200 }); }
+    if (m[1] === 'hr' && m[2] === '7012' && !m[3]) return new Response('', { status: 503 });   // the bill's own record is down (it is the slow call on Congress.gov)
     if (failSummaries && m[2] === '7010' && m[3] === '/committees') return new Response('', { status: 500 });
     const name = `${m[1]}-${num}-${(m[3] || '/record').slice(1)}.json`;
     try { return new Response(f(name), { status: 200 }); } catch { return new Response('{}', { status: 404 }); }
@@ -133,6 +134,15 @@ await ok('a bill\'s answer is kept until the change feed says the bill moved, th
     assert.ok([...store.keys()].some((k) => k.endsWith('-hr-7010-v8')), 'the bill that did not move keeps its answer');
     assert.ok(store.has('bill-changes-checkpoint-v1'), 'the time of the check is kept');
   } finally { Date.now = real; changedFeed = {}; recordTitle = null; }
+});
+
+await ok('a slow or failed Congress.gov record: the rest is served at once, marked partial, with no sponsor', async () => {
+  const { status, body: b } = await get('H.R. 7012');
+  assert.strictEqual(status, 200);
+  assert.strictEqual(b.partial, true);
+  assert.strictEqual(b.sponsor, null);
+  assert.ok(b.committees.length, 'the committees do not wait for the record');
+  assert.ok(b.latestAction, 'the latest action comes from the actions list');
 });
 
 console.log(`\n${n} passed`);
