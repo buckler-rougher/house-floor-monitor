@@ -29,7 +29,7 @@
             background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
             box-shadow: 0 0 60px rgba(248, 81, 73, 0.07);
             padding: 28px 28px 24px;
-            animation: nf-in .5s ease-out both;
+            animation: nf-in .5s ease-out both, nf-shake .28s ease-in-out 1.7s both;
         }
         @keyframes nf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         .nf-top { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
@@ -51,29 +51,52 @@
         .nf-report { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
         .nf-report a { color: var(--accent-blue); text-decoration: none; }
         .nf-report a:hover { text-decoration: underline; }
-        @media (prefers-reduced-motion: reduce) { .nf-card { animation: none; } }
+        /* the sequence: the tiles come in one by one, the bar fills and the Not Voting count runs up to 404, the card jolts, and the result is stamped */
+        .nf-tally div { animation: nf-pop .35s cubic-bezier(.2,1.4,.4,1) both; }
+        .nf-tally div:nth-child(1) { animation-delay: .35s; }
+        .nf-tally div:nth-child(2) { animation-delay: .47s; }
+        .nf-tally div:nth-child(3) { animation-delay: .59s; }
+        .nf-tally div:nth-child(4) { animation: nf-pop .35s cubic-bezier(.2,1.4,.4,1) .71s both, nf-glow 1.1s ease-out 1.7s both; }
+        .nf-bar i { animation: nf-fill .8s cubic-bezier(.3,.7,.2,1) .9s both, nf-stripes .9s linear infinite; transform-origin: left; }
+        
+        .nf-stamp { display: inline-block; animation: nf-stamp .3s cubic-bezier(.2,1.5,.4,1) 1.7s both; }
+        .nf-actions, .nf-report { animation: nf-fade .5s ease-out 2s both; }
+        @property --n { syntax: '<integer>'; inherits: false; initial-value: 404; }
+        .nf-count { --n: 404; counter-reset: n var(--n); animation: nf-count 1s cubic-bezier(.2,.7,.2,1) .75s both; }
+        .nf-count::before { content: counter(n); }
+        @keyframes nf-count { from { --n: 0; } to { --n: 404; } }
+        @keyframes nf-pop { from { opacity: 0; transform: scale(.8) translateY(6px); } to { opacity: 1; transform: none; } }
+        @keyframes nf-glow { 0% { box-shadow: 0 0 0 rgba(210,153,34,0); } 35% { box-shadow: 0 0 22px rgba(210,153,34,.55); } 100% { box-shadow: 0 0 0 rgba(210,153,34,0); } }
+        @keyframes nf-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        @keyframes nf-stripes { to { background-position: 17px 0; } }
+        @keyframes nf-shake { 0%, 100% { transform: none; } 25% { transform: translate(-3px, 2px); } 50% { transform: translate(3px, -1px); } 75% { transform: translate(-2px, 1px); } }
+        @keyframes nf-stamp { from { opacity: 0; transform: scale(1.8); } to { opacity: 1; transform: none; } }
+        @keyframes nf-fade { from { opacity: 0; } to { opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) {
+            .nf-card, .nf-tally div, .nf-tally div:nth-child(4), .nf-bar i, .nf-count, .nf-stamp, .nf-actions, .nf-report { animation: none; }
+        }
         @media (max-width: 480px) { .nf-tally b { font-size: 22px; } .nf-motion { font-size: 19px; } }
     </style>
 </head>
 <body>
     <main class="nf">
-        <div class="nf-card">
-            <div class="nf-top"><span class="nf-tag">Error 404</span><span>Roll call 404</span></div>
+        <div class="nf-card" id="nf-card">
+            <div class="nf-top"><span class="nf-tag">Error</span><span>Roll Call 404</span></div>
             <h1 class="nf-motion">On the motion to find this page</h1>
             <p class="nf-sub">The chair does not recognize an address like this one. It may be mistyped, or the page may have moved.</p>
-            <div class="nf-tally" role="group" aria-label="Vote tally: no yeas, no present, no nays, one not voting">
+            <div class="nf-tally" role="group" aria-label="Vote tally: no yeas, no present, no nays, 404 not voting">
                 <div><b>0</b><span>Yea</span></div>
                 <div><b>0</b><span>Present</span></div>
                 <div><b>0</b><span>Nay</span></div>
-                <div class="nf-nv"><b>1</b><span>Not voting</span></div>
+                <div class="nf-nv"><b class="nf-count"></b><span>Not voting</span></div>
             </div>
             <div class="nf-bar" aria-hidden="true"><i></i></div>
-            <div class="nf-result">Motion failed. Page not found</div>
+            <div class="nf-result"><span class="nf-stamp">Motion failed. Page not found</span></div>
             <div class="nf-actions">
                 <a class="nf-btn" href="https://house-floor.evanhollander.org">The House floor</a>
                 <a class="nf-btn" href="https://senate-floor.evanhollander.org">The Senate floor</a>
             </div>
-            <p class="nf-report">Followed a link from this site? <a href="https://house-floor.evanhollander.org/?report=error">Report an error</a>.</p>
+            <p class="nf-report">Followed a link from this site? <a id="nf-report" href="/?report=error">Report an error</a>.</p>
         </div>
     </main>
 
@@ -84,6 +107,7 @@
             <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
         </div>
     </footer>
+    <script defer src="/lib/not-found.js?v=20261106a"></script>
     <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
 </body>
 </html>
