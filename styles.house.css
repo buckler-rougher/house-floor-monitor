@@ -4800,7 +4800,7 @@ font-family: var(--font-mono);
 .welcome-pt:nth-child(3) .welcome-ic { color: var(--accent-amber); }
 .welcome-h { font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-primary); margin-bottom: var(--sp-4); }
 .welcome-p { font-size: var(--fs-lg); line-height: 1.55; color: var(--text-secondary); }
-.welcome-p .info-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0 0 0 1px; line-height: 1; vertical-align: middle; position: relative; top: -1px; margin: 0 2px; pointer-events: none; border-color: var(--text-muted); }
+.welcome-p .info-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; vertical-align: middle; position: relative; top: -1px; margin: 0 2px; pointer-events: none; border-color: var(--text-muted); }
 .welcome-actions { display: flex; justify-content: flex-end; margin-top: var(--sp-20); border-top: 1px solid var(--border-color); padding-top: var(--sp-16); }
 .welcome-go { display: inline-flex; align-items: center; gap: var(--sp-8); padding: var(--sp-6) var(--sp-14); background: none; border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent); border-radius: var(--radius-6); color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
 .welcome-go:hover, .welcome-go:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); border-color: var(--text-muted); transition: background var(--dur-120), border-color var(--dur-120); }
