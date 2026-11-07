@@ -4876,14 +4876,8 @@ function openBillModal(billId, opts = {}) {
 
     // while the details load, the modal is already the shape it will be: the generic member image and a shimmer for the name, a shimmer for the support bar and the committee, and
     // lines where the summary goes. The one quiet line names the source, since that is what is slow.
-    const bsk = (w, h = 12) => `<span class="bsk" style="width:${w};height:${h}px"></span>`;
-    const pendingHtml = `<div class="bill-modal-pending" role="status" aria-live="polite" aria-label="Loading details from Congress.gov">
-        <div class="bill-modal-section"><div class="bill-modal-section-label">SPONSOR</div><div class="absentee-member" style="padding:0;border:none;"><div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div></div><div class="absentee-meta">${bsk('9em', 14)}</div></div></div>
-        <div class="bill-modal-section"><div class="bill-modal-section-label">SUPPORT</div><span class="bsk bsk-support"></span></div>
-        <div class="bill-modal-section"><div class="bill-modal-section-label">COMMITTEE</div>${bsk('13em', 34)}</div>
-        <div class="bill-modal-pending-note">Loading from Congress.gov. This can take a while when it is busy.</div>
-    </div>`;
-    const summaryPendingHtml = `<div class="bill-modal-body" aria-hidden="true"><div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div><div class="bill-modal-summary-scroll">${bsk('100%')}${bsk('96%')}${bsk('100%')}${bsk('88%')}${bsk('60%')}</div></div>`;
+    const pending = RemoteBill.pending(MEMBER_PHOTO_PLACEHOLDER);
+    const pendingHtml = pending.sections, summaryPendingHtml = pending.summary;
     const detailsStateHtml = detailsState === 'loading'
         ? pendingHtml
         : detailsState === 'failed'
@@ -5288,7 +5282,7 @@ async function openRemoteBillModal(billId, trigger) {
         if (overlay.querySelector('.bill-modal')) { _billModalTrapCleanup = trapFocus(overlay); overlay.querySelector('#bill-modal-close')?.focus(); }
     };
     const hit = RemoteBill.cached(billId);
-    overlay.innerHTML = hit ? (hit.error ? RemoteBill.skeleton(billId, SourceError.text('details', 'congress')) : RemoteBill.content(hit.bill, opts)) : RemoteBill.skeleton(billId);
+    overlay.innerHTML = hit ? (hit.error ? RemoteBill.skeleton(billId, SourceError.text('details', 'congress')) : RemoteBill.content(hit.bill, opts)) : RemoteBill.skeleton(billId, undefined, MEMBER_PHOTO_PLACEHOLDER);
     wire();
     document.addEventListener('keydown', onBillModalKey);
     if (hit) { if (!hit.error) { BillSections.wireCopyLink(overlay); BillSections.wireSource(overlay, hit.bill.id || billId, API); } return; }
