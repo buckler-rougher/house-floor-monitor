@@ -41,12 +41,11 @@
         .nf-pres b { color: var(--accent-amber); }
         .nf-nay b { color: var(--accent-red); }
         .nf-tally div > span { display: block; margin-top: 4px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
-        .nf-bar { height: 6px; border-radius: 3px; margin: 14px 0 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .nf-bar { height: 6px; border-radius: 3px; margin: 14px 0 0; background: rgba(255,255,255,0.06); overflow: hidden; }
         .nf-bar { display: flex; gap: 2px; }
         .nf-bar i { flex: 1; height: 100%; }
         .nf-bar .y { background: var(--accent-green); opacity: .75; }
         .nf-bar .n { background: var(--accent-red); opacity: .75; }
-        .nf-result { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red); text-align: right; }
         .nf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
         .nf-btn { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent); border-radius: 6px; padding: 8px 14px; }
         .nf-btn:hover, .nf-btn:focus-visible { color: var(--text-primary); background: rgba(255,255,255,0.08); border-color: var(--text-muted); }
@@ -78,7 +77,6 @@
                 <div class="nf-nay"><b class="nf-split">4</b><span>Nay</span></div>
             </div>
             <div class="nf-bar" aria-hidden="true"><i class="y"></i><i class="n"></i></div>
-            <div class="nf-result"><span class="nf-stamp">Tie vote. Motion failed. Page not found</span></div>
             <div class="nf-actions">
                 <a class="nf-btn" href="https://house-floor.evanhollander.org">The House floor</a>
                 <a class="nf-btn" href="https://senate-floor.evanhollander.org">The Senate floor</a>
