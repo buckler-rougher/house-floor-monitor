@@ -296,7 +296,6 @@
 }
   .site-footer-license:hover {
     color: var(--accent-blue);
-    text-decoration: underline;
 }
   .site-footer-secondary {
     font-size: var(--fs-base);
@@ -5924,7 +5923,7 @@ font-family: var(--font-mono);
   .suggest-hp { position: absolute; left: -9999px; opacity: 0; height: 0; }
   .suggest-error { font-size: var(--fs-xs); color: var(--accent-red); margin-top: var(--sp-4); }
   .suggest-consent { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: var(--sp-10); line-height: 1.5; }
-  .suggest-privacy-link { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+  .suggest-privacy-link { color: var(--text-muted); text-decoration: none; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
   .suggest-privacy-link:hover { color: var(--accent-blue); }
   .suggest-kind { align-self: flex-start; margin-bottom: var(--sp-6); }
   .suggest-fields { display: flex; flex-direction: column; gap: var(--sp-6); }
@@ -6000,7 +5999,6 @@ font-family: var(--font-mono);
   .suggest-data-p { font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.65; margin-bottom: var(--sp-10); }
   .suggest-data-list { font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.7; padding-left: 18px; margin-bottom: var(--sp-10); }
   .suggest-data-box a { color: var(--accent-blue); text-decoration: none; }
-  .suggest-data-box a:hover { text-decoration: underline; }
   @media (max-width: 640px) {
     #suggest-fab { display: none; }
     .suggest-drawer {
@@ -7083,7 +7081,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
 @media (prefers-reduced-motion: reduce) {
   .committee-more::after, .ai-off-btn, .committee-more, .site-footer-license.ai-toggle { transition: none; }
 }
-.bill-open {
+.bill-open, a.site-footer-license, .suggest-privacy-link, .suggest-data-box a:not([href^="http"]) {
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-size: 0 1px;
@@ -7091,12 +7089,12 @@ html.ai-off .bill-link-group > .bill-modal-link {
     padding-bottom: 1px;
     transition: background-size 0.4s cubic-bezier(0.75, 0, 0.25, 1), color var(--dur-120);
 }
-.bill-open:is(:hover, :focus-visible) {
+.bill-open:is(:hover, :focus-visible), a.site-footer-license:is(:hover, :focus-visible), .suggest-privacy-link:is(:hover, :focus-visible), .suggest-data-box a:not([href^="http"]):is(:hover, :focus-visible) {
     background-size: 100% 1px;
     background-position: 0 100%;
 }
 @media (prefers-reduced-motion: reduce) {
-  .bill-open { transition: none; }
+  .bill-open, a.site-footer-license, .suggest-privacy-link, .suggest-data-box a { transition: none; }
 }
 .beta-banner {
     display: flex;
