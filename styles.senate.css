@@ -5918,6 +5918,9 @@ font-family: var(--font-mono);
   .suggest-textarea:focus, .suggest-input:focus {
     border-color: color-mix(in srgb, var(--accent-blue) 60%, transparent);
 }
+  @media (pointer: coarse) {
+    .suggest-textarea, .suggest-input { font-size: 16px; }
+  }
   .suggest-textarea::placeholder, .suggest-input::placeholder { color: var(--text-muted); opacity: .55; }
   .suggest-textarea { margin-bottom: var(--sp-6); }
   .suggest-hp { position: absolute; left: -9999px; opacity: 0; height: 0; }
