@@ -6224,6 +6224,21 @@ font-family: var(--font-mono);
   @media (prefers-reduced-motion: reduce) {
     .is-pending::before { animation: none; }
   }
+  .panel-skeleton { display: grid; gap: var(--sp-14); padding: var(--sp-16) var(--sp-24); }
+  .panel-skeleton > i { display: block; position: relative; height: 40px; }
+  .panel-skeleton > i::before, .panel-skeleton > i::after { content: ''; position: absolute; top: 0; height: 12px; border-radius: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.13), rgba(255,255,255,0.05)); background-size: 200% 100%; animation: pending-shimmer 1.4s linear infinite; }
+  .panel-skeleton > i::before { left: 0; width: 150px; }
+  .panel-skeleton > i::after { right: 0; width: 110px; height: 10px; top: 1px; }
+  .panel-skeleton[data-kind="approps"] > i { height: 50px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 calc(20% - 6px), transparent calc(20% - 6px) 20%) 0 100% / 100% 6px no-repeat; }
+  .panel-skeleton[data-kind="cards"] > i { height: 70px; border: 1px solid var(--border-color); border-radius: var(--radius-8); background: rgba(255,255,255,0.02); }
+  .panel-skeleton[data-kind="cards"] > i::before { left: 14px; top: 14px; }
+  .panel-skeleton[data-kind="cards"] > i::after { left: 14px; right: auto; top: 38px; width: 62%; height: 10px; }
+  :has(.panel-skeleton) > .panel-header .panel-source[data-loading] { font-size: 0; }
+  :has(.panel-skeleton) > .panel-header .panel-source[data-loading] > * { display: none; }
+  :has(.panel-skeleton) > .panel-header .panel-source[data-loading]::before { content: attr(data-loading); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
+  @media (prefers-reduced-motion: reduce) {
+    .panel-skeleton > i::before, .panel-skeleton > i::after { animation: none; }
+  }
 }
 .main-display > * {
     margin-bottom: 0;

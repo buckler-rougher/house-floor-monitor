@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261107d">
+    <link rel="stylesheet" href="styles.house.css?v=20261107e">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -1741,11 +1741,11 @@
             <div class="panel-header">
                 <span class="panel-label" data-icon="group">COMMITTEE MEETINGS</span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a id="committee-source-link" href="https://docs.house.gov/Committee/Calendar/ByDay.aspx" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span>
+                    <span class="panel-source" data-loading="Loading from the House Clerk…">Source: <a id="committee-source-link" href="https://docs.house.gov/Committee/Calendar/ByDay.aspx" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span>
                     <span class="proceedings-time" id="committee-date"></span>
                 </div>
             </div>
-            <div class="committee-list" id="committee-list"><div class="loading-indicator" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
+            <div class="committee-list" id="committee-list"><div class="panel-skeleton" data-kind="rows" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Discharge Petitions: how close each open petition is to the signatures it needs (renderDischargePetitions) -->
@@ -1753,7 +1753,7 @@
             <div class="panel-header">
                 <span class="whip-label-group"><span class="panel-label" data-icon="sign">DISCHARGE PETITIONS</span><button class="info-btn" type="button" data-info="discharge-petitions" aria-label="About discharge petitions" hidden>?</button></span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://clerk.house.gov/DischargePetition" target="_blank" rel="noopener">Discharge Petitions (House Clerk)</a></span>
+                    <span class="panel-source" data-loading="Loading from the House Clerk…">Source: <a href="https://clerk.house.gov/DischargePetition" target="_blank" rel="noopener">Discharge Petitions (House Clerk)</a></span>
                     <span class="proceedings-time" id="discharge-summary"></span>
                 </div>
             </div>
@@ -1768,7 +1768,7 @@
                     <button type="button" class="bills-sort-btn" data-dp-sort="recent" aria-pressed="false">Last signed</button>
                 </div>
             </div>
-            <div class="discharge-list" id="discharge-list"><div class="loading-indicator" role="status" aria-label="Loading discharge petitions"><i></i><i></i><i></i></div></div>
+            <div class="discharge-list" id="discharge-list"><div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading discharge petitions"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Waiting for the floor: bills a committee has reported, and what the other chamber has sent over (lib/pipeline-panel.js) -->
@@ -1776,7 +1776,7 @@
             <div class="panel-header">
                 <span class="panel-label" data-icon="hourglass">WAITING FOR THE FLOOR</span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="pipeline-summary"></span>
                 </div>
             </div>
@@ -1784,12 +1784,12 @@
                 <div class="pipe-col">
                     <div class="bills-column-header"><div class="bills-column-header-left"><span class="bills-column-title" id="pipeline-head-calendar"></span></div><span class="pipe-count" id="pipeline-count-calendar"></span></div>
                     <div class="pipe-sub" id="pipeline-sub-calendar"></div>
-                    <div class="pipe-list" id="pipeline-list-calendar"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                    <div class="pipe-list" id="pipeline-list-calendar"><div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
                 </div>
                 <div class="pipe-col">
                     <div class="bills-column-header"><div class="bills-column-header-left"><span class="bills-column-title" id="pipeline-head-from"></span></div><span class="pipe-count" id="pipeline-count-from"></span></div>
                     <div class="pipe-sub" id="pipeline-sub-from"></div>
-                    <div class="pipe-list" id="pipeline-list-from"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                    <div class="pipe-list" id="pipeline-list-from"><div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
                 </div>
             </div>
         </div>
@@ -1799,7 +1799,7 @@
             <div class="panel-header">
                 <span class="whip-label-group"><span class="panel-label" id="approps-label" data-icon="bag">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="approps-summary"></span>
                 </div>
             </div>
@@ -1807,7 +1807,7 @@
             <div class="cr-expires" id="approps-expires" hidden></div>
             <div class="approps-fy" id="approps-fy"></div>
             <div class="approps-legend" id="approps-legend" aria-hidden="true"></div>
-            <div class="approps-list" id="approps-list"><div class="loading-indicator" role="status" aria-label="Loading appropriations"><i></i><i></i><i></i></div></div>
+            <div class="approps-list" id="approps-list"><div class="panel-skeleton" data-kind="approps" role="status" aria-label="Loading appropriations"><i></i><i></i><i></i></div></div>
         </div>
 
 <!-- place scripts at end of body -->
@@ -2015,7 +2015,7 @@
     <script defer src="lib/scroll-guard.js?v=20261013b"></script>
     <script defer src="lib/scroll-restore.js?v=20261013a"></script>
     <script defer src="lib/toc.js?v=20261013s"></script>
-    <script defer src="lib/pipeline-panel.js?v=20261022k"></script>
+    <script defer src="lib/pipeline-panel.js?v=20261107a"></script>
     <script defer src="lib/approps-panel.js?v=20261106a"></script>
     <script defer src="lib/debate-panel.js?v=20261011a"></script>
     <script defer src="lib/source-pop.js?v=20261022a"></script>

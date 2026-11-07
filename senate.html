@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.senate.css?v=20261107d">
+    <link rel="stylesheet" href="styles.senate.css?v=20261107e">
     <link rel="manifest" href="senate.webmanifest">
     <link rel="icon" type="image/svg+xml" href="senate-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="senate-favicon.png">
@@ -1188,11 +1188,11 @@
             <div class="panel-header">
                 <span class="panel-label" data-icon="group">COMMITTEE MEETINGS</span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.senate.gov/committees/hearings_meetings.htm" target="_blank" rel="noopener">Committee Meetings (Senate, via Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.senate.gov/committees/hearings_meetings.htm" target="_blank" rel="noopener">Committee Meetings (Senate, via Congress.gov)</a></span>
                     <span class="proceedings-time" id="senate-committees-date"></span>
                 </div>
             </div>
-            <div class="committee-list" id="senate-committees-list"><div class="loading-indicator" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
+            <div class="committee-list" id="senate-committees-list"><div class="panel-skeleton" data-kind="rows" role="status" aria-label="Loading committee meetings"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Waiting for the floor: bills a committee has reported, and what the other chamber has sent over (lib/pipeline-panel.js) -->
@@ -1200,7 +1200,7 @@
             <div class="panel-header">
                 <span class="panel-label" data-icon="hourglass">WAITING FOR THE FLOOR</span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="pipeline-summary"></span>
                 </div>
             </div>
@@ -1208,12 +1208,12 @@
                 <div class="pipe-col">
                     <div class="bills-column-header"><div class="bills-column-header-left"><span class="bills-column-title" id="pipeline-head-calendar"></span></div><span class="pipe-count" id="pipeline-count-calendar"></span></div>
                     <div class="pipe-sub" id="pipeline-sub-calendar"></div>
-                    <div class="pipe-list" id="pipeline-list-calendar"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                    <div class="pipe-list" id="pipeline-list-calendar"><div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
                 </div>
                 <div class="pipe-col">
                     <div class="bills-column-header"><div class="bills-column-header-left"><span class="bills-column-title" id="pipeline-head-from"></span></div><span class="pipe-count" id="pipeline-count-from"></span></div>
                     <div class="pipe-sub" id="pipeline-sub-from"></div>
-                    <div class="pipe-list" id="pipeline-list-from"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
+                    <div class="pipe-list" id="pipeline-list-from"><div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>
                 </div>
             </div>
         </div>
@@ -1223,7 +1223,7 @@
             <div class="panel-header">
                 <span class="whip-label-group"><span class="panel-label" id="approps-label" data-icon="bag">APPROPRIATIONS</span><button class="info-btn" type="button" data-info="appropriations" aria-label="About appropriations" hidden>?</button></span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.congress.gov/" target="_blank" rel="noopener">Bills and Actions (Congress.gov)</a></span>
                     <span class="proceedings-time" id="approps-summary"></span>
                 </div>
             </div>
@@ -1231,7 +1231,7 @@
             <div class="cr-expires" id="approps-expires" hidden></div>
             <div class="approps-fy" id="approps-fy"></div>
             <div class="approps-legend" id="approps-legend" aria-hidden="true"></div>
-            <div class="approps-list" id="approps-list"><div class="loading-indicator" role="status" aria-label="Loading appropriations"><i></i><i></i><i></i></div></div>
+            <div class="approps-list" id="approps-list"><div class="panel-skeleton" data-kind="approps" role="status" aria-label="Loading appropriations"><i></i><i></i><i></i></div></div>
         </div>
 
         <!-- Treaties before the Senate: received in this Congress and the last, not yet acted on (lib/senate-treaties.js) -->
@@ -1239,11 +1239,11 @@
             <div class="panel-header">
                 <span class="panel-label" data-icon="treaty">TREATIES</span>
                 <div class="panel-header-right">
-                    <span class="panel-source">Source: <a href="https://www.senate.gov/legislative/treaties_new.htm" target="_blank" rel="noopener">Treaties (Senate, via Congress.gov)</a></span>
+                    <span class="panel-source" data-loading="Loading from Congress.gov…">Source: <a href="https://www.senate.gov/legislative/treaties_new.htm" target="_blank" rel="noopener">Treaties (Senate, via Congress.gov)</a></span>
                     <span class="proceedings-time" id="senate-treaties-count"></span>
                 </div>
             </div>
-            <div class="treaties-list" id="senate-treaties-list"><div class="loading-indicator" role="status" aria-label="Loading treaties"><i></i><i></i><i></i></div></div>
+            <div class="treaties-list" id="senate-treaties-list"><div class="panel-skeleton" data-kind="rows" role="status" aria-label="Loading treaties"><i></i><i></i><i></i></div></div>
         </div>
 
 <!-- place scripts at end of body -->
@@ -1445,10 +1445,10 @@
     <script defer src="lib/scroll-guard.js?v=20261013b"></script>
     <script defer src="lib/scroll-restore.js?v=20261013a"></script>
     <script defer src="lib/toc.js?v=20261013s"></script>
-    <script defer src="lib/pipeline-panel.js?v=20261022k"></script>
+    <script defer src="lib/pipeline-panel.js?v=20261107a"></script>
     <script defer src="lib/approps-panel.js?v=20261106a"></script>
     <script defer src="lib/senate-amendments.js?v=20261012e"></script>
-    <script defer src="lib/senate-committees.js?v=20261017b"></script>
+    <script defer src="lib/senate-committees.js?v=20261107a"></script>
     <script defer src="lib/senate-treaties.js?v=20261106a"></script>
     <script defer src="lib/debate-panel.js?v=20261011a"></script>
     <script defer src="lib/source-pop.js?v=20261022a"></script>
