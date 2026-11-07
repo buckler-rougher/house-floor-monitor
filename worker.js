@@ -786,6 +786,26 @@ function getWeekRangeForDate(date) {
     return { start, end };
 }
 
+// WHICH WEEK'S SCHEDULE THE BILLS PANEL SHOWS (the House posts "Text of Bills to Be Considered the Week of ..." days ahead and updates it). A weekend belongs to the coming week, so
+// on Saturday the next Monday's schedule is the one that matters. And when the House posted nothing for this week (a district work period) but has posted the next one, that is the
+// one to show: before this, a recess week with next week's schedule already out answered with an empty panel. `feedWeekStarts` are the Mondays (ms) the feed has schedules for; `live`
+// is false for a past date asked for by the time machine, which keeps the plain calendar week. Returns the Monday (UTC midnight); the callers fall back to the week before it.
+function pickBillsWeekStart(referenceDate, feedWeekStarts, live) {
+  const ref = new Date(referenceDate);
+  if (live) {
+    const dow = ref.getUTCDay();
+    if (dow === 6) ref.setUTCDate(ref.getUTCDate() + 2);
+    else if (dow === 0) ref.setUTCDate(ref.getUTCDate() + 1);
+  }
+  const start = getWeekRangeForDate(ref).start;
+  if (!live) return start;
+  const next = new Date(start);
+  next.setUTCDate(next.getUTCDate() + 7);
+  const has = (t) => (feedWeekStarts || []).includes(t);
+  return !has(start.getTime()) && has(next.getTime()) ? next : start;
+}
+export { pickBillsWeekStart };
+
 // ── Proceedings → Bill Status ────────────────────────────────────────────────
 // Convert a Congress.gov bill URL to our canonical bill ID string.
 // e.g. ".../house-bill/5317" → "H.R. 5317"
@@ -1783,8 +1803,6 @@ async function handleBillsSource(request, env) {
       const entries = xml.match(/<entry[^>]*>[\s\S]*?<\/entry>/g) || [];
       const parts = dateParam.match(/(\d+)\/(\d+)\/(\d+)/);
       const reference = parts ? new Date(Date.UTC(Number(parts[3]), Number(parts[1]) - 1, Number(parts[2]))) : new Date();
-      const thisWeek = getWeekRangeForDate(reference).start.getTime();
-      const priorWeek = thisWeek - 7 * 86400000;
       const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
       const weekOf = (title, updated) => {
         const m = title.match(/week of\s+([A-Za-z]+)\s+(\d+),?\s*(\d{4})/i);
@@ -1796,7 +1814,9 @@ async function handleBillsSource(request, env) {
         .map((e) => ({ e, title: (e.match(/<title[^>]*>([^<]*)<\/title>/) || [])[1] || '', updated: (e.match(/<updated[^>]*>([^<]*)<\/updated>/) || [])[1] || '' }))
         .filter((x) => x.updated && !Number.isNaN(new Date(x.updated).getTime()) && x.e.includes('floorItems') && weekOf(x.title, x.updated) === week)
         .sort((a, b) => new Date(b.updated) - new Date(a.updated))[0];
-      const chosen = pick(thisWeek) || pick(priorWeek);
+      const feedWeeks = entries.filter((e) => e.includes('floorItems')).map((e) => weekOf((e.match(/<title[^>]*>([^<]*)<\/title>/) || [])[1] || '', (e.match(/<updated[^>]*>([^<]*)<\/updated>/) || [])[1] || ''));
+      const thisWeek = pickBillsWeekStart(reference, feedWeeks, !dateParam).getTime();
+      const chosen = pick(thisWeek) || pick(thisWeek - 7 * 86400000);
       if (!chosen) throw new Error('no entry for this week');
       return new Response(JSON.stringify({ at: Date.now(), url: RSS_FEEDS.bills, entries: entries.length, entry: chosen.e }), {
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
@@ -1865,7 +1885,7 @@ async function handleBills(request, env) {
   //
   // v9: invalidate caches poisoned with un-enriched bills written by the Durable
   // Object isolate, which never initialised _congressApiKey / CURRENT_CONGRESS.
-  const cacheKey = quick ? 'bills-weekly-quick-v10' : 'bills-weekly-v10';
+  const cacheKey = quick ? 'bills-weekly-quick-v11' : 'bills-weekly-v11';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -1919,12 +1939,6 @@ async function _fetchBills(request, env) {
     } else {
       referenceDate = new Date();
     }
-    const { start: currentWeekStart } = getWeekRangeForDate(referenceDate);
-    const weekKey = currentWeekStart.toISOString().slice(0, 10); // "2026-05-18"
-
-    // Load any statuses already confirmed this week (survives across requests/days)
-    const cachedStatuses = await loadCachedBillStatuses(env, weekKey);
-
     // Parse "Week of Month Day, Year" from entry title to match by scheduled week,
     // not by publication date (House posts next week's schedule mid-current-week).
     const MONTHS = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
@@ -1936,6 +1950,17 @@ async function _fetchBills(request, env) {
       const d = new Date(Date.UTC(Number(m[3]), mon, Number(m[2])));
       return getWeekRangeForDate(d).start;
     }
+
+    const feedWeeks = [];
+    for (const entryXml of entryMatches) {
+      const w = parseTitleWeekStart((entryXml.match(/<title[^>]*>([^<]*)<\/title>/) || [])[1] || '');
+      if (w) feedWeeks.push(w.getTime());
+    }
+    const currentWeekStart = pickBillsWeekStart(referenceDate, feedWeeks, !dateParam);
+    const weekKey = currentWeekStart.toISOString().slice(0, 10); // "2026-05-18"
+
+    // Load any statuses already confirmed this week (survives across requests/days)
+    const cachedStatuses = await loadCachedBillStatuses(env, weekKey);
 
     const matchingEntries = [];
     const priorWeekStart = new Date(currentWeekStart);
