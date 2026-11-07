@@ -2705,9 +2705,9 @@ a.proc-bill-link {
 #dp-done-block { margin-bottom: var(--sp-4); }
 /* Selected text: an amber highlighter. A background alone, since Safari ignores a text decoration here and Firefox draws it unevenly */
 ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
-/* Not selectable or draggable: the feed video and its placeholder, the logo, and the wordmark (header and footer) */
-video, canvas, img, svg, picture, .video-loading, #pip-loading, .brand, .brand *, .site-footer-brand { -webkit-user-select: none; user-select: none; }
-img, svg, picture, .brand, .brand *, .site-footer-brand { -webkit-user-drag: none; user-drag: none; }
+/* Not selectable or draggable: the feed video and its placeholder, the logo, and the wordmark (header, footer, and the welcome dialog) */
+video, canvas, img, svg, picture, .video-loading, #pip-loading, .brand, .brand *, .site-footer-brand, .welcome-card .brand-text { -webkit-user-select: none; user-select: none; }
+img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-text { -webkit-user-drag: none; user-drag: none; }
 /* A list clipped to its first items and the top of the next, faded out along the bottom, with a + / - on the edge (lib/clamp-list.js): the Orders card's motif */
 .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
 .clamp.is-short { padding-bottom: 0; }
@@ -11127,6 +11127,12 @@ html.replay-mode #party-breakdown::after, html.replay-mode #discharge-petitions:
     font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: var(--track-wider); color: var(--text-muted); text-align: center; pointer-events: none;
 }
 html.replay-mode .weather-panel { display: none; }
+/* PLACEHOLDERS (lib/placeholders.js): a stand-in ("--", a dash, "Loading...") waiting for its data is drawn as a soft shimmering bar of the same width and line height. The text is
+   kept (font-size 0) so the element is the same element, and the bar goes the moment the text changes. */
+.is-pending { font-size: 0 !important; min-height: var(--ph-lh, 0); }
+.is-pending::before { content: ''; display: inline-block; width: var(--ph-w, 2.2em); height: var(--ph-h, 1em); vertical-align: middle; border-radius: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.11) 50%, rgba(255,255,255,0.04) 100%); background-size: 200% 100%; animation: pending-shimmer 1.4s linear infinite; }
+@keyframes pending-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .is-pending::before { animation: none; } }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────

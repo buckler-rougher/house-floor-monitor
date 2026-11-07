@@ -1854,8 +1854,8 @@
     .bill-modal-scroll.is-filled { animation: none; }
   }
   ::selection { background: rgba(227, 179, 65, 0.38); color: inherit; }
-  video, canvas, img, svg, picture, .video-loading, #pip-loading, .brand, .brand *, .site-footer-brand { -webkit-user-select: none; user-select: none; }
-  img, svg, picture, .brand, .brand *, .site-footer-brand { -webkit-user-drag: none; user-drag: none; }
+  video, canvas, img, svg, picture, .video-loading, #pip-loading, .brand, .brand *, .site-footer-brand, .welcome-card .brand-text { -webkit-user-select: none; user-select: none; }
+  img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-text { -webkit-user-drag: none; user-drag: none; }
   .clamp { position: relative; padding-bottom: var(--sp-12); transition: padding-bottom 0.32s ease; }
   .clamp.is-short { padding-bottom: 0; }
   .clamp-body { position: relative; overflow: hidden; transition: max-height 0.32s ease; }
@@ -5802,6 +5802,12 @@ font-family: var(--font-mono);
   .proceedings-feed {
     overscroll-behavior: contain;
 }
+  body.all-mode .progress-section, body.all-mode .threshold-panel, body.all-mode .quorum-panel, body.all-mode .floor-grid-panel {
+    display: block;
+}
+  body.all-mode .vote-display, body.all-mode .vote-header {
+    display: flex;
+}
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -6186,9 +6192,34 @@ font-family: var(--font-mono);
   .lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
   .lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .lead-card.is-empty { visibility: hidden; }
+  html.replay-mode body { padding-bottom: 150px; }
+  html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 162px; }
+  html.replay-mode .main-header { box-shadow: 0 2px 0 rgba(63, 185, 80, .55), 0 0 22px rgba(63, 185, 80, .12); }
   :root { --tm-other: color-mix(in srgb, var(--accent-orange) 55%, var(--accent-red)); }
   .tm-moment-time { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); white-space: nowrap; }
   .tm-ag-time { flex: 0 0 5.2em; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) {
+    html.replay-mode body { padding-bottom: 226px; }
+    html.replay-mode .floor-feed:not(.pip-expanded) { bottom: 236px; }
+  }
+  html.replay-mode .proceedings-item[data-ts] { cursor: pointer; transition: background .15s ease; border-radius: var(--radius-6); }
+  html.replay-mode .proceedings-item[data-ts]:hover { background: rgba(63, 185, 80, .08); }
+  html.replay-mode .proceedings-item.is-future { opacity: .34; }
+  html.replay-mode .proceedings-item.is-future:hover { opacity: .75; }
+  html.replay-mode .proceedings-item.is-here { background: rgba(63, 185, 80, .14); box-shadow: inset 2px 0 0 var(--accent-green); }
+  html.replay-mode #twitter, html.replay-mode #airport-delays, html.replay-mode #party-breakdown, html.replay-mode #pipeline, html.replay-mode #appropriations { position: relative; }
+  html.replay-mode #twitter > *, html.replay-mode #airport-delays > *, html.replay-mode #party-breakdown > *, html.replay-mode #pipeline > *, html.replay-mode #appropriations > * { opacity: .12; filter: grayscale(1); pointer-events: none; }
+  html.replay-mode #twitter::after, html.replay-mode #airport-delays::after, html.replay-mode #party-breakdown::after, html.replay-mode #pipeline::after, html.replay-mode #appropriations::after {
+    content: "NOT AVAILABLE FOR THIS DATE"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: flex-start; justify-content: center; padding-top: 64px;
+    font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: var(--track-wider); color: var(--text-muted); text-align: center; pointer-events: none;
+}
+  html.replay-mode .weather-panel { display: none; }
+  .is-pending { font-size: 0 !important; min-height: var(--ph-lh, 0); }
+  .is-pending::before { content: ''; display: inline-block; width: var(--ph-w, 2.2em); height: var(--ph-h, 1em); vertical-align: middle; border-radius: 4px; background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.11) 50%, rgba(255,255,255,0.04) 100%); background-size: 200% 100%; animation: pending-shimmer 1.4s linear infinite; }
+  @keyframes pending-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .is-pending::before { animation: none; }
+  }
 }
 .main-display > * {
     margin-bottom: 0;
@@ -6722,6 +6753,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     letter-spacing: var(--track-wide);
     line-height: 1;
 }
+.vote-id-num { font-size: var(--fs-sm); font-weight: 400; margin-left: var(--sp-8); }
 .panel-header > .vote-type-tag, .panel-header > .vote-pill {
     height: var(--tag-height);
     padding: 0 var(--sp-10);
