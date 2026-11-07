@@ -8,7 +8,7 @@
     <!-- The generated stylesheet with every rule and no comments (a third the download of styles.css), not a
          per-chamber subset: this page is served on both hostnames. Bump the tag with the other pages
          when styles.css changes (npm run css). -->
-    <link rel="stylesheet" href="styles.house.css?v=20261108j">
+    <link rel="stylesheet" href="styles.house.css?v=20261108k">
     <!-- Bare names on purpose. This page is served on both hostnames, and
          functions/_middleware.js resolves these to the asking chamber's icons,
          so it shows the Senate mark on the Senate host. Prefixing them would
@@ -86,7 +86,7 @@
             color: var(--accent-blue);
             text-decoration: none;
         }
-        .legal-section a:hover { text-decoration: underline; }
+        .legal-section a[href^="http"]:hover, .legal-section a[href^="mailto"]:hover { text-decoration: underline; }
     </style>
 </head>
 <body>

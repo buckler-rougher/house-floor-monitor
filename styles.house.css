@@ -378,7 +378,6 @@ body {
 
 .site-footer-license:hover {
     color: var(--accent-blue);
-    text-decoration: underline;
 }
 
 .site-footer-secondary {
@@ -9825,7 +9824,7 @@ body.all-mode .vote-header {
 .suggest-hp { position: absolute; left: -9999px; opacity: 0; height: 0; }
 .suggest-error { font-size: var(--fs-xs); color: var(--accent-red); margin-top: var(--sp-4); }
 .suggest-consent { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: var(--sp-10); line-height: 1.5; }
-.suggest-privacy-link { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+.suggest-privacy-link { color: var(--text-muted); text-decoration: none; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
 .suggest-privacy-link:hover { color: var(--accent-blue); }
 
 .suggest-kind { align-self: flex-start; margin-bottom: var(--sp-6); }
@@ -9904,7 +9903,6 @@ body.all-mode .vote-header {
 .suggest-data-p { font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.65; margin-bottom: var(--sp-10); }
 .suggest-data-list { font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.7; padding-left: 18px; margin-bottom: var(--sp-10); }
 .suggest-data-box a { color: var(--accent-blue); text-decoration: none; }
-.suggest-data-box a:hover { text-decoration: underline; }
 
 @media (max-width: 640px) {
     #suggest-fab { display: none; }
@@ -11614,7 +11612,12 @@ html.ai-off .bill-link-group > .bill-modal-link {
 
 .bill-open,
 button.proc-bill-link,
-.vrec-row-label.clickable {
+.vrec-row-label.clickable,
+a.site-footer-license,
+.suggest-privacy-link,
+.suggest-data-box a:not([href^="http"]),
+.legal-nav a,
+.legal-section a:not([href^="http"]):not([href^="mailto"]) {
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-size: 0 1px;
@@ -11624,12 +11627,17 @@ button.proc-bill-link,
 }
 .bill-open:is(:hover, :focus-visible),
 button.proc-bill-link:is(:hover, :focus-visible),
-.vrec-row-label.clickable:is(:hover, :focus-visible) {
+.vrec-row-label.clickable:is(:hover, :focus-visible),
+a.site-footer-license:is(:hover, :focus-visible),
+.suggest-privacy-link:is(:hover, :focus-visible),
+.suggest-data-box a:not([href^="http"]):is(:hover, :focus-visible),
+.legal-nav a:is(:hover, :focus-visible),
+.legal-section a:not([href^="http"]):not([href^="mailto"]):is(:hover, :focus-visible) {
     background-size: 100% 1px;
     background-position: 0 100%;
 }
 @media (prefers-reduced-motion: reduce) {
-    .bill-open, button.proc-bill-link, .vrec-row-label.clickable { transition: none; }
+    .bill-open, button.proc-bill-link, .vrec-row-label.clickable, a.site-footer-license, .suggest-privacy-link, .suggest-data-box a, .legal-nav a, .legal-section a { transition: none; }
 }
 
 .beta-banner {
