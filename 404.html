@@ -34,14 +34,18 @@
         .nf-tag { color: var(--accent-red); border: 1px solid rgba(248, 81, 73, 0.4); background: rgba(248, 81, 73, 0.08); border-radius: 4px; padding: 2px 7px; }
         .nf-motion { margin: 22px 0 6px; font-size: 22px; font-weight: 600; line-height: 1.3; color: var(--text-primary); }
         .nf-sub { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px; }
-        .nf-tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+        .nf-tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
         .nf-tally div { border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 4px 8px; }
-        .nf-tally b { display: block; font-size: 28px; font-weight: 600; line-height: 1.1; color: var(--text-muted); }
+        .nf-tally b { display: block; font-size: 40px; font-weight: 600; line-height: 1.1; color: var(--text-muted); }
+        .nf-yea b { color: var(--accent-green); }
+        .nf-pres b { color: var(--accent-amber); }
+        .nf-nay b { color: var(--accent-red); }
         .nf-tally div > span { display: block; margin-top: 4px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
-        .nf-tally .nf-nv { border-color: rgba(210, 153, 34, 0.45); }
-        .nf-tally .nf-nv b { color: var(--accent-amber); }
         .nf-bar { height: 6px; border-radius: 3px; margin: 14px 0 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
-        .nf-bar i { display: block; height: 100%; width: 100%; background: repeating-linear-gradient(135deg, rgba(210,153,34,0.55) 0 6px, rgba(210,153,34,0.2) 6px 12px); }
+        .nf-bar { display: flex; gap: 2px; }
+        .nf-bar i { flex: 1; height: 100%; }
+        .nf-bar .y { background: var(--accent-green); opacity: .75; }
+        .nf-bar .n { background: var(--accent-red); opacity: .75; }
         .nf-result { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red); text-align: right; }
         .nf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
         .nf-btn { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent); border-radius: 6px; padding: 8px 14px; }
@@ -49,12 +53,17 @@
         .nf-report { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
         .nf-report a { color: var(--accent-blue); text-decoration: none; }
         .nf-report a:hover { text-decoration: underline; }
-        /* the one motion: the Not Voting count flips in, like a split-flap board */
-        .nf-tally .nf-nv { perspective: 300px; }
-        .nf-flip { display: block; animation: nf-flip .55s cubic-bezier(.3,.8,.3,1) .35s both; transform-origin: 50% 60%; backface-visibility: hidden; }
-        @keyframes nf-flip { from { transform: rotateX(-90deg); opacity: 0; } to { transform: none; opacity: 1; } }
-        @media (prefers-reduced-motion: reduce) { .nf-flip { animation: none; } }
-        @media (max-width: 480px) { .nf-tally b { font-size: 22px; } .nf-motion { font-size: 19px; } }
+        /* the one motion: the Not Voting count is a split-flap sign, as on an airport arrivals board. lib/not-found.js builds the flaps and spins each digit up to its number; without it, or with reduced motion, the number is plain text */
+        .nf-split { display: flex; justify-content: center; gap: 3px; }
+        .nf-d { position: relative; display: inline-block; width: 0.74em; height: 1.2em; perspective: 260px; }
+        .nf-h { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: var(--bg-dark, #0d1117); backface-visibility: hidden; }
+        .nf-h i { position: absolute; left: 0; right: 0; height: 200%; font-style: normal; line-height: 1.2em; text-align: center; }
+        .nf-t, .nf-ft { top: 0; border-radius: 3px 3px 0 0; transform-origin: 50% 100%; }
+        .nf-b, .nf-fb { bottom: 0; border-radius: 0 0 3px 3px; transform-origin: 50% 0; }
+        .nf-t i, .nf-ft i { top: 0; }
+        .nf-b i, .nf-fb i { bottom: 0; }
+        .nf-d::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0, 0, 0, 0.75); z-index: 5; }
+        @media (max-width: 480px) { .nf-tally b { font-size: 32px; } .nf-motion { font-size: 19px; } }
     </style>
 </head>
 <body>
@@ -63,14 +72,13 @@
             <div class="nf-top"><span class="nf-tag">Error</span><span>Roll Call 404</span></div>
             <h1 class="nf-motion">On the motion to find this page</h1>
             <p class="nf-sub">The chair does not recognize an address like this one. It may be mistyped, or the page may have moved.</p>
-            <div class="nf-tally" role="group" aria-label="Vote tally: no yeas, no present, no nays, 404 not voting">
-                <div><b>0</b><span>Yea</span></div>
-                <div><b>0</b><span>Present</span></div>
-                <div><b>0</b><span>Nay</span></div>
-                <div class="nf-nv"><b><span class="nf-flip">404</span></b><span>Not voting</span></div>
+            <div class="nf-tally" role="group" aria-label="Vote tally: 4 yeas, 0 present, 4 nays. A tie.">
+                <div class="nf-yea"><b class="nf-split">4</b><span>Yea</span></div>
+                <div class="nf-pres"><b class="nf-split">0</b><span>Present</span></div>
+                <div class="nf-nay"><b class="nf-split">4</b><span>Nay</span></div>
             </div>
-            <div class="nf-bar" aria-hidden="true"><i></i></div>
-            <div class="nf-result"><span class="nf-stamp">Motion failed. Page not found</span></div>
+            <div class="nf-bar" aria-hidden="true"><i class="y"></i><i class="n"></i></div>
+            <div class="nf-result"><span class="nf-stamp">Tie vote. Motion failed. Page not found</span></div>
             <div class="nf-actions">
                 <a class="nf-btn" href="https://house-floor.evanhollander.org">The House floor</a>
                 <a class="nf-btn" href="https://senate-floor.evanhollander.org">The Senate floor</a>
@@ -86,7 +94,7 @@
             <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
         </div>
     </footer>
-    <script defer src="/lib/not-found.js?v=20261106a"></script>
+    <script defer src="/lib/not-found.js?v=20261106c"></script>
     <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
 </body>
 </html>
