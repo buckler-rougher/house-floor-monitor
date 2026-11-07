@@ -4751,6 +4751,25 @@ function applyRemoteDetails(bill, r) {
     }
 }
 
+// Warm the details before they are asked for: the Worker reads Congress.gov slowly and keeps what it reads, so asking early (on a pointer over a bill, and in the background for the
+// week's bills) means the click finds it kept.
+(() => {
+    const API = 'https://api.evanhollander.org/house-floor/api';
+    const ID = /^(H\.?\s?R\.?|S\.?|H\.?\s?J\.?\s?Res\.?|H\.?\s?Con\.?\s?Res\.?)\s*\d+$/i;
+    const warm = (id) => { if (id && ID.test(id) && !RemoteBill.cached(id)) RemoteBill.fetch(id, API); };
+    ['pointerover', 'focusin', 'touchstart'].forEach((t) => document.addEventListener(t, (e) => {
+        const el = e.target.closest && e.target.closest('[data-bill-id], [data-bill-open]');
+        if (el) warm(el.dataset.billId || el.dataset.billOpen);
+    }, { capture: true, passive: true }));
+    const sweep = () => {
+        const queue = [...billDataMap.values()].filter((b) => b && b.id && !b.sponsor && !b.summary).map((b) => b.id);
+        const worker = async () => { while (queue.length) { const id = queue.shift(); if (id && ID.test(id) && !RemoteBill.cached(id)) await RemoteBill.fetch(id, API); } };
+        worker(); worker();
+    };
+    setTimeout(sweep, 8000);
+    setTimeout(sweep, 90000);
+})();
+
 // The Worker's Congress.gov record can be slow: the modal then opens with the rest and gets the sponsor and subject when the full answer lands (lib/remote-bill.js).
 document.addEventListener('remotebill:full', (e) => {
     const { id, bill: full } = e.detail;
