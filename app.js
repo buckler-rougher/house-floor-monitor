@@ -4751,6 +4751,17 @@ function applyRemoteDetails(bill, r) {
     }
 }
 
+// The Worker's Congress.gov record can be slow: the modal then opens with the rest and gets the sponsor and subject when the full answer lands (lib/remote-bill.js).
+document.addEventListener('remotebill:full', (e) => {
+    const { id, bill: full } = e.detail;
+    const ov = document.getElementById('bill-modal-overlay');
+    if (!ov || ov.hidden || ov.dataset.closing) return;
+    const open = document.querySelector('#bill-modal-overlay .bill-modal-id')?.textContent || '';
+    if (billSlug(open) !== billSlug(id)) return;
+    const wk = billDataMap.get(id) || [...billDataMap.values()].find((b) => billSlug(b.id) === billSlug(id));
+    if (wk) { applyRemoteDetails(wk, full); openBillModal(wk.id, { refresh: true }); } else openRemoteBillModal(id);
+});
+
 function openBillModal(billId, opts = {}) {
     let bill = billDataMap.get(billId);
     // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
@@ -4863,10 +4874,18 @@ function openBillModal(billId, opts = {}) {
         overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
     }
 
-    // while the details load, the sponsor's slot holds the generic member image and a shimmer where the name will be, so the modal already looks like what it is about to become
-    const sponsorPendingHtml = `<div class="bill-modal-section" aria-hidden="true"><div class="bill-modal-section-label">SPONSOR</div><div class="absentee-member" style="padding:0;border:none;"><div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div></div><div class="absentee-meta"><span class="absentee-name is-pending" style="--ph-w:9em">Sponsor</span></div></div></div>`;
+    // while the details load, the modal is already the shape it will be: the generic member image and a shimmer for the name, a shimmer for the support bar and the committee, and
+    // lines where the summary goes. The one quiet line names the source, since that is what is slow.
+    const bsk = (w, h = 12) => `<span class="bsk" style="width:${w};height:${h}px"></span>`;
+    const pendingHtml = `<div class="bill-modal-pending" role="status" aria-live="polite" aria-label="Loading details from Congress.gov">
+        <div class="bill-modal-section"><div class="bill-modal-section-label">SPONSOR</div><div class="absentee-member" style="padding:0;border:none;"><div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div></div><div class="absentee-meta">${bsk('9em', 14)}</div></div></div>
+        <div class="bill-modal-section"><div class="bill-modal-section-label">SUPPORT</div>${bsk('100%', 10)}</div>
+        <div class="bill-modal-section"><div class="bill-modal-section-label">COMMITTEE</div>${bsk('13em', 34)}</div>
+        <div class="bill-modal-pending-note">Loading from Congress.gov. This can take a while when it is busy.</div>
+    </div>`;
+    const summaryPendingHtml = `<div class="bill-modal-body" aria-hidden="true"><div class="bill-modal-section-label">SUMMARY (AUTHORED BY CRS)</div><div class="bill-modal-summary-scroll">${bsk('100%')}${bsk('96%')}${bsk('100%')}${bsk('88%')}${bsk('60%')}</div></div>`;
     const detailsStateHtml = detailsState === 'loading'
-        ? '<div class="bill-modal-details-state" role="status" aria-live="polite"><div class="loading-indicator" aria-hidden="true"><i></i><i></i><i></i></div><span>Loading details from Congress.gov. This can take a while when it is busy.</span></div>' + sponsorPendingHtml
+        ? pendingHtml
         : detailsState === 'failed'
             ? `<div class="bill-modal-details-state is-failed" role="status"><span>${SourceError.text('details', 'congress')}</span><button class="bill-retry" type="button">Try again</button></div>`
             : '';
@@ -4923,7 +4942,7 @@ function openBillModal(billId, opts = {}) {
                 ${committeeHtml}
                 ${committeeReportHtml}
             </div>
-            ${BillSections.summary(summaryText)}
+            ${detailsState === 'loading' ? summaryPendingHtml : BillSections.summary(summaryText)}
             <div class="bill-modal-foot">
                 ${BillSections.action({
                     textHtml: actionText,

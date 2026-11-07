@@ -1025,6 +1025,14 @@ function prefetchBills() {
     else setTimeout(start, 1200);
 }
 
+// a full answer after a partial one (the Worker's Congress.gov record was slow): an open modal for that bill draws again with the sponsor and subject
+document.addEventListener('remotebill:full', (e) => {
+    const ov = el('bill-modal-overlay');
+    if (!ov || ov.hidden || ov.dataset.closing) return;
+    const open = ov.querySelector('.bill-modal-id')?.textContent || '';
+    if (billSlug(open) === billSlug(e.detail.id)) openSenateBillModal(e.detail.id, _billModalTrigger);
+});
+
 async function openSenateBillModal(billId, trigger) {
     if (!billId) return;
     _billModalTrigger = trigger || null;
