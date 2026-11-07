@@ -20,8 +20,13 @@ export async function onRequest({ request, next }) {
 
   const isSenate = url.hostname === 'senate-floor.evanhollander.org' ||
                    url.hostname.startsWith('senate-floor.');
-  if (isSenate && (url.pathname === '/' || url.pathname === '/index.html')) {
-    return next(new Request(new URL('/senate.html', url), request));
+  const isDoc = url.pathname === '/' || url.pathname === '/index.html';
+  let page = null;
+  if (isSenate && isDoc) page = await next(new Request(new URL('/senate.html', url), request));
+  else if (isDoc) page = await next();
+  if (page) {
+    const id = billIdFromSlug(url.searchParams.get('bill'));
+    return id ? withBillPreview(page, url, id, isSenate) : page;
   }
 
   const legacy = LEGACY_ASSETS[url.pathname];
@@ -59,3 +64,39 @@ const LEGACY_ASSETS = {
   '/social.svg':           { house: '/house-social.svg',            senate: '/senate-social.svg' },
   '/logo.svg':             { house: '/house-logo.svg',              senate: '/senate-logo.svg' },
 };
+
+// A shared ?bill=hr8646 link previews as THAT bill, not as the board. Unfurlers (Slack, iMessage, Bluesky, Twitter) do not run scripts, so the card
+// has to be in the HTML they fetch: the page's own og/twitter title and description are rewritten from the Worker's bill answer. Any failure (no
+// answer in 2 s, no title) returns the page untouched, so a link never breaks for want of a preview. Display style: bill types without periods.
+const SLUG_TYPES = { hr: 'H.R.', hres: 'H.Res.', hjres: 'H.J.Res.', hconres: 'H.Con.Res.', s: 'S.', sres: 'S.Res.', sjres: 'S.J.Res.', sconres: 'S.Con.Res.' };
+function billIdFromSlug(slug) {
+  const m = String(slug || '').toLowerCase().match(/^(hr|hres|hjres|hconres|s|sres|sjres|sconres)(\d{1,5})$/);
+  return m ? `${SLUG_TYPES[m[1]]} ${m[2]}` : null;
+}
+const plainId = (id) => id.replace(/\./g, '');
+async function withBillPreview(page, url, id, isSenate) {
+  try {
+    const r = await fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(id)}`, {
+      signal: AbortSignal.timeout(2000), cf: { cacheTtl: 600, cacheEverything: true },
+    });
+    if (!r.ok) return page;
+    const b = await r.json();
+    if (!b || !b.title) return page;
+    const board = isSenate ? 'Senate' : 'House';
+    const title = `${plainId(id)}: ${b.title}`.slice(0, 120);
+    const desc = [b.latestAction ? `Latest action${b.latestActionDate ? ` (${b.latestActionDate})` : ''}: ${b.latestAction}` : '', `Monitoring the ${board} Floor`]
+      .filter(Boolean).join('. ').slice(0, 280);
+    const href = `${url.origin}/?bill=${url.searchParams.get('bill').toLowerCase()}`;
+    const set = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
+    return new HTMLRewriter()
+      .on('title', { element(e) { e.setInnerContent(`${title} | Monitoring the ${board} Floor`); } })
+      .on('meta[property="og:title"]', set('content', title))
+      .on('meta[name="twitter:title"]', set('content', title))
+      .on('meta[property="og:description"]', set('content', desc))
+      .on('meta[name="twitter:description"]', set('content', desc))
+      .on('meta[name="description"]', set('content', desc))
+      .on('meta[property="og:url"]', set('content', href))
+      .on('link[rel="canonical"]', set('href', href))
+      .transform(page);
+  } catch { return page; }
+}
