@@ -11266,7 +11266,8 @@ html.replay-mode .weather-panel { display: none; }
 /* THE TWO BUTTONS, stacked and one width, in a column of their own (desktop); the grids below lay the same wrapper out as a cell */
 .header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
 @media (min-width: 1120px) {
-    .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 152px; height: 38px; padding: 0 var(--sp-14); white-space: nowrap; max-width: none; }
+    /* the two icons share one vertical axis: content starts at the same x in both (24px in centres the longer label, "Suggestion Box") instead of each label being centred on its own width */
+    .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 152px; height: 38px; padding: 0 var(--sp-14) 0 24px; justify-content: flex-start; white-space: nowrap; max-width: none; }
 }
 :root { --suggest-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
 /* 1120 to 1279px: the logo no longer sits at the header's centre (the right group, weather to buttons, reaches left of it there); it sits just left of the right group instead */
