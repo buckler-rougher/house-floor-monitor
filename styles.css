@@ -11161,11 +11161,11 @@ html.replay-mode .weather-panel { display: none; }
 :has(.panel-skeleton) > .panel-header .panel-source[data-loading] > * { display: none; }
 :has(.panel-skeleton) > .panel-header .panel-source[data-loading]::before { content: attr(data-loading); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) { .panel-skeleton > i::before, .panel-skeleton > i::after { animation: none; } }
-/* THE HEADER BELOW 768px (tablets and phones). The desktop header is one row and needs about 800px. Narrower, it is two rows on one grid: the identity on top (the live dot and the stacked
+/* THE HEADER BELOW 1120px (tablets and phones). The desktop header is one row and needs about 1120px. Narrower, it is two rows on one grid: the identity on top (the live dot and the stacked
    three-line wordmark at the left, the heartbeat logo centered over the buttons' column at the right), and under it a status bar of cells with hairline dividers: the date over the
    session status, the weather, the clocks, and the two buttons (labelled on a tablet, icons on a phone). The header's two wrappers are display: contents, so every part is a cell of the
    one grid and the columns line up between the rows. */
-@media (max-width: 767px) {
+@media (max-width: 1119px) {
     .main-header { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 270px; grid-template-areas: "brand brand brand logo" "date wx clk btns" "nv nv nv nv"; height: auto; padding: 0; gap: 0; align-items: stretch; }
     .header-left, .header-right, .header-when { display: contents; }
     .brand-tooltip-anchor { grid-area: brand; align-self: center; padding: var(--sp-12) var(--sp-16) var(--sp-10); }
@@ -11234,13 +11234,17 @@ html.replay-mode .weather-panel { display: none; }
 #suggest-fab::after { content: ''; order: -1; flex: 0 0 auto; width: 18px; height: 18px; margin-right: var(--sp-8); background: currentColor; -webkit-mask: var(--suggest-icon) center / contain no-repeat; mask: var(--suggest-icon) center / contain no-repeat; }
 #suggest-fab { max-width: none; }
 /* the date cell and the next-votes line under it, one column (on a narrow screen the wrapper disappears and each is a cell of the grid) */
-@media (min-width: 768px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
+@media (min-width: 1120px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
 /* THE TWO BUTTONS, stacked and one width, in a column of their own (desktop); the grids below lay the same wrapper out as a cell */
 .header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
-@media (min-width: 768px) {
+@media (min-width: 1120px) {
     .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 152px; height: 38px; padding: 0 var(--sp-14); white-space: nowrap; max-width: none; }
 }
 :root { --suggest-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
+/* 1120 to 1279px: the logo no longer sits at the header's centre (the right group, weather to buttons, reaches left of it there); it sits just left of the right group instead */
+@media (min-width: 1120px) and (max-width: 1279px) {
+    .header-logo-clip { left: auto; right: calc(508px + var(--sp-24)); transform: none; }
+}
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
