@@ -10929,9 +10929,9 @@ body.all-mode .vote-header {
 html.replay-mode #replay-btn { box-shadow: inset 0 0 0 1px var(--accent-green), 0 0 12px rgba(63, 185, 80, .3); color: var(--accent-green); }
 
 /* the picker */
-.tm-picker-overlay { position: fixed; inset: 0; z-index: 1160; display: flex; align-items: center; justify-content: center; padding: var(--sp-16); background: rgba(0, 0, 0, .62); backdrop-filter: blur(3px); opacity: 0; transition: opacity .2s ease; }
+.tm-picker-overlay { position: fixed; inset: 0; z-index: 1160; display: flex; align-items: center; justify-content: center; overflow-y: auto; overscroll-behavior: contain; padding: var(--sp-16); background: rgba(0, 0, 0, .62); backdrop-filter: blur(3px); opacity: 0; transition: opacity .2s ease; }
 .tm-picker-overlay.is-open { opacity: 1; }
-.tm-picker { width: min(380px, 100%); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-12); box-shadow: 0 24px 64px rgba(0, 0, 0, .65), 0 0 0 1px rgba(63, 185, 80, .08); padding: var(--sp-16) var(--sp-20) var(--sp-16); transform: translateY(10px) scale(.98); transition: transform .24s var(--ease-emphasis); }
+.tm-picker { width: min(380px, 100%); margin: auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-12); box-shadow: 0 24px 64px rgba(0, 0, 0, .65), 0 0 0 1px rgba(63, 185, 80, .08); padding: var(--sp-16) var(--sp-20) var(--sp-16); transform: translateY(10px) scale(.98); transition: transform .24s var(--ease-emphasis); }
 .tm-picker-overlay.is-open .tm-picker { transform: none; }
 .tm-picker-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-6); }
 .tm-picker-title { font-family: var(--font-mono); font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--track-wider); color: var(--accent-green); }
@@ -11166,13 +11166,13 @@ html.replay-mode .weather-panel { display: none; }
    session status, the weather, the clocks, and the two buttons (labelled on a tablet, icons on a phone). The header's two wrappers are display: contents, so every part is a cell of the
    one grid and the columns line up between the rows. */
 @media (max-width: 1279px) {
-    .main-header { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) minmax(0, 1.6fr) 270px; grid-template-areas: "brand brand brand logo" "date wx clk btns"; height: auto; padding: 0; gap: 0; align-items: stretch; }
-    .header-left, .header-right { display: contents; }
+    .main-header { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 270px; grid-template-areas: "brand brand brand logo" "date wx clk btns" "nv nv nv nv"; height: auto; padding: 0; gap: 0; align-items: stretch; }
+    .header-left, .header-right, .header-when { display: contents; }
     .brand-tooltip-anchor { grid-area: brand; align-self: center; padding: var(--sp-12) var(--sp-16) var(--sp-10); }
     .brand-nl { display: inline; }
     .brand-text { font-size: var(--fs-lg); }
-    .header-logo-clip { grid-area: logo; position: static; transform: none; justify-self: center; align-self: center; width: 88px; height: 55px; overflow: hidden; display: flex; align-items: center; margin: var(--sp-8) 0 var(--sp-6); }
-    .header-logo { height: 88px; width: 88px; }
+    .header-logo-clip { grid-area: logo; position: static; transform: none; justify-self: center; align-self: center; width: 124px; height: 78px; overflow: hidden; display: flex; align-items: center; margin: var(--sp-8) 0 var(--sp-6); }
+    .header-logo { height: 124px; width: 124px; }
     .date-info { grid-area: date; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; }
     /* a cell is a small label over a bold value, as in the approved mock: the date is the label (short, "Thu, 03 Sep"), the session status is the value, green when it is in session */
     .today-date[data-short] { font-size: 0; }
@@ -11186,6 +11186,22 @@ html.replay-mode .weather-panel { display: none; }
     .weather-info { align-items: flex-start; padding: 0; margin: 0; }
     .weather-temp { font-family: var(--font-mono); font-size: var(--fs-base); font-weight: 600; text-align: left; }
     .weather-condition { display: none; }
+    /* hovering the weather shows the Capitol camera. On the desktop the panel grows; here it is a cell of the status bar and must not, so the camera is a card that drops from the header's
+       bottom edge, centered (the cell is not positioned, so the card is placed against the header) */
+    .weather-panel { position: static; }
+    .weather-panel:hover, .weather-panel:focus-within { width: auto; height: auto; transform: none; background: none; box-shadow: none; border-color: var(--border-color); z-index: auto; }
+    .weather-panel:hover .weather-info, .weather-panel:focus-within .weather-info { opacity: 1; }
+    .weather-panel video { left: 50%; top: 100%; width: min(320px, calc(100vw - 32px)); height: auto; aspect-ratio: 16 / 9; transform: translate(-50%, var(--sp-8)); border: 1px solid var(--accent-blue); border-radius: var(--radius-8); background: #000; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); z-index: 20; }
+    .weather-panel:hover video, .weather-panel:focus-within video { opacity: 1; }
+    .capcam-live-dot { display: none; }
+    /* the next-votes line is a row of its own under the status bar, on every narrow width (it was hidden on small phones, and wrapped inside the date cell on larger ones) */
+    .next-votes { grid-area: nv; display: block; padding: var(--sp-6) var(--sp-16); border-top: 1px solid var(--border-color); line-height: 1.4; }
+    .next-votes[data-empty] { display: none; }
+    .session-text[data-short] { font-size: 0; }
+    .session-text[data-short]::before { content: attr(data-short); font-size: var(--fs-base); }
+    /* one line height for every label and every value, so the cells share their baselines */
+    .today-date[data-short]::before, .weather-panel::before, .clock-label { line-height: 1.3; }
+    .session-text, .weather-temp, .clock-time { line-height: 1.4; }
     .clock-group { grid-area: clk; gap: var(--sp-16); align-items: center; }
     .analog-clock { display: none; }
     .clock { min-width: 0; align-items: flex-start; gap: 3px; }
@@ -11204,20 +11220,21 @@ html.replay-mode .weather-panel { display: none; }
     .clock-group .clock:nth-child(3) { display: none; }      /* no UTC where the row is tight */
 }
 @media (max-width: 640px) {
-    .main-header { grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.7fr) minmax(0, 0.9fr) 92px; }
+    .main-header { grid-template-columns: minmax(min-content, 1.3fr) minmax(max-content, 1fr) minmax(max-content, 1fr) 112px; }
     .clock-group .clock:not(:nth-child(2)) { display: none; }   /* the DC time only on a phone */
     .main-header .header-actions { gap: var(--sp-6); padding: var(--sp-6); }
     .header-actions > #replay-btn, .header-actions > #suggest-fab { display: inline-flex; width: 36px; height: 36px; max-width: none; padding: 0; font-size: 0; }
-    #replay-btn::before { margin: 0; }
-    #suggest-fab::after { margin: 0; }
-    .date-info, .weather-panel, .clock-group { padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-12); }
-    .header-logo-clip { width: 76px; height: 48px; }
-    .header-logo { width: 76px; height: 76px; }
+    .main-header #replay-btn::before, .main-header #suggest-fab::after { margin: 0; }
+    .date-info, .weather-panel, .clock-group { padding: var(--sp-8) var(--sp-12); }
+    .header-logo-clip { width: 106px; height: 66px; }
+    .header-logo { width: 106px; height: 106px; }
     .brand-text { font-size: var(--fs-md); }
 }
 /* the Suggestion Box's speech bubble, left of its words as the Time Machine's clock is (both are the symbol set's drawn strokes, in the button's own colour) */
 #suggest-fab::after { content: ''; order: -1; flex: 0 0 auto; width: 18px; height: 18px; margin-right: var(--sp-8); background: currentColor; -webkit-mask: var(--suggest-icon) center / contain no-repeat; mask: var(--suggest-icon) center / contain no-repeat; }
 #suggest-fab { max-width: none; }
+/* the date cell and the next-votes line under it, one column (on a narrow screen the wrapper disappears and each is a cell of the grid) */
+.header-when { display: flex; flex-direction: column; gap: var(--sp-4); }
 /* THE TWO BUTTONS, stacked and one width, in a column of their own (desktop); the grids below lay the same wrapper out as a cell */
 .header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
 @media (min-width: 1280px) {
