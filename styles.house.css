@@ -5441,6 +5441,12 @@ font-family: var(--font-mono);
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
 
+.bill-modal-overlay.is-refresh:not([hidden]) .bill-modal { animation: none; }
+
+.bill-modal-details-state { display: flex; align-items: center; gap: var(--sp-10); flex-wrap: wrap; width: 100%; color: var(--text-secondary); font-size: var(--fs-lg); line-height: 1.5; }
+.bill-modal-details-state .loading-indicator { flex: none; }
+.bill-modal-details-state.is-failed { color: var(--text-muted); }
+
 @media (prefers-reduced-motion: reduce) {
     .bill-modal-overlay:not([hidden]),
     .dp-modal-overlay, .dp-modal-overlay .dp-modal,
@@ -11451,7 +11457,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
     border-bottom-right-radius: var(--radius-6);
 }
 
-.ai-off-btn, .committee-more, .site-footer-license.ai-toggle, .site-footer-license.report-toggle {
+.ai-off-btn, .committee-more, .bill-retry, .site-footer-license.ai-toggle, .site-footer-license.report-toggle {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-6);
@@ -11464,6 +11470,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
 }
 .ai-off-btn:hover, .ai-off-btn:focus-visible,
 .committee-more:hover, .committee-more:focus-visible,
+.bill-retry:hover, .bill-retry:focus-visible,
 .site-footer-license.ai-toggle:hover, .site-footer-license.ai-toggle:focus-visible,
 .site-footer-license.report-toggle:hover, .site-footer-license.report-toggle:focus-visible {
     color: var(--text-primary);
