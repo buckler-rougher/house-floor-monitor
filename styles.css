@@ -6405,12 +6405,14 @@ font-family: var(--font-mono);
 .committee-chip-name { min-width: 0; }
 
 /* Amendments side panel */
+/* Side by side, the bill and its amendments are one height: the taller of the two, and the same cap (the bill alone keeps its own 92vh). */
 .bill-modal-overlay.has-amendments {
-    align-items: flex-start;
+    align-items: stretch;
     padding: var(--sp-32) var(--sp-16);
     gap: var(--sp-10);
     overflow-y: auto;
 }
+.bill-modal-overlay.has-amendments .bill-modal { max-height: 85vh; }
 
 .bill-panel-nav {
     display: none;
