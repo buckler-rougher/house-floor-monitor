@@ -394,7 +394,7 @@ body {
 }
 
 .floor-status {
-    margin-top: var(--sp-8);
+    margin-top: 6.5px;
     font-size: var(--fs-5xl);
     font-weight: 600;
     line-height: 1.2;
@@ -10956,7 +10956,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 
 .calendar-line[hidden] { display: none; }
 .calendar-line {
-    margin-top: var(--sp-6);
+    margin-top: 7.5px;
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     font-weight: 600;
