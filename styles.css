@@ -6776,6 +6776,8 @@ font-family: var(--font-mono);
 
 /* the banner's hierarchy: the Congress line is small and quiet (it is the same for months), the floor's status is the headline, the day line and the countdown follow */
 .congress-text {
+    display: block;   /* an inline span sat in a line box as tall as the banner's body text, which left a gap above the status */
+    line-height: 1.3;
     font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--text-muted);
