@@ -11171,8 +11171,8 @@ html.replay-mode .weather-panel { display: none; }
     .brand-tooltip-anchor { grid-area: brand; align-self: center; padding: var(--sp-12) var(--sp-16) var(--sp-10); }
     .brand-nl { display: inline; }
     .brand-text { font-size: var(--fs-lg); }
-    .header-logo-clip { grid-area: logo; position: static; transform: none; justify-self: center; align-self: center; width: 124px; height: 78px; overflow: hidden; display: flex; align-items: center; margin: var(--sp-8) 0 var(--sp-6); }
-    .header-logo { height: 124px; width: 124px; }
+    .header-logo-clip { grid-area: logo; position: static; transform: none; justify-self: center; align-self: center; width: 150px; height: 94px; overflow: hidden; display: flex; align-items: center; margin: var(--sp-8) 0 var(--sp-6); }
+    .header-logo { height: 150px; width: 150px; }
     .date-info { grid-area: date; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; }
     /* a cell is a small label over a bold value, as in the approved mock: the date is the label (short, "Thu, 03 Sep"), the session status is the value, green when it is in session */
     .today-date[data-short] { font-size: 0; }
@@ -11234,7 +11234,7 @@ html.replay-mode .weather-panel { display: none; }
 #suggest-fab::after { content: ''; order: -1; flex: 0 0 auto; width: 18px; height: 18px; margin-right: var(--sp-8); background: currentColor; -webkit-mask: var(--suggest-icon) center / contain no-repeat; mask: var(--suggest-icon) center / contain no-repeat; }
 #suggest-fab { max-width: none; }
 /* the date cell and the next-votes line under it, one column (on a narrow screen the wrapper disappears and each is a cell of the grid) */
-.header-when { display: flex; flex-direction: column; gap: var(--sp-4); }
+@media (min-width: 1280px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
 /* THE TWO BUTTONS, stacked and one width, in a column of their own (desktop); the grids below lay the same wrapper out as a cell */
 .header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
 @media (min-width: 1280px) {
