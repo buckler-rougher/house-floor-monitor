@@ -56,4 +56,24 @@ await ok('the Senate stages are built from the last vote list kept when senate.g
   assert.strictEqual(j.stale, true);
   assert.ok(Object.values(j.counts).reduce((a, b) => a + b, 0) >= 1, 'the measure is in a stage');
 });
+await ok('a slow source does not hold the reader up while a saved copy exists: the copy goes out stale, and the refresh finishes behind it', async () => {
+  store.clear();
+  store.set(KEY, JSON.stringify({ body: JSON.stringify({ days: [{ date: 'old' }] }), cachedAt: Date.now() - 3 * 86400000 }));
+  const waits = [];
+  const ctx = { waitUntil(p) { waits.push(p); } };
+  const slowEnv = { ...env, KV_SLOW_MS: 40 };
+  globalThis.fetch = async () => { await new Promise((r) => setTimeout(r, 250)); return new Response('<rss><channel><item><title>fresh</title></item></channel></rss>', { status: 200 }); };
+  const t0 = Date.now();
+  const r = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/senate/schedule'), slowEnv, ctx);
+  assert.ok(Date.now() - t0 < 200, 'answered well before the source did');
+  assert.strictEqual(r.headers.get('X-Stale'), '1');
+  assert.deepStrictEqual((await r.json()).days, [{ date: 'old' }]);
+  assert.ok(waits.length >= 1, 'the refresh was handed to waitUntil');
+  // a second reader while that refresh is still running is not made to wait the 40 ms again
+  const t1 = Date.now();
+  const r2 = await worker.fetch(new Request('https://api.evanhollander.org/house-floor/api/senate/schedule'), slowEnv, ctx);
+  assert.strictEqual(r2.headers.get('X-Stale'), '1');
+  assert.ok(Date.now() - t1 < 30, 'the second reader got the saved copy at once');
+  await Promise.all(waits);
+});
 console.log(`\n${n} passed`);

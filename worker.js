@@ -236,6 +236,9 @@ let CURRENT_CONGRESS = computeCurrentCongress();
 const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
 const KV_AT_STAMP = /^\{"at":\d+,/;
 const KV_STAMP_REWRITE_MS = 3 * 3600_000;
+// A source that takes longer than this to answer, while a saved copy exists, no longer holds the reader up: the saved copy goes out (marked stale) and the refresh finishes behind it.
+// Congress.gov slowed to 9 to 23 seconds a call on 7 November, and the appropriations panel waited out all of it, every time, before showing a copy that was fine.
+const KV_SLOW_ORIGIN_MS = 4000;
 let _lastUrlKept = null;   // the live-stream address last written to (or found in) KV by this isolate
 // Resolved per-request from env secrets (set via `wrangler secret put`)
 let _congressApiKey = '';
@@ -1452,30 +1455,10 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
   // Isolates do not share this map, so this narrows the stampede rather than
   // removing it. Anything that must not be called N times at once needs its own
   // guard, not this one.
-  let response;
-  try {
-    // What is shared is a SNAPSHOT (status, headers, body text), and each caller builds its own Response from it. Sharing the Response itself failed under concurrent callers
-    // ("This ReadableStream is currently locked to a reader"): the first caller's copy was already being streamed to its client when the second one tried to clone it.
-    let inflight = _kvInflight.get(key);
-    if (!inflight) {
-      // (some callers' fn return a plain value, a JSON string, instead of a Response: that goes through as it is)
-      inflight = (async () => { const r = await fn(); return r instanceof Response ? { status: r.status, headers: [...r.headers], body: await r.text() } : { value: r }; })();
-      _kvInflight.set(key, inflight);
-      inflight.then(() => _kvInflight.delete(key), () => _kvInflight.delete(key));
-    }
-    const snap = await inflight;
-    response = 'value' in snap ? snap.value : new Response(snap.body, { status: snap.status, headers: snap.headers });
-  } catch (e) {
-    // A source that THROWS (senate.gov answering 403 to everything from 23 October) is a failed origin like one that answers with an error status: the last good body is served below
-    // rather than the 500 that would otherwise reach the board. With nothing kept there is nothing to serve, so the error goes on as it always did.
-    if (prevBody === null) throw e;
-    console.warn(`[house-floor] kvCache: origin threw for key=${key}: ${e && e.message}`);
-    response = new Response('{"error":"origin failed"}', { status: 502, headers: { 'Content-Type': 'application/json' } });
-  }
-  if (response.ok) {
+  const persist = async (resp) => {
     try {
-      const body = await response.clone().text();
-      const noStore = response.headers.get(KV_NO_STORE_HEADER) === '1';
+      const body = await resp.clone().text();
+      const noStore = resp.headers.get(KV_NO_STORE_HEADER) === '1';
       if (!noStore) _mSet(key, body, freshFor(body, ttlMs));   // a degraded answer is not kept in this isolate's memory either
       if (noStore) console.warn(`[house-floor] kvCache: not persisting degraded payload for key=${key}`);
       // Many answers lead with {"at": Date.now(), ...}. That stamp differs on every fetch, so each refresh looked like a change and
@@ -1488,6 +1471,46 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
         await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
       }
     } catch {}
+  };
+  let response;
+  try {
+    // What is shared is a SNAPSHOT (status, headers, body text), and each caller builds its own Response from it. Sharing the Response itself failed under concurrent callers
+    // ("This ReadableStream is currently locked to a reader"): the first caller's copy was already being streamed to its client when the second one tried to clone it.
+    let inflight = _kvInflight.get(key);
+    const joined = !!inflight;   // someone is already refreshing this key
+    if (!inflight) {
+      // (some callers' fn return a plain value, a JSON string, instead of a Response: that goes through as it is)
+      inflight = (async () => { const r = await fn(); return r instanceof Response ? { status: r.status, headers: [...r.headers], body: await r.text() } : { value: r }; })();
+      _kvInflight.set(key, inflight);
+      inflight.then(() => _kvInflight.delete(key), () => _kvInflight.delete(key));
+    }
+    let snap;
+    if (prevBody !== null) {
+      // a saved copy exists: do not wait out a slow source for it
+      const SLOW = Symbol('slow');
+      const slowMs = joined ? 0 : (Number(env && env.KV_SLOW_MS) || KV_SLOW_ORIGIN_MS);   // a refresh already under way is not waited for a second time
+      snap = await Promise.race([inflight, new Promise((r) => setTimeout(() => r(SLOW), slowMs))]);
+      if (snap === SLOW) {
+        if (joined) throw new Error('origin refreshing, serving the saved copy');
+        const finish = inflight.then(async (sn) => {
+          if (sn && !('value' in sn) && sn.status >= 200 && sn.status < 300) await persist(new Response(sn.body, { status: sn.status, headers: sn.headers }));
+        }, () => {});
+        if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil(finish);
+        throw new Error(`origin slow (over ${slowMs} ms), serving the saved copy; refreshing behind it`);
+      }
+    } else {
+      snap = await inflight;
+    }
+    response = 'value' in snap ? snap.value : new Response(snap.body, { status: snap.status, headers: snap.headers });
+  } catch (e) {
+    // A source that THROWS (senate.gov answering 403 to everything from 23 October) is a failed origin like one that answers with an error status: the last good body is served below
+    // rather than the 500 that would otherwise reach the board. With nothing kept there is nothing to serve, so the error goes on as it always did.
+    if (prevBody === null) throw e;
+    console.warn(`[house-floor] kvCache: origin threw for key=${key}: ${e && e.message}`);
+    response = new Response('{"error":"origin failed"}', { status: 502, headers: { 'Content-Type': 'application/json' } });
+  }
+  if (response.ok) {
+    await persist(response);
     return response;
   }
 
