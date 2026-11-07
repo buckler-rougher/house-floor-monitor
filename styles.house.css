@@ -350,7 +350,7 @@ body {
     font-family: var(--font-mono);
 }
 
-@media (max-width: 1479px) {
+@media (min-width: 641px) and (max-width: 1479px) {
     html:has(.floor-feed.pip-active) .site-footer-grid { padding-right: max(var(--sp-24), calc(752px - 50vw)); }
 }
 @media (max-width: 640px) {
@@ -650,6 +650,8 @@ body {
     background-position: center top;
     background-repeat: no-repeat;
 }
+
+:root:not([data-chamber="senate"]) body[class*="-mode"]:not(.all-mode) .vote-column { display: none; }
 .vote-column > * {
     margin-bottom: 0;
 }
@@ -9260,7 +9262,10 @@ body.admin-oath-mode .admin-oath-section {
         flex-shrink: 0;
         overflow: visible;
     }
-    .header-logo { height: 40px; width: 40px; }
+    .header-logo { height: 44px; width: 44px; }
+    .header-logo-clip { order: 2; }
+    .header-right { order: 3; }
+    #replay-btn { margin-left: auto; }
 
     .header-left {
         max-width: none;

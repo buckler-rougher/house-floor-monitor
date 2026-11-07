@@ -433,7 +433,8 @@ body {
 }
 /* The floating feed sits in the margin beside the panels where there is one (about 1480px and wider); narrower than that it overlaps the page's right side, so the footer's
    columns stop short of it instead of leaving blank space beneath. The overlap is how far the column's right edge passes the feed's left edge. */
-@media (max-width: 1479px) {
+/* (not on a phone: there the padding grew the footer past the screen, a page wider than the phone, with the header's right side off the edge) */
+@media (min-width: 641px) and (max-width: 1479px) {
     html:has(.floor-feed.pip-active) .site-footer-grid { padding-right: max(var(--sp-24), calc(752px - 50vw)); }
 }
 @media (max-width: 640px) {
@@ -752,6 +753,9 @@ body {
     background-position: center top;
     background-repeat: no-repeat;
 }
+/* The vote column is empty in every mode but a live vote (its panels are hidden), but an empty flex item still brings its gap: a second section gap under the banner. The House
+   site collapses it; the Senate site shows its call panels by other classes, so it is left alone. */
+:root:not([data-chamber="senate"]) body[class*="-mode"]:not(.all-mode) .vote-column { display: none; }
 .vote-column > * {
     margin-bottom: 0;
 }
@@ -9922,7 +9926,10 @@ body.admin-oath-mode .admin-oath-section {
         flex-shrink: 0;
         overflow: visible;
     }
-    .header-logo { height: 40px; width: 40px; }
+    .header-logo { height: 44px; width: 44px; }
+    .header-logo-clip { order: 2; }               /* the logo ends row 1, so the wordmark leads it and the right side is not empty */
+    .header-right { order: 3; }                   /* ...and the info strip stays row 2 */
+    #replay-btn { margin-left: auto; }            /* the Time Machine ends row 2 */
 
     /* ── Brand + date (row 1, fills remaining width) ─────────────────────── */
     .header-left {
