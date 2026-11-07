@@ -6239,6 +6239,23 @@ font-family: var(--font-mono);
   @media (prefers-reduced-motion: reduce) {
     .panel-skeleton > i::before, .panel-skeleton > i::after { animation: none; }
   }
+  @media (min-width: 641px) and (max-width: 1279px) {
+    .main-header { height: auto; flex-wrap: wrap; padding: var(--sp-10) var(--sp-24); gap: var(--sp-8) var(--sp-16); align-items: center; }
+    .header-logo-clip { position: static; transform: none; height: auto; width: auto; order: 2; overflow: visible; flex-shrink: 0; }
+    .header-logo { height: 48px; width: 48px; }
+    .header-left { max-width: none; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; }
+    .brand-nl { display: none; }
+    .date-info { flex-direction: row; align-items: center; flex-wrap: wrap; gap: var(--sp-4) var(--sp-12); }
+    .header-right { order: 3; width: 100%; gap: var(--sp-20); justify-content: flex-start; align-items: center; }
+    .weather-panel { width: 56px; height: 34px; margin-right: 0; padding: var(--sp-4); }
+    .weather-temp { font-size: var(--fs-2xl); }
+    .weather-condition { display: none; }
+    .analog-clock { display: none; }
+    .clock { min-width: 0; gap: var(--sp-2); }
+    .clock-time { font-size: var(--fs-base); }
+    .container { padding-top: calc(var(--header-h, 100px) + var(--sp-8)); }
+    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--header-h, 100px) + var(--section-gap)); }
+  }
 }
 .main-display > * {
     margin-bottom: 0;
