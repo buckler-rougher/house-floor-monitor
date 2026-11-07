@@ -10379,7 +10379,7 @@ html.replay-mode .weather-panel { display: none; }
 :has(.panel-skeleton) > .panel-header .panel-source[data-loading]::before { content: attr(data-loading); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) { .panel-skeleton > i::before, .panel-skeleton > i::after { animation: none; } }
 
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
     .main-header { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 270px; grid-template-areas: "brand brand brand logo" "date wx clk btns" "nv nv nv nv"; height: auto; padding: 0; gap: 0; align-items: stretch; }
     .header-left, .header-right, .header-when { display: contents; }
     .brand-tooltip-anchor { grid-area: brand; align-self: center; padding: var(--sp-12) var(--sp-16) var(--sp-10); }
@@ -10447,10 +10447,10 @@ html.replay-mode .weather-panel { display: none; }
 #suggest-fab::after { content: ''; order: -1; flex: 0 0 auto; width: 18px; height: 18px; margin-right: var(--sp-8); background: currentColor; -webkit-mask: var(--suggest-icon) center / contain no-repeat; mask: var(--suggest-icon) center / contain no-repeat; }
 #suggest-fab { max-width: none; }
 
-@media (min-width: 1280px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
+@media (min-width: 1024px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
 
 .header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
     .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 152px; height: 38px; padding: 0 var(--sp-14); white-space: nowrap; max-width: none; }
 }
 :root { --suggest-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
