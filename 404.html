@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page not found — Monitoring the Floor</title>
+    <meta name="robots" content="noindex">
+    <!-- The generated stylesheet with every rule and no comments (a third the download of styles.css), not a
+         per-chamber subset: this page is served on both hostnames. Bump the tag with the other pages
+         when styles.css changes (npm run css). -->
+    <link rel="stylesheet" href="/styles.house.css?v=20261106a">
+    <!-- Bare names on purpose. This page is served on both hostnames, and
+         functions/_middleware.js resolves these to the asking chamber's icons,
+         so it shows the Senate mark on the Senate host. Prefixing them would
+         hardcode the House's. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        .legal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+        }
+        .legal-header a {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+        .legal-header a:hover { color: var(--accent-green); }
+        .legal-content {
+            max-width: 740px;
+            margin: 48px auto;
+            padding: 0 24px;
+        }
+        .legal-nav {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .legal-nav a {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .legal-nav a:hover { color: var(--accent-green); }
+        .legal-section { margin-bottom: 56px; }
+        .legal-section h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .legal-section .effective {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-bottom: 28px;
+        }
+        .legal-section h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 28px 0 10px;
+            font-family: var(--font-mono);
+        }
+        .legal-section p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .legal-section a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        .legal-section a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <a href="https://house-floor.evanhollander.org">&larr; Monitoring the House Floor</a>
+    </header>
+
+    <div class="legal-content">
+        <section class="legal-section" id="not-found">
+            <h1>Page not found</h1>
+            <p class="effective">Error 404</p>
+
+            <h2>No page at this address</h2>
+            <p>This site has no page at this address. The address may be mistyped, or the page may have moved.</p>
+
+            <h2>Where to go</h2>
+            <p><a href="https://house-floor.evanhollander.org">Monitoring the House Floor</a> or <a href="https://senate-floor.evanhollander.org">Monitoring the Senate Floor</a>. If a link on this site brought you here, <a href="https://house-floor.evanhollander.org/?report=error">report an error</a>.</p>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        <div class="site-footer-primary">
+            <span class="site-footer-brand">Monitoring the House Floor</span>
+            <span class="site-footer-sep">&middot;</span>
+            <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
+        </div>
+    </footer>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

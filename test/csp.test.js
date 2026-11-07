@@ -17,7 +17,7 @@ const test = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const headers = read('_headers');
 // the script and style rules are reported, not yet enforced (every main flow was clean on both boards); base, object, frame and form are enforced
 const policy = [...headers.matchAll(/Content-Security-Policy(?:-Report-Only)?:\s*(.+)/g)].map((m) => m[1]).join('; ');
-const pages = ['index.html', 'senate.html', 'legal.html', 'accessibility.html', 'about.html'];
+const pages = ['index.html', 'senate.html', 'legal.html', 'accessibility.html', 'about.html', '404.html'];
 const sources = ['app.js', 'senate.js', ...fs.readdirSync(path.join(root, 'lib')).filter((f) => f.endsWith('.js')).map((f) => 'lib/' + f)];
 
 test('every inline script has its hash in the policy', () => {
