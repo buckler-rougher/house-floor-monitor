@@ -1750,7 +1750,7 @@ Toc.mount({
   ],
 });
 SenateTreaties.mount({ base: API });
-globalThis.__leadership = Leadership.mount({ base: API, board: 'senate', photoUrlFor, getControl: () => globalThis.__boardControl });
+globalThis.__leadership = Leadership.mount({ base: API, board: 'senate', photoUrlFor, getControl: () => globalThis.__boardControl, placeholder: PHOTO_PLACEHOLDER });
 updateTimestamp();
 setInterval(updateTimestamp, 1000);
 Weather.init({ temp: el('weather-temp'), condition: el('weather-condition') });

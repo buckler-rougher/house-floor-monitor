@@ -4863,8 +4863,10 @@ function openBillModal(billId, opts = {}) {
         overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
     }
 
+    // while the details load, the sponsor's slot holds the generic member image and a shimmer where the name will be, so the modal already looks like what it is about to become
+    const sponsorPendingHtml = `<div class="bill-modal-section" aria-hidden="true"><div class="bill-modal-section-label">SPONSOR</div><div class="absentee-member" style="padding:0;border:none;"><div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div></div><div class="absentee-meta"><span class="absentee-name is-pending" style="--ph-w:9em">Sponsor</span></div></div></div>`;
     const detailsStateHtml = detailsState === 'loading'
-        ? '<div class="bill-modal-details-state" role="status" aria-live="polite"><div class="loading-indicator" aria-hidden="true"><i></i><i></i><i></i></div><span>Loading details from Congress.gov. This can take a while when it is busy.</span></div>'
+        ? '<div class="bill-modal-details-state" role="status" aria-live="polite"><div class="loading-indicator" aria-hidden="true"><i></i><i></i><i></i></div><span>Loading details from Congress.gov. This can take a while when it is busy.</span></div>' + sponsorPendingHtml
         : detailsState === 'failed'
             ? `<div class="bill-modal-details-state is-failed" role="status"><span>${SourceError.text('details', 'congress')}</span><button class="bill-retry" type="button">Try again</button></div>`
             : '';
@@ -4908,7 +4910,7 @@ function openBillModal(billId, opts = {}) {
                     <span class="bill-modal-id">${bill.id}</span>
                     <span class="bill-modal-badge ${statusClass}">${statusLabel}</span>
                     <span class="bill-modal-badge ${procedureClass}">${procedureLabel}</span>
-                    ${bill.policyArea ? `<span class="bill-modal-badge">${escapeHtml(bill.policyArea)}</span>` : ''}
+                    ${bill.policyArea ? `<span class="bill-modal-badge policy">${escapeHtml(bill.policyArea)}</span>` : ''}
                     ${modalRuleTagHtml}
                     ${whipRecTagHtml(bill.id)}
                 </div>
@@ -10936,7 +10938,7 @@ Toc.mount({
     }),
 });
 loadDischargePetitions();
-globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house', photoUrlFor: buildBioguidePhotoUrl, getControl: () => globalThis.__boardControl });
+globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house', photoUrlFor: buildBioguidePhotoUrl, getControl: () => globalThis.__boardControl, placeholder: MEMBER_PHOTO_PLACEHOLDER });
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
 // the amendments search box of the debate panel (the modal's is mounted when it is built)
