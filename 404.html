@@ -17,95 +17,65 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
-        .legal-header {
-            border-bottom: 1px solid var(--border-color);
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
+        .nf {
+            min-height: calc(100vh - 140px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 48px 24px;
         }
-        .legal-header a {
-            font-family: var(--font-mono);
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-decoration: none;
-            letter-spacing: 0.3px;
+        .nf-card {
+            width: 100%; max-width: 560px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+            box-shadow: 0 0 60px rgba(248, 81, 73, 0.07);
+            padding: 28px 28px 24px;
+            animation: nf-in .5s ease-out both;
         }
-        .legal-header a:hover { color: var(--accent-green); }
-        .legal-content {
-            max-width: 740px;
-            margin: 48px auto;
-            padding: 0 24px;
-        }
-        .legal-nav {
-            display: flex;
-            gap: 24px;
-            margin-bottom: 48px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 16px;
-        }
-        .legal-nav a {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-decoration: none;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .legal-nav a:hover { color: var(--accent-green); }
-        .legal-section { margin-bottom: 56px; }
-        .legal-section h1 {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-        .legal-section .effective {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-            margin-bottom: 28px;
-        }
-        .legal-section h2 {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 28px 0 10px;
-            font-family: var(--font-mono);
-        }
-        .legal-section p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 12px;
-        }
-        .legal-section a {
-            color: var(--accent-blue);
-            text-decoration: none;
-        }
-        .legal-section a:hover { text-decoration: underline; }
+        @keyframes nf-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .nf-top { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+        .nf-tag { color: var(--accent-red); border: 1px solid rgba(248, 81, 73, 0.4); background: rgba(248, 81, 73, 0.08); border-radius: 4px; padding: 2px 7px; }
+        .nf-motion { margin: 22px 0 6px; font-size: 22px; font-weight: 600; line-height: 1.3; color: var(--text-primary); }
+        .nf-sub { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px; }
+        .nf-tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+        .nf-tally div { border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 4px 8px; }
+        .nf-tally b { display: block; font-size: 28px; font-weight: 600; line-height: 1.1; color: var(--text-muted); }
+        .nf-tally span { display: block; margin-top: 4px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+        .nf-tally .nf-nv { border-color: rgba(210, 153, 34, 0.45); }
+        .nf-tally .nf-nv b { color: var(--accent-amber); }
+        .nf-bar { height: 6px; border-radius: 3px; margin: 14px 0 6px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .nf-bar i { display: block; height: 100%; width: 100%; background: repeating-linear-gradient(135deg, rgba(210,153,34,0.55) 0 6px, rgba(210,153,34,0.2) 6px 12px); }
+        .nf-result { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-red); text-align: right; }
+        .nf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+        .nf-btn { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent); border-radius: 6px; padding: 8px 14px; }
+        .nf-btn:hover, .nf-btn:focus-visible { color: var(--text-primary); background: rgba(255,255,255,0.08); border-color: var(--text-muted); }
+        .nf-report { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+        .nf-report a { color: var(--accent-blue); text-decoration: none; }
+        .nf-report a:hover { text-decoration: underline; }
+        @media (prefers-reduced-motion: reduce) { .nf-card { animation: none; } }
+        @media (max-width: 480px) { .nf-tally b { font-size: 22px; } .nf-motion { font-size: 19px; } }
     </style>
 </head>
 <body>
-    <header class="legal-header">
-        <a href="https://house-floor.evanhollander.org">&larr; Monitoring the House Floor</a>
-    </header>
-
-    <div class="legal-content">
-        <section class="legal-section" id="not-found">
-            <h1>Page not found</h1>
-            <p class="effective">Error 404</p>
-
-            <h2>No page at this address</h2>
-            <p>This site has no page at this address. The address may be mistyped, or the page may have moved.</p>
-
-            <h2>Where to go</h2>
-            <p><a href="https://house-floor.evanhollander.org">Monitoring the House Floor</a> or <a href="https://senate-floor.evanhollander.org">Monitoring the Senate Floor</a>. If a link on this site brought you here, <a href="https://house-floor.evanhollander.org/?report=error">report an error</a>.</p>
-        </section>
-    </div>
+    <main class="nf">
+        <div class="nf-card">
+            <div class="nf-top"><span class="nf-tag">Error 404</span><span>Roll call 404</span></div>
+            <h1 class="nf-motion">On the motion to find this page</h1>
+            <p class="nf-sub">The chair does not recognize an address like this one. It may be mistyped, or the page may have moved.</p>
+            <div class="nf-tally" role="group" aria-label="Vote tally: no yeas, no present, no nays, one not voting">
+                <div><b>0</b><span>Yea</span></div>
+                <div><b>0</b><span>Present</span></div>
+                <div><b>0</b><span>Nay</span></div>
+                <div class="nf-nv"><b>1</b><span>Not voting</span></div>
+            </div>
+            <div class="nf-bar" aria-hidden="true"><i></i></div>
+            <div class="nf-result">Motion failed. Page not found</div>
+            <div class="nf-actions">
+                <a class="nf-btn" href="https://house-floor.evanhollander.org">The House floor</a>
+                <a class="nf-btn" href="https://senate-floor.evanhollander.org">The Senate floor</a>
+            </div>
+            <p class="nf-report">Followed a link from this site? <a href="https://house-floor.evanhollander.org/?report=error">Report an error</a>.</p>
+        </div>
+    </main>
 
     <footer class="site-footer">
         <div class="site-footer-primary">
