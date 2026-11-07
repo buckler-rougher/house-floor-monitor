@@ -4879,7 +4879,7 @@ function openBillModal(billId, opts = {}) {
     const bsk = (w, h = 12) => `<span class="bsk" style="width:${w};height:${h}px"></span>`;
     const pendingHtml = `<div class="bill-modal-pending" role="status" aria-live="polite" aria-label="Loading details from Congress.gov">
         <div class="bill-modal-section"><div class="bill-modal-section-label">SPONSOR</div><div class="absentee-member" style="padding:0;border:none;"><div class="absentee-photo-wrap" style="width:36px;height:36px;border-radius:8px;flex-shrink:0;"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div></div><div class="absentee-meta">${bsk('9em', 14)}</div></div></div>
-        <div class="bill-modal-section"><div class="bill-modal-section-label">SUPPORT</div>${bsk('100%', 10)}</div>
+        <div class="bill-modal-section"><div class="bill-modal-section-label">SUPPORT</div><span class="bsk bsk-support"></span></div>
         <div class="bill-modal-section"><div class="bill-modal-section-label">COMMITTEE</div>${bsk('13em', 34)}</div>
         <div class="bill-modal-pending-note">Loading from Congress.gov. This can take a while when it is busy.</div>
     </div>`;
