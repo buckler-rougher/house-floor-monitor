@@ -1065,7 +1065,7 @@ async function openSenateBillModal(billId, trigger) {
     };
     if (hit) paint(hit);
     else {
-        overlay.innerHTML = billModalSkeleton(billId);
+        overlay.innerHTML = RemoteBill.skeleton(billId, undefined, REMOTE_BILL.placeholder);
         overlay.querySelector('#bill-modal-close')?.addEventListener('click', closeSenateBillModal);
     }
     document.addEventListener('keydown', onSenateBillModalKey);
