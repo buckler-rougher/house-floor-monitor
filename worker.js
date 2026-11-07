@@ -234,6 +234,8 @@ let CURRENT_CONGRESS = computeCurrentCongress();
 // Entries never auto-expire so we always have a previous value to compare against.
 // Freshness is controlled by the ttlSeconds parameter inside kvCache, not by this TTL.
 const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
+const KV_AT_STAMP = /^\{"at":\d+,/;
+const KV_STAMP_REWRITE_MS = 3 * 3600_000;
 let _lastUrlKept = null;   // the live-stream address last written to (or found in) KV by this isolate
 // Resolved per-request from env secrets (set via `wrangler secret put`)
 let _congressApiKey = '';
@@ -1391,7 +1393,7 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
   if (mem) return new Response(mem, { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${maxAge}` } });
 
   // 2. KV — skip if kvFreshTtl=0
-  let prevBody = null;
+  let prevBody = null, prevStoredAt = 0;
   if (kvFreshTtl > 0 && env?.HLS_CACHE) {
     try {
       const raw = await env.HLS_CACHE.get(key);
@@ -1406,6 +1408,7 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
           }
         } catch {}
         prevBody = body; // saved for post-fetch comparison
+        prevStoredAt = age === Infinity ? 0 : now - age;
         const freshMs = freshFor(body, kvFreshMs);
         if (age < freshMs) {
           // Still fresh per KV freshness window — serve, warm in-memory
@@ -1455,7 +1458,11 @@ async function kvCache(env, key, ttlSeconds, fn, kvFreshTtl = ttlSeconds, opts =
       const noStore = response.headers.get(KV_NO_STORE_HEADER) === '1';
       if (!noStore) _mSet(key, body, freshFor(body, ttlMs));   // a degraded answer is not kept in this isolate's memory either
       if (noStore) console.warn(`[house-floor] kvCache: not persisting degraded payload for key=${key}`);
-      if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody) {
+      // Many answers lead with {"at": Date.now(), ...}. That stamp differs on every fetch, so each refresh looked like a change and
+      // cost a KV write (the free tier allows 1,000 a day, and a board left open refreshed a dozen of these every few minutes).
+      // A body that differs only by that stamp is the same data: it is rewritten only when the stored copy is hours old, so the stamp stays honest.
+      const sameData = prevBody !== null && body.replace(KV_AT_STAMP, '{') === prevBody.replace(KV_AT_STAMP, '{');
+      if (!noStore && kvFreshTtl > 0 && env?.HLS_CACHE && body !== prevBody && (!sameData || now - prevStoredAt > KV_STAMP_REWRITE_MS)) {
         // Write only if content changed — stable data may never write again after first fetch
         console.log(`[KV-WRITE] key=${key} prevNull=${prevBody===null} bodyLen=${body.length}`);
         await env.HLS_CACHE.put(key, JSON.stringify({ body, cachedAt: now }), { expirationTtl: KV_STORAGE_TTL });
