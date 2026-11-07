@@ -4742,7 +4742,16 @@ function maybeOpenDeepLinkedBill() {
     // on the next updateBillsDisplay.
 }
 
-function openBillModal(billId) {
+// Fill what a week's bill lacks from Congress.gov's answer for it (lib/remote-bill.js): only the gaps, so what the House's own list says is never overwritten.
+function applyRemoteDetails(bill, r) {
+    const empty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
+    for (const k of ['sponsor', 'support', 'cosponsorCount', 'committees', 'committeeReport', 'committeeReportDate', 'committeeReportUrl', 'committeeReportCitation', 'policyArea', 'summary',
+        'textVersionUrl', 'textVersionType', 'textVersionDate', 'cboCostEstimateUrl', 'cboCostEstimateTitle', 'sapUrl', 'ruleUrl', 'ruleTitle']) {
+        if (empty(bill[k]) && !empty(r[k])) bill[k] = r[k];
+    }
+}
+
+function openBillModal(billId, opts = {}) {
     let bill = billDataMap.get(billId);
     // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
     if (!bill && /H\.?\s*Res\./i.test(billId)) {
@@ -4760,6 +4769,26 @@ function openBillModal(billId) {
         // Not in this week's business: the same modal from Congress.gov's record (lib/remote-bill.js), the one the Senate board opens for every bill
         openRemoteBillModal(billId);
         return;
+    }
+
+    // The sponsor, summary and committees normally arrive with the week's list, but that call waits on Congress.gov and can run long or fail. A modal that finds none of them asks for
+    // this one bill itself (the answer is kept, and one request however many ask), says it is waiting, and draws the details when they arrive; if Congress.gov does not answer, it says
+    // so and offers "Try again".
+    const API_BASE = 'https://api.evanhollander.org/house-floor/api';
+    const hasDetails = (b) => !!(b.sponsor || b.summary || (b.committees && b.committees.length));
+    let detailsState = null;
+    if (!hasDetails(bill)) {
+        const hit = RemoteBill.cached(bill.id);
+        if (hit && !hit.error) applyRemoteDetails(bill, hit.bill);
+        else if (hit && hit.error) detailsState = 'failed';
+        else {
+            detailsState = 'loading';
+            RemoteBill.fetch(bill.id, API_BASE).then((res) => {
+                if (res.bill) applyRemoteDetails(bill, res.bill);
+                const ov = document.getElementById('bill-modal-overlay');
+                if (ov && !ov.hidden && !ov.dataset.closing && ov.dataset.billId === bill.id) openBillModal(billId, { refresh: true });
+            });
+        }
     }
 
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
@@ -4793,10 +4822,10 @@ function openBillModal(billId) {
     // The sections below are lib/bill-sections.js, shared with the Senate modal.
     const sp = bill.sponsor;
     const sponsorHtml = BillSections.sponsor(sp ? {
-        name: `${sp.firstName} ${sp.lastName}`,
+        name: sp.name || `${sp.firstName} ${sp.lastName}`,
         party: sp.party,
         loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
-        photoUrl: `https://bioguide.congress.gov/photo/${sp.bioguideId}.jpg`,
+        photoUrl: (sp.bioguideId || sp.bioguide) ? `https://bioguide.congress.gov/photo/${sp.bioguideId || sp.bioguide}.jpg` : '',
         placeholder: MEMBER_PHOTO_PLACEHOLDER,
     } : {});
 
@@ -4805,7 +4834,7 @@ function openBillModal(billId) {
         ...(bill.sponsor ? [bill.sponsor] : []),
         ...(bill.cosponsors || []),
     ];
-    const cosponsorsHtml = BillSections.support({
+    const cosponsorsHtml = (bill.support && !bill.cosponsors) ? BillSections.support({ ...bill.support, cosponsorCount: bill.cosponsorCount }) : BillSections.support({
         D: allSupporters.filter(m => m.party === 'D').length,
         R: allSupporters.filter(m => m.party === 'R').length,
         I: allSupporters.filter(m => m.party !== 'R' && m.party !== 'D').length,
@@ -4834,6 +4863,12 @@ function openBillModal(billId) {
         overlay.addEventListener('click', e => { if (e.target === overlay) closeBillModal(); });
     }
 
+    const detailsStateHtml = detailsState === 'loading'
+        ? '<div class="bill-modal-details-state" role="status" aria-live="polite"><div class="loading-indicator" aria-hidden="true"><i></i><i></i><i></i></div><span>Loading details from Congress.gov. This can take a while when it is busy.</span></div>'
+        : detailsState === 'failed'
+            ? `<div class="bill-modal-details-state is-failed" role="status"><span>${SourceError.text('details', 'congress')}</span><button class="bill-retry" type="button">Try again</button></div>`
+            : '';
+
     const modalRule = bill.procedure === 'rule' ? specialRulesMap.get(normalizeBillIdForRules(bill.id)) : null;
     // Fall back to governingHres from the schedule XML when specialRulesMap doesn't have a match
     // (e.g. the H.Res fell outside the top-50 Congress.gov results or the rules endpoint is stale).
@@ -4857,6 +4892,8 @@ function openBillModal(billId) {
     if (rulesSlug) overlay.classList.add('has-amendments');
     else overlay.classList.remove('has-amendments');
 
+    overlay.dataset.billId = bill.id;
+    if (opts.refresh) { overlay.classList.add('is-refresh'); requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.remove('is-refresh'))); }   // the same modal, filled in: no second entrance
     overlay.innerHTML = `
         ${rulesSlug ? `
         <div class="bill-panel-nav" id="bill-panel-nav">
@@ -4878,6 +4915,7 @@ function openBillModal(billId) {
                 <h2 class="bill-modal-title">${escapeHtml(bill.title)}</h2>
             </div>
             <div class="bill-modal-sections">
+                ${detailsStateHtml}
                 ${sponsorHtml}
                 ${cosponsorsHtml}
                 ${committeeHtml}
@@ -4945,14 +4983,15 @@ function openBillModal(billId) {
         </div>` : ''}
     `;
     overlay.hidden = false;
-    _billModalTrigger = document.activeElement;
+    if (!opts.refresh) _billModalTrigger = document.activeElement;
     // Deep link: reflect the open bill in the URL so it's shareable.
     setBillUrlParam(billSlug(billId));
     const closeBtn = document.getElementById('bill-modal-close');
     closeBtn.addEventListener('click', closeBillModal);
-    document.addEventListener('keydown', onBillModalKey);
+    if (!opts.refresh) document.addEventListener('keydown', onBillModalKey);
     const modal = document.getElementById('bill-main-panel');
-    if (modal) { _billModalTrapCleanup = trapFocus(overlay); closeBtn.focus(); }
+    if (modal && !opts.refresh) { _billModalTrapCleanup = trapFocus(overlay); closeBtn.focus(); }
+    overlay.querySelector('.bill-retry')?.addEventListener('click', () => { RemoteBill.forget(bill.id); openBillModal(billId, { refresh: true }); });
 
     // Copy-link button — copies the current (deep-linked) URL.
     BillSections.wireCopyLink(overlay);
@@ -5219,6 +5258,7 @@ async function openRemoteBillModal(billId, trigger) {
     overlay.classList.remove('has-amendments');
     overlay.hidden = false;
     delete overlay.dataset.closing;
+    delete overlay.dataset.billId;   // a week's-bill modal still waiting for its details must not draw over this one
     const API = 'https://api.evanhollander.org/house-floor/api';
     const opts = { linkClass: 'rule', photoUrlFor: buildBioguidePhotoUrl, placeholder: MEMBER_PHOTO_PLACEHOLDER, formatDate: (d) => formatDate(d) };
     const wire = () => {

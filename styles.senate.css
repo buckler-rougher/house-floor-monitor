@@ -3821,6 +3821,7 @@ font-family: var(--font-mono);
   .bill-modal-overlay:not([hidden]) .bill-modal {
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
+  .bill-modal-overlay.is-refresh:not([hidden]) .bill-modal { animation: none; }
   @media (prefers-reduced-motion: reduce) {
     .bill-modal-overlay:not([hidden]), .dp-modal-overlay, .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
   }
