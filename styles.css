@@ -5973,11 +5973,11 @@ font-family: var(--font-mono);
 
 .bill-modal-top {
     flex-shrink: 0;
-    padding: var(--sp-20) var(--sp-24) var(--sp-16);
+    padding: var(--sp-20) var(--sp-24) var(--sp-8);
 }
 
 .bill-modal-sections {
-    padding: var(--sp-8) var(--sp-24) var(--sp-4);
+    padding: var(--sp-4) var(--sp-24) var(--sp-4);
 }
 
 /* Outer scroll safety net: when the NON-summary content (e.g. a very long rule
@@ -5998,7 +5998,7 @@ font-family: var(--font-mono);
     /* its own height, no more, and less when the window is short: everything else in the modal (the sponsor, the committees, the latest action, the resources) stays
        on screen and the summary scrolls inside its box, to as little as three lines */
     flex: 0 1 auto;
-    min-height: 7rem;
+    min-height: 10rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -6057,6 +6057,7 @@ font-family: var(--font-mono);
     margin-top: -3px;
 }
 
+.bill-modal-header .bill-modal-badge.policy { padding-left: 0; padding-right: 0; }   /* the subject has no box of its own, so no inset: it lines up with the ID and the title */
 .bill-modal-badge.scheduled,
 .bill-modal-badge.pending {
     background: rgba(100, 116, 139, 0.15);
@@ -6099,7 +6100,7 @@ font-family: var(--font-mono);
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1.4;
-    margin: 0 0 var(--sp-14);
+    margin: 0 0 var(--sp-6);
 }
 
 .bill-modal-section {
@@ -10646,11 +10647,19 @@ body.all-mode .vote-header {
     #suggest-fab { display: none; }
     .suggest-drawer {
         top: auto; right: 0; left: 0; bottom: 0; width: 100%;
-        max-height: 85vh; border-radius: 12px 12px 0 0;
+        height: min(86vh, 640px); height: min(86dvh, 640px);   /* one height for both kinds, so switching between them does not make the sheet jump */
+        border-radius: 12px 12px 0 0;
         border-left: none; border-top: 1px solid var(--border-color);
         transform: translateY(100%);
     }
     .suggest-drawer.open { transform: translateY(0); }
+    .suggest-form { padding: var(--sp-16) var(--sp-16) calc(var(--sp-16) + env(safe-area-inset-bottom)); overscroll-behavior: contain; }
+    /* the two kinds fill the width as two equal halves */
+    .suggest-kind { align-self: stretch; display: flex; }
+    .suggest-kind .bills-sort-btn { flex: 1 1 0; text-align: center; justify-content: center; }
+    /* Send stays in reach while the fields scroll under it */
+    .suggest-submit { position: sticky; bottom: 0; padding: 12px 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-green) 30%, transparent), 0 0 0 var(--sp-8) var(--bg-card), 0 calc(var(--sp-16) * -1) var(--sp-16) var(--bg-card); }
+    .suggest-textarea { min-height: 96px; }
 }
 
 
@@ -10881,7 +10890,8 @@ body.all-mode .vote-header {
 .lead-card.ind { --lead-color: var(--party-i); }
 .lead-card.none { --lead-color: var(--border-color); }
 .lead-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 32%; corner-shape: squircle; overflow: hidden; background: var(--bg-card-hover, rgba(255, 255, 255, 0.06)); box-shadow: 0 0 0 2px var(--lead-color); }
-.lead-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 0.2s; display: block; }
+.lead-photo-placeholder { position: absolute; inset: 0; display: flex; }
+.lead-photo img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 0.2s; display: block; }
 .lead-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .lead-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lead-title { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
