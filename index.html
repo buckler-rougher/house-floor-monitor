@@ -4,21 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring the House Floor</title>
-    <meta name="description" content="Real-time US House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta name="description" content="Live US House floor: video, current votes and roll call tallies, bills on the floor, and the Clerk's record, from public sources.">
     <meta name="theme-color" content="#0d1117">
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://house-floor.evanhollander.org">
     <meta property="og:title" content="Monitoring the House Floor">
-    <meta property="og:description" content="Real-time US House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta property="og:description" content="Live US House floor: video, current votes and roll call tallies, bills on the floor, and the Clerk's record, from public sources.">
     <meta property="og:image" content="https://house-floor.evanhollander.org/house-social.webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Monitoring the House Floor","url":"https://house-floor.evanhollander.org/","description":"Live US House floor: video, current votes and roll call tallies, bills on the floor, and the Clerk's record, from public sources.","inLanguage":"en-US","publisher":{"@type":"Person","name":"Evan M. Hollander"}}</script>
     <link rel="canonical" href="https://house-floor.evanhollander.org">
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Monitoring the House Floor">
-    <meta name="twitter:description" content="Real-time US House floor monitoring — live video feed, vote tallies, bills on the floor, member status, and congressional news.">
+    <meta name="twitter:description" content="Live US House floor: video, current votes and roll call tallies, bills on the floor, and the Clerk's record, from public sources.">
     <meta name="twitter:image" content="https://house-floor.evanhollander.org/house-social.webp">
     <!-- Preload the mono face: it is used by almost every label on the page, so
          discovering it only after the stylesheet parses costs a visible reflow. -->
@@ -1259,7 +1260,7 @@
                     </div>
                 </div>
                 <div class="vote-header">
-                    <h1 class="vote-title" id="vote-title">Loading...</h1>
+                    <h2 class="vote-title" id="vote-title">Loading...</h2>
                     <button class="vote-bill-btn" id="vote-bill-btn" style="display:none" type="button">VIEW BILL</button>
                 </div>
                 <div class="vote-counts-row" aria-live="polite" aria-atomic="true" aria-label="Current vote tallies">
