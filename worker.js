@@ -234,6 +234,7 @@ let CURRENT_CONGRESS = computeCurrentCongress();
 // Entries never auto-expire so we always have a previous value to compare against.
 // Freshness is controlled by the ttlSeconds parameter inside kvCache, not by this TTL.
 const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
+let _lastUrlKept = null;   // the live-stream address last written to (or found in) KV by this isolate
 // Resolved per-request from env secrets (set via `wrangler secret put`)
 let _congressApiKey = '';
 let _domewatchApiKey = '';
@@ -5250,9 +5251,16 @@ async function handleHlsUrl(env) {
         let isLive = result.isLiveByFlag;
         if (isLive === null) isLive = await checkManifestLiveness(result.url) ?? false;
 
-        if (env?.HLS_CACHE) {
-          console.log(`[KV-WRITE] key=last_url`);
-          try { await env.HLS_CACHE.put('last_url', result.url, { expirationTtl: 7 * 24 * 3600 }); } catch (_) {}
+        // The board asks every twenty seconds while it is open, and the address changes a few times a day at most:
+        // write only when it differs from the copy kept, so an open tab is reads and not a thousand writes a day.
+        if (env?.HLS_CACHE && result.url !== _lastUrlKept) {
+          try {
+            if ((await env.HLS_CACHE.get('last_url')) !== result.url) {
+              console.log(`[KV-WRITE] key=last_url`);
+              await env.HLS_CACHE.put('last_url', result.url, { expirationTtl: 7 * 24 * 3600 });
+            }
+            _lastUrlKept = result.url;
+          } catch (_) {}
         }
         return reply(JSON.stringify({ url: result.url, isLive }), 20_000, 20);
       }
@@ -7054,7 +7062,7 @@ async function handleSourceStatus(env) {
     return new Response(JSON.stringify({ at: Date.now(), sources }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
     });
-  });
+  }, 0);   // memory only: the answer carries response times, so it differs every run and would be a KV write every ten minutes
 }
 
 async function checkCongressApiHealth() {
