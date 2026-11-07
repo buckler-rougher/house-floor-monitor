@@ -9768,6 +9768,12 @@ body.all-mode .vote-header {
 .suggest-consent { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: var(--sp-10); line-height: 1.5; }
 .suggest-privacy-link { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
 .suggest-privacy-link:hover { color: var(--accent-blue); }
+
+.suggest-kind { align-self: flex-start; margin-bottom: var(--sp-6); }
+.suggest-fields { display: flex; flex-direction: column; gap: var(--sp-6); }
+.suggest-fields[hidden] { display: none; }
+.suggest-select { cursor: pointer; }
+.suggest-said { font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.5; }
 .suggest-submit {
     position: relative;
     margin-top: var(--sp-16);
@@ -11395,14 +11401,14 @@ html.ai-off .ai-block:not(.is-plain) { display: none !important; }
 .ai-block.is-plain .ai-off-btn { display: none; }
 button.site-footer-license { font-size: var(--fs-base); }
 
-.site-footer-col > .site-footer-license.ai-toggle { margin: var(--sp-6) 0 0 calc(-1 * (var(--sp-10) + 1px)); }
+.site-footer-col > .site-footer-license.ai-toggle, .site-footer-col > .site-footer-license.report-toggle { margin: var(--sp-6) 0 0 calc(-1 * (var(--sp-10) + 1px)); }
 
 html.ai-off .bill-link-group > .bill-modal-link {
     border-top-right-radius: var(--radius-6);
     border-bottom-right-radius: var(--radius-6);
 }
 
-.ai-off-btn, .committee-more, .site-footer-license.ai-toggle {
+.ai-off-btn, .committee-more, .site-footer-license.ai-toggle, .site-footer-license.report-toggle {
     display: inline-flex;
     align-items: center;
     gap: var(--sp-6);
@@ -11415,7 +11421,8 @@ html.ai-off .bill-link-group > .bill-modal-link {
 }
 .ai-off-btn:hover, .ai-off-btn:focus-visible,
 .committee-more:hover, .committee-more:focus-visible,
-.site-footer-license.ai-toggle:hover, .site-footer-license.ai-toggle:focus-visible {
+.site-footer-license.ai-toggle:hover, .site-footer-license.ai-toggle:focus-visible,
+.site-footer-license.report-toggle:hover, .site-footer-license.report-toggle:focus-visible {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--text-muted);

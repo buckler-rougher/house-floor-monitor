@@ -178,15 +178,27 @@
 <div id="suggest-overlay" class="suggest-overlay" style="display:none"></div>
 <div id="suggest-drawer" class="suggest-drawer" aria-hidden="true" role="dialog" aria-label="Suggestion box">
   <div class="suggest-drawer-header">
-    <span class="suggest-drawer-title">SUGGESTION BOX</span>
+    <span class="suggest-drawer-title" id="suggest-title">SUGGESTION BOX</span>
     <button class="suggest-drawer-close" id="suggest-close" aria-label="Close">✕</button>
   </div>
   <form id="suggest-form" class="suggest-form" novalidate>
+    <div class="bills-sort-switcher suggest-kind" id="suggest-kind" role="group" aria-label="What you are sending">
+      <button type="button" class="bills-sort-btn active" data-kind="suggestion" aria-pressed="true">Suggestion</button>
+      <button type="button" class="bills-sort-btn" data-kind="error" aria-pressed="false">Report an error</button>
+    </div>
     <input type="text" name="website" class="suggest-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
     <input type="hidden" name="ref" value="house-floor" />
     <input type="hidden" name="subject" value="House Floor Monitor — Suggestion" />
     <input type="hidden" name="name" value="Anonymous" />
-    <label class="suggest-label" for="suggest-message">MESSAGE <span class="suggest-req">*</span></label>
+    <div class="suggest-fields" id="suggest-error-fields" hidden>
+      <label class="suggest-label" for="suggest-panel">PANEL</label>
+      <select id="suggest-panel" class="suggest-input suggest-select"></select>
+      <div id="suggest-said-wrap" class="suggest-fields" hidden>
+        <label class="suggest-label" for="suggest-said">WHAT IT SAID <span class="suggest-opt">(sent with your report; edit it if it is not what you saw)</span></label>
+        <textarea id="suggest-said" class="suggest-textarea suggest-said" rows="5" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <label class="suggest-label" for="suggest-message"><span id="suggest-message-label">MESSAGE</span> <span class="suggest-req">*</span></label>
     <textarea id="suggest-message" name="message" class="suggest-textarea" rows="5" placeholder="Ideas, bugs, data questions…" required></textarea>
     <label class="suggest-label" for="suggest-email">EMAIL <span class="suggest-opt">(optional, for follow-up)</span></label>
     <input type="email" id="suggest-email" name="email" class="suggest-input" placeholder="you@example.com" autocomplete="email" />
@@ -211,6 +223,7 @@
       <li>Your message</li>
       <li>Your email address, if provided</li>
       <li>Your IP address and the time of submission</li>
+      <li>For an error report, the panel you chose, the text it showed on your screen, and the page address</li>
     </ul>
     <p class="suggest-data-p">This information is used solely to read and respond to your suggestion. It is not stored in a database, not shared with third parties, and not used for marketing.</p>
     <p class="suggest-data-p">For more, see the <a href="/legal.html#privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
@@ -1905,6 +1918,7 @@
             <nav class="site-footer-col" aria-label="The board">
                 <span class="site-footer-head">The board</span>
                 <a class="site-footer-license" href="/legal">Legal</a>
+                <a class="site-footer-license" href="/accessibility">Accessibility</a>
                 <a class="site-footer-license" href="/demo">Demo</a>
                 <a class="site-footer-license" href="https://senate-floor.evanhollander.org">Senate board (beta)</a>
                 <button class="site-footer-license ai-toggle" type="button" data-ai-toggle>Turn off AI summaries</button>
@@ -1914,6 +1928,7 @@
                 <a class="site-footer-license" href="https://contact.evanhollander.org/?subject=Monitoring the House Floor" target="_blank" rel="noopener">Contact</a>
                 <a class="site-footer-license" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">Source code</a>
                 <a class="site-footer-license" href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener license">MIT License</a>
+                <button class="site-footer-license report-toggle" type="button" data-report-error>Report an error</button>
             </nav>
         </div>
     </footer>
@@ -1988,7 +2003,7 @@
     <script defer src="lib/airport-delays.js?v=20261017b"></script>
     <script defer src="lib/voting-calendar.js?v=20261022a"></script>
     <script defer src="lib/animations.js?v=20260926a"></script>
-    <script defer src="lib/suggest-box.js?v=20261022a"></script>
+    <script defer src="lib/suggest-box.js?v=20261106a"></script>
     <script defer src="lib/floor-feed.js?v=20261017b"></script>
     <script src="lib/replay-lazy.js?v=20261022k"></script>
     <script defer src="lib/speaker-meter.js?v=20261002a"></script>

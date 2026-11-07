@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility — Monitoring the House Floor</title>
+    <!-- The generated stylesheet with every rule and no comments (a third the download of styles.css), not a
+         per-chamber subset: this page is served on both hostnames. Bump the tag with the other pages
+         when styles.css changes (npm run css). -->
+    <link rel="stylesheet" href="styles.house.css?v=20261104a">
+    <!-- Bare names on purpose. This page is served on both hostnames, and
+         functions/_middleware.js resolves these to the asking chamber's icons,
+         so it shows the Senate mark on the Senate host. Prefixing them would
+         hardcode the House's. -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        .legal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+        }
+        .legal-header a {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+        .legal-header a:hover { color: var(--accent-green); }
+        .legal-content {
+            max-width: 740px;
+            margin: 48px auto;
+            padding: 0 24px;
+        }
+        .legal-nav {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .legal-nav a {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .legal-nav a:hover { color: var(--accent-green); }
+        .legal-section { margin-bottom: 56px; }
+        .legal-section h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .legal-section .effective {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-bottom: 28px;
+        }
+        .legal-section h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 28px 0 10px;
+            font-family: var(--font-mono);
+        }
+        .legal-section p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .legal-section a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        .legal-section a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <a href="/">&larr; Monitoring the House Floor</a>
+    </header>
+
+    <div class="legal-content">
+        <section class="legal-section" id="accessibility">
+            <h1>Accessibility</h1>
+            <p class="effective">Effective November 6, 2026</p>
+
+            <h2>Standard</h2>
+            <p>We aim for the <a class="ext" href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener">Web Content Accessibility Guidelines</a> 2.2, level AA. No third party has audited this site, and we do not claim that it conforms.</p>
+
+            <h2>Keyboard</h2>
+            <p>Every control can be reached and used with a keyboard alone. Dialogs, including bill details, vote recommendations, the time machine, and the suggestion box, move focus inside when they open, keep Tab and Shift+Tab inside while they are open, and return focus to where you were when they close. Escape closes them.</p>
+
+            <h2>Screen readers</h2>
+            <p>Buttons, links, and status marks carry text labels. Panel symbols are decorative and are not read aloud. Changes to a vote's tallies are announced politely, without interrupting what you are reading.</p>
+
+            <h2>Motion</h2>
+            <p>Expanding lists, the time machine, and the contents list follow your device's reduced motion setting.</p>
+
+            <h2>Video and captions</h2>
+            <p>The floor video comes from the chambers. Captions are the chambers' own and are shown when the chamber provides them. We do not write or correct them.</p>
+
+            <h2>Known limitations</h2>
+            <p>The chamber map is a drawing, and the time machine's travel animation is purely visual. Most live updates other than vote tallies are not announced to screen readers. The site is dense, and its type is small at the default size.</p>
+
+            <h2>Feedback</h2>
+            <p>If something on this site is hard or impossible for you to use, <a href="/?report=accessibility">tell us</a>. Say what you were trying to do and what got in the way. We will look at it and write back if you leave an email address.</p>
+
+            <h2>Changes</h2>
+            <p>This statement may be updated from time to time. The effective date above reflects the most recent revision.</p>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        <div class="site-footer-primary">
+            <span class="site-footer-brand">Monitoring the House Floor</span>
+            <span class="site-footer-sep">&middot;</span>
+            <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
+        </div>
+    </footer>
+    <script defer src="lib/util.js?v=20261024a"></script>
+    <script defer src="lib/source-pop.js?v=20261024a"></script>
+    <script defer src="lib/display-style.js?v=20261024c"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
