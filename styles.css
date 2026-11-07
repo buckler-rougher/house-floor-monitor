@@ -11162,17 +11162,19 @@ html.replay-mode .weather-panel { display: none; }
 :has(.panel-skeleton) > .panel-header .panel-source[data-loading] > * { display: none; }
 :has(.panel-skeleton) > .panel-header .panel-source[data-loading]::before { content: attr(data-loading); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); }
 @media (prefers-reduced-motion: reduce) { .panel-skeleton > i::before, .panel-skeleton > i::after { animation: none; } }
-/* THE HEADER AT TABLET AND NARROW LAPTOP WIDTHS (641 to 1279px). The one-row desktop header needs about 1280px: below that the date and the "first votes" line wrapped and the 160px centered logo
-   sat on top of the weather and the clocks. Here it is two rows, as on a phone but roomier: the wordmark (one line) with the date, status and next-votes line under it, the logo ending
-   the row; then the weather, the clocks (digital) and the buttons, the buttons at the right. */
-@media (min-width: 641px) and (max-width: 1279px) {
-    .main-header { height: auto; flex-wrap: wrap; padding: var(--sp-10) var(--sp-24); gap: var(--sp-8) var(--sp-16); align-items: center; }
-    .header-logo-clip { position: static; transform: none; height: auto; width: auto; order: 2; overflow: visible; flex-shrink: 0; }
-    .header-logo { height: 48px; width: 48px; }
-    .header-left { max-width: none; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; }
-    .brand-nl { display: none; }
-    .date-info { flex-direction: row; align-items: center; flex-wrap: wrap; gap: var(--sp-4) var(--sp-12); }
-    .header-right { order: 3; width: 100%; gap: var(--sp-20); justify-content: flex-start; align-items: center; }
+/* THE HEADER BELOW 1280px (tablets and phones). The desktop header is one row and needs about 1280px; narrower, it keeps what makes it the site's: the live dot and the stacked
+   three-line wordmark, the date and status beside it, and the heartbeat logo at the right end of the same row (its central band, scaled with the logo). A second row has the weather,
+   the clocks, and the two buttons at the right: labelled on a tablet, icons only on a phone. */
+@media (max-width: 1279px) {
+    .main-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "left logo" "right right"; height: auto; padding: var(--sp-10) var(--sp-16); gap: var(--sp-8) var(--sp-12); align-items: center; }
+    .header-left { grid-area: left; max-width: none; min-width: 0; flex-direction: row; align-items: center; gap: var(--sp-14); }
+    .brand-nl { display: inline; }
+    .brand-text { font-size: var(--fs-lg); }
+    .date-info { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .today-date { font-size: var(--fs-md); }
+    .header-logo-clip { grid-area: logo; position: static; transform: none; width: 88px; height: 55px; overflow: hidden; display: flex; align-items: center; flex-shrink: 0; }
+    .header-logo { height: 88px; width: 88px; }
+    .header-right { grid-area: right; width: 100%; gap: var(--sp-16); justify-content: flex-start; align-items: center; }
     .weather-panel { width: 56px; height: 34px; margin-right: 0; padding: var(--sp-4); }
     .weather-temp { font-size: var(--fs-2xl); }
     .weather-condition { display: none; }
@@ -11183,6 +11185,21 @@ html.replay-mode .weather-panel { display: none; }
     .container { padding-top: calc(var(--header-h, 100px) + var(--sp-8)); }
     #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--header-h, 100px) + var(--section-gap)); }
 }
+@media (max-width: 640px) {
+    .clock-group .clock:last-child { display: none; }          /* no UTC on a phone */
+    #replay-btn, #suggest-fab { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; padding: 0; font-size: 0; }
+    #replay-btn::before { margin: 0; }
+    #suggest-fab { margin-left: 0; }
+    #suggest-fab::after { content: ''; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--suggest-icon) center / contain no-repeat; mask: var(--suggest-icon) center / contain no-repeat; }
+}
+@media (max-width: 400px) {
+    .header-left { gap: var(--sp-10); }
+    .brand-text { font-size: var(--fs-md); }
+    .today-date { font-size: var(--fs-sm); }
+    .header-logo-clip { width: 72px; height: 45px; }
+    .header-logo { height: 72px; width: 72px; }
+}
+:root { --suggest-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E"); }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────
