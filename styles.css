@@ -477,9 +477,13 @@ body {
 }
 
 .floor-status {
-    font-size: var(--fs-base);
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
+    margin-top: var(--sp-8);
+    font-size: var(--fs-5xl);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    text-wrap: balance;
     margin-left: 0;
     display: block;
     position: relative;
@@ -6765,17 +6769,19 @@ font-family: var(--font-mono);
     background: var(--bg-elevated);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-8);
-    padding: var(--sp-8) var(--sp-16);
+    padding: var(--sp-16);
     text-align: center;
 }
+.congress-info > br { display: none; }   /* the line breaks are now margins */
 
+/* the banner's hierarchy: the Congress line is small and quiet (it is the same for months), the floor's status is the headline, the day line and the countdown follow */
 .congress-text {
-    font-size: var(--fs-md);
+    font-size: var(--fs-sm);
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-muted);
     font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: var(--track-wide);
+    letter-spacing: var(--track-wider);
 }
 
 /* Committee of the Whole indicator — appears below floor-status in congress-info */
@@ -6814,9 +6820,9 @@ font-family: var(--font-mono);
     display: inline-flex;
     align-items: center;
     gap: var(--sp-6);
-    margin-top: 2px;
+    margin-top: var(--sp-8);
     font-family: var(--font-mono);
-    font-size: var(--fs-md);
+    font-size: var(--fs-lg);
     font-weight: 600;
     color: var(--accent-amber);
     letter-spacing: var(--track-wide);
@@ -11927,7 +11933,7 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
    for morning-hour debate, and whether there are postponed votes. Absent on a day with no calendar. */
 .calendar-line[hidden] { display: none; }
 .calendar-line {
-    margin-top: var(--sp-4);
+    margin-top: var(--sp-6);
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
     font-weight: 600;
