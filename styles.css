@@ -10521,6 +10521,7 @@ body.all-mode .vote-header {
 .suggest-fields { display: flex; flex-direction: column; gap: var(--sp-6); }
 .suggest-fields[hidden] { display: none; }
 .suggest-select { cursor: pointer; }
+.suggest-stamp { font-size: var(--fs-xs); font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .suggest-said { font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.5; }
 .suggest-submit {
     position: relative;
