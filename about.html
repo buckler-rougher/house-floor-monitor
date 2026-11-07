@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About — Monitoring the House Floor</title>
+    <!-- The generated stylesheet with every rule and no comments (a third the download of styles.css), not a
+         per-chamber subset: this page is served on both hostnames. Bump the tag with the other pages
+         when styles.css changes (npm run css). -->
+    <link rel="stylesheet" href="styles.house.css?v=20261106a">
+    <!-- Bare names on purpose. This page is served on both hostnames, and
+         functions/_middleware.js resolves these to the asking chamber's icons,
+         so it shows the Senate mark on the Senate host. Prefixing them would
+         hardcode the House's. -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        .legal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+        }
+        .legal-header a {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.3px;
+        }
+        .legal-header a:hover { color: var(--accent-green); }
+        .legal-content {
+            max-width: 740px;
+            margin: 48px auto;
+            padding: 0 24px;
+        }
+        .legal-nav {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .legal-nav a {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .legal-nav a:hover { color: var(--accent-green); }
+        .legal-section { margin-bottom: 56px; }
+        .legal-section h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .legal-section .effective {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            margin-bottom: 28px;
+        }
+        .legal-section h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 28px 0 10px;
+            font-family: var(--font-mono);
+        }
+        .legal-section p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .legal-section a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+        .legal-section a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <a href="/">&larr; Monitoring the House Floor</a>
+    </header>
+
+    <div class="legal-content">
+        <section class="legal-section" id="about">
+            <h1>About</h1>
+            <p class="effective">Effective November 6, 2026</p>
+
+            <h2>Who runs this site</h2>
+            <p>This site is an independent project by Evan M. Hollander. It follows what the US House of Representatives and the US Senate are doing, as it happens, in one place.</p>
+
+            <h2>Independence</h2>
+            <p>This site is not affiliated with, endorsed by, or operated by the US House of Representatives, the US Senate, or any government body.</p>
+
+            <h2>Sources</h2>
+            <p>This site shows information from public sources, and each panel names its source. The main ones are the Clerk of the House, the Senate, Congress.gov, the Democratic Whip, and the chambers' own video and captions. Where a panel summarizes a source with AI, it says so and names the document it summarizes. A reader can turn AI summaries off from the footer.</p>
+
+            <h2>Corrections</h2>
+            <p>If something on this site is wrong, <a href="/?report=error">report an error</a>. Choose the panel, and the report includes what the panel showed, the page, and the time. When a source itself is wrong, the panel shows what the source says.</p>
+
+            <h2>Contact</h2>
+            <p>To reach us for any other reason, use the <a class="ext" href="https://contact.evanhollander.org/?subject=Monitoring the House Floor" target="_blank" rel="noopener">contact form</a>.</p>
+
+            <h2>Source code</h2>
+            <p>The code for this site is public, under the <a class="ext" href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener license">MIT License</a>, at <a class="ext" href="https://github.com/buckler-rougher/house-floor-monitor" target="_blank" rel="noopener">GitHub</a>. See also the <a href="/legal">Legal</a> and <a href="/accessibility">Accessibility</a> pages.</p>
+        </section>
+    </div>
+
+    <footer class="site-footer">
+        <div class="site-footer-primary">
+            <span class="site-footer-brand">Monitoring the House Floor</span>
+            <span class="site-footer-sep">&middot;</span>
+            <span class="site-footer-copy">&copy; <span id="footer-year"></span> Evan M. Hollander</span>
+        </div>
+    </footer>
+    <script defer src="lib/util.js?v=20261024a"></script>
+    <script defer src="lib/source-pop.js?v=20261024a"></script>
+    <script defer src="lib/display-style.js?v=20261024c"></script>
+    <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
