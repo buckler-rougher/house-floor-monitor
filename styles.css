@@ -5133,7 +5133,7 @@ font-family: var(--font-mono);
 }
 /* THE close button of every modal and drawer: the ✕ of the AI explanations' popup, a little bigger (a 36px target, an 18px glyph), borderless and quiet until pointed at,
    when it brightens and takes a faint fill. Each container keeps its own place for it. */
-.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close {
+.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close, .welcome-close {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; padding: 0; margin: 0; flex-shrink: 0;
     background: none; border: 0; border-radius: var(--radius-8);
@@ -5141,20 +5141,45 @@ font-family: var(--font-mono);
     cursor: pointer; opacity: 0.6;
     transition: opacity var(--dur-150), background var(--dur-150), color var(--dur-150);
 }
-.info-popup-close:hover, .bill-modal-close:hover, .vrec-close-x:hover, .suggest-data-close:hover, .suggest-drawer-close:hover, .dp-modal-close:hover,
-.info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible {
+.info-popup-close:hover, .bill-modal-close:hover, .vrec-close-x:hover, .suggest-data-close:hover, .suggest-drawer-close:hover, .dp-modal-close:hover, .welcome-close:hover,
+.info-popup-close:focus-visible, .bill-modal-close:focus-visible, .vrec-close-x:focus-visible, .suggest-data-close:focus-visible, .suggest-drawer-close:focus-visible, .dp-modal-close:focus-visible, .welcome-close:focus-visible {
     opacity: 1; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); outline: none;
 }
-[data-quiet] .info-popup-close:focus-visible, [data-quiet] .dp-modal-close:focus-visible { opacity: 0.6; color: var(--text-muted); background: none; }   /* focused by a reload, not lit (QuietFocus in lib/util.js) */
+[data-quiet] .info-popup-close:focus-visible, [data-quiet] .dp-modal-close:focus-visible, .welcome-close:focus-visible { opacity: 0.6; color: var(--text-muted); background: none; }   /* focused by a reload, not lit (QuietFocus in lib/util.js) */
 /* The ✕ is drawn, not typed: a text glyph sits on its font's baseline and never lands in the middle of the square. Two 18px strokes crossed at the centre. */
-.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close { position: relative; font-size: 0; }
+.info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close, .suggest-drawer-close, .dp-modal-close, .welcome-close { position: relative; font-size: 0; }
 .info-popup-close::before, .info-popup-close::after, .bill-modal-close::before, .bill-modal-close::after, .vrec-close-x::before, .vrec-close-x::after,
-.suggest-data-close::before, .suggest-data-close::after, .suggest-drawer-close::before, .suggest-drawer-close::after, .dp-modal-close::before, .dp-modal-close::after {
+.suggest-data-close::before, .suggest-data-close::after, .suggest-drawer-close::before, .suggest-drawer-close::after, .dp-modal-close, .welcome-close::before, .dp-modal-close, .welcome-close::after {
     content: ''; position: absolute; left: 50%; top: 50%; width: 16px; height: 1.5px; margin: -0.75px 0 0 -8px; border-radius: 1px; background: currentColor;
     transform: rotate(45deg);
 }
-.info-popup-close::after, .bill-modal-close::after, .vrec-close-x::after, .suggest-data-close::after, .suggest-drawer-close::after, .dp-modal-close::after { transform: rotate(-45deg); }
+.info-popup-close::after, .bill-modal-close::after, .vrec-close-x::after, .suggest-data-close::after, .suggest-drawer-close::after, .dp-modal-close, .welcome-close::after { transform: rotate(-45deg); }
 .info-popup-close, .bill-modal-close, .vrec-close-x, .suggest-data-close { position: absolute; top: 10px; right: 12px; z-index: 20; }   /* above the content under it, or it cannot be clicked */
+.welcome-close { position: absolute; top: 10px; right: 12px; z-index: 2; }
+/* THE WELCOME: what the site is, for someone arriving for the first time. A dialog over the page (the suggestion drawer's data notice is its model), shut by its X, Escape, the
+   backdrop or "Start exploring", and then kept shut in this browser (lib/welcome.js). Hidden until the script decides it is a first visit. */
+.welcome-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: var(--sp-24); backdrop-filter: blur(2px); }
+.welcome-overlay[hidden] { display: none; }
+.welcome-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.65); }
+.welcome-card { position: relative; z-index: 1; width: 100%; max-width: 680px; max-height: 100%; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-12); box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); padding: var(--sp-24) var(--sp-24) var(--sp-20); text-align: left; }
+.welcome-head { padding-right: var(--sp-32); margin-bottom: var(--sp-20); }
+.welcome-to { font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-4); }
+.welcome-card .brand-nl { display: inline; }   /* the wordmark keeps its three lines here at every width, as the footer's does */
+.welcome-sub { font-size: var(--fs-lg); color: var(--text-secondary); line-height: 1.55; margin-top: var(--sp-8); }
+.welcome-points { display: grid; grid-template-columns: 1fr; gap: var(--sp-16); border-top: 1px solid var(--border-color); padding-top: var(--sp-16); }
+.welcome-pt { display: flex; gap: var(--sp-12); }
+.welcome-pt .welcome-ic { display: flex; flex: none; width: 20px; height: 20px; margin-top: 1px; padding: 0; }
+.welcome-pt .welcome-ic::before { width: 20px; height: 20px; }
+.welcome-pt:nth-child(1) .welcome-ic { color: var(--accent-green); }
+.welcome-pt:nth-child(2) .welcome-ic { color: var(--accent-blue); }
+.welcome-pt:nth-child(3) .welcome-ic { color: var(--accent-amber); }
+.welcome-h { font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-primary); margin-bottom: var(--sp-4); }
+.welcome-p { font-size: var(--fs-lg); line-height: 1.55; color: var(--text-secondary); }
+.welcome-p .info-btn { display: inline-block; vertical-align: middle; position: relative; top: -1px; margin: 0 2px; pointer-events: none; border-color: var(--text-muted); line-height: 13px; text-align: center; }
+.welcome-actions { display: flex; justify-content: flex-end; margin-top: var(--sp-20); border-top: 1px solid var(--border-color); padding-top: var(--sp-16); }
+.welcome-go { display: inline-flex; align-items: center; gap: var(--sp-8); padding: var(--sp-6) var(--sp-14); background: none; border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent); border-radius: var(--radius-6); color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
+.welcome-go:hover, .welcome-go:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.08); border-color: var(--text-muted); transition: background var(--dur-120), border-color var(--dur-120); }
+.panel-label[data-icon="rewind"] { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.6-5.9'/%3E%3Cpath d='M4 4v4.5h4.5'/%3E%3Cpath d='M12 8v4l2.8 1.8'/%3E%3C/svg%3E"); }
 .info-popup-title {
     font-family: var(--font-mono);
     font-size: var(--fs-md);
