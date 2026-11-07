@@ -3376,30 +3376,28 @@ async function handleSenateBill(env, billId) {
     // reported is among the OLDEST on it, so a short page loses it for any bill that has since had
     // floor days. The White House memo is looked up in the list the House modal already uses; its
     // failure costs the link, not the bill.
-    // The bill's own record is the slow call: the others answer in under a second while the record can take 40 seconds or never answer (measured 7 Nov 2026, four bills, three
-    // slow). So it gets one short try; if that fails, the copy kept from an earlier answer stands in, and failing that the answer goes out without it (the sponsor, the subject,
-    // the CBO link) and is marked partial. A slow try carries on in the background and is kept, so the next opening has it.
-    const recordKey = `bill-record-${CURRENT_CONGRESS}-${type}-${number}`;
-    const keepRecord = async (json) => { try { if (json?.bill && env?.HLS_CACHE) await env.HLS_CACHE.put(recordKey, JSON.stringify(json), { expirationTtl: 14 * 24 * 3600 }); } catch { /* the next opening asks again */ } };
-    const quick = callOnce('', 4000).then((j) => { keepRecord(j); return j; });
-    const recordP = quick.catch(async () => {
-      if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil(callOnce('', 40000).then(keepRecord).catch(() => {}));
-      try { const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(recordKey) : null; if (raw) return JSON.parse(raw); } catch { /* none kept */ }
+    // Any call to Congress.gov can run long (measured 7 Nov 2026: the bill's own record and, for other bills, every one of the calls, at 20 to 40 seconds or never), and the
+    // answer waits for the slowest. So every call gets one short try. One that fails carries on in the background and is kept, and the copy kept from an earlier answer stands
+    // in; failing that its section is left empty and the answer is marked partial (served, not kept, so the next opening asks again and finds what has arrived by then).
+    const partKey = (path) => `bill-part-${CURRENT_CONGRESS}-${type}-${number}-${path.replace(/[^a-z0-9]+/gi, '_') || 'record'}`;
+    const keepPart = async (path, json) => { try { if (json && env?.HLS_CACHE) await env.HLS_CACHE.put(partKey(path), JSON.stringify(json), { expirationTtl: 14 * 24 * 3600 }); } catch { /* the next opening asks again */ } };
+    const part = (path) => callOnce(path, 4500).then((j) => { keepPart(path, j); return j; }).catch(async () => {
+      if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil(callOnce(path, 40000).then((j) => keepPart(path, j)).catch(() => {}));
+      try { const raw = env?.HLS_CACHE ? await env.HLS_CACHE.get(partKey(path)) : null; if (raw) return JSON.parse(raw); } catch { /* none kept */ }
       degraded = true;
       return null;
     });
     const [record, summaries, cosponsors, committees, actions, sapRaw, textVersions, titles] = await Promise.all([
-      recordP, soft('/summaries?limit=5'), soft('/cosponsors?limit=250'), soft('/committees'),
-      soft('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), soft('/text?limit=20'), soft('/titles?limit=10'),
+      part(''), part('/summaries?limit=5'), part('/cosponsors?limit=250'), part('/committees'),
+      part('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), part('/text?limit=20'), part('/titles?limit=10'),
     ]);
     // More than 250 cosponsors: the rest, so the support bar counts them all.
-    const moreCo = await moreCosponsorPages(base, cosponsors, (path) => soft(path));
+    const moreCo = await moreCosponsorPages(base, cosponsors, (path) => part(path));
     const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
     // Without the record: the title from the titles list, the latest action from the actions list (newest first), and no sponsor.
     const partial = !record?.bill;
     const displayTitle = (titles?.titles || []).find((t) => /display/i.test(t.titleType || ''))?.title || (titles?.titles || [])[0]?.title || null;
     const bill = record?.bill || { title: displayTitle, latestAction: (actions?.actions || [])[0] || null };
-    if (partial && !bill.title && !(actions?.actions || []).length) throw new Error(`bill detail: no record for ${billId}`);
     const craRule = await fetchCraRule(bill?.title).catch(() => null);
     // The responses as received, for the source popover; the requests as made, without the key.
     const asked = (path, json) => json ? [{ request: `GET ${base}${path}${path.includes('?') ? '&' : '?'}format=json`, json }] : [];
@@ -3439,7 +3437,8 @@ async function handleSenateBill(env, billId) {
 
     return new Response(JSON.stringify({
       id: billId,
-      partial,
+      // something was slow and is missing (the sponsor, a section): the page asks again in a few seconds
+      partial: partial || degraded,
       title: bill.title || null,
       introduced: bill.introducedDate || null,
       policyArea: bill.policyArea?.name || null,
