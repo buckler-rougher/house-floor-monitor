@@ -2172,6 +2172,8 @@ body.tellers-mode .tellers-column { display: flex; }
   object-fit: cover;
 }
 
+.floor-feed-media[hidden] { display: none; }
+
 .floor-feed-video { cursor: pointer; }
 .floor-feed-overlay {
   position: absolute;
@@ -10489,6 +10491,48 @@ html.replay-mode .weather-panel { display: none; }
 
 @media (max-width: 640px) {
     .bills-sort-bar { flex-wrap: wrap; padding-inline: var(--sp-16); row-gap: var(--sp-8); }
+}
+
+@media (max-width: 640px) {
+
+    :root {
+        --fs-2xs: 0.625rem;
+        --fs-xs: 0.6875rem;
+        --fs-sm: 0.71875rem;
+        --fs-md: 0.75rem;
+        --fs-base: 0.8125rem;
+        --fs-lg: 0.875rem;
+    }
+
+    .brand-tooltip-anchor { padding: var(--sp-8) var(--sp-16) var(--sp-6); }
+    .brand-text { font-size: 10px; line-height: 1.25; }
+    .header-logo-clip { width: 88px; height: 55px; margin: var(--sp-4) 0; }
+    .header-logo { width: 88px; height: 88px; }
+
+    .main-header { grid-template-rows: auto auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
+        .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
+    html.header-compact .main-header .date-info, html.header-compact .main-header .weather-panel, html.header-compact .main-header .clock-group,
+    html.header-compact .main-header .header-actions, html.header-compact .main-header .next-votes { display: none; }
+
+    html.header-compact .brand-text { font-size: 9.5px; line-height: 1.2; }
+    html.header-compact .brand-tooltip-anchor { padding-block: var(--sp-10); }
+    html.header-compact .header-logo-clip { width: 76px; height: 48px; margin: var(--sp-4) 0; }
+    html.header-compact .header-logo { width: 76px; height: 76px; }
+
+    .container { padding-top: calc(var(--header-full-h, var(--header-h, 100px)) + var(--sp-8)); }
+
+    .bills-sort-btn { position: relative; }
+    .bills-sort-btn::before { content: ""; position: absolute; inset: -8px 0; }
+    .calendar-card-toggle::before { content: ""; position: absolute; inset: -8px; }
+}
+
+@media (max-width: 360px) {
+    .main-header { grid-template-columns: minmax(min-content, 1fr) max-content max-content 80px; }
+    .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-8); }
+    .main-header .header-actions { gap: 4px; padding: 4px; }
+    .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 32px; height: 32px; }
+    .today-date[data-short]::before, .weather-panel::before, .clock-label { letter-spacing: 0.04em; }
+    .session-text { letter-spacing: 0.02em; }
 }
 }
 
