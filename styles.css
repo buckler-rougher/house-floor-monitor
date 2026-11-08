@@ -5873,6 +5873,7 @@ font-family: var(--font-mono);
 @media (prefers-reduced-motion: reduce) {
     .bill-modal-overlay:not([hidden]),
     .dp-modal-overlay, .dp-modal-overlay .dp-modal,
+    .welcome-overlay:not([hidden]), .welcome-overlay:not([hidden]) .welcome-card,
     .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
 }
 
@@ -5882,11 +5883,13 @@ font-family: var(--font-mono);
    mean. */
 .vrec-overlay:not([hidden]),
 .dp-modal-overlay,
+.welcome-overlay:not([hidden]),
 .info-popup-overlay:not([hidden]) {
     animation: bill-overlay-in var(--dur-150) ease both;
 }
 .vrec-overlay:not([hidden]) .vrec-modal,
 .dp-modal-overlay .dp-modal,
+.welcome-overlay:not([hidden]) .welcome-card,
 .info-popup-overlay:not([hidden]) .info-popup {
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
@@ -5907,12 +5910,14 @@ font-family: var(--font-mono);
 .bill-modal-overlay.is-closing,
 .vrec-overlay.is-closing,
 .dp-modal-overlay.is-closing,
+.welcome-overlay.is-closing,
 .info-popup-overlay.is-closing {
     animation: bill-overlay-out var(--dur-200) ease both;
 }
 .bill-modal-overlay.is-closing .bill-modal,
 .vrec-overlay.is-closing .vrec-modal,
 .dp-modal-overlay.is-closing .dp-modal,
+.welcome-overlay.is-closing .welcome-card,
 .info-popup-overlay.is-closing .info-popup {
     animation: bill-modal-out var(--dur-200) ease both;
 }
