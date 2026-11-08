@@ -3665,6 +3665,8 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
 .whip-update-body a:hover {
   text-decoration: underline;
 }
+/* a bill number in a notice is bold inside its link: it takes the link's blue (the notice's own bold is white, which left a white number with a blue arrow) */
+.whip-update-body a strong, .whip-update-body a b { color: inherit; }
 /* Strip inline color styles — we own the palette */
 .whip-update-body [style*="color"] {
   color: inherit !important;

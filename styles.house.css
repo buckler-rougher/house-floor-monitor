@@ -3341,6 +3341,8 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
   text-decoration: underline;
 }
 
+.whip-update-body a strong, .whip-update-body a b { color: inherit; }
+
 .whip-update-body [style*="color"] {
   color: inherit !important;
 }
