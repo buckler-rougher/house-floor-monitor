@@ -10504,22 +10504,30 @@ html.replay-mode .weather-panel { display: none; }
         --fs-lg: 0.875rem;
     }
 
-    .brand-tooltip-anchor { padding: var(--sp-8) var(--sp-16) var(--sp-6); }
-    .brand-text { font-size: 10px; line-height: 1.25; }
-    .header-logo-clip { width: 88px; height: 55px; margin: var(--sp-4) 0; }
-    .header-logo { width: 88px; height: 88px; }
+    :root {
+        --p: 0;
+        --brand-full-h: 70px;
+        --brand-min-h: 52px;
+        --bar-h: calc(var(--brand-full-h) - (var(--brand-full-h) - var(--brand-min-h)) * var(--p));
+        --logo-w: calc(76px - 16px * var(--p));
+    }
 
-    .main-header { grid-template-rows: auto auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
-        .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
-    html.header-compact .main-header .date-info, html.header-compact .main-header .weather-panel, html.header-compact .main-header .clock-group,
-    html.header-compact .main-header .header-actions, html.header-compact .main-header .next-votes { display: none; }
-
-    html.header-compact .brand-text { font-size: 9.5px; line-height: 1.2; }
-    html.header-compact .brand-tooltip-anchor { padding-block: var(--sp-10); }
-    html.header-compact .header-logo-clip { width: 76px; height: 48px; margin: var(--sp-4) 0; }
-    html.header-compact .header-logo { width: 76px; height: 76px; }
+    .main-header { position: absolute; backdrop-filter: none; -webkit-backdrop-filter: none; grid-template-rows: var(--brand-full-h) auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
+    .main-header .brand-tooltip-anchor {
+        position: fixed; top: 0; left: 0; z-index: 2; width: 100%; height: var(--bar-h); box-sizing: border-box;
+        display: flex; align-items: center; padding: 0 var(--sp-16);
+        background: rgba(13, 17, 23, 0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-bottom: 1px solid var(--border-color);
+    }
+    .main-header .brand-text { font-size: calc(14px - 3px * var(--p)); line-height: 1.22; }
+    .main-header .header-logo-clip {
+        position: fixed; z-index: 3; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
+        width: var(--logo-w); height: calc(var(--logo-w) * 0.625); margin: 0;
+    }
+    .main-header .header-logo { width: var(--logo-w); height: var(--logo-w); }
+    .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
 
     .container { padding-top: calc(var(--header-full-h, var(--header-h, 100px)) + var(--sp-8)); }
+    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--brand-min-h) + var(--section-gap)); }
 
     .bills-sort-btn { position: relative; }
     .bills-sort-btn::before { content: ""; position: absolute; inset: -8px 0; }
