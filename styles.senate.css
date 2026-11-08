@@ -6350,7 +6350,7 @@ font-family: var(--font-mono);
     }
     .main-header .brand-text { font-size: 12px; line-height: 1.22; }
     .main-header .header-logo-clip {
-        position: fixed; z-index: 21; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
+        position: fixed; z-index: 21; left: auto; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
         width: var(--logo-w); height: calc(var(--logo-w) * 0.625); margin: 0;
     }
     .main-header .header-logo { width: var(--logo-w); height: var(--logo-w); }
@@ -6362,6 +6362,7 @@ font-family: var(--font-mono);
   }
   @media (max-width: 360px) {
     .main-header { grid-template-columns: minmax(min-content, 1fr) max-content max-content 80px; }
+    .main-header .header-logo-clip { right: calc((80px - var(--logo-w)) / 2); }
     .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-8); }
     .main-header .header-actions { gap: 4px; padding: 4px; }
     .header-actions > #suggest-fab { width: 32px; height: 32px; }
