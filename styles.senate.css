@@ -7416,3 +7416,11 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .tone-switcher .bills-sort-btn[data-tone="speech"] { --tone: var(--accent-yellow); }
 .tone-switcher .bills-sort-btn[data-tone="other"] { --tone: var(--tm-other); }
 .pip-live-dot.is-recorded { background: var(--text-muted); animation: none; box-shadow: none; opacity: .7; }
+:is(.airport-status, .result-status, .threshold-state, .dp-standing, .conn-dash-badge, .committee-tag.is-off):not(#badge) {
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+}
+:is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag):not(#badge) {
+    border-color: transparent;
+    border-radius: var(--radius-4);
+}
