@@ -10486,6 +10486,10 @@ html.replay-mode .weather-panel { display: none; }
 @media (min-width: 1120px) and (max-width: 1279px) {
     .header-logo-clip { left: auto; right: calc(508px + var(--sp-24)); transform: none; }
 }
+
+@media (max-width: 640px) {
+    .bills-sort-bar { flex-wrap: wrap; padding-inline: var(--sp-16); row-gap: var(--sp-8); }
+}
 }
 
 .main-display > * {
