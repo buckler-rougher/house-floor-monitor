@@ -11293,33 +11293,28 @@ html.replay-mode .weather-panel { display: none; }
         --fs-base: 0.8125rem;   /* 13px */
         --fs-lg: 0.875rem;      /* 14px */
     }
-    /* THE HEADER ON A PHONE. The brand bar is the only thing that stays: fixed to the top, and it shrinks as the page is scrolled (--p runs 0 to 1 over the first 60px, set by
-       lib/header-fit.js) until it reaches its smallest and stops. The status bar is not fixed: it is the page's first row and scrolls away with the page, passing behind the brand bar.
-       The same three stacked lines throughout; only the size changes. */
+    /* THE HEADER ON A PHONE. The brand bar is the only thing that stays: fixed to the top, one size. The status bar is not fixed: it is the page's first row and scrolls away with the
+       page, passing behind the brand bar. The same three stacked lines as everywhere, smaller. */
     :root {
-        --p: 0;
-        --brand-full-h: 70px;
-        --brand-min-h: 52px;
-        --bar-h: calc(var(--brand-full-h) - (var(--brand-full-h) - var(--brand-min-h)) * var(--p));
-        --logo-w: calc(76px - 16px * var(--p));
+        --bar-h: 60px;
+        --logo-w: 68px;
     }
-    /* (no backdrop blur on the header itself here: a blurred ancestor becomes the containing block of its fixed children, and the bar would scroll away with it; the bar has the blur) */
-    .main-header { position: absolute; backdrop-filter: none; -webkit-backdrop-filter: none; grid-template-rows: var(--brand-full-h) auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
+    .main-header { position: absolute; backdrop-filter: none; -webkit-backdrop-filter: none; grid-template-rows: var(--bar-h) auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
     .main-header .brand-tooltip-anchor {
-        position: fixed; top: 0; left: 0; z-index: 2; width: 100%; height: var(--bar-h); box-sizing: border-box;
+        position: fixed; top: 0; left: 0; z-index: 20; width: 100%; height: var(--bar-h); box-sizing: border-box;
         display: flex; align-items: center; padding: 0 var(--sp-16);
         background: rgba(13, 17, 23, 0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-bottom: 1px solid var(--border-color);
     }
-    .main-header .brand-text { font-size: calc(14px - 3px * var(--p)); line-height: 1.22; }
+    .main-header .brand-text { font-size: 12px; line-height: 1.22; }
     .main-header .header-logo-clip {
-        position: fixed; z-index: 3; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
+        position: fixed; z-index: 21; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
         width: var(--logo-w); height: calc(var(--logo-w) * 0.625); margin: 0;
     }
     .main-header .header-logo { width: var(--logo-w); height: var(--logo-w); }
     .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
     /* the page starts below the whole header, whatever the bar has shrunk to */
     .container { padding-top: calc(var(--header-full-h, var(--header-h, 100px)) + var(--sp-8)); }
-    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--brand-min-h) + var(--section-gap)); }
+    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--bar-h) + var(--section-gap)); }
 
     /* Tap areas: the chips keep their look, and the area that answers a tap reaches 8px above and below each */
     .bills-sort-btn { position: relative; }
