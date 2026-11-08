@@ -3832,12 +3832,12 @@ font-family: var(--font-mono);
     .bsk { animation: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .bill-modal-overlay:not([hidden]), .dp-modal-overlay, .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
+    .bill-modal-overlay:not([hidden]), .dp-modal-overlay, .welcome-overlay:not([hidden]), .welcome-overlay:not([hidden]) .welcome-card, .bill-modal-overlay:not([hidden]) .bill-modal { animation: none; }
   }
-  .vrec-overlay:not([hidden]), .dp-modal-overlay, .info-popup-overlay:not([hidden]) {
+  .vrec-overlay:not([hidden]), .dp-modal-overlay, .welcome-overlay:not([hidden]), .info-popup-overlay:not([hidden]) {
     animation: bill-overlay-in var(--dur-150) ease both;
 }
-  .vrec-overlay:not([hidden]) .vrec-modal, .info-popup-overlay:not([hidden]) .info-popup {
+  .vrec-overlay:not([hidden]) .vrec-modal, .welcome-overlay:not([hidden]) .welcome-card, .info-popup-overlay:not([hidden]) .info-popup {
     animation: bill-modal-in var(--dur-300) var(--ease-emphasis) both;
 }
   @keyframes bill-overlay-out {
@@ -3848,10 +3848,10 @@ font-family: var(--font-mono);
     from { opacity: 1; transform: none; }
     to   { opacity: 0; transform: translateY(6px) scale(0.99); }
 }
-  .bill-modal-overlay.is-closing, .vrec-overlay.is-closing, .dp-modal-overlay.is-closing, .info-popup-overlay.is-closing {
+  .bill-modal-overlay.is-closing, .vrec-overlay.is-closing, .dp-modal-overlay.is-closing, .welcome-overlay.is-closing, .info-popup-overlay.is-closing {
     animation: bill-overlay-out var(--dur-200) ease both;
 }
-  .bill-modal-overlay.is-closing .bill-modal, .vrec-overlay.is-closing .vrec-modal, .info-popup-overlay.is-closing .info-popup {
+  .bill-modal-overlay.is-closing .bill-modal, .vrec-overlay.is-closing .vrec-modal, .welcome-overlay.is-closing .welcome-card, .info-popup-overlay.is-closing .info-popup {
     animation: bill-modal-out var(--dur-200) ease both;
 }
   @keyframes bill-sheet-in {
