@@ -6339,27 +6339,24 @@ font-family: var(--font-mono);
         --fs-lg: 0.875rem;
     }
     :root {
-        --p: 0;
-        --brand-full-h: 70px;
-        --brand-min-h: 52px;
-        --bar-h: calc(var(--brand-full-h) - (var(--brand-full-h) - var(--brand-min-h)) * var(--p));
-        --logo-w: calc(76px - 16px * var(--p));
+        --bar-h: 60px;
+        --logo-w: 68px;
     }
-    .main-header { position: absolute; backdrop-filter: none; -webkit-backdrop-filter: none; grid-template-rows: var(--brand-full-h) auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
+    .main-header { position: absolute; backdrop-filter: none; -webkit-backdrop-filter: none; grid-template-rows: var(--bar-h) auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
     .main-header .brand-tooltip-anchor {
-        position: fixed; top: 0; left: 0; z-index: 2; width: 100%; height: var(--bar-h); box-sizing: border-box;
+        position: fixed; top: 0; left: 0; z-index: 20; width: 100%; height: var(--bar-h); box-sizing: border-box;
         display: flex; align-items: center; padding: 0 var(--sp-16);
         background: rgba(13, 17, 23, 0.92); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-bottom: 1px solid var(--border-color);
     }
-    .main-header .brand-text { font-size: calc(14px - 3px * var(--p)); line-height: 1.22; }
+    .main-header .brand-text { font-size: 12px; line-height: 1.22; }
     .main-header .header-logo-clip {
-        position: fixed; z-index: 3; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
+        position: fixed; z-index: 21; right: calc((96px - var(--logo-w)) / 2); top: calc((var(--bar-h) - var(--logo-w) * 0.625) / 2);
         width: var(--logo-w); height: calc(var(--logo-w) * 0.625); margin: 0;
     }
     .main-header .header-logo { width: var(--logo-w); height: var(--logo-w); }
     .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
     .container { padding-top: calc(var(--header-full-h, var(--header-h, 100px)) + var(--sp-8)); }
-    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--brand-min-h) + var(--section-gap)); }
+    #vote, #proceedings, #bills, #live { scroll-margin-top: calc(var(--bar-h) + var(--section-gap)); }
     .bills-sort-btn { position: relative; }
     .bills-sort-btn::before { content: ""; position: absolute; inset: -8px 0; }
   }
