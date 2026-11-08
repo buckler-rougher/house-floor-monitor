@@ -13235,3 +13235,18 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 /* the feed in the time machine is a recording: no red live dot */
 .pip-live-dot.is-recorded { background: var(--text-muted); animation: none; box-shadow: none; opacity: .7; }
+
+/* ── BADGES: an outline means a STATE, no outline means a LABEL (owner, 8 November 2026; see AGENTS.md "Badges") ───────────────────────────────────────────────────────────────
+   A filled, non-interactive badge either says where something STANDS (it can change: who controls the House, a funding status, an airport delay, a petition's standing, a bill's or
+   amendment's result) and has a thin outline in its own colour, or says what something IS (a kind, a category, a party, an agenda item) and has none. Unlayered on purpose: the
+   badges' rules are spread over the whole file with different specificities, and this has to win over all of them (the :not(#badge) only raises the specificity above theirs). States that had no outline get one; labels that had one lose it
+   (the border stays, transparent, so nothing moves) and the rounder "pill" shape becomes the tag's 4px corner. */
+:is(.airport-status, .result-status, .threshold-state, .dp-standing, .conn-dash-badge, .committee-tag.is-off):not(#badge) {
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+}
+.dp-standing.is-eligible:not(#badge) { border-color: transparent; }   /* a solid chip needs no edge */
+:is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag):not(#badge) {
+    border-color: transparent;
+    border-radius: var(--radius-4);
+}
