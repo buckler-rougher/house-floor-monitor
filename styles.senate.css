@@ -2272,6 +2272,7 @@
   .whip-update-body a:hover {
   text-decoration: underline;
 }
+  .whip-update-body a strong, .whip-update-body a b { color: inherit; }
   .whip-update-body [style*="color"] {
   color: inherit !important;
 }
