@@ -2426,6 +2426,8 @@ body.tellers-mode .tellers-column { display: flex; }
   border: none;
   object-fit: cover;
 }
+/* the author's display:block above beats the hidden attribute: the still-frame <img> (no picture yet) showed, and a browser draws a thin light frame for an image that has none */
+.floor-feed-media[hidden] { display: none; }
 
 .floor-feed-video { cursor: pointer; }
 .floor-feed-overlay {
@@ -11279,6 +11281,49 @@ html.replay-mode .weather-panel { display: none; }
 /* The bills' sort row on a phone: the label, the two sorts, Tracked and the bell did not fit in one line, and the bell ran off the screen. Narrower side padding, and the row wraps. */
 @media (max-width: 640px) {
     .bills-sort-bar { flex-wrap: wrap; padding-inline: var(--sp-16); row-gap: var(--sp-8); }
+}
+/* ── PHONE: a smaller brand row that folds the status bar away once the page is scrolled, a larger type scale, and tap areas (lib/header-fit.js sets html.header-compact) ── */
+@media (max-width: 640px) {
+    /* The type scale a phone can read: nothing under 11px. (Larger sizes are as they were.) */
+    :root {
+        --fs-2xs: 0.625rem;     /* 10px */
+        --fs-xs: 0.6875rem;     /* 11px */
+        --fs-sm: 0.71875rem;    /* 11.5px */
+        --fs-md: 0.75rem;       /* 12px */
+        --fs-base: 0.8125rem;   /* 13px */
+        --fs-lg: 0.875rem;      /* 14px */
+    }
+    /* the brand row, smaller (the same three stacked lines, the same wordmark: only the size changes) */
+    .brand-tooltip-anchor { padding: var(--sp-8) var(--sp-16) var(--sp-6); }
+    .brand-text { font-size: 10px; line-height: 1.25; }
+    .header-logo-clip { width: 88px; height: 55px; margin: var(--sp-4) 0; }
+    .header-logo { width: 88px; height: 88px; }
+    /* the status bar folds: its row shrinks to nothing, its cells fade and lose their padding */
+    .main-header { grid-template-rows: auto auto auto; grid-template-columns: minmax(min-content, 1.2fr) max-content max-content 96px; }
+        .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-10); }
+    html.header-compact .main-header .date-info, html.header-compact .main-header .weather-panel, html.header-compact .main-header .clock-group,
+    html.header-compact .main-header .header-actions, html.header-compact .main-header .next-votes { display: none; }
+    /* and the brand row smaller still, still three lines */
+    html.header-compact .brand-text { font-size: 9.5px; line-height: 1.2; }
+    html.header-compact .brand-tooltip-anchor { padding-block: var(--sp-10); }
+    html.header-compact .header-logo-clip { width: 76px; height: 48px; margin: var(--sp-4) 0; }
+    html.header-compact .header-logo { width: 76px; height: 76px; }
+    /* the page keeps the full header's height at the top whatever the header is doing */
+    .container { padding-top: calc(var(--header-full-h, var(--header-h, 100px)) + var(--sp-8)); }
+
+    /* Tap areas: the chips keep their look, and the area that answers a tap reaches 8px above and below each */
+    .bills-sort-btn { position: relative; }
+    .bills-sort-btn::before { content: ""; position: absolute; inset: -8px 0; }
+    .calendar-card-toggle::before { content: ""; position: absolute; inset: -8px; }
+}
+/* A small phone (320 to 360px, an SE or a mini): the status bar's cells and the two buttons each give up a little so the row still fits */
+@media (max-width: 360px) {
+    .main-header { grid-template-columns: minmax(min-content, 1fr) max-content max-content 80px; }
+    .date-info, .weather-panel, .clock-group { padding-inline: var(--sp-8); }
+    .main-header .header-actions { gap: 4px; padding: 4px; }
+    .header-actions > #replay-btn, .header-actions > #suggest-fab { width: 32px; height: 32px; }
+    .today-date[data-short]::before, .weather-panel::before, .clock-label { letter-spacing: 0.04em; }
+    .session-text { letter-spacing: 0.02em; }
 }
 }  /* end @layer app */
 
