@@ -13103,6 +13103,7 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-modal-sort { padding: 0; }
 .dp-sort { padding: var(--sp-12) var(--sp-24) 0; }
 .pr-block { padding-bottom: 0; }
+#decided-head { color: var(--text-muted); }
 .pr-block[hidden], .dp-section-head[hidden] { display: none; }   /* display:grid on the class would beat the attribute */
 .dp-group-head.dp-section-head { padding: var(--sp-16) var(--sp-24) 0; color: var(--text-muted); }
 @media (max-width: 640px) { .dp-group-head.dp-section-head { padding-left: var(--sp-16); padding-right: var(--sp-16); } }
