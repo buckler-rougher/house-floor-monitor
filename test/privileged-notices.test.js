@@ -77,4 +77,15 @@ ok('no notices, no days: nothing', () => {
   assert.deepStrictEqual(PN.build([day('2026-11-09', row('2026-11-09', '14:00', 'The House convened.'))]), []);
 });
 
+ok('a discharge motion announcement is its own kind, names its measure, and is not answered by a privileged-matter row', () => {
+  const dis = 'NOTIFICATION OF INTENT TO OFFER RESOLUTION - Mr. Jones notified the House of his intent to offer a motion to discharge the Committee on Rules from further consideration of &lt;a target=&quot;_blank&quot; href=&quot;https://www.congress.gov/bill/119th-congress/house-resolution/1247&quot;&gt;H. Res. 1247&lt;/a&gt; pursuant to clause 2(c) of rule XV. The Chair announced that the House will entertain the gentleman&#x27;s motion within two legislative days.';
+  const out = PN.build([day('2026-11-09', row('2026-11-09', '14:00', dis), row('2026-11-09', '14:10', NOTICE)), day('2026-11-10', row('2026-11-10', '15:00', 'Considered as privileged matter. H. Res. 1500 \u2014 A resolution'))]);
+  const d = out.find((x) => x.kind === 'discharge');
+  assert.strictEqual(d.bill, 'H.Res. 1247');
+  assert.strictEqual(d.member, 'Jones');
+  assert.ok(!/</.test(d.text));
+  assert.strictEqual(d.state, 'noticed');
+  assert.strictEqual(out.find((x) => x.kind === 'resolution').state, 'considered');
+});
+
 console.log(`${n} passed`);
