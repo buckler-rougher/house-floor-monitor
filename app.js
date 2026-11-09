@@ -6468,7 +6468,7 @@ function dischargeStanding(p) {
         const ann = dischargeAnnounced(p);
         if (ann) {
             const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-            return { kind: 'eligible', running: true, label: 'Motion announced', detail: `${ann.days} of 2 legislative days \u00b7 announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
+            return { kind: 'eligible', running: true, label: 'Motion announced', detail: `announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
         }
     }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
@@ -6506,6 +6506,11 @@ function dischargeSponsorHtml(p, role = 'Sponsor') {
         <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">${role}</span></div>
     </div>`;
 }
+// The two legislative days a notice has, as two small segments that fill as days pass (a day the House met, pro forma days included).
+function daysTracker(days) {
+    const d = Math.max(0, Math.min(2, Number(days) || 0));
+    return `<span class="dp-days" role="img" aria-label="${d} of 2 legislative days"><i${d >= 1 ? ' class="on"' : ''}></i><i${d >= 2 ? ' class="on"' : ''}></i></span>`;
+}
 // One petition's card. Top level because an announced motion is drawn in the active group above the petitions as well as here.
 function dischargeItem(p) {
     const need = _discharge.needed;
@@ -6523,11 +6528,12 @@ function dischargeItem(p) {
         const url = p.id ? `https://clerk.house.gov/DischargePetition/${p.id}` : 'https://clerk.house.gov/DischargePetition';
         const hasRule = p.billNumber && p.billNumber.replace(/\s+/g, '') !== bill.replace(/\s+/g, '');
         const standing = isDone ? dischargeStanding(p) : null;
+        const ann = isDone ? dischargeAnnounced(p) : null;   // the motion's two legislative days are running
         return `
         <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}${standing && standing.kind === 'off' ? ' is-off' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${billBtn(bill)}${hasRule ? `<span class="dp-rule">rule ${billBtn(p.billNumber)}</span>` : ''}</span>
-                <span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
+                ${ann ? '<span class="dp-count-col">' : ''}<span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>${ann ? `<span class="dp-days-line">${daysTracker(ann.days)}<span>${ann.days} of 2 days</span></span></span>` : ''}
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
             ${bar(p)}
@@ -6656,7 +6662,6 @@ function renderPrivileged() {
         const live = isActive(n);
         const what = n.title || 'Privileged resolution';
         const running = n.state === 'noticed' || n.state === 'due';
-        const pct = Math.min(100, Math.round(100 * n.days / 2));
         const who = n.seat ? dischargeSponsorHtml(n.seat, 'Gave notice') : `<span class="dp-sponsor-name">Mr. ${escapeHtml(n.member)}</span>`;
         return {
             key: n.noticeAt, at: n.noticeAt,
@@ -6664,10 +6669,9 @@ function renderPrivileged() {
         <div class="dp-item pr-item${live ? ' is-eligible' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">Notice</span>${n.id ? `<button type="button" class="bill-open" data-bill-open="${escapeHtml(n.id.replace(/^H\.\s?Res\./i, 'H.Res.'))}">${escapeHtml(n.id)}</button>` : ''}</span>
-                <span class="dp-count"><b>${n.days}</b> of 2 legislative days</span>
+                <span class="dp-count-col"><span class="dp-count"><b>${n.days}</b> of 2 legislative days</span>${daysTracker(n.days)}</span>
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
-            <div class="dp-bar ${n.days >= 1 ? 'close' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${Math.min(2, n.days)}" aria-label="${n.days} of 2 legislative days"><span style="width:${pct}%"></span></div>
             <div class="dp-meta">
                 ${running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${st.cls}">${escapeHtml(n.state === 'noticed' ? 'Notice given' : st.label(n))}</span>
                 <span>noticed ${escapeHtml(when(n.noticeAt))}</span>
