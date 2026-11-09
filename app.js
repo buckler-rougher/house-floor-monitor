@@ -6468,7 +6468,7 @@ function dischargeStanding(p) {
         const ann = dischargeAnnounced(p);
         if (ann) {
             const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-            return { kind: 'eligible', running: true, label: 'Motion announced', detail: `announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
+            return { kind: 'eligible', running: true, label: 'Notice given', detail: `motion noticed ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
         }
     }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
