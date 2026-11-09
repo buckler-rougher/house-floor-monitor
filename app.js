@@ -6495,15 +6495,15 @@ function dischargeSorted(list) {
     }[_dischargeSort] || ((a, b) => b.number - a.number);
     return [...list].sort(by);
 }
-function dischargeSponsorHtml(p) {
+function dischargeSponsorHtml(p, role = 'Sponsor') {
     const seat = p.sponsorSeat;
     const party = seat ? (/^R/i.test(seat.party) ? 'R' : /^D/i.test(seat.party) ? 'D' : 'I') : null;
     const cls = party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent';
     const loc = seat ? seat.state + (/^\d+$/.test(seat.district || '') ? '-' + String(seat.district).padStart(2, '0') : '') : '';
     const photo = p.sponsorId ? buildBioguidePhotoUrl(p.sponsorId) : null;
-    return `<div class="absentee-member dp-sponsor" title="Sponsor">
+    return `<div class="absentee-member dp-sponsor" title="${role}">
         <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
-        <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">Sponsor</span></div>
+        <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">${role}</span></div>
     </div>`;
 }
 // One petition's card. Top level because an announced motion is drawn in the active group above the petitions as well as here.
@@ -6623,6 +6623,27 @@ function privilegedShown() {
         return now - new Date(n.noticeAt).getTime() < PRIVILEGED_KEEP_DAYS * 86400000;
     });
 }
+// The Member a notice names ("Massie", "Green of Texas", "Smith (TX)"): the exact surname, and only if it lands on one Member (a near match would show the wrong face), from the
+// same roster the live privilege panel reads. `member` is the Member's name in the shape dischargeSponsorHtml reads.
+async function privilegeNoticeMember(raw) {
+    const paren = String(raw).match(/^(.*?)\s*\(([A-Z]{2})\)$/);
+    const ofState = String(raw).match(/^(.*?)\s+of\s+(.+)$/i);
+    const surname = (paren ? paren[1] : ofState ? ofState[1] : String(raw)).trim();
+    const state = paren ? paren[2] : ofState ? (STATE_NAME_TO_ABBR[ofState[2].trim()] || '') : '';
+    if (!surname) return null;
+    try {
+        const doc = parseMemberDataXml(await getMemberDataXml());
+        const hits = [];
+        for (const m of doc.querySelectorAll('member')) {
+            const last = m.querySelector('lastname'), first = m.querySelector('firstname'), id = m.querySelector('bioguideID');
+            if (!last || !first || !id || last.textContent.trim().toLowerCase() !== surname.toLowerCase()) continue;
+            const st = (m.querySelector('state')?.getAttribute('postal-code') || '').toUpperCase();
+            if (state && st !== state) continue;
+            hits.push({ sponsor: `${first.textContent.trim()} ${last.textContent.trim()}`, sponsorId: id.textContent.trim(), sponsorSeat: { party: m.querySelector('party')?.textContent.trim() || '', state: st, district: m.querySelector('district')?.textContent.trim() || '' } });
+        }
+        return hits.length === 1 ? hits[0] : null;
+    } catch { return null; }
+}
 function renderPrivileged() {
     const block = document.getElementById('privileged-block');
     const list = document.getElementById('privileged-list');
@@ -6634,21 +6655,26 @@ function renderPrivileged() {
         const st = PRIVILEGED_STANDING[n.state];
         const live = isActive(n);
         const what = n.title || 'Privileged resolution';
+        const running = n.state === 'noticed' || n.state === 'due';
+        const pct = Math.min(100, Math.round(100 * n.days / 2));
+        const who = n.seat ? dischargeSponsorHtml(n.seat, 'Gave notice') : `<span class="dp-sponsor-name">Mr. ${escapeHtml(n.member)}</span>`;
         return {
             key: n.noticeAt, at: n.noticeAt,
             html: `
         <div class="dp-item pr-item${live ? ' is-eligible' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">Notice</span>${n.id ? `<button type="button" class="bill-open" data-bill-open="${escapeHtml(n.id.replace(/^H\.\s?Res\./i, 'H.Res.'))}">${escapeHtml(n.id)}</button>` : ''}</span>
-                <span class="dp-count">Mr. ${escapeHtml(n.member)}</span>
+                <span class="dp-count"><b>${n.days}</b> of 2 legislative days</span>
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
+            <div class="dp-bar ${n.days >= 1 ? 'close' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${Math.min(2, n.days)}" aria-label="${n.days} of 2 legislative days"><span style="width:${pct}%"></span></div>
             <div class="dp-meta">
-                ${n.state === 'noticed' || n.state === 'due' ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${st.cls}">${escapeHtml(st.label(n))}</span>
+                ${running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${st.cls}">${escapeHtml(n.state === 'noticed' ? 'Notice given' : st.label(n))}</span>
                 <span>noticed ${escapeHtml(when(n.noticeAt))}</span>
-                ${n.state === 'noticed' || n.state === 'due' ? '<span>the Speaker sets the time</span>' : ''}
+                ${running ? '<span>the Speaker sets the time</span>' : ''}
                 <a class="ext" href="https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${escapeHtml(encodeURIComponent(new Date(n.noticeAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'America/New_York' })))}" target="_blank" rel="noopener">Floor record</a>
             </div>
+            <div class="dp-people">${who}</div>
         </div>`,
         };
     };
@@ -6673,7 +6699,7 @@ function renderPrivileged() {
 function loadPrivileged() {
     fetch('https://api.evanhollander.org/house-floor/api/privileged-resolutions')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then((d) => { _privileged = d; renderPrivileged(); if (_discharge) renderDischargePetitions(); })
+        .then(async (d) => { await Promise.all(d.notices.filter((n) => n.kind !== 'discharge').map(async (n) => { n.seat = await privilegeNoticeMember(n.member); })); _privileged = d; renderPrivileged(); if (_discharge) renderDischargePetitions(); })
         .catch(() => { /* the petitions stand alone without it */ });
 }
 
