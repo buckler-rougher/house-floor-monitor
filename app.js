@@ -6533,10 +6533,11 @@ function dischargeItem(p) {
         <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}${standing && standing.kind === 'off' ? ' is-off' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${billBtn(bill)}${hasRule ? `<span class="dp-rule">rule ${billBtn(p.billNumber)}</span>` : ''}</span>
-                ${ann ? '<span class="dp-count-col">' : ''}<span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>${ann ? `<span class="dp-days-line">${daysTracker(ann.days)}<span>${ann.days} of 2 days</span></span></span>` : ''}
+                ${ann ? `<span class="dp-count-col"><span class="dp-count"><b>${ann.days}</b> of 2 legislative days</span>${daysTracker(ann.days)}</span>`
+                    : `<span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>`}
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
-            ${bar(p)}
+            ${ann ? `<div class="dp-barrow">${bar(p)}<span class="dp-count"><span class="dp-check gi gi-check" aria-hidden="true"></span> <b>${p.signatures}</b> of ${need}</span></div>` : bar(p)}
             <div class="dp-meta">
                 ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `${standing.running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
