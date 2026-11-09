@@ -6468,7 +6468,7 @@ function dischargeStanding(p) {
         const ann = dischargeAnnounced(p);
         if (ann) {
             const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-            return { kind: 'eligible', running: true, label: 'Notice given', detail: `motion noticed ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
+            return { kind: 'eligible', badge: 'waiting', running: true, label: 'Notice given', detail: `motion noticed ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
         }
     }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
@@ -6539,7 +6539,7 @@ function dischargeItem(p) {
             <div class="dp-what">${escapeHtml(what)}</div>
             ${ann ? `<div class="dp-barrow">${bar(p)}<span class="dp-count"><span class="dp-check gi gi-check" aria-hidden="true"></span> <b>${p.signatures}</b> of ${need}</span></div>` : bar(p)}
             <div class="dp-meta">
-                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `${standing.running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
+                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `${standing.running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${standing.badge || standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
@@ -6616,7 +6616,7 @@ function renderDischargePetitions() {
 let _privileged = null;
 const PRIVILEGED_KEEP_DAYS = 4;   // a decided or lapsed notice stays this many calendar days
 const PRIVILEGED_STANDING = {
-    noticed: { cls: 'eligible', label: (n) => `${n.days} of 2 legislative days` },
+    noticed: { cls: 'waiting', label: (n) => `${n.days} of 2 legislative days` },
     due: { cls: 'eligible', label: () => 'Due: second legislative day' },
     considered: { cls: 'eligible', label: () => 'Called up' },
     lapsed: { cls: 'off', label: () => 'Notice lapsed' },
