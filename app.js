@@ -6468,7 +6468,7 @@ function dischargeStanding(p) {
         const ann = dischargeAnnounced(p);
         if (ann) {
             const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-            return { kind: 'eligible', label: 'Motion announced', detail: `${ann.days} of 2 legislative days \u00b7 announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
+            return { kind: 'eligible', running: true, label: 'Motion announced', detail: `${ann.days} of 2 legislative days \u00b7 announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
         }
     }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
@@ -6539,7 +6539,7 @@ function renderDischargePetitions() {
             <div class="dp-what">${escapeHtml(what)}</div>
             ${bar(p)}
             <div class="dp-meta">
-                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `<span class="dp-standing is-${standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
+                ${isDone ? `<span class="dp-need is-done">Reached ${need}${p.lastSigned ? ` on ${escapeHtml(dischargeDate(p.lastSigned))}` : ''}</span>${standing ? `${standing.running ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${standing.kind}">${escapeHtml(standing.label)}</span>${standing.detail ? `<span>${escapeHtml(standing.detail)}</span>` : ''}` : ''}`
                     : `<span class="dp-need${more <= 5 ? ' is-close' : ''}">${more === 1 ? '1 more signature' : `${more} more signatures`}</span>`}
                 ${p.petitionDate ? `<span>filed ${escapeHtml(p.petitionDate.replace(/(\d+)(st|nd|rd|th)/, '$1'))}</span>` : ''}
                 ${!isDone && p.lastSigned ? `<span>last signed ${escapeHtml(dischargeDate(p.lastSigned))}</span>` : ''}
@@ -6640,7 +6640,7 @@ function renderPrivileged() {
             </div>
             <div class="dp-what">${escapeHtml(what)}</div>
             <div class="dp-meta">
-                <span class="dp-standing is-${st.cls}">${escapeHtml(st.label(n))}</span>
+                ${n.state === 'noticed' || n.state === 'due' ? '<span class="dp-clock gi gi-clock" aria-hidden="true"></span>' : ''}<span class="dp-standing is-${st.cls}">${escapeHtml(st.label(n))}</span>
                 <span>noticed ${escapeHtml(when(n.noticeAt))}</span>
                 ${n.state === 'noticed' || n.state === 'due' ? '<span>the Speaker sets the time</span>' : ''}
                 <a class="ext" href="https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${escapeHtml(encodeURIComponent(new Date(n.noticeAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'America/New_York' })))}" target="_blank" rel="noopener">Floor record</a>
