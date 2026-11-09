@@ -6616,7 +6616,7 @@ function renderDischargePetitions() {
 let _privileged = null;
 const PRIVILEGED_KEEP_DAYS = 4;   // a decided or lapsed notice stays this many calendar days
 const PRIVILEGED_STANDING = {
-    noticed: { cls: 'waiting', label: (n) => `${n.days} of 2 legislative days` },
+    noticed: { cls: 'eligible', label: (n) => `${n.days} of 2 legislative days` },
     due: { cls: 'eligible', label: () => 'Due: second legislative day' },
     considered: { cls: 'eligible', label: () => 'Called up' },
     lapsed: { cls: 'off', label: () => 'Notice lapsed' },
