@@ -6456,7 +6456,21 @@ function dischargeDateKey(d) { return d ? d.slice(6) + d.slice(0, 2) + d.slice(3
 function dischargeDate(d) { return d ? globalThis.BoardUtil.fmtIso(d.slice(6) + '-' + d.slice(0, 2) + '-' + d.slice(3, 5)) : ''; }
 // Where a petition at 218 stands on the Discharge Calendar (the House Calendars' own list): waiting out seven legislative days, eligible, or off it.
 // null when the calendar could not be read (nothing is claimed then).
+// A signer's announcement of the motion (the Clerk's "notified the House of his intent to offer a motion to discharge ... of H. Res. N"): the Chair then entertains it within
+// two legislative days, so while that holds it is what the petition stands at, whatever the Discharge Calendar says.
+function dischargeAnnounced(p) {
+    if (!_privileged) return null;
+    const ids = [p.billNumber].filter(Boolean).map((x) => x.replace(/\s+/g, ''));
+    return _privileged.notices.find((n) => n.kind === 'discharge' && (n.state === 'noticed' || n.state === 'due') && ids.includes(String(n.bill).replace(/\s+/g, ''))) || null;
+}
 function dischargeStanding(p) {
+    if (_discharge && p.signatures >= _discharge.needed) {
+        const ann = dischargeAnnounced(p);
+        if (ann) {
+            const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+            return { kind: 'eligible', label: 'Motion announced', detail: `${day} by Mr. ${ann.member}; to be taken up within 2 legislative days` };
+        }
+    }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
     const m = _dischargeCal.pending.find((x) => x.number === p.number);
     if (m) {
@@ -6596,7 +6610,7 @@ const PRIVILEGED_STANDING = {
 function privilegedShown() {
     if (!_privileged) return [];
     const now = Date.now();
-    return _privileged.notices.filter((n) => {
+    return _privileged.notices.filter((n) => n.kind !== 'discharge').filter((n) => {
         if (n.state === 'noticed' || n.state === 'due' || n.state === 'considered') return true;
         return now - new Date(n.noticeAt).getTime() < PRIVILEGED_KEEP_DAYS * 86400000;
     });
@@ -6639,7 +6653,7 @@ function renderPrivileged() {
 function loadPrivileged() {
     fetch('https://api.evanhollander.org/house-floor/api/privileged-resolutions')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-        .then((d) => { _privileged = d; renderPrivileged(); })
+        .then((d) => { _privileged = d; renderPrivileged(); if (_discharge) renderDischargePetitions(); })
         .catch(() => { /* the petitions stand alone without it */ });
 }
 
