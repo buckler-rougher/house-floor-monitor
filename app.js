@@ -6506,16 +6506,9 @@ function dischargeSponsorHtml(p) {
         <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">Sponsor</span></div>
     </div>`;
 }
-function renderDischargePetitions() {
-    const list = document.getElementById('discharge-list');
-    if (!list || !_discharge) return;
+// One petition's card. Top level because an announced motion is drawn in the active group above the petitions as well as here.
+function dischargeItem(p) {
     const need = _discharge.needed;
-    const all = _discharge.petitions.filter((p) => p.signatures != null);
-    const open = dischargeSorted(all.filter((p) => p.signatures < need));
-    const done = dischargeSorted(all.filter((p) => p.signatures >= need));
-    const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
-    put('discharge-summary', `${open.length} open`);
-    document.querySelectorAll('#dp-sort [data-dp-sort]').forEach((b) => { const on = b.dataset.dpSort === _dischargeSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     const bar = (p) => {
         const pct = Math.min(100, Math.round(1000 * p.signatures / need) / 10);
         const state = p.signatures >= need ? 'done' : p.signatures >= need - 5 ? 'close' : '';
@@ -6552,6 +6545,20 @@ function renderDischargePetitions() {
             </div>
         </div>`;
     };
+    return item(p);
+}
+function renderDischargePetitions() {
+    const list = document.getElementById('discharge-list');
+    if (!list || !_discharge) return;
+    const need = _discharge.needed;
+    // a petition whose motion a signer has announced is in the active group above (renderPrivileged), not in these lists
+    const all = _discharge.petitions.filter((p) => p.signatures != null && !(p.signatures >= need && dischargeAnnounced(p)));
+    const open = dischargeSorted(all.filter((p) => p.signatures < need));
+    const done = dischargeSorted(all.filter((p) => p.signatures >= need));
+    const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
+    put('discharge-summary', `${open.length} open`);
+    document.querySelectorAll('#dp-sort [data-dp-sort]').forEach((b) => { const on = b.dataset.dpSort === _dischargeSort; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    const item = dischargeItem;
     const entries = [];
     const card = (p) => ({ key: p.id || 'n' + p.number, html: item(p) });
     // two clipped lists, made once: the petitions at 218 (with their label above) and the rest. Each shows its first petitions whole and the top of the next under a fade,
@@ -6586,6 +6593,7 @@ function renderDischargePetitions() {
     const rest = grouped ? open : dischargeSorted(all);
     ListSync.sync(dp.openRegion, rest.length ? rest.map(card) : [{ key: 'none', html: '<div class="empty-note">No open petitions</div>' }]);
     dp.doneClamp.refresh(); dp.openClamp.refresh();
+    renderPrivileged();
     if (globalThis.SourcePop) {
         // the Clerk's own list entries (tidied, see lib/discharge-petitions.js), each with where its signature count comes from
         const html = `<!-- GET https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${_discharge.congress}: ${_discharge.total} petitions, ${open.length} still open. The number of signatures of each is the number of rows in the signature table on its own page. -->\n`
@@ -6620,18 +6628,14 @@ function renderPrivileged() {
     const list = document.getElementById('privileged-list');
     if (!block || !list) return;
     const shown = privilegedShown();
-    block.hidden = !shown.length;
-    document.getElementById('dp-petitions-head').hidden = !shown.length;
-    if (!shown.length) return;
-    const pending = shown.filter((n) => n.state === 'noticed' || n.state === 'due' || n.state === 'considered').length;
-    document.getElementById('privileged-head').textContent = `Privileged resolutions · ${shown.length}` + (pending ? ` · ${pending} pending` : '');
+    const isActive = (n) => n.state === 'noticed' || n.state === 'due' || n.state === 'considered';
     const when = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
     const card = (n) => {
         const st = PRIVILEGED_STANDING[n.state];
-        const live = n.state === 'due' || n.state === 'considered';
+        const live = isActive(n);
         const what = n.title || 'Privileged resolution';
         return {
-            key: n.noticeAt,
+            key: n.noticeAt, at: n.noticeAt,
             html: `
         <div class="dp-item pr-item${live ? ' is-eligible' : ''}">
             <div class="dp-top">
@@ -6648,7 +6652,23 @@ function renderPrivileged() {
         </div>`,
         };
     };
-    ListSync.sync(list, shown.map(card));
+    // ACTIVE: a clock is running on it (or it is on the floor now): privileged resolutions and the petitions whose motion a signer has announced, newest first
+    const activePetitions = _discharge ? _discharge.petitions.filter((p) => p.signatures != null && p.signatures >= _discharge.needed).map((p) => ({ p, ann: dischargeAnnounced(p) })).filter((x) => x.ann) : [];
+    const active = [...shown.filter(isActive).map(card), ...activePetitions.map(({ p, ann }) => ({ key: 'p' + p.number, at: ann.noticeAt, html: dischargeItem(p) }))]
+        .sort((x, y) => String(y.at).localeCompare(String(x.at)));
+    const decided = shown.filter((n) => !isActive(n)).map(card);
+    block.hidden = !active.length && !decided.length;
+    document.getElementById('dp-petitions-head').hidden = block.hidden;
+    if (block.hidden) return;
+    const head = document.getElementById('privileged-head');
+    head.hidden = !active.length;
+    head.textContent = `Active now · ${active.length}`;
+    ListSync.sync(list, active);
+    const dHead = document.getElementById('decided-head');
+    const dList = document.getElementById('decided-list');
+    dHead.hidden = !decided.length;
+    dHead.textContent = `Decided or lapsed · ${decided.length}`;
+    ListSync.sync(dList, decided);
 }
 function loadPrivileged() {
     fetch('https://api.evanhollander.org/house-floor/api/privileged-resolutions')
