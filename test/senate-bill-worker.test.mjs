@@ -43,7 +43,7 @@ globalThis.fetch = async (u) => {
   return new Response('', { status: 404 });
 };
 const get = async (id) => {
-  const r = await worker.fetch(new Request(`https://api.evanhollander.org/senate-floor/api/senate/bill?id=${encodeURIComponent(id)}`), { CONGRESS_API_KEY: 'test' });
+  const r = await worker.fetch(new Request(`https://api.evanhollander.org/senate-floor/api/senate/bill?id=${encodeURIComponent(id)}`), { CONGRESS_API_KEY: 'test', PART_RETRY_MS: '0' });
   return { status: r.status, body: await r.json() };
 };
 

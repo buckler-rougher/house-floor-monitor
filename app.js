@@ -4761,13 +4761,12 @@ function applyRemoteDetails(bill, r) {
         const el = e.target.closest && e.target.closest('[data-bill-id], [data-bill-open]');
         if (el) warm(el.dataset.billId || el.dataset.billOpen);
     }, { capture: true, passive: true }));
-    const sweep = () => {
+    const sweep = () => {   // kept, not scheduled: for a way to warm the list on purpose
         const queue = [...billDataMap.values()].filter((b) => b && b.id && !b.sponsor && !b.summary).map((b) => b.id);
         const worker = async () => { while (queue.length) { const id = queue.shift(); if (id && ID.test(id) && !RemoteBill.cached(id)) await RemoteBill.fetch(id, API); } };
         worker(); worker();
     };
-    setTimeout(sweep, 8000);
-    setTimeout(sweep, 90000);
+    // (no background sweep of the week's bills: it asked the Worker for about thirty bills on every page load, and each cold one cost Congress.gov calls and KV writes; a pointer over a bill is enough)
 })();
 
 // The Worker's Congress.gov record can be slow: the modal then opens with the rest and gets the sponsor and subject when the full answer lands (lib/remote-bill.js).
@@ -6582,6 +6581,68 @@ function renderDischargePetitions() {
         SourcePop.set(document.getElementById('discharge-petitions'), calPart.length ? { parts: [listPart, ...calPart], at: _discharge.at } : { ...listPart, at: _discharge.at });
     }
 }
+// PRIVILEGED RESOLUTIONS a Member has given notice of: the Worker's /api/privileged-resolutions reads the Clerk's floor record of the last ten days
+// (lib/privileged-notices.js) and says, for each notice, how many legislative days have passed and whether the resolution was called up. They sit above the
+// petitions while one is pending or was decided in the last few days, and the panel shows only its petitions when there is nothing to show.
+let _privileged = null;
+const PRIVILEGED_KEEP_DAYS = 4;   // a decided or lapsed notice stays this many calendar days
+const PRIVILEGED_STANDING = {
+    noticed: { cls: 'waiting', label: (n) => `${n.days} of 2 legislative days` },
+    due: { cls: 'eligible', label: () => 'Due: second legislative day' },
+    considered: { cls: 'eligible', label: () => 'Called up' },
+    lapsed: { cls: 'off', label: () => 'Notice lapsed' },
+    resolved: { cls: 'off', label: (n) => n.outcome },
+};
+function privilegedShown() {
+    if (!_privileged) return [];
+    const now = Date.now();
+    return _privileged.notices.filter((n) => {
+        if (n.state === 'noticed' || n.state === 'due' || n.state === 'considered') return true;
+        return now - new Date(n.noticeAt).getTime() < PRIVILEGED_KEEP_DAYS * 86400000;
+    });
+}
+function renderPrivileged() {
+    const block = document.getElementById('privileged-block');
+    const list = document.getElementById('privileged-list');
+    if (!block || !list) return;
+    const shown = privilegedShown();
+    block.hidden = !shown.length;
+    document.getElementById('dp-petitions-head').hidden = !shown.length;
+    if (!shown.length) return;
+    const pending = shown.filter((n) => n.state === 'noticed' || n.state === 'due' || n.state === 'considered').length;
+    document.getElementById('privileged-head').textContent = `Privileged resolutions · ${shown.length}` + (pending ? ` · ${pending} pending` : '');
+    const when = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+    const card = (n) => {
+        const st = PRIVILEGED_STANDING[n.state];
+        const live = n.state === 'due' || n.state === 'considered';
+        const what = n.title || 'A resolution raising a question of the privileges of the House (not yet called up)';
+        return {
+            key: n.noticeAt,
+            html: `
+        <div class="dp-item pr-item${live ? ' is-eligible' : ''}">
+            <div class="dp-top">
+                <span class="dp-id"><span class="dp-chip">Notice</span>${n.id ? `<button type="button" class="bill-open" data-bill-open="${escapeHtml(n.id.replace(/^H\.\s?Res\./i, 'H.Res.'))}">${escapeHtml(n.id)}</button>` : ''}</span>
+                <span class="dp-count">Mr. ${escapeHtml(n.member)}</span>
+            </div>
+            <div class="dp-what">${escapeHtml(what)}</div>
+            <div class="dp-meta">
+                <span class="dp-standing is-${st.cls}">${escapeHtml(st.label(n))}</span>
+                <span>noticed ${escapeHtml(when(n.noticeAt))}</span>
+                ${n.state === 'noticed' || n.state === 'due' ? '<span>to be taken up at a time the Speaker sets</span>' : ''}
+                <a class="ext" href="https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${escapeHtml(encodeURIComponent(new Date(n.noticeAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'America/New_York' })))}" target="_blank" rel="noopener">Floor record</a>
+            </div>
+        </div>`,
+        };
+    };
+    ListSync.sync(list, shown.map(card));
+}
+function loadPrivileged() {
+    fetch('https://api.evanhollander.org/house-floor/api/privileged-resolutions')
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then((d) => { _privileged = d; renderPrivileged(); })
+        .catch(() => { /* the petitions stand alone without it */ });
+}
+
 function loadDischargeCalendar() {
     fetch('https://api.evanhollander.org/house-floor/api/discharge-calendar')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -10961,7 +11022,7 @@ Toc.mount({
         { id: '', label: 'Last sitting day' }, { id: 'proceedings', label: 'Floor proceedings' }, { id: 'vote-series-panel', label: 'Vote series' }, { id: 'whip-updates', label: 'Dem Whip notices' },
         { id: 'absentee', label: 'Missing members' }, { id: 'bills', label: 'Bills this week' }, { id: 'twitter', label: 'Reporters' }, { id: 'voting-calendar', label: 'House calendar' },
         { id: 'airport-delays', label: 'Airport delays' }, { id: 'party-breakdown', label: 'Balance of power' }, { id: 'committee-meetings', label: 'Committee meetings' },
-        { id: 'discharge-petitions', label: 'Discharge petitions' }, { id: 'pipeline', label: 'Waiting for the floor' }, { id: 'appropriations', label: 'Appropriations' }, { id: 'data-sources', label: 'Sources' },
+        { id: 'discharge-petitions', label: 'Member-initiated action' }, { id: 'pipeline', label: 'Waiting for the floor' }, { id: 'appropriations', label: 'Appropriations' }, { id: 'data-sources', label: 'Sources' },
     ],
     topLabel: () => Toc.topLabel({
         live: !document.body.classList.contains('recess-mode'),
@@ -10970,6 +11031,8 @@ Toc.mount({
     }),
 });
 loadDischargePetitions();
+loadPrivileged();
+setInterval(() => { if (!document.hidden) loadPrivileged(); }, 90000);
 globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house', photoUrlFor: buildBioguidePhotoUrl, getControl: () => globalThis.__boardControl, placeholder: MEMBER_PHOTO_PLACEHOLDER });
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });

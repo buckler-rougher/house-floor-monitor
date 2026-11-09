@@ -26,6 +26,7 @@ import './lib/pipeline.js';
 import './lib/funding-deadline.js';
 import './lib/discharge-petitions.js';
 import './lib/discharge-calendar.js';
+import './lib/privileged-notices.js';
 import './lib/cra-rule.js';
 import './lib/appropriations.js';
 import './lib/leadership.js';
@@ -236,6 +237,8 @@ let CURRENT_CONGRESS = computeCurrentCongress();
 const KV_STORAGE_TTL = 30 * 24 * 3600; // 30 days
 const KV_AT_STAMP = /^\{"at":\d+,/;
 const KV_STAMP_REWRITE_MS = 3 * 3600_000;
+const PART_RETRY_MS = 90_000;           // a section of a bill that is still being read is not asked for again within this
+const _partTried = new Map();           // `${bag key}|${path}` -> when it was last started
 // A source that takes longer than this to answer, while a saved copy exists, no longer holds the reader up: the saved copy goes out (marked stale) and the refresh finishes behind it.
 // Congress.gov slowed to 9 to 23 seconds a call on 7 November, and the appropriations panel waited out all of it, every time, before showing a copy that was fine.
 const KV_SLOW_ORIGIN_MS = 4000;
@@ -3392,18 +3395,24 @@ async function handleSenateBill(env, billId) {
     const flushBag = () => { if (!bagChanged || !env?.HLS_CACHE) return Promise.resolve(); bagChanged = false; return env.HLS_CACHE.put(bagKey, JSON.stringify(bag), { expirationTtl: 14 * 24 * 3600 }).catch(() => {}); };
     // The kept copy first, whatever Congress.gov is doing: a section read before is on screen at once (a copy over six hours old is read again in the background). Only a section never
     // read waits, and only for one short try; if that fails it carries on in the background and is kept for the next opening.
+    // A section already being read for this bill (a client asks again every few seconds while one is missing) is NOT asked for again for a while, and does not wait: it answers
+    // from what is kept, or marks the answer partial at once. Without that every poll started the same slow Congress.gov calls again and, as each finished, another KV write.
     const part = async (path) => {
       const kept = bag[path];
-      const background = (ms) => { pending.push(callOnce(path, ms).then((j) => { if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } }).catch(() => {})); };
-      if (kept && kept.json) { if (Date.now() - kept.at > 6 * 3600 * 1000) background(40000); return kept.json; }
-      try { const j = await callOnce(path, 4500); if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } return j; } catch { background(40000); degraded = true; return null; }
+      const tryKey = `${bagKey}|${path}`;
+      const retryMs = env && env.PART_RETRY_MS !== undefined ? Number(env.PART_RETRY_MS) : PART_RETRY_MS;   // (a test turns the hold off)
+      const background = (ms) => { _partTried.set(tryKey, Date.now()); pending.push(callOnce(path, ms).then((j) => { if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } }).catch(() => {})); };
+      if (kept && kept.json) { if (Date.now() - kept.at > 6 * 3600 * 1000 && !(Date.now() - (_partTried.get(tryKey) || 0) < retryMs)) background(25000); return kept.json; }
+      if (Date.now() - (_partTried.get(tryKey) || 0) < retryMs) { degraded = true; return null; }
+      try { const j = await callOnce(path, 4500); if (j) { bag[path] = { at: Date.now(), json: j }; bagChanged = true; } return j; } catch { background(25000); degraded = true; return null; }
     };
     const [record, summaries, cosponsors, committees, actions, sapRaw, textVersions, titles] = await Promise.all([
       part(''), part('/summaries?limit=5'), part('/cosponsors?limit=250'), part('/committees'),
       part('/actions?limit=250'), fetchSapMap(env).catch(() => '{}'), part('/text?limit=20'), part('/titles?limit=10'),
     ]);
-    // keep what was learned now; and, once the slow ones have finished, what they learned
-    if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil((async () => { await flushBag(); if (pending.length) { await Promise.all(pending); await flushBag(); } })());
+    // keep what was learned: ONE write, once the slow calls have finished (never one now and another after, as the first version did)
+    if (_ctx && typeof _ctx.waitUntil === 'function') _ctx.waitUntil((async () => { if (pending.length) await Promise.all(pending); await flushBag(); })());
+    else await flushBag();
     // More than 250 cosponsors: the rest, so the support bar counts them all.
     const moreCo = await moreCosponsorPages(base, cosponsors, (path) => part(path));
     const everyCosponsor = [...(cosponsors?.cosponsors || []), ...moreCo.flatMap(p => p.json.cosponsors || [])];
@@ -4698,6 +4707,33 @@ async function handleDischargeCalendar(env) {
       return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
   });
+}
+
+// Privileged resolutions a Member has given notice of in the last ten days, read from the Clerk's floor record (lib/privileged-notices.js). Past days come from
+// handleProceedings, which keeps each (a past day never changes) in the key the time machine uses already; today is read straight from the Clerk and kept in
+// memory only, so a live floor does not write to KV on every action.
+async function handlePrivilegedResolutions(env) {
+  const ymd = getTodayDateET();
+  return kvCache(env, `privileged-resolutions-v1-${ymd}`, 60, async () => {
+    const days = [];
+    await Promise.all(Array.from({ length: 10 }, (_, back) => back).map(async (back) => {
+      const d = new Date(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8) - back));
+      const iso = d.toISOString().slice(0, 10);
+      const clerk = `${iso.slice(5, 7)}/${iso.slice(8, 10)}/${iso.slice(0, 4)}`;
+      try {
+        if (back === 0) {
+          const r = await fetch(`https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(clerk)}`, { signal: AbortSignal.timeout(10_000), headers: BOT_HEADERS });
+          if (r.ok) days.push({ date: iso, items: parseViewFloorActionsHtml(await r.text()).items });
+        } else {
+          const r = await handleProceedings(new Request(`https://internal/api/proceedings?date=${encodeURIComponent(clerk)}`), env);
+          if (r.ok) days.push({ date: iso, items: (await r.json()).items || [] });
+        }
+      } catch { /* a day that cannot be read is a day not counted */ }
+    }));
+    return new Response(JSON.stringify({ at: Date.now(), notices: globalThis.PrivilegedNotices.build(days), source: 'https://clerk.house.gov/FloorSummary' }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' },
+    });
+  }, 0);
 }
 
 // The twelve regular appropriations bills of the fiscal year and how far each has got (lib/appropriations.js), read from each bill's own Congress.gov record and
@@ -7223,6 +7259,8 @@ async function handleRequest(request, env) {
     return await handleAppropriations(env);
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
     return await handleDischargeCalendar(env);
+  } else if (path === '/api/privileged-resolutions' && request.method === 'GET') {
+    return await handlePrivilegedResolutions(env);
   } else if (path === '/api/discharge-petition' && request.method === 'GET') {
     return await handleDischargePetition(env, url.searchParams.get('id'));
   } else if (path === '/api/discharge-petitions' && request.method === 'GET') {
