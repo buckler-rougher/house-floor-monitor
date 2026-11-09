@@ -12036,6 +12036,9 @@ body.recess-mode .today-house.has-data { display: block; }
 .dp-days { display: inline-flex; gap: 3px; }
 .dp-days i { width: 18px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); }
 .dp-days i.on { background: var(--accent-green); }
+.dp-barrow { display: flex; align-items: center; gap: var(--sp-12); }
+.dp-barrow .dp-bar { flex: 1; }
+.dp-barrow .dp-count { white-space: nowrap; }
 .dp-days-line { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--sp-6); font-size: var(--fs-xs); color: var(--text-muted); }
 .dp-clock { align-self: center; color: var(--accent-green); font-size: var(--fs-md); }
 .dp-standing.is-off { background: rgba(255, 255, 255, 0.06); color: var(--text-muted); }
