@@ -6524,7 +6524,7 @@ function dischargeItem(p) {
         const hasRule = p.billNumber && p.billNumber.replace(/\s+/g, '') !== bill.replace(/\s+/g, '');
         const standing = isDone ? dischargeStanding(p) : null;
         return `
-        <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}">
+        <div class="dp-item${isDone ? ' is-done' : ''}${standing && standing.kind === 'eligible' ? ' is-eligible' : ''}${standing && standing.kind === 'off' ? ' is-off' : ''}">
             <div class="dp-top">
                 <span class="dp-id"><span class="dp-chip">No. ${p.number}</span>${billBtn(bill)}${hasRule ? `<span class="dp-rule">rule ${billBtn(p.billNumber)}</span>` : ''}</span>
                 <span class="dp-count">${isDone ? `<span class="dp-check gi gi-check" aria-hidden="true"></span> ` : ''}<b>${p.signatures}</b> of ${need}</span>
