@@ -6468,7 +6468,7 @@ function dischargeStanding(p) {
         const ann = dischargeAnnounced(p);
         if (ann) {
             const day = new Date(ann.noticeAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
-            return { kind: 'eligible', label: 'Motion announced', detail: `${day} by Mr. ${ann.member}; to be taken up within 2 legislative days` };
+            return { kind: 'eligible', label: 'Motion announced', detail: `${ann.days} of 2 legislative days \u00b7 announced ${day} by Mr. ${ann.member} \u00b7 the Speaker sets the time` };
         }
     }
     if (!_dischargeCal || p.signatures < _discharge.needed) return null;
@@ -6629,7 +6629,7 @@ function renderPrivileged() {
     const card = (n) => {
         const st = PRIVILEGED_STANDING[n.state];
         const live = n.state === 'due' || n.state === 'considered';
-        const what = n.title || 'A resolution raising a question of the privileges of the House (not yet called up)';
+        const what = n.title || 'Privileged resolution';
         return {
             key: n.noticeAt,
             html: `
@@ -6642,7 +6642,7 @@ function renderPrivileged() {
             <div class="dp-meta">
                 <span class="dp-standing is-${st.cls}">${escapeHtml(st.label(n))}</span>
                 <span>noticed ${escapeHtml(when(n.noticeAt))}</span>
-                ${n.state === 'noticed' || n.state === 'due' ? '<span>to be taken up at a time the Speaker sets</span>' : ''}
+                ${n.state === 'noticed' || n.state === 'due' ? '<span>the Speaker sets the time</span>' : ''}
                 <a class="ext" href="https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${escapeHtml(encodeURIComponent(new Date(n.noticeAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'America/New_York' })))}" target="_blank" rel="noopener">Floor record</a>
             </div>
         </div>`,
