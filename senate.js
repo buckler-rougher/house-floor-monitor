@@ -1421,6 +1421,14 @@ function scheduledVote(measure) {
     return { time: _agenda.voteTime, date: boardDate(day) };
 }
 
+// The bill a measure is a vehicle for, when the caucus schedule says so ("H.R.2347, legislative vehicle for the Bipartisan American Affordability and Jobs Act"). The
+// measure's own title is a placeholder then, so the card says what is really being passed. The words are the schedule's, a hand-written post: only said, never inferred.
+function scheduledVehicle(measure) {
+    const key = measureKey(measure);
+    const m = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.vehicle);
+    return m ? m.vehicle : null;
+}
+
 // Which modal a card opens, decided by the shape of what it names. The roll
 // call record gives a measure id or a PN; the caucus prose, which is the only
 // place a cloture motion filed and not yet voted appears, gives "Exec. Cal. 830".
@@ -1507,6 +1515,7 @@ function stageCard(m, key, i) {
     // A scheduled card is dated by when its vote is, not by when the cloture
     // that got it there was.
     const when = due ? due.date : boardDate(v.date);
+    const vehicle = scheduledVehicle(m.measure);
 
     return `
     <div class="bill-slot">
@@ -1520,6 +1529,7 @@ function stageCard(m, key, i) {
                         ${idRow}
                     </div>
                     <div class="bill-title">${escapeHtml(m.subject)}</div>
+                    ${vehicle ? `<div class="bill-tags"><span class="pipe-tag" title="As the Senate Democratic Caucus schedule describes it">Vehicle for ${escapeHtml(vehicle)}</span></div>` : ''}
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml(action)}</div>
                         <div class="bill-date">${escapeHtml(when)}</div>

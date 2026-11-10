@@ -10860,6 +10860,8 @@ body.all-mode .vote-header {
 .pipe-list .bill-date { flex: none; white-space: nowrap; }
 .pipe-tag { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); padding: 1px 6px; border-radius: var(--radius-full); background: rgba(255, 255, 255, 0.06); }
 .pipe-tag.is-amended { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent); padding: 0 6px; }
+.bill-tags { margin-top: var(--sp-4); }
+.bill-tags .pipe-tag { display: inline-block; border-radius: var(--radius-4); line-height: 1.45; padding: 2px 6px; }   /* a vehicle's name can run to two lines, which a full pill makes lumpy */
 @media (max-width: 768px) {
   .pipe-cols { grid-template-columns: 1fr; }
   .pipe-col, .pipe-col:last-child { padding: var(--sp-12) var(--sp-16); border-right: 0; }
