@@ -98,4 +98,19 @@ ok('amendments do not change the measure: the bill is the one named (24 and 28 S
   for (const re of [/Thursday, September 24/, /Monday, September 28/]) assert.strictEqual(post(re).measures.find((m) => m.measure === 'S.4668').role, 'taken-up');
 });
 
+ok('a vehicle: the post names the bill that is really being passed (10 November: H.R.2347, vehicle for the Bipartisan American Affordability and Jobs Act)', () => {
+  const sentence = 'Following Leader remarks, the Senate will resume consideration of the motion to proceed to Cal. #453 , H.R.2347 , legislative vehicle for the Bipartisan American Affordability and Jobs Act, post-cloture.';
+  const m = A.parse(sentence).measures.find((x) => x.measure === 'H.R.2347');
+  assert.strictEqual(m.vehicle, 'Bipartisan American Affordability and Jobs Act');
+  assert.strictEqual(m.role, 'taken-up');
+});
+
+ok('a vehicle, in the other forms the posts use: after a line break, in brackets, "the legislative vehicle for"; a measure with none has none', () => {
+  const v = (s, id) => A.parse(s).measures.find((x) => x.measure === id).vehicle;
+  assert.strictEqual(v('Cal. #5, H.R.6500, vehicle for\nContinuing Resolution:\nCollins', 'H.R.6500'), 'Continuing Resolution');
+  assert.strictEqual(v('S.1318 (Legislative Vehicle for FISA). If he does so,', 'S.1318'), 'FISA');
+  assert.strictEqual(v('S.1383, the legislative vehicle for the SAVE Act.', 'S.1383'), 'SAVE Act');
+  assert.strictEqual(v('Cal. #12, S.77 Some Act, post-cloture.', 'S.77'), null);
+});
+
 console.log(`\n${n} passed`);
