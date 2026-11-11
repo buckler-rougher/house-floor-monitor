@@ -3632,7 +3632,8 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
         ruleBills:            mergeBills(data.ruleBills,            billsData.ruleBills,            isQuick),
         suspensionBills:      mergeBills(data.suspensionBills,      billsData.suspensionBills,      isQuick),
         mayBeConsideredBills: mergeBills(data.mayBeConsideredBills, billsData.mayBeConsideredBills, isQuick),
-        alsoOnFloorBills:     mergeBills(data.alsoOnFloorBills,     billsData.alsoOnFloorBills,     isQuick),
+        // an answer from before the group existed (a copy kept in the Worker's cache) says nothing about it, so what the page already has stays
+        alsoOnFloorBills:     data.alsoOnFloorBills === undefined ? (billsData.alsoOnFloorBills || []) : mergeBills(data.alsoOnFloorBills, billsData.alsoOnFloorBills, isQuick),
         rawHeaders:  data.rawHeaders  || billsData.rawHeaders  || null,
         lastUpdated: data.lastUpdated || new Date(),
         weekDate:    data.weekDate    || billsData.weekDate    || 'No current week bills available'
