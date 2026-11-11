@@ -3,6 +3,10 @@
 // Helpers both boards share (lib/util.js). Declared first so nothing can reach them early.
 const { escapeHtml, setIfChanged, MONTH_NAMES, DAY_NAMES, fmtDate, fmtDateLong } = globalThis.BoardUtil;
 
+// The groups of the Bills panel, in the order they are drawn. The first three are the Majority Leader's schedule; ALSO ON THE FLOOR is what the Clerk's floor log shows the House taking
+// up that the schedule never listed (the Worker's offScheduleBills). Every place that looks a bill up across the groups, or updates one from the proceedings, reads this one list.
+const BILL_GROUPS = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills', 'alsoOnFloorBills'];
+
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
 // The Office of the Clerk's quill, lifted out of their wordmark where it forms
 // the K. Inline and drawn in currentColor so it takes the row's colour and dims
@@ -451,7 +455,7 @@ function applyRollLogToBills(entries, activeRoll) {
                         const mtrData = { type: mtrType, status, voteText: `${yeas}-${nays}` };
                         motionsToRecommit.set(bid, mtrData);
                         // Persist onto bill object so it survives proceedings rollover
-                        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                        for (const key of BILL_GROUPS) {
                             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === bid);
                             if (bill) { bill.mtr = mtrData; break; }
                         }
@@ -475,7 +479,7 @@ function applyRollLogToBills(entries, activeRoll) {
         const isSuspension = /suspend/i.test(q);
         const required = isSuspension ? Math.ceil((yeas + nays) * 2 / 3) : Math.floor((yeas + nays) / 2) + 1;
         const passed = yeas >= required;
-        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+        for (const key of BILL_GROUPS) {
             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billNorm);
             if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
                 bill.status = passed ? 'passed' : 'failed';
@@ -1487,7 +1491,7 @@ function reconcileVoteWithBills(force = false) {
     const billId = BillId.parseBillId(question, { anchored: true }).display;
 
     // Look for the bill across all three billsData arrays
-    const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
+    const allArrays = BILL_GROUPS;
     let found = false;
     for (const key of allArrays) {
         const arr = billsData[key] || [];
@@ -3571,6 +3575,7 @@ let billsData = {
     ruleBills: [],
     suspensionBills: [],
     mayBeConsideredBills: [],
+    alsoOnFloorBills: [],
     rawHeaders: null,
     lastUpdated: null
 };
@@ -3627,6 +3632,7 @@ function applyBillsData({ bills: data, rules: rulesData, whip: whipData }, isQui
         ruleBills:            mergeBills(data.ruleBills,            billsData.ruleBills,            isQuick),
         suspensionBills:      mergeBills(data.suspensionBills,      billsData.suspensionBills,      isQuick),
         mayBeConsideredBills: mergeBills(data.mayBeConsideredBills, billsData.mayBeConsideredBills, isQuick),
+        alsoOnFloorBills:     mergeBills(data.alsoOnFloorBills,     billsData.alsoOnFloorBills,     isQuick),
         rawHeaders:  data.rawHeaders  || billsData.rawHeaders  || null,
         lastUpdated: data.lastUpdated || new Date(),
         weekDate:    data.weekDate    || billsData.weekDate    || 'No current week bills available'
@@ -3747,7 +3753,7 @@ function updateBillStatusFromProceedings(items) {
     if (!items || items.length === 0) return;
 
     const billIdPattern = /\b(H\.R\.|H\.Res\.|H\.J\.Res\.|H\.Con\.Res\.|S\.(?:Res\.|J\.Res\.|Con\.Res\.)?|S\.)\s*(\d+)/i;
-    const allArrays = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills'];
+    const allArrays = BILL_GROUPS;
     let changed = false;
 
     const extractBillId = desc => {
@@ -4053,7 +4059,7 @@ function loadMtrFromStorage() {
 function applyStoredMtrToBills() {
     for (const [billId, mtrData] of motionsToRecommit) {
         if (mtrData.status !== 'passed' && mtrData.status !== 'failed') continue;
-        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+        for (const key of BILL_GROUPS) {
             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billId);
             if (bill && !bill.mtr) { bill.mtr = mtrData; break; }
         }
@@ -4106,7 +4112,7 @@ function updateMotionsToRecommit(items) {
             motionsToRecommit.set(billId, mtrData);
             // Persist onto bill object so it survives proceedings rollover
             if (status === 'passed' || status === 'failed') {
-                for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+                for (const key of BILL_GROUPS) {
                     const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billId);
                     if (bill) { bill.mtr = mtrData; break; }
                 }
@@ -4218,7 +4224,7 @@ function loadAmendmentVotesFromStorage() {
 function applyStoredAmendmentVotesToBills() {
     for (const data of amendmentVotes.values()) {
         if (data.status !== 'passed' && data.status !== 'failed') continue;
-        for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+        for (const key of BILL_GROUPS) {
             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === data.billId);
             if (bill) {
                 bill.amendmentVotes = bill.amendmentVotes || [];
@@ -4308,7 +4314,7 @@ function updateAmendmentVotes(items) {
     const applyEntry = (mapKey, entry) => {
         amendmentVotes.set(mapKey, entry);
         if (entry.status === 'passed' || entry.status === 'failed') {
-            for (const key of ['ruleBills', 'suspensionBills', 'mayBeConsideredBills']) {
+            for (const key of BILL_GROUPS) {
                 const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === entry.billId);
                 if (bill) {
                     bill.amendmentVotes = bill.amendmentVotes || [];
@@ -4541,6 +4547,20 @@ function updateBillsDisplay() {
         } else {
             setIfChanged(mayBeConsideredList, '');
             if (mayBeConsideredSection) mayBeConsideredSection.style.display = 'none';
+        }
+    }
+
+    // ALSO ON THE FLOOR: taken up on the floor but not on the schedule. Own group below, never mixed into the scheduled ones.
+    const alsoList = document.getElementById('also-on-floor-list');
+    const alsoSection = document.getElementById('also-on-floor-section');
+    const sortedAlso = sortBillsForDisplay(filterTracked(billsData.alsoOnFloorBills || []));
+    if (alsoList) {
+        if (sortedAlso.length > 0) {
+            setIfChanged(alsoList, sortedAlso.map(bill => createBillCard(bill, 'also')).join(''));
+            if (alsoSection) alsoSection.style.display = '';
+        } else {
+            setIfChanged(alsoList, '');
+            if (alsoSection) alsoSection.style.display = 'none';
         }
     }
 
@@ -4799,6 +4819,11 @@ function openBillModal(billId, opts = {}) {
         openRemoteBillModal(billId);
         return;
     }
+    // Off the schedule, so the week's list carries no sponsor, summary or committees for it: the Congress.gov modal does
+    if (bill.offSchedule) {
+        openRemoteBillModal(billId);
+        return;
+    }
 
     // The sponsor, summary and committees normally arrive with the week's list, but that call waits on Congress.gov and can run long or fail. A modal that finds none of them asks for
     // this one bill itself (the answer is kept, and one request however many ask), says it is waiting, and draws the details when they arrive; if Congress.gov does not answer, it says
@@ -4820,8 +4845,8 @@ function openBillModal(billId, opts = {}) {
         }
     }
 
-    const procedureClass = bill.procedure === 'suspension' ? 'suspension' : bill.procedure === 'maybe' ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
-    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'SUBJECT TO A RULE';
+    const procedureClass = bill.procedure === 'suspension' ? 'suspension' : (bill.procedure === 'maybe' || bill.procedure === 'also') ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
+    const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'also' ? 'NOT ON THE SCHEDULE' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'SUBJECT TO A RULE';
     const statusClass = bill.status || 'scheduled';
     const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';

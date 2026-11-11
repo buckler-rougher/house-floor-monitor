@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261109k">
+    <link rel="stylesheet" href="styles.house.css?v=20261111a">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -50,7 +50,7 @@
         // the header button is held back (html.tm-on) until the owner has seen it work on the live site: ?tm shows it, and remembers
         try { if (/[?&]tm\b/.test(location.search)) localStorage.setItem('tm-on', '1'); if (localStorage.getItem('tm-on') === '1') document.documentElement.classList.add('tm-on'); } catch (e) { /* no storage */ }
         if (/[?&]replay=\d{8}/.test(location.search)) {
-            document.write('<scr' + 'ipt src="lib/replay.js?v=20261017a"></scr' + 'ipt><scr' + 'ipt src="lib/replay-cc.js?v=20261015b"></scr' + 'ipt><scr' + 'ipt src="lib/replay-shim.js?v=20261017d"></scr' + 'ipt>');
+            document.write('<scr' + 'ipt src="lib/replay.js?v=20261111a"></scr' + 'ipt><scr' + 'ipt src="lib/replay-cc.js?v=20261015b"></scr' + 'ipt><scr' + 'ipt src="lib/replay-shim.js?v=20261017d"></scr' + 'ipt>');
         }
     </script>
     <script src="lib/fetch-dedupe.js?v=20261022a"></script>
@@ -1599,6 +1599,13 @@
                             </div>
                         </div>
                         <div class="bills-list" id="may-be-considered-list"></div>
+                        <!-- ALSO ON THE FLOOR: taken up but not on the schedule (the Clerk's floor log; the Worker's offScheduleBills) -->
+                        <div class="bills-column-header bills-column-header-sub" id="also-on-floor-section" style="display:none">
+                            <div class="bills-column-header-left">
+                                <span class="bills-column-title">ALSO ON THE FLOOR</span>
+                            </div>
+                        </div>
+                        <div class="bills-list" id="also-on-floor-list"></div>
                     </div>
                     <!-- col 2: UNDER SUSPENSION -->
                     <div class="bills-column">
@@ -2051,7 +2058,7 @@
     <script defer src="lib/missing-members.js?v=20261018a"></script>
     <script defer src="lib/floor-speaker.js?v=20261003a"></script>
     <script defer src="lib/caption-panels.js?v=20261017a"></script>
-    <script defer src="app.js?v=20261109q"></script>
+    <script defer src="app.js?v=20261111a"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>
