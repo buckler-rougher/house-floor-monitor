@@ -5121,7 +5121,6 @@ font-family: var(--font-mono);
     margin-bottom: var(--sp-2);
 }
 .bill-id-row .bill-id { margin-bottom: 0; }
-.bill-id-row .whip-tag { margin-top: 2px; }
 
 .whip-tag {
     display: inline-flex;
