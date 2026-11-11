@@ -810,7 +810,37 @@ function pickBillsWeekStart(referenceDate, feedWeekStarts, live) {
   const has = (t) => (feedWeekStarts || []).includes(t);
   return !has(start.getTime()) && has(next.getTime()) ? next : start;
 }
-export { pickBillsWeekStart };
+// Measures the Clerk's floor log shows the House taking up that the Majority Leader's schedule never listed (see the call in handleBills). `titles` and `statuses` are what
+// extractBillStatusesFromProceedings read from the week's days; `onSchedule` is every card the schedule produced. Exported for test/off-schedule.test.mjs.
+function offScheduleBills(onSchedule, titles, statuses) {
+  const key = (id) => String(id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const have = new Set(onSchedule.map((b) => key(b.id)));
+  const out = [];
+  for (const [id, text] of Object.entries(titles)) {
+    if (have.has(key(id))) continue;
+    // taken up on the floor, not merely named: a "Considered ..." row, a debate, or a resumed consideration
+    if (!/\bConsider(?:ed|ation)\b[^.]{0,40}\b(?:as|under|from|initiated|resumed)|proceeded with[^.]{0,40}debate|resumed consideration/i.test(text) && !statuses[id]) continue;
+    const q = text.match(/[\u2014\u2013-]\s*"\s*([^"]+?)\s*"/);
+    const title = q ? q[1].replace(/\s+([.,;:)])/g, '$1').replace(/\(\s+/g, '(').replace(/\s+/g, ' ').trim() : '';
+    const st = statuses[id];
+    out.push({
+      id: id.replace(/^H\.Res\./i, 'H. Res. ').replace(/\s+/g, ' ').trim(),
+      title,
+      isRule: false,
+      description: '',
+      status: st ? st.status : 'scheduled',
+      latestAction: st ? st.statusText : 'Considered on the floor',
+      latestActionDate: null,
+      considered: true,
+      offSchedule: true,
+      actionSource: 'proceedings',
+      actionSourceUrl: st ? (st.sourceUrl || null) : null,
+    });
+  }
+  return out;
+}
+
+export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills };
 
 // ── Proceedings → Bill Status ────────────────────────────────────────────────
 // Convert a Congress.gov bill URL to our canonical bill ID string.
@@ -1042,6 +1072,21 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
             statusText: detail ? `Tabled ${detail}` : 'Tabled',
             sourceUrl,
           };
+        }
+      }
+      continue;
+    }
+
+    // Referral reads like tabling: agreeing to the motion ends the resolution's run on the floor. Recorded as the same terminal status the card already draws for a measure the
+    // House did not adopt, with the words saying what happened ("Referred (Roll Call 317): 211-204"). A referral that fails leaves the resolution where it was.
+    if (globalThis.FloorStatus.isReferralMotion(description)) {
+      const agreed = /(agreed to)\b/i.test(description) && !/not agreed to|failed/i.test(description);
+      const rid = findBillId(i, 6, 0);   // forward only (the rows after it in the feed are the ones before it in time): the row BEFORE it in time can be another measure's
+      if (rid && agreed) {
+        const detail = formatVoteDetail(description);
+        const prev = statuses[rid];
+        if (!prev || prev.status !== 'passed') {
+          statuses[rid] = { status: 'failed', statusText: detail ? `Referred ${detail}` : 'Referred', sourceUrl };
         }
       }
       continue;
@@ -2223,7 +2268,10 @@ async function _fetchBills(request, env) {
         // short a prefix matches every contempt resolution equally and silently
         // collapses them onto whichever was seen first.
         let hit = null;
-        for (const len of [150, 130, 110, 90]) {
+        // A title shorter than the shortest prefix ("Impeaching Peter Brian Hegseth, Secretary of Defense, for high crimes and misdemeanors." is 84 characters) is matched whole,
+        // so it still needs exactly one resolution to contain it. Skipping it left the impeachment "may be considered" after the House had referred it.
+        const lens = full.length >= 40 && full.length < 90 ? [full.length] : [150, 130, 110, 90];
+        for (const len of lens) {
           if (full.length < len) continue;
           const needle = full.slice(0, len);
           const matches = candidates.filter(([id, text]) =>
@@ -2420,10 +2468,17 @@ async function _fetchBills(request, env) {
       if (sapUrl) bill.sapUrl = sapUrl;
     }
 
+    // ALSO ON THE FLOOR: measures the Clerk's floor log shows the House taking up that the Majority Leader's schedule never listed (a discharge rule and the bill it brings up, a bill
+    // resumed as unfinished business, ...). The panel is built from the schedule, so without this they have no card at all (10 to 11 November 2026: H.Res. 1247, H.R. 2102 and H.R. 9237).
+    // Everything here is the Clerk's own wording, the title from the quoted text of the "Considered ..." row and the status from the same reading as every other card; a measure with no
+    // outcome row yet shows what the Clerk last said, and corrects itself when the Clerk posts the next row.
+    const alsoOnFloorBills = offScheduleBills(allBills, proceedingsTitles, proceedingsStatuses);
+
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
       suspensionBills: suspensionBills,
       mayBeConsideredBills: mayBeConsideredBills,
+      alsoOnFloorBills: alsoOnFloorBills,
       lastUpdated: new Date(),
       weekDate: weekDate,
       rawHeaders: {

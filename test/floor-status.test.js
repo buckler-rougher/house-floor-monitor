@@ -105,6 +105,15 @@ check('nor a postponement', F.isPostponement(tabled), false);
 // just passed.
 const reconsider = 'Motion to reconsider laid on the table Agreed to without objection.';
 check('reconsideration laid on the table is not tabling', F.isTablingMotion(reconsider), false);
+
+// ── Referral, 10 November 2026 (H.Res. 1655, the Hegseth impeachment, referred to Judiciary) ──
+const referred = 'On motion to refer Agreed to by the Yeas and Nays: 211 - 204 (Roll no. 317) .';
+check('referral is recognised', F.isReferralMotion(referred), true);
+check('and bounds the bill search like any outcome', F.isOutcomeRow(referred), true);
+check('referral is not a passage motion', F.isPassageMotion(referred), false);
+check('nor tabling', F.isTablingMotion(referred), false);
+check('the debate row that names the motion is not the outcome', F.isReferralMotion('DEBATE - The House proceeded with one hour of debate on motion to refer H. Res. 1655 .'), false);
+check('nor is the previous question on it', F.isReferralMotion('The previous question on the motion to refer was ordered without objection.'), false);
 check('and is not an outcome at all', F.isOutcomeRow(reconsider), false);
 
 // ── How an outcome reads on the card ────────────────────────────────────────
