@@ -13270,7 +13270,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
    over all of them (the :not(#badge) only raises the specificity above theirs). The border stays, transparent, so nothing moves; the badges that never had one are left alone. The rounder
    "pill" shape of the agenda items stays the tag's 4px corner. */
 :is(.majority-badge, .cr-badge, .bill-modal-badge, .amdt-status-badge, .bill-rule-tag, .journal-approval-badge, .cert-election-approval-badge, .cert-electoral-approval-badge, .pipe-tag,
-    .one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag):not(#badge) {
+    .one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag,
+    .whip-tag, .dais-label, .debate-length-tag, .journal-party-tag):not(#badge) {
     border-color: transparent;
 }
 :is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag):not(#badge) {
