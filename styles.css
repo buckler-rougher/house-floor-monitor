@@ -5503,7 +5503,7 @@ font-family: var(--font-mono);
     margin-bottom: var(--sp-2);
 }
 .bill-id-row .bill-id { margin-bottom: 0; }
-.bill-id-row .whip-tag { margin-top: 2px; }
+/* no margin-top on the Dem Whip tag: the row centres its items, and a 2px top margin put the tag's caps 0.7px below the id's (measured against EMH Mono's metrics, 11 November) */
 
 /* A tag's caps used to be pushed down with uneven padding (3px above, 1px below; the rule tag 5 and 3),
    a workaround for system fonts whose caps sit high in the line box. EMH Mono's metrics are known, and
