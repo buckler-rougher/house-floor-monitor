@@ -1529,7 +1529,7 @@ function stageCard(m, key, i) {
                         ${idRow}
                     </div>
                     <div class="bill-title">${escapeHtml(m.subject)}</div>
-                    ${vehicle ? `<div class="bill-tags"><span class="pipe-tag" title="As the Senate Democratic Caucus schedule describes it">Vehicle for ${escapeHtml(vehicle)}</span></div>` : ''}
+                    ${vehicle ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(vehicle)}</div>` : ''}
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml(action)}</div>
                         <div class="bill-date">${escapeHtml(when)}</div>
