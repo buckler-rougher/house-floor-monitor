@@ -5290,7 +5290,7 @@ async function handleSpecialRule(env, nRaw) {
   const n = Number(nRaw);
   if (!Number.isInteger(n) || n < 1 || n > 99999) return new Response(JSON.stringify({ error: 'n must be a resolution number' }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   const today = getTodayDateET(); const iso = `${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}`;
-  return kvCache(env, `special-rule-${n}-${iso}-v1`, 600, async () => {
+  return kvCache(env, `special-rule-${n}-${iso}-v2`, 600, async () => {
     const KEY = `special-rules-corpus-v1`;
     const state = (env.HLS_CACHE && await env.HLS_CACHE.get(KEY, 'json')) || { bodies: {}, agreed: { ...SPECIAL_RULE_AGREED_SEED }, none: {} };
     const before = JSON.stringify(state);
