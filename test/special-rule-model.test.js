@@ -21,3 +21,11 @@ test('an extension chain ends where the last step says, with the day count', () 
 });
 test('the card tags match the parser\'s', () => { assert.deepEqual(model(1650).tags, ['Closed', '1 hr debate']); });
 test('html escapes what it draws', () => { const m = model(1650); m.measures[0].title = '<img onerror=x>'; assert.ok(!M.html(m).includes('<img')); });
+
+test('a committee substitute reads ADOPTS COMMITTEE AINS and spells itself out on hover', () => {
+  const f = (n) => model(n).measures.flatMap((m) => m.facts).find((x) => x.t === 'Adopts committee AINS');
+  assert.equal(f(211).tip, "Adopts Ways and Means' committee amendment in the nature of a substitute");
+  assert.equal(f(377).tip, "Adopts Natural Resources' committee amendment in the nature of a substitute");
+  const j = Object.keys(rules).map((n) => model(n).measures.flatMap((m) => m.facts)).flat().find((x) => /Judiciary/.test(x.tip || ''));
+  assert.equal(j.tip, "Adopts Judiciary's committee amendment in the nature of a substitute");
+});
