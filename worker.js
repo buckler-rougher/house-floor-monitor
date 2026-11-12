@@ -5720,11 +5720,11 @@ async function handleSenateQuorum(env) {
     for (const seg of fresh.slice(0, 12)) {
       const vtt = await get(dir + seg);
       if (!vtt) continue;
-      const flat = vtt.replace(/\r/g, '').replace(/\n/g, ' ');
+      const flat = SC.cueText(vtt);
       // Modes first: a leader's recognition starts the overlay, and the member label the
       // call latches from the same segment then says who it is.
       state.modes = SM.feed(state.modes, flat, heard);
-      state.call = SC.feed(state.call, flat, heard);
+      state.call = SC.feedVtt(state.call, vtt, heard);
       const sp = state.call.speaker;
       if (sp && sp.kind === 'member' && sp.label !== lastMember) state.modes = SM.speaker(state.modes, sp.label, heard);
       if (sp) lastMember = sp.label;
