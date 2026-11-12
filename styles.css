@@ -11354,7 +11354,8 @@ html.replay-mode .weather-panel { display: none; }
 /* ── What a special rule does (BETA): the tags on a rule's card and the section of its modal (lib/special-rule-model.js draws it). Labels, not buttons: no outline. ── */
 .sr-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .sr-facts:empty { display: none; }
-.sr-fact { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); background: rgba(255, 255, 255, 0.07); padding: 3px 7px; border-radius: 4px; line-height: 1.35; }
+.sr-fact { display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); background: rgba(255, 255, 255, 0.07); padding: 2px 7px; border-radius: var(--radius-4); line-height: 1.4; white-space: nowrap; }
+.sr-card-facts { margin: var(--sp-6) 0 var(--sp-6); gap: var(--sp-6); }
 .sr-fact.is-hl { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); }
 .sr-section { padding: var(--sp-16) var(--sp-24) var(--sp-4); border-top: 1px solid var(--border-color); margin-top: var(--sp-16); flex: none; }
 .sr-section[hidden] { display: none; }
