@@ -11350,6 +11350,54 @@ html.replay-mode .weather-panel { display: none; }
     .today-date[data-short]::before, .weather-panel::before, .clock-label { letter-spacing: 0.04em; }
     .session-text { letter-spacing: 0.02em; }
 }
+
+/* ── What a special rule does (BETA): the tags on a rule's card and the section of its modal (lib/special-rule-model.js draws it). Labels, not buttons: no outline. ── */
+.sr-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sr-facts:empty { display: none; }
+.sr-fact { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-secondary); background: rgba(255, 255, 255, 0.07); padding: 3px 7px; border-radius: 4px; line-height: 1.35; }
+.sr-fact.is-hl { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); }
+.sr-section { padding: var(--sp-16) var(--sp-24) var(--sp-4); border-top: 1px solid var(--border-color); margin-top: var(--sp-16); flex: none; }
+.sr-section[hidden] { display: none; }
+.sr-head { display: flex; align-items: center; gap: 8px; }
+.sr-title { font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+.sr-beta { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); padding: 2px 6px; border-radius: 4px; }
+.sr-note { margin: 6px 0 12px; font-size: var(--fs-base); line-height: 1.5; color: var(--text-muted); }
+.sr-block { padding: 6px 0 2px; }
+.sr-h { margin: 0 0 8px; font-family: var(--font-mono); font-size: var(--fs-md); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+.sr-h small { text-transform: none; letter-spacing: 0; font-family: var(--font-sans); font-size: var(--fs-base); font-weight: 400; }
+.sr-meas { padding: 10px 0; border-top: 1px solid var(--border-color); }
+.sr-meas:first-of-type { border-top: 0; padding-top: 0; }
+.sr-top { display: flex; align-items: baseline; gap: 10px; }
+.sr-mid { font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-lg); color: var(--accent-blue); }
+.sr-sec { margin-left: auto; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); letter-spacing: var(--track-wide); }
+.sr-mtitle { margin-top: 3px; color: var(--text-secondary); font-size: var(--fs-lg); line-height: 1.4; }
+.sr-prov { padding: 11px 0; border-top: 1px solid var(--border-color); }
+.sr-prov:first-of-type { border-top: 0; padding-top: 0; }
+.sr-kind { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-blue); }
+.sr-kind.is-raw { color: var(--text-muted); }
+.sr-ext { color: var(--text-secondary); background: rgba(255, 255, 255, 0.07); padding: 1px 6px; border-radius: 4px; }
+.sr-plain { font-size: var(--fs-lg); line-height: 1.5; color: var(--text-primary); }
+.sr-raw { display: block; margin-top: 4px; color: var(--text-muted); font-size: var(--fs-base); }
+.sr-quote { margin-top: 7px; }
+.sr-quote > summary { cursor: pointer; font-size: var(--fs-base); color: var(--accent-blue); list-style: none; display: inline-flex; align-items: center; gap: 5px; width: fit-content; }
+.sr-quote > summary::-webkit-details-marker { display: none; }
+.sr-quote > summary::before { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.15s; }
+.sr-quote[open] > summary::before { transform: rotate(45deg); }
+.sr-quote-body { margin-top: 7px; padding: 9px 12px; background: rgba(255, 255, 255, 0.04); border-left: 2px solid var(--border-color); font-size: var(--fs-base); line-height: 1.55; color: var(--text-secondary); max-height: 280px; overflow-y: auto; }
+.sr-quote-body p { margin: 0 0 8px; }
+.sr-quote-body small { color: var(--text-muted); }
+.sr-chain { margin: 10px 0 2px 2px; padding-left: 14px; border-left: 2px solid var(--border-color); display: grid; gap: 9px; }
+.sr-step { position: relative; font-size: var(--fs-base); line-height: 1.45; color: var(--text-secondary); }
+.sr-step::before { content: ""; position: absolute; left: -20px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--bg-elevated, var(--bg-dark)); border: 2px solid var(--text-muted); }
+.sr-step.is-now::before { border-color: var(--accent-blue); background: var(--accent-blue); }
+.sr-when { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+.sr-rl { font-family: var(--font-mono); color: var(--accent-blue); font-weight: 600; }
+.sr-old { text-decoration: line-through; color: var(--text-muted); }
+.sr-status { display: inline-flex; align-items: center; gap: 7px; margin-top: 6px; font-size: var(--fs-base); color: var(--text-muted); }
+.sr-status .sr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+.sr-status.is-live { color: var(--text-primary); }
+.sr-status.is-live .sr-dot { background: var(--accent-green); }
+.sr-related { margin-top: 8px; font-size: var(--fs-base); color: var(--text-secondary); }
 }  /* end @layer app */
 
 /* ── Deliberate overrides (unlayered) ──────────────────────────────────────

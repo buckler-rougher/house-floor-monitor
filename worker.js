@@ -33,6 +33,9 @@ import './lib/leadership.js';
 import './lib/replay.js';
 import './lib/congress-bills.js';
 import './lib/house-calendar.js';
+import './lib/special-rule.js';
+import './lib/house-rule-clauses.js';
+import './lib/special-rule-model.js';
 // Senate seniority, read off Wikipedia's ranked table (see lib/senate-seniority.js
 // for why Wikipedia and how it is refused when it does not parse cleanly).
 import './lib/senate-seniority.js';
@@ -5252,6 +5255,77 @@ async function handleHouseCalendar(env) {
   });
 }
 
+// ── /api/special-rule?n=1656 ─────────────────────────────────────────────────
+// What a special rule does, read from its text by lib/special-rule.js (patterns, no model) and put in the shape the page draws (lib/special-rule-model.js). The text is GovInfo's
+// enrolled or reported print of the resolution (BILLS-119hres<N>rh | eh | ih), never anything but the House's own words. An extension is a chain across rules (a later rule changes an
+// earlier one's dates), so the rules are kept together in KV (`special-rules-corpus-v1`: text by number, and the date each was agreed to). It starts with the 61 of the 119th Congress
+// (SPECIAL_RULE_SEED) and grows by the rules asked for; a call reads at most SPECIAL_RULE_BATCH missing ones (Worker subrequest budget) and says `complete: false` until they are in,
+// so the page asks again. A rule nobody has asked for yet and not in the seed is not in a chain: BETA, and the modal says so.
+const SPECIAL_RULE_SEED = [53, 93, 122, 161, 177, 211, 242, 282, 294, 313, 354, 377, 405, 426, 436, 458, 489, 499, 530, 566, 580, 672, 682, 707, 722, 873, 879, 916, 936, 951, 953, 977, 988, 992, 1009, 1014, 1032, 1042, 1057, 1075, 1095, 1115, 1131, 1174, 1175, 1189, 1224, 1247, 1275, 1300, 1333, 1345, 1377, 1398, 1423, 1438, 1499, 1530, 1596, 1650, 1656];
+const SPECIAL_RULE_AGREED_SEED = { 211: '2025-03-11', 313: '2025-04-09', 354: '2025-04-29', 707: '2025-09-16', 722: '2025-09-17', 1042: '2026-02-10', 1131: '2026-03-25' };
+const SPECIAL_RULE_BATCH = 14;
+
+async function fetchSpecialRuleText(n) {
+  for (const v of ['rh', 'eh', 'ih']) {   // reported, engrossed (agreed), introduced: the first print that exists
+    const r = await fetch(`https://www.govinfo.gov/content/pkg/BILLS-${CURRENT_CONGRESS}hres${n}${v}/html/BILLS-${CURRENT_CONGRESS}hres${n}${v}.htm`, { headers: BOT_HEADERS, signal: AbortSignal.timeout(12_000) });
+    if (r.status >= 500) throw new Error(`special rule ${n}: HTTP ${r.status}`);
+    if (!r.ok || !/html/i.test(r.headers.get('Content-Type') || '')) continue;   // a 200 can be an HTML error page: the text must read as a resolution
+    const body = globalThis.SpecialRule.body(await r.text());
+    if (body) return body;
+  }
+  return null;
+}
+
+// the date the House agreed to a resolution: the Congress.gov action "Agreed to ..." / "On agreeing to the resolution ... Passed". null when it has not or cannot be read.
+async function fetchSpecialRuleAgreed(n) {
+  if (!_congressApiKey) return null;
+  const r = await fetch(`https://api.congress.gov/v3/bill/${CURRENT_CONGRESS}/hres/${n}/actions?api_key=${_congressApiKey}&limit=250&format=json`, { headers: BOT_HEADERS, signal: AbortSignal.timeout(10_000) });
+  if (!r.ok) return null;
+  const acts = (await r.json()).actions || [];
+  const hit = acts.find((a) => /^(agreed to|on agreeing to the resolution|passed)/i.test(String(a.text || '').trim()) && !/not agreed|failed|motion to reconsider/i.test(a.text || ''));
+  return hit && /^\d{4}-\d{2}-\d{2}$/.test(hit.actionDate || '') ? hit.actionDate : null;
+}
+
+async function handleSpecialRule(env, nRaw) {
+  const n = Number(nRaw);
+  if (!Number.isInteger(n) || n < 1 || n > 99999) return new Response(JSON.stringify({ error: 'n must be a resolution number' }), { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  const today = getTodayDateET(); const iso = `${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}`;
+  return kvCache(env, `special-rule-${n}-${iso}-v1`, 600, async () => {
+    const KEY = `special-rules-corpus-v1`;
+    const state = (env.HLS_CACHE && await env.HLS_CACHE.get(KEY, 'json')) || { bodies: {}, agreed: { ...SPECIAL_RULE_AGREED_SEED }, none: {} };
+    const before = JSON.stringify(state);
+    // the asked-for rule first, then the seed, SPECIAL_RULE_BATCH texts at most
+    const want = [n, ...SPECIAL_RULE_SEED].filter((x, i, a) => a.indexOf(x) === i && !state.bodies[x] && !(state.none[x] > Date.now() - 6 * 3600e3));
+    const batch = want.slice(0, SPECIAL_RULE_BATCH);
+    let askedFailed = null;
+    for (let i = 0; i < batch.length; i += 5) {
+      await Promise.all(batch.slice(i, i + 5).map(async (x) => {
+        try { const b = await fetchSpecialRuleText(x); if (b) state.bodies[x] = b; else state.none[x] = Date.now(); } catch (e) { console.warn('[special-rule]', e.message); if (x === n) askedFailed = e; }
+      }));
+    }
+    if (askedFailed && !state.bodies[n]) throw askedFailed;   // govinfo down: an error, not a held "no such rule"
+    const rules = {};
+    for (const [k, b] of Object.entries(state.bodies)) rules[k] = { parsed: globalThis.SpecialRule.parse(b), agreed: state.agreed[k] || null };
+    // dates for the rules in the chains of the one asked for
+    if (rules[n]) {
+      const chainNums = new Set([n]);
+      for (const p of rules[n].parsed.provisions) {
+        if (p.kind === 'amends-earlier') chainNums.add(Number(p.resolution));
+        if (p.kind === 'days-not-count' || p.kind === 'nea-not-apply') for (const later of Object.keys(rules)) for (const q of rules[later].parsed.provisions) if (q.kind === 'amends-earlier' && Number(q.resolution) === n) chainNums.add(Number(later));
+      }
+      const missing = [...chainNums].filter((x) => rules[x] && !state.agreed[x] && !(state.agreedTried && state.agreedTried[x] > Date.now() - 6 * 3600e3)).slice(0, 5);
+      state.agreedTried = state.agreedTried || {};
+      await Promise.all(missing.map(async (x) => { try { const d = await fetchSpecialRuleAgreed(x); if (d) { state.agreed[x] = d; rules[x].agreed = d; } else state.agreedTried[x] = Date.now(); } catch (e) { console.warn('[special-rule]', e.message); } }));
+    }
+    if (env.HLS_CACHE && JSON.stringify(state) !== before) await env.HLS_CACHE.put(KEY, JSON.stringify(state));   // written only when it changed
+    const complete = SPECIAL_RULE_SEED.every((x) => state.bodies[x] || state.none[x]);
+    const model = rules[n] ? globalThis.SpecialRuleModel.build(rules, n, iso, globalThis.HouseRuleClauses) : null;
+    return new Response(JSON.stringify({ n, model, complete, source: `https://www.govinfo.gov/app/details/BILLS-${CURRENT_CONGRESS}hres${n}`, today: iso }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${complete ? 600 : 20}` },
+    });
+  }, 600, { ttlOf: (body) => { try { return JSON.parse(body).complete ? 600 : 20; } catch { return 20; } } });
+}
+
 async function fetchBroadcastEvents(dateId) {
   const resp = await fetch(
     `https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${dateId}`,
@@ -7331,6 +7405,8 @@ async function handleRequest(request, env) {
     return await handleApproMarkups(env, url);
   } else if (path === '/api/appropriations' && request.method === 'GET') {
     return await handleAppropriations(env);
+  } else if (path === '/api/special-rule' && request.method === 'GET') {
+    return await handleSpecialRule(env, url.searchParams.get('n'));
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
     return await handleDischargeCalendar(env);
   } else if (path === '/api/privileged-resolutions' && request.method === 'GET') {

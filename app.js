@@ -4510,6 +4510,7 @@ function updateBillsDisplay() {
                                 ${whipRecTagHtml(rule.hres)}
                             </div>
                             <div class="bill-title">${escapeHtml(rule.title || 'Special rule governing floor consideration')}</div>
+                            ${specialRuleCardTags(rule.hresNum)}
                             <div class="bill-meta">
                                 <div class="bill-action">${actionText}</div>
                             </div>
@@ -4803,6 +4804,49 @@ document.addEventListener('remotebill:full', (e) => {
     if (wk) { applyRemoteDetails(wk, full); openBillModal(wk.id, { refresh: true }); } else openRemoteBillModal(id);
 });
 
+
+// ── What a special rule does (BETA) ─────────────────────────────────────────────
+// Read from the rule's text by the Worker (/special-rule, lib/special-rule.js): the card's two tags (how amendments are handled, how long debate is) and the modal's section. A model is
+// fetched once per rule and kept; a card draws its tags from the kept one and fills them in when the answer arrives.
+const SPECIAL_RULE_API = 'https://api.evanhollander.org/house-floor/api';
+const specialRuleCache = new Map();   // number -> { model, complete, state: 'loading' | 'done' | 'failed' }
+function specialRuleLoad(n, force) {
+    n = Number(n);
+    const hit = specialRuleCache.get(n);
+    if (hit && !force && (hit.state === 'loading' || hit.state === 'done')) return hit.promise;
+    const entry = { model: hit ? hit.model : null, complete: false, state: 'loading' };
+    entry.promise = fetch(`${SPECIAL_RULE_API}/special-rule?n=${n}`).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((d) => {
+        entry.model = d.model || null; entry.complete = !!d.complete; entry.state = 'done';
+        document.querySelectorAll(`[data-sr-tags="${n}"]`).forEach((el) => { el.innerHTML = specialRuleTagsHtml(n); });
+        return entry;
+    }).catch(() => { entry.state = 'failed'; return entry; });
+    specialRuleCache.set(n, entry);
+    return entry.promise;
+}
+function specialRuleTagsHtml(n) {
+    const hit = specialRuleCache.get(Number(n));
+    return hit && hit.model && hit.model.tags.length ? hit.model.tags.map((t) => `<span class="sr-fact">${escapeHtml(t)}</span>`).join('') : '';
+}
+// A card's tag row: what is already known, and a request for the rest. The row keeps its place so the card does not jump when the tags arrive.
+function specialRuleCardTags(n) {
+    if (!globalThis.SpecialRuleModel) return '';
+    specialRuleLoad(n);
+    return `<div class="sr-facts sr-card-facts" data-sr-tags="${n}">${specialRuleTagsHtml(n)}</div>`;
+}
+async function fillSpecialRuleModal(overlay, n) {
+    const host = overlay.querySelector('[data-sr-modal]');
+    if (!host || !globalThis.SpecialRuleModel) return;
+    const draw = (entry) => {
+        if (!overlay.contains(host)) return;
+        host.innerHTML = entry.model ? SpecialRuleModel.html(entry.model) + (entry.complete ? '' : '<p class="sr-note">Some earlier rules are still being read, so a chain of extensions may be missing steps. Reopen this in a minute.</p>') : '';
+        host.hidden = !entry.model;
+        host.dispatchEvent(new CustomEvent('sr-drawn', { bubbles: true }));
+    };
+    const entry = await specialRuleLoad(n);
+    draw(entry);
+    if (entry.model && !entry.complete) setTimeout(async () => { if (overlay.contains(host)) draw(await specialRuleLoad(n, true)); }, 12_000);
+}
+
 function openBillModal(billId, opts = {}) {
     let bill = billDataMap.get(billId);
     // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
@@ -4985,6 +5029,7 @@ function openBillModal(billId, opts = {}) {
                 ${committeeReportHtml}
             </div>
             ${detailsState === 'loading' ? summaryPendingHtml : BillSections.summary(summaryText)}
+            ${bill.procedure === 'hres' && (bill.id.match(/\d+/) || [])[0] ? `<div class="sr-section" data-sr-modal="${(bill.id.match(/\d+/) || [])[0]}" hidden></div>` : ''}
             <div class="bill-modal-foot">
                 ${BillSections.action({
                     textHtml: actionText,
@@ -5046,6 +5091,7 @@ function openBillModal(billId, opts = {}) {
         </div>` : ''}
     `;
     overlay.hidden = false;
+    { const srN = (bill.procedure === 'hres' && (bill.id.match(/\d+/) || [])[0]) || null; if (srN) fillSpecialRuleModal(overlay, srN); }
     if (!opts.refresh) _billModalTrigger = document.activeElement;
     // Deep link: reflect the open bill in the URL so it's shareable.
     setBillUrlParam(billSlug(billId));
