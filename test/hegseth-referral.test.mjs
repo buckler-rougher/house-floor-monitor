@@ -24,9 +24,9 @@ const ok = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
 const { statuses, titles } = extractBillStatusesFromProceedings(page, 'https://clerk.house.gov/FloorSummary/ViewFloorActions?date=11%2F10%2F2026');
 const key = Object.keys(statuses).find((k) => /1655/.test(k));
 
-ok('the referral is the outcome of H. Res. 1655: a terminal status that says what happened', () => {
+ok('the referral is the outcome of H. Res. 1655: the terminal status "disposed" (not passed, not failed) with the words saying what happened', () => {
   assert.ok(key, `no status for 1655 in ${JSON.stringify(Object.keys(statuses))}`);
-  assert.strictEqual(statuses[key].status, 'failed');
+  assert.strictEqual(statuses[key].status, 'disposed');
   assert.strictEqual(statuses[key].statusText, 'Referred (Roll Call 317): 211-204');
 });
 
@@ -44,7 +44,7 @@ ok("the Clerk's text for 1655 carries the title the schedule uses, so a short ti
 ok('a motion to refer that is not agreed to leaves the resolution where it was', () => {
   const failed = page.replace('Agreed to by the Yeas and Nays: 211 - 204', 'Failed by the Yeas and Nays: 204 - 211');
   const r = extractBillStatusesFromProceedings(failed, 'x').statuses;
-  assert.ok(!Object.keys(r).some((k) => /1655/.test(k) && r[k].status === 'failed'));
+  assert.ok(!Object.keys(r).some((k) => /1655/.test(k) && (r[k].status === 'failed' || r[k].status === 'disposed')));
 });
 
 console.log(`\n${n} passed`);

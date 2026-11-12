@@ -812,12 +812,16 @@ function pickBillsWeekStart(referenceDate, feedWeekStarts, live) {
 }
 // Measures the Clerk's floor log shows the House taking up that the Majority Leader's schedule never listed (see the call in handleBills). `titles` and `statuses` are what
 // extractBillStatusesFromProceedings read from the week's days; `onSchedule` is every card the schedule produced. Exported for test/off-schedule.test.mjs.
-function offScheduleBills(onSchedule, titles, statuses) {
+function offScheduleBills(onSchedule, titles, statuses, dates = {}) {
   const key = (id) => String(id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // the Clerk's text arrives with its dash and apostrophes as numeric entities (&#x2014;), which the row reader leaves as they are
+  const unentity = (s) => String(s || '').replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   const have = new Set(onSchedule.map((b) => key(b.id)));
   const out = [];
-  for (const [id, text] of Object.entries(titles)) {
+  for (const [id, raw] of Object.entries(titles)) {
     if (have.has(key(id))) continue;
+    const text = unentity(raw);
     // taken up on the floor, not merely named: a "Considered ..." row, a debate, or a resumed consideration
     if (!/\bConsider(?:ed|ation)\b[^.]{0,40}\b(?:as|under|from|initiated|resumed)|proceeded with[^.]{0,40}debate|resumed consideration/i.test(text) && !statuses[id]) continue;
     const q = text.match(/[\u2014\u2013-]\s*"\s*([^"]+?)\s*"/);
@@ -830,7 +834,7 @@ function offScheduleBills(onSchedule, titles, statuses) {
       description: '',
       status: st ? st.status : 'scheduled',
       latestAction: st ? st.statusText : 'Considered on the floor',
-      latestActionDate: null,
+      latestActionDate: dates[id] || null,
       considered: true,
       offSchedule: true,
       actionSource: 'proceedings',
@@ -840,7 +844,7 @@ function offScheduleBills(onSchedule, titles, statuses) {
   return out;
 }
 
-export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills };
+export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills, congressFloorStatus };
 
 // ── Proceedings → Bill Status ────────────────────────────────────────────────
 // Convert a Congress.gov bill URL to our canonical bill ID string.
@@ -914,15 +918,18 @@ async function fetchProceedingsBillStatuses() {
     // Merge oldest→newest so today's data takes precedence.
     let merged = {};
     let mergedTitles = {};
+    let mergedDates = {};   // the last day each measure is named, as YYYY-MM-DD (the card's date for a measure the schedule does not list)
     for (const { d, r } of responses) {
       if (!r?.ok) continue;
       const url = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(fmtClerk(d))}`;
       const { statuses, titles } = extractBillStatusesFromProceedings(await r.text(), url);
       merged = { ...merged, ...statuses };
       mergedTitles = { ...mergedTitles, ...titles };
+      const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      for (const id of Object.keys(titles)) mergedDates[id] = iso;
     }
-    return { statuses: merged, titles: mergedTitles };
-  } catch { return { statuses: {}, titles: {} }; }
+    return { statuses: merged, titles: mergedTitles, dates: mergedDates };
+  } catch { return { statuses: {}, titles: {}, dates: {} }; }
 }
 
 // Wording of an outcome line and how specific it is — both live in
@@ -1068,7 +1075,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
         const prev = statuses[tid];
         if (!prev || prev.status !== 'passed') {
           statuses[tid] = {
-            status: 'failed',
+            status: 'disposed',
             statusText: detail ? `Tabled ${detail}` : 'Tabled',
             sourceUrl,
           };
@@ -1077,8 +1084,8 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       continue;
     }
 
-    // Referral reads like tabling: agreeing to the motion ends the resolution's run on the floor. Recorded as the same terminal status the card already draws for a measure the
-    // House did not adopt, with the words saying what happened ("Referred (Roll Call 317): 211-204"). A referral that fails leaves the resolution where it was.
+    // Referral reads like tabling: agreeing to the motion ends the resolution's run on the floor without adopting it. Recorded as the terminal status 'disposed' (a grey dash on the
+    // card), with the words saying what happened ("Referred (Roll Call 317): 211-204"). A referral that fails leaves the resolution where it was.
     if (globalThis.FloorStatus.isReferralMotion(description)) {
       const agreed = /(agreed to)\b/i.test(description) && !/not agreed to|failed/i.test(description);
       const rid = findBillId(i, 6, 0);   // forward only (the rows after it in the feed are the ones before it in time): the row BEFORE it in time can be another measure's
@@ -1086,7 +1093,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
         const detail = formatVoteDetail(description);
         const prev = statuses[rid];
         if (!prev || prev.status !== 'passed') {
-          statuses[rid] = { status: 'failed', statusText: detail ? `Referred ${detail}` : 'Referred', sourceUrl };
+          statuses[rid] = { status: 'disposed', statusText: detail ? `Referred ${detail}` : 'Referred', sourceUrl };
         }
       }
       continue;
@@ -1349,6 +1356,46 @@ async function fetchBillMeta(billId, env) {
 
 const { formatCommitteeReport, pickCommitteeReport, committeeReportLink } = globalThis.CongressBills;
 
+// What one Congress.gov floor action says about the measure: passed, failed, or disposed of (tabled or referred), or null when it says nothing about the measure itself. Pure, so
+// test/congress-floor-status.test.mjs can run it on the wording Congress.gov sends. A MOTION is not the measure: "On motion to refer Agreed to by the Yeas and Nays: 211 - 204 (Roll no. 317)"
+// carries the words "agreed to by" and read as passage, so the Hegseth impeachment, which the House referred, showed as PASSED; a failed motion to table would have read as the resolution
+// failing, and "On motion to discharge Agreed to" as passing the resolution it brings up. Agreeing to a motion to table or refer ends the resolution's run on the floor without adopting it
+// (status 'disposed'); a motion to discharge, or one that failed, says nothing about the measure.
+function congressFloorStatus(action) {
+  const text = action.text || '';
+  const t = text.toLowerCase();
+  const code = action.actionCode || '';
+  // Skip rule-adoption actions (e.g. "Rule H. Res. 1300 passed House.")
+  if (/^H1L/i.test(code) || /^rule\s+h\.?\s*res\./i.test(text)) return null;
+  const detail = formatVoteDetail(text);
+  const agreed = /\bagreed to\b/i.test(text) && !/not agreed to|failed/i.test(text);
+  if (globalThis.FloorStatus.isReferralMotion(text) || globalThis.FloorStatus.isTablingMotion(text)) {
+    if (!agreed) return null;
+    const word = globalThis.FloorStatus.isReferralMotion(text) ? 'Referred' : 'Tabled';
+    return { status: 'disposed', statusText: detail ? `${word} ${detail}` : word, actionDate: action.actionDate, actionText: text };
+  }
+  if (/^\s*on\s+motion\s+to\s+discharge\b/i.test(text)) return null;
+  // "suspend the rules and pass/agree" alone matches the MOTION text that Congress.gov logs when a bill is called up, NOT the outcome. Require an outcome word ("agreed to" or "passed")
+  // to confirm the vote actually succeeded.
+  const suspensionPassed = (t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree'))
+                         && (t.includes('agreed to') || t.includes('passed'));
+  const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
+                    t.includes('on passage passed') || t.includes('considered and passed') ||
+                    suspensionPassed;
+  const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
+  if (!isPassage && !isFailed) return null;
+  // Same wording as the Clerk-proceedings path, from the same helper: a bill's status line should not change shape depending on which source happened to report it first.
+  let statusText;
+  if (isFailed) {
+    statusText = detail ? `Failed ${detail}` : 'Failed';
+  } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
+    statusText = 'Passed (voice vote)';
+  } else {
+    statusText = detail ? `Passed ${detail}` : 'Passed';
+  }
+  return { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: text };
+}
+
 async function fetchCongressBillStatus(billId) {
   const parsed = billIdToCongressType(billId);
   if (!parsed) return null;
@@ -1367,41 +1414,8 @@ async function fetchCongressBillStatus(billId) {
     let floorStatus = null;
 
     for (const action of (data.actions || [])) {
-      // Floor: passage / failure
-      if (!floorStatus && action.type === 'Floor') {
-        const t = (action.text || '').toLowerCase();
-        const code = action.actionCode || '';
-        // Skip rule-adoption actions (e.g. "Rule H. Res. 1300 passed House.")
-        if (/^H1L/i.test(code) || /^rule\s+h\.?\s*res\./i.test(action.text || '')) {
-          // not a bill passage action — skip
-        } else {
-          // "suspend the rules and pass/agree" alone matches the MOTION text that Congress.gov
-          // logs when a bill is called up — NOT the outcome. Require an outcome word ("agreed to"
-          // or "passed") to confirm the vote actually succeeded.
-          const suspensionPassed = (t.includes('suspend the rules and pass') || t.includes('suspend the rules and agree'))
-                                 && (t.includes('agreed to') || t.includes('passed'));
-          const isPassage = t.includes('passed house') || t.includes('agreed to by') ||
-                            t.includes('on passage passed') || t.includes('considered and passed') ||
-                            suspensionPassed;
-          const isFailed = t.includes('failed') || t.includes('not agreed to') || t.includes('not passed');
-          if (isPassage || isFailed) {
-            // Same wording as the Clerk-proceedings path, from the same helper —
-            // a bill's status line should not change shape depending on which
-            // source happened to report it first.
-            const detail = formatVoteDetail(action.text || '');
-            let statusText;
-            if (isFailed) {
-              statusText = detail ? `Failed ${detail}` : 'Failed';
-            } else if (t.includes('voice vote') || t.includes('without objection') || t.includes('unanimous consent')) {
-              statusText = 'Passed (voice vote)';
-            } else {
-              statusText = detail ? `Passed ${detail}` : 'Passed';
-            }
-            floorStatus = { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: action.text };
-          }
-        }
-      }
-
+      // Floor: passage / failure / set aside (see congressFloorStatus)
+      if (!floorStatus && action.type === 'Floor') floorStatus = congressFloorStatus(action);
       if (floorStatus) break;
     }
 
@@ -1416,12 +1430,13 @@ async function fetchCongressBillStatus(billId) {
 }
 
 // Terminal statuses — once reached, never downgrade.
-const TERMINAL_STATUSES = new Set(['passed', 'failed']);
+// 'disposed' is the House setting a measure aside without adopting it: tabled, or referred to committee (a privileged resolution is how that mostly happens).
+const TERMINAL_STATUSES = new Set(['passed', 'failed', 'disposed']);
 // Response header a producer sets to say "serve this, but do not persist it".
 // Used for degraded payloads that would otherwise outlive the degradation.
 const KV_NO_STORE_HEADER = 'x-kv-no-store';
 
-const STATUS_RANK = { passed: 4, failed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
+const STATUS_RANK = { passed: 4, failed: 4, disposed: 4, postponed: 3, 'roll-call': 2, scheduled: 1 };
 
 // ── Generic KV response cache ─────────────────────────────────────────────────
 // kvCache(env, key, ttlSeconds, fn, kvTtl?)
@@ -1956,7 +1971,10 @@ async function handleBills(request, env) {
   //
   // v9: invalidate caches poisoned with un-enriched bills written by the Durable
   // Object isolate, which never initialised _congressApiKey / CURRENT_CONGRESS.
-  const cacheKey = quick ? 'bills-weekly-quick-v11' : 'bills-weekly-v11';
+  //
+  // v11 -> v12 (12 November 2026): a referred resolution had been cached as PASSED (Congress.gov's "agreed to by" on a motion to refer), and the answer carries the new
+  // 'disposed' status and ALSO ON THE FLOOR. Cheap now: a small week (19 cards), so the rebuild is about twenty Congress.gov calls, not the stampede described above.
+  const cacheKey = quick ? 'bills-weekly-quick-v12' : 'bills-weekly-v12';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -1983,6 +2001,7 @@ async function _fetchBills(request, env) {
     const sapMap = (() => { try { return JSON.parse(sapMapRaw); } catch { return {}; } })();
     const proceedingsStatuses = proceedingsData?.statuses || {};
     const proceedingsTitles = proceedingsData?.titles || {};
+    const proceedingsDates = proceedingsData?.dates || {};
 
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
@@ -2472,7 +2491,7 @@ async function _fetchBills(request, env) {
     // resumed as unfinished business, ...). The panel is built from the schedule, so without this they have no card at all (10 to 11 November 2026: H.Res. 1247, H.R. 2102 and H.R. 9237).
     // Everything here is the Clerk's own wording, the title from the quoted text of the "Considered ..." row and the status from the same reading as every other card; a measure with no
     // outcome row yet shows what the Clerk last said, and corrects itself when the Clerk posts the next row.
-    const alsoOnFloorBills = offScheduleBills(allBills, proceedingsTitles, proceedingsStatuses);
+    const alsoOnFloorBills = offScheduleBills(allBills, proceedingsTitles, proceedingsStatuses, proceedingsDates);
 
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
@@ -6142,7 +6161,7 @@ async function applyRollLogToBillList(env, items) {
   }
 
   for (const it of items) {
-    if (it.status === 'passed' || it.status === 'failed') continue;
+    if (TERMINAL_STATUSES.has(it.status)) continue;
     const hit = byBill.get(BillId.normalizeBillId(it.id));
     if (!hit) continue;
     it.status = hit.passed ? 'passed' : 'failed';
