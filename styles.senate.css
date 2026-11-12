@@ -3613,11 +3613,11 @@ font-family: var(--font-mono);
     box-shadow: 0 0 0 1px rgba(210, 153, 34, 0.4);
 }
   .bill-card[data-status="roll-call"]:hover .bill-chevron { color: var(--accent-amber); }
-  .bill-card[data-status="scheduled"]:hover, .bill-card[data-status="pending"]:hover, .bill-card:not([data-status]):hover {
+  .bill-card[data-status="scheduled"]:hover, .bill-card[data-status="pending"]:hover, .bill-card[data-status="disposed"]:hover, .bill-card:not([data-status]):hover {
     background: rgba(139, 148, 158, 0.06);
     box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35);
 }
-  .bill-card[data-status="scheduled"]:hover .bill-chevron, .bill-card[data-status="pending"]:hover .bill-chevron, .bill-card:not([data-status]):hover .bill-chevron { color: var(--text-secondary); }
+  .bill-card[data-status="scheduled"]:hover .bill-chevron, .bill-card[data-status="pending"]:hover .bill-chevron, .bill-card[data-status="disposed"]:hover .bill-chevron, .bill-card:not([data-status]):hover .bill-chevron { color: var(--text-secondary); }
   .bill-chevron {
     color: var(--text-muted);
     font-size: var(--fs-3xl);
@@ -3652,6 +3652,11 @@ font-family: var(--font-mono);
     background: rgba(248, 81, 73, 0.1);
     color: var(--accent-red);
     border: 1px solid rgba(248, 81, 73, 0.3);
+}
+  .bill-status.disposed {
+    background: rgba(139, 148, 158, 0.14);
+    color: var(--text-secondary);
+    border: 1px solid rgba(139, 148, 158, 0.4);
 }
   .bill-status.roll-call {
     background: rgba(255, 193, 7, 0.1);
@@ -3954,7 +3959,7 @@ font-family: var(--font-mono);
     margin-top: -3px;
 }
   .bill-modal-header .bill-modal-badge.policy { padding-left: 0; padding-right: 0; }
-  .bill-modal-badge.scheduled, .bill-modal-badge.pending {
+  .bill-modal-badge.scheduled, .bill-modal-badge.pending, .bill-modal-badge.disposed {
     background: rgba(100, 116, 139, 0.15);
     color: var(--text-secondary);
     border: 1px solid rgba(100, 116, 139, 0.3);

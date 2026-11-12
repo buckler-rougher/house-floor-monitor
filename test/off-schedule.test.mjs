@@ -12,19 +12,19 @@ import { extractBillStatusesFromProceedings, offScheduleBills } from '../worker.
 const link = (kind, n, label) => `<a target="_blank" rel="bill" href="https://www.congress.gov/bill/119th-congress/${kind}/${n}">${label}</a>`;
 const row = (time, html) => `<tr><td><span style="display:none;">11/11/2026 ${time}</span></td><td data-label="Activity"><span style="display:none;">${html}</span></td></tr>`;
 const page = `<table>
-${row('17:15:18', `Considered as unfinished business. ${link('house-bill', 5549, 'H.R. 5549')} — " To amend the Atomic Energy Act of 1954 to provide for more efficient hearings on nuclear facility construction applications, and for other purposes ."`)}
+${row('17:15:18', `Considered as unfinished business. ${link('house-bill', 5549, 'H.R. 5549')} &#x2014; " To amend the Atomic Energy Act of 1954 to provide for more efficient hearings on nuclear facility construction applications, and for other purposes ."`)}
 ${row('14:46:08', 'On passage Passed by voice vote.')}
-${row('14:44:08', `Considered as unfinished business. ${link('house-bill', 9237, 'H.R. 9237')} — " To amend titles 10 and 38, United States Code, and other Federal laws, to improve benefits for veterans and the administration of the Department of Veterans Affairs ."`)}
+${row('14:44:08', `Considered as unfinished business. ${link('house-bill', 9237, 'H.R. 9237')} &#x2014; " To amend titles 10 and 38, United States Code, and other Federal laws, to improve benefits for veterans and the administration of the Department of Veterans Affairs ."`)}
 ${row('14:44:02', 'Pursuant to clause 1(c) of rule XIX, the House resumed consideration on HR 9237.')}
 ${row('13:32:25', `POSTPONED PROCEEDINGS - At the conclusion of debate on ${link('house-resolution', 1247, 'H. Res. 1247')} , the Chair put the question on agreeing to the resolution and by voice vote, announced that the noes had prevailed. Mr. Takano demanded the yeas and nays and the Chair postponed further proceedings until a time to be announced.`)}
 ${row('13:05:33', `DEBATE - The House proceeded with one hour of debate on ${link('house-resolution', 1247, 'H. Res. 1247')} .`)}
-${row('13:05:31', `Considered from the Discharge Calendar. ${link('house-resolution', 1247, 'H. Res. 1247')} — " Providing for consideration of the bill ( ${link('house-bill', 2102, 'H.R. 2102')} ) to amend title 10, United States Code, to provide for concurrent receipt of veterans' disability compensation and retired pay for disability retirees with combat-related disabilities, and for other purposes ."`)}
+${row('13:05:31', `Considered from the Discharge Calendar. ${link('house-resolution', 1247, 'H. Res. 1247')} &#x2014; " Providing for consideration of the bill ( ${link('house-bill', 2102, 'H.R. 2102')} ) to amend title 10, United States Code, to provide for concurrent receipt of veterans' disability compensation and retired pay for disability retirees with combat-related disabilities, and for other purposes ."`)}
 ${row('11:00:00', `Mr. Smith asked unanimous consent to insert a statement about ${link('house-bill', 7777, 'H.R. 7777')} in the record.`)}
 </table>`;
 
 const { statuses, titles } = extractBillStatusesFromProceedings(page, 'https://clerk.house.gov/FloorSummary/ViewFloorActions?date=11%2F11%2F2026');
 const onSchedule = [{ id: 'H.R. 5549' }];   // on the schedule that week
-const out = offScheduleBills(onSchedule, titles, statuses);
+const out = offScheduleBills(onSchedule, titles, statuses, { 'H.R. 9237': '2026-11-11', 'H.Res. 1247': '2026-11-11' });
 const by = (n) => out.find((b) => new RegExp(String(n)).test(b.id));
 let n = 0;
 const ok = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
@@ -41,6 +41,11 @@ ok("the title is the Clerk's quoted text, tidied (no space before a full stop or
 ok('a measure with an outcome row says so; one whose last row is a postponement says that, not a result', () => {
   assert.strictEqual(by(1247).status, 'roll-call');
   assert.ok(/postponed/i.test(by(1247).latestAction));
+});
+
+ok('the card is dated by the last day the Clerk names the measure', () => {
+  assert.strictEqual(by(9237).latestActionDate, '2026-11-11');
+  assert.strictEqual(by(1247).latestActionDate, '2026-11-11');
 });
 
 ok('every card is marked as off the schedule and drawn from the Clerk', () => {

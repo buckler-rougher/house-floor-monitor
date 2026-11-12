@@ -50,6 +50,8 @@ check('display H R 4795',   parseBillId('H R 4795').display,   'H.R. 4795');
 check('passage',            billIdFromRollCallQuestion('H R 1501 - On Passage'), 'HR1501');
 check('resolution adopted', billIdFromRollCallQuestion('H RES 1499 - On Agreeing to the Resolution'), 'HRES1499');
 check('suspension',         billIdFromRollCallQuestion('H J RES 1 - On Motion to Suspend the Rules and Pass'), 'HJRES1');
+check('a motion to discharge is not a vote on the resolution (H.Res. 1247, roll 320)', billIdFromRollCallQuestion('H RES 1247 - On Motion to Discharge'), null);
+check('nor is a motion to refer (H.Res. 1655, roll 317)', billIdFromRollCallQuestion('H RES 1655 - On Motion to Refer'), null);
 check('recommit excluded',  billIdFromRollCallQuestion('H R 9436 - On Motion to Recommit'), null);
 check('prev question excluded', billIdFromRollCallQuestion('H RES 1499 - On Ordering the Previous Question'), null);
 check('amendment excluded', billIdFromRollCallQuestion('H R 8595 - Boebert Part A Amendment No. 1 - On Agreeing to the Amendment'), null);

@@ -6,6 +6,8 @@ const { escapeHtml, setIfChanged, MONTH_NAMES, DAY_NAMES, fmtDate, fmtDateLong }
 // The groups of the Bills panel, in the order they are drawn. The first three are the Majority Leader's schedule; ALSO ON THE FLOOR is what the Clerk's floor log shows the House taking
 // up that the schedule never listed (the Worker's offScheduleBills). Every place that looks a bill up across the groups, or updates one from the proceedings, reads this one list.
 const BILL_GROUPS = ['ruleBills', 'suspensionBills', 'mayBeConsideredBills', 'alsoOnFloorBills'];
+// A status the floor has settled: passed, failed, or disposed of (the House set it aside without adopting it: tabled, or referred to committee).
+const isFinalBillStatus = (s) => s === 'passed' || s === 'failed' || s === 'disposed';
 
 // Shared member photo placeholder: US flag (left) + person silhouette, scales to any size
 // The Office of the Clerk's quill, lifted out of their wordmark where it forms
@@ -481,7 +483,7 @@ function applyRollLogToBills(entries, activeRoll) {
         const passed = yeas >= required;
         for (const key of BILL_GROUPS) {
             const bill = (billsData[key] || []).find(b => normalizeBillIdForRules(b.id) === billNorm);
-            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+            if (bill && !isFinalBillStatus(bill.status)) {
                 bill.status = passed ? 'passed' : 'failed';
                 bill.latestAction = passed ? `Passed (Roll Call ${entry.roll}): ${yeas}-${nays}` : `Failed (Roll Call ${entry.roll}): ${yeas}-${nays}`;
                 changed = true;
@@ -3529,7 +3531,7 @@ let billsSortMode = 'status';
 // When true, the three bill lists show only bills in trackedBillIds
 let billsTrackedFilterOn = false;
 
-const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, postponed: 2 };
+const BILL_STATUS_SORT_ORDER = { scheduled: 0, 'roll-call': 1, passed: 2, failed: 2, disposed: 2, postponed: 2 };
 
 // Amendment sort mode: 'status' | 'listed'
 let amendmentsSortMode = 'status';
@@ -3590,7 +3592,7 @@ let billsFullyEnriched = false;
 //  1. Never downgrade a higher-priority status (e.g. passed → scheduled).
 //  2. When enrichment is partial (quick-mode server response), carry over
 //     Congress.gov fields (summary, sponsor, committees) from the previous state.
-const STATUS_PRIORITY = { passed: 4, failed: 4, 'roll-call': 3, postponed: 2, scheduled: 1 };
+const STATUS_PRIORITY = { passed: 4, failed: 4, disposed: 4, 'roll-call': 3, postponed: 2, scheduled: 1 };
 function mergeBills(newArr, existingArr, isQuick = false) {
     const byId = Object.fromEntries((existingArr || []).map(b => [b.id, b]));
     return (newArr || []).map((bill, i) => {
@@ -3787,7 +3789,7 @@ function updateBillStatusFromProceedings(items) {
         const normId = billId.replace(/\s+/g, '');
         for (const key of allArrays) {
             const bill = (billsData[key] || []).find(b => b.id.replace(/\s+/g, '') === normId);
-            if (bill && bill.status !== 'passed' && bill.status !== 'failed') {
+            if (bill && !isFinalBillStatus(bill.status)) {
                 bill.status = 'passed';
                 bill.latestAction = 'Passed (voice vote)';
                 bill.latestActionDate = items[i].pubDate || '';
@@ -4849,7 +4851,9 @@ function openBillModal(billId, opts = {}) {
     const procedureClass = bill.procedure === 'suspension' ? 'suspension' : (bill.procedure === 'maybe' || bill.procedure === 'also') ? 'maybe' : bill.procedure === 'hres' ? 'rule' : 'rule';
     const procedureLabel = bill.procedure === 'suspension' ? 'UNDER SUSPENSION' : bill.procedure === 'maybe' ? 'MAY BE CONSIDERED' : bill.procedure === 'also' ? 'NOT ON THE SCHEDULE' : bill.procedure === 'hres' ? 'SPECIAL RULE' : 'SUBJECT TO A RULE';
     const statusClass = bill.status || 'scheduled';
-    const statusLabel = { passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED';
+    const statusLabel = bill.status === 'disposed'
+        ? (/^referred/i.test(bill.latestAction || bill.statusText || '') ? 'REFERRED' : /^tabled/i.test(bill.latestAction || bill.statusText || '') ? 'TABLED' : 'SET ASIDE')
+        : ({ passed: 'PASSED', failed: 'FAILED', 'roll-call': 'VOTE REQUESTED' }[bill.status] || 'SCHEDULED');
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
     // Decode Congress.gov HTML entities (&nbsp; &mdash; etc.) and strip any tags before escaping
