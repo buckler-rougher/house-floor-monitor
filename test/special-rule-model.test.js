@@ -29,3 +29,9 @@ test('a committee substitute reads ADOPTS AINS and spells itself out on hover', 
   const j = Object.keys(rules).map((n) => model(n).measures.flatMap((m) => m.facts)).flat().find((x) => /Judiciary/.test(x.tip || ''));
   assert.equal(j.tip, "Adopts Judiciary Committee's amendment in the nature of a substitute");
 });
+
+test('a rule with only a measure and no other provision still shows its text', () => {
+  const m = model(1650); assert.equal(m.provisions.length, 0);
+  assert.match(M.html(m), /<summary>Text of the rule<\/summary>/);
+  assert.match(m.measures[0].text, /^Resolved, That upon adoption of this resolution/);
+});
