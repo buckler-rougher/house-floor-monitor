@@ -10588,7 +10588,7 @@ html.replay-mode .weather-panel { display: none; }
 .sr-quote > summary { cursor: pointer; font-size: var(--fs-base); color: var(--accent-blue); list-style: none; display: inline-flex; align-items: center; gap: 5px; width: fit-content; }
 .sr-quote > summary::-webkit-details-marker { display: none; }
 .sr-quote > summary::before { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 0.15s; }
-.sr-quote[open] > summary::before { transform: rotate(45deg); }
+.sr-quote.is-open > summary::before { transform: rotate(45deg); }
 .sr-quote-body { margin-top: 7px; padding: 9px 12px; background: rgba(255, 255, 255, 0.04); border-left: 2px solid var(--border-color); font-size: var(--fs-base); line-height: 1.55; color: var(--text-secondary); max-height: 280px; overflow-y: auto; }
 .sr-quote-body p { margin: 0 0 8px; }
 .sr-quote-body small { color: var(--text-muted); }

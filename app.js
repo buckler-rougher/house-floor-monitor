@@ -4840,6 +4840,7 @@ async function fillSpecialRuleModal(overlay, n) {
         if (!overlay.contains(host)) return;
         host.innerHTML = entry.model ? SpecialRuleModel.html(entry.model) + (entry.complete ? '' : '<p class="sr-note">Some earlier rules are still being read, so a chain of extensions may be missing steps. Reopen this in a minute.</p>') : '';
         host.hidden = !entry.model;
+        SpecialRuleModel.wire(host);
         host.dispatchEvent(new CustomEvent('sr-drawn', { bubbles: true }));
     };
     const entry = await specialRuleLoad(n);
