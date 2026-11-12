@@ -40,7 +40,7 @@ ok('H.Res. 1650 (this week): one measure, closed, a committee substitute, one ho
   const m = parsed['1650'].measures[0];
   assert.strictEqual(m.id, 'H.R. 1013');
   assert.strictEqual(m.amendments, 'closed');
-  assert.deepStrictEqual(m.substitute, { kind: 'committee' });
+  assert.deepStrictEqual(m.substitute, { kind: 'committee', committee: 'Financial Services' });
   assert.strictEqual(m.debateMinutes, 60);
   assert.deepStrictEqual(m.debateCommittees, ['Financial Services']);
   assert.strictEqual(m.motionToRecommit, 'recommit');
