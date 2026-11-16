@@ -11,6 +11,9 @@
 export async function onRequest({ request, next }) {
   const url = new URL(request.url);
 
+  // Pages serves the whole repository root. Tool settings in it are not part of the site.
+  if (/^\/\.(claude|codex|github)(\/|$)/.test(url.pathname)) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+
   if (url.hostname === 'monitor-a6i.pages.dev') {
     return Response.redirect(
       `https://house-floor.evanhollander.org${url.pathname}${url.search}`,

@@ -7332,7 +7332,17 @@ async function handleSourceStatus(env) {
   }, 0);   // memory only: the answer carries response times, so it differs every run and would be a KV write every ten minutes
 }
 
+// /api/health is open, and this check spends a call on the Congress.gov key (5,000 an hour, shared with every bill lookup), so its answer is
+// kept for ten minutes: asking in a loop used to be a way to use the key up.
 async function checkCongressApiHealth() {
+  const held = _mGet('congress-health-v1');
+  if (held) return { ...JSON.parse(held), cached: true };
+  const fresh = await probeCongressApi();
+  _mSet('congress-health-v1', JSON.stringify(fresh), 10 * 60_000);
+  return fresh;
+}
+
+async function probeCongressApi() {
   const currentCongress = CURRENT_CONGRESS;
   if (!_congressApiKey) {
     return { keyPresent: false, ok: false, status: null, currentCongress, note: 'CONGRESS_API_KEY secret is not set on this worker — bill enrichment disabled' };
@@ -7465,7 +7475,12 @@ async function handleRequest(request, env) {
     return await handleCongressIndex();
   } else if (path === '/api/tweets' && request.method === 'GET') {
     const twitterUser = url.searchParams.get('user');
-    if (twitterUser) return await handleUserTweets(twitterUser.replace(/^@/, ''));
+    if (twitterUser) {
+      // A Twitter handle and nothing else: the value becomes a path on the Nitter instances, and each call is up to five requests to them.
+      const handle = twitterUser.replace(/^@/, '');
+      if (!/^\w{1,15}$/.test(handle)) return badRequest('not a Twitter handle');
+      return await handleUserTweets(handle);
+    }
     return await handleTweets(env);
   } else if (path === '/api/img-proxy' && request.method === 'GET') {
     return await handleImageProxy(request);
@@ -7669,7 +7684,10 @@ export default {
       res = await handleRequest(request, env);
     } catch (e) {
       console.error('[worker] unhandled', request.method, new URL(request.url).pathname, e && e.message);
-      res = new Response(JSON.stringify({ error: `internal error: ${(e && e.message) || 'unknown'}` }), {
+      // The reason is the handler's own ("house calendar: HTTP 503") and the board shows it, so it stays; the Congress.gov key, which rides in request
+      // addresses, is taken out of it in case a runtime error ever quotes one.
+      const why = String((e && e.message) || 'unknown').replace(/api_key=[^&\s"']*/gi, 'api_key=').split(_congressApiKey || '\u0000').join('');
+      res = new Response(JSON.stringify({ error: `internal error: ${why}` }), {
         status: 500, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
     }

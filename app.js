@@ -2210,9 +2210,19 @@ const VOTE_SERIES_RE = /floor\s+update\s*[–\-]\s*\d+\s*votes?/i;
 // subsequent votes in <ol><li>. Scan ALL <p> and <li> elements and keep only
 // those that contain a bill reference. Deduplicate by billId (same bill can
 // appear in both a "Following this vote..." paragraph AND an <ol><li>).
+// Outside HTML, parsed without being brought to life: a <template>'s content belongs to a document with no browsing context, so an image in it is not
+// fetched and no handler runs. A plain detached <div> does both (only the Content-Security-Policy stopped the handler). `|| t` is for the tests' stand-in document.
+function inertHtml(html) {
+    const t = document.createElement('template');
+    t.innerHTML = html || '';
+    return t.content || t;
+}
+
 function parseVoteItemsFromHtml(htmlBody) {
-    const div = document.createElement('div');
-    div.innerHTML = htmlBody;
+    // inertHtml, written out: the tests lift this function out of the file by itself
+    const tpl = document.createElement('template');
+    tpl.innerHTML = htmlBody || '';
+    const div = tpl.content || tpl;
     const seen = new Set();
     const results = [];
     const SUSPENSION_RE = /under\s+suspension\s+of\s+the\s+rules/i;
@@ -2910,9 +2920,7 @@ function etHMtoDate(h24, min, refDate) {
 
 // Parse vote-series notice metadata: start time, live flag, total est. duration, end time.
 function parseVoteSeriesMeta(currentItem, allVotes) {
-    const div = document.createElement('div');
-    div.innerHTML = currentItem.body || '';
-    const text = div.textContent;
+    const text = inertHtml(currentItem.body).textContent;
     const ref = currentItem.publishedAt ? new Date(currentItem.publishedAt) : new Date();
 
     // Detect "the House is now taking the following vote(s)"
@@ -4902,7 +4910,7 @@ function openBillModal(billId, opts = {}) {
     const actionText = bill.statusText || bill.latestAction || 'Scheduled for consideration';
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
     // Decode Congress.gov HTML entities (&nbsp; &mdash; etc.) and strip any tags before escaping
-    const summaryText = bill.summary ? (() => { const d = document.createElement('div'); d.innerHTML = bill.summary; return d.textContent.trim(); })() : '';
+    const summaryText = bill.summary ? inertHtml(bill.summary).textContent.trim() : '';
     let actionTimeStr = '';
     // Congress.gov only has date precision (actionDate = "YYYY-MM-DD", stored as midnight UTC).
     // Bluesky and proceedings timestamps have real time precision — show the time for those.
