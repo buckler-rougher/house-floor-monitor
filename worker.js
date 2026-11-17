@@ -966,7 +966,13 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     const raw = hiddenSpan ? hiddenSpan[1] : tdContent;
     const description = decodeHtmlEntities(raw).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-    rows.push({ billId, description });
+    // The row's own time: a hidden span in the Time cell reads "11/17/2026 16:33:52", Eastern. It is the time of the ACTION (the House Docs list's update time, which the card used to show, is
+    // when the Majority Leader's schedule was last edited: 17 November 2026 the card gave H.R. 8483's vote request as 5:24 PM, an hour and nine minutes after the Clerk logged it at 4:33 PM).
+    const tm = row.match(/data-label="Time"[^>]*>\s*<span[^>]*display:\s*none[^>]*>\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2}:\d{2})\s*<\/span>/i);
+    const atMs = tm && globalThis.Replay ? globalThis.Replay.etMs(`${tm[3]}-${tm[1]}-${tm[2]}T${tm[4]}`) : NaN;
+    const at = Number.isNaN(atMs) ? null : new Date(atMs).toISOString();
+
+    rows.push({ billId, description, at });
     if (billId) titles[billId] = ((titles[billId] || '') + ' ' + description).trim();
   }
 
@@ -1059,7 +1065,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
         // hidden by the KV ratchet's already-persisted terminal status.
         const existing = statuses[pid];
         if (!existing || !TERMINAL_STATUSES.has(existing.status)) {
-          statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl };
+          statuses[pid] = { status: 'roll-call', statusText: 'Recorded vote requested — postponed', sourceUrl, at: rows[i].at };
         }
       }
       continue;
@@ -1081,6 +1087,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
             status: 'disposed',
             statusText: detail ? `Tabled ${detail}` : 'Tabled',
             sourceUrl,
+            at: rows[i].at,
           };
         }
       }
@@ -1096,7 +1103,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
         const detail = formatVoteDetail(description);
         const prev = statuses[rid];
         if (!prev || prev.status !== 'passed') {
-          statuses[rid] = { status: 'disposed', statusText: detail ? `Referred ${detail}` : 'Referred', sourceUrl };
+          statuses[rid] = { status: 'disposed', statusText: detail ? `Referred ${detail}` : 'Referred', sourceUrl, at: rows[i].at };
         }
       }
       continue;
@@ -1137,7 +1144,7 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
       const existing = statuses[billId];
       // "passed" and "failed" are final — don't downgrade
       if (!existing || existing.status !== 'passed') {
-        statuses[billId] = { status, statusText, sourceUrl };
+        statuses[billId] = { status, statusText, sourceUrl, at: rows[i].at };
       }
     }
   }
@@ -2243,6 +2250,7 @@ async function _fetchBills(request, env) {
         // parseBillId is the shared reader for exactly this: pull the identifier
         // out of whatever text surrounds it. Tried only after the exact key fails,
         // so a row that already names a bill plainly is unaffected.
+        let actionAt = null;
         let proceedingsUpdate = proceedingsStatuses[normId];
         if (!proceedingsUpdate) {
           const parsed = globalThis.BillId.parseBillId(normId);
@@ -2254,6 +2262,7 @@ async function _fetchBills(request, env) {
           considered = true;
           actionSource = 'proceedings';
           actionSourceUrl = proceedingsUpdate.sourceUrl || null;
+          if (proceedingsUpdate.at) actionAt = new Date(proceedingsUpdate.at);   // the Clerk's time of the action, not the list's update time
         }
 
         target.push({
@@ -2264,7 +2273,7 @@ async function _fetchBills(request, env) {
           pubDate: new Date(contentUpdatedAt),
           status: billStatus,
           latestAction: latestAction,
-          latestActionDate: new Date(contentUpdatedAt),
+          latestActionDate: actionAt || new Date(contentUpdatedAt),
           considered,
           actionSource,
           actionSourceUrl,
@@ -2338,6 +2347,7 @@ async function _fetchBills(request, env) {
           bill.considered = true;
           bill.actionSource = 'proceedings';
           bill.actionSourceUrl = st.sourceUrl || null;
+          if (st.at) bill.latestActionDate = new Date(st.at);
         }
       }
     };
