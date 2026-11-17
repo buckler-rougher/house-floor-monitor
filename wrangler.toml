@@ -16,6 +16,10 @@ class_name = "DomeWatchStreamCoordinator"
 tag = "v1"
 new_sqlite_classes = ["DomeWatchStreamCoordinator"]
 
+# @cloudflare/puppeteer imports node:fs, which this Worker's compatibility date does not provide (deploy error 10021): a stub stands in (shims/node-fs.mjs).
+[alias]
+"node:fs" = "./shims/node-fs.mjs"
+
 # Browser Rendering: draws card.html for a shared bill link's preview image (handleOgImage). Free plan: 10 minutes a day; a failure falls back to the generic image.
 [browser]
 binding = "BROWSER"
