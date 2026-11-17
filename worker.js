@@ -5384,7 +5384,8 @@ async function handleOgImage(env, slug, url) {
   const m = slug.match(/^([a-z]+)(\d+)$/);
   const draw = async () => {
     // the bill must exist (this answer is cached, and a crawler's made-up numbers cost a request, not a browser)
-    const r = await fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(`${types[m[1]]} ${m[2]}`)}`, { signal: AbortSignal.timeout(8000), cf: { cacheTtl: 600, cacheEverything: true } });
+    // in-process: a Worker that fetches its own public address hangs until the timeout (the first version did, and every image fell back after 8 seconds)
+    const r = await handleSenateBill(env, `${types[m[1]]} ${m[2]}`);
     const b = r.ok ? await r.json().catch(() => null) : null;
     if (!b || !b.title) return null;
     const puppeteer = (await import('@cloudflare/puppeteer')).default;
@@ -5392,7 +5393,7 @@ async function handleOgImage(env, slug, url) {
     try {
       const page = await browser.newPage();
       await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
-      await page.goto(`https://${board}-floor.evanhollander.org/card.html?bill=${slug}&b=${board}`, { waitUntil: 'networkidle0', timeout: 20_000 });
+      await page.goto(`https://${board}-floor.evanhollander.org/card?bill=${slug}&b=${board}`, { waitUntil: 'networkidle0', timeout: 20_000 });
       await page.waitForSelector('body[data-ready], body[data-failed]', { timeout: 15_000 });
       if (await page.evaluate(() => document.body.dataset.failed === '1')) return null;
       return await page.screenshot({ type: 'png' });
