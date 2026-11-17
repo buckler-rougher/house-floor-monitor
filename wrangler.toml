@@ -1,6 +1,7 @@
 name = "house-floor-api"
 main = "worker.js"
 compatibility_date = "2023-12-01"
+compatibility_flags = ["nodejs_compat"]   # @cloudflare/puppeteer (the link-preview images, /api/og) needs it
 account_id = "ce55e9960094bcc712fc82a8086248d5"
 
 [[kv_namespaces]]
@@ -14,3 +15,7 @@ class_name = "DomeWatchStreamCoordinator"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["DomeWatchStreamCoordinator"]
+
+# Browser Rendering: draws card.html for a shared bill link's preview image (handleOgImage). Free plan: 10 minutes a day; a failure falls back to the generic image.
+[browser]
+binding = "BROWSER"

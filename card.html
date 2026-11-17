@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1200">
+    <meta name="robots" content="noindex">
+    <title>Bill card</title>
+    <!-- The 1200 x 630 picture a shared bill link previews as. Not a page for readers: the Worker's /api/og/<bill>.png opens it in a browser, waits for body[data-ready], and keeps a screenshot.
+         It draws the bill as the bill modal does (the same badges and support bar, the title, the sponsor) from the same answer, and nothing that changes with the floor (no status, no latest action):
+         a preview is made once, when a link is first shared. -->
+    <link rel="stylesheet" href="styles.house.css?v=20261112h">
+    <link rel="stylesheet" href="card.css?v=20261117a">
+</head>
+<body>
+    <main class="card" id="card" aria-label="Bill card" hidden>
+        <div class="c-top" id="c-top"></div>
+        <h1 class="c-title" id="c-title"></h1>
+        <p class="c-sum" id="c-sum"></p>
+        <div class="c-spons" id="c-spons"></div>
+        <div class="c-support" id="c-support"></div>
+        <footer class="c-foot"><span id="c-site">Monitoring the House Floor</span><span class="live" id="c-host">house-floor.evanhollander.org</span></footer>
+    </main>
+    <script src="lib/bill-card.js?v=20261117a"></script>
+</body>
+</html>

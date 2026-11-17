@@ -1,0 +1,27 @@
+/* card.html: the picture a shared bill link previews as (1200 x 630). Tokens and badges come from styles.house.css. */
+html, body { margin: 0; padding: 0; background: var(--bg-card); }
+body { width: 1200px; height: 630px; overflow: hidden; color: var(--text-primary); font-family: var(--font-sans); }
+.card { width: 1200px; height: 630px; box-sizing: border-box; background: var(--bg-card); position: relative; padding: 40px 64px 0; display: flex; flex-direction: column; }
+.card[hidden] { display: none; }
+.card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--accent-blue); }
+.card > * { flex: none; }
+.c-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.c-id { font-family: var(--font-mono); font-weight: 700; font-size: 50px; letter-spacing: -0.01em; }
+.card .bill-modal-badge { font-size: 19px; padding: 7px 14px; height: auto; line-height: 1.2; letter-spacing: 0.08em; border-radius: 7px; }
+.c-title { margin: 16px 0 0; font-size: 46px; line-height: 1.12; font-weight: 600; letter-spacing: -0.012em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.c-sum { margin: 14px 0 0; font-size: 24px; line-height: 1.45; color: var(--text-secondary); max-width: 1020px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.c-spons { display: flex; align-items: center; gap: 20px; margin-top: auto; padding-top: 14px; }
+.c-photo { width: 92px; height: 92px; border-radius: 32%; corner-shape: squircle; overflow: hidden; box-shadow: 0 0 0 4px var(--ring, var(--text-muted)); background: var(--bg-card-hover); flex: none; }
+.c-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.c-lab { font-family: var(--font-mono); font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.c-name { font-size: 34px; font-weight: 600; }
+.c-name small { font-size: 24px; font-weight: 500; margin-left: 10px; color: var(--ring, var(--text-muted)); }
+.c-meta { margin-left: auto; text-align: right; font-size: 22px; color: var(--text-secondary); line-height: 1.5; max-width: 420px; }
+.c-support { margin-top: 22px; border-top: 1px solid var(--border-color); padding: 16px 0 18px; }
+.c-support .c-lab { margin-bottom: 12px; }
+.c-bar { height: 22px; border-radius: 8px; overflow: hidden; display: flex; background: var(--bg-elevated); }
+.c-bar .dem { background: var(--party-d); } .c-bar .rep { background: var(--party-r); } .c-bar .ind { background: var(--party-i); }
+.c-counts { display: flex; gap: 22px; margin-top: 8px; font-family: var(--font-mono); font-weight: 700; font-size: 22px; }
+.c-counts .dem { color: var(--party-d); } .c-counts .rep { color: var(--party-r); } .c-counts .ind { color: var(--party-i); }
+.c-foot { margin: 0 -64px; padding: 14px 64px; background: rgba(255, 255, 255, 0.04); display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 19px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+.c-foot .live { color: var(--accent-green); }

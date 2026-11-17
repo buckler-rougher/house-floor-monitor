@@ -88,45 +88,64 @@ function billIdFromSlug(slug) {
   return m ? `${SLUG_TYPES[m[1]]} ${m[2]}` : null;
 }
 const plainId = (id) => id.replace(/\./g, '');
-// The sentence under a bill's preview title: where the bill stands on THIS site (its floor status, from this week's list, which follows the Clerk's floor log), else Congress.gov's latest action
-// (which lags the floor: H.R. 9600 read "Placed on the Union Calendar" in October on the day the yeas and nays were ordered), then the sponsor. No em dashes, no doubled full stop.
-const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const dayFirst = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]} ${SHORT_MONTHS[Number(m[2]) - 1]} ${m[1]}` : ''; };
-const noStop = (t) => String(t || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/[\s.]+$/, '').trim();
-function billDescription(b, siteBill, isSenate) {
+// The sentence under a bill's preview title. Nothing in it changes with the floor: a link is previewed when it is first shared and the preview is kept, so a status or a latest action would be
+// wrong by the next vote. It is the sponsor, the committee, and the start of the CRS summary (the first sentence, which Congress.gov prefixes with the title).
+const clip = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); if (t.length <= n) return t; const cut = t.slice(0, n); const sp = cut.lastIndexOf(' '); return (sp > n * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:]+$/, '') + '...'; };
+function firstSentence(summary, title) {
+  let t = String(summary || '').replace(/\s+/g, ' ').trim();
+  if (title && t.toLowerCase().startsWith(String(title).toLowerCase())) t = t.slice(String(title).length).trim();
+  const m = t.match(/^(.+?[.!?])(\s|$)/);
+  return m ? m[1] : t;
+}
+function billDescription(b, isSenate) {
   const parts = [];
-  const siteAction = siteBill && siteBill.latestAction && siteBill.status && siteBill.status !== 'scheduled' ? siteBill.latestAction : (siteBill && siteBill.status === 'scheduled' ? 'Scheduled for consideration' : '');
-  if (siteAction) parts.push(noStop(siteAction));
-  else if (b && b.latestAction) parts.push(`Latest action${b.latestActionDate ? ` (${dayFirst(b.latestActionDate)})` : ''}: ${noStop(b.latestAction)}`);
   const sp = b && b.sponsor;
   if (sp && sp.name) parts.push(`Sponsor: ${isSenate || /^S/.test(String(b.id || '')) ? 'Sen.' : 'Rep.'} ${sp.name}${sp.party && sp.state ? ` (${sp.party}-${sp.state})` : ''}`);
+  const cm = b && Array.isArray(b.committees) && b.committees[0] && (b.committees[0].name || b.committees[0]);
+  if (cm && typeof cm === 'string') parts.push(cm);
+  const lead = firstSentence(b && b.summary, b && b.title);
+  if (lead) parts.push(clip(lead, 150).replace(/\.$/, ''));
   parts.push(`Monitoring the ${isSenate ? 'Senate' : 'House'} Floor`);
   return parts.join('. ').slice(0, 280);
 }
-const sameBillId = (a, b) => String(a || '').replace(/[\s.]/g, '').toLowerCase() === String(b || '').replace(/[\s.]/g, '').toLowerCase();
+// The Monday of the week (Eastern) as YYYYMMDD: the key the bill's preview image is kept under. The same as BoardUtil.weekKey in lib/util.js (this file cannot load it); a test holds them equal.
+function weekKey(date) {
+  const d = date instanceof Date ? date : new Date(date == null ? Date.now() : date);
+  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const [y, m, day] = ymd.split('-').map(Number);
+  const mon = new Date(Date.UTC(y, m - 1, day));
+  mon.setUTCDate(mon.getUTCDate() - ((mon.getUTCDay() + 6) % 7));
+  return `${mon.getUTCFullYear()}${String(mon.getUTCMonth() + 1).padStart(2, '0')}${String(mon.getUTCDate()).padStart(2, '0')}`;
+}
+// How the bill is handled this week, for the card's badge: it does not change within the week. Only the three the modal also labels; anything else shows no badge.
+function procedureOf(weekly, id) {
+  const sameId = (a) => String(a || '').replace(/[\s.]/g, '').toLowerCase() === String(id || '').replace(/[\s.]/g, '').toLowerCase();
+  const has = (list) => (list || []).some((x) => x && sameId(x.id));
+  if (!weekly) return null;
+  if (has(weekly.suspensionBills)) return 'UNDER SUSPENSION';
+  if (has(weekly.ruleBills)) return 'SUBJECT TO A RULE';
+  if (has(weekly.mayBeConsideredBills)) return 'MAY BE CONSIDERED';
+  return null;
+}
 
 async function withBillPreview(page, url, id, isSenate) {
   try {
     const opts = { signal: AbortSignal.timeout(2000), cf: { cacheTtl: 60, cacheEverything: true } };
-    // the bill's record, and this week's list (the site's own status); the list is best effort
-    const [r, w] = await Promise.all([
-      fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(id)}`, opts),
-      isSenate ? Promise.resolve(null) : fetch('https://api.evanhollander.org/house-floor/api/bills', opts).catch(() => null),
-    ]);
+    const r = await fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(id)}`, opts);
     if (!r.ok) return page;
     const b = await r.json();
     if (!b || !b.title) return page;
-    let siteBill = null;
-    try {
-      if (w && w.ok) { const d = await w.json(); siteBill = [...(d.ruleBills || []), ...(d.suspensionBills || []), ...(d.mayBeConsideredBills || []), ...(d.alsoOnFloorBills || [])].find((x) => x && sameBillId(x.id, id)) || null; }
-    } catch { /* the Congress.gov line stands in */ }
     const board = isSenate ? 'Senate' : 'House';
     const title = `${plainId(id)}: ${b.title}`.slice(0, 120);
-    const desc = billDescription(b, siteBill, isSenate);
+    const desc = billDescription(b, isSenate);
     const href = `${url.origin}/?bill=${url.searchParams.get('bill').toLowerCase()}`;
     const set = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
+    // the card: drawn like the bill modal by a browser the first time it is asked for, kept a week; if it cannot be drawn the route redirects to the generic image, so a preview never loses its picture
+    const image = `https://api.evanhollander.org/house-floor/api/og/${url.searchParams.get('bill').toLowerCase()}.png?w=${weekKey()}&b=${board.toLowerCase()}`;
     return new HTMLRewriter()
       .on('title', { element(e) { e.setInnerContent(`${title} | Monitoring the ${board} Floor`); } })
+      .on('meta[property="og:image"]', set('content', image))
+      .on('meta[name="twitter:image"]', set('content', image))
       .on('meta[property="og:title"]', set('content', title))
       .on('meta[name="twitter:title"]', set('content', title))
       .on('meta[property="og:description"]', set('content', desc))

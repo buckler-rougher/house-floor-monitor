@@ -5353,6 +5353,65 @@ async function handleSpecialRule(env, nRaw) {
   }, 600, { ttlOf: (body) => { try { return JSON.parse(body).complete ? 600 : 20; } catch { return 20; } } });
 }
 
+// ── /api/og/<bill>.png?w=YYYYMMDD&b=house|senate ─────────────────────────────────────────────────────────────
+// The picture a shared bill link previews as (functions/_middleware.js names this as og:image). card.html draws the bill like the bill modal (no status, no latest action: a preview is made once,
+// when a link is first shared); a browser opens it and a screenshot is kept in KV by bill and week (`w` is the Monday of the week, so a bill is drawn again at most weekly). Cloudflare's free
+// Browser Rendering is 10 minutes a day, so EVERY failure (no binding, the allowance spent, no such bill, a slow page) answers with a redirect to the generic image, which a preview shows
+// as it always did, and is remembered for a few minutes so a crawler cannot spend the allowance on a bill that cannot be drawn. Bills are checked to exist before a browser is opened.
+const _ogInflight = new Map();
+async function handleOgImage(env, slug, url) {
+  const board = url.searchParams.get('b') === 'senate' ? 'senate' : 'house';
+  const generic = `https://${board}-floor.evanhollander.org/${board}-social.webp`;
+  const fallback = (secs = 300) => new Response(null, { status: 302, headers: { ...CORS_HEADERS, Location: generic, 'Cache-Control': `public, max-age=${secs}` } });
+  if (!/^(hr|hres|hjres|hconres|s|sres|sjres|sconres)\d{1,5}$/.test(slug)) return fallback();
+  // the week key: a date within a week either side of today, so nobody can fill KV with keys of their own
+  const w = url.searchParams.get('w') || '';
+  const nowMs = Date.now(), wMs = /^\d{8}$/.test(w) ? Date.UTC(+w.slice(0, 4), +w.slice(4, 6) - 1, +w.slice(6, 8)) : NaN;
+  if (!(Math.abs(wMs - nowMs) < 9 * 86400_000)) return fallback();
+  const key = `og-v1:${board}:${slug}:${w}`;
+  const png = (body) => new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
+
+  const mem = _mGet(key);
+  if (mem === 'none') return fallback();
+  try {
+    const stored = env?.HLS_CACHE ? await env.HLS_CACHE.get(key, 'arrayBuffer') : null;
+    if (stored) return png(stored);
+  } catch { /* draw it */ }
+  if (!env?.BROWSER) return fallback();
+
+  const types = { hr: 'H.R.', hres: 'H.Res.', hjres: 'H.J.Res.', hconres: 'H.Con.Res.', s: 'S.', sres: 'S.Res.', sjres: 'S.J.Res.', sconres: 'S.Con.Res.' };
+  const m = slug.match(/^([a-z]+)(\d+)$/);
+  const draw = async () => {
+    // the bill must exist (this answer is cached, and a crawler's made-up numbers cost a request, not a browser)
+    const r = await fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(`${types[m[1]]} ${m[2]}`)}`, { signal: AbortSignal.timeout(8000), cf: { cacheTtl: 600, cacheEverything: true } });
+    const b = r.ok ? await r.json().catch(() => null) : null;
+    if (!b || !b.title) return null;
+    const puppeteer = (await import('@cloudflare/puppeteer')).default;
+    const browser = await puppeteer.launch(env.BROWSER);
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
+      await page.goto(`https://${board}-floor.evanhollander.org/card.html?bill=${slug}&b=${board}`, { waitUntil: 'networkidle0', timeout: 20_000 });
+      await page.waitForSelector('body[data-ready], body[data-failed]', { timeout: 15_000 });
+      if (await page.evaluate(() => document.body.dataset.failed === '1')) return null;
+      return await page.screenshot({ type: 'png' });
+    } finally { await browser.close().catch(() => {}); }
+  };
+  try {
+    let p = _ogInflight.get(key);
+    if (!p) { p = draw(); _ogInflight.set(key, p); p.finally(() => _ogInflight.delete(key)).catch(() => {}); }
+    const img = await p;
+    if (!img) { _mSet(key, 'none', 10 * 60_000); return fallback(); }
+    try { if (env.HLS_CACHE) await env.HLS_CACHE.put(key, img, { expirationTtl: 21 * 86400 }); } catch { /* served anyway */ }
+    return png(img);
+  } catch (e) {
+    console.warn('[og]', e && e.message);
+    // the daily allowance answers 429; wait longer then
+    _mSet(key, 'none', /429|limit|exceed/i.test(String(e && e.message)) ? 60 * 60_000 : 5 * 60_000);
+    return fallback();
+  }
+}
+
 async function fetchBroadcastEvents(dateId) {
   const resp = await fetch(
     `https://liveproxy-azapp-prod-eastus2-003.azurewebsites.net/broadcastevents/${dateId}`,
@@ -7444,6 +7503,8 @@ async function handleRequest(request, env) {
     return await handleApproMarkups(env, url);
   } else if (path === '/api/appropriations' && request.method === 'GET') {
     return await handleAppropriations(env);
+  } else if (/^\/api\/og\/[a-z0-9]+\.png$/.test(path) && request.method === 'GET') {
+    return await handleOgImage(env, path.slice('/api/og/'.length, -'.png'.length), url);
   } else if (path === '/api/special-rule' && request.method === 'GET') {
     return await handleSpecialRule(env, url.searchParams.get('n'));
   } else if (path === '/api/discharge-calendar' && request.method === 'GET') {
