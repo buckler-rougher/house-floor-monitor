@@ -88,18 +88,41 @@ function billIdFromSlug(slug) {
   return m ? `${SLUG_TYPES[m[1]]} ${m[2]}` : null;
 }
 const plainId = (id) => id.replace(/\./g, '');
+// The sentence under a bill's preview title: where the bill stands on THIS site (its floor status, from this week's list, which follows the Clerk's floor log), else Congress.gov's latest action
+// (which lags the floor: H.R. 9600 read "Placed on the Union Calendar" in October on the day the yeas and nays were ordered), then the sponsor. No em dashes, no doubled full stop.
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayFirst = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]} ${SHORT_MONTHS[Number(m[2]) - 1]} ${m[1]}` : ''; };
+const noStop = (t) => String(t || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/[\s.]+$/, '').trim();
+function billDescription(b, siteBill, isSenate) {
+  const parts = [];
+  const siteAction = siteBill && siteBill.latestAction && siteBill.status && siteBill.status !== 'scheduled' ? siteBill.latestAction : (siteBill && siteBill.status === 'scheduled' ? 'Scheduled for consideration' : '');
+  if (siteAction) parts.push(noStop(siteAction));
+  else if (b && b.latestAction) parts.push(`Latest action${b.latestActionDate ? ` (${dayFirst(b.latestActionDate)})` : ''}: ${noStop(b.latestAction)}`);
+  const sp = b && b.sponsor;
+  if (sp && sp.name) parts.push(`Sponsor: ${isSenate || /^S/.test(String(b.id || '')) ? 'Sen.' : 'Rep.'} ${sp.name}${sp.party && sp.state ? ` (${sp.party}-${sp.state})` : ''}`);
+  parts.push(`Monitoring the ${isSenate ? 'Senate' : 'House'} Floor`);
+  return parts.join('. ').slice(0, 280);
+}
+const sameBillId = (a, b) => String(a || '').replace(/[\s.]/g, '').toLowerCase() === String(b || '').replace(/[\s.]/g, '').toLowerCase();
+
 async function withBillPreview(page, url, id, isSenate) {
   try {
-    const r = await fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(id)}`, {
-      signal: AbortSignal.timeout(2000), cf: { cacheTtl: 600, cacheEverything: true },
-    });
+    const opts = { signal: AbortSignal.timeout(2000), cf: { cacheTtl: 60, cacheEverything: true } };
+    // the bill's record, and this week's list (the site's own status); the list is best effort
+    const [r, w] = await Promise.all([
+      fetch(`https://api.evanhollander.org/house-floor/api/senate/bill?id=${encodeURIComponent(id)}`, opts),
+      isSenate ? Promise.resolve(null) : fetch('https://api.evanhollander.org/house-floor/api/bills', opts).catch(() => null),
+    ]);
     if (!r.ok) return page;
     const b = await r.json();
     if (!b || !b.title) return page;
+    let siteBill = null;
+    try {
+      if (w && w.ok) { const d = await w.json(); siteBill = [...(d.ruleBills || []), ...(d.suspensionBills || []), ...(d.mayBeConsideredBills || []), ...(d.alsoOnFloorBills || [])].find((x) => x && sameBillId(x.id, id)) || null; }
+    } catch { /* the Congress.gov line stands in */ }
     const board = isSenate ? 'Senate' : 'House';
     const title = `${plainId(id)}: ${b.title}`.slice(0, 120);
-    const desc = [b.latestAction ? `Latest action${b.latestActionDate ? ` (${b.latestActionDate})` : ''}: ${b.latestAction}` : '', `Monitoring the ${board} Floor`]
-      .filter(Boolean).join('. ').slice(0, 280);
+    const desc = billDescription(b, siteBill, isSenate);
     const href = `${url.origin}/?bill=${url.searchParams.get('bill').toLowerCase()}`;
     const set = (attr, value) => ({ element(e) { e.setAttribute(attr, value); } });
     return new HTMLRewriter()
