@@ -81,3 +81,18 @@ test('"LEADER THUNE." followed by "I CALL UP" is running the floor, not giving r
   const { seen } = run('opening', 'leader-business');
   assert.ok(!seen.modes.includes('leader'), seen.modes.join(','));
 });
+
+test('the wrap-up names the next sitting: noon Wednesday 11 November 2026, Eastern', () => {
+  const { modes } = run('wrap-up'); const n = modes.day.next;
+  assert.deepEqual([n.date, n.time, new Date(n.at).toISOString()], ['2026-11-11', '12:00', '2026-11-11T17:00:00.000Z']);
+  assert.equal(SM.next(modes, T0 + 60 * 60_000).date, '2026-11-11');
+  assert.equal(SM.next(modes, Date.UTC(2026, 10, 12)), null, 'a sitting that has begun is not "next"');
+});
+test('the next sitting is read in its other wordings, and a weekday that does not match the date is not read', () => {
+  const at = (t, now) => { const x = SM.parseNext(t, now); return x && [x.date, x.time, new Date(x.at).toISOString()]; };
+  assert.deepEqual(at('IT STAND ADJOURNED UNTIL 3:00 P.M. ON MONDAY, NOVEMBER 16', T0), ['2026-11-16', '15:00', '2026-11-16T20:00:00.000Z']);
+  assert.deepEqual(at('STAND ADJOURNED UNTIL NOON ON TUESDAY, DECEMBER 1', T0), ['2026-12-01', '12:00', '2026-12-01T17:00:00.000Z']);
+  assert.deepEqual(at('STAND ADJOURNED UNTIL 10 A.M. ON THURSDAY, MARCH 11', Date.UTC(2027, 2, 1)), ['2027-03-11', '10:00', '2027-03-11T15:00:00.000Z'], 'the year is the next one in which 11 March is a Thursday');
+  assert.equal(SM.parseNext('STAND ADJOURNED UNTIL 12:00 NOON ON FRIDAY, NOVEMBER 11', T0), null);
+  assert.equal(SM.parseNext('THE SENATE STANDS ADJOURNED UNTIL NOON TOMORROW.', T0), null);
+});

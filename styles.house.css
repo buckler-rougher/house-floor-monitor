@@ -67,6 +67,9 @@
     --track-wide:  0.5px;
     --track-wider: 1px;
 
+    --table-rule: rgba(255, 255, 255, 0.06);
+    --table-hover: rgba(255, 255, 255, 0.03);
+
     --font-sans: 'EMH Grotesk', system-ui, sans-serif;
     --font-mono: 'EMH Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     --section-gap: 1.5rem;
@@ -3425,7 +3428,6 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
   align-items: center;
   gap: var(--sp-10);
   padding: var(--sp-4) 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .absentee-list[data-filter="rep"] .absentee-member:not(.rep),
@@ -3452,10 +3454,6 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
 @media (prefers-reduced-motion: reduce) {
     .absentee-list .absentee-member.is-entering { animation: none; }
     .absentee-list { transition: none !important; }
-}
-
-.absentee-member:last-child {
-  border-bottom: none;
 }
 
 .absentee-party {
@@ -4527,6 +4525,8 @@ font-family: var(--font-mono);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: var(--sp-6);
     padding: var(--sp-8) var(--sp-12);
     background: var(--bg-elevated);
     border-radius: var(--radius-6);
@@ -6127,7 +6127,7 @@ font-family: var(--font-mono);
     font-size: var(--fs-sm);
     font-weight: 600;
     font-family: var(--font-mono);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--track-wide);
     text-transform: uppercase;
     color: var(--text-muted);
     padding: var(--sp-6) var(--sp-10) var(--sp-8);
@@ -6147,9 +6147,9 @@ font-family: var(--font-mono);
 .amendments-table th:nth-child(5) { width: 52px; }
 
 .amendments-table tbody tr {
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid var(--table-rule);
 }
-.amendments-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.amendments-table tbody tr:hover { background: var(--table-hover); }
 .amendments-table tbody tr:last-child { border-bottom: none; }
 
 .amendments-table td {
@@ -11439,12 +11439,11 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
 }
 
 .info-popup-table-wrap { margin: var(--sp-12) 0; overflow-x: auto; }
-.info-popup-table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); line-height: 1.45; }
+.info-popup-table { width: 100%; border-collapse: collapse; font-size: var(--fs-base); line-height: 1.5; }
 .info-popup-table th, .info-popup-table td {
     padding: var(--sp-8) var(--sp-10);
     text-align: left;
     vertical-align: top;
-    border-bottom: 1px solid var(--border-color);
 }
 .info-popup-table thead th {
     font-family: var(--font-mono);
@@ -11453,6 +11452,9 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     letter-spacing: var(--track-wide);
     text-transform: uppercase;
     color: var(--text-muted);
+    padding: var(--sp-6) var(--sp-10) var(--sp-8);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
 }
 .info-popup-table tbody th {
     width: 26%;
@@ -11464,9 +11466,12 @@ body.senate-call-quorum #floor-grid .legend-item:not(:has(.dot.present)) {
     color: var(--text-muted);
 }
 .info-popup-table td { color: var(--text-secondary); }
-.info-popup-table tbody tr:last-child th, .info-popup-table tbody tr:last-child td { border-bottom: none; }
+.info-popup-table tbody tr { border-bottom: 1px solid var(--table-rule); }
+.info-popup-table tbody tr:hover { background: var(--table-hover); }
+.info-popup-table tbody tr:last-child { border-bottom: none; }
 @media (max-width: 640px) {
     .info-popup-table th, .info-popup-table td { padding: var(--sp-8) var(--sp-6); }
+    .info-popup-table thead th { padding: var(--sp-6) var(--sp-6) var(--sp-8); }
     .info-popup-table tbody th { width: 28%; }
 }
 

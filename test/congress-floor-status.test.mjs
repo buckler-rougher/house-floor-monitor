@@ -47,4 +47,22 @@ ok('a rule being adopted is skipped (it is not the bill)', () => {
   assert.strictEqual(act('Rule H. Res. 1300 passed House.'), null);
 });
 
+
+// 17 November 2026: H.R. 2400 (the Pit River Land Transfer Act) was on the week's schedule to take up the Senate's amendment, and the card said "Passed (voice vote) 15 Dec 2025": the House's
+// passage of the original bill, a year earlier, was the newest floor outcome Congress.gov had. An outcome older than the week the list is for is the earlier stage, not this one.
+import { congressStatusIsThisWeek } from '../worker.js';
+ok('an outcome from before the week of the schedule is not this week\'s status', () => {
+  const old = act('On motion to suspend the rules and pass the bill, as amended Agreed to by voice vote.', { actionDate: '2025-12-15' });
+  assert.strictEqual(old.status, 'passed');
+  assert.strictEqual(congressStatusIsThisWeek(old, '2026-11-09'), false);
+});
+ok('an outcome from this week, or the Monday of it, still is', () => {
+  assert.strictEqual(congressStatusIsThisWeek({ actionDate: '2026-11-09' }, '2026-11-09'), true);
+  assert.strictEqual(congressStatusIsThisWeek({ actionDate: '2026-11-12' }, '2026-11-09'), true);
+});
+ok('a status with no date, or no week to compare to, is taken as it is', () => {
+  assert.strictEqual(congressStatusIsThisWeek({ actionDate: null }, '2026-11-09'), true);
+  assert.strictEqual(congressStatusIsThisWeek({ actionDate: '2025-12-15' }, null), true);
+});
+
 console.log(`\n${n} passed`);

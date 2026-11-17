@@ -318,6 +318,7 @@ function renderCongressBanner(data) {
 // is the point: a pro forma is gavel in, gavel out, so calling it "in session"
 // would be true and misleading at once.
 function renderSchedule(data) {
+    _lastSchedule = data;
     const line = el('session-text');
     const next = el('next-votes');
     const latest = data?.latest;
@@ -351,15 +352,23 @@ function renderSchedule(data) {
 
     if (next) {
         const nc = latest.nextConvene ? new Date(latest.nextConvene) : null;
+        // The board's formats: day-first with the month spelled ("Tue, 13 October 2026"), a padded 12-hour clock with the zone ("03:30 PM EDT").
+        const whenOf = (d) => {
+            const et = (o) => d.toLocaleString('en-US', Object.assign({ timeZone: 'America/New_York' }, o));
+            const day = new Date(d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) + 'T12:00:00');
+            return `${BoardUtil.DAY_NAMES[day.getDay()].slice(0, 3)}, ${BoardUtil.fmtDate(day)} at ${et({ hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
+        };
+        // The majority leader's wrap-up request names the next sitting the evening it is read ("stand adjourned until 12:00 noon on Wednesday, November 11"), which the feed
+        // that carries nextConvene publishes only after a sitting has ended. Used only when the feed has no sitting still ahead.
+        const heard = _captionNext && _captionNext.at > now ? new Date(_captionNext.at) : null;
         if (nc && !isNaN(nc) && nc.getTime() > now) {
-            const et = (o) => nc.toLocaleString('en-US', Object.assign({ timeZone: 'America/New_York' }, o));
-            // the board's formats: day-first with the month spelled ("Tuesday, 13 October 2026"), a padded 12-hour clock with the zone ("03:30 PM EDT")
-            const day = new Date(nc.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) + 'T12:00:00');
-            const when = `${BoardUtil.DAY_NAMES[day.getDay()].slice(0, 3)}, ${BoardUtil.fmtDate(day)} at ${et({ hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' })}`;
             // On a pro forma the (?) follows the marker, drawn only once its entry is registered.
             const help = (latest.nextIsProForma && (InfoPopup.has('pro-forma') || new URLSearchParams(location.search).has('fixtures')))
                 ? ' <button type="button" class="info-btn next-votes-help is-quiet" data-info="pro-forma" aria-label="About pro forma sessions">?</button>' : '';
-            next.innerHTML = `NEXT CONVENES ${when}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}${help}`;
+            next.innerHTML = `NEXT CONVENES ${whenOf(nc)}${latest.nextIsProForma ? ' (PRO FORMA)' : ''}${help}`;
+        } else if (heard) {
+            next.textContent = `NEXT CONVENES ${whenOf(heard)}`;
+            next.title = 'Read from the majority leader\'s wrap-up request in the floor captions';
         } else if (nc && !isNaN(nc)) {
             // The feed publishes a sitting only once it has ended, so after the
             // time it last named has passed it still names that time. Showing it
@@ -372,6 +381,13 @@ function renderSchedule(data) {
         }
     }
 }
+
+// What the floor captions say the next sitting is (the Worker's reading of the wrap-up), kept so the line is redrawn when it arrives.
+let _captionNext = null, _lastSchedule = null;
+document.addEventListener('senate-mode', (e) => {
+    const n = (e.detail && e.detail.nextConvening) || null;
+    if ((n && n.at) !== (_captionNext && _captionNext.at)) { _captionNext = n; if (_lastSchedule) renderSchedule(_lastSchedule); }
+});
 
 async function loadSchedule() {
     try {

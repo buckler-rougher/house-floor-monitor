@@ -847,7 +847,7 @@ function offScheduleBills(onSchedule, titles, statuses, dates = {}) {
   return out;
 }
 
-export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills, congressFloorStatus };
+export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills, congressFloorStatus, congressStatusIsThisWeek };
 
 // ── Proceedings → Bill Status ────────────────────────────────────────────────
 // Convert a Congress.gov bill URL to our canonical bill ID string.
@@ -1397,6 +1397,15 @@ function congressFloorStatus(action) {
     statusText = detail ? `Passed ${detail}` : 'Passed';
   }
   return { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: text };
+}
+
+// A floor outcome on Congress.gov counts for a bill on THIS week's schedule only if it happened this week. A bill scheduled again after it passed (the House passed H.R. 2400 by voice vote on
+// 15 December 2025, the Senate amended it, and it was scheduled 13 November 2026 to take up the Senate's amendment) is not passed: that action is the earlier stage, and the card said
+// "Passed (voice vote) 15 Dec 2025" before the House had met. A status with no date is taken as it is.
+function congressStatusIsThisWeek(status, weekStartISO) {
+  const d = status && status.actionDate;
+  if (!d || !/^\d{4}-\d{2}-\d{2}/.test(String(d)) || !weekStartISO) return true;
+  return String(d).slice(0, 10) >= weekStartISO;
 }
 
 async function fetchCongressBillStatus(billId) {
@@ -1977,7 +1986,7 @@ async function handleBills(request, env) {
   //
   // v11 -> v12 (12 November 2026): a referred resolution had been cached as PASSED (Congress.gov's "agreed to by" on a motion to refer), and the answer carries the new
   // 'disposed' status and ALSO ON THE FLOOR. Cheap now: a small week (19 cards), so the rebuild is about twenty Congress.gov calls, not the stampede described above.
-  const cacheKey = quick ? 'bills-weekly-quick-v12' : 'bills-weekly-v12';
+  const cacheKey = quick ? 'bills-weekly-quick-v13' : 'bills-weekly-v13';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -2350,6 +2359,8 @@ async function _fetchBills(request, env) {
     // Results are cached in KV for 30 minutes so Congress.gov is only hit on cold cache,
     // not on every page load.
     const allBills = [...ruleBills, ...suspensionBills, ...mayBeConsideredBills];
+    // The week the list is FOR: the current week's entry, or the prior week's when the current one is not out yet.
+    const statusFloorISO = (matchingEntries.length ? currentWeekStart : priorWeekStart).toISOString().slice(0, 10);
     if (!quick) await Promise.all(allBills.map(async (bill) => {
       // Check KV cache first — avoids hitting Congress.gov on warm loads
       const enrichCached = await getCachedBillEnrichment(env, bill.id);
@@ -2423,8 +2434,8 @@ async function _fetchBills(request, env) {
         }
       }
       if (congressStatus) {
-        // Only apply floor-action fields when a floor action was actually found
-        if (congressStatus.status) {
+        // Only apply floor-action fields when a floor action was actually found, and it happened this week (see congressStatusIsThisWeek)
+        if (congressStatus.status && congressStatusIsThisWeek(congressStatus, statusFloorISO)) {
           bill.status = congressStatus.status;
           bill.latestAction = congressStatus.statusText;
           bill.considered = true;
@@ -5664,7 +5675,7 @@ async function handleSenateQuorum(env) {
     // from the same caption segments as the call. State stored before they existed has none.
     const SM = globalThis.SenateModes;
     state.modes = state.modes || SM.empty();
-    const sigOf = () => senateCallSignature(state.call) + JSON.stringify([state.modes.base, state.modes.leader, state.modes.day]);
+    const sigOf = () => senateCallSignature(state.call) + JSON.stringify([state.modes.base, state.modes.leader, state.modes.day]);   // day carries the next sitting
     const startedWith = sigOf();
     const now = Date.now();
     state.call = SC.expire(state.call, now);
@@ -5675,6 +5686,8 @@ async function handleSenateQuorum(env) {
       return new Response(JSON.stringify({
         stream: filename, call, summary: SC.summarize(call), updated: state.updated,
         mode: SM.current(state.modes, Date.now()),
+        // The next sitting, as the majority leader read it in the wrap-up: the feed that names it publishes only after a sitting has ended.
+        nextConvening: SM.next(state.modes, Date.now()),
         // The shape before the call was a thing, for a tab that has not reloaded.
         names: call.names, votes: call.votes, ...extra,
       }), { headers: hdrs });
