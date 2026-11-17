@@ -847,7 +847,7 @@ function offScheduleBills(onSchedule, titles, statuses, dates = {}) {
   return out;
 }
 
-export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills, congressFloorStatus, congressStatusIsThisWeek };
+export { pickBillsWeekStart, extractBillStatusesFromProceedings, offScheduleBills, congressFloorStatus, congressStatusIsThisWeek, proceedingsSignature };
 
 // ── Proceedings → Bill Status ────────────────────────────────────────────────
 // Convert a Congress.gov bill URL to our canonical bill ID string.
@@ -1397,6 +1397,13 @@ function congressFloorStatus(action) {
     statusText = detail ? `Passed ${detail}` : 'Passed';
   }
   return { status: isFailed ? 'failed' : 'passed', statusText, actionDate: action.actionDate, actionText: text };
+}
+
+// A cheap fingerprint of the Clerk's floor log for a day: its length and the number of rows. The log only grows while the House sits, so a different fingerprint means something new happened
+// (a vote ordered, a bill considered). The stream object checks this every minute and rebuilds the bills only when it moves: the full rebuild reads the House Docs feed and is kept to every ten minutes.
+function proceedingsSignature(html) {
+  const s = String(html || '');
+  return `${s.length}:${(s.match(/<tr[\s>]/gi) || []).length}`;
 }
 
 // A floor outcome on Congress.gov counts for a bill on THIS week's schedule only if it happened this week. A bill scheduled again after it passed (the House passed H.R. 2400 by voice vote on
@@ -7945,13 +7952,14 @@ export class DomeWatchStreamCoordinator {
     // Bills — combines three endpoints into one SSE event so the browser gets
     // bills + rules + whip recs in a single push.
     if (!this.dataIntervals.has('bills')) {
-      const pollBills = async () => {
+      // `force` rebuilds now instead of serving handleBills' 60-second memory (the Clerk's floor log just changed).
+      const pollBills = async (force = false) => {
         if (this.clients.size === 0) return;
         initRuntimeGlobals(this.env);
         try {
           // Direct in-process handler calls, no self-fetch.
           const [billsResp, rulesResp, whipResp] = await Promise.all([
-            handleBills(new Request('https://internal/api/bills'), this.env),
+            force ? _fetchBills(new Request('https://internal/api/bills'), this.env) : handleBills(new Request('https://internal/api/bills'), this.env),
             handleRules(new Request('https://internal/api/rules'), this.env),
             handleWhipNotices(this.env),
           ]);
@@ -7974,6 +7982,26 @@ export class DomeWatchStreamCoordinator {
       };
       pollBills();
       this.dataIntervals.set('bills', setInterval(pollBills, 10 * 60 * 1000));
+
+      // The ten-minute rebuild left a floor action up to ten minutes late on the page (17 November 2026: the yeas and nays were ordered on H.R. 9600 at 4:44 PM and the card said
+      // "scheduled" at 4:48). Every minute the Clerk's floor log for today is read (one small page) and the bills are rebuilt the moment it has changed.
+      if (!this.dataIntervals.has('bills-watch')) {
+        let lastSig = null;
+        const watchProceedings = async () => {
+          if (this.clients.size === 0) return;
+          initRuntimeGlobals(this.env);
+          try {
+            const ymd = getTodayDateET();
+            const r = await fetch(`https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${ymd.slice(4, 6)}%2F${ymd.slice(6, 8)}%2F${ymd.slice(0, 4)}`, { headers: BOT_HEADERS, signal: AbortSignal.timeout(8000) });
+            if (!r.ok) return;
+            const sig = proceedingsSignature(await r.text());
+            const changed = lastSig !== null && sig !== lastSig;
+            lastSig = sig;
+            if (changed) await pollBills(true);
+          } catch { /* the ten-minute rebuild still runs */ }
+        };
+        this.dataIntervals.set('bills-watch', setInterval(watchProceedings, 60 * 1000));
+      }
     }
 
     // Whip notices — combines floor updates (Firestore) and daily/nightly/weekly notices
