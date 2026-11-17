@@ -822,5 +822,18 @@ check('empty roster resolves to nothing',
   H.resolveFloorSpeakers(H.splitTurns(H.parseCaptionCues(read('captions-suspension.vtt'))), []).timeline
     .filter((x) => x.member).length, 0);
 
+// 17 November 2026, the Indian Buffalo Management Act: the stenographer wrote "THE GENTLE WOMAN FROM NEW MEXICO IS RECOGNIZED" (two words, split across cues as "THE GENTLE WOMAN FROM" and
+// "NEW MEXICO IS RECOGNIZED"), the recognition pattern wanted one word (GENTLEWOMAN), missed it, and the row kept naming the previous speaker's state (Florida) while Stansbury spoke.
+const spaced = (word) => H.resolveFloorSpeakers([
+  { t: 0, text: 'PURSUANT TO THE RULE, THE GENTLEMAN FROM ARKANSAS, MR. WESTERMAN, AND THE GENTLEWOMAN FROM OREGON, MS. HOYLE, EACH WILL CONTROL 20 MINUTES.' },
+  { t: 1, text: 'THE GENTLEMAN FROM ARKANSAS IS RECOGNIZED.' },
+  { t: 2, text: 'I URGE MY COLLEAGUES TO SUPPORT THE BILL AND I RESERVE THE BALANCE OF MY TIME.' },
+  { t: 3, text: `THE GENTLEMAN RESERVES. THE ${word} FROM OREGON IS RECOGNIZED.` },
+  { t: 4, text: 'THANK YOU, MR. SPEAKER. I RISE TODAY IN SUPPORT OF THIS BILL.' },
+], roster);
+check('"GENTLEWOMAN" in one word recognizes the next member',  spaced('GENTLEWOMAN').timeline[4].member && spaced('GENTLEWOMAN').timeline[4].member.last, 'Hoyle');
+check('"GENTLE WOMAN" in two words does the same',            spaced('GENTLE WOMAN').timeline[4].member && spaced('GENTLE WOMAN').timeline[4].member.last, 'Hoyle');
+check('and "GENTLE MAN"',                                      spaced('GENTLE MAN').timeline[4].member && spaced('GENTLE MAN').timeline[4].member.last, 'Hoyle');
+
 console.log(failed ? `\n${failed} failed` : `\nall floor-speaker assertions pass`);
 process.exit(failed ? 1 : 0);
