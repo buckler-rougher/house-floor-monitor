@@ -2000,6 +2000,15 @@ async function handleBills(request, env) {
   return kvCache(env, cacheKey, ttl, () => _fetchBills(request, env), 3600);
 }
 
+// The bills answer is cached under two keys by handleBills (full and quick). A build the stream object made from the source is written under the full key (and into this isolate's memory) so a
+// reader of the plain route gets it too instead of a copy up to an hour old. The quick key is left to expire: its readers refetch every 30 seconds in memory and fall back to the full one.
+async function storeBillsBuild(env, body) {
+  try {
+    _mSet('bills-weekly-v13', body, 60_000);
+    if (env?.HLS_CACHE) await env.HLS_CACHE.put('bills-weekly-v13', JSON.stringify({ body, cachedAt: Date.now() }), { expirationTtl: KV_STORAGE_TTL });
+  } catch { /* the stream still carries it */ }
+}
+
 async function _fetchBills(request, env) {
   try {
     const url = new URL(request.url);
@@ -7952,14 +7961,16 @@ export class DomeWatchStreamCoordinator {
     // Bills — combines three endpoints into one SSE event so the browser gets
     // bills + rules + whip recs in a single push.
     if (!this.dataIntervals.has('bills')) {
-      // `force` rebuilds now instead of serving handleBills' 60-second memory (the Clerk's floor log just changed).
-      const pollBills = async (force = false) => {
+      // Built from the SOURCE every time, never through handleBills: that serves a stored copy for up to an hour (kvFreshTtl 3600), so the page was up to an hour behind the floor
+      // (17 November 2026: H.R. 9600 had its yeas and nays ordered at 4:44 PM and the data built at 4:38 PM were still being served at 4:54). One instance builds, a rebuild is about
+      // twenty Congress.gov calls late in a week, and it runs every ten minutes and whenever the Clerk's floor log changes. The result is written back for the plain route (below).
+      const pollBills = async () => {
         if (this.clients.size === 0) return;
         initRuntimeGlobals(this.env);
         try {
           // Direct in-process handler calls, no self-fetch.
           const [billsResp, rulesResp, whipResp] = await Promise.all([
-            force ? _fetchBills(new Request('https://internal/api/bills'), this.env) : handleBills(new Request('https://internal/api/bills'), this.env),
+            _fetchBills(new Request('https://internal/api/bills'), this.env),
             handleRules(new Request('https://internal/api/rules'), this.env),
             handleWhipNotices(this.env),
           ]);
@@ -7971,6 +7982,8 @@ export class DomeWatchStreamCoordinator {
           const cacheKey = bills + '|' + (rules || '') + '|' + (whip || '');
           if (this.dataCache.get('bills') === cacheKey) return;
           this.dataCache.set('bills', cacheKey);
+          // The plain route and the first load read the same key through handleBills: hand them this build, not the hour-old copy.
+          if (billsResp.headers.get(KV_NO_STORE_HEADER) !== '1') await storeBillsBuild(this.env, bills);
           const payload = JSON.stringify({
             bills: JSON.parse(bills),
             rules: rules ? JSON.parse(rules) : null,
@@ -7997,7 +8010,7 @@ export class DomeWatchStreamCoordinator {
             const sig = proceedingsSignature(await r.text());
             const changed = lastSig !== null && sig !== lastSig;
             lastSig = sig;
-            if (changed) await pollBills(true);
+            if (changed) await pollBills();
           } catch { /* the ten-minute rebuild still runs */ }
         };
         this.dataIntervals.set('bills-watch', setInterval(watchProceedings, 60 * 1000));
