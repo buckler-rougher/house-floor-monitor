@@ -5362,7 +5362,8 @@ const _ogInflight = new Map();
 async function handleOgImage(env, slug, url) {
   const board = url.searchParams.get('b') === 'senate' ? 'senate' : 'house';
   const generic = `https://${board}-floor.evanhollander.org/${board}-social.webp`;
-  const fallback = (secs = 300) => new Response(null, { status: 302, headers: { ...CORS_HEADERS, Location: generic, 'Cache-Control': `public, max-age=${secs}` } });
+  // `why` is in a header so a failure can be read from outside (the Worker's log is not reachable from here)
+  const fallback = (secs = 300, why = '') => new Response(null, { status: 302, headers: { ...CORS_HEADERS, Location: generic, 'Cache-Control': `public, max-age=${secs}`, ...(why ? { 'X-OG-Why': String(why).replace(/[^\x20-\x7e]/g, ' ').slice(0, 200) } : {}) } });
   if (!/^(hr|hres|hjres|hconres|s|sres|sjres|sconres)\d{1,5}$/.test(slug)) return fallback();
   // the week key: a date within a week either side of today, so nobody can fill KV with keys of their own
   const w = url.searchParams.get('w') || '';
@@ -5372,12 +5373,12 @@ async function handleOgImage(env, slug, url) {
   const png = (body) => new Response(body, { headers: { ...CORS_HEADERS, 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
 
   const mem = _mGet(key);
-  if (mem === 'none') return fallback();
+  if (mem === 'none') return fallback(300, 'recent failure, not retried yet');
   try {
     const stored = env?.HLS_CACHE ? await env.HLS_CACHE.get(key, 'arrayBuffer') : null;
     if (stored) return png(stored);
   } catch { /* draw it */ }
-  if (!env?.BROWSER) return fallback();
+  if (!env?.BROWSER) return fallback(300, 'no BROWSER binding');
 
   const types = { hr: 'H.R.', hres: 'H.Res.', hjres: 'H.J.Res.', hconres: 'H.Con.Res.', s: 'S.', sres: 'S.Res.', sjres: 'S.J.Res.', sconres: 'S.Con.Res.' };
   const m = slug.match(/^([a-z]+)(\d+)$/);
@@ -5401,14 +5402,14 @@ async function handleOgImage(env, slug, url) {
     let p = _ogInflight.get(key);
     if (!p) { p = draw(); _ogInflight.set(key, p); p.finally(() => _ogInflight.delete(key)).catch(() => {}); }
     const img = await p;
-    if (!img) { _mSet(key, 'none', 10 * 60_000); return fallback(); }
+    if (!img) { _mSet(key, 'none', 10 * 60_000); return fallback(300, 'no bill, or the card page reported nothing to draw'); }
     try { if (env.HLS_CACHE) await env.HLS_CACHE.put(key, img, { expirationTtl: 21 * 86400 }); } catch { /* served anyway */ }
     return png(img);
   } catch (e) {
     console.warn('[og]', e && e.message);
     // the daily allowance answers 429; wait longer then
     _mSet(key, 'none', /429|limit|exceed/i.test(String(e && e.message)) ? 60 * 60_000 : 5 * 60_000);
-    return fallback();
+    return fallback(300, `${e && e.name}: ${e && e.message}`);
   }
 }
 
