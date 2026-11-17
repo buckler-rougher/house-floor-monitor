@@ -144,8 +144,8 @@ async function withBillPreview(page, url, id, isSenate) {
     const image = `https://api.evanhollander.org/house-floor/api/og/${url.searchParams.get('bill').toLowerCase()}.png?w=${weekKey()}&b=${board.toLowerCase()}`;
     return new HTMLRewriter()
       .on('title', { element(e) { e.setInnerContent(`${title} | Monitoring the ${board} Floor`); } })
-      .on('meta[property="og:image"]', set('content', image))
-      .on('meta[name="twitter:image"]', set('content', image))
+      // .on('meta[property="og:image"]', set('content', image))     // switched on once /api/og answers (the Worker build of 17 Nov 2026 failed; the generic image stays until then)
+      // .on('meta[name="twitter:image"]', set('content', image))
       .on('meta[property="og:title"]', set('content', title))
       .on('meta[name="twitter:title"]', set('content', title))
       .on('meta[property="og:description"]', set('content', desc))
