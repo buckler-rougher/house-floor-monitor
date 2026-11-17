@@ -3516,7 +3516,9 @@ function computeRiceIndex(bill) {
     //   "Reported by Committee"  (no vote data → null)
     const text = (bill.committeeReport || '').trim();
     if (!text) return null;
-    if (/voice vote|without objection|unanimous/i.test(text)) return 1.0;
+    // A report by unanimous consent is not scored: no vote was counted (see isUnanimousConsentReport). A voice vote still reads as 1.0.
+    if (isUnanimousConsentReport(bill)) return null;
+    if (/voice vote/i.test(text)) return 1.0;
     // No colon needed — the formatted text is just "... X – Y"
     const m = text.match(/(\d+)\s*[-–]\s*(\d+)/);
     if (m) {
@@ -3525,6 +3527,12 @@ function computeRiceIndex(bill) {
         if (a + b >= 5) return Math.abs(a - b) / (a + b);
     }
     return null;
+}
+
+// Reported out of committee by unanimous consent ("Reported out of cmte by unanimous consent"; "without objection" is the same thing). That is not the same as the committee voting unanimously: nobody
+// was counted, so there is no cohesion to score, and the card says UC where it would show the Rice score (owner, 17 November 2026).
+function isUnanimousConsentReport(bill) {
+    return /unanimous consent|without objection/i.test(String((bill && bill.committeeReport) || ''));
 }
 
 // HSL color for a Rice value: 0 = red (hue 0°), 1 = green (hue 120°)
@@ -4593,7 +4601,9 @@ function createBillCard(bill, procedure) {
     const actionDate = bill.latestActionDate ? formatDate(bill.latestActionDate) : '';
 
     const rice = computeRiceIndex(bill);
-    const riceSpan = rice !== null
+    const riceSpan = isUnanimousConsentReport(bill)
+        ? `<span class="bill-rice is-uc" data-tooltip="Reported out of committee by unanimous consent (no vote was counted)">UC</span>`
+        : rice !== null
         ? `<span class="bill-rice" data-tooltip="Rice Index of Cohesion · 0 = evenly split · 1 = unanimous" style="color:${riceIndexColor(rice)}"><span class="bill-rice-label">RICE </span>${rice.toFixed(2)}</span>`
         : '';
 

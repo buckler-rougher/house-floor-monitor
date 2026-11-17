@@ -5662,6 +5662,8 @@ font-family: var(--font-mono);
     font-weight: 400;
     color: var(--text-muted);
 }
+/* reported by unanimous consent: the score's place and style, green, saying UC */
+.bill-rice.is-uc { color: var(--accent-green); }
 
 .bill-action {
     color: var(--accent-blue);

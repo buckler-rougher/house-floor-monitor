@@ -5267,6 +5267,8 @@ font-family: var(--font-mono);
     color: var(--text-muted);
 }
 
+.bill-rice.is-uc { color: var(--accent-green); }
+
 .bill-action {
     color: var(--accent-blue);
 }
