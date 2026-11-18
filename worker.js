@@ -265,7 +265,10 @@ function initRuntimeGlobals(env) {
   CURRENT_CONGRESS = computeCurrentCongress();
 }
 
-const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator';
+// The one stream object everyone connects to. It is long-lived and keeps the code it STARTED with while it has connections, so a deploy that changes what it builds (the bills payload) can leave it
+// on the old code for as long as a tab stays open (17 November 2026: debateAt was in the plain bills route and missing from the stream, minutes after the deploy). Bump the suffix with such a
+// deploy: the Worker then starts a fresh instance on the new code, new connections go to it, and the old one fades as its tabs reconnect. Its state is only caches, so nothing is lost.
+const STREAM_COORDINATOR_OBJECT = 'domewatch-stream-coordinator-g2';
 const STREAM_FALLBACK_KEY = '__domewatch_stream_fallback__';
 
 function decodeHtmlEntities(str) {
