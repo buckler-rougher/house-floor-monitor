@@ -8039,6 +8039,8 @@ export class DomeWatchStreamCoordinator {
       // twenty Congress.gov calls late in a week, and it runs every ten minutes and whenever the Clerk's floor log changes. The result is written back for the plain route (below).
       const pollBills = async () => {
         if (this.clients.size === 0) return;
+        if (this._billsBuilding) return;   // a rebuild is already running: the timer, the Clerk's log and a new visitor can all ask at once
+        this._billsBuilding = true;
         initRuntimeGlobals(this.env);
         try {
           // Direct in-process handler calls, no self-fetch.
@@ -8048,6 +8050,7 @@ export class DomeWatchStreamCoordinator {
             handleWhipNotices(this.env),
           ]);
           if (!billsResp.ok) return; // bills are essential; skip if unavailable
+          this._billsBuiltAt = Date.now();   // built from the source just now, changed or not
           const bills = await billsResp.text();
           const rules = rulesResp.ok  ? await rulesResp.text()  : null;
           const whip  = whipResp.ok   ? await whipResp.text()   : null;
@@ -8064,8 +8067,9 @@ export class DomeWatchStreamCoordinator {
           });
           this.dataCache.set('bills-payload', payload); // cached for immediate replay to new clients
           await this.broadcast(`event: bills\ndata: ${payload}\n\n`);
-        } catch { /* non-critical */ }
+        } catch { /* non-critical */ } finally { this._billsBuilding = false; }
       };
+      this._pollBills = pollBills;
       pollBills();
       this.dataIntervals.set('bills', setInterval(pollBills, 10 * 60 * 1000));
 
@@ -8241,6 +8245,9 @@ export class DomeWatchStreamCoordinator {
         this.startProceedingsBroadcast();
         this.startFloorBroadcast();
         this.startDataBroadcasts();
+        // A visitor is sent the last bills payload at once, however old it is, and the next timer may be ten minutes away (a deploy, or a quiet stretch, leaves it stale): when what they were
+        // sent is more than two minutes old, rebuild now; the result is broadcast to them and everyone else if it changed.
+        if (this._pollBills && Date.now() - (this._billsBuiltAt || 0) > 2 * 60_000) this._pollBills().catch(() => {});
         this.ensureUpstream();
       },
       cancel: removeClient
