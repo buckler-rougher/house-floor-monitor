@@ -2010,7 +2010,7 @@ async function handleBills(request, env) {
   //
   // v11 -> v12 (12 November 2026): a referred resolution had been cached as PASSED (Congress.gov's "agreed to by" on a motion to refer), and the answer carries the new
   // 'disposed' status and ALSO ON THE FLOOR. Cheap now: a small week (19 cards), so the rebuild is about twenty Congress.gov calls, not the stampede described above.
-  const cacheKey = quick ? 'bills-weekly-quick-v13' : 'bills-weekly-v13';
+  const cacheKey = quick ? 'bills-weekly-quick-v14' : 'bills-weekly-v14';
   const ttl = quick ? 30 : 60;
   // in-memory TTL (30/60s) drives per-isolate freshness.
   // kvFreshTtl=3600s — re-check KV once per hour; write-on-change skips writes when unchanged.
@@ -2021,8 +2021,8 @@ async function handleBills(request, env) {
 // reader of the plain route gets it too instead of a copy up to an hour old. The quick key is left to expire: its readers refetch every 30 seconds in memory and fall back to the full one.
 async function storeBillsBuild(env, body) {
   try {
-    _mSet('bills-weekly-v13', body, 60_000);
-    if (env?.HLS_CACHE) await env.HLS_CACHE.put('bills-weekly-v13', JSON.stringify({ body, cachedAt: Date.now() }), { expirationTtl: KV_STORAGE_TTL });
+    _mSet('bills-weekly-v14', body, 60_000);
+    if (env?.HLS_CACHE) await env.HLS_CACHE.put('bills-weekly-v14', JSON.stringify({ body, cachedAt: Date.now() }), { expirationTtl: KV_STORAGE_TTL });
   } catch { /* the stream still carries it */ }
 }
 
