@@ -4866,6 +4866,25 @@ async function fillSpecialRuleModal(overlay, n) {
     if (entry.model && !entry.complete) setTimeout(async () => { if (overlay.contains(host)) draw(await specialRuleLoad(n, true)); }, 12_000);
 }
 
+// "Watch the Debate": the Time Machine opened at the moment the Clerk's floor log says debate on this bill began (the Worker's `debateAt`, an instant). It opens in a new tab so the live page stays.
+// The Time Machine takes the day and the Eastern clock minute: /?replay=YYYYMMDD&t=HH:MM.
+function debateReplayLink(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const p = {}; for (const x of f.formatToParts(d)) p[x.type] = x.value;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    const h12 = ((Number(p.hour) + 11) % 12) + 1, ampm = Number(p.hour) < 12 ? 'AM' : 'PM';
+    const clock = `${String(h12).padStart(2, '0')}:${p.minute} ${ampm}`;
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const dayLabel = day === today ? '' : `${BoardUtil.fmtIso(day)}, `;
+    return {
+        href: `${location.origin}/?replay=${p.year}${p.month}${p.day}&t=${p.hour}:${p.minute}`,
+        label: `Watch the Debate (${dayLabel}${clock})`,
+        title: `Opens the Time Machine at ${clock} Eastern on ${BoardUtil.fmtIso(day)}, when the House Clerk's floor log says debate began`,
+    };
+}
+
 function openBillModal(billId, opts = {}) {
     let bill = billDataMap.get(billId);
     // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
@@ -5056,6 +5075,7 @@ function openBillModal(billId, opts = {}) {
                 })}
                 ${BillSections.links({
                     linkClass: procedureClass,
+                    debate: bill.debateAt ? debateReplayLink(bill.debateAt) : null,
                     text: bill.textVersionUrl || textUrl,
                     textLabel: bill.textVersionUrl ? bill.textVersionType : null,
                     textTitle: bill.textVersionUrl ? textVersionTitle(bill) : null,

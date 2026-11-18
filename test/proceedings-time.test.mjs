@@ -33,4 +33,10 @@ ok('a row with no readable time still gives its status, with no time', () => {
   const s = extractBillStatusesFromProceedings(broken).statuses['H.R. 8483'];
   assert.strictEqual(s.status, 'roll-call'); assert.strictEqual(s.at, null);
 });
+
+// When the debate began (the modal's "Watch the debate" link): the Clerk's "DEBATE - The House proceeded with forty minutes of debate on <bill>" row, with its own time.
+const { moments } = extractBillStatusesFromProceedings(html);
+ok('H.R. 8483 debate began 4:27:08 PM EST, 21:27:08 UTC', () => assert.strictEqual(moments['H.R. 8483'].debateAt, '2026-11-17T21:27:08.000Z'));
+ok('H.R. 9600 debate began 4:34:33 PM EST, 21:34:33 UTC', () => assert.strictEqual(moments['H.R. 9600'].debateAt, '2026-11-17T21:34:33.000Z'));
+ok('a measure with no debate row has no moment', () => assert.strictEqual(moments['H.R. 8195'], undefined));
 console.log(`\n${n} passed`);

@@ -815,7 +815,7 @@ function pickBillsWeekStart(referenceDate, feedWeekStarts, live) {
 }
 // Measures the Clerk's floor log shows the House taking up that the Majority Leader's schedule never listed (see the call in handleBills). `titles` and `statuses` are what
 // extractBillStatusesFromProceedings read from the week's days; `onSchedule` is every card the schedule produced. Exported for test/off-schedule.test.mjs.
-function offScheduleBills(onSchedule, titles, statuses, dates = {}) {
+function offScheduleBills(onSchedule, titles, statuses, dates = {}, moments = {}) {
   const key = (id) => String(id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   // the Clerk's text arrives with its dash and apostrophes as numeric entities (&#x2014;), which the row reader leaves as they are
   const unentity = (s) => String(s || '').replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d))
@@ -838,6 +838,7 @@ function offScheduleBills(onSchedule, titles, statuses, dates = {}) {
       status: st ? st.status : 'scheduled',
       latestAction: st ? st.statusText : 'Considered on the floor',
       latestActionDate: dates[id] || null,
+      debateAt: (moments[id] && moments[id].debateAt) || null,
       considered: true,
       offSchedule: true,
       actionSource: 'proceedings',
@@ -921,18 +922,20 @@ async function fetchProceedingsBillStatuses() {
     // Merge oldest→newest so today's data takes precedence.
     let merged = {};
     let mergedTitles = {};
+    let mergedMoments = {};
     let mergedDates = {};   // the last day each measure is named, as YYYY-MM-DD (the card's date for a measure the schedule does not list)
     for (const { d, r } of responses) {
       if (!r?.ok) continue;
       const url = `https://clerk.house.gov/FloorSummary/ViewFloorActions?date=${encodeURIComponent(fmtClerk(d))}`;
-      const { statuses, titles } = extractBillStatusesFromProceedings(await r.text(), url);
+      const { statuses, titles, moments } = extractBillStatusesFromProceedings(await r.text(), url);
       merged = { ...merged, ...statuses };
+      mergedMoments = { ...mergedMoments, ...moments };   // oldest day first, so a debate resumed on a later day is the later one
       mergedTitles = { ...mergedTitles, ...titles };
       const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
       for (const id of Object.keys(titles)) mergedDates[id] = iso;
     }
-    return { statuses: merged, titles: mergedTitles, dates: mergedDates };
-  } catch { return { statuses: {}, titles: {}, dates: {} }; }
+    return { statuses: merged, titles: mergedTitles, dates: mergedDates, moments: mergedMoments };
+  } catch { return { statuses: {}, titles: {}, dates: {}, moments: {} }; }
 }
 
 // Wording of an outcome line and how specific it is — both live in
@@ -1149,7 +1152,14 @@ function extractBillStatusesFromProceedings(html, sourceUrl = null) {
     }
   }
 
-  return { statuses, titles };
+  // When each measure's debate began, from the Clerk's own row: "DEBATE - The House proceeded with forty minutes of debate on H.R. 9600." The earliest such row of the day (rows run newest first).
+  // The bill modal links to this moment in the Time Machine, so a reader can watch the debate before a vote.
+  const moments = {};
+  for (const r of rows) {
+    if (!r.billId || !r.at || !/^DEBATE\s*-\s*The House proceeded with/i.test(r.description)) continue;
+    if (!moments[r.billId] || r.at < moments[r.billId].debateAt) moments[r.billId] = { debateAt: r.at };
+  }
+  return { statuses, titles, moments };
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2037,6 +2047,7 @@ async function _fetchBills(request, env) {
     const proceedingsStatuses = proceedingsData?.statuses || {};
     const proceedingsTitles = proceedingsData?.titles || {};
     const proceedingsDates = proceedingsData?.dates || {};
+    const proceedingsMoments = proceedingsData?.moments || {};
 
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
@@ -2251,11 +2262,9 @@ async function _fetchBills(request, env) {
         // out of whatever text surrounds it. Tried only after the exact key fails,
         // so a row that already names a bill plainly is unaffected.
         let actionAt = null;
+        const parsedId = globalThis.BillId.parseBillId(normId);
         let proceedingsUpdate = proceedingsStatuses[normId];
-        if (!proceedingsUpdate) {
-          const parsed = globalThis.BillId.parseBillId(normId);
-          if (parsed && parsed.display !== normId) proceedingsUpdate = proceedingsStatuses[parsed.display];
-        }
+        if (!proceedingsUpdate && parsedId && parsedId.display !== normId) proceedingsUpdate = proceedingsStatuses[parsedId.display];
         if (proceedingsUpdate) {
           billStatus = proceedingsUpdate.status;
           latestAction = proceedingsUpdate.statusText;
@@ -2274,6 +2283,8 @@ async function _fetchBills(request, env) {
           status: billStatus,
           latestAction: latestAction,
           latestActionDate: actionAt || new Date(contentUpdatedAt),
+          // when the debate began (the Clerk's log): the modal's "Watch the debate" link
+          debateAt: (proceedingsMoments[normId] || (parsedId && proceedingsMoments[parsedId.display]) || {}).debateAt || null,
           considered,
           actionSource,
           actionSourceUrl,
@@ -2531,7 +2542,7 @@ async function _fetchBills(request, env) {
     // resumed as unfinished business, ...). The panel is built from the schedule, so without this they have no card at all (10 to 11 November 2026: H.Res. 1247, H.R. 2102 and H.R. 9237).
     // Everything here is the Clerk's own wording, the title from the quoted text of the "Considered ..." row and the status from the same reading as every other card; a measure with no
     // outcome row yet shows what the Clerk last said, and corrects itself when the Clerk posts the next row.
-    const alsoOnFloorBills = offScheduleBills(allBills, proceedingsTitles, proceedingsStatuses, proceedingsDates);
+    const alsoOnFloorBills = offScheduleBills(allBills, proceedingsTitles, proceedingsStatuses, proceedingsDates, proceedingsMoments);
 
     return new Response(JSON.stringify({
       ruleBills: ruleBills,
