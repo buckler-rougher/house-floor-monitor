@@ -11468,19 +11468,20 @@ html.replay-mode .weather-panel { display: none; }
 .se-bar { position: relative; }
 .se-plus { position: absolute; top: 50%; margin-top: -11px; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 700; pointer-events: none; opacity: 0; text-shadow: 0 0 6px rgba(0, 0, 0, 0.6); }
 .se-who { display: flex; align-items: center; gap: var(--sp-10); min-width: 0; }
-.se-cph { flex: none; width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--c); }
-.se-cph, .se-ph { position: relative; }
+.se-cph, .se-ph { position: relative; flex: none; border-radius: var(--radius-8); overflow: hidden; border: 1px solid var(--border-color); background: rgba(136, 153, 170, 0.12); }   /* the page's person-row photo (Missing Members): a thin neutral border, not a party ring */
+.se-cph { width: 44px; height: 44px; }
+.se-ph { width: 28px; height: 28px; }
 .se-cph > svg, .se-ph > svg { width: 100%; height: 100%; display: block; }
 .se-cph img, .se-ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }   /* over the generic image, which shows alone until the photo loads or if it never does */
 .se-cn { display: grid; gap: 1px; min-width: 0; }
-.se-cn b { font-size: var(--fs-lg); font-weight: 600; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
-.se-cn span { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); }
+.se-cn b { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.se-cn .se-pr { display: inline-flex; align-items: center; gap: var(--sp-8); }
+.se-cn i { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-md); color: var(--text-muted); }
 .se-check { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-green); display: inline-grid; place-items: center; }
 .se-check svg { width: 11px; height: 11px; stroke: var(--bg-card); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.se-track { position: relative; height: 18px; background: var(--bg-elevated); border-radius: var(--radius-6); }
+.se-track { position: relative; height: 12px; background: var(--bg-elevated); border-radius: var(--radius-6); }
 .se-fill { height: 100%; border-radius: var(--radius-6); transition: width 0.6s var(--ease-emphasis), background var(--dur-300); }
 @media (prefers-reduced-motion: reduce) { .se-fill { transition: none; } }
-.se-bar.is-winner .se-track { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-green) 45%, transparent); }
 .se-mark { position: absolute; top: -4px; bottom: -4px; left: 50%; width: 2px; background: rgba(255, 255, 255, 0.75); border-radius: 1px; }
 .se-mark.is-est { background: none; width: 0; border-left: 2px dashed rgba(255, 255, 255, 0.75); border-radius: 0; }
 .se-num { font-family: var(--font-mono); font-size: var(--fs-3xl); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
@@ -11491,27 +11492,17 @@ html.replay-mode .weather-panel { display: none; }
 .se-others { font-size: var(--fs-sm); color: var(--text-muted); }
 .se-tellers { align-self: stretch; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-8) var(--sp-16); border-top: 1px solid var(--border-color); margin-top: var(--sp-8); padding-top: var(--sp-12); }
 .se-tellers-h { font-size: var(--fs-sm); letter-spacing: var(--track-wider); color: var(--text-muted); font-weight: 600; }
-.se-teller { display: inline-flex; align-items: center; gap: var(--sp-8); font-size: var(--fs-md); }
-.se-teller b { font-weight: 600; }
-.se-tph { position: relative; flex: none; width: 28px; height: 28px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 2px var(--c); background: var(--bg-elevated); }
-.se-tph > svg { width: 100%; height: 100%; display: block; }
-.se-tph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.se-teller { display: inline-flex; align-items: center; gap: var(--sp-10); }
 .od-panel > .panel-header .od-time { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--text-muted); }
 .od-body { align-self: stretch; display: flex; align-items: center; gap: var(--sp-16); padding-top: var(--sp-16); }
 .od-who { display: inline-flex; align-items: center; gap: var(--sp-12); flex: none; }
-.od-who .se-ph { width: 56px; height: 56px; border-radius: 14px; }
-.od-who b { font-size: var(--fs-lg); font-weight: 600; }
-.od-who i { display: block; font-style: normal; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-muted); }
+.od-who .se-cph { width: 64px; height: 64px; }
 .od-text { margin: 0; font-size: var(--fs-xl); line-height: 1.45; color: var(--text-primary); }
 .se-strip { align-self: stretch; border-top: 1px solid var(--border-color); margin-top: var(--sp-8); padding-top: var(--sp-12); }
 .se-strip-h { font-size: var(--fs-sm); letter-spacing: var(--track-wider); color: var(--text-muted); font-weight: 600; margin-bottom: var(--sp-8); }
 .se-reads { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-10); }
-.se-read { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; column-gap: var(--sp-10); align-items: center; }
-.se-ph { grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px var(--c); background: var(--bg-elevated); }
-.se-rn { font-size: var(--fs-md); }
-.se-rn b { font-weight: 600; }
-.se-unk { color: var(--text-muted); }
-.se-rc { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; }
+.se-read { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-10); }
+.se-line { display: inline-flex; align-items: baseline; gap: var(--sp-8); flex-wrap: wrap; min-width: 0; }
 .se-foot { align-self: stretch; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-8) var(--sp-16); margin-top: var(--sp-12); font-size: var(--fs-md); color: var(--text-secondary); }
 .se-foot b { color: var(--text-primary); font-family: var(--font-mono); }
 .se-note { color: var(--text-muted); font-size: var(--fs-sm); max-width: 60ch; }
