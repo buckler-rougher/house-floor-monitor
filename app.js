@@ -11248,6 +11248,7 @@ setInterval(() => { if (!document.hidden) loadPrivileged(); }, 90000);
 globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.org/house-floor/api', board: 'house', photoUrlFor: buildBioguidePhotoUrl, getControl: () => globalThis.__boardControl, placeholder: MEMBER_PHOTO_PLACEHOLDER });
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api', votingDays: true });
+SpeakerPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api' });
 // the amendments search box of the debate panel (the modal's is mounted when it is built)
 document.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i, AMDT_SEARCH));
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);

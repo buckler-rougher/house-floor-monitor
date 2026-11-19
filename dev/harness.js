@@ -171,6 +171,7 @@
     '/api/proceedings':                 'proceedings.json',
     '/api/voting-days':                 'voting-days.json',
     '/api/leadership':                  'leadership.json',
+    '/api/replay-day':                  'replay-day.json',   // the day ?speaker=YYYYMMDD reads (lib/speaker-panel.js): 3 January 2025, the Speaker election
     '/api/bluesky':                     'bluesky.json',
     '/api/tweets':                      'tweets.json',
     '/api/hls-url':                     'hls-url.json',

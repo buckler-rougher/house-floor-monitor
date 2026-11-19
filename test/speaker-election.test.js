@@ -13,11 +13,7 @@ const SE = require('../lib/speaker-election.js');
 const dir = path.join(__dirname, 'speaker-election');
 const vtt = fs.readFileSync(path.join(dir, 'captions-2025-01-03.vtt'), 'utf8');
 const roster = JSON.parse(fs.readFileSync(path.join(dir, 'roster-2025.json'), 'utf8')).roster;
-const cues = [];
-for (const blk of vtt.split(/\n\n+/)) {
-  const m = blk.match(/(\d+:\d+:\d+\.\d+)\s+-->\s+(\d+:\d+:\d+\.\d+)\n([\s\S]*)/);
-  if (m) cues.push({ start: m[1], end: m[2], text: m[3].replace(/\n/g, ' ') });
-}
+const cues = SE.parseVtt(vtt);
 
 let n = 0;
 const ok = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
@@ -79,4 +75,19 @@ ok('an election that elects someone is not followed by a second ballot, even if 
   assert.strictEqual(SE.read([...cues, ...cues.slice(29, 60)], roster).length, 1);
 });
 ok('no roll in the captions: no ballot', () => assert.deepStrictEqual(SE.read(cues.slice(0, 20), roster), []));
+ok('parseVtt keeps the file\'s order and joins a cue\'s lines', () => {
+  const c = SE.parseVtt('WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nTHE ROLL NOW\nWILL BE CALLED.\n\n00:00:02.000 --> 00:00:04.000\nADAMS.\n');
+  assert.deepStrictEqual(c.map((x) => x.text), ['THE ROLL NOW WILL BE CALLED.', 'ADAMS.']);
+  assert.strictEqual(c[0].start, '00:00:01.000');
+  assert.deepStrictEqual(SE.parseVtt(''), []);
+});
+ok('a candidate is told from the four Johnsons by the tellers\' state, or by being a leader, never guessed', () => {
+  const half = cues.slice(0, 500);
+  assert.strictEqual(SE.read(half, roster)[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'ambiguous and nothing to go on: no Member');
+  assert.strictEqual(SE.read(half, roster, { leaders: ['J000299', 'J000294'] })[0].candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the one leader of the four');
+  assert.strictEqual(SE.read(half, roster, { leaders: ['J000299', 'J000288'] })[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'two of them are leaders: still no guess');
+  assert.strictEqual(votes(b, 'JOHNSON') > 0 && b.candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the tellers say Louisiana');
+  assert.strictEqual(b.candidates.find((c) => c.key === 'JEFFRIES').member.bioguideId, 'J000294', 'a surname held by one Member needs nothing');
+  assert.strictEqual(b.candidates.find((c) => c.key === 'EMMER').member.bioguideId, 'E000294');
+});
 console.log(`\n${n} passed`);
