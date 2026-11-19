@@ -10703,6 +10703,11 @@ html.replay-mode .weather-panel { display: none; }
 .se-teller { display: inline-flex; align-items: center; gap: var(--sp-10); }
 .od-panel > .panel-header .od-time { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--text-muted); }
 .od-body { align-self: stretch; display: flex; align-items: center; gap: var(--sp-16); padding-top: var(--sp-16); }
+.od-leaders { align-self: stretch; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--sp-24); padding-top: var(--sp-20); }
+.od-lgroup { display: grid; gap: var(--sp-8); align-content: start; }
+.od-lhead { font-size: var(--fs-sm); letter-spacing: var(--track-wider); color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+.od-lrow { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-12); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); }
+.od-post { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--text-secondary); text-transform: uppercase; letter-spacing: var(--track-wide); white-space: nowrap; }
 .od-who { display: inline-flex; align-items: center; gap: var(--sp-12); flex: none; }
 .od-who .se-cph { width: 64px; height: 64px; }
 .od-text { margin: 0; font-size: var(--fs-xl); line-height: 1.45; color: var(--text-primary); }

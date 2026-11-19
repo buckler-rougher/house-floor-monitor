@@ -60,6 +60,14 @@ ok('the Chaplain named on opening day is its own step, not a prayer', () => {
   assert.strictEqual(p.kind, 'CHAPLAIN APPOINTED');
   assert(/Kibben/.test(p.text));
 });
+ok('leadership announcements are read into people and posts', () => {
+  const g = OD.leadership('Mrs. McClain of Michigan notified the House that, at the direction of the Republican Conference, Mr. Scalise of Louisiana had been elected as Majority Leader and Mr. Emmer of Minnesota had been elected as Majority Whip.');
+  assert.strictEqual(g.body, 'Republican Conference');
+  assert.deepStrictEqual(g.people, [{ name: 'Scalise', state: 'Louisiana', post: 'Majority Leader' }, { name: 'Emmer', state: 'Minnesota', post: 'Majority Whip' }]);
+  const d = OD.leadership('Mr. Aguilar of California notified the House that, at the direction of the Democratic Caucus, Mr. Jeffries of New York had been elected Minority Leader, and that Ms. Clark of Massachusetts had been elected as Minority Whip.');
+  assert.deepStrictEqual(d.people.map((x) => x.post), ['Minority Leader', 'Minority Whip']);
+  assert.strictEqual(d.people[1].name, 'Clark');
+});
 ok('the oath takes over from the address', () => assert.strictEqual(OD.pick(upTo(9), at(15, 27)), null));
 ok('an old step is not shown: 45 minutes', () => {
   assert.strictEqual(OD.pick(upTo(8), at(15, 5) + 44 * 60000).kind, 'ADDRESS BY THE SPEAKER-ELECT');
