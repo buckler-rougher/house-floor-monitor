@@ -98,4 +98,18 @@ test('safeHref lets http, https, mailto and relative addresses through and nothi
   for (const bad of ['javascript:alert(1)', ' JaVaScRiPt:alert(1)', 'jav\tascript:alert(1)', 'java\nscript:alert(1)', 'jav&#x09;ascript:alert(1)'.replace('&#x09;', '\t'), 'data:text/html,<script>1</script>', 'vbscript:x', 'file:///etc/passwd', 'blob:https://x/1', '', null, undefined]) assert.strictEqual(U.safeHref(bad), '', String(bad));
 });
 
+test('congressName: the Clerk\'s wording for a Congress, for the day of an earlier one', () => {
+  assert.strictEqual(U.congressName(119), 'One Hundred Nineteenth Congress');
+  assert.strictEqual(U.congressName(118), 'One Hundred Eighteenth Congress');
+  assert.strictEqual(U.congressName('120'), 'One Hundred Twentieth Congress');
+  assert.strictEqual(U.congressName(121), 'One Hundred Twenty-First Congress');
+  assert.strictEqual(U.congressName(111), 'One Hundred Eleventh Congress');
+  assert.strictEqual(U.congressName(112), 'One Hundred Twelfth Congress');
+  assert.strictEqual(U.congressName(100), 'One Hundredth Congress');
+  assert.strictEqual(U.congressName(199), 'One Hundred Ninety-Ninth Congress');
+  assert.strictEqual(U.congressName(95), '95th Congress', 'outside 100 to 199: numerals, never a wrong word');
+  assert.strictEqual(U.congressName(''), '');
+  assert.strictEqual(U.congressName(null), '');
+});
+
 console.log(`\n${n} passed`);

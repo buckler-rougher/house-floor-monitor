@@ -8954,6 +8954,18 @@ async function resolveClerkMember(text) {
 const ambiguousStates = (candidates) => candidates.map((c) => c.postal).sort().join(' or ');
 const AMBIGUOUS_NOTE = 'The Clerk did not say which member';
 
+// The Congress banner ("One Hundred Nineteenth Congress - Session 1"). The Clerk's member file gives the CURRENT Congress and session, which is wrong for a day replayed in the Time Machine (3 January
+// 2025 said Session 2; a day of 2023 would have said the 119th): there the replayed day's own record says which. The shim calls this when the day has loaded.
+let bannerFromMemberFile = null;
+function applyCongressBanner() {
+    const el = elements.congressInfo && elements.congressInfo.querySelector('.congress-text');
+    if (!el) return;
+    const day = window.__replay && window.__replay.day;
+    if (day && day.congress && day.session) { el.textContent = `${BoardUtil.congressName(day.congress)} - Session ${day.session}`; return; }
+    if (bannerFromMemberFile) el.textContent = `${bannerFromMemberFile.text} - Session ${bannerFromMemberFile.session}`;
+}
+window.applyCongressBanner = applyCongressBanner;
+
 function parseMemberDataXml(xmlText) {
     const parser = new DOMParser();
     return parser.parseFromString(xmlText, 'text/xml');
@@ -9219,13 +9231,8 @@ async function fetchHouseMakeup(preData = null) {
             controllingParty = titleInfo.querySelector('majority')?.textContent || controllingParty;
             
             // Update Congress info display
-            if (elements.congressInfo) {
-                const congressText = titleInfo.querySelector('congress-text')?.textContent || `${currentCongress}th Congress`;
-                const congressTextElement = elements.congressInfo.querySelector('.congress-text');
-                if (congressTextElement) {
-                    congressTextElement.textContent = `${congressText} - Session ${currentSession}`;
-                }
-            }
+            bannerFromMemberFile = { text: titleInfo.querySelector('congress-text')?.textContent || `${currentCongress}th Congress`, session: currentSession };
+            applyCongressBanner();
         }
 
         // Extract last updated date from publish-date attribute

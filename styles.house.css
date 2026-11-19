@@ -10718,6 +10718,8 @@ html.replay-mode .weather-panel { display: none; }
 .se-foot { align-self: stretch; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-8) var(--sp-16); margin-top: var(--sp-12); font-size: var(--fs-md); color: var(--text-secondary); }
 .se-foot b { color: var(--text-primary); font-family: var(--font-mono); }
 .se-note { color: var(--text-muted); font-size: var(--fs-sm); max-width: 60ch; }
+.se-note a, .se-note a:visited { color: var(--accent-blue); text-decoration: none; }
+.se-note a:hover, .se-note a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 480px) {
   .se-bar, .se-scale { grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 48px; }
   .se-cph { width: 38px; height: 38px; }
