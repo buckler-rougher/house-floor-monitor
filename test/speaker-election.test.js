@@ -194,4 +194,23 @@ ok('when the winner was declared, and how long ago by the captions\' own clock: 
   const b2 = SE.read(rep, roster)[0];
   assert.strictEqual(Math.round(b2.electedT), Math.round(b0.electedT));
 });
+ok('the real 2023 captions, 3 January: three ballots, each ended by the tellers with no majority (the 2025 wording does not apply: "AGREE IN THEIR TALLIES", "NO PERSONS HAVING RECEIVED A MAJORITY")', () => {
+  const c23 = SE.parseVtt(fs.readFileSync(path.join(dir, 'captions-2023-01-03.vtt'), 'utf8'));
+  assert(SE.hasRoll(fs.readFileSync(path.join(dir, 'captions-2023-01-03.vtt'), 'utf8')));
+  const bs = SE.read(c23, []);   // no roster: the names are as heard
+  assert.strictEqual(bs.length, 3, 'three ballots, not one run together');
+  const ann = bs.map((x) => x.announced);
+  assert(ann.every((a) => a.total === 434 && a.complete && a.elected === null), 'each announced 434 votes, complete, nobody elected');
+  const votesOf = (a, last) => (a.candidates.find((c) => c.name.split(' ').pop() === last) || {}).votes;
+  assert.deepStrictEqual(ann.map((a) => votesOf(a, 'JEFFRIES')), [212, 212, 212]);
+  assert.deepStrictEqual(ann.map((a) => votesOf(a, 'MCCARTHY')), [203, 203, 202]);
+  assert.deepStrictEqual(ann.map((a) => votesOf(a, 'JORDAN')), [6, 19, 20]);
+  assert.strictEqual(votesOf(ann[0], 'BIGGS'), 10);
+  // what was heard is a floor of what the tellers say, never over it by more than the garbles allow
+  bs.forEach((x, i) => {
+    const heardJ = (x.candidates.find((c) => c.key === 'JEFFRIES') || { votes: 0 }).votes;
+    assert(heardJ >= 190 && heardJ <= 215, `ballot ${i + 1} Jeffries heard ${heardJ}`);
+    assert(x.heard >= 400 && x.heard <= 440, `ballot ${i + 1} heard ${x.heard}`);
+  });
+});
 console.log(`\n${n} passed`);
