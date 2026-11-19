@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+//
+// lib/speaker-election.js: the election of the Speaker, counted from the captions as the roll is read. The fixtures are the REAL captions of 3 January 2025 (1,046 cues, the House
+// broadcast's captions.vtt) and the 434 Members of that day with how each voted (roll 2 of the Clerk's, roll002.xml): Johnson (LA) 218, Jeffries 215, Emmer 1.
+// What is pinned is what the reader may promise: a FLOOR (it hears most answers, never more than were given, and not the chair's words), the tellers' totals when they are read, the
+// candidates, and a second ballot starting when the first elects no one. No network.
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const SE = require('../lib/speaker-election.js');
+
+const dir = path.join(__dirname, 'speaker-election');
+const vtt = fs.readFileSync(path.join(dir, 'captions-2025-01-03.vtt'), 'utf8');
+const roster = JSON.parse(fs.readFileSync(path.join(dir, 'roster-2025.json'), 'utf8')).roster;
+const cues = [];
+for (const blk of vtt.split(/\n\n+/)) {
+  const m = blk.match(/(\d+:\d+:\d+\.\d+)\s+-->\s+(\d+:\d+:\d+\.\d+)\n([\s\S]*)/);
+  if (m) cues.push({ start: m[1], end: m[2], text: m[3].replace(/\n/g, ' ') });
+}
+
+let n = 0;
+const ok = (name, fn) => { fn(); n++; console.log('ok  ' + name); };
+const votes = (b, key) => (b.candidates.find((c) => c.key === key) || { votes: 0 }).votes;
+
+const ballots = SE.read(cues, roster);
+const b = ballots[0];
+
+ok('the fixture reads as one ballot, over, with the House as large as the roster', () => {
+  assert.strictEqual(cues.length, 1046);
+  assert.strictEqual(ballots.length, 1);
+  assert(b.over);
+  assert.strictEqual(b.expected, 434);
+  assert.strictEqual(b.majority, 218);
+});
+ok('the candidates are the three who got votes, and not the chair\'s words', () => {
+  const keys = b.candidates.map((c) => c.key);
+  for (const k of ['JOHNSON', 'JEFFRIES', 'EMMER']) assert(keys.includes(k), k);
+  for (const bad of ['THE', 'ORDER', 'HOUSE', 'CLERK', 'CHAIR', 'CLYDE', 'NORMAN']) assert(!keys.includes(bad), bad + ' is not a candidate');
+  assert.deepStrictEqual(b.candidates.slice(0, 2).map((c) => c.key), ['JOHNSON', 'JEFFRIES']);
+});
+ok('the count is a floor: close to the roll, never over it', () => {
+  // Johnson 218 and Jeffries 215 in the end; two Members who answered otherwise (Jordan, Donalds) changed to Johnson AFTER the roll, so Johnson is 216 here, and a few answers are lost to the garbled names
+  assert(votes(b, 'JOHNSON') >= 205 && votes(b, 'JOHNSON') <= 218, 'Johnson ' + votes(b, 'JOHNSON'));
+  assert(votes(b, 'JEFFRIES') >= 200 && votes(b, 'JEFFRIES') <= 215, 'Jeffries ' + votes(b, 'JEFFRIES'));
+  assert.strictEqual(votes(b, 'EMMER'), 1);
+  assert(b.heard >= 415 && b.heard <= 434, 'heard ' + b.heard);
+});
+ok('the vote changes after the roll are not counted again', () => {
+  assert(votes(b, 'JORDAN') <= 1 && votes(b, 'DONALDS') <= 1);
+  assert(b.heard <= b.expected);
+});
+ok('the tellers\' announcement: the total, each candidate\'s count, and who was elected', () => {
+  const a = b.announced;
+  assert.strictEqual(a.total, 434);
+  assert.deepStrictEqual(a.candidates.map((c) => [c.name, c.votes]), [['MIKE JOHNSON', 218], ['HAKEEM JEFFRIES', 215], ['TOM EMMER', 1]]);
+  assert.strictEqual(a.elected, 'MIKE JOHNSON');
+  assert.strictEqual(a.candidates[0].state, 'LOUISIANA');
+});
+ok('the last Members heard are placed on a Member where the names allow it', () => {
+  assert(b.recent.length > 0 && b.recent.length <= 8);
+  assert(b.recent.some((r) => r.member && r.member.bioguideId));
+});
+ok('captions that are only the start of the roll: a ballot, not over, no tellers', () => {
+  const early = SE.read(cues.slice(0, 400), roster)[0];
+  assert(early && !early.over && !early.announced);
+  assert(early.heard > 100 && early.heard < 434);
+  assert(votes(early, 'JOHNSON') > 40);
+});
+ok('a second ballot starts when the first elected no one', () => {
+  const first = cues.slice(29, 1038).map((c) => ({ ...c, text: c.text.replace(/DULY ELECTED/i, 'NOT ELECTED').replace(/HAVING/i, 'NOT HAVING') }));
+  const two = SE.read([...cues.slice(0, 29), ...first, ...cues.slice(29)], roster);
+  assert.strictEqual(two.length, 2, 'two ballots');
+  assert.strictEqual(two[0].announced.elected, null);
+  assert.strictEqual(two[1].announced.elected, 'MIKE JOHNSON');
+  assert.strictEqual(two[1].n, 2);
+});
+ok('an election that elects someone is not followed by a second ballot, even if the roll is called again', () => {
+  assert.strictEqual(SE.read([...cues, ...cues.slice(29, 60)], roster).length, 1);
+});
+ok('no roll in the captions: no ballot', () => assert.deepStrictEqual(SE.read(cues.slice(0, 20), roster), []));
+console.log(`\n${n} passed`);
