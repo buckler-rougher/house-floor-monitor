@@ -18,6 +18,16 @@ ok('after 14 days from the entry\'s date nothing shows', () => {
   assert(W.decide({ board: 'house', seen: 'b', dismissed: null, now: day('2026-12-02'), entries: E }).showBanner, 'day 14');
   const late = W.decide({ board: 'house', seen: 'b', dismissed: null, now: day('2026-12-03'), entries: E }); assert(!late.showDot && !late.showBanner, 'day 15');
 });
+ok('session days: window is 5 session days after the date; a recess does not use it up', () => {
+  const args = { board: 'house', seen: 'b', dismissed: null, now: day('2026-12-20'), entries: E };
+  assert(W.decide({ ...args, sessionsSince: 5 }).showBanner, 'fifth session day');
+  assert(!W.decide({ ...args, sessionsSince: 6 }).showBanner, 'sixth');
+  assert(W.decide({ ...args, sessionsSince: 0 }).showBanner, 'a month of recess, no sessions');
+});
+ok('sessionDaysSince counts distinct days after the date, up to today, skipping cancelled', () => {
+  const items = [{ date: '2026-11-18', type: 'vote-day' }, { date: '2026-11-19', type: 'vote-day' }, { date: '2026-11-19', type: 'fly-in' }, { date: '2026-11-20', type: 'cancelled' }, { date: '2026-11-23', type: 'vote-day' }, { date: '2026-11-30', type: 'vote-day' }];
+  assert.strictEqual(W.sessionDaysSince(items, '2026-11-18', '2026-11-23'), 2);
+});
 ok('a link straight to something shows the dot but no banner', () => { const d = W.decide({ board: 'house', seen: 'b', dismissed: null, now: day('2026-11-19'), entries: E, straightToSomething: true }); assert(d.showDot && !d.showBanner); });
 ok('the Senate site hears only of what is for it', () => { const d = W.decide({ board: 'senate', seen: 'a', dismissed: null, now: day('2026-11-19'), entries: E }); assert.strictEqual(d.newest.id, 'b'); assert.deepStrictEqual(W.forBoard('senate', E).map((e) => e.id), ['b']); });
 ok('a board with no entries shows nothing', () => assert.deepStrictEqual(W.decide({ board: 'senate', seen: 'x', dismissed: null, now: day('2026-11-19'), entries: [E[0]] }).showBanner, false));
