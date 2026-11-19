@@ -359,7 +359,9 @@ const API_CONFIG = {
 // State for DomeWatch floor data
 // The election of the Speaker is a roll by candidate, not yeas and nays: its "roll call" (the Clerk's roll 2) must not reach the vote panel as a vote, live or in the Time Machine, as the last
 // vote or the current one. lib/speaker-panel.js is its display. Returns the roll call and counts to use.
-const isSpeakerElectionRoll = (rc) => !!rc && /election\s+of\s+(?:the\s+|a\s+)?speaker/i.test(rc.question || '');
+const isSpeakerElectionRoll = (rc, counts) => !!rc && (/election\s+of\s+(?:the\s+|a\s+)?speaker/i.test(rc.question || '')
+    // a quorum call ("Call by States") that is over has present votes and no yeas or nays: not a vote to keep showing as the last one
+    || (/call\s+by\s+states|quorum/i.test(rc.question || '') && counts && counts.totals && !(Number(counts.totals.yeas) || 0) && !(Number(counts.totals.nays) || 0)));
 
 let floorData = {
     lastUpdated: null,
@@ -1132,8 +1134,8 @@ function startSSEStreaming() {
                     ...floorData,
                     lastUpdated: new Date(),
                     currentStatus: data.now || floorData.currentStatus,
-                    rollCall: isSpeakerElectionRoll(data.roll_call) ? floorData.rollCall : (data.roll_call || floorData.rollCall),
-                    voteCounts: isSpeakerElectionRoll(data.roll_call) ? floorData.voteCounts : (data.votes?.counts || floorData.voteCounts),
+                    rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? floorData.rollCall : (data.roll_call || floorData.rollCall),
+                    voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? floorData.voteCounts : (data.votes?.counts || floorData.voteCounts),
                     timer: data.timer || floorData.timer,
                     timeline: data.timeline || floorData.timeline
                 };
@@ -1200,8 +1202,8 @@ function applyFloorData(data) {
     floorData = {
         lastUpdated: new Date(),
         currentStatus: data.now,
-        rollCall: isSpeakerElectionRoll(data.roll_call) ? null : data.roll_call,
-        voteCounts: isSpeakerElectionRoll(data.roll_call) ? null : (sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts),
+        rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? null : data.roll_call,
+        voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? null : (sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts),
         timer: data.timer,
         timeline: data.timeline
     };
