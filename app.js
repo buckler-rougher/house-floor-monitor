@@ -6037,7 +6037,9 @@ function autoSwitchModeFromProceedings(items) {
 
     // Administration of the Oath of Office (bulk/ceremonial — distinct from individual oath)
     const adminOathItem = candidateItems.find(i => /^ADMINISTRATION OF THE OATH OF OFFICE\b/i.test(i.description.trim()));
-    if (adminOathItem && episodicStillOpen(adminOathItem)) {
+    // The oath is a moment: once the House moves on (the caucuses name their leaders, a resolution is called up) the card goes, until the next oath (the officers') brings it back.
+    const movedPastOath = !!adminOathItem && candidateItems.some(i => itemTime(i) > itemTime(adminOathItem) && (/^(?:NOMINATIONS FOR OFFICE OF SPEAKER|APPOINTMENT OF TELLERS|Roll call \d+ - Election of the Speaker|COMMITTEE TO ESCORT|ADDRESS BY THE SPEAKER|ANNOUNCEMENT OF LEADERSHIP POSTS|Considered as privileged matter)/i.test(i.description.trim())));
+    if (adminOathItem && episodicStillOpen(adminOathItem) && !movedPastOath) {
         window.setMode('admin-oath');
         updateAdminOathSection(items);
         if (adminOathItem.pubDate && elements.adminOathTime) {
