@@ -311,7 +311,7 @@
     const key = resolve(url);
     if (key) {
       // ?speaker=YYYYMMDD reads that day's opening-day roster from roll call 1 (the quorum "Call by States"): the Members-elect of 3 January 2025
-      const name = (new URLSearchParams(location.search).has('speaker') && /\/congress-index\/roll\/1(?:\?|$)/.test(url)) ? 'speaker-roll001.xml' : ROUTES[key];
+      const name = (new URLSearchParams(location.search).has('speaker') && /\/congress-index\/roll\/0*1(?:\?|$)/.test(url)) ? 'speaker-roll001.xml' : ROUTES[key];
       try {
         let body = await loadFixture(name);
         // ?rehearsal=http://localhost:3466/captions.vtt: the day's caption file is the growing one dev/live-rehearsal.mjs serves
