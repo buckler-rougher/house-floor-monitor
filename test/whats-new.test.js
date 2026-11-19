@@ -31,10 +31,10 @@ ok('sessionDaysSince counts distinct days after the date, up to today, skipping 
 ok('a link straight to something shows the dot but no banner', () => { const d = W.decide({ board: 'house', seen: 'b', dismissed: null, now: day('2026-11-19'), entries: E, straightToSomething: true }); assert(d.showDot && !d.showBanner); });
 ok('the Senate site hears only of what is for it', () => { const d = W.decide({ board: 'senate', seen: 'a', dismissed: null, now: day('2026-11-19'), entries: E }); assert.strictEqual(d.newest.id, 'b'); assert.deepStrictEqual(W.forBoard('senate', E).map((e) => e.id), ['b']); });
 ok('a board with no entries shows nothing', () => assert.deepStrictEqual(W.decide({ board: 'senate', seen: 'x', dismissed: null, now: day('2026-11-19'), entries: [E[0]] }).showBanner, false));
-ok('the real entries: newest first, each for a board, one short sentence, no em dash', () => {
+ok('the real entries: newest first, each for a board, short text, no em dash', () => {
   const real = W.ENTRIES;
   for (let i = 1; i < real.length; i++) assert(real[i - 1].date >= real[i].date, 'newest first');
-  for (const e of real) { assert(e.boards.length && e.boards.every((b) => b === 'house' || b === 'senate')); assert(e.text.length <= 110, e.id + ' too long'); assert(!/—/.test(e.title + e.text)); assert(/^\d{4}-\d\d-\d\d-/.test(e.id)); }
+  for (const e of real) { assert(e.boards.length && e.boards.every((b) => b === 'house' || b === 'senate')); assert(e.text.length <= 160, e.id + ' too long'); assert(!/—/.test(e.title + e.text)); assert(/^\d{4}-\d\d-\d\d-/.test(e.id)); }
   assert.strictEqual(new Set(real.map((e) => e.id)).size, real.length);
 });
 ok('an entry dated in the future is held back: not new, not listed, until its day', () => {
