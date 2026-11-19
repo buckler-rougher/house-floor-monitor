@@ -12840,7 +12840,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
 .bill-open,
 button.proc-bill-link,
 .vrec-row-label.clickable,
-a.site-footer-license,
+a.site-footer-license:not(.ext),
 .suggest-privacy-link,
 .suggest-data-box a:not([href^="http"]),
 .legal-nav a,
@@ -12855,7 +12855,7 @@ a.site-footer-license,
 .bill-open:is(:hover, :focus-visible),
 button.proc-bill-link:is(:hover, :focus-visible),
 .vrec-row-label.clickable:is(:hover, :focus-visible),
-a.site-footer-license:is(:hover, :focus-visible),
+a.site-footer-license:not(.ext):is(:hover, :focus-visible),
 .suggest-privacy-link:is(:hover, :focus-visible),
 .suggest-data-box a:not([href^="http"]):is(:hover, :focus-visible),
 .legal-nav a:is(:hover, :focus-visible),
@@ -12864,7 +12864,7 @@ a.site-footer-license:is(:hover, :focus-visible),
     background-position: 0 100%;
 }
 @media (prefers-reduced-motion: reduce) {
-    .bill-open, button.proc-bill-link, .vrec-row-label.clickable, a.site-footer-license, .suggest-privacy-link, .suggest-data-box a, .legal-nav a, .legal-section a { transition: none; }
+    .bill-open, button.proc-bill-link, .vrec-row-label.clickable, a.site-footer-license:not(.ext), .suggest-privacy-link, .suggest-data-box a, .legal-nav a, .legal-section a { transition: none; }
 }
 
 /* The beta notice at the top of the Senate board. */
