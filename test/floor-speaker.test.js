@@ -835,5 +835,20 @@ check('"GENTLEWOMAN" in one word recognizes the next member',  spaced('GENTLEWOM
 check('"GENTLE WOMAN" in two words does the same',            spaced('GENTLE WOMAN').timeline[4].member && spaced('GENTLE WOMAN').timeline[4].member.last, 'Hoyle');
 check('and "GENTLE MAN"',                                      spaced('GENTLE MAN').timeline[4].member && spaced('GENTLE MAN').timeline[4].member.last, 'Hoyle');
 
+
+// ── the tellers' names in the Clerk's entry ──
+{
+  const H = globalThis.HouseFloorSpeaker;
+  check('four tellers for the Speaker election: all four, the Californian keeps her state',
+    H.tellerNames('The Acting Clerk announced the appointment of the following Members-elect to act as Tellers during the Roll Call for Election of Speaker: Ms. Foxx, Mr. Morelle, Mr. Steil, and Mrs. Torres (CA).'),
+    ['Ms. Foxx', 'Mr. Morelle', 'Mr. Steil', 'Mrs. Torres (CA)']);
+  check('two tellers for the electoral count', H.tellerNames("The Chair announced the Speaker's appointment as tellers on the part of the House to count the electoral votes: Mr. Smith and Ms. Jones."), ['Mr. Smith', 'Ms. Jones']);
+  check('three without a serial comma', H.tellerNames('as Tellers: Mr. A, Mr. B and Mr. C.'), ['Mr. A', 'Mr. B', 'Mr. C']);
+  check('one teller', H.tellerNames('as Teller: Ms. Foxx.'), ['Ms. Foxx']);
+  check('nothing', H.tellerNames(''), []);
+  check('"Mrs. Torres (CA)": the state in parentheses picks Norma Torres, not Ritchie Torres of New York', (H.resolveNamed('Mrs. Torres (CA)', roster).member || {}).postal, 'CA');
+  check('and "Mr. Torres (NY)" the other', (H.resolveNamed('Mr. Torres (NY)', roster).member || {}).postal, 'NY');
+}
+
 console.log(failed ? `\n${failed} failed` : `\nall floor-speaker assertions pass`);
 process.exit(failed ? 1 : 0);

@@ -8723,15 +8723,9 @@ function findTellersProceeding(items) {
     return items.find(i => /^APPOINTMENT OF TELLERS\b/i.test(i.description.trim())) || null;
 }
 
+// the names in the entry (lib/floor-speaker.js: four tellers, a state in parentheses, "A and B")
 function extractTellerNames(text) {
-    const cleaned = (text || '').replace(/\.\s*$/, '').trim();
-    const afterColon = cleaned.includes(':') ? cleaned.slice(cleaned.lastIndexOf(':') + 1).trim() : cleaned;
-    const suffix = afterColon.replace(/^(?:the\s+Chair announced the Speaker's appointment as tellers on the part of the House to count the electoral votes:\s*)/i, '').trim();
-    const candidates = suffix.split(/\s+and\s+/i).map(part => part.replace(/,\s*$/, '').trim()).filter(Boolean);
-    return candidates.map(part => {
-        const idx = part.lastIndexOf(',');
-        return idx > -1 ? part.slice(0, idx).trim() : part;
-    }).filter(Boolean);
+    return HouseFloorSpeaker.tellerNames(text);
 }
 
 async function fetchTellerInfo(nameStr, cardEl) {
