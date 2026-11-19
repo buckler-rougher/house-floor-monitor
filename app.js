@@ -3125,6 +3125,7 @@ function renderVoteTimeline(items) {
     // MTR indicator ahead of the actual proceedings text existing — redraw now so
     // that shows up immediately rather than waiting on some unrelated refresh.
     updateBillsDisplay();
+    decorateDebateLines();
 }
 
 // Build the Dem Whip recommendation tag for a bill, or '' if none.
@@ -4591,6 +4592,9 @@ function updateBillsDisplay() {
     syncVoteBillBtn();
 
     checkTrackedBillStatusTransitions();
+
+    // The series may have drawn before these bills arrived: give it its debate lines now.
+    decorateDebateLines();
 }
 
 function createBillCard(bill, procedure) {
@@ -4866,6 +4870,45 @@ async function fillSpecialRuleModal(overlay, n) {
     if (entry.model && !entry.complete) setTimeout(async () => { if (overlay.contains(host)) draw(await specialRuleLoad(n, true)); }, 12_000);
 }
 
+// A bill's record by any spelling of its id (the week's bills are keyed "H.R. 3590", rule resolutions "hres-1203").
+function findBillRecord(billId) {
+    let bill = billDataMap.get(billId);
+    if (!bill && /H\.?\s*Res\./i.test(billId)) {
+        const n = billId.match(/(\d+)/)?.[1];
+        if (n) bill = billDataMap.get(`hres-${n}`);
+    }
+    if (!bill) {
+        const norm = normalizeBillIdForRules(billId);
+        for (const [key, val] of billDataMap) {
+            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
+        }
+    }
+    return bill;
+}
+
+// VOTE SERIES: under each item's description, "Debate began 04:34 PM · Watch video ↗" when the Clerk's floor log says when debate on that bill began (the Worker's `debateAt`).
+// The link opens the Time Machine at that minute in a new tab. Drawn here, not in the item's template, because the bills load separately and can arrive after the series; called after both draw.
+function decorateDebateLines() {
+    const body = document.getElementById('vote-series-body');
+    if (!body) return;
+    for (const item of body.querySelectorAll('.vote-tl-item')) {
+        const have = item.querySelector('.vote-tl-debate');
+        const id = item.dataset.billId || (item.querySelector('[data-act="openBillModalToAmendments"]') ? (() => { try { return JSON.parse(item.querySelector('[data-act="openBillModalToAmendments"]').dataset.args)[0]; } catch { return null; } })() : null);
+        const bill = id ? findBillRecord(id) : null;
+        const link = bill && bill.debateAt ? debateReplayLink(bill.debateAt) : null;
+        if (!link) { if (have) have.remove(); continue; }
+        if (have && have.dataset.href === link.href) continue;
+        if (have) have.remove();
+        const line = document.createElement('div');
+        line.className = 'vote-tl-debate';
+        line.dataset.href = link.href;
+        line.innerHTML = `Debate began ${escapeHtml(link.when)} · <a class="ext" href="${escapeHtml(BoardUtil.safeHref(link.href))}" target="_blank" rel="noopener" title="${escapeHtml(link.title)}">Watch video</a>`;
+        const content = item.querySelector('.vote-tl-content');
+        const anchor = content.querySelector('.vote-tl-badges');
+        anchor ? content.insertBefore(line, anchor) : content.appendChild(line);
+    }
+}
+
 // "Watch the Debate": the Time Machine opened at the moment the Clerk's floor log says debate on this bill began (the Worker's `debateAt`, an instant). It opens in a new tab so the live page stays.
 // The Time Machine takes the day and the Eastern clock minute: /?replay=YYYYMMDD&t=HH:MM.
 function debateReplayLink(iso) {
@@ -4881,24 +4924,13 @@ function debateReplayLink(iso) {
     return {
         href: `${location.origin}/?replay=${p.year}${p.month}${p.day}&t=${p.hour}:${p.minute}`,
         label: `Watch the Debate (${dayLabel}${clock})`,
+        when: `${dayLabel}${clock}`,
         title: `Opens the Time Machine at ${clock} Eastern on ${BoardUtil.fmtIso(day)}, when the House Clerk's floor log says debate began`,
     };
 }
 
 function openBillModal(billId, opts = {}) {
-    let bill = billDataMap.get(billId);
-    // H.Res. rule resolutions are stored as "hres-NNNN", not "H.Res. NNNN"
-    if (!bill && /H\.?\s*Res\./i.test(billId)) {
-        const n = billId.match(/(\d+)/)?.[1];
-        if (n) bill = billDataMap.get(`hres-${n}`);
-    }
-    // Last-resort: normalized scan to handle spacing differences ("H. Res." vs "H.Res.")
-    if (!bill) {
-        const norm = normalizeBillIdForRules(billId);
-        for (const [key, val] of billDataMap) {
-            if (normalizeBillIdForRules(key) === norm) { bill = val; break; }
-        }
-    }
+    let bill = findBillRecord(billId);
     if (!bill) {
         // Not in this week's business: the same modal from Congress.gov's record (lib/remote-bill.js), the one the Senate board opens for every bill
         openRemoteBillModal(billId);

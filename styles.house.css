@@ -2666,6 +2666,15 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
   background: color-mix(in srgb, var(--accent-red) 12%, transparent);
 }
 
+.vote-tl-debate {
+  margin-top: var(--sp-6);
+  font-size: var(--fs-md);
+  color: var(--text-muted);
+}
+.vote-tl-debate a { color: var(--accent-blue); font-weight: 600; text-decoration: none; }
+.vote-tl-debate a:hover, .vote-tl-debate a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+.vote-tl-debate a:focus-visible { outline: none; color: #fff; text-decoration-thickness: 2px; text-shadow: 0 0 8px color-mix(in srgb, var(--accent-blue) 70%, transparent); }
+
 .vote-tl-badges {
   display: flex;
   align-items: center;
