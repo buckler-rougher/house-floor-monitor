@@ -1,6 +1,29 @@
 {
  "ruleBills": [
   {
+   "id": "H.Res. 1203",
+   "debateAt": "2010-03-21T20:02:00.000Z",
+   "title": "Providing for consideration of the Senate amendments to H.R. 3590 and for consideration of H.R. 4872",
+   "isRule": true,
+   "description": "",
+   "pubDate": "2010-03-21T20:02:00.000Z",
+   "status": "passed",
+   "latestAction": "Agreed to by the Yeas and Nays: 224-206",
+   "latestActionDate": "2010-03-21T20:55:00.000Z",
+   "considered": true,
+   "actionSource": "proceedings",
+   "sponsor": {
+    "firstName": "Louise",
+    "lastName": "Slaughter",
+    "party": "D",
+    "state": "NY",
+    "district": 28
+   },
+   "committees": [
+    "Rules"
+   ]
+  },
+  {
    "id": "H.R. 3590",
    "debateAt": "2010-03-21T22:34:00.000Z",
    "title": "Patient Protection and Affordable Care Act",
@@ -202,6 +225,29 @@
    ],
    "procedure": "rule",
    "textUrl": "https://www.govinfo.gov/content/pkg/BILLS-111hr3590enr/pdf/BILLS-111hr3590enr.pdf"
+  },
+  {
+   "id": "H.R. 4872",
+   "debateAt": "2010-03-21T23:15:00.000Z",
+   "title": "Health Care and Education Reconciliation Act of 2010",
+   "isRule": false,
+   "description": "",
+   "pubDate": "2010-03-21T20:02:00.000Z",
+   "status": "pending",
+   "latestAction": "Rule provides for consideration",
+   "latestActionDate": "2010-03-21T20:55:00.000Z",
+   "considered": true,
+   "actionSource": "proceedings",
+   "sponsor": {
+    "firstName": "John",
+    "lastName": "Spratt",
+    "party": "D",
+    "state": "SC",
+    "district": 5
+   },
+   "committees": [
+    "Budget"
+   ]
   }
  ],
  "suspensionBills": [],
