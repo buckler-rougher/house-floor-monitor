@@ -150,4 +150,30 @@ test('billsAsOf: a bill reads as passed only once its vote had closed', () => {
   assert.strictEqual(R.billsAsOf({ ruleBills: [bill('H.R. 9', 'passed', 'Passed (voice vote)', '2026-09-15T00:00:00.000Z')] }, 6000, ctx).ruleBills[0].status, 'passed');
 });
 
+test('an ordinary day is left alone by calibrate: the API\'s start and the video\'s differ by four or five minutes', () => {
+  // 16 September 2026: start 09:00:00 EDT, asset 08:51:54, the caption shift measured at 215.8 s
+  const f = R.pickFiles(ev('20260916'));
+  const tl = R.timeline({ startMs: f.startMs, vttCues: [], anchors: [{ c: 3000, shift: 215.8, n: 30 }] });
+  assert.strictEqual(tl.calibrate(f.assetStartMs), false);
+  assert.strictEqual(tl.startMs, f.startMs);
+  assert.strictEqual(tl.wallFromCaption(100), f.startMs + 100000);
+  assert.strictEqual(R.timeline({ startMs: f.startMs }).calibrate(f.assetStartMs), false, 'no anchors: nothing to go on');
+});
+
+test('the opening day of a Congress: the caption clock began at 10:59, not at the noon the API gives', () => {
+  // 3 January 2025: the API says noon (the new Congress convening); the asset began 12:37:37; the first anchors put caption time 0 at video time -6205 s.
+  // The Clerk's log has the 11:02 pledge of the old Congress (caption 177 s here), the certificates of election at 12:04 (caption 3,977 s), and the Speaker's roll at 2:36 (announced at caption 13,248 s).
+  const startMs = R.etMs('2025-01-03T12:00:00');
+  const assetStartMs = R.etMs('2025-01-03T12:37:37');
+  const tl = R.timeline({ startMs, vttCues: [], anchors: [{ c: 6269.821, shift: -6205.454, n: 26 }, { c: 6374.125, shift: -6208.47, n: 31 }] });
+  assert.strictEqual(tl.calibrate(assetStartMs), true);
+  const near = (ms, clock, why) => assert(Math.abs(ms - R.etMs('2025-01-03T' + clock)) <= 2000, `${why}: ${new Date(ms).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false })} is not ${clock}`);
+  near(tl.startMs, '10:58:42', 'caption time 0');
+  near(tl.wallFromCaption(177.8), '11:01:39', 'the 11:02 pledge');
+  near(tl.wallFromCaption(3977.9), '12:04:59', 'the certificates of election: 12:04 in the log, not 1:06');
+  near(tl.wallFromCaption(13248), '14:39:30', 'the tellers announcing: the roll result is 2:36 in the log, not 3:40');
+  assert(Math.abs(tl.captionFromWall(R.etMs('2025-01-03T12:05:00')) - 3978) < 3);
+  assert.strictEqual(tl.calibrate(assetStartMs), false, 'once is enough');
+});
+
 console.log(`replay: ${n} passed`);
