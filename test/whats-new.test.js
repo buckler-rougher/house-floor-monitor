@@ -37,4 +37,15 @@ ok('the real entries: newest first, each for a board, one short sentence, no em 
   for (const e of real) { assert(e.boards.length && e.boards.every((b) => b === 'house' || b === 'senate')); assert(e.text.length <= 110, e.id + ' too long'); assert(!/—/.test(e.title + e.text)); assert(/^\d{4}-\d\d-\d\d-/.test(e.id)); }
   assert.strictEqual(new Set(real.map((e) => e.id)).size, real.length);
 });
+ok('an entry dated in the future is held back: not new, not listed, until its day', () => {
+  const F = [{ id: 'f', date: '2027-01-03', title: 'F', text: 'f', boards: ['house'] }, ...E];
+  const before = W.decide({ board: 'house', seen: 'b', dismissed: null, now: day('2026-11-20'), entries: F });
+  assert.strictEqual(before.newest.id, 'c', 'the newest published one, not the future one');
+  assert.deepStrictEqual(W.forBoard('house', F, day('2026-11-20')).map((e) => e.id), ['c', 'b', 'a']);
+  const on = W.decide({ board: 'house', seen: 'c', dismissed: null, now: day('2027-01-03'), entries: F });
+  assert.strictEqual(on.newest.id, 'f');
+  assert(on.showDot && on.showBanner, 'new on the day');
+  assert.deepStrictEqual(W.forBoard('house', F, day('2027-01-03')).map((e) => e.id), ['f', 'c', 'b', 'a']);
+  assert.strictEqual(W.decide({ board: 'house', seen: 'c', dismissed: null, now: day('2027-01-02'), entries: F }).showBanner, false, 'the day before: nothing');
+});
 console.log(`\n${n} passed`);
