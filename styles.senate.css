@@ -1809,6 +1809,8 @@
   flex: 1;
   font-family: var(--font-mono);
 }
+  .proceedings-text a, .proceedings-text a:visited { color: var(--accent-blue); }
+  .proceedings-text a:hover, .proceedings-text a:focus-visible { text-decoration-thickness: 2px; }
   .proceedings-time {
   font-size: var(--fs-md);
   font-weight: 600;

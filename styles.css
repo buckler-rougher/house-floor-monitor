@@ -2589,6 +2589,9 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   flex: 1;
   font-family: var(--font-mono);
 }
+/* the Clerk's own links (bill, roll call) inside an entry: blue, and blue once visited too (the browser's purple reads as AI) */
+.proceedings-text a, .proceedings-text a:visited { color: var(--accent-blue); }
+.proceedings-text a:hover, .proceedings-text a:focus-visible { text-decoration-thickness: 2px; }
 
 .proceedings-time {
   font-size: var(--fs-md); /* 11px */
@@ -11502,8 +11505,8 @@ html.replay-mode .weather-panel { display: none; }
 .od-text { margin: 0; font-size: var(--fs-xl); line-height: 1.45; color: var(--text-primary); }
 .se-strip { align-self: stretch; border-top: 1px solid var(--border-color); margin-top: var(--sp-8); padding-top: var(--sp-12); }
 .se-strip-h { font-size: var(--fs-sm); letter-spacing: var(--track-wider); color: var(--text-muted); font-weight: 600; margin-bottom: var(--sp-8); }
-.se-reads { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-10); }
-.se-read { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-10); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); }
+.se-reads { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); grid-template-rows: auto; grid-auto-rows: 0; column-gap: var(--sp-10); row-gap: 0; overflow: hidden; }   /* one row: whatever does not fit on it (the 0-height rows) is clipped, never cut off at the edge */
+.se-read { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; column-gap: var(--sp-10); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); min-width: 0; overflow: hidden; }
 .se-line { display: inline-flex; align-items: baseline; gap: var(--sp-8); flex-wrap: wrap; min-width: 0; }
 .se-foot { align-self: stretch; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-8) var(--sp-16); margin-top: var(--sp-12); font-size: var(--fs-md); color: var(--text-secondary); }
 .se-foot b { color: var(--text-primary); font-family: var(--font-mono); }

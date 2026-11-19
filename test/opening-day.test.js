@@ -37,6 +37,17 @@ ok('after the roll: the escort committee, then the escort in, then the address',
   assert.strictEqual(a.kind, 'ADDRESS BY THE SPEAKER-ELECT');
   assert(/Harold Rogers/.test(a.text));
 });
+ok('the leadership announcements: both parties shown together, until the oath or a resolution takes over', () => {
+  const L = [
+    e(15, 38, 'ANNOUNCEMENT OF LEADERSHIP POSTS - Mrs. McClain of Michigan notified the House that, at the direction of the Republican Conference, Mr. Scalise of Louisiana had been elected as Majority Leader.'),
+    e(15, 39, 'ANNOUNCEMENT OF LEADERSHIP POSTS - Mr. Aguilar of California notified the House that, at the direction of the Democratic Caucus, Mr. Jeffries of New York had been elected Minority Leader.'),
+  ];
+  assert(/Scalise/.test(OD.pick([L[0]], at(15, 38, 30)).text));
+  const both = OD.pick([L[1], L[0]], at(15, 40));
+  assert.strictEqual(both.kind, 'LEADERSHIP POSTS');
+  assert(/Scalise/.test(both.text) && /Jeffries/.test(both.text) && both.text.indexOf('Scalise') < both.text.indexOf('Jeffries'), both.text);
+  assert.strictEqual(OD.pick([e(15, 41, 'ADMINISTRATION OF THE OATH OF OFFICE - The Speaker administered the Oath of Office to the Officers of the House.'), L[1], L[0]], at(15, 42)), null);
+});
 ok('the oath takes over from the address', () => assert.strictEqual(OD.pick(upTo(9), at(15, 27)), null));
 ok('an old step is not shown: 45 minutes', () => {
   assert.strictEqual(OD.pick(upTo(8), at(15, 5) + 44 * 60000).kind, 'ADDRESS BY THE SPEAKER-ELECT');
