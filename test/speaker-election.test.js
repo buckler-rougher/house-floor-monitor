@@ -113,4 +113,24 @@ ok('a call that matches no Member in the roster is written as the captions have 
   // and one that is placed carries no heard text
   assert(SE.read(cues, roster)[0].recent.every((r) => !r.member || r.heard == null));
 });
+ok('the state in a call picks the Member: Turner of Ohio and Turner of Texas, split across cues, are told apart', () => {
+  // the captions read "TURNER. / OF OHIO. / JOHNSON." then "TURNER OF TEXAS. / JEFFRIES."
+  const last = (r) => r.recent.filter((x) => x.member && x.member.last === 'Turner' || /TURNER/.test(x.heard || '')).map((x) => [x.member ? x.member.bioguideId : x.heard, x.candidate]);
+  const full = SE.read(cues.slice(0, 866), roster)[0];
+  assert.deepStrictEqual(last(full), [['T000463', 'JOHNSON'], ['T000489', 'JEFFRIES']], 'Ohio for Johnson, Texas for Jeffries');
+  // today\'s roster has no Turner of Texas: the call is kept as heard, and Turner of Ohio is not blamed for it
+  const later = SE.read(cues.slice(0, 866), roster.filter((m) => m.bioguideId !== 'T000489'))[0];
+  assert.deepStrictEqual(last(later), [['T000463', 'JOHNSON'], ['TURNER OF TEXAS', 'JEFFRIES']]);
+  // a state token that arrives on its own joins the name before it
+  assert.deepStrictEqual(SE.tokensOf([{ text: 'TURNER.' }, { text: 'OF OHIO.' }, { text: 'JOHNSON.' }]), ['TURNER OF OHIO', 'JOHNSON']);
+});
+ok('the Members named as just read match the Clerk\'s roll, at every moment of the roll but the changed votes', () => {
+  const seen = new Map();
+  for (let u = 60; u <= cues.length; u += 4) for (const r of (SE.read(cues.slice(0, u), roster)[0] || { recent: [] }).recent) if (r.member) seen.set(r.member.bioguideId, r.candidate);
+  const truth = JSON.parse(fs.readFileSync(path.join(dir, 'roster-2025.json'), 'utf8')).truth;
+  let wrong = 0;
+  for (const [id, c] of seen) if ((truth[id] || '').split(' (')[0].toUpperCase() !== c) wrong++;
+  assert(seen.size >= 380, 'named ' + seen.size);
+  assert(wrong <= 4, wrong + ' wrong of ' + seen.size);   // two are Members who answered Jordan and Donalds, then changed to Johnson after the roll
+});
 console.log(`\n${n} passed`);
