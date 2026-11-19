@@ -181,4 +181,17 @@ ok('the tellers are read from the captions before the roll and placed by state, 
   assert.deepStrictEqual([noFoxx.state, noFoxx.heard, noFoxx.member], ['NC', 'FOXX', null]);
   assert.deepStrictEqual(SE.tellersFrom('NOTHING ABOUT TELLERS HERE', roster), []);
 });
+ok('when the winner was declared, and how long ago by the captions\' own clock: the panel steps aside after a while', () => {
+  const b0 = SE.read(cues, roster)[0];
+  assert(b0.electedT > 13000 && b0.nowT >= b0.electedT, `elected ${b0.electedT} now ${b0.nowT}`);
+  assert.strictEqual(SE.read(cues.slice(0, 1010), roster)[0].electedT, null, 'not declared yet');
+  // thirty minutes later in the day: every cue is shifted so the file runs on past the announcement
+  const later = cues.concat([{ start: '04:30:00.000', end: '04:30:02.000', text: 'THE HOUSE WILL COME TO ORDER.' }]);
+  const b1 = SE.read(later, roster)[0];
+  assert(b1.nowT - b1.electedT > 12 * 60, 'the clock has moved on');
+  // replay cues carry t in seconds
+  const rep = cues.map((c) => ({ t: SE.read([], roster) && (Number(c.start.slice(0, 2)) * 3600 + Number(c.start.slice(3, 5)) * 60 + parseFloat(c.start.slice(6))), text: c.text }));
+  const b2 = SE.read(rep, roster)[0];
+  assert.strictEqual(Math.round(b2.electedT), Math.round(b0.electedT));
+});
 console.log(`\n${n} passed`);
