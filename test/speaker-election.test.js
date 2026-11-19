@@ -83,11 +83,24 @@ ok('parseVtt keeps the file\'s order and joins a cue\'s lines', () => {
 });
 ok('a candidate is told from the four Johnsons by the tellers\' state, or by being a leader, never guessed', () => {
   const half = cues.slice(0, 500);
-  assert.strictEqual(SE.read(half, roster)[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'ambiguous and nothing to go on: no Member');
-  assert.strictEqual(SE.read(half, roster, { leaders: ['J000299', 'J000294'] })[0].candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the one leader of the four');
-  assert.strictEqual(SE.read(half, roster, { leaders: ['J000299', 'J000288'] })[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'two of them are leaders: still no guess');
+  const noFirst = roster.map(({ first, ...m }) => m);   // a roster without first names, and no leaders: nothing to go on
+  assert.strictEqual(SE.read(half, noFirst)[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'ambiguous and nothing to go on: no Member');
+  assert.strictEqual(SE.read(half, roster)[0].candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the nominations said "THE HONORABLE MIKE ...": the one Johnson called Mike');
+  assert.strictEqual(SE.read(half, noFirst, { leaders: ['J000299', 'J000294'] })[0].candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the one leader of the four');
+  assert.strictEqual(SE.read(half, noFirst, { leaders: ['J000299', 'J000288'] })[0].candidates.find((c) => c.key === 'JOHNSON').member, null, 'two of them are leaders: still no guess');
   assert.strictEqual(votes(b, 'JOHNSON') > 0 && b.candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299', 'the tellers say Louisiana');
   assert.strictEqual(b.candidates.find((c) => c.key === 'JEFFRIES').member.bioguideId, 'J000294', 'a surname held by one Member needs nothing');
   assert.strictEqual(b.candidates.find((c) => c.key === 'EMMER').member.bioguideId, 'E000294');
+});
+ok('the Members shown as just read are never named twice: a stenographer\'s repeated call does not claim the next answer', () => {
+  for (const upTo of [300, 450, 600, 800, 1000, cues.length]) {
+    const recent = SE.read(cues.slice(0, upTo), roster)[0].recent;
+    const ids = recent.filter((r) => r.member).map((r) => r.member.bioguideId);
+    assert.strictEqual(new Set(ids).size, ids.length, `cue ${upTo}: ${ids.join(' ')}`);
+  }
+  // Goldman, then Gomez: the repeated GOLDMAN in the file must not hand Gomez's answer to Goldman
+  const all = SE.read(cues, roster)[0];
+  const seen = new Map();
+  for (const r of all.recent) if (r.member) { assert(!seen.has(r.member.bioguideId), r.member.last + ' twice'); seen.set(r.member.bioguideId, r.candidate); }
 });
 console.log(`\n${n} passed`);
