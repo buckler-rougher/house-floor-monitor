@@ -610,4 +610,6 @@
       }, 1200);
     });
   }
+  // ?captions: the sub-section source caption mock (dev/source-captions-mock.js, not shipped)
+  if (new URLSearchParams(location.search).has('captions')) { const sc = document.createElement('script'); sc.src = 'dev/source-captions-mock.js'; document.head.appendChild(sc); }
 })();
