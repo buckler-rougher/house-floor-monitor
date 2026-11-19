@@ -48,6 +48,13 @@ ok('the leadership announcements: both parties shown together, until the oath or
   assert(/Scalise/.test(both.text) && /Jeffries/.test(both.text) && both.text.indexOf('Scalise') < both.text.indexOf('Jeffries'), both.text);
   assert.strictEqual(OD.pick([e(15, 41, 'ADMINISTRATION OF THE OATH OF OFFICE - The Speaker administered the Oath of Office to the Officers of the House.'), L[1], L[0]], at(15, 42)), null);
 });
+ok('the leadership card stays through the resolutions that elect the officers, until their oath', () => {
+  const R = [e(15, 39, 'ANNOUNCEMENT OF LEADERSHIP POSTS - Mr. Aguilar notified the House that Mr. Jeffries had been elected Minority Leader.')];
+  const more = ['Considered as privileged matter. x', 'On agreeing to the resolution Agreed to by voice vote.', 'Motion to reconsider laid on the table Agreed to without objection.', 'An amendment, offered by Mr. Aguilar, to elect officers of the House.'].map((d, k) => e(15, 40, d));
+  const log = more.concat(R);   // newest first
+  assert.strictEqual(OD.pick(log, at(15, 40, 30)).kind, 'LEADERSHIP POSTS');
+  assert.strictEqual(OD.pick([e(15, 41, 'ADMINISTRATION OF THE OATH OF OFFICE - The Speaker administered the Oath of Office to the Officers of the House.')].concat(log), at(15, 42)), null);
+});
 ok('the oath takes over from the address', () => assert.strictEqual(OD.pick(upTo(9), at(15, 27)), null));
 ok('an old step is not shown: 45 minutes', () => {
   assert.strictEqual(OD.pick(upTo(8), at(15, 5) + 44 * 60000).kind, 'ADDRESS BY THE SPEAKER-ELECT');
