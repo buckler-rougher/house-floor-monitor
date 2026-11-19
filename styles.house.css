@@ -10646,6 +10646,7 @@ html.replay-mode .weather-panel { display: none; }
 
 .se-panel { display: flex; flex-direction: column; align-items: center; padding: var(--sp-32); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-12); overflow: hidden; }
 .se-panel[hidden] { display: none; }
+#speaker-column:not(:has(> :not([hidden]))) { display: none; }
 .vote-display.is-empty { display: none; }
 .se-panel > .panel-header { align-self: stretch; margin: calc(-1 * var(--sp-32)) calc(-1 * var(--sp-32)) 0; border-radius: 0; flex-shrink: 0; justify-content: flex-start; flex-wrap: wrap; gap: var(--sp-12); }
 .se-panel > .panel-header .panel-header-right { margin-left: auto; }

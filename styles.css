@@ -11443,6 +11443,7 @@ html.replay-mode .weather-panel { display: none; }
 /* its own classes, not .vote-display / .vote-header: the House's modes (recess, speaker, prayer ...) hide those, and this panel is for whatever mode the floor is in */
 .se-panel { display: flex; flex-direction: column; align-items: center; padding: var(--sp-32); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-12); overflow: hidden; }
 .se-panel[hidden] { display: none; }
+#speaker-column:not(:has(> :not([hidden]))) { display: none; }   /* an empty column would still bring its gap */
 .vote-display.is-empty { display: none; }   /* no roll call to show: not an empty "-- / FETCHING..." card (the Speaker election, a quorum call) */
 .se-panel > .panel-header { align-self: stretch; margin: calc(-1 * var(--sp-32)) calc(-1 * var(--sp-32)) 0; border-radius: 0; flex-shrink: 0; justify-content: flex-start; flex-wrap: wrap; gap: var(--sp-12); }
 .se-panel > .panel-header .panel-header-right { margin-left: auto; }
