@@ -136,4 +136,17 @@ ok('status: nothing to go on is null', () => {
   assert.strictEqual(FD.status({ funding: null, checked: false }), null);
 });
 
+
+ok('votingDaysLeft counts scheduled days from today through the date, once each, skipping cancelled ones', () => {
+  const items = [
+    { date: '2026-12-01', type: 'fly-in' }, { date: '2026-12-01', type: 'vote-day' }, { date: '2026-12-02', type: 'vote-day' },
+    { date: '2026-12-03', type: 'cancelled' }, { date: '2026-12-03', type: 'vote-day' }, { date: '2026-12-04', type: 'fly-out' },
+    { date: '2026-12-08', type: 'added' }, { date: '2026-12-11', type: 'vote-day' }, { date: '2026-12-14', type: 'vote-day' },
+  ];
+  assert.strictEqual(FD.votingDaysLeft(items, '2026-12-01', '2026-12-11', true), 5, 'today counted (1, 2, 4, 8, 11)');
+  assert.strictEqual(FD.votingDaysLeft(items, '2026-12-01', '2026-12-11', false), 4, 'today not counted');
+  assert.strictEqual(FD.votingDaysLeft(items, '2026-12-12', '2026-12-14', true), 1);
+  assert.strictEqual(FD.votingDaysLeft(items, '2026-12-15', '2026-12-30', true), 0, 'a schedule with none left says zero');
+  assert.strictEqual(FD.votingDaysLeft([], '2026-12-01', '2026-12-11', true), null, 'no schedule: unknown, not zero');
+});
 console.log(`\n${n} passed`);
