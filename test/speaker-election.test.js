@@ -213,4 +213,37 @@ ok('the real 2023 captions, 3 January: three ballots, each ended by the tellers 
     assert(x.heard >= 400 && x.heard <= 440, `ballot ${i + 1} heard ${x.heard}`);
   });
 });
+ok('the whole 2023 election, 3 to 6 January: 15 ballots over four days, each found, the last one electing McCarthy', () => {
+  const zlib = require('zlib');
+  const day = (d) => SE.parseVtt(d === '03' ? fs.readFileSync(path.join(dir, 'captions-2023-01-03.vtt'), 'utf8') : zlib.gunzipSync(fs.readFileSync(path.join(dir, `captions-2023-01-${d}.vtt.gz`))).toString('utf8'));
+  const per = { '03': 3, '04': 3, '05': 5, '06': 4 };
+  const all = [];
+  for (const d of Object.keys(per)) {
+    const bs = SE.read(day(d), []);
+    assert.strictEqual(bs.length, per[d], `${d} January: ${bs.length} ballots`);
+    all.push(...bs);
+  }
+  assert.strictEqual(all.length, 15);
+  const jeff = (b) => (b.announced.candidates.find((c) => /JEFFRIES/.test(c.name)) || {}).votes;
+  all.forEach((b, i) => {
+    assert(b.announced && b.announced.complete, `ballot ${i + 1} ends with the tellers`);
+    assert(b.announced.total >= 428 && b.announced.total <= 434, `ballot ${i + 1} total ${b.announced.total}`);
+    const heard = (b.candidates.find((c) => c.key === 'JEFFRIES') || { votes: 0 }).votes;
+    assert(heard >= jeff(b) - 14 && heard <= jeff(b), `ballot ${i + 1}: Jeffries heard ${heard} of ${jeff(b)}`);
+    if (i < 14) assert.strictEqual(b.announced.elected, null, `ballot ${i + 1} elected no one`);
+  });
+  assert.strictEqual(all[14].announced.elected, 'KEVIN MCCARTHY');
+  assert(all[14].present >= 4 && all[14].present <= 8, 'the last ballot had six voting present: heard ' + all[14].present);
+});
+ok('a stuttered name is not a candidate of its own (JE-JEFFRIES), and the tellers\' present count and the changed wordings of the total are read', () => {
+  const c23 = SE.parseVtt(fs.readFileSync(path.join(dir, 'captions-2023-01-03.vtt'), 'utf8'));
+  for (const b of SE.read(c23, [])) assert(!b.candidates.some((c) => c.key === 'JEJEFFRIES'), 'JEJEFFRIES is Jeffries');
+  const ann = (t) => SE.announcement([{ text: t }]);
+  assert.strictEqual(ann('THAT 433 VOTES WERE CAST, OF WHICH THE HONORABLE HAKEEM JEFFRIES OF THE STATE OF NEW YORK HAS RECEIVED 212.').total, 433);
+  assert.strictEqual(ann("THE TOTAL NUMBER OF VOTES IT'S A IS 433. OF WHICH THE HONORABLE X Y OF THE STATE OF OHIO HAS RECEIVED 200.").total, 433);
+  assert.strictEqual(ann('THE TOTAL NUMBER OF VOTES CAST IS 434.').total, 434);
+  assert.strictEqual(ann('THE HONORABLE X Y OF THE STATE OF OHIO HAS RECEIVED 20. ONE MEMBER AS PRESENT. NO MEMBER-ELECT HAVING RECEIVED THE MAJORITY OF THE VOTES CAST, A SPEAKER HAS NOT BEEN ELECTED.').present, 1);
+  assert.strictEqual(ann('SIX VOTING PRESENT.').present, 6);
+  assert.strictEqual(ann('NO MEMBER-ELECT HAVING RECEIVED THE MAJORITY OF THE VOTES CAST, A SPEAKER HAS NOT BEEN ELECTED.').complete, true);
+});
 console.log(`\n${n} passed`);
