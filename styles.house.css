@@ -10663,6 +10663,8 @@ html.replay-mode .weather-panel { display: none; }
 .se-bars { align-self: stretch; display: grid; gap: var(--sp-14); padding: var(--sp-16) 0 var(--sp-8); }
 .se-rows { display: grid; gap: var(--sp-14); }
 .se-bar, .se-scale { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr) 64px; align-items: center; gap: var(--sp-12); }
+.se-bar { position: relative; }
+.se-plus { position: absolute; top: 50%; margin-top: -11px; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 700; pointer-events: none; opacity: 0; text-shadow: 0 0 6px rgba(0, 0, 0, 0.6); }
 .se-who { display: flex; align-items: center; gap: var(--sp-10); min-width: 0; }
 .se-cph { flex: none; width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: var(--bg-elevated); box-shadow: 0 0 0 2px var(--c); }
 .se-cph, .se-ph { position: relative; }
