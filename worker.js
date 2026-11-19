@@ -7787,9 +7787,23 @@ async function handleRequest(request, env) {
 // to the House. Rather than convert every handler, the entry point substitutes
 // the header on the way out, against the same ALLOWED_ORIGINS list declared
 // above. One allowlist, two consumers.
+// Diagnostic: every KV write is logged with the route that caused it and the pattern of its key (digits become #), so a `wrangler tail` shows who is
+// spending the day's 1,000 (the account's free-tier limit: past it Cloudflare refuses every write until 00:00 UTC). Reads and deletes pass through untouched.
+function countingKv(kv, route) {
+  if (!kv || typeof kv.put !== 'function') return kv;
+  return new Proxy(kv, {
+    get(target, prop) {
+      if (prop === 'put') return (key, ...rest) => { console.log(`[KV-PUT] ${route} ${String(key).replace(/\d+/g, '#').slice(0, 48)}`); return target.put(key, ...rest); };
+      const v = target[prop];
+      return typeof v === 'function' ? v.bind(target) : v;
+    },
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     _ctx = ctx || null;
+    env = { ...env, HLS_CACHE: countingKv(env?.HLS_CACHE, new URL(request.url).pathname.replace(/\d+/g, '#').slice(0, 60)) };
     // A handler that throws (every cached route does when its upstream fails and nothing is held) used to
     // escape here, and Cloudflare answers that with its own error page, which carries no CORS headers: the
     // browser then reports "not allowed by Access-Control-Allow-Origin" and hides the real status, which is
