@@ -299,6 +299,10 @@
   window.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
 
+    // ?rehearsal=<url>: the growing caption file of dev/live-rehearsal.mjs is real, not a fixture
+    const rehearsalUrl = new URLSearchParams(location.search).get('rehearsal');
+    if (rehearsalUrl && url.startsWith(rehearsalUrl)) return realFetch(input, init);
+
     // Our own fixture reads, and any same-origin asset, go straight through.
     if (url.startsWith(BASE) || (!/^https?:/i.test(url) && !url.startsWith('//'))) {
       return realFetch(input, init);
@@ -309,7 +313,10 @@
       // ?speaker=YYYYMMDD reads that day's opening-day roster from roll call 1 (the quorum "Call by States"): the Members-elect of 3 January 2025
       const name = (new URLSearchParams(location.search).has('speaker') && /\/congress-index\/roll\/1(?:\?|$)/.test(url)) ? 'speaker-roll001.xml' : ROUTES[key];
       try {
-        const body = await loadFixture(name);
+        let body = await loadFixture(name);
+        // ?rehearsal=http://localhost:3466/captions.vtt: the day's caption file is the growing one dev/live-rehearsal.mjs serves
+        const reh = new URLSearchParams(location.search).get('rehearsal');
+        if (reh && name === 'replay-day.json') { try { body = JSON.stringify({ ...JSON.parse(body), vtt: reh }); } catch { /* not JSON */ } }
         served++;
         return reply(body, name.endsWith('.csv') ? 'text/csv' : 'application/json');
       } catch (e) {
