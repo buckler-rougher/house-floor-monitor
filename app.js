@@ -4922,7 +4922,7 @@ function debateReplayLink(iso) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const dayLabel = day === today ? '' : `${BoardUtil.fmtIso(day)}, `;
     return {
-        href: `${location.origin}/?replay=${p.year}${p.month}${p.day}&t=${p.hour}:${p.minute}`,
+        href: `${location.origin}/?replay=${p.year}${p.month}${p.day}&t=${p.hour}:${p.minute}&sound=1`,   // sound: the Time Machine takes the mute off (lib/replay-shim.js)
         label: `Watch the Debate (${dayLabel}${clock})`,
         when: `${dayLabel}${clock}`,
         title: `Opens the Time Machine at ${clock} Eastern on ${BoardUtil.fmtIso(day)}, when the House Clerk's floor log says debate began`,
