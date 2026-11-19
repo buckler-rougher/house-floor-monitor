@@ -55,6 +55,11 @@ ok('the leadership card stays through the resolutions that elect the officers, u
   assert.strictEqual(OD.pick(log, at(15, 40, 30)).kind, 'LEADERSHIP POSTS');
   assert.strictEqual(OD.pick([e(15, 41, 'ADMINISTRATION OF THE OATH OF OFFICE - The Speaker administered the Oath of Office to the Officers of the House.')].concat(log), at(15, 42)), null);
 });
+ok('the Chaplain named on opening day is its own step, not a prayer', () => {
+  const p = OD.pick([e(15, 41, 'Chaplain of the House of Representatives - Pursuant to the provisions of section 208(a) of the Legislative Reorganization Act of 1946, the Chair appointed Reverend Doctor Margaret Grun Kibben to act as and to exercise the duties of the Chaplain of the House of Representatives, effective today.')], at(15, 41, 30));
+  assert.strictEqual(p.kind, 'CHAPLAIN APPOINTED');
+  assert(/Kibben/.test(p.text));
+});
 ok('the oath takes over from the address', () => assert.strictEqual(OD.pick(upTo(9), at(15, 27)), null));
 ok('an old step is not shown: 45 minutes', () => {
   assert.strictEqual(OD.pick(upTo(8), at(15, 5) + 44 * 60000).kind, 'ADDRESS BY THE SPEAKER-ELECT');

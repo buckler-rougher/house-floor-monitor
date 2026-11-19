@@ -6077,7 +6077,7 @@ function autoSwitchModeFromProceedings(items) {
         window.setMode('message');
         return;
     }
-    if (latest.includes('prayer') || latest.includes('chaplain')) {
+    if (!isChaplainAppointment(latest) && (latest.includes('prayer') || latest.includes('chaplain'))) {
         window.setMode('prayer');
         return;
     }
@@ -7566,6 +7566,9 @@ function updateSilenceSection(items) {
     }
 }
 
+// The Clerk's entry that names a new Chaplain on opening day ("Chaplain of the House of Representatives - Pursuant to ... section 208(a) ... the Chair appointed ...") is the election of an officer, not a prayer.
+function isChaplainAppointment(desc) { return /^chaplain of the house of representatives\s*-|section 208\(a\)|duties of the chaplain/i.test(String(desc || '').trim()); }
+
 function updatePrayerSection(items) {
     if (!elements.prayerLeaderTitle || !items) return;
     if (items.length === 0 && !window.__captionLive?.('prayer')) return;   // nothing from the Clerk yet; the captions may have it first
@@ -7573,7 +7576,7 @@ function updatePrayerSection(items) {
     // Search for prayer-related proceedings
     const prayerItem = items.find(item => {
         const desc = item.description.toLowerCase();
-        return desc.includes('prayer') || desc.includes('chaplain');
+        return !isChaplainAppointment(desc) && (desc.includes('prayer') || desc.includes('chaplain'));
     });
 
     if (!prayerItem) {
