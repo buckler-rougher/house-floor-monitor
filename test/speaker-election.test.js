@@ -103,4 +103,14 @@ ok('the Members shown as just read are never named twice: a stenographer\'s repe
   const seen = new Map();
   for (const r of all.recent) if (r.member) { assert(!seen.has(r.member.bioguideId), r.member.last + ' twice'); seen.set(r.member.bioguideId, r.candidate); }
 });
+ok('a call that matches no Member in the roster is written as the captions have it, never as the chair\'s words', () => {
+  // the roster of a later day lacks a Member who was there on 3 January (a former Member): Waltz
+  const later = roster.filter((m) => m.bioguideId !== 'W000823');
+  const heard = new Set();
+  for (let u = 60; u <= cues.length; u += 3) for (const r of (SE.read(cues.slice(0, u), later)[0] || { recent: [] }).recent) if (!r.member) heard.add(r.heard);
+  assert(heard.has('WALTZ'), 'WALTZ as heard: ' + [...heard].slice(0, 12).join(' | '));
+  for (const h of heard) if (h) assert(!/\b(THE|ORDER|SURNAME|CHAIR|CLERK|GENTLEMAN)\b/.test(h) && !/^OF /.test(h), `not a name: ${h}`);
+  // and one that is placed carries no heard text
+  assert(SE.read(cues, roster)[0].recent.every((r) => !r.member || r.heard == null));
+});
 console.log(`\n${n} passed`);

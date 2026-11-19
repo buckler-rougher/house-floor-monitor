@@ -10692,6 +10692,7 @@ html.replay-mode .weather-panel { display: none; }
 .se-ph { grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px var(--c); background: var(--bg-elevated); }
 .se-rn { font-size: var(--fs-md); }
 .se-rn b { font-weight: 600; }
+.se-unk { color: var(--text-muted); }
 .se-rc { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; }
 .se-foot { align-self: stretch; display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-8) var(--sp-16); margin-top: var(--sp-12); font-size: var(--fs-md); color: var(--text-secondary); }
 .se-foot b { color: var(--text-primary); font-family: var(--font-mono); }
