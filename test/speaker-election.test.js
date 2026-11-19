@@ -284,4 +284,29 @@ ok('the Clerk\'s log: who was nominated and by whom, and the official result wit
   assert.strictEqual(SE.memberFromLogName('Mr. Turner (TX)', roster, []).bioguideId, 'T000489');
   assert.strictEqual(SE.memberFromLogName('Mr. Turner', roster, []), null, 'two Turners and no state: no guess');
 });
+ok('a past ballot from the Clerk\'s roll file: the candidates, present, and who was elected (worked out: the file names the leader even when nobody won)', () => {
+  const rolls = JSON.parse(fs.readFileSync(path.join(dir, 'rolls-2023.json'), 'utf8'));
+  const r2 = SE.electionRollFromXml(rolls['2'], [], []);
+  assert.strictEqual(r2.roll, 2);
+  assert.deepStrictEqual(r2.candidates.slice(0, 3).map((c) => [c.name, c.votes]), [['Jeffries', 212], ['McCarthy', 203], ['Biggs', 10]]);
+  assert.strictEqual(r2.elected, null, 'Jeffries led with 212 of 434 and was not elected');
+  assert.strictEqual(r2.date, '3-Jan-2023');
+  assert.strictEqual(SE.electionRollFromXml(rolls['4'], [], []).elected, null);
+  const r5 = SE.electionRollFromXml(rolls['5'], [], []);
+  assert.strictEqual(r5.present, 1);
+  assert.strictEqual(r5.total, 433);
+  const r9 = SE.electionRollFromXml(rolls['9'], [], []);
+  assert(r9.candidates.some((c) => c.name === 'Donald J. Trump' && c.votes === 1));
+  const r20 = SE.electionRollFromXml(rolls['20'], [], []);
+  assert.strictEqual(r20.present, 6);
+  assert.strictEqual(r20.total, 428);
+  assert.strictEqual(r20.need, 215, 'a majority of the votes cast for a person: those voting present are not counted');
+  assert.strictEqual(r20.elected, 'McCarthy');
+  assert.strictEqual(SE.electionRollFromXml('<rollcall-vote><vote-metadata><vote-question>On Passage</vote-question></vote-metadata></rollcall-vote>', [], []), null);
+  assert.strictEqual(SE.electionRollFromXml('', [], []), null);
+  // with the roster: "Johnson (LA)" is a Member
+  const r25 = SE.electionRollFromXml('<rollcall-vote><vote-metadata><rollcall-num>2</rollcall-num><vote-question>Election of the Speaker</vote-question><totals-by-candidate><candidate>Johnson (LA)</candidate><candidate-total>218</candidate-total></totals-by-candidate><totals-by-candidate><candidate>Jeffries</candidate><candidate-total>215</candidate-total></totals-by-candidate></vote-metadata></rollcall-vote>', roster, []);
+  assert.deepStrictEqual(r25.candidates.map((c) => c.member && c.member.bioguideId), ['J000299', 'J000294']);
+  assert.strictEqual(r25.elected, 'Johnson (LA)');
+});
 console.log(`\n${n} passed`);

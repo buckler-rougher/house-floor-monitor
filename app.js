@@ -1371,6 +1371,11 @@ function updateFloorDisplay(status = null) {
         elements.floorStatus.textContent = statusText;
     }
     
+    // With no roll call to show (none yet, or the one there was is the Speaker election or a quorum call, which are not votes) the vote panel is "-- / FETCHING..." and says nothing: hide it
+    // until there is a vote. (Three cards were stacked at 2:48 PM on opening day, one of them this.)
+    const voteBox = document.querySelector('.vote-display');
+    if (voteBox) voteBox.classList.toggle('is-empty', !floorData.rollCall);
+
     // Update vote title - show roll call question with title below
     if (elements.voteTitle && floorData.rollCall && floorData.rollCall.question) {
         const question = floorData.rollCall.question;
