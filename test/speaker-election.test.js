@@ -246,4 +246,25 @@ ok('a stuttered name is not a candidate of its own (JE-JEFFRIES), and the teller
   assert.strictEqual(ann('SIX VOTING PRESENT.').present, 6);
   assert.strictEqual(ann('NO MEMBER-ELECT HAVING RECEIVED THE MAJORITY OF THE VOTES CAST, A SPEAKER HAS NOT BEEN ELECTED.').complete, true);
 });
+ok('an opening-day roster from the Clerk\'s quorum roll (roll 1): every Member-elect with a bioguide id, even those the member file does not have', () => {
+  const xml = fs.readFileSync(path.join(dir, 'roll001-2025.xml'), 'utf8');
+  assert.strictEqual(SE.rosterFromRoll('<rollcall-vote><legis-num>H R 1</legis-num></rollcall-vote>', roster), null, 'not the quorum call');
+  assert.strictEqual(SE.rosterFromRoll('', roster), null);
+  // a member file that lacks Waltz and Turner of Texas (Members who had left by the day the roster was fetched), and every first name but the Johnsons'
+  const stale = roster.filter((m) => m.bioguideId !== 'W000823' && m.bioguideId !== 'T000489');
+  const built = SE.rosterFromRoll(xml, stale);
+  assert.strictEqual(built.roster.length, 435);
+  assert.strictEqual(built.expected, 433, 'two did not answer the quorum call');
+  assert(built.roster.some((m) => m.bioguideId === 'T000489' && m.postal === 'TX' && m.party === 'D'));
+  assert.strictEqual(built.roster.find((m) => m.bioguideId === 'J000299').first, 'Mike', 'first names come from the member file where it has the Member');
+  // the roll read with it: the two former Members are placed (they were "heard" without it), and the counts are the same
+  const seen = new Map();
+  for (let u = 60; u <= cues.length; u += 4) for (const r of (SE.read(cues.slice(0, u), built.roster, { expected: built.expected })[0] || { recent: [] }).recent) if (r.member) seen.set(r.member.bioguideId, r.candidate);
+  assert.strictEqual(seen.get('T000489'), 'JEFFRIES', 'Turner of Texas');
+  assert.strictEqual(seen.get('W000823'), 'JOHNSON', 'Waltz');
+  const b2 = SE.read(cues, built.roster, { expected: built.expected })[0];
+  assert.strictEqual(b2.expected, 433);
+  assert.strictEqual(b2.candidates.find((c) => c.key === 'JOHNSON').votes, 218);
+  assert.strictEqual(b2.candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299');
+});
 console.log(`\n${n} passed`);
