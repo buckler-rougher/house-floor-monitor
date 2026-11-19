@@ -133,4 +133,43 @@ ok('the Members named as just read match the Clerk\'s roll, at every moment of t
   assert(seen.size >= 380, 'named ' + seen.size);
   assert(wrong <= 4, wrong + ' wrong of ' + seen.size);   // two are Members who answered Jordan and Donalds, then changed to Johnson after the roll
 });
+ok('a changed vote moves the count: Norman (Jordan to Johnson) and Self (Donalds to Johnson), read after the roll', () => {
+  const at = (u) => Object.fromEntries(SE.read(cues.slice(0, u), roster)[0].candidates.map((c) => [c.key, c.votes]));
+  const before = at(1006);   // the roll and its second call are read; the clerk has not yet read back a vote
+  assert.strictEqual(before.JORDAN, 1);
+  assert.strictEqual(before.DONALDS, 1);
+  assert.strictEqual(before.JOHNSON, 216);
+  const mid = at(1013);      // "MR. NORMAN IS RECORDED AS JORDAN ... MR. NORMAN. JOHNSON." has been read; Self has not
+  assert.strictEqual(mid.JOHNSON, 217);
+  assert.strictEqual(mid.JORDAN, undefined, 'Jordan loses the vote Norman moved');
+  assert.strictEqual(mid.DONALDS, 1);
+  const after = at(1020);    // "MR. SELF IS RECORDED AS DONALDS ... MR. SELF. JOHNSON."
+  assert.strictEqual(after.JOHNSON, 218, 'the tellers say 218');
+  assert.strictEqual(after.DONALDS, undefined);
+  const last = SE.read(cues, roster)[0];
+  assert.deepStrictEqual(last.recent.filter((r) => r.changed).map((r) => [r.member && r.member.last, r.candidate]), [['Norman', 'JOHNSON'], ['Self', 'JOHNSON']]);
+  assert.strictEqual(last.candidates.find((c) => c.key === 'JOHNSON').votes, 218);
+});
+ok('the count with the tellers\' names read is the count without them: announced candidates do not change how the roll is read', () => {
+  const key = (u) => SE.read(cues.slice(0, u), roster)[0].candidates.map((c) => c.key + c.votes).join(' ');
+  assert.strictEqual(key(1019), key(cues.length));
+});
+ok('the tellers\' announcement is read as it arrives: the total, then each count, complete only when the winner is declared', () => {
+  const step = (u) => SE.read(cues.slice(0, u), roster)[0].announced;
+  assert.strictEqual(step(1016), null, 'before the tellers speak');
+  const total = step(1022);
+  assert.strictEqual(total.total, 434); assert.deepStrictEqual(total.candidates, []); assert.strictEqual(total.complete, false);
+  assert.deepStrictEqual(step(1026).candidates.map((c) => c.votes), [218]);
+  assert.deepStrictEqual(step(1029).candidates.map((c) => c.votes), [218, 215]);
+  const all3 = step(1034);   // the counts add up to 434, but a candidate has a majority: the winner is still to be declared, so it is not complete
+  assert.deepStrictEqual(all3.candidates.map((c) => c.votes), [218, 215, 1]);
+  assert.strictEqual(all3.complete, false);
+  assert.strictEqual(step(1036).complete, true);
+  assert.strictEqual(step(1036).elected, 'MIKE JOHNSON');
+});
+ok('counts that add up to the total with nobody over half is complete at once: no majority, another ballot', () => {
+  const none = SE.announcement([{ text: 'THE TOTAL NUMBER OF VOTES CAST IS 430 WHICH THE HONORABLE ADA ONE OF OHIO HAS RECEIVED 200. THE HONORABLE BEN TWO OF TEXAS HAS RECEIVED 200. THE HONORABLE CY THREE OF IOWA HAS RECEIVED 30.' }]);
+  assert.strictEqual(none.total, 430); assert.strictEqual(none.candidates.length, 3); assert.strictEqual(none.elected, null);
+  assert.strictEqual(none.complete, true);
+});
 console.log(`\n${n} passed`);
