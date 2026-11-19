@@ -2,6 +2,7 @@
  "ruleBills": [
   {
    "id": "H.R. 3590",
+   "debateAt": "2010-03-21T22:34:00.000Z",
    "title": "Patient Protection and Affordable Care Act",
    "isRule": true,
    "description": "",
