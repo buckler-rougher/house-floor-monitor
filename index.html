@@ -29,7 +29,7 @@
           href="https://cdn.evanhollander.org/fonts/EMHMono.woff2">
     <link rel="preload" as="font" type="font/woff2" crossorigin
           href="https://cdn.evanhollander.org/fonts/EMHGrotesk.woff2">
-    <link rel="stylesheet" href="styles.house.css?v=20261118r">
+    <link rel="stylesheet" href="styles.house.css?v=20261118s">
     <link rel="manifest" href="house.webmanifest">
     <link rel="icon" type="image/svg+xml" href="house-favicon.svg">
     <link rel="icon" type="image/png" sizes="64x64" href="house-favicon.png">
@@ -282,6 +282,8 @@
         <div class="main-display" id="vote">
             <!-- Speaker election: drawn by lib/speaker-panel.js, only while the House is electing a Speaker. First in the column and outside the vote column, which recess hides. -->
             <div class="se-panel" id="speaker-election" hidden></div>
+            <!-- Opening day: the quorum call, the escort and the Speaker-elect's address, which the Clerk logs and the page has no card for: lib/opening-day.js -->
+            <div class="se-panel od-panel" id="opening-day" hidden></div>
             <!-- Debate Section -->
             <div class="debate-section" id="debate-section">
                 <div class="debate-tags-row">
@@ -2040,7 +2042,8 @@
     <script defer src="lib/pipeline-panel.js?v=20261107a"></script>
     <script defer src="lib/approps-panel.js?v=20261118a"></script>
     <script defer src="lib/speaker-election.js?v=20261118l"></script>
-    <script defer src="lib/speaker-panel.js?v=20261118q"></script>
+    <script defer src="lib/speaker-panel.js?v=20261118r"></script>
+    <script defer src="lib/opening-day.js?v=20261118a"></script>
     <script defer src="lib/debate-panel.js?v=20261111a"></script>
     <script defer src="lib/source-pop.js?v=20261108a"></script>
     <script defer src="lib/display-style.js?v=20261024c"></script>
@@ -2064,7 +2067,7 @@
     <script defer src="lib/missing-members.js?v=20261018a"></script>
     <script defer src="lib/floor-speaker.js?v=20261118a"></script>
     <script defer src="lib/caption-panels.js?v=20261017a"></script>
-    <script defer src="app.js?v=20261118k"></script>
+    <script defer src="app.js?v=20261118l"></script>
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d4681f2dc9f7443eaa9eecbab8360f7a"}'></script>
 </body>
 </html>

@@ -11259,6 +11259,7 @@ globalThis.__leadership = Leadership.mount({ base: 'https://api.evanhollander.or
 loadDischargeCalendar();
 AppropsPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api', votingDays: true });
 SpeakerPanel.mount({ base: 'https://api.evanhollander.org/house-floor/api', placeholder: MEMBER_PHOTO_PLACEHOLDER });
+OpeningDay.mount();
 // the amendments search box of the debate panel (the modal's is mounted when it is built)
 document.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i, AMDT_SEARCH));
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
