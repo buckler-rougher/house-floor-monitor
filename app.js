@@ -5986,9 +5986,10 @@ function autoSwitchModeFromProceedings(items) {
     // The opening day of a Congress goes on from the certificates to the Speaker: the nominations, the tellers, the roll's result, the escort, the address, the oaths. None of those is "legislative
     // business", so the certificates card used to stay up through all of them (3 January 2025: from 12:49 PM until the first debate at 4:39) and showed "Certificates of election received" while the
     // House swore in its Speaker. Any of them, newer than the certificates, closes the card.
-    const openingDayMovedOn = certElectionItem && candidateItems.some(i => itemTime(i) > itemTime(certElectionItem) &&
-        /^(?:NOMINATIONS FOR OFFICE OF SPEAKER|APPOINTMENT OF TELLERS|Roll call \d+ - Election of the Speaker|COMMITTEE TO ESCORT THE SPEAKER|ADDRESS BY THE SPEAKER|ADMINISTRATION OF THE OATH|ANNOUNCEMENT OF LEADERSHIP POSTS)\b/i.test(i.description.trim()));
-    if (certElectionItem && episodicStillOpen(certElectionItem) && !openingDayMovedOn) {
+    const OPENING_DAY_LATER = /^(?:NOMINATIONS FOR OFFICE OF SPEAKER|APPOINTMENT OF TELLERS|Roll call \d+ - Election of the Speaker|COMMITTEE TO ESCORT THE SPEAKER|ADDRESS BY THE SPEAKER|ADMINISTRATION OF THE OATH|ANNOUNCEMENT OF LEADERSHIP POSTS)\b/i;
+    const openingDayMovedOn = (item, alsoCert) => !!item && candidateItems.some(i => itemTime(i) > itemTime(item) &&
+        (OPENING_DAY_LATER.test(i.description.trim()) || (alsoCert && /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()))));
+    if (certElectionItem && episodicStillOpen(certElectionItem) && !openingDayMovedOn(certElectionItem)) {
         window.setMode('cert-election');
         updateCertElectionSection(items);
         if (certElectionItem.pubDate && elements.certElectionTime) {
@@ -6004,7 +6005,8 @@ function autoSwitchModeFromProceedings(items) {
         const d = i.description.toLowerCase();
         return d.includes('20th amendment') && (d.includes('convened') || d.includes('new legislative day'));
     });
-    if (newSessionItem && episodicStillOpen(newSessionItem)) {
+    // (the noon convening is over once the certificates, or anything after them, come: it used to stay up all afternoon, and, checked before the newer cards, kept the Speaker's oath off the page)
+    if (newSessionItem && episodicStillOpen(newSessionItem) && !openingDayMovedOn(newSessionItem, true)) {
         window.setMode('new-session');
         updateNewSessionSection(items);
         if (newSessionItem.pubDate && elements.newSessionTime) {
