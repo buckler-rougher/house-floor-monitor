@@ -267,4 +267,21 @@ ok('an opening-day roster from the Clerk\'s quorum roll (roll 1): every Member-e
   assert.strictEqual(b2.candidates.find((c) => c.key === 'JOHNSON').votes, 218);
   assert.strictEqual(b2.candidates.find((c) => c.key === 'JOHNSON').member.bioguideId, 'J000299');
 });
+ok('the Clerk\'s log: who was nominated and by whom, and the official result with its roll', () => {
+  const nom = { timestamp: 10, description: 'NOMINATIONS FOR OFFICE OF SPEAKER - Pursuant to law and precedent, the Acting Clerk announced that the next order of business was the election of the Speaker of the House of Representatives and that nominations would now be in order. Accordingly, the Honorable Lisa C. McClain of Michigan placed the name of the Honorable Mike Johnson into nomination for the Office of Speaker and the Honorable Pete Aguilar of California placed the name of the Honorable Hakeem S. Jeffries into nomination for the Office of Speaker. No other nominations were put forward.' };
+  const res = { timestamp: 20, description: 'Roll call 2 - Election of the Speaker. Mr. Johnson (LA) 218, Mr. Jeffries 215, and Mr. Emmer 1 &lt;a target=&quot;_blank&quot; rel=&quot;vote&quot; href=&quot;http://clerk.house.gov/cgi-bin/vote.asp?year=2025&amp;amp;rollnumber=2&quot;&gt;(Roll no. 2)&lt;/a&gt;. Mr. Johnson (LA) was elected Speaker of the House.' };
+  const n1 = SE.clerkNominations([res, nom], roster, []);
+  assert.deepStrictEqual(n1.candidates.map((c) => [c.name, c.member && c.member.bioguideId, c.nominator.member && c.nominator.member.bioguideId]), [['Mike Johnson', 'J000299', 'M001136'], ['Hakeem S. Jeffries', 'J000294', 'A000371']], 'the first name tells the four Johnsons apart');
+  assert.strictEqual(SE.clerkNominations([res], roster, []), null);
+  const rolls = SE.clerkSpeakerRolls([res, nom], roster, []);
+  assert.strictEqual(rolls.length, 1);
+  assert.strictEqual(rolls[0].roll, 2);
+  assert.deepStrictEqual(rolls[0].candidates.map((c) => [c.votes, c.member && c.member.bioguideId]), [[218, 'J000299'], [215, 'J000294'], [1, 'E000294']], '"Mr. Johnson (LA)": the state tells the Johnsons apart');
+  assert.strictEqual(rolls[0].electedMember.bioguideId, 'J000299');
+  assert.strictEqual(rolls[0].url, 'https://clerk.house.gov/cgi-bin/vote.asp?year=2025&rollnumber=2');
+  const none = SE.clerkSpeakerRolls([{ timestamp: 5, description: 'Roll call 3 - Election of the Speaker. Mr. A 200, Mr. B 200 &lt;a href=&quot;http://clerk.house.gov/cgi-bin/vote.asp?year=2025&amp;amp;rollnumber=3&quot;&gt;(Roll no. 3)&lt;/a&gt;.' }], roster, []);
+  assert.strictEqual(none[0].elected, null, 'a ballot with no winner');
+  assert.strictEqual(SE.memberFromLogName('Mr. Turner (TX)', roster, []).bioguideId, 'T000489');
+  assert.strictEqual(SE.memberFromLogName('Mr. Turner', roster, []), null, 'two Turners and no state: no guess');
+});
 console.log(`\n${n} passed`);
