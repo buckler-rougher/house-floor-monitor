@@ -172,4 +172,13 @@ ok('counts that add up to the total with nobody over half is complete at once: n
   assert.strictEqual(none.total, 430); assert.strictEqual(none.candidates.length, 3); assert.strictEqual(none.elected, null);
   assert.strictEqual(none.complete, true);
 });
+ok('the tellers are read from the captions before the roll and placed by state, a garbled name too', () => {
+  const tl = b.tellers.map((x) => [x.state, x.heard, x.member && x.member.bioguideId]);
+  assert.deepStrictEqual(tl, [['NC', 'FOXX', 'F000450'], ['NY', 'MORELLE', 'M001206'], ['WI', 'STYLE', 'S001213'], ['CA', 'TORRES', 'T000474']]);
+  // every ballot carries them; a roster without the Member keeps the name as heard, with its state
+  assert(SE.read(cues, roster)[0].tellers.length === 4);
+  const noFoxx = SE.read(cues, roster.filter((m) => m.bioguideId !== 'F000450'))[0].tellers[0];
+  assert.deepStrictEqual([noFoxx.state, noFoxx.heard, noFoxx.member], ['NC', 'FOXX', null]);
+  assert.deepStrictEqual(SE.tellersFrom('NOTHING ABOUT TELLERS HERE', roster), []);
+});
 console.log(`\n${n} passed`);
