@@ -12068,6 +12068,15 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .source-pop-note { font-size: var(--fs-sm); line-height: 1.5; color: var(--text-muted); margin-bottom: var(--sp-8); }
 .source-pop-json + .source-pop-request { margin-top: var(--sp-12); }
 
+.source-plus { margin-left: var(--sp-6); font-family: var(--font-mono); color: var(--text-muted); cursor: pointer; }
+.source-plus:hover { color: var(--accent-blue); }
+.source-pop-also { margin-bottom: var(--sp-12); }
+.source-pop-also-h { font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-4); }
+.source-pop-also-row { display: flex; gap: var(--sp-8); align-items: baseline; flex-wrap: wrap; font-size: var(--fs-md); }
+.source-pop-also-row > span { color: var(--text-secondary); }
+.source-pop-also-row a, .source-pop-also-row a:visited { color: var(--accent-blue); text-decoration: none; }
+.source-pop-also + .source-pop-request { margin-top: var(--sp-4); }
+
 .bills-column-header .nom-source {
     margin-left: auto;
     margin-right: var(--sp-8);

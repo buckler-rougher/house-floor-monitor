@@ -5851,6 +5851,27 @@ InfoPopup.reveal();
 InfoPopup.fillInline();
 wireCalendarCards();
 setBillsManifest();
+// The other sources each panel draws on besides the one its Source line names: "+ N" after the link, the list in its popover (SourcePop.also). Each says what it supplies.
+if (globalThis.SourcePop) {
+    const CG = 'https://www.congress.gov/', GI = 'https://www.govinfo.gov';
+    SourcePop.also(document.getElementById('bills'), [
+        { name: 'Clerk floor log', href: 'https://clerk.house.gov/FloorSummary', supplies: 'each bill\'s status line' },
+        { name: 'Congress.gov', href: CG, supplies: 'sponsor, summary, committees, and text' },
+        { name: 'DomeWatch', href: 'https://domewatch.us', supplies: 'the Dem Whip tag' },
+        { name: 'White House OMB', href: 'https://www.whitehouse.gov/omb/statements-of-administration-policy/', supplies: 'the Statement of Administration Policy link' },
+    ]);
+    SourcePop.also(document.getElementById('discharge-petitions'), [
+        { name: 'GovInfo', href: GI, supplies: 'Discharge Calendar standing and legislative days' },
+        { name: 'Congress.gov', href: CG, supplies: 'a petition\'s latest action' },
+    ]);
+    SourcePop.also(document.getElementById('appropriations'), [
+        { name: 'House Committee Repository', href: 'https://docs.house.gov/Committee/Calendar/ByDay.aspx', supplies: 'subcommittee and committee markups' },
+        { name: 'GovInfo', href: GI, supplies: 'the funding date, extended programs, and package contents' },
+    ]);
+    SourcePop.also(document.getElementById('vote-series-panel'), [
+        { name: 'Clerk roll call data', href: 'https://clerk.house.gov/Votes', supplies: 'each vote\'s result and absences' },
+    ]);
+}
 setVotingDaysManifest();
 setWhipManifest();
 
