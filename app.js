@@ -1006,6 +1006,9 @@ function startSSEStreaming() {
                 const v = data.vote || {};
                 // Ignore DomeWatch test votes
                 if (/test vote/i.test(v.roll_call?.question || '')) return;
+                // The election of the Speaker is a roll by candidate, not yeas and nays: this panel would show Yea 0, Nay 0 and a timer for the whole of it (and for hours after, in the Time Machine).
+                // The Speaker election panel (lib/speaker-panel.js) is its display.
+                if (/election\s+of\s+(?:the\s+|a\s+)?speaker/i.test(v.roll_call?.question || '')) return;
                 lastSseTallyAt = Date.now(); // track liveness for stale watchdog
                 floorData = {
                     ...floorData,
