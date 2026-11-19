@@ -793,6 +793,8 @@ body.sine-die-mode .sine-die-column { display: flex; }
 body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 body.tellers-mode .tellers-column { display: flex; }
+/* held back while the Speaker election panel is reading the roll: it shows the tellers itself (lib/speaker-panel.js) */
+body.speaker-election-live.tellers-mode .tellers-column { display: none; }
 
 /* Floating quote card — no header, just quote text + citation. The card border
    card itself carries the opaque fill so the mode-column center line is

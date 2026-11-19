@@ -5983,7 +5983,12 @@ function autoSwitchModeFromProceedings(items) {
 
     // Certification of Election
     const certElectionItem = candidateItems.find(i => /^CERTIFICATION OF ELECTION\b/i.test(i.description.trim()));
-    if (certElectionItem && episodicStillOpen(certElectionItem)) {
+    // The opening day of a Congress goes on from the certificates to the Speaker: the nominations, the tellers, the roll's result, the escort, the address, the oaths. None of those is "legislative
+    // business", so the certificates card used to stay up through all of them (3 January 2025: from 12:49 PM until the first debate at 4:39) and showed "Certificates of election received" while the
+    // House swore in its Speaker. Any of them, newer than the certificates, closes the card.
+    const openingDayMovedOn = certElectionItem && candidateItems.some(i => itemTime(i) > itemTime(certElectionItem) &&
+        /^(?:NOMINATIONS FOR OFFICE OF SPEAKER|APPOINTMENT OF TELLERS|Roll call \d+ - Election of the Speaker|COMMITTEE TO ESCORT THE SPEAKER|ADDRESS BY THE SPEAKER|ADMINISTRATION OF THE OATH|ANNOUNCEMENT OF LEADERSHIP POSTS)\b/i.test(i.description.trim()));
+    if (certElectionItem && episodicStillOpen(certElectionItem) && !openingDayMovedOn) {
         window.setMode('cert-election');
         updateCertElectionSection(items);
         if (certElectionItem.pubDate && elements.certElectionTime) {

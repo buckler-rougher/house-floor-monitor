@@ -685,6 +685,8 @@ body.new-session-mode .new-session-column { display: flex; }
 body.journal-mode .journal-column { display: flex; }
 body.tellers-mode .tellers-column { display: flex; }
 
+body.speaker-election-live.tellers-mode .tellers-column { display: none; }
+
 .quote-card {
     background: var(--bg-elevated);
     border: 1px solid var(--border-color);
