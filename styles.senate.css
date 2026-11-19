@@ -6405,7 +6405,7 @@ font-family: var(--font-mono);
   @media (max-width: 480px) {
     .wn-entry { grid-template-columns: 1fr; gap: var(--sp-4); }
   }
-  .vote-display.is-empty { display: none; }
+  .vote-display.is-empty, .threshold-panel.is-empty, .quorum-panel.is-empty, .floor-grid-panel.is-empty { display: none; }
 }
 .main-display > * {
     margin-bottom: 0;

@@ -359,9 +359,11 @@ const API_CONFIG = {
 // State for DomeWatch floor data
 // The election of the Speaker is a roll by candidate, not yeas and nays: its "roll call" (the Clerk's roll 2) must not reach the vote panel as a vote, live or in the Time Machine, as the last
 // vote or the current one. lib/speaker-panel.js is its display. Returns the roll call and counts to use.
-const isSpeakerElectionRoll = (rc, counts) => !!rc && (/election\s+of\s+(?:the\s+|a\s+)?speaker/i.test(rc.question || '')
-    // a quorum call ("Call by States") that is over has present votes and no yeas or nays: not a vote to keep showing as the last one
-    || (/call\s+by\s+states|quorum/i.test(rc.question || '') && counts && counts.totals && !(Number(counts.totals.yeas) || 0) && !(Number(counts.totals.nays) || 0)));
+const isSpeakerElectionRoll = (rc, counts, now) => !!rc && (/election\s+of\s+(?:the\s+|a\s+)?speaker/i.test(rc.question || '')
+    // a quorum call ("Call by States") that is OVER has present votes and no yeas or nays: not a vote to keep showing as the last one. One under way (the floor says voting) is shown: that is the
+    // live roll of the opening day's quorum.
+    || (/call\s+by\s+states|quorum/i.test(rc.question || '') && counts && counts.totals && !(Number(counts.totals.yeas) || 0) && !(Number(counts.totals.nays) || 0)
+        && !/vot/i.test(`${(now && (now.value || now.text)) || ''}`)));
 
 let floorData = {
     lastUpdated: null,
@@ -1134,8 +1136,8 @@ function startSSEStreaming() {
                     ...floorData,
                     lastUpdated: new Date(),
                     currentStatus: data.now || floorData.currentStatus,
-                    rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? floorData.rollCall : (data.roll_call || floorData.rollCall),
-                    voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? floorData.voteCounts : (data.votes?.counts || floorData.voteCounts),
+                    rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts, data.now) ? floorData.rollCall : (data.roll_call || floorData.rollCall),
+                    voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts, data.now) ? floorData.voteCounts : (data.votes?.counts || floorData.voteCounts),
                     timer: data.timer || floorData.timer,
                     timeline: data.timeline || floorData.timeline
                 };
@@ -1202,8 +1204,8 @@ function applyFloorData(data) {
     floorData = {
         lastUpdated: new Date(),
         currentStatus: data.now,
-        rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? null : data.roll_call,
-        voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts) ? null : (sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts),
+        rollCall: isSpeakerElectionRoll(data.roll_call, data.votes?.counts, data.now) ? null : data.roll_call,
+        voteCounts: isSpeakerElectionRoll(data.roll_call, data.votes?.counts, data.now) ? null : (sseRecentlyTallied ? (floorData.voteCounts || data.votes?.counts) : data.votes?.counts),
         timer: data.timer,
         timeline: data.timeline
     };
@@ -1373,8 +1375,10 @@ function updateFloorDisplay(status = null) {
     
     // With no roll call to show (none yet, or the one there was is the Speaker election or a quorum call, which are not votes) the vote panel is "-- / FETCHING..." and says nothing: hide it
     // until there is a vote. (Three cards were stacked at 2:48 PM on opening day, one of them this.)
-    const voteBox = document.querySelector('.vote-display');
-    if (voteBox) voteBox.classList.toggle('is-empty', !floorData.rollCall);
+    for (const sel of ['.vote-display', '#threshold', '#quorum', '#floor-grid']) {
+        const box = document.querySelector(sel);
+        if (box) box.classList.toggle('is-empty', !floorData.rollCall);   // the threshold, the quorum and the map of a vote that is not there say "--" and 0 (they did at 2:45 PM on opening day)
+    }
 
     // Update vote title - show roll call question with title below
     if (elements.voteTitle && floorData.rollCall && floorData.rollCall.question) {
