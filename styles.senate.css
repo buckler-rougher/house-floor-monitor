@@ -6352,9 +6352,8 @@ font-family: var(--font-mono);
   .lead-col.rep { background: color-mix(in srgb, var(--party-r) 8%, transparent); }
   .lead-col.dem { background: color-mix(in srgb, var(--party-d) 8%, transparent); }
   .lead-col.ind { background: color-mix(in srgb, var(--party-i) 8%, transparent); }
-  .lead-colhead { display: flex; align-items: baseline; gap: var(--sp-8); }
+  .lead-colhead { display: flex; align-items: center; gap: var(--sp-10); }
   .lead-colside { font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-secondary); }
-  .lead-colparty { font-size: var(--fs-sm); color: var(--text-muted); }
   .lead-card.is-empty { visibility: hidden; }
   @media (max-width: 560px) {
     .lead-cols { grid-template-columns: 1fr; }
