@@ -2716,13 +2716,33 @@ async function handleVotingDays(env) {
 // staging and production alike, while it answers every other client), and the project's rule is not to get around a refusal. The service carries the same ground stops, ground delays, arrival and
 // departure delays and closures; lib/faa-delays.js writes them in the shape the panel has always read, so the panel is unchanged.
 const FAA_DELAYS_URL = 'https://external-api.faa.gov/asws/api/airport/delays';
+// The delay list says an airport has an arrival or departure delay but not which, nor its trend; the airport's own status says both ("Type": "Departure", "Trend": "Increasing"). Up to twelve airports are asked,
+// together; one that cannot be read keeps its list entry, which the panel then skips (it shows arrivals for the Washington airports and departures for the rest, so it needs the type).
+async function withArriveDepartTypes(json) {
+  const items = (json && json.ArriveDepartDelays && json.ArriveDepartDelays.arriveDepart) || [];
+  if (!items.length) return json;
+  const codes = [...new Set(items.map((i) => i.airport))].filter((c) => /^[A-Z]{3,4}$/.test(c)).slice(0, 12);
+  const got = Object.fromEntries(await Promise.all(codes.map(async (code) => {
+    try { return [code, JSON.parse(await fetchSource(`https://external-api.faa.gov/asws/api/airport/status/${code}`, `FAA status ${code}`))]; } catch { return [code, null]; }
+  })));
+  const out = [];
+  for (const it of items) {
+    const typed = ((got[it.airport] && got[it.airport].Status) || []).filter((x) => x && (x.Type === 'Arrival' || x.Type === 'Departure'));
+    if (!typed.length) { out.push(it); continue; }
+    for (const x of typed) {
+      if (out.some((o) => o.airport === it.airport && o.type === x.Type)) continue;
+      out.push({ airport: it.airport, reason: x.Reason || it.reason, minTime: x.MinDelay || it.minTime, maxTime: x.MaxDelay || it.maxTime, type: x.Type, trend: x.Trend });
+    }
+  }
+  return { ...json, ArriveDepartDelays: { ...json.ArriveDepartDelays, arriveDepart: out } };
+}
 async function handleAirportDelays() {
   try {
     const text = await fetchSource(FAA_DELAYS_URL, 'FAA airport status service');
     let json;
     try { json = JSON.parse(text); } catch { throw new Error('the FAA airport status service did not answer JSON'); }
     if (!json || typeof json !== 'object' || !json.status) throw new Error('not the FAA airport status answer');
-    return new Response(JSON.stringify({ xmlData: globalThis.FaaDelays.toXml(json) }), {
+    return new Response(JSON.stringify({ xmlData: globalThis.FaaDelays.toXml(await withArriveDepartTypes(json)) }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }   // 5 minutes
     });
   } catch (error) {

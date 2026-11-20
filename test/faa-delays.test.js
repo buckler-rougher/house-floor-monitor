@@ -45,4 +45,9 @@ test('text is escaped (a closure reason is a NOTAM with ampersands and brackets 
   assert(q.includes('<Reason>RWY 1 &amp; 2 &lt;CLSD&gt;</Reason>') && q.includes('<ARPT>XYZ</ARPT>'), q);
 });
 
+test('an arrival/departure delay the Worker has typed carries its Type attribute and trend, as the FAA\'s own XML does', () => {
+  const q = FaaDelays.toXml({ ArriveDepartDelays: { arriveDepart: [{ airport: 'MIA', reason: 'TM Initiatives:MIT:WX', minTime: '15 minutes', maxTime: '29 minutes', type: 'Departure', trend: 'Decreasing' }] } }, NOW);
+  assert(q.includes('<Arrival_Departure Type="Departure"><Min>15 minutes</Min><Max>29 minutes</Max><Trend>Decreasing</Trend></Arrival_Departure>'), q);
+});
+
 console.log(`\n${n} passed`);
