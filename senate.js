@@ -1448,6 +1448,18 @@ function scheduledVehicle(measure, subject) {
     return named && globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(named.postTitle, subject) : null;
 }
 
+// The debate panel's own "Vehicle for ..." line, under the measure's title: the title there is Congress.gov's, a placeholder when the measure is a vehicle. Redrawn whenever the panel or the schedule changes.
+function paintDebateVehicle() {
+    const t = document.getElementById('debate-bill-title');
+    if (!t) return;
+    const id = document.getElementById('debate-bill-id')?.textContent.trim() || '';
+    const v = id && id !== '\u2014' ? scheduledVehicle(id, t.textContent) : null;
+    let line = document.getElementById('debate-bill-vehicle');
+    if (!v) { if (line) line.remove(); return; }
+    if (!line) { line = document.createElement('div'); line.id = 'debate-bill-vehicle'; line.className = 'bill-vehicle'; line.title = 'As the Senate Democratic Caucus schedule describes it'; t.insertAdjacentElement('afterend', line); }
+    line.innerHTML = `<span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(v)}`;
+}
+
 // Which modal a card opens, decided by the shape of what it names. The roll
 // call record gives a measure id or a PN; the caucus prose, which is the only
 // place a cloture motion filed and not yet voted appears, gives "Exec. Cal. 830".
@@ -1742,6 +1754,7 @@ async function loadFloorSchedule() {
         // the XML to say who they are.
         if (!_nominations.length) await loadNominations();
         _agenda = data.agenda || null;
+        paintDebateVehicle();
         renderConvening();
         renderFloorSchedule(data.agenda, data.cloture);
         // The two feeds land in whichever order the network gives them, and a
@@ -1904,6 +1917,7 @@ SenateQuorum.init({ photoUrlFor });
     if (id === _debateBill) return;
     _debateBill = id;
     DebatePanel.bare({ id, title: cur.title || '' });
+    paintDebateVehicle();
     SenateAmendments.show(id);   // the Amendments tab, from Congress.gov (lib/senate-amendments.js); hidden when the measure has none
     if (src) { src.href = 'https://www.congress.gov'; src.textContent = 'Congress.gov'; }
     if (!id) return;
@@ -1933,6 +1947,7 @@ SenateQuorum.init({ photoUrlFor });
         sourceApi: API,
       });
       if (src && b.congressUrl) src.href = b.congressUrl;
+      paintDebateVehicle();
     });
   }
 
