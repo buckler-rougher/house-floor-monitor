@@ -3652,7 +3652,7 @@ async function handleSenateFloorSchedule(env) {
   // with the key left alone: KV happily served the old shape for its whole TTL,
   // so the notices stayed truncated and the card kept showing no vote time long
   // after the fix was deployed. A stale key looks exactly like a broken fix.
-  return kvCache(env, 'senate-caucus-notices-v14', 1800, async () => {
+  return kvCache(env, 'senate-caucus-notices-v15', 1800, async () => {
     const UA = BOT_HEADERS;
     const get = (url, label) => fetchSource(url, label);
     // Decode once, and keep only REAL paragraph breaks.
