@@ -123,3 +123,10 @@ ok('a name the post gives without "vehicle for" (19 November: Cal. #453 H.R.2347
   assert.strictEqual(A.nameFromPost('Ackerson Meadow Land Exchange', 'Ackerson Meadow Land Exchange Act'), null);
   assert.strictEqual(A.nameFromPost(null, 'x'), null);
 });
+
+ok('"as amended": the post says the measure was amended, so it is not only a vehicle (19 November: Cal. #453 H.R.2347 Bipartisan American Affordability and Jobs Act, as amended, post-cloture)', () => {
+  const am = A.parse('Following Leader remarks, the Senate will resume consideration of Cal. #453 H.R.2347 Bipartisan American Affordability and Jobs Act, as amended, post-cloture.').measures.find((x) => x.measure === 'H.R.2347');
+  assert.strictEqual(am.amended, true);
+  const before = A.parse('Following Leader remarks, the Senate will resume consideration of the motion to proceed to Cal. #453 , H.R.2347 , legislative vehicle for the Bipartisan American Affordability and Jobs Act, post-cloture.').measures.find((x) => x.measure === 'H.R.2347');
+  assert.strictEqual(before.amended, false);
+});

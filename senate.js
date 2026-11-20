@@ -1439,13 +1439,23 @@ function scheduledVote(measure) {
 
 // The bill a measure is a vehicle for, when the caucus schedule says so ("H.R.2347, legislative vehicle for the Bipartisan American Affordability and Jobs Act"). The
 // measure's own title is a placeholder then, so the card says what is really being passed. The words are the schedule's, a hand-written post: only said, never inferred.
-function scheduledVehicle(measure, subject) {
+function scheduledVehicleInfo(measure, subject) {
     const key = measureKey(measure);
-    const said = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.vehicle);
-    if (said) return said.vehicle;
-    // The newer posts do not say "vehicle for": they just write the bill's real name after its number. Shown when that name is plainly not the measure's own title.
-    const named = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.postTitle);
-    return named && globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(named.postTitle, subject) : null;
+    const ms = _agenda?.measures || [];
+    const said = ms.find((x) => measureKey(x.measure) === key && x.vehicle);
+    const mine = ms.find((x) => measureKey(x.measure) === key);
+    let name = said ? said.vehicle : null;
+    if (!name) {
+        // The newer posts do not say "vehicle for": they just write the bill's real name after its number. Shown when that name is plainly not the measure's own title.
+        const named = ms.find((x) => measureKey(x.measure) === key && x.postTitle);
+        name = named && globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(named.postTitle, subject) : null;
+    }
+    // "..., as amended": the substitute is in, so the measure is now that bill, not only a vehicle for it
+    return name ? { name, amended: !!(mine && mine.amended) } : null;
+}
+function scheduledVehicle(measure, subject) {
+    const v = scheduledVehicleInfo(measure, subject);
+    return v ? v.name : null;
 }
 
 // The debate panel's own "Vehicle for ..." line, under the measure's title: the title there is Congress.gov's, a placeholder when the measure is a vehicle. Redrawn whenever the panel or the schedule changes.
@@ -1456,7 +1466,8 @@ function paintDebateVehicle() {
     // the title is Congress.gov's (the shell's) until the schedule names the bill really being passed; after that it is that name, and the shell's title is kept in data-shell
     const showing = t.dataset.vehicle && t.textContent === t.dataset.vehicle;
     const shell = showing ? t.dataset.shell : t.textContent;
-    const v = id && id !== '\u2014' ? scheduledVehicle(id, shell) : null;
+    const info = id && id !== '\u2014' ? scheduledVehicleInfo(id, shell) : null;
+    const v = info && info.name;
     let note = document.getElementById('debate-bill-vehicle');
     if (!v) {
         if (showing) t.textContent = shell;
@@ -1467,7 +1478,9 @@ function paintDebateVehicle() {
     t.dataset.shell = shell; t.dataset.vehicle = v; t.textContent = v;
     if (!note) { note = document.createElement('div'); note.id = 'debate-bill-vehicle'; note.className = 'debate-vehicle-note'; t.insertAdjacentElement('afterend', note); }
     note.title = 'As the Senate Democratic Caucus schedule describes it';
-    note.innerHTML = `<span class="debate-vehicle-tag">Vehicle</span> ${escapeHtml(id)} is a House shell bill, <i>${escapeHtml(shell)}</i>. The sponsor and summary below are its own.`;
+    note.innerHTML = info.amended
+        ? `<span class="debate-vehicle-tag">Amended</span> ${escapeHtml(id)}, as amended. The title, sponsor, and summary below are Congress.gov's record of the House bill, the <i>${escapeHtml(shell)}</i>, which does not yet show the Senate's amendments.`
+        : `<span class="debate-vehicle-tag">Vehicle</span> ${escapeHtml(id)} is a House shell bill, <i>${escapeHtml(shell)}</i>. The sponsor and summary below are its own.`;
 }
 
 // Which modal a card opens, decided by the shape of what it names. The roll
@@ -1556,7 +1569,8 @@ function stageCard(m, key, i) {
     // A scheduled card is dated by when its vote is, not by when the cloture
     // that got it there was.
     const when = due ? due.date : boardDate(v.date);
-    const vehicle = scheduledVehicle(m.measure, m.subject);
+    const vehicleInfo = scheduledVehicleInfo(m.measure, m.subject);
+    const vehicle = vehicleInfo && vehicleInfo.name;
 
     return `
     <div class="bill-slot">
@@ -1570,7 +1584,7 @@ function stageCard(m, key, i) {
                         ${idRow}
                     </div>
                     <div class="bill-title">${escapeHtml(m.subject)}</div>
-                    ${vehicle ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(vehicle)}</div>` : ''}
+                    ${vehicle ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">${vehicleInfo.amended ? 'As amended' : 'Vehicle for'}</span> ${escapeHtml(vehicle)}</div>` : ''}
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml(action)}</div>
                         <div class="bill-date">${escapeHtml(when)}</div>
@@ -1697,7 +1711,7 @@ function renderFloorSchedule(data, cloture) {
                         ${data.postCloture ? '<span class="bill-calendar-no">Post-cloture</span>' : ''}
                     </div>
                     <div class="bill-title">${escapeHtml(m.title || '')}</div>
-                    ${(() => { const veh = m.vehicle || (globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(m.postTitle, m.title) : null); return veh ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(veh)}</div>` : ''; })()}
+                    ${(() => { const veh = m.vehicle || (globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(m.postTitle, m.title) : null); return veh ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">${m.amended ? 'As amended' : 'Vehicle for'}</span> ${escapeHtml(veh)}</div>` : ''; })()}
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml([m.author, vote ? `Scheduled: ${vote}` : (ROLE_TEXT[m.role] || 'Pending consideration')].filter(Boolean).join(' \u00b7 '))}</div>
                         <div class="bill-date">${escapeHtml(data.voteTime || '')}</div>
