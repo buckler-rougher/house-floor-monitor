@@ -6158,6 +6158,9 @@ font-family: var(--font-mono);
   .pipe-tag.is-amended { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent); padding: 0 6px; }
   .bill-vehicle { margin-top: var(--sp-2); font-size: var(--fs-sm); line-height: 1.4; color: var(--text-secondary); }
   .bill-vehicle-label { color: var(--text-muted); }
+  .debate-vehicle-note { margin: var(--sp-8) 0 var(--sp-24); font-size: var(--fs-md); line-height: 1.5; color: var(--text-muted); max-width: 70ch; }
+  .debate-vehicle-note i { font-style: normal; font-weight: 500; color: var(--text-secondary); }
+  .debate-vehicle-tag { display: inline-block; margin-right: var(--sp-6); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }
   @media (max-width: 768px) {
     .pipe-cols { grid-template-columns: 1fr; }
     .pipe-col, .pipe-col:last-child { padding: var(--sp-12) var(--sp-16); border-right: 0; }

@@ -1453,11 +1453,21 @@ function paintDebateVehicle() {
     const t = document.getElementById('debate-bill-title');
     if (!t) return;
     const id = document.getElementById('debate-bill-id')?.textContent.trim() || '';
-    const v = id && id !== '\u2014' ? scheduledVehicle(id, t.textContent) : null;
-    let line = document.getElementById('debate-bill-vehicle');
-    if (!v) { if (line) line.remove(); return; }
-    if (!line) { line = document.createElement('div'); line.id = 'debate-bill-vehicle'; line.className = 'bill-vehicle'; line.title = 'As the Senate Democratic Caucus schedule describes it'; t.insertAdjacentElement('afterend', line); }
-    line.innerHTML = `<span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(v)}`;
+    // the title is Congress.gov's (the shell's) until the schedule names the bill really being passed; after that it is that name, and the shell's title is kept in data-shell
+    const showing = t.dataset.vehicle && t.textContent === t.dataset.vehicle;
+    const shell = showing ? t.dataset.shell : t.textContent;
+    const v = id && id !== '\u2014' ? scheduledVehicle(id, shell) : null;
+    let note = document.getElementById('debate-bill-vehicle');
+    if (!v) {
+        if (showing) t.textContent = shell;
+        delete t.dataset.vehicle; delete t.dataset.shell;
+        if (note) note.remove();
+        return;
+    }
+    t.dataset.shell = shell; t.dataset.vehicle = v; t.textContent = v;
+    if (!note) { note = document.createElement('div'); note.id = 'debate-bill-vehicle'; note.className = 'debate-vehicle-note'; t.insertAdjacentElement('afterend', note); }
+    note.title = 'As the Senate Democratic Caucus schedule describes it';
+    note.innerHTML = `<span class="debate-vehicle-tag">Vehicle</span> ${escapeHtml(id)} is a House shell bill, <i>${escapeHtml(shell)}</i>. The sponsor and summary below are its own.`;
 }
 
 // Which modal a card opens, decided by the shape of what it names. The roll
