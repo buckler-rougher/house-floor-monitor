@@ -10969,25 +10969,37 @@ body.all-mode .vote-header {
 .leadership-header { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-8); margin-bottom: var(--sp-12); }
 .leadership-label { font-size: var(--fs-base); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: var(--track-wide); }
 .leadership-list { display: flex; flex-direction: column; gap: var(--sp-16); }
-.lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-12) var(--sp-16); }
-.lead-card { display: flex; align-items: center; gap: var(--sp-10); min-width: 0; --lead-color: var(--text-muted); }
-.lead-card.rep { --lead-color: var(--party-r); }
-.lead-card.dem { --lead-color: var(--party-d); }
-.lead-card.ind { --lead-color: var(--party-i); }
-.lead-card.none { --lead-color: var(--border-color); }
-.lead-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 32%; corner-shape: squircle; overflow: hidden; background: var(--bg-card-hover, rgba(255, 255, 255, 0.06)); box-shadow: 0 0 0 2px var(--lead-color); }
+.lead-chart { display: flex; flex-direction: column; }
+/* the officers: a card each, centred over the two columns, the larger photo and name */
+.lead-top { display: flex; justify-content: center; flex-wrap: wrap; gap: var(--sp-12); }
+.lead-card { display: flex; align-items: center; gap: var(--sp-12); min-width: 0; }
+.lead-card.is-big { gap: var(--sp-16); padding: var(--sp-16) var(--sp-24); background: var(--bg-elevated); border-radius: var(--radius-12); }
+.lead-photo { position: relative; flex: 0 0 auto; width: 56px; height: 56px; border-radius: var(--radius-8); overflow: hidden; border: 1px solid var(--border-color); background: rgba(136, 153, 170, 0.12); }   /* the board's person-row photo: a thin neutral border, no party colour */
+.lead-card.is-big .lead-photo { width: 88px; height: 88px; }
 .lead-photo-placeholder { position: absolute; inset: 0; display: flex; }
 .lead-photo img { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 0.2s; display: block; }
-.lead-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.lead-name { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lead-text { display: flex; flex-direction: column; min-width: 0; gap: 2px; line-height: 1.25; }
 .lead-title { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--track-wide); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lead-card.is-big { gap: var(--sp-14); }
-.lead-card.is-big .lead-photo { width: 64px; height: 64px; }
-.lead-card.is-big .lead-name { font-size: var(--fs-xl); }
+.lead-name { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lead-card.is-big .lead-name { font-size: var(--fs-4xl); }
 .lead-card.is-big .lead-title { font-size: var(--fs-sm); }
-.lead-top { display: grid; grid-template-columns: 1fr; gap: var(--sp-12) var(--sp-16); }
-.lead-top.is-pair { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }   /* the two Senate officers side by side where there is room for photo and name each, stacked where there is not */
+.lead-meta { display: flex; align-items: center; gap: var(--sp-8); min-height: 20px; }
+.lead-meta:empty { display: none; }
+/* the line from the officers to the two columns: a stem down, then a bracket across the columns' centres */
+.lead-tree { position: relative; height: 24px; }
+.lead-tree::before { content: ''; position: absolute; left: 50%; top: 0; width: 1px; height: 12px; background: var(--border-color); }
+.lead-tree::after { content: ''; position: absolute; left: 25%; right: 25%; top: 12px; height: 12px; border: 1px solid var(--border-color); border-bottom: 0; border-radius: var(--radius-8) var(--radius-8) 0 0; }
+.lead-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-12); }
+/* a column: a faint tint of its party (a fill, never an outline), the side and party on top, the leader and the whip under it */
+.lead-col { display: flex; flex-direction: column; gap: var(--sp-16); padding: var(--sp-16); border-radius: var(--radius-12); background: color-mix(in srgb, var(--text-muted) 7%, transparent); }
+.lead-col.rep { background: color-mix(in srgb, var(--party-r) 8%, transparent); }
+.lead-col.dem { background: color-mix(in srgb, var(--party-d) 8%, transparent); }
+.lead-col.ind { background: color-mix(in srgb, var(--party-i) 8%, transparent); }
+.lead-colhead { display: flex; align-items: baseline; gap: var(--sp-8); }
+.lead-colside { font-size: var(--fs-base); font-weight: 600; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-secondary); }
+.lead-colparty { font-size: var(--fs-sm); color: var(--text-muted); }
 .lead-card.is-empty { visibility: hidden; }
+@media (max-width: 560px) { .lead-cols { grid-template-columns: 1fr; } .lead-tree { display: none; } .lead-top { margin-bottom: var(--sp-12); } .lead-card.is-big { padding: var(--sp-12) var(--sp-16); } .lead-card.is-big .lead-photo { width: 64px; height: 64px; } .lead-card.is-big .lead-name { font-size: var(--fs-2xl); } }
 
 /* ───────────── The time machine (lib/replay-ui.js, lib/replay-shim.js) ───────────── */
 /* the header button, set like the suggestion box beside it */
