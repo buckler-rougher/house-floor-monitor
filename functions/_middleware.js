@@ -8,7 +8,22 @@
 //
 // A rewrite, not a redirect. senate-floor.evanhollander.org has to stay in the
 // address bar, because app.js picks its chamber from location.hostname.
-export async function onRequest({ request, next }) {
+// The staging sites (house-floor-staging.evanhollander.org, senate-floor-staging.evanhollander.org) must never reach a search engine: they carry unreleased changes and duplicate the real sites. They say so
+// three ways: robots.txt disallows everything, every response carries X-Robots-Tag, and there is no sitemap. (A robots.txt alone only asks a crawler not to look; the header tells it not to index what it finds.)
+const isStagingHost = (hostname) => /^(?:house|senate)-floor-staging\.evanhollander\.org$/.test(hostname);
+
+export async function onRequest(context) {
+  const url = new URL(context.request.url);
+  if (!isStagingHost(url.hostname)) return handle(context);
+  if (url.pathname === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8', 'x-robots-tag': 'noindex, nofollow', 'cache-control': 'public, max-age=300' } });
+  if (url.pathname === '/sitemap.xml') return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-robots-tag': 'noindex, nofollow' } });
+  const res = await handle(context);
+  const out = new Response(res.body, res);          // a copy whose headers can be set
+  out.headers.set('x-robots-tag', 'noindex, nofollow');
+  return out;
+}
+
+async function handle({ request, next }) {
   const url = new URL(request.url);
 
   // Pages serves the whole repository root. Tool settings in it are not part of the site.
