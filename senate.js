@@ -1511,7 +1511,12 @@ function paintDebateStands() {
     if (m.pending) {
         const n = done.length;
         const postCloture = m.stage === 'final' && m.latest && m.latest.stage === 'cloture' && m.latest.carried;
-        if (postCloture) {
+        // a roll call under way on a measure past cloture, after the clerk has read it the third time, is the vote on passage
+        const voting = postCloture && document.body.classList.contains('senate-call-vote');
+        if (voting) {
+            steps.push(`<div class="vote-tl-item connector-dotted"><div class="vote-tl-circle passed"><span class="vote-tl-num">${n + 1}</span></div><div class="vote-tl-content"><span class="stand-l">Post-cloture debate</span><span class="stand-r">ended</span></div></div>`);
+            steps.push(`<div class="vote-tl-item"><div class="vote-tl-circle active"><span class="vote-tl-num">${n + 2}</span></div><div class="vote-tl-content is-active"><span class="stand-l">Vote on passage</span><span class="stand-d">roll call under way</span></div></div>`);
+        } else if (postCloture) {
             steps.push(`<div class="vote-tl-item connector-dotted"><div class="vote-tl-circle active"><span class="vote-tl-num">${n + 1}</span></div><div class="vote-tl-content is-active"><span class="stand-l">Post-cloture debate</span></div></div>`);
             steps.push(`<div class="vote-tl-item"><div class="vote-tl-circle pending"><span class="vote-tl-num">${n + 2}</span></div><div class="vote-tl-content is-pending"><span class="stand-l">Vote on passage</span></div></div>`);
         } else {
@@ -2023,6 +2028,7 @@ SenateQuorum.init({ photoUrlFor });
     const mode = cur && cur.mode;
     const cls = BODY[mode];
     for (const c of ALL) document.body.classList.toggle(c, c === cls);
+    paintDebateStands();   // "Where it stands" follows a roll call starting or ending
     for (const k of ['prayer', 'pledge']) setText(`${k}-time`, k === mode ? time(cur.since) : '');
     if (mode === 'morning-business' || mode === 'wrap-up') {
       const wrap = mode === 'wrap-up';
