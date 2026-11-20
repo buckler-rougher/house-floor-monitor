@@ -217,7 +217,6 @@ const RSS_FEEDS = {
   proceedings: 'https://clerk.house.gov/Home/Feed',
   bills: 'https://docs.house.gov/BillsThisWeek-RSS.xml',
   votingDays: 'https://votingdays.house.gov/voting-days.ics',
-  airportDelays: 'https://nasstatus.faa.gov/api/airport-status-information',
   memberData: 'https://clerk.house.gov/xml/lists/MemberData.xml',
 };
 
@@ -5801,19 +5800,7 @@ async function handleSenateQuorum(env) {
     // from the same caption segments as the call. State stored before they existed has none.
     const SM = globalThis.SenateModes;
     state.modes = state.modes || SM.empty();
-    // ONE-OFF, 19 November 2026 (owner: "fix it manually"): the debate on H.R. 2347 (BAAJA) was ended hours earlier by an unrelated bill passing by voice vote, a bug fixed since, and nothing
-    // restarts debate mode until the Senate next says "resume consideration". The captions say it at 10:36 AM ("UNDER THE PREVIOUS ORDER, THE SENATE WILL RESUME CONSIDERATION OF H.R. 2347");
-    // that is seeded here, once, for this stream only. Delete after 20 November 2026.
-    if (filename === 'stv111926' && !state.seededDebate && !(state.modes.base && state.modes.base.mode === 'debate' && !state.modes.base.endedAt)) {
-      state.seededDebate = true;
-      state.modes = { ...state.modes, base: { mode: 'debate', since: Date.parse('2026-11-19T15:36:00Z'), endedAt: 0, bill: 'H.R. 2347' } };
-    }
     const sigOf = () => senateCallSignature(state.call) + JSON.stringify([state.modes.base, state.modes.leader, state.modes.day]);   // day carries the next sitting
-    // ONE-OFF, 19 November 2026 (owner: fix it by hand): this vote's question was latched half said by the code before the cross-window fix, and the chair says it once. Full text as the captions give it.
-    // Delete after 20 November 2026.
-    if (filename === 'stv111926' && state.call && state.call.callId === 1795144069454 && String(state.call.question || '').length < 70) {
-      state.call = { ...state.call, question: 'IS IT THE SENSE OF THE SENATE THAT DEBATE ON THE NOMINATION OF RICHARD WESLEY BENNETT, OF TEXAS, TO BE UNITED STATES DISTRICT JUDGE FOR THE SOUTHERN DISTRICT OF TEXAS SHALL BE BROUGHT A CLOSE' };
-    }
     const startedWith = sigOf();
     const now = Date.now();
     state.call = SC.expire(state.call, now);
