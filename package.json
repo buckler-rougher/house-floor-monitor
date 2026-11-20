@@ -13,7 +13,7 @@
     "check-sources": "node dev/check-sources.mjs"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^4.165.0"
   },
   "dependencies": {
     "@cloudflare/puppeteer": "^2.0.1"
