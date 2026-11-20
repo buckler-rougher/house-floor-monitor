@@ -4165,7 +4165,7 @@ a.tweet-quote:hover {
 .panel-label[data-icon] { gap: var(--sp-10); }
 @media (min-width: 641px) { .panel-header:has(.panel-label[data-icon]) { padding-left: var(--sp-20); } }
 .panel-label[data-icon]::before { content: ''; flex: 0 0 auto; width: 16px; height: 16px; background: currentColor; -webkit-mask: var(--panel-icon) center / contain no-repeat; mask: var(--panel-icon) center / contain no-repeat; }
-.panel-label[data-icon="live"] { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='2.2' fill='black'/%3E%3Cpath d='M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2'/%3E%3C/svg%3E"); }
+.panel-label[data-icon="live"], .debate-tags-row::after { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='2.2' fill='black'/%3E%3Cpath d='M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2'/%3E%3C/svg%3E"); }
 .panel-label[data-icon="log"] { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9.5' y='6' width='11' height='6' rx='1.5' transform='rotate(45 15 9)'/%3E%3Cpath d='M12.8 11.2L4.2 19.8'/%3E%3Cpath d='M12 21.5h9'/%3E%3C/svg%3E"); }
 .panel-label[data-icon="ballot"] { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.5' y='9.5' width='19' height='2.5' rx='1'/%3E%3Cpath d='M4.5 12v7.5A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5V12'/%3E%3Cpath d='M8 9.5V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v5.5'/%3E%3Cpath d='M10.3 6.3l1.3 1.3 2.4-2.6'/%3E%3Cpath d='M9.5 16.5h5'/%3E%3C/svg%3E"); }
 .panel-label[data-icon="megaphone"] { --panel-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 9.5v5h4.5l9.5 5V4.5l-9.5 5z'/%3E%3Cpath d='M19.5 9a4.5 4.5 0 0 1 0 6M6.8 14.5l1.4 5.5h3.4L10 16.5'/%3E%3C/svg%3E"); }
@@ -6852,6 +6852,19 @@ body.debate-mode .debate-section {
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border-color);
 }
+.debate-tags-row::after {
+    content: '';
+    order: -1;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-right: -2px;
+    color: var(--text-muted);
+    background: currentColor;
+    -webkit-mask: var(--panel-icon) center / contain no-repeat;
+    mask: var(--panel-icon) center / contain no-repeat;
+}
+@media (min-width: 641px) { .debate-tags-row { padding-left: var(--sp-20); } }
 .debate-tags-row::before {
     content: "HAPPENING NOW";
     flex-shrink: 0;
@@ -12391,3 +12404,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :is(.one-minute-pill, .special-order-pill, .morning-hour-pill, .privilege-pill, .joint-session-pill, .joint-meeting-pill, .ai-pill, .info-popup-tag):not(#badge) {
     border-radius: var(--radius-4);
 }
+
+:root[data-chamber="senate"] .vote-waiting-note { margin: var(--sp-12) var(--sp-24) 0; padding: var(--sp-10) var(--sp-12); border-radius: var(--radius-6); background: color-mix(in srgb, var(--accent-amber) 10%, transparent); color: var(--text-secondary); font-size: var(--fs-md); line-height: 1.5; }
+:root[data-chamber="senate"] .vote-waiting-tag { display: inline-block; margin-right: var(--sp-8); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 16%, transparent); }
+:root[data-chamber="senate"] body.senate-vote-waiting :is(.vote-display .vote-counts-row, .vote-display .progress-section, .threshold-panel, .quorum-panel, .floor-grid-panel) { opacity: 0.38; filter: grayscale(1); pointer-events: none; transition: opacity var(--dur-300), filter var(--dur-300); }
+
+:root[data-chamber="senate"] body.senate-call-vote .debate-section { display: none; }
