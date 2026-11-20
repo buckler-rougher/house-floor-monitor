@@ -431,6 +431,17 @@ test('the outcome as the chair said it on 19 November: "THE YEAS ARE 62, THE NAY
   assert.strictEqual(s.ended.outcome, 'PASSED');
 });
 
+test('a question the chair stated across two caption segments is read whole (19 November: the cloture motion on the Bennett nomination)', () => {
+  const s = run([
+    ['THE PRESIDING OFFICER: THE QUESTION IS, IS IT THE SENSE OF THE SENATE THAT DEBATE ON THE NOMINATION OF', T0],
+    ['DEBATE ON THE NOMINATION OF RICHARD WESLEY BENNETT, OF TEXAS, TO BE UNITED STATES DISTRICT JUDGE FOR THE SOUTHERN DISTRICT OF TEXAS SHALL BE BROUGHT TO A CLOSE. THE YEAS AND NAYS ARE MANDATORY UNDER THE RULE. THE CLERK WILL CALL THE ROLL.', T0 + 12000],
+    ['MS. ALSOBROOKS. MR. ARMSTRONG.', T0 + 16000],
+    ['MS. DUCKWORTH, AYE.', T0 + 20000],
+  ]);
+  assert.strictEqual(s.kind, 'vote');
+  assert.strictEqual(s.question, 'IS IT THE SENSE OF THE SENATE THAT DEBATE ON THE NOMINATION OF RICHARD WESLEY BENNETT, OF TEXAS, TO BE UNITED STATES DISTRICT JUDGE FOR THE SOUTHERN DISTRICT OF TEXAS SHALL BE BROUGHT TO A CLOSE');
+});
+
 test('a quorum call has no question, even with one waiting', () => {
   const s = run([
     ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
