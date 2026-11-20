@@ -121,7 +121,7 @@ const CHECKS = [
     const unread = j.pending.filter((m) => m.elapsed == null).length;
     return unread ? { warn: `${unread} pending motion(s) with no legislative-day count` } : null;
   }),
-  worker('house', 'airport-delays', (j) => has((j.xmlData || '').includes('AIRPORT_STATUS_INFORMATION'), 'not the FAA feed')),
+  worker('house', 'airport-delays', (j) => has((j.xmlData || '').includes('AIRPORT_STATUS_INFORMATION') && !j.error, 'not the FAA feed')),
 
   // ---- the deployed Worker, Senate ----
   worker('senate', 'senate/roster', (j) => has(j.seats === 100 && arr(j.members).length === 100, `${arr(j.members).length} senators`)),
@@ -197,6 +197,7 @@ const CHECKS = [
   direct('CBO cost estimates feed', 'https://www.cbo.gov/publications/all/rss.xml', (r) => r.status !== 200 ? { fail: `HTTP ${r.status}` } : /<rss/.test(r.text) && /<item>/.test(r.text) ? null : { fail: 'not an RSS feed with items' }),
   direct('clerk MemberData.xml', 'https://clerk.house.gov/xml/lists/MemberData.xml', (r) => r.status === 200 && r.text.includes('<MemberData') ? null : { fail: `HTTP ${r.status}, not MemberData` }),
   direct('house docs BillsThisWeek RSS', 'https://docs.house.gov/BillsThisWeek-RSS.xml', (r) => r.status === 200 && /<rss|<feed/.test(r.text) ? null : { fail: `HTTP ${r.status}, not a feed` }),
+  direct('FAA airport status service', 'https://external-api.faa.gov/asws/api/airport/delays', (r) => r.status === 200 && /"status"\s*:/.test(r.text) ? null : { fail: `HTTP ${r.status}, not the airport status service` }),
   direct('house voting days (ics)', 'https://votingdays.house.gov/voting-days.ics', (r) => r.status === 200 && r.text.includes('BEGIN:VCALENDAR') ? null : { fail: `HTTP ${r.status}, not a calendar` }),
   direct('domewatch whip notices', 'https://data.domewatch.us/v1/whip-notices?limit=8', (r) => r.status === 200 && r.type.includes('json') ? null : { fail: `HTTP ${r.status} ${r.type}` }),
   // No direct check of the FAA feed: its WAF refuses any non-browser client outside Cloudflare (an
