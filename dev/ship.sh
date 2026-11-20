@@ -68,6 +68,8 @@ if [ "$mode" = mergepr ]; then
     else echo "REFUSED: no keyboard to confirm on. Pass --yes only when the repo's owner has said to merge #$mergepr." >&2; exit 1; fi
   fi
   say "waiting for the required checks (a failing one stops here and nothing is merged)"
+  # a check takes a few seconds to appear after a push: "no required checks reported" in that window is not a pass, so wait for the check to exist
+  for _ in $(seq 1 20); do gh pr checks "$mergepr" --required >/dev/null 2>&1 && break; out="$(gh pr checks "$mergepr" --required 2>&1 || true)"; case "$out" in *"no required checks"*) sleep 6 ;; *) break ;; esac; done
   gh pr checks "$mergepr" --required --watch --fail-fast
   gh pr merge "$mergepr" --squash --delete-branch
   git checkout -q "$default" 2>/dev/null && git pull -q --ff-only 2>/dev/null || true

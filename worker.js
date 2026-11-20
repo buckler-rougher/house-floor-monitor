@@ -315,7 +315,11 @@ async function fetchRSSFeed(url, timeoutMs = 8000) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // What the source said when it refused, so a 403 can be told apart (a bot wall, an address block, a changed path) from the status line alone: the first 160 characters of the body, plain text, and the server that answered.
+      let said = '';
+      try { said = (await response.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160); } catch { /* no body */ }
+      const server = response.headers.get('server') || '';
+      throw new Error(`HTTP ${response.status}: ${response.statusText}${server ? ` [server: ${server}]` : ''}${said ? ` [said: ${said}]` : ''}`);
     }
 
     return await response.text();
