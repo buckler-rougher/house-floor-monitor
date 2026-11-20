@@ -17,6 +17,7 @@ import './lib/floor-status.js';
 import './lib/senate-call.js';
 import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
+import './lib/memory-kv.js';
 import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
@@ -76,6 +77,9 @@ const ALLOWED_ORIGINS = new Set([
   'https://house-floor.evanhollander.org',
   'https://senate-floor.evanhollander.org',
   'https://monitor-a6i.pages.dev',
+  // the owner's staging sites (lib/api-base.js sends them to the staging Worker; allowed here too so a staging page pointed at this one still reads)
+  'https://house-floor-staging.evanhollander.org',
+  'https://senate-floor-staging.evanhollander.org',
 ]);
 // Module-level CORS headers — used by all route handler functions.
 // Never mutated (was a race condition when it was `let` + assigned per-request).
@@ -7816,6 +7820,8 @@ function countingKv(kv, route) {
 export default {
   async fetch(request, env, ctx) {
     _ctx = ctx || null;
+    // STAGING (wrangler.toml [env.staging]) has no KV namespace, so nothing it does can spend the account's 1,000 daily KV writes: a Map stands in, per isolate, and the code above it needs no change.
+    if (env && env.STAGING === '1' && !env.HLS_CACHE) env = { ...env, HLS_CACHE: globalThis.MemoryKv() };
     env = { ...env, HLS_CACHE: countingKv(env?.HLS_CACHE, new URL(request.url).pathname.replace(/\d+/g, '#').slice(0, 60)) };
     // A handler that throws (every cached route does when its upstream fails and nothing is held) used to
     // escape here, and Cloudflare answers that with its own error page, which carries no CORS headers: the

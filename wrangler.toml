@@ -23,3 +23,22 @@ new_sqlite_classes = ["DomeWatchStreamCoordinator"]
 # Browser Rendering: draws card.html for a shared bill link's preview image (handleOgImage). Free plan: 10 minutes a day; a failure falls back to the generic image.
 [browser]
 binding = "BROWSER"
+
+# ── STAGING ───────────────────────────────────────────────────────────────────────────────────────────────────────
+# `wrangler deploy --env staging` makes a SECOND Worker, house-floor-api-staging, for testing a change before it reaches the real one (served at api-staging.evanhollander.org; the staging sites
+# house-floor-staging.evanhollander.org and senate-floor-staging.evanhollander.org talk to it, see lib/api-base.js). Bindings are not inherited by an environment, so what it has is listed here:
+#   - NO KV namespace. STAGING=1 makes the Worker keep its caches in memory (lib/memory-kv.js), so testing cannot spend the account's 1,000 daily KV writes.
+#   - its own Durable Object (a separate instance, so it does not share the real one's state).
+#   - no Browser Rendering binding: the link-preview image falls back to the generic card.
+# Secrets (CONGRESS_API_KEY and the rest) are NOT inherited either: set them on the staging Worker (`wrangler secret put NAME --env staging`, or its Settings > Variables in the dashboard).
+[env.staging]
+name = "house-floor-api-staging"
+vars = { STAGING = "1" }
+
+[[env.staging.durable_objects.bindings]]
+name = "DOMEWATCH_STREAM_COORDINATOR"
+class_name = "DomeWatchStreamCoordinator"
+
+[[env.staging.migrations]]
+tag = "v1"
+new_sqlite_classes = ["DomeWatchStreamCoordinator"]

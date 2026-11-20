@@ -21,8 +21,8 @@ export async function onRequest({ request, next }) {
     );
   }
 
-  const isSenate = url.hostname === 'senate-floor.evanhollander.org' ||
-                   url.hostname.startsWith('senate-floor.');
+  // Any senate-floor... host: production, and staging (senate-floor-staging.evanhollander.org). app.js picks the chamber with the same test.
+  const isSenate = /^senate-floor(?:-staging)?\./.test(url.hostname);
   const isDoc = url.pathname === '/' || url.pathname === '/index.html';
   let page = null;
   if (isSenate && isDoc) page = await next(new Request(new URL('/senate.html', url), request));
