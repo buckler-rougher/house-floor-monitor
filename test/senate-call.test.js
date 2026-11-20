@@ -442,6 +442,14 @@ test('a question the chair stated across two caption segments is read whole (19 
   assert.strictEqual(s.question, 'IS IT THE SENSE OF THE SENATE THAT DEBATE ON THE NOMINATION OF RICHARD WESLEY BENNETT, OF TEXAS, TO BE UNITED STATES DISTRICT JUDGE FOR THE SOUTHERN DISTRICT OF TEXAS SHALL BE BROUGHT TO A CLOSE');
 });
 
+test('a garbled surname is snapped to the senator it is one letter from (19 November: "CAT TON" is COTTON); a name two letters off or equally near two is left alone', () => {
+  const s = run([['THE CLERK WILL CALL THE ROLL. VOTE: MS. DUCKWORTH, AYE. MR. CAT TON, AYE. MR. HIRNO, NO. MR. ZZZZZZ, AYE.', T0]]);
+  assert.strictEqual(s.votes.COTTON, 'AYE');
+  assert.strictEqual(s.votes['CAT TON'], undefined);
+  assert.strictEqual(s.votes.HIRONO, 'NO');
+  assert.strictEqual(s.votes.ZZZZZZ, 'AYE');
+});
+
 test('a quorum call has no question, even with one waiting', () => {
   const s = run([
     ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
