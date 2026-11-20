@@ -410,6 +410,16 @@ test('a question cut off before any announcement stops at the first senator name
   assert.deepStrictEqual(s.votes, { SCHUMER: 'AYE', THUNE: 'NO' });
 });
 
+test('the question as the chair worded it on 19 November: "THE QUESTION OCCURS ON PASSAGE OF THE AMENDMENT"', () => {
+  const s = run([
+    ['THE PRESIDING OFFICER: QUESTION OCCURS ON PASSAGE OF THE AMENDMENT. IS THERE A SUFFICIENT SECOND? THERE APPEARS TO BE. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. ALSOBROOKS. MR. ARMSTRONG. MS. BALDWIN.', T0 + 4000],
+    ['MS. DUCKWORTH, AYE.', T0 + 9000],
+  ]);
+  assert.strictEqual(s.kind, 'vote');
+  assert.strictEqual(s.question, 'ON PASSAGE OF THE AMENDMENT');
+});
+
 test('a quorum call has no question, even with one waiting', () => {
   const s = run([
     ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],
