@@ -13546,3 +13546,26 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .sm-sw.sm-split { background: var(--accent-purple); } .sm-sw.sm-none { background: var(--bg-elevated); }
 :root[data-chamber="senate"] body:not(.senate-call-vote) .state-map-panel { display: none; }
 @media (max-width: 640px) { .state-map-body { padding: var(--sp-12); } .sm-t { font-size: var(--fs-xs); } }
+
+/* THE HEADER BUTTONS (desktop): the Time Machine and Suggestion Box as quiet ghost buttons. Hover draws a line out from the middle of the button's bottom edge, the clock rewinds while the pointer is on it (lib/header-buttons.js), the bubble shows typing dots, and a small card says what the button does. Below 1120px the buttons keep their own pill and mask icons, and these drawn icons stay hidden. */
+.hb-ic { display: none; }
+.hb-tip { position: fixed; z-index: 9000; width: 210px; background: var(--bg-elevated); border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-8); padding: 9px 12px; color: rgba(255,255,255,.75); font-size: var(--fs-sm); line-height: 1.5; opacity: 0; pointer-events: none; transition: opacity .2s; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.hb-tip b { display: block; color: #fff; font-weight: 600; }
+@media (min-width: 1120px) {
+.header-actions > #replay-btn, .header-actions > #suggest-fab { background: none; box-shadow: none; height: 32px; width: 152px; padding: 0 0 0 12px; border-radius: 6px; }
+.header-actions > #replay-btn:hover, .header-actions > #suggest-fab:hover { transform: none; background: rgba(255,255,255,.06); box-shadow: none; }
+#replay-btn::after, #suggest-fab::before { left: 12px; width: calc(100% - 24px); height: 1px; opacity: 0; transform: scaleX(0); transform-origin: center; transition: transform .4s var(--ease-emphasis), opacity .25s; }
+#replay-btn:hover::after, #suggest-fab:hover::before { opacity: .8; transform: scaleX(1); }
+#replay-btn::before, #suggest-fab::after { display: none; }
+/* the icon is dimmed as ONE unit (opacity on the svg), never by a translucent colour, so strokes that overlap do not brighten where they cross */
+.hb-ic { display: block; flex: none; width: 18px; height: 18px; margin-right: 8px; overflow: visible; color: #fff; opacity: .7; transition: opacity .3s; }
+#replay-btn:hover .hb-ic, #suggest-fab:hover .hb-ic { opacity: 1; }
+.hb-min, .hb-hour { transform-box: view-box; transform-origin: 12px 12px; }
+.hb-min { transform: rotate(var(--m, 0deg)); }
+.hb-hour { transform: rotate(var(--h, 0deg)); }
+.hb-dot { opacity: 0; }
+#suggest-fab:hover .hb-dot { animation: hbtype 1s ease-in-out infinite; }
+#suggest-fab:hover .hb-dot:nth-child(2) { animation-delay: .15s; }
+#suggest-fab:hover .hb-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes hbtype { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
+}
