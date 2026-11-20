@@ -420,6 +420,17 @@ test('the question as the chair worded it on 19 November: "THE QUESTION OCCURS O
   assert.strictEqual(s.question, 'ON PASSAGE OF THE AMENDMENT');
 });
 
+test('the outcome as the chair said it on 19 November: "THE YEAS ARE 62, THE NAYS ARE 33. THE BILL, AS AMENDED, PASSES."', () => {
+  const s = run([
+    ['THE QUESTION IS ON PASSAGE OF THE BILL. THE CLERK WILL CALL THE ROLL.', T0],
+    ['MS. DUCKWORTH, AYE.', T0 + 4000],
+    ['THE PRESIDING OFFICER: THE YEAS ARE 62, THE NAYS ARE 33. THE BILL, AS AMENDED, PASSES.', T0 + 9000],
+  ]);
+  assert.strictEqual(s.ended.yeas, 62);
+  assert.strictEqual(s.ended.nays, 33);
+  assert.strictEqual(s.ended.outcome, 'PASSED');
+});
+
 test('a quorum call has no question, even with one waiting', () => {
   const s = run([
     ['THE QUESTION IS ON THE MOTION TO ADJOURN. THE CLERK WILL CALL THE ROLL.', T0],

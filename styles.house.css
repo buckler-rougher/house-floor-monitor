@@ -12412,3 +12412,19 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :root[data-chamber="senate"] body.senate-call-vote .debate-section { display: none; }
 :root[data-chamber="senate"] .vote-heard-note { margin: var(--sp-12) var(--sp-24) 0; padding: var(--sp-10) var(--sp-12); border-radius: var(--radius-6); background: color-mix(in srgb, var(--accent-blue) 8%, transparent); color: var(--text-secondary); font-size: var(--fs-md); line-height: 1.5; }
 :root[data-chamber="senate"] .vote-heard-tag { display: inline-block; margin-right: var(--sp-8); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 14%, transparent); }
+
+.state-map-body { padding: var(--sp-20) var(--sp-24) var(--sp-24); }
+.state-grid { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(8, auto); gap: 4px; max-width: 640px; margin: 0 auto; }
+.sm-t { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-6); font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); transition: background var(--dur-300); cursor: default; }
+.sm-t.sm-none { background: var(--bg-elevated); color: var(--text-muted); }
+.sm-t.sm-aye2 { background: var(--accent-green); color: #06210f; }
+.sm-t.sm-aye1 { background: color-mix(in srgb, var(--accent-green) 50%, transparent); }
+.sm-t.sm-no2 { background: var(--accent-red); color: #2a0a08; }
+.sm-t.sm-no1 { background: color-mix(in srgb, var(--accent-red) 50%, transparent); }
+.sm-t.sm-split { background: var(--accent-purple); color: #1d1030; }
+.sm-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.sm-sw.sm-aye2 { background: var(--accent-green); } .sm-sw.sm-aye1 { background: color-mix(in srgb, var(--accent-green) 50%, transparent); }
+.sm-sw.sm-no2 { background: var(--accent-red); } .sm-sw.sm-no1 { background: color-mix(in srgb, var(--accent-red) 50%, transparent); }
+.sm-sw.sm-split { background: var(--accent-purple); } .sm-sw.sm-none { background: var(--bg-elevated); }
+:root[data-chamber="senate"] body:not(.senate-call-vote) .state-map-panel { display: none; }
+@media (max-width: 640px) { .state-map-body { padding: var(--sp-12); } .sm-t { font-size: var(--fs-xs); } }
