@@ -10890,6 +10890,17 @@ body.all-mode .vote-header {
 .bill-vehicle { margin-top: var(--sp-2); font-size: var(--fs-sm); line-height: 1.4; color: var(--text-secondary); }   /* what the bill really is, when the schedule says its own text is only a vehicle: a quiet line, not a block */
 .bill-vehicle-label { color: var(--text-muted); }
 /* the debate panel: the bill really being passed is the heading, and a quiet note says the record below (sponsor, summary) is the shell bill's */
+/* "Where it stands" in the debate panel: the Vote series' own steps (numbered circles, a joining line, blue when done, yellow for the current one, grey and dotted for what is next) */
+.debate-stands { margin: 0 0 var(--sp-24); }
+.debate-stands-h { font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-12); }
+.debate-stands .vote-tl-item { margin-bottom: var(--sp-12); }
+.debate-stands .vote-tl-item::after { bottom: -12px; }
+.debate-stands .stand-l { font-size: var(--fs-lg); color: var(--text-primary); line-height: 24px; }
+.debate-stands .stand-r { font-family: var(--font-mono); font-size: var(--fs-md); margin-left: var(--sp-8); color: var(--accent-green); }
+.debate-stands .stand-r.failed { color: var(--accent-red); }
+.debate-stands .stand-d { font-family: var(--font-mono); font-size: var(--fs-sm); margin-left: var(--sp-8); color: var(--text-muted); }
+.debate-stands .is-active .stand-l { color: var(--accent-yellow); font-weight: 600; }
+.debate-stands .is-pending .stand-l { color: var(--text-muted); }
 .debate-vehicle-note { margin: var(--sp-8) 0 var(--sp-24); font-size: var(--fs-md); line-height: 1.5; color: var(--text-muted); max-width: 70ch; }
 .debate-vehicle-note i { font-style: normal; font-weight: 500; color: var(--text-secondary); }   /* no italic exists in any EMH face */
 .debate-vehicle-tag { display: inline-block; margin-right: var(--sp-6); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }

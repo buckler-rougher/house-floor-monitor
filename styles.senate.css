@@ -1886,6 +1886,99 @@
     .loading-indicator i { animation: none; opacity: 0.5; }
   }
   .stage-row .list-scroll:has(> .loading-indicator:only-child) { justify-content: center; }
+  .vote-tl-items {
+  position: relative;
+}
+  .vote-tl-item::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 24px;
+  width: 4px;
+  bottom: -20px;
+  background: var(--border-color);
+  transition: background var(--dur-300);
+}
+  .vote-tl-item:last-child::after {
+  display: none;
+}
+  .vote-tl-item.connector-dotted::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--text-muted) 0px,
+    var(--text-muted) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+}
+  .vote-tl-item {
+  display: flex;
+  gap: var(--sp-16);
+  margin-bottom: var(--sp-20);
+  position: relative;
+  align-items: flex-start;
+}
+  .vote-tl-item:last-child {
+  margin-bottom: 0;
+}
+  .vote-tl-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: background var(--dur-300), border-color var(--dur-300);
+}
+  .vote-tl-num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+  user-select: none;
+}
+  .vote-tl-circle.passed .vote-tl-num, .vote-tl-circle.failed .vote-tl-num {
+  color: var(--accent-blue);
+}
+  .vote-tl-circle.active .vote-tl-num {
+  color: var(--accent-yellow);
+}
+  .vote-tl-circle.pending {
+  border-color: var(--text-muted);
+  background: var(--bg-card);
+}
+  .vote-tl-circle.active {
+  border-color: color-mix(in srgb, var(--accent-yellow) 50%, transparent);
+  background: color-mix(in srgb, var(--accent-yellow) 25%, var(--bg-card));
+}
+  .vote-tl-circle.active::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--accent-yellow);
+  border-right-color: var(--accent-yellow);
+  animation: vt-spin 0.85s linear infinite;
+}
+  .vote-tl-circle.passed, .vote-tl-circle.failed {
+  border-width: 1px;
+  border-color: var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+}
+  @keyframes vt-spin {
+  to { transform: rotate(360deg); }
+}
+  .vote-tl-content {
+  flex: 1;
+  min-width: 0;
+}
   .vrec-overlay {
   position: fixed;
   inset: 0;
@@ -6158,6 +6251,16 @@ font-family: var(--font-mono);
   .pipe-tag.is-amended { color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent-amber) 35%, transparent); padding: 0 6px; }
   .bill-vehicle { margin-top: var(--sp-2); font-size: var(--fs-sm); line-height: 1.4; color: var(--text-secondary); }
   .bill-vehicle-label { color: var(--text-muted); }
+  .debate-stands { margin: 0 0 var(--sp-24); }
+  .debate-stands-h { font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--sp-12); }
+  .debate-stands .vote-tl-item { margin-bottom: var(--sp-12); }
+  .debate-stands .vote-tl-item::after { bottom: -12px; }
+  .debate-stands .stand-l { font-size: var(--fs-lg); color: var(--text-primary); line-height: 24px; }
+  .debate-stands .stand-r { font-family: var(--font-mono); font-size: var(--fs-md); margin-left: var(--sp-8); color: var(--accent-green); }
+  .debate-stands .stand-r.failed { color: var(--accent-red); }
+  .debate-stands .stand-d { font-family: var(--font-mono); font-size: var(--fs-sm); margin-left: var(--sp-8); color: var(--text-muted); }
+  .debate-stands .is-active .stand-l { color: var(--accent-yellow); font-weight: 600; }
+  .debate-stands .is-pending .stand-l { color: var(--text-muted); }
   .debate-vehicle-note { margin: var(--sp-8) 0 var(--sp-24); font-size: var(--fs-md); line-height: 1.5; color: var(--text-muted); max-width: 70ch; }
   .debate-vehicle-note i { font-style: normal; font-weight: 500; color: var(--text-secondary); }
   .debate-vehicle-tag { display: inline-block; margin-right: var(--sp-6); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 12%, transparent); }

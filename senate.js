@@ -1473,6 +1473,7 @@ function paintDebateVehicle() {
         if (showing) t.textContent = shell;
         delete t.dataset.vehicle; delete t.dataset.shell;
         if (note) note.remove();
+        paintDebateStands();
         return;
     }
     t.dataset.shell = shell; t.dataset.vehicle = v; t.textContent = v;
@@ -1481,6 +1482,47 @@ function paintDebateVehicle() {
     note.innerHTML = info.amended
         ? `<span class="debate-vehicle-tag">Amended</span> ${escapeHtml(id)}, as amended. The title, sponsor, and summary below are Congress.gov's record of the House bill, the <i>${escapeHtml(shell)}</i>, which does not yet show the Senate's amendments.`
         : `<span class="debate-vehicle-tag">Vehicle</span> ${escapeHtml(id)} is a House shell bill, <i>${escapeHtml(shell)}</i>. The sponsor and summary below are its own.`;
+    paintDebateStands();
+}
+
+// "Where it stands": the debate measure's recorded votes as numbered steps joined by a line (the Vote series' own steps), then what comes next. From the Senate's roll call menu (the same
+// chain the Procedural stages card draws) and the schedule's "post-cloture"; nothing else is inferred. Under the vehicle note, or the title.
+function stagesFor(id) {
+    const key = measureKey(id);
+    for (const rows of Object.values(_stages || {})) { const m = (rows || []).find((x) => measureKey(x.measure) === key); if (m) return m; }
+    return null;
+}
+function paintDebateStands() {
+    const title = document.getElementById('debate-bill-title');
+    if (!title) return;
+    const id = document.getElementById('debate-bill-id')?.textContent.trim() || '';
+    const m = id && id !== '\u2014' ? stagesFor(id) : null;
+    let box = document.getElementById('debate-bill-stands');
+    if (!m || !(m.chain || []).length) { if (box) box.remove(); return; }
+    const done = chainRuns(m.chain).map((item) => {
+        if (item.single) {
+            const v = item.single;
+            return { ok: v.carried, label: STAGE_CHIP[v.stage] || v.stage, result: `${v.result} ${v.yeas}-${v.nays}`, date: boardDate(v.date), title: `Roll call ${v.rollCall}` };
+        }
+        const { stage, votes } = item.run; const won = votes.filter((v) => v.carried).length;
+        return { ok: won === votes.length, label: `${votes.length} \u00d7 ${STAGE_CHIP[stage] || stage}`, result: won === votes.length ? 'all agreed to' : won === 0 ? 'all rejected' : `${won} agreed to, ${votes.length - won} rejected`, date: boardDate(votes[votes.length - 1].date), title: `Roll calls ${votes[0].rollCall}\u2013${votes[votes.length - 1].rollCall}` };
+    });
+    const steps = done.map((d, i) => `<div class="vote-tl-item"><div class="vote-tl-circle ${d.ok ? 'passed' : 'failed'}"><span class="vote-tl-num">${i + 1}</span></div><div class="vote-tl-content" title="${escapeHtml(d.title)}"><span class="stand-l">${escapeHtml(d.label)}</span><span class="stand-r ${d.ok ? '' : 'failed'}">${escapeHtml(d.result)}</span><span class="stand-d">${escapeHtml(d.date)}</span></div></div>`);
+    if (m.pending) {
+        const n = done.length;
+        const postCloture = m.stage === 'final' && m.latest && m.latest.stage === 'cloture' && m.latest.carried;
+        if (postCloture) {
+            steps.push(`<div class="vote-tl-item connector-dotted"><div class="vote-tl-circle active"><span class="vote-tl-num">${n + 1}</span></div><div class="vote-tl-content is-active"><span class="stand-l">Post-cloture debate</span></div></div>`);
+            steps.push(`<div class="vote-tl-item"><div class="vote-tl-circle pending"><span class="vote-tl-num">${n + 2}</span></div><div class="vote-tl-content is-pending"><span class="stand-l">Vote on passage</span></div></div>`);
+        } else {
+            steps.push(`<div class="vote-tl-item"><div class="vote-tl-circle active"><span class="vote-tl-num">${n + 1}</span></div><div class="vote-tl-content is-active"><span class="stand-l">${escapeHtml(STAGE_AWAITING[m.stage] || 'Awaiting a vote')}</span></div></div>`);
+        }
+    }
+    if (!box) { box = document.createElement('div'); box.id = 'debate-bill-stands'; box.className = 'debate-stands'; }
+    const anchor = document.getElementById('debate-bill-vehicle') || title;
+    if (box.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', box);
+    const html = `<div class="debate-stands-h">Where it stands</div><div class="vote-tl-items">${steps.join('')}</div>`;
+    if (box.innerHTML !== html) box.innerHTML = html;
 }
 
 // Which modal a card opens, decided by the shape of what it names. The roll
@@ -1613,6 +1655,7 @@ function renderStages(data) {
     // Say what the window reached, rather than showing a slice and letting it
     // look like the whole record.
     prefetchBills();
+    paintDebateVehicle();   // the debate panel's "Where it stands" reads the same stages
     const when = el('senate-stages-when');
     if (when && data?.kept != null) {
         when.textContent = data.since
