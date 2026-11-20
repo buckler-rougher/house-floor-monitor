@@ -283,4 +283,14 @@ ok('an ordinary unanimous-consent request is not the wrap-up', () => {
   assert.strictEqual(mode(M.feed(M.empty(), 'I ask unanimous consent that the committee be discharged', 0), 1 * S), null);
 });
 
+ok('a bill passed by voice vote during the debate is another measure: it does not end the debate (19 November 2026, H.R. 2347)', () => {
+  let s = M.feed(M.empty(), 'UNDER THE PREVIOUS ORDER, THE SENATE WILL RESUME CONSIDERATION OF H.R. 2347, WHICH THE CLERK WILL REPORT.', 0);
+  assert.strictEqual(M.current(s, 10 * S).bill, 'H.R. 2347');
+  s = M.feed(s, 'MS. ERNST: I KNOW OF NO FURTHER DEBATE ON THIS BILL. THE PRESIDING OFFICER: ALL IN FAVOR SAY AYE. ALL OPPOSED, NO. THE AYES APPEAR TO HAVE IT. THE AYES DO HAVE IT. THE BILL IS PASSED. THE MOTION TO RECONSIDER IS LAID UPON THE TABLE.', 2 * MIN);
+  assert.strictEqual(M.current(s, 2 * MIN + 10 * S).bill, 'H.R. 2347', 'still on the measure');
+  // the measure itself passing, after its roll call, still ends it
+  s = M.feed(s, 'THE YEAS ARE 53, THE NAYS ARE 45. THE BILL, AS AMENDED, IS PASSED.', 3 * MIN);
+  assert.strictEqual(M.current(s, 3 * MIN + 10 * S), null);
+});
+
 console.log(`\n${n} passed`);

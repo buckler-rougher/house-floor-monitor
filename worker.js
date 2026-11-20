@@ -3913,6 +3913,7 @@ async function enrichSenateOrders(orders, limit = 24) {
       return {
         ...o,
         title: bill.title || o.title,
+        postTitle: o.title || null,   // the name the caucus schedule gave it: for a House shell bill used as a vehicle that is the bill really being passed, and Congress.gov's title is the placeholder
         // "Sen. Tuberville, Tommy [R-AL]" reads better than a truncation, and
         // it is the same shape the House board's sponsor line uses.
         author: sp?.fullName || o.author,

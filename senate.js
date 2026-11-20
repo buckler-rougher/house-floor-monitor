@@ -1439,10 +1439,13 @@ function scheduledVote(measure) {
 
 // The bill a measure is a vehicle for, when the caucus schedule says so ("H.R.2347, legislative vehicle for the Bipartisan American Affordability and Jobs Act"). The
 // measure's own title is a placeholder then, so the card says what is really being passed. The words are the schedule's, a hand-written post: only said, never inferred.
-function scheduledVehicle(measure) {
+function scheduledVehicle(measure, subject) {
     const key = measureKey(measure);
-    const m = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.vehicle);
-    return m ? m.vehicle : null;
+    const said = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.vehicle);
+    if (said) return said.vehicle;
+    // The newer posts do not say "vehicle for": they just write the bill's real name after its number. Shown when that name is plainly not the measure's own title.
+    const named = (_agenda?.measures || []).find((x) => measureKey(x.measure) === key && x.postTitle);
+    return named && globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(named.postTitle, subject) : null;
 }
 
 // Which modal a card opens, decided by the shape of what it names. The roll
@@ -1531,7 +1534,7 @@ function stageCard(m, key, i) {
     // A scheduled card is dated by when its vote is, not by when the cloture
     // that got it there was.
     const when = due ? due.date : boardDate(v.date);
-    const vehicle = scheduledVehicle(m.measure);
+    const vehicle = scheduledVehicle(m.measure, m.subject);
 
     return `
     <div class="bill-slot">
@@ -1672,6 +1675,7 @@ function renderFloorSchedule(data, cloture) {
                         ${data.postCloture ? '<span class="bill-calendar-no">Post-cloture</span>' : ''}
                     </div>
                     <div class="bill-title">${escapeHtml(m.title || '')}</div>
+                    ${(() => { const veh = m.vehicle || (globalThis.SenateAgenda ? globalThis.SenateAgenda.nameFromPost(m.postTitle, m.title) : null); return veh ? `<div class="bill-vehicle" title="As the Senate Democratic Caucus schedule describes it"><span class="bill-vehicle-label">Vehicle for</span> ${escapeHtml(veh)}</div>` : ''; })()}
                     <div class="bill-meta">
                         <div class="bill-action">${escapeHtml([m.author, vote ? `Scheduled: ${vote}` : (ROLE_TEXT[m.role] || 'Pending consideration')].filter(Boolean).join(' \u00b7 '))}</div>
                         <div class="bill-date">${escapeHtml(data.voteTime || '')}</div>

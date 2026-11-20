@@ -114,3 +114,12 @@ ok('a vehicle, in the other forms the posts use: after a line break, in brackets
 });
 
 console.log(`\n${n} passed`);
+
+ok('a name the post gives without "vehicle for" (19 November: Cal. #453 H.R.2347 Bipartisan American Affordability and Jobs Act): a vehicle only when the titles differ', () => {
+  const m = A.parse('Following Leader remarks, the Senate will resume consideration of Cal. #453 H.R.2347 Bipartisan American Affordability and Jobs Act, as amended, post-cloture.').measures.find((x) => x.measure === 'H.R.2347');
+  assert.strictEqual(m.title, 'Bipartisan American Affordability and Jobs Act');
+  assert.strictEqual(A.nameFromPost(m.title, 'Survivor Justice Tax Prevention Act'), 'Bipartisan American Affordability and Jobs Act');
+  assert.strictEqual(A.nameFromPost('Fiscal Year 2027 National Defense Authorization\u2026', 'National Defense Authorization Act for Fiscal Year 2027'), null);
+  assert.strictEqual(A.nameFromPost('Ackerson Meadow Land Exchange', 'Ackerson Meadow Land Exchange Act'), null);
+  assert.strictEqual(A.nameFromPost(null, 'x'), null);
+});
