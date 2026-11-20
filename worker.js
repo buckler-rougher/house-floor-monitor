@@ -18,6 +18,7 @@ import './lib/senate-call.js';
 import './lib/senate-modes.js';
 import './lib/senate-agenda.js';
 import './lib/memory-kv.js';
+import './lib/faa-delays.js';
 import './lib/clerk-votes.js';
 import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
@@ -2711,28 +2712,43 @@ async function handleVotingDays(env) {
   }
 }
 
+// The airport delays come from the FAA's own public Airport Status Web Service on its API gateway, NOT from nasstatus.faa.gov: that host answers this Worker "403 Access Denied" (seen from 19 November 2026,
+// staging and production alike, while it answers every other client), and the project's rule is not to get around a refusal. The service carries the same ground stops, ground delays, arrival and
+// departure delays and closures; lib/faa-delays.js writes them in the shape the panel has always read, so the panel is unchanged.
+const FAA_DELAYS_URL = 'https://external-api.faa.gov/asws/api/airport/delays';
+// The delay list says an airport has an arrival or departure delay but not which, nor its trend; the airport's own status says both ("Type": "Departure", "Trend": "Increasing"). Up to twelve airports are asked,
+// together; one that cannot be read keeps its list entry, which the panel then skips (it shows arrivals for the Washington airports and departures for the rest, so it needs the type).
+async function withArriveDepartTypes(json) {
+  const items = (json && json.ArriveDepartDelays && json.ArriveDepartDelays.arriveDepart) || [];
+  if (!items.length) return json;
+  const codes = [...new Set(items.map((i) => i.airport))].filter((c) => /^[A-Z]{3,4}$/.test(c)).slice(0, 12);
+  const got = Object.fromEntries(await Promise.all(codes.map(async (code) => {
+    try { return [code, JSON.parse(await fetchSource(`https://external-api.faa.gov/asws/api/airport/status/${code}`, `FAA status ${code}`))]; } catch { return [code, null]; }
+  })));
+  const out = [];
+  for (const it of items) {
+    const typed = ((got[it.airport] && got[it.airport].Status) || []).filter((x) => x && (x.Type === 'Arrival' || x.Type === 'Departure'));
+    if (!typed.length) { out.push(it); continue; }
+    for (const x of typed) {
+      if (out.some((o) => o.airport === it.airport && o.type === x.Type)) continue;
+      out.push({ airport: it.airport, reason: x.Reason || it.reason, minTime: x.MinDelay || it.minTime, maxTime: x.MaxDelay || it.maxTime, type: x.Type, trend: x.Trend });
+    }
+  }
+  return { ...json, ArriveDepartDelays: { ...json.ArriveDepartDelays, arriveDepart: out } };
+}
 async function handleAirportDelays() {
   try {
-    const xmlText = await fetchRSSFeed(RSS_FEEDS.airportDelays);
-    
-    return new Response(JSON.stringify({ 
-      xmlData: xmlText 
-    }), {
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // 5 minutes
-      }
+    const text = await fetchSource(FAA_DELAYS_URL, 'FAA airport status service');
+    let json;
+    try { json = JSON.parse(text); } catch { throw new Error('the FAA airport status service did not answer JSON'); }
+    if (!json || typeof json !== 'object' || !json.status) throw new Error('not the FAA airport status answer');
+    return new Response(JSON.stringify({ xmlData: globalThis.FaaDelays.toXml(await withArriveDepartTypes(json)) }), {
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }   // 5 minutes
     });
   } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: `Failed to fetch airport delays: ${error.message}` 
-    }), {
+    return new Response(JSON.stringify({ error: `Failed to fetch airport delays: ${error.message}` }), {
       status: 500,
-      headers: {
-        ...CORS_HEADERS,
-        'Content-Type': 'application/json', 'Cache-Control': 'no-store'
-      }
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }
@@ -7404,7 +7420,7 @@ function sourceStatusChecks() {
     'house-docs': ['https://docs.house.gov/BillsThisWeek-RSS.xml', 4096, (r) => ok200(r, (x) => /<rss|<feed/.test(x.text), 'a feed')],
     'voting-days': ['https://votingdays.house.gov/voting-days.ics', 4096, (r) => ok200(r, (x) => x.text.includes('BEGIN:VCALENDAR'), 'a calendar')],
     'domewatch': ['https://data.domewatch.us/v1/whip-notices?limit=1', 4096, (r) => ok200(r, (x) => /json/.test(x.type), 'JSON')],
-    'faa': ['https://nasstatus.faa.gov/api/airport-status-information', 8192, (r) => ok200(r, (x) => x.text.includes('AIRPORT_STATUS_INFORMATION'), 'the FAA feed')],
+    'faa': [FAA_DELAYS_URL, 8192, (r) => ok200(r, (x) => /"status"\s*:/.test(x.text), 'the FAA airport status service')],
     // a day's page (the bare address redirects to the month view, which has no meetings table)
     'house-committees': [`https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=${getTodayDateET().slice(4, 6)}${getTodayDateET().slice(6, 8)}${getTodayDateET().slice(0, 4)}`, 40_000, (r) => ok200(r, (x) => x.text.includes('MainContent_GridViewMeetings'), 'the committee calendar')],
     'house-discharge': [`https://clerk.house.gov/DischargePetition/DischargePetitions?CongressNum=${CURRENT_CONGRESS}`, 40_000, (r) => ok200(r, (x) => x.text.includes('Discharge Petition No.'), 'the petition list')],
