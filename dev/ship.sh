@@ -95,8 +95,9 @@ case "$mode" in
     fi
     echo "pull request: $url"
     if [ "$merge" = 1 ]; then
-      say "waiting for the checks (a failing check stops here and nothing is merged)"
-      gh pr checks "$url" --watch --fail-fast
+      # only the REQUIRED checks (the ruleset requires `test`): a Cloudflare preview build that fails on a branch must not block a change whose tests passed
+      say "waiting for the required checks (a failing one stops here and nothing is merged)"
+      gh pr checks "$url" --required --watch --fail-fast
       gh pr merge "$url" --squash --delete-branch
       git checkout -q "$default" && git pull -q --ff-only
       echo "merged. $default is at $(git rev-parse --short HEAD). Reload the live page once and check it; do not poll the deploy."
