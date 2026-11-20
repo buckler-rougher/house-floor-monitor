@@ -13519,3 +13519,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 /* A roll call is the live event: the vote panel carries HAPPENING NOW, so the measure's debate panel steps aside until it ends (one HAPPENING NOW at a time). */
 :root[data-chamber="senate"] body.senate-call-vote .debate-section { display: none; }
+:root[data-chamber="senate"] .vote-heard-note { margin: var(--sp-12) var(--sp-24) 0; padding: var(--sp-10) var(--sp-12); border-radius: var(--radius-6); background: color-mix(in srgb, var(--accent-blue) 8%, transparent); color: var(--text-secondary); font-size: var(--fs-md); line-height: 1.5; }
+:root[data-chamber="senate"] .vote-heard-tag { display: inline-block; margin-right: var(--sp-8); padding: 1px var(--sp-6); border-radius: var(--radius-4); font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 14%, transparent); }
