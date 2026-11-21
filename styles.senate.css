@@ -7731,3 +7731,5 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-clear-btn { margin-top: var(--sp-4); font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); background: none; border: 1px solid var(--border-color); border-radius: var(--radius-6); padding: 6px 14px; cursor: pointer; transition: color .2s, border-color .2s; }
 .es-clear-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
 .es-people .es-step { gap: var(--sp-12); }
+.es-h .bills-sort-btn { margin-left: var(--sp-8); vertical-align: middle; }
+.es-h .es-term-in { color: var(--accent-blue); }
