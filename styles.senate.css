@@ -3259,7 +3259,6 @@
   .this-week-day-vote { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
   .this-week-day-fly { background: rgba(63,185,80,0.15);  color: var(--accent-green); }
   .this-week-day-recess { background: rgba(139,148,158,0.12); color: var(--text-muted); }
-  .this-week-empty { color: var(--text-muted); font-size: var(--fs-sm); line-height: 1; }
   .voting-calendar-wrap {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

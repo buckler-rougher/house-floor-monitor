@@ -2138,7 +2138,7 @@ function renderWhipNoticesFeed(items) {
         // a filter with no match: the filter itself, as its chip, is the way out (its click is the same data-filter-type handler the filter control uses)
         feed.innerHTML = whipNoticeFilter
             ? EmptyState.filtered({ shape: 'cards', noun: 'notices', term: WHIP_NOTICE_TYPE_LABEL[whipNoticeFilter] || String(whipNoticeFilter).toUpperCase(), tone: whipNoticeFilter, attrs: 'data-filter-type="all"', label: 'Show all notices' })
-            : '<div class="whip-updates-loading">No notices today.</div>';
+            : EmptyState.html({ shape: 'cards', title: 'No notices today', text: 'The Democratic Whip\u2019s notices appear here as they are posted.' });
         return;
     }
 
@@ -2993,7 +2993,7 @@ function renderVoteTimeline(items) {
     // follow-up "1 vote" notice doesn't erase already-voted items.
     const seriesItems = items.filter(item => VOTE_SERIES_RE.test(item.title));
     if (!seriesItems.length) {
-        body.innerHTML = '<div class="empty-note">No vote series announced yet</div>';
+        body.innerHTML = EmptyState.html({ shape: 'timeline', title: 'No vote series announced yet', text: 'The Democratic Whip posts a series when the House schedules a run of votes.' });
         hideSubHeader();
         return;
     }
@@ -3035,7 +3035,7 @@ function renderVoteTimeline(items) {
     // Completed (older) votes come first in the timeline; current/pending after
     const votes = [...completedVotes, ...currentVotes];
     if (votes.length === 0) {
-        body.innerHTML = '<div class="empty-note">No votes listed in notice</div>';
+        body.innerHTML = EmptyState.html({ shape: 'timeline', title: 'The notice lists no votes', text: 'When it names them, they will appear here in order.' });
         hideSubHeader();
         return;
     }
@@ -3778,10 +3778,10 @@ async function fetchBillsThisWeek() {
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
-            setIfChanged(elements.ruleBillsList, `<div class="empty-note">${SourceError.text('bills', 'docs')}</div>`);
+            setIfChanged(elements.ruleBillsList, `${EmptyState.error(SourceError.text('bills', 'docs'))}`);
         }
         if (elements.suspensionBillsList) {
-            setIfChanged(elements.suspensionBillsList, `<div class="empty-note">${SourceError.text('bills', 'docs')}</div>`);
+            setIfChanged(elements.suspensionBillsList, `${EmptyState.error(SourceError.text('bills', 'docs'))}`);
         }
     }
 }
@@ -6579,7 +6579,7 @@ function renderCommitteeMeetings() {
     const put = (id, v) => { const n = document.getElementById(id); if (n && n.textContent !== v) n.textContent = v; };
     put('committee-date', d.events.length ? (d.date === today ? 'Today' : dayText) : '');
     if (!d.events.length) {
-        setIfChanged(list, '<div class="empty-note">No committee meetings today</div>');
+        setIfChanged(list, EmptyState.html({ shape: 'rows', title: 'No committee meetings today', text: 'Meetings are listed here on days committees meet.' }));
     } else {
         if (!list._clamp) { list.innerHTML = ''; ClampList.mount(list, { keep: COMMITTEE_SHOWN }); }
         const entries = d.events.map((e) => ({ key: e.id, html: `
@@ -6616,7 +6616,7 @@ function committeeDetailHtml(x) {
         <div class="committee-witness"><span class="committee-witness-name">${escapeHtml(w.name)}</span><span class="committee-witness-role">${escapeHtml(w.role)}</span>
         ${w.docs.length ? `<span class="committee-docs">${w.docs.map(doc).join('')}</span>` : ''}</div>`).join('')}` : '';
     const sections = x.sections.map((s) => `<div class="committee-detail-head">${escapeHtml(s.title)}</div><ul class="committee-docs-list">${s.items.map((i) => `<li>${doc(i)}</li>`).join('')}</ul>`).join('');
-    return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? '<span class="committee-detail-note">Nothing posted yet</span>' : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
+    return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? EmptyState.detail('Nothing posted yet. Witnesses and documents appear here when the committee posts them.') : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
 }
 function toggleCommitteeDetail(id) {
     const list = document.getElementById('committee-list');
@@ -6807,7 +6807,7 @@ function renderDischargePetitions() {
     openHead.textContent = `Open \u00b7 ${open.length}`;
     ListSync.sync(dp.doneRegion, grouped ? done.map(card) : []);
     const rest = grouped ? open : dischargeSorted(all);
-    ListSync.sync(dp.openRegion, rest.length ? rest.map(card) : [{ key: 'none', html: '<div class="empty-note">No open petitions</div>' }]);
+    ListSync.sync(dp.openRegion, rest.length ? rest.map(card) : [{ key: 'none', html: EmptyState.html({ shape: 'doc', title: 'No open petitions', text: 'A discharge petition appears here from its first signature.' }) }]);
     dp.doneClamp.refresh(); dp.openClamp.refresh();
     renderPrivileged();
     if (globalThis.SourcePop) {
@@ -7012,7 +7012,7 @@ function openDischargeSigners(id, number, trigger) {
                 <span class="dp-signer-date">${unsigned ? '' : escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
         });
-        if (!entries.length) entries.push({ key: 'none', html: q ? EmptyState.filtered({ shape: 'people', noun: 'signers', term: `\u201c${document.getElementById('dp-modal-search').value.trim()}\u201d`, attrs: 'data-clear-signer-search', label: 'Clear search' }) : '<div class="empty-note">No matching signers</div>' });
+        if (!entries.length) entries.push({ key: 'none', html: q ? EmptyState.filtered({ shape: 'people', noun: 'signers', term: `\u201c${document.getElementById('dp-modal-search').value.trim()}\u201d`, attrs: 'data-clear-signer-search', label: 'Clear search' }) : EmptyState.html({ shape: 'people', title: 'No signers in this view', text: 'Try the other party, or the other list.' }) });
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     const searchField = SearchField.mount(document.getElementById('dp-modal-search'), { fields: ['Name', 'State'] });
@@ -7069,7 +7069,7 @@ function openDischargeSigners(id, number, trigger) {
             syncExamples();
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
-        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = `<div class="empty-note">${SourceError.text('signers', 'clerk')}</div>`; });
+        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = `${EmptyState.error(SourceError.text('signers', 'clerk'))}`; });
     requestAnimationFrame(() => requestAnimationFrame(load));
 }
 document.addEventListener('click', (e) => {
@@ -10409,7 +10409,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    absenteePanel().render({ members, info, emptyText: 'ALL MEMBERS VOTED' });
+    absenteePanel().render({ members, info, emptyText: 'All Members voted' });
 }
 
 // Update API Status Indicator

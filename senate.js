@@ -536,7 +536,7 @@ function renderAbsences(data) {
         }
         info = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
     }
-    absencePanel.render({ members, info, emptyText: 'ALL SENATORS VOTED' });
+    absencePanel.render({ members, info, emptyText: 'All Senators voted' });
 
     // The same numbers, as the House board's LAST VOTE ABSENCES inside THRESHOLD ANALYSIS: how
     // many of each party missed the previous vote, which is what to weigh the one in front of
@@ -797,7 +797,7 @@ function renderNotices() {
     const shown = _noticeFilter === 'all' ? _notices : _notices.filter((n) => n.type === _noticeFilter);
     if (!shown.length) {
         // a filter with no match: the filter's own chip, which clears it (see the feed's click handler)
-        setIfChanged(feed, _noticeFilter === 'all' ? '<div class="empty-note">No floor notices</div>' : EmptyState.filtered({ shape: 'cards', noun: 'notices', term: (NOTICE_TYPES[_noticeFilter] || {}).label || String(_noticeFilter).toUpperCase(), tone: _noticeFilter, attrs: 'data-notice-filter="all"', label: 'Show all notices' }));
+        setIfChanged(feed, _noticeFilter === 'all' ? EmptyState.html({ shape: 'cards', title: 'No notices today', text: 'The Democratic Caucus\u2019s notices appear here as they are posted.' }) : EmptyState.filtered({ shape: 'cards', noun: 'notices', term: (NOTICE_TYPES[_noticeFilter] || {}).label || String(_noticeFilter).toUpperCase(), tone: _noticeFilter, attrs: 'data-notice-filter="all"', label: 'Show all notices' }));
         watchListScroll(feed);
         return;
     }
@@ -873,6 +873,23 @@ const NOM_STAGES = {
     failed:     { label: 'RETURNED',     badge: 'wrap-up',  status: 'failed' },
     withdrawn:  { label: 'WITHDRAWN',    badge: 'wrap-up',  status: 'failed' },
 };
+// what each empty column of Nominations and Procedural Stages is for (lib/empty-state.js)
+const NOM_EMPTY = {
+    calendar: 'Nominations reported by committee wait here for floor time.',
+    privileged: 'Privileged nominations, which skip committee, appear here.',
+    committee: 'Nominations referred to a committee appear here.',
+    confirmed: 'Confirmed nominations appear here.',
+    failed: 'Nominations that failed or were returned appear here.',
+    withdrawn: 'Withdrawn nominations appear here.',
+};
+const STAGE_EMPTY = {
+    final: 'A measure waits here for its final vote.',
+    amendment: 'Amendments awaiting a vote appear here.',
+    mtp: 'A motion to proceed waiting for a vote appears here.',
+    cloture: 'A cloture vote on a measure appears here.',
+    'cloture-amdt': 'A cloture vote on an amendment appears here.',
+    'cloture-mtp': 'A cloture vote on a motion to proceed appears here.',
+};
 let _nomCounts = {};
 
 // The XML dates are ISO; the card format is day-first with a short month.
@@ -936,7 +953,7 @@ function renderNominations() {
         if (!list) continue;
         setIfChanged(list, shown.length
             ? shown.map(nominationCard).join('')
-            : '<div class="empty-note">None at this stage</div>');
+            : EmptyState.column('None at this stage', NOM_EMPTY[stage] || ''));
         watchListScroll(list);
     }
 }
@@ -1662,7 +1679,7 @@ function renderStages(data) {
         if (!list) continue;
         setIfChanged(list, rows.length
             ? rows.map((m, i) => stageCard(m, key, i)).join('')
-            : '<div class="empty-note">Nothing at this stage</div>');
+            : EmptyState.column('Nothing at this stage', STAGE_EMPTY[key] || ''));
         watchListScroll(list);
     }
     // Say what the window reached, rather than showing a slice and letting it
