@@ -12510,5 +12510,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-meter-full { width: 160px; }
 .es-meter-full i { width: 100%; background: color-mix(in srgb, var(--accent-green) 55%, transparent); }
 .es-count { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); }
-.empty-note.es-week { padding: 0; }
+.empty-note.es.es-week { display: inline-flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: var(--sp-12); padding: 0; text-align: left; }
 .es-search { color: var(--text-muted); }
