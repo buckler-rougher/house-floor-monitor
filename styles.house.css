@@ -12458,3 +12458,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #suggest-fab:hover .hb-dot:nth-child(3) { animation-delay: .3s; }
 @keyframes hbtype { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
 }
+
+.tm-today { height: 32px; padding: 0 var(--sp-12); border-radius: var(--radius-6); border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
+.tm-today[hidden] { display: none; }
+.tm-today:hover { color: var(--accent-green); border-color: var(--accent-green); }
