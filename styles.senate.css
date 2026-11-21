@@ -3099,6 +3099,13 @@
     color: var(--text-secondary);
     font-family: var(--font-mono);
 }
+  .party-breakdown-indicator .indicator-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
   .party-breakdown-content {
     display: flex;
     flex-direction: column;
