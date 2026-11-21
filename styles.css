@@ -11485,7 +11485,7 @@ html.replay-mode .weather-panel { display: none; }
 #speaker-column:not(:has(> :not([hidden]))) { display: none; }   /* an empty column would still bring its gap */
 .vote-display.is-empty, .threshold-panel.is-empty, .quorum-panel.is-empty, .floor-grid-panel.is-empty { display: none; }   /* no roll call to show: not an empty "-- / FETCHING..." card (the Speaker election, a quorum call) */
 .se-panel > .panel-header, .od-panel > .panel-header { align-self: stretch; margin: calc(-1 * var(--sp-32)) calc(-1 * var(--sp-32)) 0; border-radius: 0; flex-shrink: 0; justify-content: flex-start; flex-wrap: wrap; gap: var(--sp-12); 
-  height: auto; min-height: 52px; padding-top: 0; padding-bottom: 0; align-content: center; }   /* the stepper's 28px buttons are taller than the 20px a 16px-padded 52px header leaves, which pushed the whole row 4px low */
+  height: auto; min-height: 52px; padding-top: var(--sp-12); padding-bottom: var(--sp-12); row-gap: var(--sp-8); align-content: center; }   /* the stepper's 28px buttons are taller than the 20px a 16px-padded 52px header leaves, which pushed the whole row 4px low. The 12px above and below (28 + 24 = the same 52px on one line) are what keep a WRAPPED header, the Source dropping to its own line in a narrow column, off the top and bottom borders. */
 .se-panel > .panel-header .panel-header-right { margin-left: auto; }
 .se-head { align-self: stretch; display: flex; margin-top: var(--sp-24); }
 .se-title { flex: 1; font-size: var(--fs-7xl); font-weight: 700; color: var(--text-primary); line-height: 1.3; }
