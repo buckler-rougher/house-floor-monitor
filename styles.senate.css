@@ -2413,6 +2413,19 @@
   .absentee-content {
   padding: var(--sp-16) var(--sp-24);
 }
+  .absentee-metric .metric-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--track-wider);
+}
+  .absentee-metric .metric-value {
+  font-size: var(--fs-4xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
   .absentee-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
