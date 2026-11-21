@@ -12515,3 +12515,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .esf-link:hover { text-decoration: underline; }
 .es-h .es-term-in { color: var(--accent-blue); }
 .es-x { margin-left: 6px; opacity: .7; }
+
+.tm-today { height: 32px; padding: 0 var(--sp-12); border-radius: var(--radius-6); border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
+.tm-today[hidden] { display: none; }
+.tm-today:hover { color: var(--accent-green); border-color: var(--accent-green); }
