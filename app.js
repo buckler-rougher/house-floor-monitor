@@ -4448,6 +4448,15 @@ function updateAmendmentVotes(items) {
     return changed;
 }
 
+// An empty column of Bills This Week (lib/empty-state.js). It says where the week's bills are when the other column has them, so "No bills subject to a rule" is never left unexplained.
+function emptyBillsColumn(kind, otherCount) {
+    if (billsTrackedFilterOn) return EmptyState.column('No tracked bills', 'Track a bill from its card and it will be kept here.');
+    const none = kind === 'rule' ? 'No bills subject to a rule' : 'No bills under suspension';
+    const where = kind === 'rule' ? 'under suspension' : 'subject to a rule';
+    if (!otherCount) return EmptyState.column('No bills this week yet', 'They are listed here once the weekly schedule is posted.');
+    return EmptyState.column(none, otherCount === 1 ? `This week\u2019s only bill is ${where}.` : `All ${otherCount} of this week\u2019s bills are ${where}.`);
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -4467,13 +4476,13 @@ function updateBillsDisplay() {
     if (sortedRule.length > 0) {
         setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
-        setIfChanged(elements.ruleBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills subject to a rule'}</div>`);
+        setIfChanged(elements.ruleBillsList, emptyBillsColumn('rule', sortedSuspension.length));
     }
 
     if (sortedSuspension.length > 0) {
         setIfChanged(elements.suspensionBillsList, sortedSuspension.map(bill => createBillCard(bill, 'suspension')).join(''));
     } else {
-        setIfChanged(elements.suspensionBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills under suspension'}</div>`);
+        setIfChanged(elements.suspensionBillsList, emptyBillsColumn('suspension', sortedRule.length));
     }
 
     const trackedFilterBtn = document.getElementById('bills-tracked-filter-btn');
