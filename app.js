@@ -10296,9 +10296,11 @@ async function _doAbsenteeTracking() {
             
             const absentees = [];
             const recordedVotes = xmlDoc.querySelectorAll('recorded-vote');
+            let seated = 0;   // Members on the roll (a vacant seat has no name), for "433 of 433"
             
             recordedVotes.forEach(recordedVote => {
                 const vote = recordedVote.querySelector('vote')?.textContent;
+                if ((recordedVote.querySelector('legislator')?.textContent || '').trim()) seated++;
                 if (vote === 'Not Voting') {
                     const legislator = recordedVote.querySelector('legislator');
                     const name = legislator?.textContent || '';
@@ -10320,7 +10322,7 @@ async function _doAbsenteeTracking() {
 
             const rollDate = xmlDoc.querySelector('action-date')?.textContent?.trim() || '';
             const rollTime = xmlDoc.querySelector('action-time')?.textContent?.trim() || '';
-            await updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime);
+            await updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime, seated);
 
         } catch (error) {
             console.error('Absentee tracking fetch failed:', error);
@@ -10366,7 +10368,7 @@ function setAbsenteeManifest(xmlDoc, rollNumber) {
 }
 
 // Update absentee UI with data from roll call
-async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
+async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime, seated) {
     if (!elements.absenteeList || !absenteePanel()) return;
 
     // The roll line, "Roll 314 • 16 September 2026 7:05 PM".
@@ -10409,7 +10411,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    absenteePanel().render({ members, info, emptyText: 'All Members voted' });
+    absenteePanel().render({ members, info, emptyText: 'All Members voted', of: seated || 0, n: Math.max(0, (seated || 0) - members.length) });
 }
 
 // Update API Status Indicator
