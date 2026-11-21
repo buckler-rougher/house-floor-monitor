@@ -7733,3 +7733,4 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-people .es-step { gap: var(--sp-12); }
 .es-h .bills-sort-btn { margin-left: var(--sp-8); vertical-align: middle; }
 .es-h .es-term-in { color: var(--accent-blue); }
+.es-x { margin-left: 6px; opacity: .7; }

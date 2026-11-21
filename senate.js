@@ -796,7 +796,8 @@ function renderNotices() {
     if (!feed) return;
     const shown = _noticeFilter === 'all' ? _notices : _notices.filter((n) => n.type === _noticeFilter);
     if (!shown.length) {
-        setIfChanged(feed, '<div class="empty-note">No floor notices</div>');
+        // a filter with no match: the filter's own chip, which clears it (see the feed's click handler)
+        setIfChanged(feed, _noticeFilter === 'all' ? '<div class="empty-note">No floor notices</div>' : EmptyState.filtered({ shape: 'cards', noun: 'notices', term: (NOTICE_TYPES[_noticeFilter] || {}).label || String(_noticeFilter).toUpperCase(), tone: _noticeFilter, attrs: 'data-notice-filter="all"', label: 'Show all notices' }));
         watchListScroll(feed);
         return;
     }
@@ -840,6 +841,13 @@ function initNoticeFilter() {
         // pinned so opening it does not reflow the page every frame.
         if (dd.hidden) anim.openDrawer(dd);
         else anim.closeDrawer(dd);
+    });
+    el('caucus-notices-feed')?.addEventListener('click', (e) => {   // the empty state's chip clears the filter
+        const chip = e.target.closest('[data-notice-filter]');
+        if (!chip) return;
+        _noticeFilter = chip.dataset.noticeFilter;
+        renderNoticeFilter();
+        renderNotices();
     });
     dd.addEventListener('click', (e) => {
         const chip = e.target.closest('[data-notice-filter]');

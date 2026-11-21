@@ -13570,10 +13570,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 @keyframes hbtype { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
 }
 
-/* THE TIME MACHINE'S WAY BACK: a quiet button beside the month and year, shown only when the calendar is on another month */
-.tm-today { height: 32px; padding: 0 var(--sp-12); border-radius: var(--radius-6); border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
-.tm-today[hidden] { display: none; }
-.tm-today:hover { color: var(--accent-green); border-color: var(--accent-green); }
 
 /* EMPTY STATES (lib/empty-state.js): a ghost of the real thing, drawn in the site's own muted tones, with a headline and one line. Rings are zero-length round-capped dashes, so they are dots. */
 .empty-note.es { display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--text-secondary); }
@@ -13631,3 +13627,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .esf-link { font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--accent-blue); background: none; border: 0; padding: 0; cursor: pointer; }
 .esf-link:hover { text-decoration: underline; }
 .es-h .es-term-in { color: var(--accent-blue); }
+.es-x { margin-left: 6px; opacity: .7; }
