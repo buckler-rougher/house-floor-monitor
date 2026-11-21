@@ -1812,6 +1812,8 @@ let nextSessionAt = null;
 function updateNextSessionCountdown() { SessionClock.show(elements.nextSessionCountdown, nextSessionAt); }
 
 // Absentee filter state
+// The Vote Series panel with nothing to show: three ghost steps (a dotted ring and a faint bar each, joined by a dotted line) in the shape of a real series, so the panel says what will fill it.
+const VOTE_SERIES_EMPTY_HTML = '<div class="empty-note vsn"><div class="vsn-tl" aria-hidden="true">' + [140, 100, 120].map((w) => '<div class="vsn-step"><svg class="vsn-dot" viewBox="0 0 14 14" width="14" height="14"><circle cx="7" cy="7" r="5.5"/></svg><span class="vsn-bar" style="width:' + w + 'px"></span></div>').join('') + '</div><div class="vsn-h">No active vote series</div><p class="vsn-p">Each vote will appear here as a step, in the order it is called.</p></div>';
 let _absenteePanel = null; // lib/missing-members.js, made in initEventListeners
 
 // State for House makeup
@@ -2806,7 +2808,7 @@ function updateVoteTimelineStatus() {
     // rather than waiting for the next full re-render (matches renderVoteTimeline).
     if (liveStatuses.length && liveStatuses.every(s => s === 'passed' || s === 'failed')) {
         currentVotesList = [];
-        body.innerHTML = '<div class="empty-note">No active vote series</div>';
+        body.innerHTML = VOTE_SERIES_EMPTY_HTML;
         const subHeader = document.getElementById('vote-series-sub-header');
         if (subHeader) subHeader.hidden = true;
         return;
@@ -3057,7 +3059,7 @@ function renderVoteTimeline(items) {
     const isStale = staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
     if (allComplete || isStale) {
         currentVotesList = [];
-        body.innerHTML = '<div class="empty-note">No active vote series</div>';
+        body.innerHTML = VOTE_SERIES_EMPTY_HTML;
         hideSubHeader();
         return;
     }

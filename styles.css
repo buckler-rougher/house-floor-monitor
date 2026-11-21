@@ -13574,3 +13574,14 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .tm-today { height: 32px; padding: 0 var(--sp-12); border-radius: var(--radius-6); border: 1px solid var(--border-color); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; cursor: pointer; }
 .tm-today[hidden] { display: none; }
 .tm-today:hover { color: var(--accent-green); border-color: var(--accent-green); }
+
+/* THE EMPTY VOTE SERIES: ghost steps in the shape of a real series. The ring is a round-capped dash of zero length (so each dash is a dot) around a circle of 5.5 radius: about eleven dots, not four dashes. */
+.empty-note.vsn { display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--text-secondary); }
+.vsn-tl { display: grid; justify-items: start; margin: var(--sp-4) 0; }
+.vsn-step { display: flex; align-items: center; gap: var(--sp-12); position: relative; padding: var(--sp-6) 0; }
+.vsn-dot { flex: none; overflow: visible; }
+.vsn-dot circle { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0 3.14; }
+.vsn-step + .vsn-step::before { content: ""; position: absolute; left: 6px; bottom: calc(50% + 7px + var(--sp-2)); height: var(--sp-8); border-left: 1.5px dotted var(--border-color); }
+.vsn-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
+.vsn-h { font-size: var(--fs-lg); font-weight: 600; color: var(--text-primary); }
+.vsn-p { margin: 0; max-width: 46ch; font-size: var(--fs-md); color: var(--text-muted); line-height: 1.5; }
