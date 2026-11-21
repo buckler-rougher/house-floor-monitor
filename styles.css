@@ -13612,7 +13612,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-week { display: inline-flex; align-items: center; gap: var(--sp-12); color: var(--text-muted); font-size: var(--fs-sm); line-height: 1; }
 .es-days { display: inline-flex; gap: 4px; }
 .es-day { display: inline-block; width: 22px; height: 18px; border-radius: var(--radius-3); border: 1px dotted var(--border-color); }
-.empty-note.es-detail { flex-direction: column; align-items: flex-start; padding: var(--sp-8) 0; gap: var(--sp-8); }
+.empty-note.es-detail { flex-direction: column; align-items: center; text-align: center; padding: var(--sp-16) 0; gap: var(--sp-8); }
 .es-lines-ghost { display: grid; gap: var(--sp-6); margin: 0; }
 .es-bar.es-head { height: 6px; background: color-mix(in srgb, var(--text-muted) 26%, transparent); }
 .es-wk { color: var(--text-muted); font-size: var(--fs-sm); }
