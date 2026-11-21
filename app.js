@@ -1812,6 +1812,8 @@ let nextSessionAt = null;
 function updateNextSessionCountdown() { SessionClock.show(elements.nextSessionCountdown, nextSessionAt); }
 
 // Absentee filter state
+// The Vote Series panel with nothing to show (lib/empty-state.js): three ghost steps in the shape of a real series, so the panel says what will fill it.
+const VOTE_SERIES_EMPTY_HTML = EmptyState.html({ shape: 'timeline', title: 'No active vote series', text: 'Each vote will appear here as a step, in the order it is called.' });
 let _absenteePanel = null; // lib/missing-members.js, made in initEventListeners
 
 // State for House makeup
@@ -2133,7 +2135,10 @@ function renderWhipNoticesFeed(items) {
         : items;
 
     if (filtered.length === 0) {
-        feed.innerHTML = `<div class="whip-updates-loading">${whipNoticeFilter ? 'No ' + whipNoticeFilter + ' notices.' : 'No notices today.'}</div>`;
+        // a filter with no match: the filter itself, as its chip, is the way out (its click is the same data-filter-type handler the filter control uses)
+        feed.innerHTML = whipNoticeFilter
+            ? EmptyState.filtered({ shape: 'cards', noun: 'notices', term: WHIP_NOTICE_TYPE_LABEL[whipNoticeFilter] || String(whipNoticeFilter).toUpperCase(), tone: whipNoticeFilter, attrs: 'data-filter-type="all"', label: 'Show all notices' })
+            : '<div class="whip-updates-loading">No notices today.</div>';
         return;
     }
 
@@ -2806,7 +2811,7 @@ function updateVoteTimelineStatus() {
     // rather than waiting for the next full re-render (matches renderVoteTimeline).
     if (liveStatuses.length && liveStatuses.every(s => s === 'passed' || s === 'failed')) {
         currentVotesList = [];
-        body.innerHTML = '<div class="empty-note">No active vote series</div>';
+        body.innerHTML = VOTE_SERIES_EMPTY_HTML;
         const subHeader = document.getElementById('vote-series-sub-header');
         if (subHeader) subHeader.hidden = true;
         return;
@@ -3057,7 +3062,7 @@ function renderVoteTimeline(items) {
     const isStale = staleAnchor && (Date.now() - staleAnchor.getTime() > VOTE_SERIES_STALE_MS);
     if (allComplete || isStale) {
         currentVotesList = [];
-        body.innerHTML = '<div class="empty-note">No active vote series</div>';
+        body.innerHTML = VOTE_SERIES_EMPTY_HTML;
         hideSubHeader();
         return;
     }
@@ -4446,6 +4451,15 @@ function updateAmendmentVotes(items) {
     return changed;
 }
 
+// An empty column of Bills This Week (lib/empty-state.js). It says where the week's bills are when the other column has them, so "No bills subject to a rule" is never left unexplained.
+function emptyBillsColumn(kind, otherCount) {
+    if (billsTrackedFilterOn) return EmptyState.filtered({ shape: 'doc', noun: 'bills', term: 'TRACKED', cls: 'bills-tracked-filter-btn', label: 'Show all bills' });   // its click is the tracked filter's own toggle
+    const none = kind === 'rule' ? 'No bills subject to a rule' : 'No bills under suspension';
+    const where = kind === 'rule' ? 'under suspension' : 'subject to a rule';
+    if (!otherCount) return EmptyState.column('No bills this week yet', 'They are listed here once the weekly schedule is posted.');
+    return EmptyState.column(none, otherCount === 1 ? `This week\u2019s only bill is ${where}.` : `All ${otherCount} of this week\u2019s bills are ${where}.`);
+}
+
 // Update bills display
 function updateBillsDisplay() {
     if (!elements.ruleBillsList || !elements.suspensionBillsList) return;
@@ -4465,13 +4479,13 @@ function updateBillsDisplay() {
     if (sortedRule.length > 0) {
         setIfChanged(elements.ruleBillsList, sortedRule.map(bill => createBillCard(bill, 'rule')).join(''));
     } else {
-        setIfChanged(elements.ruleBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills subject to a rule'}</div>`);
+        setIfChanged(elements.ruleBillsList, emptyBillsColumn('rule', sortedSuspension.length));
     }
 
     if (sortedSuspension.length > 0) {
         setIfChanged(elements.suspensionBillsList, sortedSuspension.map(bill => createBillCard(bill, 'suspension')).join(''));
     } else {
-        setIfChanged(elements.suspensionBillsList, `<div class="empty-note">${billsTrackedFilterOn ? 'No tracked bills' : 'No bills under suspension'}</div>`);
+        setIfChanged(elements.suspensionBillsList, emptyBillsColumn('suspension', sortedRule.length));
     }
 
     const trackedFilterBtn = document.getElementById('bills-tracked-filter-btn');
@@ -6998,13 +7012,14 @@ function openDischargeSigners(id, number, trigger) {
                 <span class="dp-signer-date">${unsigned ? '' : escapeHtml(dischargeDate(s.date))}</span>
             </div>` };
         });
-        if (!entries.length) entries.push({ key: 'none', html: '<div class="empty-note">No matching signers</div>' });
+        if (!entries.length) entries.push({ key: 'none', html: q ? EmptyState.filtered({ shape: 'people', noun: 'signers', term: `\u201c${document.getElementById('dp-modal-search').value.trim()}\u201d`, attrs: 'data-clear-signer-search', label: 'Clear search' }) : '<div class="empty-note">No matching signers</div>' });
         reconcileList(document.getElementById('dp-modal-list'), entries);
     };
     const searchField = SearchField.mount(document.getElementById('dp-modal-search'), { fields: ['Name', 'State'] });
     // examples out of the list being searched: the signers, or the members who have not signed
     const syncExamples = () => { const pool = unsigned ? absent : signers; searchField?.setExamples([...pool.map((s) => s.name), ...pool.map((s) => s.stateName || s.state)]); };
     document.getElementById('dp-modal-search').addEventListener('input', draw);
+    document.getElementById('dp-modal-list').addEventListener('click', (e) => { if (!e.target.closest('[data-clear-signer-search]')) return; const inp = document.getElementById('dp-modal-search'); inp.value = ''; inp.dispatchEvent(new Event('input')); inp.focus(); });
     document.getElementById('dp-modal-order').addEventListener('click', (e) => {
         order = order === 'new' ? 'old' : 'new';
         const t = order === 'new' ? 'Newest first' : 'Oldest first';
