@@ -1812,8 +1812,8 @@ let nextSessionAt = null;
 function updateNextSessionCountdown() { SessionClock.show(elements.nextSessionCountdown, nextSessionAt); }
 
 // Absentee filter state
-// The Vote Series panel with nothing to show: three ghost steps (a dotted ring and a faint bar each, joined by a dotted line) in the shape of a real series, so the panel says what will fill it.
-const VOTE_SERIES_EMPTY_HTML = '<div class="empty-note vsn"><div class="vsn-tl" aria-hidden="true">' + [140, 100, 120].map((w) => '<div class="vsn-step"><svg class="vsn-dot" viewBox="0 0 14 14" width="14" height="14"><circle cx="7" cy="7" r="5.5"/></svg><span class="vsn-bar" style="width:' + w + 'px"></span></div>').join('') + '</div><div class="vsn-h">No active vote series</div><p class="vsn-p">Each vote will appear here as a step, in the order it is called.</p></div>';
+// The Vote Series panel with nothing to show (lib/empty-state.js): three ghost steps in the shape of a real series, so the panel says what will fill it.
+const VOTE_SERIES_EMPTY_HTML = EmptyState.html({ shape: 'timeline', title: 'No active vote series', text: 'Each vote will appear here as a step, in the order it is called.' });
 let _absenteePanel = null; // lib/missing-members.js, made in initEventListeners
 
 // State for House makeup

@@ -26,6 +26,9 @@ export async function onRequest(context) {
 async function handle({ request, next }) {
   const url = new URL(request.url);
 
+  // TEMPORARY: the empty-states gallery is for the staging sites only.
+  if (url.pathname.startsWith('/empty-states') && !isStagingHost(url.hostname)) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+
   // Pages serves the whole repository root. Tool settings in it are not part of the site.
   if (/^\/\.(claude|codex|github)(\/|$)/.test(url.pathname)) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
 
