@@ -7765,7 +7765,8 @@ async function handleRequest(request, env) {
     return await handleHlsUrl(env);
   } else if (path === '/api/domewatch-floor' && request.method === 'GET') {
     return await handleDomeWatchFloor(env);
-  } else if (path === '/api/stream/votes/current' && request.method === 'GET') {
+  } else if (path === '/api/stream/votes/current' && (request.method === 'GET' || (request.method === 'POST' && url.searchParams.has('ping')))) {
+    // GET opens the live-vote stream; the page's POST ?ping=<id> every 45 s keeps its connection alive (the coordinator drops a viewer who has not pinged in 2 minutes). The POST used to fall through to 404.
     return await handleDomeWatchStream(request, env);
   } else if (path === '/api/stream/votes/current/status' && request.method === 'GET') {
     const coordinator = await getStreamCoordinator(env);
