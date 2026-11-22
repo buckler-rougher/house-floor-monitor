@@ -1111,7 +1111,6 @@
   height: 180px;
   border-color: var(--accent-blue);
   z-index: 100;
-  background: #000;
   transform: translateY(56px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
@@ -1144,18 +1143,27 @@
 }
   .weather-panel video {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
   object-fit: cover;
   opacity: 0;
   transition: opacity var(--dur-350) ease;
   pointer-events: none;
 }
-  .weather-panel:hover video {
+  .weather-panel.is-live:hover video {
   opacity: 1;
 }
+  @media (min-width: 1120px) {
+    .header-right { position: relative; }
+    .header-right::before { content: ''; flex: none; width: calc(76px + var(--sp-16)); height: 60px; }
+    html.replay-mode .header-right::before { display: none; }
+    .weather-panel { position: absolute; top: calc(50% - 30px); right: calc(100% - 76px); margin: 0; transform: none; will-change: width, height, top; transition-property: width, height, top, background, border-color, box-shadow; }
+    .weather-panel:hover, .weather-panel:focus-within { top: calc(50% - 34px); transform: none; }
+    .weather-panel:not(.is-live):hover::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.03) 100%); background-size: 200% 100%; animation: pending-shimmer 1.4s linear infinite; pointer-events: none; }
+  }
   .quorum-panel {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -5676,12 +5684,11 @@ font-family: var(--font-mono);
     height: 180px;
     border-color: var(--accent-blue);
     z-index: 100;
-    background: #000;
     transform: translateY(56px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
-  .weather-panel:focus-within .weather-info { opacity: 0; }
-  .weather-panel:focus-within video { opacity: 1; }
+  .weather-panel.is-live:focus-within .weather-info { opacity: 0; }
+  .weather-panel.is-live:focus-within video { opacity: 1; }
   .weather-panel:focus-within .capcam-live-dot {
     visibility: visible;
     animation: pip-blink 1.4s ease-in-out infinite;
@@ -6292,7 +6299,7 @@ font-family: var(--font-mono);
     .weather-panel:hover, .weather-panel:focus-within { width: auto; height: auto; transform: none; background: none; box-shadow: none; border-color: var(--border-color); z-index: auto; }
     .weather-panel:hover .weather-info, .weather-panel:focus-within .weather-info { opacity: 1; }
     .weather-panel video { left: 50%; top: 100%; width: min(320px, calc(100vw - 32px)); height: auto; aspect-ratio: 16 / 9; transform: translate(-50%, var(--sp-8)); border: 1px solid var(--accent-blue); border-radius: var(--radius-8); background: #000; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); z-index: 20; }
-    .weather-panel:hover video, .weather-panel:focus-within video { opacity: 1; }
+    .weather-panel.is-live:hover video, .weather-panel.is-live:focus-within video { opacity: 1; }
     .capcam-live-dot { display: none; }
     .next-votes { grid-area: nv; display: block; padding: var(--sp-6) var(--sp-16); border-top: 1px solid var(--border-color); line-height: 1.4; }
     .next-votes[data-empty] { display: none; }
