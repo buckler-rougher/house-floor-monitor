@@ -7543,7 +7543,8 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-ring-solid path { fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .es-error .es-ring-solid circle, .es-error .es-ring-solid path { stroke: var(--accent-amber); }
 .es-error .es-eh { color: var(--es-ink); font-weight: 600; }
-.es-error .es-p { flex-basis: 100%; text-align: center; }
+.es-error .es-p { flex-basis: 100%; max-width: none; text-align: center; }
+.tweets-feed > .es { min-height: 200px; align-content: center; }
 .es-h-sm { font-size: var(--fs-md); }
 .es-column { padding: var(--sp-16) var(--sp-10); }
 .es-column .es-ghost { width: 100%; max-width: 260px; }
