@@ -2478,9 +2478,10 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   /* centred with auto margins, not a translate, so the glide (lib/floor-feed.js) is the only thing moving it. The width is also capped by the height left after the header, speaker line, and footer (about 230px), so the whole panel always fits. */
   inset: 0;
   margin: auto;
-  height: fit-content;
+  --feed-w: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
+  width: var(--feed-w);
+  height: calc(var(--feed-chrome, 130px) + var(--feed-w) * 9 / 16);   /* a definite height, so the auto margins centre it (they do not with fit-content) */
   transform: none;
-  width: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
   max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;

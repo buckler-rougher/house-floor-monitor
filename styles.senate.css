@@ -1711,9 +1711,10 @@
 
   inset: 0;
   margin: auto;
-  height: fit-content;
+  --feed-w: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
+  width: var(--feed-w);
+  height: calc(var(--feed-chrome, 130px) + var(--feed-w) * 9 / 16);
   transform: none;
-  width: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
   max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
