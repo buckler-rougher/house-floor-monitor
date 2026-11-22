@@ -1868,6 +1868,7 @@
   .clamp-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.25; stroke-linecap: round; }
   .clamp.is-open .clamp-toggle .v { display: none; }
   .clamp.is-short .clamp-toggle { display: none; }
+  .absentee-panel .clamp.is-open { padding-bottom: calc(24px + var(--sp-8)); }
   @media (prefers-reduced-motion: reduce) {
     .clamp, .clamp-body, .clamp-body::after { transition: none; }
   }
