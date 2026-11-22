@@ -2480,10 +2480,17 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   margin: auto;
   height: fit-content;
   transform: none;
-  width: min(92vw, 1100px, calc((100dvh - 230px) * 16 / 9));
+  width: min(96vw, 1800px, calc((100dvh - 32px - var(--feed-chrome, 130px)) * 16 / 9));
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
   z-index: 1100;
   border-radius: var(--radius-12);
 }
+
+/* The picture takes whatever height the panel has left; if a window is ever too short it letterboxes in black rather than clipping. */
+.floor-feed.pip-expanded .floor-feed-video { flex: 1 1 auto; min-height: 0; }
+.floor-feed.pip-expanded .floor-feed-media { object-fit: contain; }
 
 /* While the panel glides between corner and centre, CSS transitions stay out of its way. */
 .floor-feed.is-gliding { transition: none; }
