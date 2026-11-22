@@ -7690,8 +7690,8 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-doc .es-lines { gap: var(--sp-8); }
 .es-meter { display: block; width: 100%; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text-muted) 9%, transparent); overflow: hidden; }
 .es-meter i { display: block; width: 22%; height: 100%; background: color-mix(in srgb, var(--text-muted) 24%, transparent); }
-.es-h { font-size: var(--fs-lg); font-weight: 600; color: var(--text-secondary); }
-.es-p { margin: 0; max-width: 46ch; font-size: var(--fs-md); color: var(--text-muted); line-height: 1.5; }
+.es-h { font-size: var(--fs-lg); font-weight: 600; color: var(--text-muted); }
+.es-p { margin: 0; max-width: 46ch; font-size: var(--fs-md); color: color-mix(in srgb, var(--text-muted) 70%, transparent); line-height: 1.5; }
 .es-next { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }
 .empty-note.es-small, .empty-note.es-error { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: var(--sp-8); padding: var(--sp-14) var(--sp-16); font-size: var(--fs-md); }
 .es-small { color: var(--text-muted); }
