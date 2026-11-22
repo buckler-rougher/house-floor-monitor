@@ -3778,10 +3778,10 @@ async function fetchBillsThisWeek() {
     } catch (error) {
         console.error('Error fetching bills:', error);
         if (elements.ruleBillsList) {
-            setIfChanged(elements.ruleBillsList, `${EmptyState.error(SourceError.text('bills', 'docs'))}`);
+            setIfChanged(elements.ruleBillsList, `${SourceError.panel('bills', 'docs', 'column')}`);
         }
         if (elements.suspensionBillsList) {
-            setIfChanged(elements.suspensionBillsList, `${EmptyState.error(SourceError.text('bills', 'docs'))}`);
+            setIfChanged(elements.suspensionBillsList, `${SourceError.panel('bills', 'docs', 'column')}`);
         }
     }
 }
@@ -6645,7 +6645,7 @@ function loadCommitteeMeetings() {
     fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?date=' + encodeURIComponent(today))
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _committee = d; renderCommitteeMeetings(); })
-        .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), EmptyState.error(SourceError.text('committee meetings', 'docs'))); });
+        .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), SourceError.panel('committee meetings', 'docs', 'rows')); });
 }
 
 // DISCHARGE PETITIONS: the House Clerk's list for this Congress, each with the number of signatures it has against the 218 it needs, through the Worker's
@@ -6935,7 +6935,7 @@ function loadDischargePetitions() {
     fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _discharge = d; renderDischargePetitions(); restoreDischargeSigners(); })
-        .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), EmptyState.error(SourceError.text('discharge petitions', 'clerk'))); });
+        .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), SourceError.panel('discharge petitions', 'clerk', 'doc')); });
 }
 
 // Everyone who signed one petition, in a window: searchable, by party, newest signers first or in the order signed.
@@ -7077,7 +7077,7 @@ function openDischargeSigners(id, number, trigger) {
             syncExamples();
             if (globalThis.SourcePop) SourcePop.set(o, { request: `GET https://clerk.house.gov/DischargePetition/${id}`, html: `<!-- ${d.count} signers: the signature table of the petition's page -->\n${d.rows || ''}`, at: d.at });
         })
-        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = `${EmptyState.error(SourceError.text('signers', 'clerk'))}`; });
+        .catch(() => { const l = document.getElementById('dp-modal-list'); if (l) l.innerHTML = `${SourceError.panel('signers', 'clerk', 'people')}`; });
     requestAnimationFrame(() => requestAnimationFrame(load));
 }
 document.addEventListener('click', (e) => {
@@ -7207,7 +7207,7 @@ async function updateProceedingsFeed() {
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
-        setIfChanged(elements.proceedingsFeed, EmptyState.error(SourceError.text('proceedings', 'clerk')));
+        setIfChanged(elements.proceedingsFeed, SourceError.panel('proceedings', 'clerk', 'rows'));
     }
 }
 
