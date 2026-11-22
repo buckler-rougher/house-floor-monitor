@@ -4184,9 +4184,8 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
 .tweet-item:hover { background: rgba(255, 255, 255, 0.022); }
 .tweet-row { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: var(--sp-10); }
 .tweet-main { min-width: 0; }
-.tweet-rt-bar { display: flex; align-items: center; gap: var(--sp-10); margin-bottom: var(--sp-2); font-size: 11.5px; font-weight: 600; line-height: 1.2; color: var(--text-muted); }
-.tweet-rt-bar .gi { width: 32px; flex: none; text-align: right; }
-.tweet-rt-bar a { color: inherit; text-decoration: none; }
+.tweet-rt-bar { margin: 0 0 var(--sp-2); padding-left: calc(32px + var(--sp-10)); font-size: 11px; line-height: 1.3; color: var(--text-muted); }   /* "Retweeted by @name": quiet text over the name, no icon */
+.tweet-rt-bar a { color: inherit; font-family: var(--font-mono); text-decoration: none; }
 .tweet-rt-bar a:hover { text-decoration: underline; }
 .tweet-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(139, 148, 158, 0.16); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-size: var(--fs-md); font-weight: 700; flex-shrink: 0; overflow: hidden; }
 a.tweet-avatar { cursor: pointer; }
