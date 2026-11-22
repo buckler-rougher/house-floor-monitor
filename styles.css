@@ -13572,7 +13572,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 
 /* EMPTY STATES (lib/empty-state.js): a ghost of the real thing, drawn in the site's own muted tones, with a headline and one line. Rings are zero-length round-capped dashes, so they are dots. */
-.empty-note.es { --es-ink: #4b5260; --es-ghost: var(--es-ink); display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--es-ink); }   /* ONE grey, opaque, for everything in an empty state: the words, the rings, the bars, the dotted lines. #4b5260 sits just above the panel colour, so it stays behind the content (about 2.3:1: deliberately quiet). */
+.empty-note.es { --es-ink: #4b5260; --es-ghost: var(--bg-dark); display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--es-ink); }   /* The ghost shapes (rings, bars, dotted lines, outlines) are the PAGE's own dark (--bg-dark), so they read as cut into the panel; the words are one quiet grey. */
 .es-ghost { display: grid; justify-items: start; margin: var(--sp-4) 0; }
 .es-step { display: flex; align-items: center; gap: var(--sp-12); position: relative; padding: var(--sp-6) 0; }
 .es-ring { flex: none; overflow: visible; }
