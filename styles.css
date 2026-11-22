@@ -1671,10 +1671,9 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   pointer-events: none;
 }
 
-.weather-panel.is-live:hover .weather-info {
+.weather-panel:hover .weather-info {
   opacity: 0;
 }
-.weather-panel.is-live:hover { background: #000; }
 
 .weather-temp {
   font-size: var(--fs-5xl);
@@ -1718,7 +1717,7 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   html.replay-mode .header-right::before { display: none; }
   .weather-panel { position: absolute; top: calc(50% - 30px); right: calc(100% - 76px); margin: 0; transform: none; will-change: width, height, top; transition-property: width, height, top, background, border-color, box-shadow; }
   .weather-panel:hover, .weather-panel:focus-within { top: calc(50% - 34px); transform: none; }
-  .weather-panel:not(.is-live):hover::after { content: 'Connecting to the Capitol camera'; position: absolute; left: 0; right: 0; bottom: var(--sp-12); text-align: center; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); letter-spacing: var(--track-wide); }
+  .weather-panel:not(.is-live):hover::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.03) 100%); background-size: 200% 100%; animation: pending-shimmer 1.4s linear infinite; pointer-events: none; }
 }
 
 /* Quorum Panel */
@@ -10200,7 +10199,6 @@ h1.brand-text {
 }
 .weather-panel.is-live:focus-within .weather-info { opacity: 0; }
 .weather-panel.is-live:focus-within video { opacity: 1; }
-.weather-panel.is-live:focus-within { background: #000; }
 .weather-panel:focus-within .capcam-live-dot {
     visibility: visible;
     animation: pip-blink 1.4s ease-in-out infinite;
