@@ -13576,7 +13576,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-ghost { display: grid; justify-items: start; margin: var(--sp-4) 0; }
 .es-step { display: flex; align-items: center; gap: var(--sp-12); position: relative; padding: var(--sp-6) 0; }
 .es-ring { flex: none; overflow: visible; }
-.es-ring circle { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0 3.14; }
+.es-ring circle { fill: none; stroke: color-mix(in srgb, var(--text-muted) 48%, transparent); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0 3.14; }   /* the ghost is background: dimmer than the words */
 .es-timeline .es-step + .es-step::before { content: ""; position: absolute; left: 6px; bottom: calc(50% + 7px + var(--sp-2)); height: var(--sp-8); border-left: 1.5px dotted var(--border-color); }
 .es-bar { display: block; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 16%, transparent); }
 .es-bar.es-faint { background: color-mix(in srgb, var(--text-muted) 9%, transparent); }
