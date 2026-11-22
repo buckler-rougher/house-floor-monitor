@@ -2475,15 +2475,18 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
 
 /* Expanded PiP — centered, large */
 .floor-feed.pip-expanded {
-  bottom: auto;
-  right: auto;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(92vw, 1100px);
+  /* centred with auto margins, not a translate, so the glide (lib/floor-feed.js) is the only thing moving it. The width is also capped by the height left after the header, speaker line, and footer (about 230px), so the whole panel always fits. */
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  transform: none;
+  width: min(92vw, 1100px, calc((100dvh - 230px) * 16 / 9));
   z-index: 1100;
   border-radius: var(--radius-12);
 }
+
+/* While the panel glides between corner and centre, CSS transitions stay out of its way. */
+.floor-feed.is-gliding { transition: none; }
 
 /* Full screen: the controls are made for a 220px card, so they grow with the picture. */
 .floor-feed.pip-expanded .floor-feed-header { padding: var(--sp-12) var(--sp-20); }

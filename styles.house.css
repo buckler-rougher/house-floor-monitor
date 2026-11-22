@@ -2216,15 +2216,17 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
 }
 
 .floor-feed.pip-expanded {
-  bottom: auto;
-  right: auto;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(92vw, 1100px);
+
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  transform: none;
+  width: min(92vw, 1100px, calc((100dvh - 230px) * 16 / 9));
   z-index: 1100;
   border-radius: var(--radius-12);
 }
+
+.floor-feed.is-gliding { transition: none; }
 
 .floor-feed.pip-expanded .floor-feed-header { padding: var(--sp-12) var(--sp-20); }
 .floor-feed.pip-expanded .floor-feed-header-right { gap: var(--sp-14); }
