@@ -7683,7 +7683,7 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-timeline .es-step + .es-step::before { content: ""; position: absolute; left: 6px; bottom: calc(50% + 7px + var(--sp-2)); height: var(--sp-8); border-left: 1.5px dotted var(--es-ghost); }
 .es-bar { display: block; height: 8px; border-radius: 4px; background: var(--es-ghost); }
 .es-bar.es-faint { background: var(--es-ghost); }
-.es-bar.es-chip { height: 14px; border-radius: 5px; }
+.es-bar.es-tchip { height: 14px; border-radius: 5px; }
 .es-card { display: flex; align-items: flex-start; gap: var(--sp-12); padding: var(--sp-10) var(--sp-14); border: 1.5px dotted var(--es-ghost); border-radius: var(--radius-8); margin: var(--sp-4) 0; }
 .es-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--es-ghost); }
 .es-lines { display: grid; gap: var(--sp-6); }
