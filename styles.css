@@ -13450,7 +13450,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-small { color: var(--es-ink); }
 .es-ring-solid circle { stroke-dasharray: none; stroke-width: 1.3; }
 .es-ring-solid path { fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-.es-error .es-ring-solid circle, .es-error .es-ring-solid path { stroke: var(--accent-amber); }
+/* an error is the empty state in a faded red: one colour for the words, the ghost and the ring */
+.empty-note.es.es-bad, .empty-note.es.es-error { --es-ink: color-mix(in srgb, var(--accent-red) 62%, transparent); }
+.es-error .es-ring-solid circle, .es-error .es-ring-solid path { stroke: var(--es-ink); }
 .es-error .es-eh { color: var(--es-ink); font-weight: 600; }
 .es-error .es-p { flex-basis: 100%; max-width: none; text-align: center; }   /* the hint on its own line under the message */
 .tweets-feed > .es { min-height: 200px; align-content: center; }   /* the feed's empty and unavailable states sit in the middle of the feed */
