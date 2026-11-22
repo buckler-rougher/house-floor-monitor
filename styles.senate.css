@@ -1709,11 +1709,15 @@
 }
   .floor-feed.pip-expanded {
 
-  inset: 0;
-  margin: auto;
+  inset: auto;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  top: calc((100dvh - var(--feed-h)) / 2);
   --feed-w: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
   width: var(--feed-w);
-  height: calc(var(--feed-chrome, 130px) + var(--feed-w) * 9 / 16);
+  --feed-h: calc(var(--feed-chrome, 130px) + var(--feed-w) * 9 / 16);
+  height: var(--feed-h);
   transform: none;
   max-height: calc(100dvh - 48px);
   display: flex;
