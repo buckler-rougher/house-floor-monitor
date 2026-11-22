@@ -4851,6 +4851,7 @@ a.tweet-quote:hover {
 .cal-day-cancelled { background: rgba(139,148,158,0.10); }
 .cal-day-cancelled:hover { background: rgba(139,148,158,0.18); }
 .cal-day-today     { border-color: rgba(88, 166, 255, 0.35); }
+.cal-day.cal-day-past { opacity: 0.42; filter: saturate(0.5); }   /* days already gone fade back, so the ones still ahead stand out */
 .cal-num {
     position: absolute;
     top: 2px;
