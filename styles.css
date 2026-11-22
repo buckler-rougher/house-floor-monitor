@@ -13572,30 +13572,30 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 
 /* EMPTY STATES (lib/empty-state.js): a ghost of the real thing, drawn in the site's own muted tones, with a headline and one line. Rings are zero-length round-capped dashes, so they are dots. */
-.empty-note.es { display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--text-secondary); }
+.empty-note.es { --es-ink: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--es-ink); }   /* ONE grey for everything in an empty state: the words, the ghost, the rings. Background, not white. */
 .es-ghost { display: grid; justify-items: start; margin: var(--sp-4) 0; }
 .es-step { display: flex; align-items: center; gap: var(--sp-12); position: relative; padding: var(--sp-6) 0; }
 .es-ring { flex: none; overflow: visible; }
-.es-ring circle { fill: none; stroke: color-mix(in srgb, var(--text-muted) 48%, transparent); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0 3.14; }   /* the ghost is background: dimmer than the words */
+.es-ring circle { fill: none; stroke: var(--es-ink); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 0 3.14; }   /* the ghost is background: dimmer than the words */
 .es-timeline .es-step + .es-step::before { content: ""; position: absolute; left: 6px; bottom: calc(50% + 7px + var(--sp-2)); height: var(--sp-8); border-left: 1.5px dotted var(--border-color); }
-.es-bar { display: block; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--text-muted) 16%, transparent); }
-.es-bar.es-faint { background: color-mix(in srgb, var(--text-muted) 9%, transparent); }
+.es-bar { display: block; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--es-ink) 16%, transparent); }
+.es-bar.es-faint { background: color-mix(in srgb, var(--es-ink) 9%, transparent); }
 .es-bar.es-chip { height: 14px; border-radius: 5px; }
 .es-card { display: flex; align-items: flex-start; gap: var(--sp-12); padding: var(--sp-10) var(--sp-14); border: 1.5px dotted var(--border-color); border-radius: var(--radius-8); margin: var(--sp-4) 0; }
-.es-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--text-muted) 16%, transparent); }
+.es-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--es-ink) 16%, transparent); }
 .es-lines { display: grid; gap: var(--sp-6); }
 .es-doc .es-lines { gap: var(--sp-8); }
-.es-meter { display: block; width: 100%; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text-muted) 9%, transparent); overflow: hidden; }
-.es-meter i { display: block; width: 22%; height: 100%; background: color-mix(in srgb, var(--text-muted) 24%, transparent); }
-.es-h { font-size: var(--fs-lg); font-weight: 600; color: var(--text-muted); }   /* background, not a heading: a grey, not white */
-.es-p { margin: 0; max-width: 46ch; font-size: var(--fs-md); color: color-mix(in srgb, var(--text-muted) 70%, transparent); line-height: 1.5; }
+.es-meter { display: block; width: 100%; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--es-ink) 9%, transparent); overflow: hidden; }
+.es-meter i { display: block; width: 22%; height: 100%; background: color-mix(in srgb, var(--es-ink) 24%, transparent); }
+.es-h { font-size: var(--fs-lg); font-weight: 600; color: var(--es-ink); }
+.es-p { margin: 0; max-width: 46ch; font-size: var(--fs-md); color: var(--es-ink); line-height: 1.5; }
 .es-next { font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }
 .empty-note.es-small, .empty-note.es-error { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: var(--sp-8); padding: var(--sp-14) var(--sp-16); font-size: var(--fs-md); }
-.es-small { color: var(--text-muted); }
+.es-small { color: var(--es-ink); }
 .es-ring-solid circle { stroke-dasharray: none; stroke-width: 1.3; }
 .es-ring-solid path { fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .es-error .es-ring-solid circle, .es-error .es-ring-solid path { stroke: var(--accent-amber); }
-.es-error .es-eh { color: var(--text-primary); font-weight: 600; }
+.es-error .es-eh { color: var(--es-ink); font-weight: 600; }
 .es-error .es-p { flex-basis: 100%; text-align: center; }
 .es-h-sm { font-size: var(--fs-md); }
 .es-column { padding: var(--sp-16) var(--sp-10); }
@@ -13603,21 +13603,21 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-card.es-mini { width: 100%; padding: var(--sp-8) var(--sp-12); margin: var(--sp-4) 0; }
 .es-mini .es-lines { width: 100%; }
 .es-mini .es-bar { max-width: 100%; }
-.es-week { display: inline-flex; align-items: center; gap: var(--sp-12); color: var(--text-muted); font-size: var(--fs-sm); line-height: 1; }
+.es-week { display: inline-flex; align-items: center; gap: var(--sp-12); color: var(--es-ink); font-size: var(--fs-sm); line-height: 1; }
 .es-days { display: inline-flex; gap: 4px; }
 .es-day { display: inline-block; width: 22px; height: 18px; border-radius: var(--radius-3); border: 1px dotted var(--border-color); }
 .empty-note.es-detail { flex-direction: column; align-items: center; text-align: center; padding: var(--sp-16) 0; gap: var(--sp-8); }
 .es-lines-ghost { display: grid; gap: var(--sp-6); margin: 0; }
-.es-bar.es-head { height: 6px; background: color-mix(in srgb, var(--text-muted) 26%, transparent); }
-.es-wk { color: var(--text-muted); font-size: var(--fs-sm); }
+.es-bar.es-head { height: 6px; background: color-mix(in srgb, var(--es-ink) 26%, transparent); }
+.es-wk { color: var(--es-ink); font-size: var(--fs-sm); }
 .empty-note.es.es-week { display: inline-flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: var(--sp-12); padding: 0; text-align: left; }
-.es-term { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-primary); padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: color-mix(in srgb, var(--text-muted) 10%, transparent); max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.es-term { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--es-ink); padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: color-mix(in srgb, var(--text-muted) 10%, transparent); max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .es-clear-btn { margin-top: var(--sp-4); font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); background: none; border: 1px solid var(--border-color); border-radius: var(--radius-6); padding: 6px 14px; cursor: pointer; transition: color .2s, border-color .2s; }
 .es-clear-btn:hover { color: var(--accent-blue); border-color: var(--accent-blue); }
 .es-people .es-step { gap: var(--sp-12); }
 .es-h .bills-sort-btn { margin-left: var(--sp-8); vertical-align: middle; }
 .esf-bar { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); padding: var(--sp-8) var(--sp-14); margin: calc(-1 * var(--sp-12)) calc(-1 * var(--sp-6)) var(--sp-8); border-bottom: 1px solid var(--border-color); background: color-mix(in srgb, var(--accent-blue) 7%, transparent); font-size: var(--fs-sm); color: var(--text-secondary); }
-.esf-bar b { color: var(--text-primary); font-weight: 600; }
+.esf-bar b { color: var(--es-ink); font-weight: 600; }
 .esf-link { font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--accent-blue); background: none; border: 0; padding: 0; cursor: pointer; }
 .esf-link:hover { text-decoration: underline; }
 .es-h .es-term-in { color: var(--accent-blue); }
@@ -13637,4 +13637,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .es-chip-d { color: var(--accent-blue); }
 .es-chip-r { color: var(--accent-red); }
 .es-chip-i { color: var(--accent-purple); }
-.es-mono { margin: 0; font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); color: var(--text-muted); }
+.es-mono { margin: 0; font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); color: var(--es-ink); }
