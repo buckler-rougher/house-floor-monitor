@@ -7675,7 +7675,7 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
   #suggest-fab:hover .hb-dot:nth-child(3) { animation-delay: .3s; }
   @keyframes hbtype { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
 }
-.empty-note.es { --es-ink: color-mix(in srgb, #9aaecb 45%, transparent); --es-ghost: var(--es-ink); display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--es-ink); }
+.empty-note.es { --es-ink: color-mix(in srgb, var(--text-secondary) 60%, transparent); --es-ghost: var(--es-ink); display: flex; flex-direction: column; align-items: center; gap: var(--sp-8); color: var(--es-ink); }
 .es-ghost { display: grid; justify-items: start; margin: var(--sp-4) 0; }
 .es-step { display: flex; align-items: center; gap: var(--sp-12); position: relative; padding: var(--sp-6) 0; }
 .es-ring { flex: none; overflow: visible; }
