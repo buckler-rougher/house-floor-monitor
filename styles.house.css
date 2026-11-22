@@ -1511,10 +1511,11 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
 
 .weather-panel video {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
   object-fit: cover;
   opacity: 0;
   transition: opacity var(--dur-350) ease;
