@@ -10409,7 +10409,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    absenteePanel().render({ members, info, emptyText: 'All Members voted' });
+    absenteePanel().render({ members, info, emptyText: 'All Members voted', who: 'Members' });
 }
 
 // Update API Status Indicator
