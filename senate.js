@@ -1367,7 +1367,7 @@ async function loadProceedings() {
         setProceedingsManifest(data);
     } catch (e) {
         if (!feed.querySelector('.proceedings-measure')) {
-            setIfChanged(feed, EmptyState.error(SourceError.text('floor activity', 'senate')));
+            setIfChanged(feed, SourceError.panel('floor activity', 'senate', 'rows'));
         }
         console.error('Proceedings fetch failed:', e);
     }
