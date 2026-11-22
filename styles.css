@@ -2455,7 +2455,10 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
 
 /* Backdrop — blurs page behind expanded PiP */
 .pip-backdrop {
-  display: none;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--dur-350) ease, visibility 0s linear var(--dur-350);
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.72);
@@ -2465,7 +2468,9 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   cursor: pointer;
 }
 .pip-backdrop.pip-backdrop-visible {
-  display: block;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity var(--dur-350) ease, visibility 0s;
 }
 
 /* Expanded PiP — centered, large */
@@ -2479,6 +2484,20 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   z-index: 1100;
   border-radius: var(--radius-12);
 }
+
+/* Full screen: the controls are made for a 220px card, so they grow with the picture. */
+.floor-feed.pip-expanded .floor-feed-header { padding: var(--sp-12) var(--sp-20); }
+.floor-feed.pip-expanded .floor-feed-header-right { gap: var(--sp-14); }
+.floor-feed.pip-expanded .floor-feed-label { font-size: var(--fs-3xl); }
+.floor-feed.pip-expanded .pip-live-dot { width: 10px; height: 10px; }
+.floor-feed.pip-expanded .pip-mute-btn { width: 40px; height: 40px; border-radius: var(--radius-8); }
+.floor-feed.pip-expanded .pip-mute-btn svg { width: 26px; height: 26px; }
+.floor-feed.pip-expanded .pip-close-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; font-size: var(--fs-6xl); border-radius: var(--radius-8); padding: 0; }
+.floor-feed.pip-expanded .pip-mute-btn:hover, .floor-feed.pip-expanded .pip-close-btn:hover, .floor-feed.pip-expanded .pip-cc-btn:hover { background: var(--bg-card); }
+.floor-feed.pip-expanded .floor-feed-footer { padding: var(--sp-10) var(--sp-20); }
+.floor-feed.pip-expanded .floor-feed-source { font-size: var(--fs-lg); }
+.floor-feed.pip-expanded .pip-cc-btn { width: 44px; height: 36px; border-radius: var(--radius-8); }
+.floor-feed.pip-expanded .pip-cc-btn svg { width: 30px; height: 22px; }
 .floor-feed.pip-expanded .floor-feed-overlay {
   pointer-events: none; /* let user interact with video controls */
 }
@@ -2497,7 +2516,6 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   transition: opacity var(--dur-150);
 }
 .pip-close-btn:hover { opacity: 1; }
-.floor-feed.pip-expanded .pip-close-btn { display: inline; }
 
 /* Mute/unmute control — always visible (collapsed + expanded). Fixed-size box
    and block icons so hover/blur and the icon swap never shift layout. */
