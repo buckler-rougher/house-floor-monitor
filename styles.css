@@ -1657,7 +1657,6 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   height: 180px;
   border-color: var(--accent-blue);
   z-index: 100;
-  background: #000;
   transform: translateY(56px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
@@ -1672,9 +1671,10 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   pointer-events: none;
 }
 
-.weather-panel:hover .weather-info {
+.weather-panel.is-live:hover .weather-info {
   opacity: 0;
 }
+.weather-panel.is-live:hover { background: #000; }
 
 .weather-temp {
   font-size: var(--fs-5xl);
@@ -1706,7 +1706,7 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   pointer-events: none;
 }
 
-.weather-panel:hover video {
+.weather-panel.is-live:hover video {
   opacity: 1;
 }
 
@@ -1716,8 +1716,9 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   .header-right { position: relative; }
   .header-right::before { content: ''; flex: none; width: calc(76px + var(--sp-16)); height: 60px; }
   html.replay-mode .header-right::before { display: none; }
-  .weather-panel { position: absolute; top: 50%; right: calc(100% - 76px); margin: 0; transform: translateY(-50%); will-change: width, height, transform; }
-  .weather-panel:hover { transform: translateY(calc(-50% + 56px)); }
+  .weather-panel { position: absolute; top: calc(50% - 30px); right: calc(100% - 76px); margin: 0; transform: none; will-change: width, height, top; transition-property: width, height, top, background, border-color, box-shadow; }
+  .weather-panel:hover, .weather-panel:focus-within { top: calc(50% - 34px); transform: none; }
+  .weather-panel:not(.is-live):hover::after { content: 'Connecting to the Capitol camera'; position: absolute; left: 0; right: 0; bottom: var(--sp-12); text-align: center; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); letter-spacing: var(--track-wide); }
 }
 
 /* Quorum Panel */
@@ -10194,12 +10195,12 @@ h1.brand-text {
     height: 180px;
     border-color: var(--accent-blue);
     z-index: 100;
-    background: #000;
     transform: translateY(56px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
-.weather-panel:focus-within .weather-info { opacity: 0; }
-.weather-panel:focus-within video { opacity: 1; }
+.weather-panel.is-live:focus-within .weather-info { opacity: 0; }
+.weather-panel.is-live:focus-within video { opacity: 1; }
+.weather-panel.is-live:focus-within { background: #000; }
 .weather-panel:focus-within .capcam-live-dot {
     visibility: visible;
     animation: pip-blink 1.4s ease-in-out infinite;
@@ -11162,7 +11163,7 @@ html.replay-mode .weather-panel { display: none; }
     .weather-panel:hover, .weather-panel:focus-within { width: auto; height: auto; transform: none; background: none; box-shadow: none; border-color: var(--border-color); z-index: auto; }
     .weather-panel:hover .weather-info, .weather-panel:focus-within .weather-info { opacity: 1; }
     .weather-panel video { left: 50%; top: 100%; width: min(320px, calc(100vw - 32px)); height: auto; aspect-ratio: 16 / 9; transform: translate(-50%, var(--sp-8)); border: 1px solid var(--accent-blue); border-radius: var(--radius-8); background: #000; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); z-index: 20; }
-    .weather-panel:hover video, .weather-panel:focus-within video { opacity: 1; }
+    .weather-panel.is-live:hover video, .weather-panel.is-live:focus-within video { opacity: 1; }
     .capcam-live-dot { display: none; }
     /* the next-votes line is a row of its own under the status bar, on every narrow width (it was hidden on small phones, and wrapped inside the date cell on larger ones) */
     .next-votes { grid-area: nv; display: block; padding: var(--sp-6) var(--sp-16); border-top: 1px solid var(--border-color); line-height: 1.4; }
