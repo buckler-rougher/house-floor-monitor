@@ -2480,8 +2480,8 @@ body.speaker-election-live.tellers-mode .tellers-column { display: none; }
   margin: auto;
   height: fit-content;
   transform: none;
-  width: min(96vw, 1800px, calc((100dvh - 32px - var(--feed-chrome, 130px)) * 16 / 9));
-  max-height: calc(100dvh - 32px);
+  width: min(96vw, 1800px, calc((100dvh - 56px - var(--feed-chrome, 130px)) * 16 / 9));
+  max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
   z-index: 1100;
