@@ -4472,6 +4472,14 @@ function updateBillsDisplay() {
 
     billDataMap.clear();
 
+    // Nothing has arrived yet: a loading placeholder, not "no bills" (applyBillsData stamps lastUpdated).
+    if (billsData.lastUpdated == null && !billsTrackedFilterOn) {
+        const sk = '<div class="panel-skeleton" data-kind="cards" role="status" aria-label="Loading bills"><i></i><i></i><i></i></div>';
+        setIfChanged(elements.ruleBillsList, sk);
+        setIfChanged(elements.suspensionBillsList, sk);
+        return;
+    }
+
     const filterTracked = arr => billsTrackedFilterOn ? arr.filter(b => isBillTracked(b.id)) : arr;
     const sortedRule = sortBillsForDisplay(filterTracked(billsData.ruleBills));
     const sortedSuspension = sortBillsForDisplay(filterTracked(billsData.suspensionBills));
