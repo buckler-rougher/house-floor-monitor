@@ -536,7 +536,7 @@ function renderAbsences(data) {
         }
         info = `Roll ${data.rollCall}${when ? ' \u2022 ' + when : ''}`;
     }
-    absencePanel.render({ members, info, emptyText: 'All Senators voted', of: 100, n: 100 - members.length });
+    absencePanel.render({ members, info, emptyText: 'All Senators voted', who: 'Senators' });
 
     // The same numbers, as the House board's LAST VOTE ABSENCES inside THRESHOLD ANALYSIS: how
     // many of each party missed the previous vote, which is what to weigh the one in front of
