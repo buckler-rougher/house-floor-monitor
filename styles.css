@@ -2729,15 +2729,13 @@ img, svg, picture, .brand, .brand *, .site-footer-brand, .welcome-card .brand-te
 .clamp-body > * { position: relative; }
 .clamp.is-following .clamp-body { transition: none; }
 /* the fade is an overlay that changes opacity, not a mask: a gradient mask cannot be animated */
-.clamp-body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3.5rem; background: linear-gradient(to bottom, transparent, var(--bg-card)); opacity: 1; transition: opacity 0.32s ease; pointer-events: none; }
+.clamp-body::after { content: ""; position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 3.5rem; background: linear-gradient(to bottom, transparent, var(--bg-card)); opacity: 1; transition: opacity 0.32s ease; pointer-events: none; }
 .clamp.is-open .clamp-body::after, .clamp.is-short .clamp-body::after { opacity: 0; }
 .clamp-toggle { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); box-sizing: border-box; width: 24px; height: 24px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; z-index: 2; }
 .clamp-toggle:hover, .clamp-toggle:focus-visible { color: var(--text-primary); border-color: var(--text-muted); outline: none; }
 .clamp-toggle svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.25; stroke-linecap: round; }
 .clamp.is-open .clamp-toggle .v { display: none; }
 .clamp.is-short .clamp-toggle { display: none; }
-/* Missing Members: its rows have photos all the way across (the second column starts at the panel's middle, where the + sits), so the + gets a strip of its own under the list instead of resting on the last row */
-.absentee-panel .clamp:not(.is-short) { padding-bottom: calc(24px + var(--sp-8)); }
 @media (prefers-reduced-motion: reduce) { .clamp, .clamp-body, .clamp-body::after { transition: none; } }
 /* A panel waiting for its first answer: three dots that pulse in turn (still, and dimmer, when the reader asks for reduced motion). Errors keep their own red. */
 .loading-indicator { display: flex; justify-content: center; align-items: center; gap: var(--sp-6); padding: var(--sp-24); }
