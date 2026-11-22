@@ -1331,7 +1331,7 @@ function renderProceedings(data) {
     if (stamp) stamp.textContent = data?.date || '';
     const sections = data?.sections || [];
     if (!sections.length) {
-        setIfChanged(feed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+        setIfChanged(feed, EmptyState.html({ shape: 'rows', title: 'No proceedings yet', text: 'The Senate\u2019s record of the day appears here as it is published.' }));
         return;
     }
     // Newest first, which is how the House board's feed reads and how every
@@ -1367,7 +1367,7 @@ async function loadProceedings() {
         setProceedingsManifest(data);
     } catch (e) {
         if (!feed.querySelector('.proceedings-measure')) {
-            setIfChanged(feed, `<div class="proceedings-error">${SourceError.text('floor activity', 'senate')}</div>`);
+            setIfChanged(feed, EmptyState.error(SourceError.text('floor activity', 'senate')));
         }
         console.error('Proceedings fetch failed:', e);
     }

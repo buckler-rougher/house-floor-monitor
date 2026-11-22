@@ -6637,7 +6637,7 @@ function loadCommitteeMeetings() {
     fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?date=' + encodeURIComponent(today))
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _committee = d; renderCommitteeMeetings(); })
-        .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), '<div class="proceedings-error">COMMITTEE MEETINGS UNAVAILABLE</div>'); });
+        .catch(() => { if (!_committee) setIfChanged(document.getElementById('committee-list'), EmptyState.error(SourceError.text('committee meetings', 'docs'))); });
 }
 
 // DISCHARGE PETITIONS: the House Clerk's list for this Congress, each with the number of signatures it has against the 218 it needs, through the Worker's
@@ -6927,7 +6927,7 @@ function loadDischargePetitions() {
     fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions')
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _discharge = d; renderDischargePetitions(); restoreDischargeSigners(); })
-        .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), '<div class="proceedings-error">DISCHARGE PETITIONS UNAVAILABLE</div>'); });
+        .catch(() => { if (!_discharge) setIfChanged(document.getElementById('discharge-list'), EmptyState.error(SourceError.text('discharge petitions', 'clerk'))); });
 }
 
 // Everyone who signed one petition, in a window: searchable, by party, newest signers first or in the order signed.
@@ -7088,7 +7088,7 @@ document.addEventListener('click', (e) => {
 function renderProceedingsFeedPanel(items, future) {
     if (!elements.proceedingsFeed) return;
     if ((!items || items.length === 0) && !(future && future.length)) {
-        setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+        setIfChanged(elements.proceedingsFeed, EmptyState.html({ shape: 'rows', title: 'No proceedings yet', text: 'The Clerk\u2019s record of the day appears here as the House meets.' }));
         return;
     }
     items = items || [];
@@ -7151,7 +7151,7 @@ async function updateProceedingsFeed() {
 
         if (!data.items || data.items.length === 0) {
             if (data.future && data.future.length) renderProceedingsFeedPanel([], data.future);
-            else setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">NO PROCEEDINGS DATA AVAILABLE</div>');
+            else setIfChanged(elements.proceedingsFeed, EmptyState.html({ shape: 'rows', title: 'No proceedings yet', text: 'The Clerk\u2019s record of the day appears here as the House meets.' }));
             return;
         }
 
@@ -7199,7 +7199,7 @@ async function updateProceedingsFeed() {
 
     } catch (error) {
         console.error('Error fetching proceedings:', error);
-        setIfChanged(elements.proceedingsFeed, '<div class="proceedings-error">UNABLE TO FETCH PROCEEDINGS</div>');
+        setIfChanged(elements.proceedingsFeed, EmptyState.error(SourceError.text('proceedings', 'clerk')));
     }
 }
 
