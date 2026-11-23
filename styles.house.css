@@ -6265,16 +6265,22 @@ font-family: var(--font-mono);
 
     .session-demo-prompt[hidden] { display: none; }
     .session-demo-prompt {
-        display: block;
-        margin-top: var(--sp-6, 6px);
-        font-size: var(--fs-sm);
-        color: var(--primary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 9px;
+        margin-top: var(--sp-16);
         text-decoration: none;
-        border-bottom: 1px dotted currentColor;
         width: fit-content;
         margin-inline: auto;
     }
-    .session-demo-prompt:hover { border-bottom-style: solid; }
+
+    .session-demo-prompt .demo-note { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
+    .session-demo-prompt .demo-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent-green) 55%, transparent); background: color-mix(in srgb, var(--accent-green) 10%, var(--bg-elevated)); color: var(--text-primary); font-size: var(--fs-sm); font-weight: 600; transition: box-shadow var(--dur-200) ease, transform var(--dur-200) ease; }
+    .session-demo-prompt .demo-btn svg { color: var(--accent-green); }
+    .session-demo-prompt:hover .demo-btn { box-shadow: 0 0 14px rgba(63, 185, 80, 0.3); transform: translateY(-1px); }
+    .session-demo-prompt:not(:has(.demo-btn)) { display: block; font-size: var(--fs-sm); color: var(--primary); border-bottom: 1px dotted currentColor; }
+    .session-demo-prompt:not(:has(.demo-btn)):hover { border-bottom-style: solid; }
 
 .next-session-countdown {
     display: inline-flex;
