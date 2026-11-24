@@ -13845,3 +13845,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .has-members #absentee-list .absentee-photo-wrap { width: var(--mm-photo); height: var(--mm-photo); }
 .has-members #absentee-list .absentee-meta { align-content: center; }
 .has-members #absentee-list .absentee-casualty-status { order: 6; flex: 0 1 auto; min-width: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Three columns on a wide screen (each is about 260px: the longest name with its streak, and the longest departure note, still fit); two below that */
+@media (min-width: 1100px) {
+  .has-members #absentee-list { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--sp-16); }
+}
