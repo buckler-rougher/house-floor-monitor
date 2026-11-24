@@ -24,6 +24,7 @@ import path from 'node:path';
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > -1 ? process.argv[i + 1] : d; };
 const CACHE = arg('cache', '.member-stats-cache');
 const OUT = arg('out', 'member-stats.json');
+const THROUGH = arg('through', '');   // y:n, stop after that roll (a snapshot to check the live additions against)
 const YEARS = arg('years', '2025,2026').split(',').map(Number);
 const DELAY = Number(arg('delay', '0'));   // ms between downloads (cached rolls cost nothing); a slow, steady pace is kind to the Clerk's site
 const CONGRESS = 119;
@@ -42,7 +43,8 @@ async function get(url) {
   return 'ERR';
 }
 
-const tag = (s, t) => { const m = s.match(new RegExp(`<${t}[^>]*>([^<]*)</${t}>`)); return m ? m[1].trim() : ''; };
+const decode = (t) => String(t).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'");
+const tag = (s, t) => { const m = s.match(new RegExp(`<${t}[^>]*>([^<]*)</${t}>`)); return m ? decode(m[1]).trim() : ''; };
 const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
 function isoDate(d) { const m = d.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/); return m ? `${m[3]}-${String(MONTHS[m[2]]).padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; }
 function weekOf(iso) { // Monday of that date's week
@@ -56,7 +58,7 @@ function parseRoll(xml) {
   if (!date) return null;
   const votes = [];
   for (const m of xml.matchAll(/<recorded-vote>\s*<legislator name-id="([^"]+)"[^>]*? party="([^"]*)" state="([^"]*)"[^>]*>([^<]*)<\/legislator>\s*<vote>([^<]*)<\/vote>/g)) {
-    votes.push({ id: m[1], party: m[2], state: m[3], name: m[4].trim(), v: m[5].trim() });
+    votes.push({ id: m[1], party: m[2], state: m[3], name: decode(m[4]).trim(), v: decode(m[5]).trim() });
   }
   if (!votes.length) return null;
   const tot = meta.match(/<totals-by-vote>[\s\S]*?<yea-total>(\d+)<\/yea-total>\s*<nay-total>(\d+)<\/nay-total>/);
@@ -97,9 +99,10 @@ async function loadYear(year) {
 const all = [];
 for (const y of YEARS) { const r = await loadYear(y); console.error(`${y}: ${r.length} rolls`); all.push(...r); }
 all.sort((a, b) => a.date.localeCompare(b.date) || a.roll - b.roll);
+if (THROUGH) { const [ty, tn] = THROUGH.split(':').map(Number); const keepN = all.filter((r) => Number(r.date.slice(0, 4)) < ty || (Number(r.date.slice(0, 4)) === ty && r.roll <= tn)); all.length = 0; all.push(...keepN); }
 
 const who = new Map();   // id -> record
-const ensure = (v) => { if (!who.has(v.id)) who.set(v.id, { id: v.id, name: v.name, party: v.party, state: v.state, rolls: 0, missed: 0, dayRolls: {}, dayMissed: {}, unity: 0, breaks: 0, recent: [], missedAt: [], breakAt: [], first: '', last: '', vec: new Int8Array(all.length), cast: [] }); const m = who.get(v.id); m.name = v.name; m.party = v.party; m.state = v.state; return m; };
+const ensure = (v) => { if (!who.has(v.id)) who.set(v.id, { id: v.id, name: v.name, party: v.party, state: v.state, rolls: 0, missed: 0, dayRolls: {}, dayMissed: {}, unity: 0, breaks: 0, recent: [], missedAt: [], breakAt: [], first: '', last: '', vec: new Int8Array(all.length), cast: [], fi: -1, li: -1, listed: new Set() }); const m = who.get(v.id); m.name = v.name; m.party = v.party; m.state = v.state; return m; };
 
 const days = new Set(); const weeks = new Set(); let unityRolls = 0;
 for (const [ri, r] of all.entries()) {
@@ -118,6 +121,8 @@ for (const [ri, r] of all.entries()) {
     const missed = /^not voting$/i.test(v.v);
     if (missed) { m.missed++; m.missedAt.push(ri); }
     if (!m.first) m.first = r.date;
+    if (m.fi < 0) m.fi = ri;
+    m.li = ri; m.listed.add(ri);
     if (!missed) {
       const y = /^(yea|aye)$/i.test(v.v), n = /^(nay|no)$/i.test(v.v);
       m.vec[ri] = y ? 1 : n ? -1 : 0;
@@ -149,7 +154,8 @@ for (const a of all_) {
   likeOf.set(a.id, scores.slice(0, 6));
 }
 
-const members = [...who.values()].map((m) => {
+const members = [...who.values()].filter((m) => m.state !== 'XX').map((m) => {
+  const gaps = []; for (let i = m.fi; i <= m.li; i++) if (!m.listed.has(i)) gaps.push(i);   // roll calls inside their stretch that the Clerk did not list them on (the Speaker votes only when he chooses to)
   const dayList = Object.keys(m.dayRolls);
   const daysMissed = dayList.filter((d) => m.dayMissed[d] === m.dayRolls[d]).length;
   const wk = {}; for (const d of dayList) { const w = weekOf(d); (wk[w] ||= { r: 0, x: 0 }); wk[w].r += m.dayRolls[d]; wk[w].x += m.dayMissed[d] || 0; }
@@ -161,7 +167,7 @@ const members = [...who.values()].map((m) => {
     id: m.id, name: m.name, party: m.party, state: m.state,
     rolls: m.rolls, missed: m.missed, missedPct: +(100 * m.missed / m.rolls).toFixed(1),
     days: dayList.length, daysMissed, weeks: weekList.length, weeksMissed,
-    first: m.first, last: m.last, active: m.last === all.at(-1)?.date,
+    first: m.first, last: m.last, fi: m.fi, li: m.li, gaps, active: m.last === all.at(-1)?.date,
     last10Missed: last10, missedAt: m.missedAt, breakAt: m.breakAt, cast: m.cast.slice(-40), like: likeOf.get(m.id) || [], unityScored: scored, breaks: m.breaks, breakPct: scored ? +(100 * m.breaks / scored).toFixed(1) : null,
   };
 }).sort((a, b) => b.missed - a.missed);
