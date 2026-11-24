@@ -13637,3 +13637,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-who i .absentee-party-tag { font-size: var(--fs-xs); padding: 1px 6px; }
 .mem-who i .absentee-state { font-size: var(--fs-xs); }
 .mem-id p { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+.mem-comms { display: flex; flex-wrap: wrap; gap: var(--sp-8); }
+.mem-comm { text-decoration: none; color: inherit; }
+.mem-comm:hover .bill-modal-committee { border-color: var(--accent-blue); }
+.mem-comm-role { margin-left: 8px; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }

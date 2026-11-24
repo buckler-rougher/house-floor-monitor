@@ -11348,6 +11348,7 @@ if (globalThis.Members) Members.init({
                 official: t('official-name'), town: m.town,
                 office: t('office-room') ? `${t('office-room')} ${HOB[t('office-building')] || t('office-building')}` : '',
                 phone: t('phone'),
+                committees: [...el.querySelectorAll('committee-assignments > committee')].map((c) => ({ code: c.getAttribute('comcode'), rank: Number(c.getAttribute('rank')) || 0, lead: c.getAttribute('leadership') || '' })),
                 sworn: swornOn ? new Date(+swornOn.slice(0, 4), +swornOn.slice(4, 6) - 1, +swornOn.slice(6)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
             });
         });
