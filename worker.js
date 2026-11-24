@@ -898,7 +898,9 @@ function congressUrlToBillId(url) {
 // status on later page loads when Congress.gov lags or the KV cache hasn't warmed yet.
 // Returns { "H.R. 5317": { status: "passed", statusText: "Passed 405-0" }, ... }
 // Later days win over earlier days (spread order: oldest first, today last).
-async function fetchProceedingsBillStatuses() {
+// `scheduleWeekStart` (a Monday, as a Date) is the week of the schedule being served. When that is an EARLIER week than this one (the Majority Leader has posted nothing for the new week, so the
+// last schedule is served, as in Thanksgiving week), that week's days are read instead, or its voice votes and roll calls would be missed and its bills would read "Scheduled" for good.
+async function fetchProceedingsBillStatuses(scheduleWeekStart) {
   try {
     const now = new Date();
     const etOffset = (now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10) ? -4 : -5;
@@ -915,11 +917,16 @@ async function fetchProceedingsBillStatuses() {
     const dow = etNow.getUTCDay(); // 0=Sun … 6=Sat
     const daysFromMon = dow === 0 ? 6 : dow === 6 ? 5 : dow - 1;
     const dates = [];
-    for (let i = daysFromMon; i >= 0; i--) {
-      const d = new Date(etNow);
-      d.setUTCDate(etNow.getUTCDate() - i);
-      const wd = d.getUTCDay();
-      if (wd !== 0 && wd !== 6) dates.push(d); // skip Sat/Sun
+    const thisMonday = new Date(Date.UTC(etNow.getUTCFullYear(), etNow.getUTCMonth(), etNow.getUTCDate() - daysFromMon));
+    if (scheduleWeekStart instanceof Date && !Number.isNaN(scheduleWeekStart.getTime()) && scheduleWeekStart.getTime() < thisMonday.getTime()) {
+      for (let i = 0; i < 5; i++) dates.push(new Date(Date.UTC(scheduleWeekStart.getUTCFullYear(), scheduleWeekStart.getUTCMonth(), scheduleWeekStart.getUTCDate() + i)));   // Monday to Friday of the schedule's week
+    } else {
+      for (let i = daysFromMon; i >= 0; i--) {
+        const d = new Date(etNow);
+        d.setUTCDate(etNow.getUTCDate() - i);
+        const wd = d.getUTCDay();
+        if (wd !== 0 && wd !== 6) dates.push(d); // skip Sat/Sun
+      }
     }
 
     const responses = await Promise.all(
@@ -2050,16 +2057,13 @@ async function _fetchBills(request, env) {
     // Proceedings (House Clerk) is the authoritative source for the full vote
     // lifecycle — recorded vote requested/postponed → passed/failed — so the
     // partisan Bluesky/Dem Cloakroom feed is no longer used for bill status.
-    const [billsXmlText, proceedingsData, sapMapRaw] = await Promise.all([
+    // The proceedings come after the feed, since which week's days to read depends on which week's schedule is being served (see fetchProceedingsBillStatuses).
+    const [billsXmlText, sapMapRaw] = await Promise.all([
       fetchRSSFeed(RSS_FEEDS.bills),
-      fetchProceedingsBillStatuses(),
       fetchSapMap(env).catch(() => '{}'),
     ]);
     const sapMap = (() => { try { return JSON.parse(sapMapRaw); } catch { return {}; } })();
-    const proceedingsStatuses = proceedingsData?.statuses || {};
-    const proceedingsTitles = proceedingsData?.titles || {};
-    const proceedingsDates = proceedingsData?.dates || {};
-    const proceedingsMoments = proceedingsData?.moments || {};
+    let proceedingsStatuses = {}, proceedingsTitles = {}, proceedingsDates = {}, proceedingsMoments = {};   // filled once the week being served is known, below
 
     // Parse Atom feed entries
     const entryMatches = billsXmlText.match(/<entry[^>]*>[\s\S]*?<\/entry>/g);
@@ -2113,6 +2117,15 @@ async function _fetchBills(request, env) {
     const matchingEntries = [];
     const priorWeekStart = new Date(currentWeekStart);
     priorWeekStart.setUTCDate(priorWeekStart.getUTCDate() - 7);
+    {
+      // The schedule served is this week's if the feed has it, else the prior week's (see the fallback below): read the Clerk's floor log for the week actually served.
+      const servedWeekStart = !dateParam && !feedWeeks.includes(currentWeekStart.getTime()) && feedWeeks.includes(priorWeekStart.getTime()) ? priorWeekStart : currentWeekStart;
+      const proceedingsData = await fetchProceedingsBillStatuses(servedWeekStart);
+      proceedingsStatuses = proceedingsData?.statuses || {};
+      proceedingsTitles = proceedingsData?.titles || {};
+      proceedingsDates = proceedingsData?.dates || {};
+      proceedingsMoments = proceedingsData?.moments || {};
+    }
     const priorEntries = [];
 
     for (const entryXml of entryMatches) {
