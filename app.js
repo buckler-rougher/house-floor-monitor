@@ -9791,7 +9791,7 @@ function renderHouseCalendar() {
             // The Calendar does not separate the day's agreed orders from the standing special-order rules: both sit under its one "Special Orders" heading. So the card lists all of it, in the Calendar's order and under its own labels.
             const items = [
                 ...orders.map((o) => ({ label: o.label, paras: [o.text] })),
-                ...(c.standing || []).map((s) => ({ label: s.label, paras: s.paragraphs || [] })),
+                ...(c.standing || []).filter((s) => s.kind !== 'hour-of-meeting').map((s) => ({ label: s.label, paras: s.paragraphs || [] })),   // not the standing daily hours: the hour the House meets can be set by something the Calendar does not list (the Speaker's adjournment announcement), so they are not quoted as if they explained it
             ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
                 ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div>${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
