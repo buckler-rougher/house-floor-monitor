@@ -13701,3 +13701,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* The Members window is one fixed size, whatever it holds (a search that narrows to one Member, a short page, a long one): only the body scrolls. */
 .mem-dialog { height: min(820px, calc(100dvh - 2 * var(--sp-16))); max-height: none; }
 .mem-body { flex: 1 1 auto; }
+
+/* Members window header: the way back is a real button, beside the title, over a rule */
+.mem-head-bar { margin-bottom: var(--sp-12); padding-bottom: var(--sp-12); border-bottom: 1px solid var(--border-color); gap: var(--sp-12); }
+.mem-headleft { display: flex; align-items: center; gap: var(--sp-12); flex: 1; min-width: 0; }
+.mem-back { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 6px 13px 6px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-8); background: var(--bg-elevated); color: var(--text-secondary); font: inherit; font-size: var(--fs-md); font-weight: 600; text-decoration: none; cursor: pointer; transition: color var(--dur-150) ease, border-color var(--dur-150) ease, background var(--dur-150) ease, transform var(--dur-150) ease; }
+.mem-back:hover { color: var(--text-primary); border-color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 10%, var(--bg-elevated)); text-decoration: none; }
+.mem-back:hover svg { transform: translateX(-2px); }
+.mem-back svg { transition: transform var(--dur-150) ease; }
+.mem-body { padding-top: 0; }
