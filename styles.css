@@ -13759,3 +13759,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* Petition numbers ("No. 10 ↗") are wider than a roll number: a wider first column, and never wrapped, so every row is one line tall */
 .mem-roll-n { white-space: nowrap; }
 .mem-dp .mem-rolls li { grid-template-columns: 5.6rem minmax(0, 1fr) auto; }
+/* One first-column width for every list in the Members window (roll calls, petitions, bills on the floor, meetings), so the text of each starts at the same place */
+.mem-rolls li, .mem-dp .mem-rolls li, .mem-floor li { grid-template-columns: 4.8rem minmax(0, 1fr) auto; }
+.mem-floor .mem-roll-n { width: auto; white-space: normal; }
+.mem-meet { grid-template-columns: 4.8rem minmax(0, 1fr); }
