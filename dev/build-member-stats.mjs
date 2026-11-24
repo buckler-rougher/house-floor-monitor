@@ -102,6 +102,7 @@ for (const [ri, r] of all.entries()) {
   const maj = (t) => (t.y > t.n ? 'Y' : t.n > t.y ? 'N' : '');
   const md = maj(tally.D), mr = maj(tally.R);
   const unity = md && mr && md !== mr;
+  r.unity = !!unity;
   if (unity) unityRolls++;
   for (const v of r.votes) {
     const m = ensure(v);
@@ -137,7 +138,7 @@ const members = [...who.values()].map((m) => {
   };
 }).sort((a, b) => b.missed - a.missed);
 
-fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
+fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0 })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
 console.log(`rolls ${all.length}, voting days ${days.size}, weeks ${weeks.size}, party-unity rolls ${unityRolls}, members ${members.length}, through ${all.at(-1)?.date}`);
 console.log('most missed:'); for (const m of members.slice(0, 12)) console.log(`  ${m.name} (${m.party}-${m.state}) ${m.missed}/${m.rolls} rolls (${m.missedPct}%), ${m.daysMissed}/${m.days} days, ${m.weeksMissed}/${m.weeks} weeks`);
 const br = members.filter((m) => m.unityScored >= 50).sort((a, b) => b.breakPct - a.breakPct);
