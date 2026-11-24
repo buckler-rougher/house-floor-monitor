@@ -13807,3 +13807,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-comms { display: block; columns: 2 22rem; column-gap: var(--sp-10); }
 .mem-comm-block { break-inside: avoid; margin-bottom: var(--sp-10); }
 .mem-th.mem-th-name { text-align: left; }
+/* The count keeps one width however many Members match, so the search box and the filters beside it never move */
+.mem-count { flex: none; width: 7.5rem; text-align: right; }
