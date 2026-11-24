@@ -12693,3 +12693,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .absentee-streak-key[hidden] { display: none; }
 .absentee-streak-key .absentee-streak-ic { color: var(--accent-amber); }
 .absentee-info { height: auto; min-height: 44px; flex-wrap: wrap; row-gap: var(--sp-4); }
+
+.has-members #absentee-list .absentee-member { padding: var(--sp-6) 0; }
+.has-members #absentee-list .absentee-meta { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--sp-8); row-gap: 2px; }
+.has-members #absentee-list .absentee-name { order: 1; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.has-members #absentee-list .absentee-streak { order: 2; flex: none; }
+.has-members #absentee-list .absentee-meta::after { content: ''; order: 3; flex-basis: 100%; height: 0; }
+.has-members #absentee-list .absentee-party-tag { order: 4; flex: 0 0 1.8rem; box-sizing: border-box; padding-left: 0; padding-right: 0; text-align: center; }
+.has-members #absentee-list .absentee-state { order: 5; flex: 0 0 3.4rem; }
+.has-members #absentee-list .absentee-casualty-status { order: 6; flex: 0 1 auto; min-width: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
