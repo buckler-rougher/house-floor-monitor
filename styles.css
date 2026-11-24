@@ -13863,3 +13863,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* Missing Members: the same room under the numbers as above them, and the sort at the right of the key row */
 .absentee-content .party-breakdown-metrics { margin-bottom: var(--sp-16); }
 .absentee-streak-key .absentee-sort { display: flex; align-items: center; gap: var(--sp-8); margin-left: auto; }
+
+/* Members window: the loading state, in the shape of what is coming */
+.mem-loading { display: grid; gap: var(--sp-16); }
+.mem-loading .bsk { border-radius: var(--radius-8); max-width: 100%; }
+.mem-load-head { display: flex; align-items: center; gap: var(--sp-16); }
+.mem-load-title { display: grid; gap: var(--sp-8); }
+.mem-load-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-12); }
+.mem-load-row { display: flex; align-items: center; gap: var(--sp-12); }
+@media (max-width: 640px) { .mem-load-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
