@@ -13821,3 +13821,13 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 .mem-congress { height: var(--control-h); box-sizing: border-box; align-items: stretch; }
 .mem-congress .bills-sort-btn { display: flex; align-items: center; padding-top: 0; padding-bottom: 0; }
+
+/* Missing Members: a run of roll calls missed in a row, as a small step symbol and a number (two or more), and the key to it in the panel's bar */
+.absentee-streak { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.absentee-streak.is-short { color: var(--accent-amber); }
+.absentee-streak.is-long { color: var(--accent-red); }
+.absentee-streak-ic { flex: none; }
+.absentee-streak-key { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; margin-right: var(--sp-16); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); white-space: nowrap; }
+.absentee-streak-key[hidden] { display: none; }
+.absentee-streak-key .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-info { height: auto; min-height: 44px; flex-wrap: wrap; row-gap: var(--sp-4); }

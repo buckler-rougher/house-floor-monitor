@@ -10419,8 +10419,15 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    absenteePanel().render({ members, info, emptyText: 'All Members voted', who: 'Members' });
+    // The rows go up at once; the streaks (from the Members record, which has to be fetched and brought up to date) are added when they arrive.
+    const stamp = ++_absenteeStamp;
+    const paint = (streaks) => absenteePanel().render({ members: streaks ? members.map((m) => ({ ...m, streak: (m.id && streaks.get(m.id)) || 0 })) : members, info, emptyText: 'All Members voted', who: 'Members' });
+    paint(null);
+    if (globalThis.Members && Members.streaks && members.length) {
+        Members.streaks().then((map) => { if (stamp !== _absenteeStamp) return; paint(map); const key = document.getElementById('absentee-streak-key'); if (key) key.hidden = false; }).catch(() => {});
+    }
 }
+let _absenteeStamp = 0;
 
 // Update API Status Indicator
 function updateApiStatus() {
