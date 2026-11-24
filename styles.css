@@ -13685,3 +13685,15 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-comm-block .mem-meet { margin-top: 2px; }
 .mem-comms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
 .mem-streak > small { margin-top: 1px; }
+
+/* Members: committees as cards, subcommittees as a list, thinner small labels */
+.mem-h em { font-weight: 400; letter-spacing: var(--track-wide); text-transform: none; color: var(--text-muted); }
+.mem-quiet { margin-left: 12px; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 400; letter-spacing: var(--track-wide); text-transform: none; color: var(--text-muted); }
+.mem-comms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: var(--sp-10); align-items: start; }
+.mem-comm-block { gap: 0; padding: var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-10); background: color-mix(in srgb, var(--bg-elevated) 55%, transparent); }
+.mem-comm-block.has-meeting { padding: var(--sp-12); }
+.mem-comm-block .bill-modal-committee { align-self: flex-start; }
+.mem-subs { list-style: none; margin: var(--sp-10) 0 0; padding: 0; max-width: none; }
+.mem-subs li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-10); padding: 5px 0; border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent); font-size: var(--fs-md); color: var(--text-secondary); line-height: 1.35; }
+.mem-subs li em { flex: none; font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); white-space: nowrap; }
+.mem-comm-block .mem-meet { margin-top: var(--sp-8); }
