@@ -5895,7 +5895,7 @@ setBillsManifest();
 if (globalThis.SourcePop) {
     const CG = 'https://www.congress.gov/', GI = 'https://www.govinfo.gov';
     SourcePop.also(document.getElementById('bills'), [
-        { name: 'Clerk floor log', href: 'https://clerk.house.gov/FloorSummary', supplies: 'each bill\'s status line' },
+        { name: 'Clerk floor log', href: 'https://clerk.house.gov/FloorSummary', supplies: 'each bill\'s status line, and every bill under Also on the floor' },
         { name: 'Congress.gov', href: CG, supplies: 'sponsor, summary, committees, and text' },
         { name: 'DomeWatch', href: 'https://domewatch.us', supplies: 'the Dem Whip tag' },
         { name: 'White House OMB', href: 'https://www.whitehouse.gov/omb/statements-of-administration-policy/', supplies: 'the Statement of Administration Policy link' },
