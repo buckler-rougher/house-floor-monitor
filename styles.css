@@ -13827,9 +13827,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .absentee-streak.is-short { color: var(--accent-amber); }
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
-.absentee-streak-key { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 var(--sp-4) var(--sp-6); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); white-space: nowrap; }
-.absentee-streak-key[hidden] { display: flex; visibility: hidden; }   /* the line is kept while the streaks load, so the list does not jump */
-.absentee-streak-key .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-streak-key { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4) var(--sp-16); margin: var(--sp-12) 0 var(--sp-8); padding: 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-muted); }
+.absentee-streak-key[hidden] { display: flex; visibility: hidden; }   /* the key's room is kept while the streaks load, so the list does not jump */
+.absentee-streak-key .key-title { font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; font-size: var(--fs-xs); }
+.absentee-streak-key .key-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); color: var(--text-secondary); }
+.absentee-streak-key .key-item.is-short .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-streak-key .key-item.is-long .absentee-streak-ic { color: var(--accent-red); }
 
 /* Missing Members, House: two lines a row. The name with its streak beside it; under it the party, the district, and the departure note, which starts in the same place on every row. (Scoped to the House:
    the Senate's rows have no streak or note, and keep their single line.) */

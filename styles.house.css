@@ -12689,9 +12689,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .absentee-streak.is-short { color: var(--accent-amber); }
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
-.absentee-streak-key { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 var(--sp-4) var(--sp-6); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); white-space: nowrap; }
+.absentee-streak-key { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4) var(--sp-16); margin: var(--sp-12) 0 var(--sp-8); padding: 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-muted); }
 .absentee-streak-key[hidden] { display: flex; visibility: hidden; }
-.absentee-streak-key .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-streak-key .key-title { font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; font-size: var(--fs-xs); }
+.absentee-streak-key .key-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); color: var(--text-secondary); }
+.absentee-streak-key .key-item.is-short .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-streak-key .key-item.is-long .absentee-streak-ic { color: var(--accent-red); }
 
 .has-members #absentee-list .absentee-member { padding: var(--sp-6) 0; }
 .has-members #absentee-list .absentee-meta { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--sp-8); row-gap: 2px; }
