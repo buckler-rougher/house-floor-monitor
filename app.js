@@ -10419,14 +10419,23 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    // The rows go up at once; the streaks (from the Members record, which has to be fetched and brought up to date) are added when they arrive.
+    // The rows go up at once with the streaks last known, so a refresh draws what is already there (the panel leaves identical rows alone: redrawing them reloaded every photo); the streaks (from the
+    // Members record, fetched and brought up to date) are drawn again only when one of them has changed.
     const stamp = ++_absenteeStamp;
+    const sigOf = (map) => members.map((m) => `${m.id}:${(map && m.id && map.get(m.id)) || 0}`).join(',');
     const paint = (streaks) => absenteePanel().render({ members: streaks ? members.map((m) => ({ ...m, streak: (m.id && streaks.get(m.id)) || 0 })) : members, info, emptyText: 'All Members voted', who: 'Members' });
-    paint(null);
+    paint(_absenteeStreaks);
+    let drawn = sigOf(_absenteeStreaks);
     if (globalThis.Members && Members.streaks && members.length) {
-        Members.streaks().then((map) => { if (stamp !== _absenteeStamp) return; paint(map); const key = document.getElementById('absentee-streak-key'); if (key) key.hidden = false; }).catch(() => {});
+        Members.streaks().then((map) => {
+            _absenteeStreaks = map;
+            const key = document.getElementById('absentee-streak-key'); if (key) key.hidden = false;
+            if (stamp !== _absenteeStamp || sigOf(map) === drawn) return;
+            drawn = sigOf(map); paint(map);
+        }).catch(() => {});
     }
 }
+let _absenteeStreaks = null;
 let _absenteeStamp = 0;
 
 // Update API Status Indicator
