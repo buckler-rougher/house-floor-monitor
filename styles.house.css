@@ -12578,3 +12578,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-back svg { transition: transform var(--dur-150) ease; }
 .mem-body { padding-top: 0; }
 .mem-spark.purple { color: var(--accent-purple); }
+
+.mem-foot { flex: none; margin: 0 calc(-1 * var(--sp-20)); padding: var(--sp-10) var(--sp-20); border-top: 1px solid var(--border-color); }
