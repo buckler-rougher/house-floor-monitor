@@ -12621,3 +12621,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-id p.mem-links { gap: 4px var(--sp-24); margin: var(--sp-8) 0 0; }
 
 .mem-dialog [hidden] { display: none !important; }
+
+.mem-roll-n { white-space: nowrap; }
+.mem-dp .mem-rolls li { grid-template-columns: 5.6rem minmax(0, 1fr) auto; }

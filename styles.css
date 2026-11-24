@@ -13756,3 +13756,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-id p.mem-links { gap: 4px var(--sp-24); margin: var(--sp-8) 0 0; }
 /* An author rule that sets display beats the browser's own [hidden]; inside the Members window hidden always means hidden (the extra petitions, the list of unsigned ones) */
 .mem-dialog [hidden] { display: none !important; }
+/* Petition numbers ("No. 10 ↗") are wider than a roll number: a wider first column, and never wrapped, so every row is one line tall */
+.mem-roll-n { white-space: nowrap; }
+.mem-dp .mem-rolls li { grid-template-columns: 5.6rem minmax(0, 1fr) auto; }
