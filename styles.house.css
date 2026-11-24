@@ -12577,3 +12577,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-back:hover svg { transform: translateX(-2px); }
 .mem-back svg { transition: transform var(--dur-150) ease; }
 .mem-body { padding-top: 0; }
+.mem-spark.purple { color: var(--accent-purple); }
