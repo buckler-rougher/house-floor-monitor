@@ -3622,6 +3622,13 @@ let billsData = {
     lastUpdated: null
 };
 
+// How many weeks old the schedule behind Bills This Week is (0: this week's; "Week of 16 Nov 2026" on the Monday of 23 Nov is 1). 0 when it cannot be told.
+function billsWeekAge() {
+    const m = /week of (.+)$/i.exec((billsData && billsData.weekDate) || ''); if (!m) return 0;
+    const d = new Date(m[1] + ' 12:00'); if (isNaN(d)) return 0;
+    const mon = (t) => { const x = new Date(t); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+    return Math.max(0, Math.round((mon(new Date()) - mon(d)) / 604800000));
+}
 // Bills This Week Functions
 // True after the first successful full fetch (with Congress.gov enrichment).
 // Subsequent calls use ?quick=1 and preserve enrichment fields from the initial load.
@@ -4508,6 +4515,9 @@ function updateBillsDisplay() {
     if (elements.billsLastUpdate) {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
+    // The Worker falls back to the last schedule posted when the new week's is not out yet (Thanksgiving week, a recess), so say so rather than call last week's bills "this week".
+    const billsPanelLabel = document.querySelector('#bills .panel-header .panel-label');
+    if (billsPanelLabel) billsPanelLabel.textContent = billsWeekAge() > 0 ? (billsWeekAge() === 1 ? 'BILLS LAST WEEK' : 'BILLS FROM AN EARLIER WEEK') : 'BILLS THIS WEEK';
 
     // Column count — injected directly into title text
     const ruleTitleEl = document.getElementById('rule-bills-title');
@@ -11371,6 +11381,7 @@ setInterval(loadDischargeCalendar, 15 * 60 * 1000);
 if (globalThis.Members) Members.init({
     meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),
     floor: () => {   // this week's bills (the Bills This Week panel's), each with its sponsor: SPONSOR ONLY, no cosponsors
+        if (billsWeekAge() > 0) return [];   // the panel is showing an earlier week's schedule (none posted for this one yet): nothing is on the floor this week
         const groups = [['Under a special rule', billsData.ruleBills], ['Under suspension', billsData.suspensionBills], ['May be considered', billsData.mayBeConsideredBills], ['Also on the floor', billsData.alsoOnFloorBills]];
         const out = [];
         for (const [group, list] of groups) for (const b of list || []) if (b && b.id && b.sponsor && b.sponsor.bioguideId) out.push({ id: b.id, title: b.title || b.shortTitle || '', sponsorId: b.sponsor.bioguideId, status: b.status || '', group });
