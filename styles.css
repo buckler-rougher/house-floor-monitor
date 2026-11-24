@@ -13573,9 +13573,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-who { display: flex; flex-direction: column; min-width: 0; }
 .mem-who b { font-weight: 600; font-size: var(--fs-lg); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mem-who i { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); }
-.mem-row.dem .mem-who i, .mem-id p.dem { color: var(--party-d); }
-.mem-row.rep .mem-who i, .mem-id p.rep { color: var(--party-r); }
-.mem-row.ind .mem-who i, .mem-id p.ind { color: var(--party-i); }
 .mem-cell { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); color: var(--text-primary); display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
 .mem-cell b { font-size: var(--fs-lg); font-weight: 600; }
 .mem-cell i, .mem-num i { font-style: normal; color: var(--text-muted); font-size: var(--fs-sm); }
@@ -13621,3 +13618,22 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-info dt { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); }
 .mem-info dd { margin: 0; font-size: var(--fs-md); color: var(--text-secondary); }
 .mem-row.is-few .mem-cell { opacity: .45; }
+
+/* Members: severity colours (low, middling, high rate of missed votes), the sparklines behind the cards, and the site's own party tag in the directory */
+.sev-lo { color: var(--accent-green); }
+.sev-mid { color: var(--accent-amber); }
+.sev-hi { color: var(--accent-red); }
+.mem-wd .bar s.sev-lo { background: color-mix(in srgb, var(--accent-green) 65%, transparent); }
+.mem-wd .bar s.sev-mid { background: color-mix(in srgb, var(--accent-amber) 70%, transparent); }
+.mem-wd .bar s.sev-hi { background: color-mix(in srgb, var(--accent-red) 75%, transparent); }
+.mem-card { position: relative; overflow: hidden; }
+.mem-card > span, .mem-card > b, .mem-card > i { position: relative; z-index: 1; }
+.mem-spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 70%; pointer-events: none; }
+.mem-spark .area { fill: currentColor; opacity: .12; }
+.mem-spark .line { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.mem-spark.red { color: var(--accent-red); }
+.mem-spark.blue { color: var(--accent-blue); }
+.mem-who i { display: flex; align-items: center; gap: 6px; }
+.mem-who i .absentee-party-tag { font-size: var(--fs-xs); padding: 1px 6px; }
+.mem-who i .absentee-state { font-size: var(--fs-xs); }
+.mem-id p { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
