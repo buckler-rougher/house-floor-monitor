@@ -10439,7 +10439,7 @@ html.replay-mode .weather-panel { display: none; }
 
 @media (min-width: 1120px) { .header-when { display: flex; flex-direction: column; gap: var(--sp-4); } }
 
-.header-actions { display: flex; flex-direction: column; gap: var(--sp-8); align-items: stretch; }
+.header-actions { display: flex; flex-direction: column; gap: var(--sp-4); align-items: stretch; }
 @media (min-width: 1120px) {
 
     .header-actions > #replay-btn, .header-actions > #suggest-fab, .header-actions > #members-btn { width: 152px; height: 38px; padding: 0 var(--sp-14) 0 24px; justify-content: flex-start; white-space: nowrap; max-width: none; }
@@ -12333,7 +12333,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .hb-tip { position: fixed; z-index: 9000; width: 210px; background: var(--bg-elevated); border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius-8); padding: 9px 12px; color: rgba(255,255,255,.75); font-size: var(--fs-sm); line-height: 1.5; opacity: 0; pointer-events: none; transition: opacity .2s; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
 .hb-tip b { display: block; color: #fff; font-weight: 600; }
 @media (min-width: 1120px) {
-.header-actions > #replay-btn, .header-actions > #suggest-fab, .header-actions > #members-btn { background: none; box-shadow: none; height: 32px; width: 152px; padding: 0 0 0 12px; border-radius: 6px; }
+.header-actions > #replay-btn, .header-actions > #suggest-fab, .header-actions > #members-btn { background: none; box-shadow: none; height: 28px; width: 152px; padding: 0 0 0 12px; border-radius: 6px; }
 .header-actions > #replay-btn:hover, .header-actions > #suggest-fab:hover, .header-actions > #members-btn:hover { transform: none; background: rgba(255,255,255,.06); box-shadow: none; }
 #replay-btn::after, #suggest-fab::before, #members-btn::before { left: 12px; width: calc(100% - 24px); height: 1px; opacity: 0; transform: scaleX(0); transform-origin: center; transition: transform .4s var(--ease-emphasis), opacity .25s; }
 #replay-btn:hover::after, #suggest-fab:hover::before, #members-btn:hover::before { opacity: .8; transform: scaleX(1); }
