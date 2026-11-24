@@ -12491,3 +12491,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-info div { display: flex; gap: 6px; align-items: baseline; }
 .mem-info dt { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); }
 .mem-info dd { margin: 0; font-size: var(--fs-md); color: var(--text-secondary); }
+.mem-row.is-few .mem-cell { opacity: .45; }
