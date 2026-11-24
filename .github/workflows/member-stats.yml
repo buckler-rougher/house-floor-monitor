@@ -1,0 +1,51 @@
+# Refresh the Members window's vote record every night.
+#
+# WHY THIS RUNS HERE AND NOT IN THE WORKER
+# The Members window works from a saved record of every roll call of the Congress (a snapshot) and adds whatever is newer, live, in the browser. The newer the snapshot, the less each visitor's
+# page has to add, so it is rebuilt nightly: the new roll calls are added to the last one and "votes like theirs" (every pair of Members, about 140 million comparisons) is recomputed. A Worker gets
+# 10 ms of CPU a run on the free plan, so the counting belongs here, as the other heavy jobs do.
+#
+# WHERE THE ROLL CALLS COME FROM
+# From the site's own /api/member-rolls, not from the Clerk: the Worker reads the Clerk and keeps each roll call, so this job never touches the Clerk's site (which has turned a machine away for asking
+# for hundreds of roll calls in a few minutes).
+#
+# WHERE THE RESULT GOES
+# Two files, member-stats-<congress>.json and member-votes-<congress>.json, as assets of the `member-data` release. Not a commit: `main` wants a pull request with green tests, and a pull request opened
+# by a workflow does not run them, so a commit would mean loosening that rule or adding a token. A release asset needs neither, triggers no deploy, and the Worker serves it (/api/member-stats).
+# A new Congress needs nothing done: with no files for it, the first run starts it empty and fills it.
+name: Refresh Member vote record
+
+on:
+  schedule:
+    # 09:30 UTC, 4:30 am Eastern: after the day's last roll call, long before the next.
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # the release's assets
+
+concurrency:
+  group: member-stats
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Add the new roll calls
+        id: refresh
+        run: |
+          node dev/refresh-member-stats.mjs --out out | tee result.txt
+          if grep -q '^changed' result.txt; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Publish
+        if: steps.refresh.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view member-data >/dev/null 2>&1 || gh release create member-data --title "Member vote record" --notes "Rebuilt nightly by .github/workflows/member-stats.yml. Served by the site at /api/member-stats."
+          gh release upload member-data out/*.json --clobber

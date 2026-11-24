@@ -4536,6 +4536,19 @@ async function handleMemberRolls(request, env) {
   return new Response(JSON.stringify({ at: Date.now(), congress, rolls, members, done }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' } });
 }
 
+// MEMBER SNAPSHOT: the Members window's nightly vote record (.github/workflows/member-stats.yml publishes it as an asset of the `member-data` release; the repository is public). Passed through and
+// kept for 15 minutes; the page adds whatever is newer than it (/api/member-rolls) and falls back to the copy bundled with the site when this has none.
+async function handleMemberStats(env, congress) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!/^\d{3}$/.test(congress || '')) return fail(400, 'a Congress number is required');
+  return kvCache(edgeEnv(env), `member-stats-v1-${congress}`, 900, async () => {
+    const r = await fetch(`https://github.com/buckler-rougher/house-floor-monitor/releases/download/member-data/member-stats-${congress}.json`, { redirect: 'follow' });
+    if (r.status === 404) return fail(404, 'no snapshot for that Congress yet');
+    if (!r.ok) return fail(502, `GitHub answered ${r.status}`);
+    return new Response(await r.text(), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
+  });
+}
+
 // One Member's record from Congress.gov: the official website, the name as the Member writes it (the Clerk's roll call files carry only a surname), and the terms served in the House,
 // for "in the House since" and the count. Kept a week; a Member's record barely moves.
 async function handleMemberProfile(env, id) {
@@ -7599,6 +7612,8 @@ async function handleRequest(request, env) {
     return await handleWhipSource(env);
   } else if (path === '/api/house-rolls' && request.method === 'GET') {
     return await handleHouseRolls(request, env);
+  } else if (path === '/api/member-stats' && request.method === 'GET') {
+    return await handleMemberStats(env, url.searchParams.get('congress'));
   } else if (path === '/api/member-rolls' && request.method === 'GET') {
     return await handleMemberRolls(request, env);
   } else if (path === '/api/member-profile' && request.method === 'GET') {
