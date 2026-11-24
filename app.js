@@ -11333,6 +11333,7 @@ setInterval(loadDischargeCalendar, 15 * 60 * 1000);
 
 // The Members modal (lib/members.js): the Clerk's roster gives a Member's first name (the roll call files carry only a surname) and district. Former Members are not on it, so they show as their surname with the dates they served.
 if (globalThis.Members) Members.init({
+    meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),   // today's, as the Committee Meetings panel loaded them
     roster: async () => {
         const doc = parseMemberDataXml(await getMemberDataXml());
         const map = new Map();
@@ -11349,6 +11350,7 @@ if (globalThis.Members) Members.init({
                 office: t('office-room') ? `${t('office-room')} ${HOB[t('office-building')] || t('office-building')}` : '',
                 phone: t('phone'),
                 committees: [...el.querySelectorAll('committee-assignments > committee')].map((c) => ({ code: c.getAttribute('comcode'), rank: Number(c.getAttribute('rank')) || 0, lead: c.getAttribute('leadership') || '' })),
+                subcommittees: [...el.querySelectorAll('committee-assignments > subcommittee')].map((c) => ({ code: c.getAttribute('subcomcode'), rank: Number(c.getAttribute('rank')) || 0, lead: c.getAttribute('leadership') || '' })),
                 sworn: swornOn ? new Date(+swornOn.slice(0, 4), +swornOn.slice(4, 6) - 1, +swornOn.slice(6)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
             });
         });

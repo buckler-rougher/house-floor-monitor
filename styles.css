@@ -13642,3 +13642,19 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-comm { text-decoration: none; color: inherit; }
 .mem-comm:hover .bill-modal-committee { border-color: var(--accent-blue); }
 .mem-comm-role { margin-left: 8px; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }
+
+.mem-dot { display: inline-block; width: 7px; height: 7px; margin-left: 7px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 22%, transparent); vertical-align: middle; }
+.mem-today { margin: var(--sp-16) 0 var(--sp-4); padding: var(--sp-10) var(--sp-14) var(--sp-6); border: 1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border-color)); border-radius: var(--radius-8); background: color-mix(in srgb, var(--accent-green) 6%, transparent); }
+.mem-today .mem-h { margin-top: 0; }
+.mem-h-live { display: flex; align-items: center; color: var(--accent-green); }
+.mem-h-live .mem-dot { margin: 0 8px 0 0; }
+.mem-meet { display: grid; grid-template-columns: 6.2rem minmax(0, 1fr); gap: var(--sp-12); padding: 7px 0; border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent); text-decoration: none; color: inherit; align-items: baseline; }
+.mem-meet:hover .mem-meet-what b { color: var(--accent-blue); }
+.mem-meet-time { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--accent-green); font-variant-numeric: tabular-nums; }
+.mem-meet-what b { display: block; font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); line-height: 1.35; }
+.mem-meet-what i { display: block; font-style: normal; font-size: var(--fs-sm); color: var(--text-muted); margin-top: 1px; }
+.mem-today-none { margin-top: var(--sp-16); }
+.mem-comm-block { display: flex; flex-direction: column; gap: 4px; }
+.mem-subs { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; max-width: 34rem; }
+.mem-subs em { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }
+.mem-comms { gap: var(--sp-14) var(--sp-16); }
