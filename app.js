@@ -9788,13 +9788,18 @@ function renderHouseCalendar() {
         if (orders === null || orders === undefined) {
             card.hidden = true;
         } else {
-            // The Calendar does not separate the day's agreed orders from the standing special-order rules: both sit under its one "Special Orders" heading. So the card lists all of it, in the Calendar's order and under its own labels.
+            // The Calendar does not separate the day's agreed orders from the standing special-order rules: both sit under its one "Special Orders" heading. So the card lists all of it, in the Calendar's
+            // order and under its own labels; the standing ones carry a small tag. The daily hours of meeting are the standing rule only: the hour the House meets can be set by something the Calendar does not
+            // list (the Speaker's adjournment announcement), so that item says so, and the line above the card stays the day's hour.
             const items = [
                 ...orders.map((o) => ({ label: o.label, paras: [o.text] })),
-                ...(c.standing || []).filter((s) => s.kind !== 'hour-of-meeting').map((s) => ({ label: s.label, paras: s.paragraphs || [] })),   // not the standing daily hours: the hour the House meets can be set by something the Calendar does not list (the Speaker's adjournment announcement), so they are not quoted as if they explained it
+                ...(c.standing || []).map((s) => ({
+                    label: s.label, paras: s.paragraphs || [], tag: 'Standing order',
+                    note: s.kind === 'hour-of-meeting' ? 'This is the standing rule. The hour the House actually meets can be set by a later order or the Speaker\u2019s adjournment announcement, so the hour above is the one to go by.' : '',
+                })),
             ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
-                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div>${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
+                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="calendar-card-tag">${escapeHtml(o.tag)}</span>` : ''}</div>${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
                 : '<p class="calendar-card-empty">The Calendar lists no orders for this day.</p>');
             setSource(card);
             const count = card.querySelector('.calendar-card-count');
