@@ -7618,3 +7618,8 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
 .absentee-content .party-breakdown-metrics { margin-bottom: var(--sp-16); }
+.party-metric { min-width: 0; }
+@media (max-width: 430px) {
+  .party-breakdown-metrics { gap: var(--sp-8); }
+  .party-label { font-size: var(--fs-xs); letter-spacing: 0.02em; }
+}

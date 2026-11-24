@@ -13872,3 +13872,10 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-load-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-12); }
 .mem-load-row { display: flex; align-items: center; gap: var(--sp-12); }
 @media (max-width: 640px) { .mem-load-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* The party figures (Missing Members, Balance of power) on a phone: the four labels (DEMOCRATS, REPUBLICANS, INDEPENDENT, TOTAL) at their usual size are wider than the panel, so TOTAL ran off the edge */
+.party-metric { min-width: 0; }
+@media (max-width: 430px) {
+  .party-breakdown-metrics { gap: var(--sp-8); }
+  .party-label { font-size: var(--fs-xs); letter-spacing: 0.02em; }
+}
