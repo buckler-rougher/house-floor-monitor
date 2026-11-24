@@ -21,6 +21,7 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > -1 
 const CACHE = arg('cache', '.member-stats-cache');
 const OUT = arg('out', 'member-stats.json');
 const YEARS = arg('years', '2025,2026').split(',').map(Number);
+const DELAY = Number(arg('delay', '0'));   // ms between downloads (cached rolls cost nothing); a slow, steady pace is kind to the Clerk's site
 const CONGRESS = 119;
 fs.mkdirSync(CACHE, { recursive: true });
 
@@ -62,14 +63,16 @@ async function loadYear(year) {
   const failed = [];
   let missesInARow = 0;
   for (let n = 1; n < 2000; n += 8) {
-    const batch = await Promise.all(Array.from({ length: 8 }, async (_, k) => {
+    const batch = [];
+    for (let k = 0; k < 8; k++) {
       const num = n + k; const f = path.join(CACHE, `${year}-${String(num).padStart(3, '0')}.xml`);
-      if (fs.existsSync(f)) return { num, xml: fs.readFileSync(f, 'utf8') };
+      if (fs.existsSync(f)) { batch.push({ num, xml: fs.readFileSync(f, 'utf8') }); continue; }
+      if (DELAY) await sleep(DELAY);
       const got = await get(`https://clerk.house.gov/evs/${year}/roll${String(num).padStart(3, '0')}.xml`);
-      if (got === 'ERR') { failed.push(num); return { num, xml: null }; }
+      if (got === 'ERR') { failed.push(num); batch.push({ num, xml: null }); continue; }
       if (got) fs.writeFileSync(f, got);
-      return { num, xml: got };
-    }));
+      batch.push({ num, xml: got });
+    }
     let any = false;
     for (const b of batch) {
       if (!b.xml) continue;

@@ -13678,3 +13678,10 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-key { display: flex; align-items: center; gap: 6px; margin: var(--sp-8) 0 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .mem-key span { width: 10px; height: 10px; margin-left: 8px; }
 .mem-key span:first-child { margin-left: 0; }
+
+.mem-live { display: inline-flex; align-items: center; margin-left: 12px; color: var(--accent-green); font-style: normal; }
+.mem-live .mem-dot { margin: 0 6px 0 0; }
+.mem-comm-block.has-meeting { padding: var(--sp-8) var(--sp-12) var(--sp-4); border: 1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border-color)); border-radius: var(--radius-8); background: color-mix(in srgb, var(--accent-green) 6%, transparent); }
+.mem-comm-block .mem-meet { margin-top: 2px; }
+.mem-comms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
+.mem-streak > small { margin-top: 1px; }
