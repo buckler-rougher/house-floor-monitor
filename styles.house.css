@@ -12606,3 +12606,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 @media (max-width: 720px) { .mem-likes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .mem-more-inline { margin: 0 0 0 6px; padding: 1px 10px; }
 .mem-dp-open { display: block; margin-top: var(--sp-6); }
+
+.mem-roll-n.ext { color: var(--text-muted); text-decoration: none; }
+.mem-roll-n.ext:hover { color: var(--accent-blue); }
+.mem-bill, .mem-link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--accent-blue); cursor: pointer; text-align: left; }
+.mem-bill:hover, .mem-link:hover { text-decoration: underline; }
+
+.mem-flag { margin-left: 8px; padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--accent-amber) 55%, transparent); border-radius: 999px; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); vertical-align: 1px; white-space: nowrap; }
+.mem-floor .mem-roll-n { font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; width: 6.2rem; }
+.mem-floor li { grid-template-columns: 6.2rem minmax(0, 1fr); }

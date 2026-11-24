@@ -4492,6 +4492,28 @@ async function handleCommitteeEvent(env, id) {
   });
 }
 
+// One Member's record from Congress.gov: the official website, the name as the Member writes it (the Clerk's roll call files carry only a surname), and the terms served in the House,
+// for "in the House since" and the count. Kept a week; a Member's record barely moves.
+async function handleMemberProfile(env, id) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!/^[A-Z]\d{6}$/.test(id || '')) return fail(400, 'a bioguide id is required');
+  if (!_congressApiKey) return fail(503, 'the Congress.gov key is not set');
+  return kvCache(edgeEnv(env), `member-profile-v1-${id}`, 7 * 86400, async () => {
+    try {
+      const url = `https://api.congress.gov/v3/member/${id}`;
+      const r = await fetch(`${url}?api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error(`Congress.gov answered ${r.status}`);
+      const m = (await r.json()).member || {};
+      const terms = Array.isArray(m.terms) ? m.terms : (m.terms && m.terms.item) || [];
+      const house = terms.filter((t) => /house/i.test(t.chamber || ''));
+      const years = house.map((t) => Number(t.startYear)).filter(Boolean);
+      const site = /^https?:\/\//i.test(m.officialWebsiteUrl || '') ? m.officialWebsiteUrl : null;
+      const body = { at: Date.now(), id, request: `GET ${url}`, name: m.directOrderName || [m.firstName, m.lastName].filter(Boolean).join(' ') || null, firstName: m.firstName || null, lastName: m.lastName || null, website: site, houseTerms: house.length, firstYear: years.length ? Math.min(...years) : null };
+      return new Response(JSON.stringify(body), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' } });
+    } catch (e) { return fail(502, e.message); }
+  });
+}
+
 async function handleCommitteeMeetings(request, env) {
   const date = new URL(request.url).searchParams.get('date') || '';
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
@@ -7533,6 +7555,8 @@ async function handleRequest(request, env) {
     return await handleWhipSource(env);
   } else if (path === '/api/house-rolls' && request.method === 'GET') {
     return await handleHouseRolls(request, env);
+  } else if (path === '/api/member-profile' && request.method === 'GET') {
+    return await handleMemberProfile(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-event' && request.method === 'GET') {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/committee-meetings' && request.method === 'GET') {

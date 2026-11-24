@@ -11334,6 +11334,13 @@ setInterval(loadDischargeCalendar, 15 * 60 * 1000);
 // The Members modal (lib/members.js): the Clerk's roster gives a Member's first name (the roll call files carry only a surname) and district. Former Members are not on it, so they show as their surname with the dates they served.
 if (globalThis.Members) Members.init({
     meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),
+    floor: () => {   // this week's bills (the Bills This Week panel's), each with its sponsor: SPONSOR ONLY, no cosponsors
+        const groups = [['Under a special rule', billsData.ruleBills], ['Under suspension', billsData.suspensionBills], ['May be considered', billsData.mayBeConsideredBills], ['Also on the floor', billsData.alsoOnFloorBills]];
+        const out = [];
+        for (const [group, list] of groups) for (const b of list || []) if (b && b.id && b.sponsor && b.sponsor.bioguideId) out.push({ id: b.id, title: b.title || b.shortTitle || '', sponsorId: b.sponsor.bioguideId, status: b.status || '', group });
+        return out;
+    },
+    profile: (id) => fetch(`https://api.evanhollander.org/house-floor/api/member-profile?id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     discharge: {   // the petitions the Discharge Petitions panel loaded, and each one's signers (the same endpoint as the panel's signer window)
         list: () => (_discharge && Array.isArray(_discharge.petitions) && _discharge.petitions.length ? _discharge.petitions : null),
         needed: 218,
