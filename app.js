@@ -3622,6 +3622,21 @@ let billsData = {
     lastUpdated: null
 };
 
+// How many weeks old the schedule behind Bills This Week is (0: this week's; "Week of 16 Nov 2026" on the Monday of 23 Nov is 1). 0 when it cannot be told.
+function billsWeekAge() {
+    const m = /week of (.+)$/i.exec((billsData && billsData.weekDate) || ''); if (!m) return 0;
+    const d = new Date(m[1] + ' 12:00'); if (isNaN(d)) return 0;
+    const mon = (t) => { const x = new Date(t); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+    return Math.max(0, Math.round((mon(new Date()) - mon(d)) / 604800000));
+}
+// The Bills This Week panel's heading and its entries in the contents list (lib/toc.js), worded for the age of the schedule behind them.
+function paintBillsWeekLabels() {
+    const age = billsWeekAge();
+    const panel = document.querySelector('#bills .panel-header .panel-label');
+    if (panel) panel.textContent = age > 0 ? (age === 1 ? 'BILLS LAST WEEK' : 'BILLS FROM AN EARLIER WEEK') : 'BILLS THIS WEEK';
+    const toc = age > 0 ? (age === 1 ? 'Bills last week' : 'Bills, earlier week') : 'Bills this week';
+    document.querySelectorAll('.toc-list a[href="#bills"]').forEach((a) => { a.dataset.label = toc; if (a.firstChild) a.firstChild.textContent = toc; });
+}
 // Bills This Week Functions
 // True after the first successful full fetch (with Congress.gov enrichment).
 // Subsequent calls use ?quick=1 and preserve enrichment fields from the initial load.
@@ -4508,6 +4523,8 @@ function updateBillsDisplay() {
     if (elements.billsLastUpdate) {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
+    // The Worker falls back to the last schedule posted when the new week's is not out yet (Thanksgiving week, a recess), so say so rather than call last week's bills "this week".
+    paintBillsWeekLabels();
 
     // Column count — injected directly into title text
     const ruleTitleEl = document.getElementById('rule-bills-title');
@@ -10419,8 +10436,41 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    absenteePanel().render({ members, info, emptyText: 'All Members voted', who: 'Members' });
+    // The rows go up at once with the streaks last known; the streaks (from the Members record, fetched and brought up to date) are drawn when they arrive, and only if a streak or the order has changed.
+    // The order is the roll call's (alphabetical by surname) or longest streak first; the rows slide to their new places (lib/list-sync.js), and a refresh that changes nothing touches nothing.
+    _absenteeData = { members, info };
+    const stamp = ++_absenteeStamp;
+    const keyRow = document.getElementById('absentee-streak-key'); if (keyRow) keyRow.hidden = !members.length;   // the key and the sort are there whenever there is a list
+    paintAbsentees();
+    if (globalThis.Members && Members.streaks && members.length) {
+        Members.streaks().then((map) => {
+            _absenteeStreaks = map;
+            if (stamp === _absenteeStamp) paintAbsentees();
+        }).catch(() => {});
+    }
 }
+let _absenteeData = null;
+let _absenteeSort = 'name';   // 'name' | 'streak'
+let _absenteeSig = '';
+function paintAbsentees() {
+    if (!_absenteeData) return;
+    const { members, info } = _absenteeData;
+    let rows = members.map((m) => ({ ...m, streak: (_absenteeStreaks && m.id && _absenteeStreaks.get(m.id)) || 0 }));
+    if (_absenteeSort === 'streak' && _absenteeStreaks) rows = rows.map((m, i) => [m, i]).sort((x, y) => (y[0].streak - x[0].streak) || (x[1] - y[1])).map((x) => x[0]);
+    const sig = rows.map((m) => `${m.id}:${m.streak}`).join(',') + '|' + info;
+    if (sig === _absenteeSig) return;
+    _absenteeSig = sig;
+    absenteePanel().render({ members: rows, info, emptyText: 'All Members voted', who: 'Members' });
+}
+document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-absentee-sort]');
+    if (!b || b.dataset.absenteeSort === _absenteeSort) return;
+    _absenteeSort = b.dataset.absenteeSort;
+    document.querySelectorAll('[data-absentee-sort]').forEach((x) => x.classList.toggle('active', x === b));
+    paintAbsentees();
+});
+let _absenteeStreaks = null;
+let _absenteeStamp = 0;
 
 // Update API Status Indicator
 function updateApiStatus() {
@@ -11320,6 +11370,7 @@ Toc.mount({
         session: document.getElementById('session-text')?.textContent,
     }),
 });
+paintBillsWeekLabels();   // the contents list has just been built; the bills may already be in
 loadDischargePetitions();
 loadPrivileged();
 setInterval(() => { if (!document.hidden) loadPrivileged(); }, 90000);
@@ -11338,6 +11389,7 @@ setInterval(loadDischargeCalendar, 15 * 60 * 1000);
 if (globalThis.Members) Members.init({
     meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),
     floor: () => {   // this week's bills (the Bills This Week panel's), each with its sponsor: SPONSOR ONLY, no cosponsors
+        if (billsWeekAge() > 0) return [];   // the panel is showing an earlier week's schedule (none posted for this one yet): nothing is on the floor this week
         const groups = [['Under a special rule', billsData.ruleBills], ['Under suspension', billsData.suspensionBills], ['May be considered', billsData.mayBeConsideredBills], ['Also on the floor', billsData.alsoOnFloorBills]];
         const out = [];
         for (const [group, list] of groups) for (const b of list || []) if (b && b.id && b.sponsor && b.sponsor.bioguideId) out.push({ id: b.id, title: b.title || b.shortTitle || '', sponsorId: b.sponsor.bioguideId, status: b.status || '', group });

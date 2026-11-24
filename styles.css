@@ -13821,3 +13821,54 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 .mem-congress { height: var(--control-h); box-sizing: border-box; align-items: stretch; }
 .mem-congress .bills-sort-btn { display: flex; align-items: center; padding-top: 0; padding-bottom: 0; }
+
+/* Missing Members: a run of roll calls missed in a row, as a small step symbol and a number (two or more), and the key to it in the panel's bar */
+.absentee-streak { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.absentee-streak.is-short { color: var(--accent-amber); }
+.absentee-streak.is-long { color: var(--accent-red); }
+.absentee-streak-ic { flex: none; }
+/* The key to the streaks: a thin row of its own under the sentence and the roll number, in the same bar style */
+.absentee-streak-key { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-16); min-height: 32px; box-sizing: border-box; padding: var(--sp-6) var(--sp-24); border-bottom: 1px solid var(--border-color); background: rgba(13, 17, 23, 0.28); font-size: var(--fs-sm); color: var(--text-muted); }
+.absentee-streak-key[hidden] { display: none; }
+.absentee-streak-key .key-title { font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; font-size: var(--fs-xs); }
+.absentee-streak-key .key-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); color: var(--text-secondary); }
+.absentee-streak-key .key-item.is-short .absentee-streak-ic { color: var(--accent-amber); }
+.absentee-streak-key .key-item.is-long .absentee-streak-ic { color: var(--accent-red); }
+
+/* Missing Members, House: two lines a row. The name with its streak beside it; under it the party, the district, and the departure note, which starts in the same place on every row. (Scoped to the House:
+   the Senate's rows have no streak or note, and keep their single line.) */
+.has-members #absentee-list .absentee-member { padding: var(--sp-6) 0; }
+.has-members #absentee-list .absentee-meta { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--sp-8); row-gap: 2px; }
+.has-members #absentee-list .absentee-name { order: 1; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.has-members #absentee-list .absentee-streak { order: 2; flex: none; }
+.has-members #absentee-list .absentee-meta::after { content: ''; order: 3; flex-basis: 100%; height: 0; }
+.has-members #absentee-list .absentee-party-tag { order: 4; flex: none; box-sizing: border-box; width: 1.4rem; height: 1.4rem; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.has-members #absentee-list .absentee-state { order: 5; flex: none; min-width: 5ch; }
+/* the photo fills the height of the name and the details, and stays square */
+.has-members #absentee-list { --mm-photo: calc(var(--fs-lg) * 1.4 + 2px + 1.4rem); }   /* the name line, the gap, and the badge line */
+.has-members #absentee-list .absentee-photo-wrap { width: var(--mm-photo); height: var(--mm-photo); }
+.has-members #absentee-list .absentee-meta { align-content: center; }
+.has-members #absentee-list .absentee-casualty-status { order: 6; flex: 0 1 auto; min-width: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Three columns on a wide screen (each is about 260px: the longest name with its streak, and the longest departure note, still fit); two below that */
+@media (min-width: 1100px) {
+  .has-members #absentee-list { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--sp-16); }
+}
+
+/* Missing Members: a row opens its Member, and says so with a ghost container on hover (a faint fill and a hairline), not with a blue name. The padding is matched by a negative margin, so the text does not move. */
+.has-members #absentee-list .absentee-member[data-open-member] { padding-left: var(--sp-8); padding-right: var(--sp-8); border-radius: var(--radius-8); box-shadow: inset 0 0 0 1px transparent; transition: background var(--dur-150) ease, box-shadow var(--dur-150) ease; }
+.has-members #absentee-list .absentee-member[data-open-member]:hover { background: rgba(255, 255, 255, 0.035); box-shadow: inset 0 0 0 1px var(--border-color); }
+.has-members #absentee-list .absentee-member[data-open-member]:hover .absentee-name { color: var(--text-primary); }
+
+/* Missing Members: the same room under the numbers as above them, and the sort at the right of the key row */
+.absentee-content .party-breakdown-metrics { margin-bottom: var(--sp-16); }
+.absentee-streak-key .absentee-sort { display: flex; align-items: center; gap: var(--sp-8); margin-left: auto; }
+
+/* Members window: the loading state, in the shape of what is coming */
+.mem-loading { display: grid; gap: var(--sp-16); }
+.mem-loading .bsk { border-radius: var(--radius-8); max-width: 100%; }
+.mem-load-head { display: flex; align-items: center; gap: var(--sp-16); }
+.mem-load-title { display: grid; gap: var(--sp-8); }
+.mem-load-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-12); }
+.mem-load-row { display: flex; align-items: center; gap: var(--sp-12); }
+@media (max-width: 640px) { .mem-load-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

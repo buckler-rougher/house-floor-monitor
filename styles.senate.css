@@ -7613,3 +7613,8 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .es-chip-i { color: var(--accent-purple); }
 .es-mono { margin: 0; font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: var(--track-wide); color: var(--es-ink); }
 .mem-meet-time { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--accent-green); font-variant-numeric: tabular-nums; }
+.absentee-streak { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.absentee-streak.is-short { color: var(--accent-amber); }
+.absentee-streak.is-long { color: var(--accent-red); }
+.absentee-streak-ic { flex: none; }
+.absentee-content .party-breakdown-metrics { margin-bottom: var(--sp-16); }
