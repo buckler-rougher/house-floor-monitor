@@ -12666,3 +12666,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .has-members [data-open-member]:hover .absentee-name, .has-members [data-open-member]:hover .lead-name { color: var(--accent-blue); }
 .has-members .pip-speaker[data-open-member] .pip-speaker-name { cursor: pointer; }
 .has-members .pip-speaker[data-open-member]:hover .pip-speaker-name { color: var(--accent-blue); }
+
+.mem-comms { display: block; columns: 2 22rem; column-gap: var(--sp-10); }
+.mem-comm-block { break-inside: avoid; margin-bottom: var(--sp-10); }
