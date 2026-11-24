@@ -5035,6 +5035,7 @@ function openBillModal(billId, opts = {}) {
     // The sections below are lib/bill-sections.js, shared with the Senate modal.
     const sp = bill.sponsor;
     const sponsorHtml = BillSections.sponsor(sp ? {
+        id: sp.bioguideId || sp.bioguide || '',
         name: sp.name || `${sp.firstName} ${sp.lastName}`,
         party: sp.party,
         loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
@@ -6718,7 +6719,7 @@ function dischargeSponsorHtml(p, role = 'Sponsor') {
     const cls = party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent';
     const loc = seat ? seat.state + (/^\d+$/.test(seat.district || '') ? '-' + String(seat.district).padStart(2, '0') : '') : '';
     const photo = p.sponsorId ? buildBioguidePhotoUrl(p.sponsorId) : null;
-    return `<div class="absentee-member dp-sponsor" title="${role}">
+    return `<div class="absentee-member dp-sponsor"${p.sponsorId ? ` data-open-member="${escapeHtml(p.sponsorId)}"` : ''} title="${role}">
         <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
         <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">${role}</span></div>
     </div>`;
@@ -7013,7 +7014,7 @@ function openDischargeSigners(id, number, trigger) {
             const l = letter(s.party), cls = l === 'R' ? 'republican' : l === 'D' ? 'democrat' : 'independent';
             const loc = s.state + (/^\d+$/.test(s.district) ? '-' + s.district.padStart(2, '0') : '');
             const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
-            return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer">
+            return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer"${s.id ? ` data-open-member="${escapeHtml(s.id)}"` : ''}>
                 <span class="dp-signer-n">${unsigned ? '' : s.n}</span>
                 <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
                 <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
@@ -10413,6 +10414,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             party: absentee.party,
             name: match ? match.fullName : (parsedName.rawName || 'Unknown'),
             state: match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state,
+            id: match && match.bioguideId ? match.bioguideId : '',
             photoUrl: match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '',
             badge: getCasualtyStatus(match),
         };
@@ -11044,6 +11046,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
         // no-op, leaving an empty grey square where the placeholder should be.
         if (bioguideId === lastPhotoId) return;
         lastPhotoId = bioguideId;
+        if (row) { if (bioguideId) row.dataset.openMember = bioguideId; else delete row.dataset.openMember; }
         const url = bioguideId ? buildBioguidePhotoUrl(bioguideId) : '';
         photo.innerHTML = `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>` +
             (url ? `<img class="pip-speaker-photo" src="${url}" alt="" data-img="fade">` : '');
@@ -11330,3 +11333,44 @@ document.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
 setInterval(loadDischargeCalendar, 15 * 60 * 1000);
+
+// The Members modal (lib/members.js): the Clerk's roster gives a Member's first name (the roll call files carry only a surname) and district. Former Members are not on it, so they show as their surname with the dates they served.
+if (globalThis.Members) Members.init({
+    meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),
+    floor: () => {   // this week's bills (the Bills This Week panel's), each with its sponsor: SPONSOR ONLY, no cosponsors
+        const groups = [['Under a special rule', billsData.ruleBills], ['Under suspension', billsData.suspensionBills], ['May be considered', billsData.mayBeConsideredBills], ['Also on the floor', billsData.alsoOnFloorBills]];
+        const out = [];
+        for (const [group, list] of groups) for (const b of list || []) if (b && b.id && b.sponsor && b.sponsor.bioguideId) out.push({ id: b.id, title: b.title || b.shortTitle || '', sponsorId: b.sponsor.bioguideId, status: b.status || '', group });
+        return out;
+    },
+    profile: (id) => fetch(`https://api.evanhollander.org/house-floor/api/member-profile?id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    rolls: (congress, after) => fetch(`https://api.evanhollander.org/house-floor/api/member-rolls?congress=${congress}&after=${encodeURIComponent(after || '')}`).then((r) => (r.ok ? r.json() : null)),   // the roll calls since the snapshot
+    discharge: {   // the petitions the Discharge Petitions panel loaded, and each one's signers (the same endpoint as the panel's signer window)
+        list: () => (_discharge && Array.isArray(_discharge.petitions) && _discharge.petitions.length ? _discharge.petitions : null),
+        needed: 218,
+        load: (() => { let p = null; return () => (p = p || fetch('https://api.evanhollander.org/house-floor/api/discharge-petitions').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((d) => d.petitions || []).catch(() => { p = null; return null; })); })(),   // the petition list, when the page's own panel has not loaded it yet
+        signers: (id) => fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((d) => d.signers || []),
+    },   // today's, as the Committee Meetings panel loaded them
+    roster: async () => {
+        const doc = parseMemberDataXml(await getMemberDataXml());
+        const map = new Map();
+        doc.querySelectorAll('member').forEach((el) => {
+            const m = memberMatchFromElement(el);
+            if (!m.bioguideId) return;
+            const t = (sel) => { const n = el.querySelector(sel); return n ? n.textContent.trim() : ''; };
+            const HOB = { CHOB: 'Cannon', LHOB: 'Longworth', RHOB: 'Rayburn' };
+            const sworn = el.querySelector('sworn-date');
+            const swornOn = sworn && /^\d{8}$/.test(sworn.getAttribute('date') || '') ? sworn.getAttribute('date') : '';
+            map.set(m.bioguideId, {
+                first: m.firstName, last: m.lastName, district: ((t('statedistrict').match(/^[A-Z]{2}(\d\d)$/) || [])[1] || '').replace(/^00$/, 'AL'),   // RI01 -> 01 (shown RI-01), AK00 -> AL
+                official: t('official-name'), town: m.town,
+                office: t('office-room') ? `${t('office-room')} ${HOB[t('office-building')] || t('office-building')}` : '',
+                phone: t('phone'),
+                committees: [...el.querySelectorAll('committee-assignments > committee')].map((c) => ({ code: c.getAttribute('comcode'), rank: Number(c.getAttribute('rank')) || 0, lead: c.getAttribute('leadership') || '' })),
+                subcommittees: [...el.querySelectorAll('committee-assignments > subcommittee')].map((c) => ({ code: c.getAttribute('subcomcode'), rank: Number(c.getAttribute('rank')) || 0, lead: c.getAttribute('leadership') || '' })),
+                sworn: swornOn ? new Date(+swornOn.slice(0, 4), +swornOn.slice(4, 6) - 1, +swornOn.slice(6)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+            });
+        });
+        return map;
+    },
+});

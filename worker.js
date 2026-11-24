@@ -20,6 +20,7 @@ import './lib/senate-agenda.js';
 import './lib/memory-kv.js';
 import './lib/faa-delays.js';
 import './lib/clerk-votes.js';
+import './lib/member-rolls.js';
 import './lib/committee-meetings.js';
 import './lib/senate-committees.js';
 import './lib/senate-treaties.js';
@@ -4492,6 +4493,71 @@ async function handleCommitteeEvent(env, id) {
   });
 }
 
+// MEMBER ROLL CALLS: the roll calls after the ones the Members window's snapshot holds, as who voted how (lib/member-rolls.js). The page asks for the roll calls after the last one it has
+// (?after=2026-327) and is handed up to three, oldest first; it asks again until `done`. Each roll call file is read from the Clerk once and kept (a roll call is final), so a sitting day costs one
+// KV write per roll call, and a visitor after the first costs none. `congress` keeps a roll call of the next Congress out of this one (the 120th starts with roll 1 of 2027); with no `after`, it
+// starts at the Congress's first roll call.
+const _rollMissing = new Map();   // 'year-n' -> when the Clerk last said it is not there (asking again within a minute is pointless)
+async function memberRoll(env, y, n) {
+  const key = `${y}-${n}`;
+  if (Date.now() - (_rollMissing.get(key) || 0) < 60000) return null;
+  const resp = await kvCache(edgeEnv(env), `member-roll-v1-${key}`, 30 * 86400, async () => {
+    const xml = await fetchRSSFeed(`https://clerk.house.gov/evs/${y}/roll${String(n).padStart(3, '0')}.xml`);
+    const roll = globalThis.MemberRolls.parse(xml);
+    if (!roll) return new Response('{}', { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(roll), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+  });
+  if (!resp.ok) { _rollMissing.set(key, Date.now()); return null; }
+  return await resp.json();
+}
+async function handleMemberRolls(request, env) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  const u = new URL(request.url);
+  const congress = Number(u.searchParams.get('congress')) || CURRENT_CONGRESS;
+  const limit = Math.min(3, Math.max(1, Number(u.searchParams.get('limit')) || 3));
+  const after = (u.searchParams.get('after') || '').match(/^(\d{4})-(\d{1,4})$/);
+  let y = after ? Number(after[1]) : 1789 + (congress - 1) * 2;
+  let n = after ? Number(after[2]) : 0;
+  const thisYear = Number(getTodayDateET().slice(0, 4));
+  if (y > thisYear + 1) return fail(400, 'that year has not begun');
+  const rolls = [], members = {};
+  let done = false;
+  try {
+    while (rolls.length < limit) {
+      let roll = await memberRoll(env, y, n + 1);
+      if (!roll && y < thisYear) { y += 1; n = 0; roll = await memberRoll(env, y, 1); }   // the year's last roll call is behind: the next year's first
+      if (!roll || roll.congress !== congress) { done = true; break; }
+      Object.assign(members, roll.members);
+      delete roll.members;
+      rolls.push(roll);
+      y = roll.y; n = roll.n;
+    }
+  } catch (e) { if (!rolls.length) return fail(502, e.message); }
+  return new Response(JSON.stringify({ at: Date.now(), congress, rolls, members, done }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' } });
+}
+
+// One Member's record from Congress.gov: the official website, the name as the Member writes it (the Clerk's roll call files carry only a surname), and the terms served in the House,
+// for "in the House since" and the count. Kept a week; a Member's record barely moves.
+async function handleMemberProfile(env, id) {
+  const fail = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (!/^[A-Z]\d{6}$/.test(id || '')) return fail(400, 'a bioguide id is required');
+  if (!_congressApiKey) return fail(503, 'the Congress.gov key is not set');
+  return kvCache(edgeEnv(env), `member-profile-v1-${id}`, 7 * 86400, async () => {
+    try {
+      const url = `https://api.congress.gov/v3/member/${id}`;
+      const r = await fetch(`${url}?api_key=${_congressApiKey}`, { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error(`Congress.gov answered ${r.status}`);
+      const m = (await r.json()).member || {};
+      const terms = Array.isArray(m.terms) ? m.terms : (m.terms && m.terms.item) || [];
+      const house = terms.filter((t) => /house/i.test(t.chamber || ''));
+      const years = house.map((t) => Number(t.startYear)).filter(Boolean);
+      const site = /^https?:\/\//i.test(m.officialWebsiteUrl || '') ? m.officialWebsiteUrl : null;
+      const body = { at: Date.now(), id, request: `GET ${url}`, name: m.directOrderName || [m.firstName, m.lastName].filter(Boolean).join(' ') || null, firstName: m.firstName || null, lastName: m.lastName || null, website: site, houseTerms: house.length, firstYear: years.length ? Math.min(...years) : null };
+      return new Response(JSON.stringify(body), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' } });
+    } catch (e) { return fail(502, e.message); }
+  });
+}
+
 async function handleCommitteeMeetings(request, env) {
   const date = new URL(request.url).searchParams.get('date') || '';
   const fail = (status, error) => new Response(JSON.stringify({ error }), {
@@ -7533,6 +7599,10 @@ async function handleRequest(request, env) {
     return await handleWhipSource(env);
   } else if (path === '/api/house-rolls' && request.method === 'GET') {
     return await handleHouseRolls(request, env);
+  } else if (path === '/api/member-rolls' && request.method === 'GET') {
+    return await handleMemberRolls(request, env);
+  } else if (path === '/api/member-profile' && request.method === 'GET') {
+    return await handleMemberProfile(env, url.searchParams.get('id'));
   } else if (path === '/api/committee-event' && request.method === 'GET') {
     return await handleCommitteeEvent(env, url.searchParams.get('id'));
   } else if (path === '/api/senate/committee-meetings' && request.method === 'GET') {
