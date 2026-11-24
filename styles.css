@@ -13750,3 +13750,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-flag { margin-left: 8px; padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--accent-amber) 55%, transparent); border-radius: 999px; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); vertical-align: 1px; white-space: nowrap; }
 .mem-floor .mem-roll-n { font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; width: 6.2rem; }
 .mem-floor li { grid-template-columns: 6.2rem minmax(0, 1fr); }
+
+.mem-links { display: flex; flex-wrap: wrap; gap: 4px var(--sp-16); margin: var(--sp-6) 0 0; }
+.mem-links a.mem-ext, .mem-links a.mem-ext:visited { color: var(--accent-blue); }
