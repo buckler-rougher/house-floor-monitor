@@ -15,7 +15,7 @@
 //
 //   cast     each Member's last 40 votes actually cast (not Not Voting): [roll index, Y | N | P | O]. O is anything else, as in a Speaker election.
 //   like     the five Members whose votes most often match theirs, over rolls where both voted Yea or Nay (at least 150 shared): [id, percent].
-//   y, n, r  on each roll: the Yeas, the Nays and the result, so a missed vote can be put against its margin.
+//   ye, na, r  on each roll: the Yeas, the Nays and the result (`n` there is the roll number), so a missed vote can be put against its margin.
 //
 // Downloads are cached under --cache so a rerun only fetches rolls it has not seen. Nothing here guesses: a roll that cannot be fetched or parsed is reported and left out.
 import fs from 'node:fs';
@@ -166,7 +166,7 @@ const members = [...who.values()].map((m) => {
   };
 }).sort((a, b) => b.missed - a.missed);
 
-fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0, y: r.yeas, n: r.nays, r: r.result })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
+fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0, ye: r.yeas, na: r.nays, r: r.result })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
 console.log(`rolls ${all.length}, voting days ${days.size}, weeks ${weeks.size}, party-unity rolls ${unityRolls}, members ${members.length}, through ${all.at(-1)?.date}`);
 console.log('most missed:'); for (const m of members.slice(0, 12)) console.log(`  ${m.name} (${m.party}-${m.state}) ${m.missed}/${m.rolls} rolls (${m.missedPct}%), ${m.daysMissed}/${m.days} days, ${m.weeksMissed}/${m.weeks} weeks`);
 const br = members.filter((m) => m.unityScored >= 50).sort((a, b) => b.breakPct - a.breakPct);
