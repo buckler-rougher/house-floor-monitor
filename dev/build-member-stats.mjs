@@ -24,6 +24,7 @@ import path from 'node:path';
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > -1 ? process.argv[i + 1] : d; };
 const CACHE = arg('cache', '.member-stats-cache');
 const OUT = arg('out', 'member-stats.json');
+const VOTES_OUT = arg('votes-out', '');   // also write each Member's Yea / Nay on every roll call (member-votes-<congress>.json), which the nightly refresh needs to recompute "votes like theirs"
 const THROUGH = arg('through', '');   // y:n, stop after that roll (a snapshot to check the live additions against)
 const YEARS = arg('years', '2025,2026').split(',').map(Number);
 const DELAY = Number(arg('delay', '0'));   // ms between downloads (cached rolls cost nothing); a slow, steady pace is kind to the Clerk's site
@@ -150,7 +151,7 @@ for (const a of all_) {
     for (let i = 0; i < a.vec.length; i++) { const x = a.vec[i], y = b.vec[i]; if (x && y) { shared++; if (x === y) same++; } }
     if (shared >= 150) scores.push([b.id, +(100 * same / shared).toFixed(1)]);
   }
-  scores.sort((p, q) => q[1] - p[1]);
+  scores.sort((p, q) => q[1] - p[1] || (p[0] < q[0] ? -1 : 1));   // ties by id, so a full rebuild and the nightly refresh pick the same Members
   likeOf.set(a.id, scores.slice(0, 6));
 }
 
@@ -161,17 +162,22 @@ const members = [...who.values()].filter((m) => m.state !== 'XX').map((m) => {
   const wk = {}; for (const d of dayList) { const w = weekOf(d); (wk[w] ||= { r: 0, x: 0 }); wk[w].r += m.dayRolls[d]; wk[w].x += m.dayMissed[d] || 0; }
   const weekList = Object.values(wk);
   const weeksMissed = weekList.filter((w) => w.x === w.r).length;
-  const last10 = m.recent.slice(-10).reduce((a, b) => a + b, 0);
   const scored = m.unity + m.breaks;
   return {
     id: m.id, name: m.name, party: m.party, state: m.state,
     rolls: m.rolls, missed: m.missed, missedPct: +(100 * m.missed / m.rolls).toFixed(1),
     days: dayList.length, daysMissed, weeks: weekList.length, weeksMissed,
     first: m.first, last: m.last, fi: m.fi, li: m.li, gaps, active: m.last === all.at(-1)?.date,
-    last10Missed: last10, missedAt: m.missedAt, breakAt: m.breakAt, cast: m.cast.slice(-40), like: likeOf.get(m.id) || [], unityScored: scored, breaks: m.breaks, breakPct: scored ? +(100 * m.breaks / scored).toFixed(1) : null,
+    missedAt: m.missedAt, breakAt: m.breakAt, cast: m.cast.slice(-40), like: likeOf.get(m.id) || [], unityScored: scored, breaks: m.breaks, breakPct: scored ? +(100 * m.breaks / scored).toFixed(1) : null,
   };
 }).sort((a, b) => b.missed - a.missed);
 
+if (VOTES_OUT) {
+  // one character per roll call: 1 Yea, 2 Nay, 0 anything else (not voting, present, not listed)
+  const votes = {};
+  for (const m of who.values()) if (m.state !== 'XX') votes[m.id] = Array.from(m.vec, (x) => (x === 1 ? '1' : x === -1 ? '2' : '0')).join('');
+  fs.writeFileSync(VOTES_OUT, JSON.stringify({ congress: CONGRESS, rolls: all.length, through: all.at(-1)?.date, votes }));
+}
 fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0, ye: r.yeas, na: r.nays, r: r.result })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
 console.log(`rolls ${all.length}, voting days ${days.size}, weeks ${weeks.size}, party-unity rolls ${unityRolls}, members ${members.length}, through ${all.at(-1)?.date}`);
 console.log('most missed:'); for (const m of members.slice(0, 12)) console.log(`  ${m.name} (${m.party}-${m.state}) ${m.missed}/${m.rolls} rolls (${m.missedPct}%), ${m.daysMissed}/${m.days} days, ${m.weeksMissed}/${m.weeks} weeks`);

@@ -11344,6 +11344,7 @@ if (globalThis.Members) Members.init({
         return out;
     },
     profile: (id) => fetch(`https://api.evanhollander.org/house-floor/api/member-profile?id=${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    snapshot: (congress) => fetch(`https://api.evanhollander.org/house-floor/api/member-stats?congress=${congress}`).then((r) => (r.ok ? r.json() : null)),   // the nightly snapshot
     rolls: (congress, after) => fetch(`https://api.evanhollander.org/house-floor/api/member-rolls?congress=${congress}&after=${encodeURIComponent(after || '')}`).then((r) => (r.ok ? r.json() : null)),   // the roll calls since the snapshot
     discharge: {   // the petitions the Discharge Petitions panel loaded, and each one's signers (the same endpoint as the panel's signer window)
         list: () => (_discharge && Array.isArray(_discharge.petitions) && _discharge.petitions.length ? _discharge.petitions : null),
