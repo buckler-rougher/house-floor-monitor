@@ -12701,7 +12701,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .has-members #absentee-list .absentee-party-tag { order: 4; flex: none; box-sizing: border-box; width: 1.4rem; height: 1.4rem; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 .has-members #absentee-list .absentee-state { order: 5; flex: none; min-width: 5ch; }
 
-.has-members #absentee-list .absentee-member { align-items: stretch; }
-.has-members #absentee-list .absentee-photo-wrap { align-self: stretch; width: auto; height: auto; aspect-ratio: 1 / 1; }
+.has-members #absentee-list { --mm-photo: calc(var(--fs-lg) * 1.4 + 2px + 1.4rem); }
+.has-members #absentee-list .absentee-photo-wrap { width: var(--mm-photo); height: var(--mm-photo); }
 .has-members #absentee-list .absentee-meta { align-content: center; }
 .has-members #absentee-list .absentee-casualty-status { order: 6; flex: 0 1 auto; min-width: 0; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
