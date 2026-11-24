@@ -12486,3 +12486,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-more { margin-top: var(--sp-8); background: none; border: 1px solid var(--border-color); border-radius: 999px; color: var(--text-secondary); font: inherit; font-size: var(--fs-sm); padding: 4px 14px; cursor: pointer; }
 .mem-more:hover { color: var(--text-primary); border-color: var(--accent-blue); }
 .mem-none { margin: 0; color: var(--text-muted); font-size: var(--fs-md); }
+
+.mem-info { display: flex; flex-wrap: wrap; gap: 2px var(--sp-20); margin: 0 0 var(--sp-6); }
+.mem-info div { display: flex; gap: 6px; align-items: baseline; }
+.mem-info dt { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); }
+.mem-info dd { margin: 0; font-size: var(--fs-md); color: var(--text-secondary); }

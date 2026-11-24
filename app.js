@@ -11338,7 +11338,18 @@ if (globalThis.Members) Members.init({
         const map = new Map();
         doc.querySelectorAll('member').forEach((el) => {
             const m = memberMatchFromElement(el);
-            if (m.bioguideId) map.set(m.bioguideId, { first: m.firstName, last: m.lastName, district: /^\d+$/.test(m.district) ? m.district : '' });
+            if (!m.bioguideId) return;
+            const t = (sel) => { const n = el.querySelector(sel); return n ? n.textContent.trim() : ''; };
+            const HOB = { CHOB: 'Cannon', LHOB: 'Longworth', RHOB: 'Rayburn' };
+            const sworn = el.querySelector('sworn-date');
+            const swornOn = sworn && /^\d{8}$/.test(sworn.getAttribute('date') || '') ? sworn.getAttribute('date') : '';
+            map.set(m.bioguideId, {
+                first: m.firstName, last: m.lastName, district: /^\d+$/.test(m.district) ? m.district : '',
+                official: t('official-name'), town: m.town,
+                office: t('office-room') ? `${t('office-room')} ${HOB[t('office-building')] || t('office-building')}` : '',
+                phone: t('phone'),
+                sworn: swornOn ? new Date(+swornOn.slice(0, 4), +swornOn.slice(4, 6) - 1, +swornOn.slice(6)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+            });
         });
         return map;
     },
