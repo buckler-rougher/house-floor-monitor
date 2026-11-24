@@ -10419,22 +10419,39 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             badge: getCasualtyStatus(match),
         };
     });
-    // The rows go up at once with the streaks last known, so a refresh draws what is already there (the panel leaves identical rows alone: redrawing them reloaded every photo); the streaks (from the
-    // Members record, fetched and brought up to date) are drawn again only when one of them has changed.
+    // The rows go up at once with the streaks last known; the streaks (from the Members record, fetched and brought up to date) are drawn when they arrive, and only if a streak or the order has changed.
+    // The order is the roll call's (alphabetical by surname) or longest streak first; the rows slide to their new places (lib/list-sync.js), and a refresh that changes nothing touches nothing.
+    _absenteeData = { members, info };
     const stamp = ++_absenteeStamp;
-    const sigOf = (map) => members.map((m) => `${m.id}:${(map && m.id && map.get(m.id)) || 0}`).join(',');
-    const paint = (streaks) => absenteePanel().render({ members: streaks ? members.map((m) => ({ ...m, streak: (m.id && streaks.get(m.id)) || 0 })) : members, info, emptyText: 'All Members voted', who: 'Members' });
-    paint(_absenteeStreaks);
-    const keyRow = document.getElementById('absentee-streak-key'); if (keyRow) keyRow.hidden = !members.length;   // the key is there whenever there is a list
-    let drawn = sigOf(_absenteeStreaks);
+    const keyRow = document.getElementById('absentee-streak-key'); if (keyRow) keyRow.hidden = !members.length;   // the key and the sort are there whenever there is a list
+    paintAbsentees();
     if (globalThis.Members && Members.streaks && members.length) {
         Members.streaks().then((map) => {
             _absenteeStreaks = map;
-            if (stamp !== _absenteeStamp || sigOf(map) === drawn) return;
-            drawn = sigOf(map); paint(map);
+            if (stamp === _absenteeStamp) paintAbsentees();
         }).catch(() => {});
     }
 }
+let _absenteeData = null;
+let _absenteeSort = 'name';   // 'name' | 'streak'
+let _absenteeSig = '';
+function paintAbsentees() {
+    if (!_absenteeData) return;
+    const { members, info } = _absenteeData;
+    let rows = members.map((m) => ({ ...m, streak: (_absenteeStreaks && m.id && _absenteeStreaks.get(m.id)) || 0 }));
+    if (_absenteeSort === 'streak' && _absenteeStreaks) rows = rows.map((m, i) => [m, i]).sort((x, y) => (y[0].streak - x[0].streak) || (x[1] - y[1])).map((x) => x[0]);
+    const sig = rows.map((m) => `${m.id}:${m.streak}`).join(',') + '|' + info;
+    if (sig === _absenteeSig) return;
+    _absenteeSig = sig;
+    absenteePanel().render({ members: rows, info, emptyText: 'All Members voted', who: 'Members' });
+}
+document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-absentee-sort]');
+    if (!b || b.dataset.absenteeSort === _absenteeSort) return;
+    _absenteeSort = b.dataset.absenteeSort;
+    document.querySelectorAll('[data-absentee-sort]').forEach((x) => x.classList.toggle('active', x === b));
+    paintAbsentees();
+});
 let _absenteeStreaks = null;
 let _absenteeStamp = 0;
 

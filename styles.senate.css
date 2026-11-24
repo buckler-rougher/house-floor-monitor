@@ -7617,3 +7617,4 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .absentee-streak.is-short { color: var(--accent-amber); }
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
+.absentee-content .party-breakdown-metrics { margin-bottom: var(--sp-16); }
