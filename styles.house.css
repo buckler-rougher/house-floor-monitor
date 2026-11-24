@@ -12528,3 +12528,23 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-subs { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; max-width: 34rem; }
 .mem-subs em { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); }
 .mem-comms { gap: var(--sp-14) var(--sp-16); }
+
+.mem-streaks { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-10); margin-bottom: var(--sp-12); }
+@media (max-width: 640px) { .mem-streaks { grid-template-columns: 1fr; } }
+.mem-streak { display: flex; flex-direction: column; gap: 2px; padding: var(--sp-10) var(--sp-12); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-8); }
+.mem-streak.is-on { border-color: color-mix(in srgb, var(--accent-red) 55%, var(--border-color)); background: color-mix(in srgb, var(--accent-red) 7%, var(--bg-elevated)); }
+.mem-streak span { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); }
+.mem-streak b { font-family: var(--font-mono); font-size: var(--fs-6xl); font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+.mem-streak.is-on b { color: var(--accent-red); }
+.mem-streak i { font-style: normal; font-size: var(--fs-sm); color: var(--text-secondary); }
+.mem-streak small { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
+.mem-strip-wrap { margin-top: var(--sp-10); }
+.mem-strip-label { display: block; margin-bottom: 5px; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wider); text-transform: uppercase; color: var(--text-muted); }
+.mem-strip { display: flex; flex-wrap: wrap; gap: 3px; }
+.mem-strip span, .mem-key span { width: 10px; height: 18px; border-radius: 3px; display: inline-block; }
+.mem-strip span.none, .mem-key span.none { background: color-mix(in srgb, var(--accent-green) 50%, transparent); }
+.mem-strip span.some, .mem-key span.some { background: color-mix(in srgb, var(--accent-amber) 70%, transparent); }
+.mem-strip span.all, .mem-key span.all { background: color-mix(in srgb, var(--accent-red) 78%, transparent); }
+.mem-key { display: flex; align-items: center; gap: 6px; margin: var(--sp-8) 0 0; font-size: var(--fs-sm); color: var(--text-muted); }
+.mem-key span { width: 10px; height: 10px; margin-left: 8px; }
+.mem-key span:first-child { margin-left: 0; }
