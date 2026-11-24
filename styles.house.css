@@ -12689,10 +12689,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .absentee-streak.is-short { color: var(--accent-amber); }
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
-.absentee-streak-key { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; margin-right: var(--sp-16); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); white-space: nowrap; }
-.absentee-streak-key[hidden] { display: none; }
+.absentee-streak-key { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 var(--sp-4) var(--sp-6); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: var(--track-wide); color: var(--text-muted); white-space: nowrap; }
+.absentee-streak-key[hidden] { display: flex; visibility: hidden; }
 .absentee-streak-key .absentee-streak-ic { color: var(--accent-amber); }
-.absentee-info { height: auto; min-height: 44px; flex-wrap: wrap; row-gap: var(--sp-4); }
 
 .has-members #absentee-list .absentee-member { padding: var(--sp-6) 0; }
 .has-members #absentee-list .absentee-meta { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--sp-8); row-gap: 2px; }
