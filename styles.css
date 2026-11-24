@@ -13763,3 +13763,28 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-rolls li, .mem-dp .mem-rolls li, .mem-floor li { grid-template-columns: 4.8rem minmax(0, 1fr) auto; }
 .mem-floor .mem-roll-n { width: auto; white-space: normal; }
 .mem-meet { grid-template-columns: 4.8rem minmax(0, 1fr); }
+
+/* Members: the controls are one height, the checkbox, the sort arrow, five columns */
+.mem-tools { --control-h: 38px; align-items: flex-end; }
+.mem-search { height: var(--control-h); box-sizing: border-box; padding-top: 0; padding-bottom: 0; }
+.mem-parties { height: var(--control-h); box-sizing: border-box; align-items: stretch; }
+.mem-parties .bills-sort-btn { display: flex; align-items: center; padding-top: 0; padding-bottom: 0; }
+.mem-check { height: var(--control-h); color: var(--text-secondary); font-size: var(--fs-md); }
+.mem-check input { accent-color: var(--accent-blue); }
+.mem-head, .mem-row { grid-template-columns: 34px minmax(0, 1.7fr) repeat(5, minmax(0, 1fr)); }
+.mem-th .mem-arrow { margin-left: 5px; vertical-align: -1px; opacity: 0; transition: transform .34s var(--ease-emphasis), opacity .2s ease; }
+.mem-th.is-sorted .mem-arrow { opacity: 1; }
+.mem-th.is-asc .mem-arrow { transform: rotate(180deg); }
+.mem-list { position: relative; }
+@media (max-width: 640px) {
+  .mem-head, .mem-row { grid-template-columns: 34px minmax(0, 1fr) auto auto; }
+  .mem-head .c1, .mem-head .c2, .mem-head .c4, .mem-row .c1, .mem-row .c2, .mem-row .c4 { display: none; }
+}
+/* The Members button, like the Time Machine and the Suggestion Box, moves while the pointer is on it: the figure behind slides out and back, the one in front bobs */
+@media (min-width: 1120px) {
+  #members-btn .hb-mfront, #members-btn .hb-mback { transform-box: fill-box; transform-origin: center; }
+  #members-btn:hover .hb-mback { animation: hbmback 1.2s ease-in-out infinite; }
+  #members-btn:hover .hb-mfront { animation: hbmfront 1.2s ease-in-out infinite; }
+}
+@keyframes hbmback { 0%, 100% { transform: translateX(0); opacity: .5; } 50% { transform: translateX(2.4px); opacity: 1; } }
+@keyframes hbmfront { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
