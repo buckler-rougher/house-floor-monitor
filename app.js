@@ -5035,6 +5035,7 @@ function openBillModal(billId, opts = {}) {
     // The sections below are lib/bill-sections.js, shared with the Senate modal.
     const sp = bill.sponsor;
     const sponsorHtml = BillSections.sponsor(sp ? {
+        id: sp.bioguideId || sp.bioguide || '',
         name: sp.name || `${sp.firstName} ${sp.lastName}`,
         party: sp.party,
         loc: sp.state + (sp.district != null ? `-${String(sp.district).padStart(2, '0')}` : ''),
@@ -6718,7 +6719,7 @@ function dischargeSponsorHtml(p, role = 'Sponsor') {
     const cls = party === 'R' ? 'republican' : party === 'D' ? 'democrat' : 'independent';
     const loc = seat ? seat.state + (/^\d+$/.test(seat.district || '') ? '-' + String(seat.district).padStart(2, '0') : '') : '';
     const photo = p.sponsorId ? buildBioguidePhotoUrl(p.sponsorId) : null;
-    return `<div class="absentee-member dp-sponsor" title="${role}">
+    return `<div class="absentee-member dp-sponsor"${p.sponsorId ? ` data-open-member="${escapeHtml(p.sponsorId)}"` : ''} title="${role}">
         <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
         <div class="absentee-meta"><span class="absentee-name">${escapeHtml(p.sponsor)}</span>${party ? `<span class="absentee-party-tag ${cls}">${party}</span>` : ''}${loc ? `<span class="absentee-state">${escapeHtml(loc)}</span>` : ''}<span class="dp-role">${role}</span></div>
     </div>`;
@@ -7013,7 +7014,7 @@ function openDischargeSigners(id, number, trigger) {
             const l = letter(s.party), cls = l === 'R' ? 'republican' : l === 'D' ? 'democrat' : 'independent';
             const loc = s.state + (/^\d+$/.test(s.district) ? '-' + s.district.padStart(2, '0') : '');
             const photo = s.id ? buildBioguidePhotoUrl(s.id) : null;
-            return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer">
+            return { key: unsigned ? 'u' + s.id : String(s.n), html: `<div class="absentee-member dp-signer"${s.id ? ` data-open-member="${escapeHtml(s.id)}"` : ''}>
                 <span class="dp-signer-n">${unsigned ? '' : s.n}</span>
                 <div class="absentee-photo-wrap"><div class="absentee-photo-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</div>${photo ? `<img class="absentee-photo" src="${escapeHtml(photo)}" alt="" loading="lazy" data-img="fade">` : ''}</div>
                 <div class="absentee-meta"><span class="absentee-name">${escapeHtml(s.name)}</span><span class="absentee-party-tag ${cls}">${l}</span><span class="absentee-state">${escapeHtml(loc)}</span></div>
@@ -10413,6 +10414,7 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
             party: absentee.party,
             name: match ? match.fullName : (parsedName.rawName || 'Unknown'),
             state: match ? (nd ? `${match.state}-${nd}` : match.state) : absentee.state,
+            id: match && match.bioguideId ? match.bioguideId : '',
             photoUrl: match && match.bioguideId ? buildBioguidePhotoUrl(match.bioguideId) : '',
             badge: getCasualtyStatus(match),
         };
@@ -11044,6 +11046,7 @@ FloorFeed.init({ hlsUrl: 'https://api.evanhollander.org/house-floor/api/hls-url'
         // no-op, leaving an empty grey square where the placeholder should be.
         if (bioguideId === lastPhotoId) return;
         lastPhotoId = bioguideId;
+        if (row) { if (bioguideId) row.dataset.openMember = bioguideId; else delete row.dataset.openMember; }
         const url = bioguideId ? buildBioguidePhotoUrl(bioguideId) : '';
         photo.innerHTML = `<span class="pip-speaker-placeholder">${MEMBER_PHOTO_PLACEHOLDER}</span>` +
             (url ? `<img class="pip-speaker-photo" src="${url}" alt="" data-img="fade">` : '');

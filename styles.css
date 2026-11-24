@@ -13797,3 +13797,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-fold-in { overflow: hidden; min-height: 0; }
 .mem-fold.is-open .mem-fold-in { padding-bottom: var(--sp-6); }
 .mem-body .clamp { margin: 0; }
+
+/* Members are links across the page: a name or a face that carries data-open-member opens that Member in the Members window */
+.has-members [data-open-member] { cursor: pointer; }
+.has-members [data-open-member]:hover .absentee-name, .has-members [data-open-member]:hover .lead-name { color: var(--accent-blue); }
+.has-members .pip-speaker[data-open-member] .pip-speaker-name { cursor: pointer; }
+.has-members .pip-speaker[data-open-member]:hover .pip-speaker-name { color: var(--accent-blue); }
