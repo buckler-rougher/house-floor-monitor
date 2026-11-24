@@ -12618,3 +12618,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 .mem-links { display: flex; flex-wrap: wrap; gap: 4px var(--sp-16); margin: var(--sp-6) 0 0; }
 .mem-links a.mem-ext, .mem-links a.mem-ext:visited { color: var(--accent-blue); }
+.mem-id p.mem-links { gap: 4px var(--sp-24); margin: var(--sp-8) 0 0; }
