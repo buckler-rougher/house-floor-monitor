@@ -13827,8 +13827,10 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .absentee-streak.is-short { color: var(--accent-amber); }
 .absentee-streak.is-long { color: var(--accent-red); }
 .absentee-streak-ic { flex: none; }
-.absentee-streak-key { display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-4) var(--sp-16); margin: var(--sp-12) 0 var(--sp-8); padding: 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-muted); }
-.absentee-streak-key[hidden] { display: flex; visibility: hidden; }   /* the key's room is kept while the streaks load, so the list does not jump */
+.has-members .absentee-info { height: auto; min-height: 44px; padding-top: var(--sp-8); padding-bottom: var(--sp-8); gap: var(--sp-16); }
+.absentee-info-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.absentee-streak-key { display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--sp-14); font-size: var(--fs-sm); color: var(--text-muted); }
+.absentee-streak-key[hidden] { display: flex; visibility: hidden; }   /* its room is kept while the streaks load, so the bar does not change height */
 .absentee-streak-key .key-title { font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; font-size: var(--fs-xs); }
 .absentee-streak-key .key-item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); color: var(--text-secondary); }
 .absentee-streak-key .key-item.is-short .absentee-streak-ic { color: var(--accent-amber); }
