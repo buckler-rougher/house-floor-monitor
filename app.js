@@ -11345,7 +11345,7 @@ if (globalThis.Members) Members.init({
             const sworn = el.querySelector('sworn-date');
             const swornOn = sworn && /^\d{8}$/.test(sworn.getAttribute('date') || '') ? sworn.getAttribute('date') : '';
             map.set(m.bioguideId, {
-                first: m.firstName, last: m.lastName, district: /^\d+$/.test(m.district) ? m.district : '',
+                first: m.firstName, last: m.lastName, district: ((t('statedistrict').match(/^[A-Z]{2}(\d\d)$/) || [])[1] || '').replace(/^00$/, 'AL'),   // RI01 -> 01 (shown RI-01), AK00 -> AL
                 official: t('official-name'), town: m.town,
                 office: t('office-room') ? `${t('office-room')} ${HOB[t('office-building')] || t('office-building')}` : '',
                 phone: t('phone'),
