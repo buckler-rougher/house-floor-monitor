@@ -17,10 +17,56 @@ export async function onRequest(context) {
   if (!isStagingHost(url.hostname)) return handle(context);
   if (url.pathname === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8', 'x-robots-tag': 'noindex, nofollow', 'cache-control': 'public, max-age=300' } });
   if (url.pathname === '/sitemap.xml') return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-robots-tag': 'noindex, nofollow' } });
+  const gated = await stagingGate(context, url);   // a Response (the passcode page, or a refusal) until the visitor has the code; null once they do
+  if (gated) return gated;
   const res = await handle(context);
   const out = new Response(res.body, res);          // a copy whose headers can be set
   out.headers.set('x-robots-tag', 'noindex, nofollow');
   return out;
+}
+
+// THE STAGING PASSCODE. The staging sites carry unreleased work, and noindex only keeps them out of search results; anyone with the address could still open them. So they ask for a passcode
+// (the Pages secret STAGING_PASSCODE, kept in 1Password too). A visitor types it once per browser; the page then holds a cookie that is a keyed hash of the code, never the code. A script or curl
+// can send it as the header X-Staging-Key instead. It FAILS CLOSED: with no secret set, staging answers 503 rather than opening. The Worker API (api-staging) is not gated: it serves the same
+// public data as production, and a gate there would stop the page's own calls. Production hosts never reach this.
+const GATE_COOKIE = 'staging_gate';
+const enc = new TextEncoder();
+async function gateToken(code) {
+  const key = await crypto.subtle.importKey('raw', enc.encode(code), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode('staging-gate-v1'));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function same(a, b) {   // constant time, so the comparison does not leak how much of a guess was right
+  const x = enc.encode(String(a)), y = enc.encode(String(b));
+  let d = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) d |= (x[i] || 0) ^ (y[i] || 0);
+  return d === 0;
+}
+const gateHeaders = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' };
+function gatePage(note) {
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Staging</title>
+<style>:root{color-scheme:dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0d1117;color:#e6edf3;font:16px/1.5 system-ui,sans-serif}
+form{width:min(320px,86vw);display:grid;gap:12px}h1{margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#8b949e;font-weight:600}
+input,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #30363d;background:#161b22;color:inherit}button{cursor:pointer;background:#1f6feb;border-color:#1f6feb;font-weight:600}
+p{margin:0;font-size:13px;color:#f85149;min-height:1.2em}</style></head><body><form method="post" action="/__gate"><h1>Staging</h1>
+<input type="password" name="code" autocomplete="current-password" placeholder="Passcode" autofocus required><button type="submit">Enter</button><p>${note || ''}</p></form></body></html>`;
+  return new Response(html, { status: note ? 401 : 200, headers: { ...gateHeaders, 'content-type': 'text/html; charset=utf-8' } });
+}
+async function stagingGate({ request, env, next }, url) {
+  const code = env && env.STAGING_PASSCODE;
+  if (!code) return new Response('Staging is locked: no passcode is configured.', { status: 503, headers: { ...gateHeaders, 'content-type': 'text/plain; charset=utf-8' } });
+  const token = await gateToken(code);
+  if (request.method === 'POST' && url.pathname === '/__gate') {
+    const given = String((await request.formData().catch(() => new FormData())).get('code') || '');
+    if (!same(await gateToken(given), token)) return gatePage('That is not the passcode.');
+    return new Response(null, { status: 303, headers: { ...gateHeaders, location: '/', 'set-cookie': `${GATE_COOKIE}=${token}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax` } });
+  }
+  const cookie = (request.headers.get('cookie') || '').split(/;\s*/).find((c) => c.startsWith(GATE_COOKIE + '='));
+  if (cookie && same(cookie.slice(GATE_COOKIE.length + 1), token)) return null;
+  const key = request.headers.get('x-staging-key');
+  if (key && same(key, code)) return null;
+  const wantsPage = request.method === 'GET' && /text\/html/.test(request.headers.get('accept') || '');
+  return wantsPage ? gatePage('') : new Response('Staging needs the passcode.', { status: 401, headers: { ...gateHeaders, 'content-type': 'text/plain; charset=utf-8' } });
 }
 
 async function handle({ request, next }) {
