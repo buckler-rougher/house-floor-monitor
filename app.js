@@ -11333,7 +11333,12 @@ setInterval(loadDischargeCalendar, 15 * 60 * 1000);
 
 // The Members modal (lib/members.js): the Clerk's roster gives a Member's first name (the roll call files carry only a surname) and district. Former Members are not on it, so they show as their surname with the dates they served.
 if (globalThis.Members) Members.init({
-    meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),   // today's, as the Committee Meetings panel loaded them
+    meetings: () => (_committee && Array.isArray(_committee.events) ? { date: _committee.date, events: _committee.events } : null),
+    discharge: {   // the petitions the Discharge Petitions panel loaded, and each one's signers (the same endpoint as the panel's signer window)
+        list: () => (_discharge && Array.isArray(_discharge.petitions) && _discharge.petitions.length ? _discharge.petitions : null),
+        needed: 218,
+        signers: (id) => fetch(`https://api.evanhollander.org/house-floor/api/discharge-petition?id=${encodeURIComponent(id)}`).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((d) => d.signers || []),
+    },   // today's, as the Committee Meetings panel loaded them
     roster: async () => {
         const doc = parseMemberDataXml(await getMemberDataXml());
         const map = new Map();

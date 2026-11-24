@@ -13,6 +13,10 @@
 //   unity    on party-unity rolls (a majority of Democrats against a majority of Republicans, counting Yea and Nay only), how often they voted with
 //            their own party's majority; `breaks` is the other times they voted. Independents are not scored.
 //
+//   cast     each Member's last 40 votes actually cast (not Not Voting): [roll index, Y | N | P | O]. O is anything else, as in a Speaker election.
+//   like     the five Members whose votes most often match theirs, over rolls where both voted Yea or Nay (at least 150 shared): [id, percent].
+//   y, n, r  on each roll: the Yeas, the Nays and the result, so a missed vote can be put against its margin.
+//
 // Downloads are cached under --cache so a rerun only fetches rolls it has not seen. Nothing here guesses: a roll that cannot be fetched or parsed is reported and left out.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -55,7 +59,8 @@ function parseRoll(xml) {
     votes.push({ id: m[1], party: m[2], state: m[3], name: m[4].trim(), v: m[5].trim() });
   }
   if (!votes.length) return null;
-  return { roll: Number(tag(meta, 'rollcall-num')), date, question: tag(meta, 'vote-question'), type: tag(meta, 'vote-type'), legis: tag(meta, 'legis-num'), desc: tag(meta, 'vote-desc'), votes };
+  const tot = meta.match(/<totals-by-vote>[\s\S]*?<yea-total>(\d+)<\/yea-total>\s*<nay-total>(\d+)<\/nay-total>/);
+  return { yeas: tot ? Number(tot[1]) : null, nays: tot ? Number(tot[2]) : null, result: tag(meta, 'vote-result'), roll: Number(tag(meta, 'rollcall-num')), date, question: tag(meta, 'vote-question'), type: tag(meta, 'vote-type'), legis: tag(meta, 'legis-num'), desc: tag(meta, 'vote-desc'), votes };
 }
 
 async function loadYear(year) {
@@ -94,7 +99,7 @@ for (const y of YEARS) { const r = await loadYear(y); console.error(`${y}: ${r.l
 all.sort((a, b) => a.date.localeCompare(b.date) || a.roll - b.roll);
 
 const who = new Map();   // id -> record
-const ensure = (v) => { if (!who.has(v.id)) who.set(v.id, { id: v.id, name: v.name, party: v.party, state: v.state, rolls: 0, missed: 0, dayRolls: {}, dayMissed: {}, unity: 0, breaks: 0, recent: [], missedAt: [], breakAt: [], first: '', last: '' }); const m = who.get(v.id); m.name = v.name; m.party = v.party; m.state = v.state; return m; };
+const ensure = (v) => { if (!who.has(v.id)) who.set(v.id, { id: v.id, name: v.name, party: v.party, state: v.state, rolls: 0, missed: 0, dayRolls: {}, dayMissed: {}, unity: 0, breaks: 0, recent: [], missedAt: [], breakAt: [], first: '', last: '', vec: new Int8Array(all.length), cast: [] }); const m = who.get(v.id); m.name = v.name; m.party = v.party; m.state = v.state; return m; };
 
 const days = new Set(); const weeks = new Set(); let unityRolls = 0;
 for (const [ri, r] of all.entries()) {
@@ -113,6 +118,11 @@ for (const [ri, r] of all.entries()) {
     const missed = /^not voting$/i.test(v.v);
     if (missed) { m.missed++; m.missedAt.push(ri); }
     if (!m.first) m.first = r.date;
+    if (!missed) {
+      const y = /^(yea|aye)$/i.test(v.v), n = /^(nay|no)$/i.test(v.v);
+      m.vec[ri] = y ? 1 : n ? -1 : 0;
+      m.cast.push([ri, y ? 'Y' : n ? 'N' : /^present$/i.test(v.v) ? 'P' : 'O']);
+    }
     m.last = r.date;
     m.dayRolls[r.date] = (m.dayRolls[r.date] || 0) + 1;
     if (missed) m.dayMissed[r.date] = (m.dayMissed[r.date] || 0) + 1;
@@ -122,6 +132,21 @@ for (const [ri, r] of all.entries()) {
       if (yea || nay) { const own = v.party === 'D' ? md : mr; if ((yea ? 'Y' : 'N') === own) m.unity++; else { m.breaks++; m.breakAt.push(ri); } }
     }
   }
+}
+
+// Members whose votes match most often: agreement over the rolls both cast a Yea or a Nay on
+const all_ = [...who.values()];
+const likeOf = new Map();
+for (const a of all_) {
+  const scores = [];
+  for (const b of all_) {
+    if (a === b) continue;
+    let shared = 0, same = 0;
+    for (let i = 0; i < a.vec.length; i++) { const x = a.vec[i], y = b.vec[i]; if (x && y) { shared++; if (x === y) same++; } }
+    if (shared >= 150) scores.push([b.id, +(100 * same / shared).toFixed(1)]);
+  }
+  scores.sort((p, q) => q[1] - p[1]);
+  likeOf.set(a.id, scores.slice(0, 5));
 }
 
 const members = [...who.values()].map((m) => {
@@ -137,11 +162,11 @@ const members = [...who.values()].map((m) => {
     rolls: m.rolls, missed: m.missed, missedPct: +(100 * m.missed / m.rolls).toFixed(1),
     days: dayList.length, daysMissed, weeks: weekList.length, weeksMissed,
     first: m.first, last: m.last, active: m.last === all.at(-1)?.date,
-    last10Missed: last10, missedAt: m.missedAt, breakAt: m.breakAt, unityScored: scored, breaks: m.breaks, breakPct: scored ? +(100 * m.breaks / scored).toFixed(1) : null,
+    last10Missed: last10, missedAt: m.missedAt, breakAt: m.breakAt, cast: m.cast.slice(-40), like: likeOf.get(m.id) || [], unityScored: scored, breaks: m.breaks, breakPct: scored ? +(100 * m.breaks / scored).toFixed(1) : null,
   };
 }).sort((a, b) => b.missed - a.missed);
 
-fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0 })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
+fs.writeFileSync(OUT, JSON.stringify({ congress: CONGRESS, rollList: all.map((r) => ({ y: +r.date.slice(0, 4), n: r.roll, d: r.date, l: r.legis, q: r.question, t: r.desc, u: r.unity ? 1 : 0, y: r.yeas, n: r.nays, r: r.result })), rolls: all.length, days: days.size, weeks: weeks.size, unityRolls, through: all.at(-1)?.date, members }, null, 0));
 console.log(`rolls ${all.length}, voting days ${days.size}, weeks ${weeks.size}, party-unity rolls ${unityRolls}, members ${members.length}, through ${all.at(-1)?.date}`);
 console.log('most missed:'); for (const m of members.slice(0, 12)) console.log(`  ${m.name} (${m.party}-${m.state}) ${m.missed}/${m.rolls} rolls (${m.missedPct}%), ${m.daysMissed}/${m.days} days, ${m.weeksMissed}/${m.weeks} weeks`);
 const br = members.filter((m) => m.unityScored >= 50).sort((a, b) => b.breakPct - a.breakPct);

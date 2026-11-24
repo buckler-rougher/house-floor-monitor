@@ -13716,3 +13716,22 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* the Source bar: less above the line, the space below kept */
 .mem-body { padding-bottom: var(--sp-8); }
 .mem-foot { padding: var(--sp-4) var(--sp-20) var(--sp-10); }
+
+/* Members: recent votes, margins, votes like, discharge petitions */
+.mem-roll-t .mem-vote { display: inline-block; margin-right: 8px; padding: 1px 7px; border-radius: var(--radius-4); font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-wide); text-transform: uppercase; vertical-align: 1px; }
+.mem-vote.yea { background: color-mix(in srgb, var(--accent-green) 18%, transparent); color: var(--accent-green); }
+.mem-vote.nay { background: color-mix(in srgb, var(--accent-red) 18%, transparent); color: var(--accent-red); }
+.mem-vote.pres { background: color-mix(in srgb, var(--accent-amber) 18%, transparent); color: var(--accent-amber); }
+.mem-roll-t small.mem-result { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-secondary); }
+.mem-close, .mem-broke { font-weight: 600; font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; margin-left: 8px; }
+.mem-close { color: var(--accent-amber); }
+.mem-broke { color: var(--accent-purple); }
+.mem-note { margin: 0 0 var(--sp-8); font-size: var(--fs-md); color: var(--text-secondary); line-height: 1.5; }
+.mem-chipn { display: inline-block; margin: 2px 3px 2px 0; padding: 0 7px; border: 1px solid var(--border-color); border-radius: 999px; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+.mem-likes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: var(--sp-8); }
+.mem-like { display: flex; align-items: center; gap: var(--sp-10); padding: 8px 10px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-8); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color var(--dur-150) ease; }
+.mem-like:hover { border-color: var(--accent-blue); }
+.mem-like span:not(.mem-photo) { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.mem-like b { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mem-like i { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
+.mem-like em { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; color: var(--accent-purple); }
