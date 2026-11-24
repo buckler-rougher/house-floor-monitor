@@ -12580,3 +12580,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-spark.purple { color: var(--accent-purple); }
 
 .mem-foot { flex: none; margin: 0 calc(-1 * var(--sp-20)); padding: var(--sp-10) var(--sp-20); border-top: 1px solid var(--border-color); }
+
+.mem-body { padding-bottom: var(--sp-8); }
+.mem-foot { padding: var(--sp-4) var(--sp-20) var(--sp-10); }
