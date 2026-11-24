@@ -13806,3 +13806,4 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* Committee cards flow down two columns, so a short card is followed by the next one and not by the empty height of its tall neighbour */
 .mem-comms { display: block; columns: 2 22rem; column-gap: var(--sp-10); }
 .mem-comm-block { break-inside: avoid; margin-bottom: var(--sp-10); }
+.mem-th.mem-th-name { text-align: left; }
