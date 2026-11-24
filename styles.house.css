@@ -12601,3 +12601,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-like b { font-size: var(--fs-md); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mem-like i { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-muted); }
 .mem-like em { font-style: normal; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; color: var(--accent-purple); }
+
+.mem-likes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 720px) { .mem-likes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

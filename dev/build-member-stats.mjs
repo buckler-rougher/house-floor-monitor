@@ -14,7 +14,7 @@
 //            their own party's majority; `breaks` is the other times they voted. Independents are not scored.
 //
 //   cast     each Member's last 40 votes actually cast (not Not Voting): [roll index, Y | N | P | O]. O is anything else, as in a Speaker election.
-//   like     the five Members whose votes most often match theirs, over rolls where both voted Yea or Nay (at least 150 shared): [id, percent].
+//   like     the six Members whose votes most often match theirs, over rolls where both voted Yea or Nay (at least 150 shared): [id, percent].
 //   ye, na, r  on each roll: the Yeas, the Nays and the result (`n` there is the roll number), so a missed vote can be put against its margin.
 //
 // Downloads are cached under --cache so a rerun only fetches rolls it has not seen. Nothing here guesses: a roll that cannot be fetched or parsed is reported and left out.
@@ -146,7 +146,7 @@ for (const a of all_) {
     if (shared >= 150) scores.push([b.id, +(100 * same / shared).toFixed(1)]);
   }
   scores.sort((p, q) => q[1] - p[1]);
-  likeOf.set(a.id, scores.slice(0, 5));
+  likeOf.set(a.id, scores.slice(0, 6));
 }
 
 const members = [...who.values()].map((m) => {
