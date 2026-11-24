@@ -13788,3 +13788,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 }
 @keyframes hbmback { 0%, 100% { transform: translateX(0); opacity: .5; } 50% { transform: translateX(2.4px); opacity: 1; } }
 @keyframes hbmfront { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+
+.mem-chipn[data-dp-signers] { background: none; font: inherit; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-secondary); cursor: pointer; transition: border-color var(--dur-150) ease, color var(--dur-150) ease; }
+.mem-chipn[data-dp-signers]:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+/* Members: the unsigned petitions fold open and shut, and the clamped lists sit flush with the rest of the page */
+.mem-fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .34s var(--ease-emphasis); }
+.mem-fold.is-open { grid-template-rows: 1fr; }
+.mem-fold-in { overflow: hidden; min-height: 0; }
+.mem-fold.is-open .mem-fold-in { padding-bottom: var(--sp-6); }
+.mem-body .clamp { margin: 0; }
