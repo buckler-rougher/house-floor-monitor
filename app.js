@@ -3629,6 +3629,14 @@ function billsWeekAge() {
     const mon = (t) => { const x = new Date(t); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
     return Math.max(0, Math.round((mon(new Date()) - mon(d)) / 604800000));
 }
+// The Bills This Week panel's heading and its entries in the contents list (lib/toc.js), worded for the age of the schedule behind them.
+function paintBillsWeekLabels() {
+    const age = billsWeekAge();
+    const panel = document.querySelector('#bills .panel-header .panel-label');
+    if (panel) panel.textContent = age > 0 ? (age === 1 ? 'BILLS LAST WEEK' : 'BILLS FROM AN EARLIER WEEK') : 'BILLS THIS WEEK';
+    const toc = age > 0 ? (age === 1 ? 'Bills last week' : 'Bills, earlier week') : 'Bills this week';
+    document.querySelectorAll('.toc-list a[href="#bills"]').forEach((a) => { a.dataset.label = toc; if (a.firstChild) a.firstChild.textContent = toc; });
+}
 // Bills This Week Functions
 // True after the first successful full fetch (with Congress.gov enrichment).
 // Subsequent calls use ?quick=1 and preserve enrichment fields from the initial load.
@@ -4516,8 +4524,7 @@ function updateBillsDisplay() {
         elements.billsLastUpdate.textContent = billsData.weekDate || 'THIS WEEK';
     }
     // The Worker falls back to the last schedule posted when the new week's is not out yet (Thanksgiving week, a recess), so say so rather than call last week's bills "this week".
-    const billsPanelLabel = document.querySelector('#bills .panel-header .panel-label');
-    if (billsPanelLabel) billsPanelLabel.textContent = billsWeekAge() > 0 ? (billsWeekAge() === 1 ? 'BILLS LAST WEEK' : 'BILLS FROM AN EARLIER WEEK') : 'BILLS THIS WEEK';
+    paintBillsWeekLabels();
 
     // Column count — injected directly into title text
     const ruleTitleEl = document.getElementById('rule-bills-title');
@@ -11363,6 +11370,7 @@ Toc.mount({
         session: document.getElementById('session-text')?.textContent,
     }),
 });
+paintBillsWeekLabels();   // the contents list has just been built; the bills may already be in
 loadDischargePetitions();
 loadPrivileged();
 setInterval(() => { if (!document.hidden) loadPrivileged(); }, 90000);
