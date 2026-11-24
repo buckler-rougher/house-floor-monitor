@@ -13809,3 +13809,12 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-th.mem-th-name { text-align: left; }
 /* The count keeps one width however many Members match, so the search box and the filters beside it never move */
 .mem-count { flex: none; width: 7.5rem; text-align: right; }
+/* "Include former Members": a drawn checkbox in a bordered control, the same height and corners as the search box and the party selector beside it */
+.mem-check { gap: 9px; padding: 0 var(--sp-12); box-sizing: border-box; border: 1px solid var(--border-color); border-radius: var(--radius-8); background: var(--bg-elevated); user-select: none; transition: border-color var(--dur-150) ease, background var(--dur-150) ease, color var(--dur-150) ease; }
+.mem-check:hover { border-color: color-mix(in srgb, var(--accent-blue) 55%, var(--border-color)); color: var(--text-primary); }
+.mem-check:has(input:checked) { border-color: color-mix(in srgb, var(--accent-blue) 60%, transparent); background: color-mix(in srgb, var(--accent-blue) 8%, var(--bg-elevated)); color: var(--text-primary); }
+.mem-check input { appearance: none; -webkit-appearance: none; margin: 0; width: 16px; height: 16px; flex: none; display: grid; place-content: center; border: 1.5px solid color-mix(in srgb, var(--text-muted) 70%, transparent); border-radius: 5px; background: transparent; cursor: pointer; transition: background var(--dur-150) ease, border-color var(--dur-150) ease; }
+.mem-check input::after { content: ''; width: 9px; height: 5px; margin-top: -2px; border-left: 2px solid var(--bg-card); border-bottom: 2px solid var(--bg-card); transform: rotate(-45deg) scale(0); transition: transform .18s var(--ease-emphasis); }
+.mem-check input:checked { background: var(--accent-blue); border-color: var(--accent-blue); }
+.mem-check input:checked::after { transform: rotate(-45deg) scale(1); }
+.mem-check input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
