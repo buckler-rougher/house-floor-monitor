@@ -10425,11 +10425,11 @@ async function updateAbsenteeUI(absentees, rollNumber, rollDate, rollTime) {
     const sigOf = (map) => members.map((m) => `${m.id}:${(map && m.id && map.get(m.id)) || 0}`).join(',');
     const paint = (streaks) => absenteePanel().render({ members: streaks ? members.map((m) => ({ ...m, streak: (m.id && streaks.get(m.id)) || 0 })) : members, info, emptyText: 'All Members voted', who: 'Members' });
     paint(_absenteeStreaks);
+    const keyRow = document.getElementById('absentee-streak-key'); if (keyRow) keyRow.hidden = !members.length;   // the key is there whenever there is a list
     let drawn = sigOf(_absenteeStreaks);
     if (globalThis.Members && Members.streaks && members.length) {
         Members.streaks().then((map) => {
             _absenteeStreaks = map;
-            const key = document.getElementById('absentee-streak-key'); if (key) key.hidden = false;
             if (stamp !== _absenteeStamp || sigOf(map) === drawn) return;
             drawn = sigOf(map); paint(map);
         }).catch(() => {});
