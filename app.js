@@ -9788,13 +9788,17 @@ function renderHouseCalendar() {
         if (orders === null || orders === undefined) {
             card.hidden = true;
         } else {
-            const items = orders.map((o) => ({ label: o.label, text: o.text }));
+            // The Calendar does not separate the day's agreed orders from the standing special-order rules: both sit under its one "Special Orders" heading. So the card lists all of it, in the Calendar's order and under its own labels.
+            const items = [
+                ...orders.map((o) => ({ label: o.label, paras: [o.text] })),
+                ...(c.standing || []).map((s) => ({ label: s.label, paras: s.paragraphs || [] })),
+            ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
-                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
-                : '<p class="calendar-card-empty">No orders are listed for this day.</p>');
+                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div>${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
+                : '<p class="calendar-card-empty">The Calendar lists no orders for this day.</p>');
             setSource(card);
             const count = card.querySelector('.calendar-card-count');
-            if (count) count.textContent = orders.length ? String(orders.length) : '';
+            if (count) count.textContent = items.length ? String(items.length) : '';
             card.hidden = false;
             if (card._measure) card._measure();
         }
