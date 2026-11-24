@@ -11330,3 +11330,16 @@ document.querySelectorAll('[data-amdt-search]').forEach(i => SearchField.mount(i
 setInterval(loadCommitteeMeetings, 10 * 60 * 1000);
 setInterval(loadDischargePetitions, 10 * 60 * 1000);
 setInterval(loadDischargeCalendar, 15 * 60 * 1000);
+
+// The Members modal (lib/members.js): the Clerk's roster gives a Member's first name (the roll call files carry only a surname) and district. Former Members are not on it, so they show as their surname with the dates they served.
+if (globalThis.Members) Members.init({
+    roster: async () => {
+        const doc = parseMemberDataXml(await getMemberDataXml());
+        const map = new Map();
+        doc.querySelectorAll('member').forEach((el) => {
+            const m = memberMatchFromElement(el);
+            if (m.bioguideId) map.set(m.bioguideId, { first: m.firstName, last: m.lastName, district: /^\d+$/.test(m.district) ? m.district : '' });
+        });
+        return map;
+    },
+});
