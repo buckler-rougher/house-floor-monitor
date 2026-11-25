@@ -7111,6 +7111,18 @@ document.addEventListener('click', (e) => {
     if (sig) openDischargeSigners(sig.dataset.dpSigners, sig.dataset.dpNumber, sig);
 });
 
+// A proceedings entry's Time Machine link: the day and the Eastern clock second of the entry, less 30 seconds (the Clerk logs an action just after it happens, so the lead-in is on screen too).
+// Opens in a new tab, as "Watch the Debate" does, so the live page stays. /?replay=YYYYMMDD&t=HH:MM:SS (lib/replay-shim.js).
+const REPLAY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/><path d="M12 12V8"/><path d="M12 12l2.8 1.8"/></svg>';
+function proceedingReplayHtml(pubDate) {
+    if (!(pubDate instanceof Date) || isNaN(pubDate)) return '';
+    const at = new Date(pubDate.getTime() - 30000);
+    const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    const p = {}; for (const x of f.formatToParts(at)) p[x.type] = x.value;
+    const href = `${location.pathname}?replay=${p.year}${p.month}${p.day}&t=${p.hour}:${p.minute}:${p.second}&sound=1`;
+    return `<a class="proceedings-replay" href="${href}" target="_blank" rel="noopener" title="Watch this moment in the Time Machine" aria-label="Watch this moment in the Time Machine">${REPLAY_ICON}</a>`;
+}
+
 function renderProceedingsFeedPanel(items, future) {
     if (!elements.proceedingsFeed) return;
     if ((!items || items.length === 0) && !(future && future.length)) {
@@ -7140,7 +7152,7 @@ function renderProceedingsFeedPanel(items, future) {
         return `
         <div class="proceedings-item${item._future ? ' is-future' : ''}" data-ts="${item.timestamp || ''}">
             <div class="proceedings-text">
-                <span class="proceedings-time">${timeStr}</span>
+                <span class="proceedings-time">${timeStr}${proceedingReplayHtml(pubDate)}</span>
                 ${linkifyBillNumbers(unlinkClerkBills(decodeHtml(item.description)))}
             </div>
         </div>`;
