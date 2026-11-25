@@ -12747,5 +12747,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #calendar-orders .calendar-card-count { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 1.5rem; height: 1.5rem; padding: 0 var(--sp-6); margin-left: var(--sp-8); border-radius: var(--radius-7); background: rgba(255, 255, 255, 0.07); font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 #calendar-orders .calendar-card-count:empty { display: none; }
 
-.calendar-card-date, .calendar-card-date:visited { color: inherit; text-decoration: underline; text-decoration-color: var(--text-muted); text-underline-offset: 2px; transition: text-decoration-color var(--dur-150) ease; }
-.calendar-card-date:hover { text-decoration-color: currentColor; }
+.calendar-card-date, .calendar-card-date:visited { color: inherit; font-weight: 600; text-decoration: none; transition: color var(--dur-150) ease; }
+.calendar-card-date:hover { color: var(--text-primary); }
