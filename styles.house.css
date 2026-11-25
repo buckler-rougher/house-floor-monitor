@@ -12741,3 +12741,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #calendar-orders .calendar-card-item p { margin: var(--sp-10) 0 0; line-height: 1.6; }
 #calendar-orders .calendar-card-label + p { margin-top: var(--sp-8); }
 #calendar-orders .calendar-card-item p.calendar-card-note { padding: var(--sp-6) var(--sp-10); border-left: 2px solid var(--accent-amber); background: rgba(255, 255, 255, 0.03); border-radius: 0 var(--radius-6) var(--radius-6) 0; font-size: var(--fs-sm); color: var(--text-secondary); }
+
+#calendar-orders .calendar-card-head { margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-12)) var(--sp-4); padding: var(--sp-8) var(--sp-12); background: rgba(255, 255, 255, 0.045); border-bottom: 1px solid var(--border-color); border-radius: var(--radius-8) var(--radius-8) 0 0; }
+#calendar-orders .calendar-card-title { color: var(--text-secondary); }
+#calendar-orders .calendar-card-count { color: var(--text-muted); }
