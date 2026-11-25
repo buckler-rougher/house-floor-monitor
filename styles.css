@@ -12870,11 +12870,9 @@ html.ai-off .bill-link-group > .bill-modal-link {
 .committee-more[aria-expanded="true"]::after { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .committee-more::after, .ai-off-btn, .committee-more, .site-footer-license.ai-toggle { transition: none; } }
 
-/* Links inside the board that open a modal (a bill number): the underline is drawn left to right when hovered and erased left to right when left, along every row of a link
+/* Links elsewhere on the site (the footer's, the legal pages', the suggestion box's): the underline is drawn left to right when hovered and erased left to right when left, along every row of a link
    that wraps. The same line is on the site's own links (the footer's, the data notice's, the legal pages'). The method is the CDN's underlines.js: the line is the link's own background, which an inline box lays out end to end across its rows, so one animation runs
    along the first row and on to the next; the anchor jumps to the right edge when the line is full width, so it leaves from the left. External links do not animate; they have the arrow. */
-.bill-open,
-button.proc-bill-link,
 .vrec-row-label.clickable,
 a.site-footer-license:not(.ext),
 .suggest-privacy-link,
@@ -12888,8 +12886,6 @@ a.site-footer-license:not(.ext),
     padding-bottom: 1px;
     transition: background-size 0.4s cubic-bezier(0.75, 0, 0.25, 1), color var(--dur-120);
 }
-.bill-open:is(:hover, :focus-visible),
-button.proc-bill-link:is(:hover, :focus-visible),
 .vrec-row-label.clickable:is(:hover, :focus-visible),
 a.site-footer-license:not(.ext):is(:hover, :focus-visible),
 .suggest-privacy-link:is(:hover, :focus-visible),
@@ -13745,7 +13741,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .mem-roll-n.ext { color: var(--text-muted); text-decoration: none; }
 .mem-roll-n.ext:hover { color: var(--accent-blue); }
 .mem-bill, .mem-link { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--accent-blue); cursor: pointer; text-align: left; }
-.mem-bill:hover, .mem-link:hover { text-decoration: underline; }
 
 .mem-flag { margin-left: 8px; padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--accent-amber) 55%, transparent); border-radius: 999px; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--accent-amber); vertical-align: 1px; white-space: nowrap; }
 .mem-floor .mem-roll-n { font-size: var(--fs-xs); letter-spacing: var(--track-wide); text-transform: uppercase; width: 6.2rem; }
@@ -13935,3 +13930,15 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :root[data-chamber="senate"] #proceedings-feed .proceedings-measure { display: block; box-sizing: border-box; width: auto; max-width: 100%; margin-top: var(--sp-10); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); background: var(--bg-elevated); text-align: left; transition: background var(--dur-150) ease, border-color var(--dur-150) ease; }
 :root[data-chamber="senate"] #proceedings-feed button.proceedings-measure:hover { background: rgba(255, 255, 255, 0.035); border-color: var(--text-muted); }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-size: var(--fs-lg); margin-top: var(--sp-2); }
+
+/* LINKS THAT OPEN A MODAL (a bill number, a Member's name in a list): an outlined chip. The outline is the site's mark for "this does something" (Badges: an outline means interactive), so a reader can tell a
+   bill number that opens a window from a label that does not. The corner is the tags' 4px. Hover fills it and brightens the edge. An external link is different: it carries the arrow (`ext`) and opens a new tab. */
+.bill-open, button.proc-bill-link, .mem-bill, .mem-link {
+    padding: 0 var(--sp-6); margin: 0 -1px; border: 1px solid color-mix(in srgb, var(--accent-blue) 55%, transparent); border-radius: var(--radius-4);
+    background: transparent; color: var(--accent-blue); text-decoration: none; cursor: pointer;
+    transition: background-color var(--dur-150) ease, border-color var(--dur-150) ease;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.bill-open:is(:hover, :focus-visible), button.proc-bill-link:is(:hover, :focus-visible), .mem-bill:is(:hover, :focus-visible), .mem-link:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--accent-blue) 16%, transparent); border-color: var(--accent-blue); text-decoration: none;
+}

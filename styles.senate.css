@@ -7204,7 +7204,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
 @media (prefers-reduced-motion: reduce) {
   .committee-more::after, .ai-off-btn, .committee-more, .site-footer-license.ai-toggle { transition: none; }
 }
-.bill-open, a.site-footer-license:not(.ext), .suggest-privacy-link, .suggest-data-box a:not([href^="http"]) {
+a.site-footer-license:not(.ext), .suggest-privacy-link, .suggest-data-box a:not([href^="http"]) {
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat;
     background-size: 0 1px;
@@ -7212,7 +7212,7 @@ html.ai-off .bill-link-group > .bill-modal-link {
     padding-bottom: 1px;
     transition: background-size 0.4s cubic-bezier(0.75, 0, 0.25, 1), color var(--dur-120);
 }
-.bill-open:is(:hover, :focus-visible), a.site-footer-license:not(.ext):is(:hover, :focus-visible), .suggest-privacy-link:is(:hover, :focus-visible), .suggest-data-box a:not([href^="http"]):is(:hover, :focus-visible) {
+a.site-footer-license:not(.ext):is(:hover, :focus-visible), .suggest-privacy-link:is(:hover, :focus-visible), .suggest-data-box a:not([href^="http"]):is(:hover, :focus-visible) {
     background-size: 100% 1px;
     background-position: 0 100%;
 }
@@ -7643,3 +7643,12 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 :root[data-chamber="senate"] #proceedings-feed .proceedings-measure { display: block; box-sizing: border-box; width: auto; max-width: 100%; margin-top: var(--sp-10); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); background: var(--bg-elevated); text-align: left; transition: background var(--dur-150) ease, border-color var(--dur-150) ease; }
 :root[data-chamber="senate"] #proceedings-feed button.proceedings-measure:hover { background: rgba(255, 255, 255, 0.035); border-color: var(--text-muted); }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-size: var(--fs-lg); margin-top: var(--sp-2); }
+.bill-open {
+    padding: 0 var(--sp-6); margin: 0 -1px; border: 1px solid color-mix(in srgb, var(--accent-blue) 55%, transparent); border-radius: var(--radius-4);
+    background: transparent; color: var(--accent-blue); text-decoration: none; cursor: pointer;
+    transition: background-color var(--dur-150) ease, border-color var(--dur-150) ease;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.bill-open:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--accent-blue) 16%, transparent); border-color: var(--accent-blue); text-decoration: none;
+}
