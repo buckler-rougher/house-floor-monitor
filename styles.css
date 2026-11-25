@@ -13891,5 +13891,5 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 /* Orders of the day: the header is a shaded bar across the top of the card, so it cannot be mistaken for the first order's label beneath it. Its text is the secondary colour, not the brightest. */
 #calendar-orders .calendar-card-head { margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-12)) var(--sp-4); padding: var(--sp-8) var(--sp-12); background: rgba(13, 17, 23, 0.28); border-bottom: 1px solid var(--border-color); border-radius: var(--radius-8) var(--radius-8) 0 0; }   /* the secondary header row's own tint (.absentee-info) */
-#calendar-orders .calendar-card-title { color: var(--text-secondary); }
+#calendar-orders .calendar-card-title { font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 600; color: var(--text-secondary); }   /* as the Bills column titles are set */
 #calendar-orders .calendar-card-count { color: var(--text-muted); }
