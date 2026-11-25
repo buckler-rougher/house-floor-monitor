@@ -13988,9 +13988,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 /* THE MEETING WINDOW: the site's modal chrome (.tm-picker), a header with the committee, the meeting's title and when and where, then what the Clerk has posted: witnesses (with their documents), and a markup's
    legislation, amendments and notices. A bill number in it opens that bill's window. Nothing in it is pressed except its links, so nothing is outlined. */
 .cm-dialog { width: min(680px, 100%); max-height: min(88vh, 780px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-.cm-dialog .tm-picker-head { margin: 0; padding: var(--sp-16) var(--sp-20) 0; }
+.cm-dialog .tm-picker-head { margin: 0; padding: var(--sp-16) var(--sp-20) var(--sp-12); border-bottom: 1px solid var(--border-color); }
 .cm-kicker { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
-.cm-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-6) var(--sp-20) var(--sp-20); overscroll-behavior: contain; }
+.cm-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-16) var(--sp-20) var(--sp-20); overscroll-behavior: contain; }
 .cm-title { margin: 0 0 var(--sp-8); font-family: var(--font-sans); font-size: var(--fs-5xl); font-weight: 600; line-height: 1.3; color: var(--text-primary); overflow-wrap: anywhere; }
 .cm-meta { display: flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-16); font-size: var(--fs-md); color: var(--text-secondary); }
 .cm-meta-time { font-family: var(--font-mono); color: var(--accent-green); }

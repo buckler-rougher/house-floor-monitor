@@ -12822,9 +12822,9 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 @media (max-width: 640px) { .committee-card { grid-template-columns: 4.2rem minmax(0, 1fr) auto; } .committee-card .committee-room { grid-column: 2; } .committee-card .bill-chevron { grid-column: 3; grid-row: 1 / span 2; } }
 
 .cm-dialog { width: min(680px, 100%); max-height: min(88vh, 780px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-.cm-dialog .tm-picker-head { margin: 0; padding: var(--sp-16) var(--sp-20) 0; }
+.cm-dialog .tm-picker-head { margin: 0; padding: var(--sp-16) var(--sp-20) var(--sp-12); border-bottom: 1px solid var(--border-color); }
 .cm-kicker { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--text-muted); }
-.cm-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-6) var(--sp-20) var(--sp-20); overscroll-behavior: contain; }
+.cm-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-16) var(--sp-20) var(--sp-20); overscroll-behavior: contain; }
 .cm-title { margin: 0 0 var(--sp-8); font-family: var(--font-sans); font-size: var(--fs-5xl); font-weight: 600; line-height: 1.3; color: var(--text-primary); overflow-wrap: anywhere; }
 .cm-meta { display: flex; flex-wrap: wrap; gap: var(--sp-4) var(--sp-16); font-size: var(--fs-md); color: var(--text-secondary); }
 .cm-meta-time { font-family: var(--font-mono); color: var(--accent-green); }
