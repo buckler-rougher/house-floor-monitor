@@ -12742,7 +12742,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #calendar-orders .calendar-card-label + p { margin-top: var(--sp-8); }
 #calendar-orders .calendar-card-item p.calendar-card-note { padding: var(--sp-6) var(--sp-10); border-left: 2px solid var(--accent-amber); background: rgba(255, 255, 255, 0.03); border-radius: 0 var(--radius-6) var(--radius-6) 0; font-size: var(--fs-sm); color: var(--text-secondary); }
 
-#calendar-orders .calendar-card-head { margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-12)) var(--sp-4); padding: var(--sp-8) var(--sp-12); background: rgba(13, 17, 23, 0.28); border-bottom: 1px solid var(--border-color); border-radius: var(--radius-8) var(--radius-8) 0 0; }
-#calendar-orders .calendar-card-title { font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 600; color: var(--text-secondary); }
+#calendar-orders .calendar-card-head { align-items: center; margin: calc(-1 * var(--sp-8)) calc(-1 * var(--sp-12)) var(--sp-4); padding: var(--sp-8) var(--sp-12); background: rgba(13, 17, 23, 0.28); border-bottom: 1px solid var(--border-color); border-radius: var(--radius-8) var(--radius-8) 0 0; }
+#calendar-orders .calendar-card-title { display: flex; align-items: center; line-height: 1; font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 600; color: var(--text-secondary); }
 #calendar-orders .calendar-card-count { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 1.5rem; height: 1.5rem; padding: 0 var(--sp-6); margin-left: var(--sp-8); border-radius: var(--radius-7); background: rgba(255, 255, 255, 0.07); font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 #calendar-orders .calendar-card-count:empty { display: none; }
