@@ -12785,21 +12785,41 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 }
 
 .ai-modal-overlay { z-index: 1400; }
-.ai-modal { width: min(420px, 100%); }
-.ai-modal-title { margin: 0; font-family: var(--font-sans); font-size: var(--fs-3xl); font-weight: 600; line-height: 1.3; color: var(--text-primary); }
-.ai-modal-text { margin: var(--sp-4) 0 var(--sp-16); font-size: var(--fs-xl); line-height: 1.55; color: var(--text-secondary); }
-.ai-modal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); padding: var(--sp-12); border-radius: var(--radius-8); background: rgba(255, 255, 255, 0.04); }
-.ai-modal-label { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); }
-.ai-switch { display: inline-flex; align-items: center; gap: var(--sp-10); padding: 0; border: 0; background: none; font: inherit; color: var(--text-secondary); cursor: pointer; }
-.ai-switch-state { min-width: 2.4em; text-align: right; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; }
-.ai-switch-track { position: relative; box-sizing: border-box; width: 44px; height: 24px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.12); transition: background-color 0.2s ease, border-color 0.2s ease; }
-.ai-switch-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-primary); transition: transform 0.2s var(--ease-emphasis, ease); }
+.ai-modal { width: min(440px, 100%); position: relative; overflow: hidden; border-color: var(--border-color); transition: border-color 0.4s ease, box-shadow 0.4s ease; }
+.ai-modal::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 150px; background: radial-gradient(120% 100% at 50% -10%, color-mix(in srgb, var(--accent-purple) 38%, transparent), transparent 70%); opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
+.ai-modal.is-on { border-color: color-mix(in srgb, var(--accent-purple) 50%, var(--border-color)); box-shadow: 0 24px 64px rgba(0, 0, 0, .65), 0 0 40px color-mix(in srgb, var(--accent-purple) 22%, transparent); }
+.ai-modal.is-on::before { opacity: 1; }
+.ai-modal > * { position: relative; }
+.ai-modal .tm-picker-head { margin-bottom: var(--sp-10); }
+.ai-badge { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius-12); background: rgba(255, 255, 255, 0.06); color: var(--text-muted); transition: background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease; }
+.ai-badge svg { width: 26px; height: 26px; fill: currentColor; }
+.ai-modal.is-on .ai-badge { background: color-mix(in srgb, var(--accent-purple) 26%, transparent); color: var(--accent-purple); box-shadow: 0 0 22px color-mix(in srgb, var(--accent-purple) 45%, transparent); animation: ai-glow 2.6s ease-in-out infinite; }
+.ai-modal.is-on .ai-star-s { animation: ai-twinkle 2.6s ease-in-out infinite; transform-origin: 19px 5.5px; }
+.ai-modal-title { margin: 0; font-family: var(--font-sans); font-size: var(--fs-5xl, 1.5rem); font-weight: 700; line-height: 1.25; color: var(--text-primary); }
+.ai-modal-text { margin: var(--sp-8) 0 var(--sp-20); font-size: var(--fs-xl); line-height: 1.6; color: var(--text-secondary); }
+.ai-modal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); padding: var(--sp-14) var(--sp-16); border-radius: var(--radius-12); background: rgba(255, 255, 255, 0.05); }
+.ai-modal-label { font-size: var(--fs-3xl); font-weight: 600; color: var(--text-primary); }
+.ai-switch { display: inline-flex; align-items: center; gap: var(--sp-12); padding: 0; border: 0; background: none; font: inherit; color: var(--text-muted); cursor: pointer; }
+.ai-switch-state { min-width: 2.4em; text-align: right; font-family: var(--font-mono); font-size: var(--fs-md); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; transition: color 0.3s ease; }
+.ai-switch-track { position: relative; box-sizing: border-box; width: 62px; height: 34px; border: 1px solid var(--border-color); border-radius: 17px; background: rgba(255, 255, 255, 0.1); transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
+.ai-switch-knob { position: absolute; top: 3px; left: 3px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--text-secondary); color: var(--bg-card); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); transition: transform 0.3s var(--ease-emphasis, cubic-bezier(.3, 1.4, .5, 1)), background-color 0.3s ease, color 0.3s ease; }
+.ai-switch-knob svg { width: 16px; height: 16px; fill: currentColor; }
+.ai-switch-knob .ai-star-s { display: none; }
 .ai-switch.is-on .ai-switch-state { color: var(--accent-purple); }
-.ai-switch.is-on .ai-switch-track { background: color-mix(in srgb, var(--accent-purple) 55%, transparent); border-color: var(--accent-purple); }
-.ai-switch.is-on .ai-switch-knob { transform: translateX(20px); }
+.ai-switch.is-on .ai-switch-track { border-color: var(--accent-purple); background: linear-gradient(100deg, color-mix(in srgb, var(--accent-purple) 70%, transparent), color-mix(in srgb, var(--accent-purple) 45%, #ffffff), color-mix(in srgb, var(--accent-purple) 70%, transparent)); background-size: 220% 100%; animation: ai-sheen 3.2s linear infinite; box-shadow: 0 0 16px color-mix(in srgb, var(--accent-purple) 55%, transparent); }
+.ai-switch.is-on .ai-switch-knob { transform: translateX(28px); background: #fff; color: var(--accent-purple); }
 .ai-switch:hover .ai-switch-track { border-color: var(--text-muted); }
-.ai-switch.is-on:hover .ai-switch-track { border-color: var(--accent-purple); }
+.ai-switch.is-on:hover .ai-switch-track { border-color: #fff; }
 .ai-switch:focus-visible { outline: none; }
-.ai-switch:focus-visible .ai-switch-track { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
-.ai-modal-done { margin: var(--sp-10) 0 0; min-height: 1.4em; font-size: var(--fs-md); color: var(--text-secondary); }
-@media (prefers-reduced-motion: reduce) { .ai-switch-track, .ai-switch-knob { transition: none; } }
+.ai-switch:focus-visible .ai-switch-track { outline: 2px solid var(--accent-blue); outline-offset: 3px; }
+.ai-modal-done { margin: var(--sp-12) 0 0; min-height: 1.5em; font-size: var(--fs-lg); font-weight: 500; color: var(--text-secondary); }
+.ai-modal.is-on .ai-modal-done { color: var(--accent-purple); }
+.ai-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--accent-purple); box-shadow: 0 0 8px var(--accent-purple); transform: translate(calc(14px + var(--d, 20px) * 0) , 0) rotate(var(--a, 0deg)) translateX(0); animation: ai-spark-out 0.7s ease-out forwards; pointer-events: none; }
+@keyframes ai-spark-out { from { transform: rotate(var(--a)) translateX(10px) scale(1); opacity: 1; } to { transform: rotate(var(--a)) translateX(calc(var(--d) + 14px)) scale(0.2); opacity: 0; } }
+@keyframes ai-sheen { from { background-position: 0% 0; } to { background-position: -220% 0; } }
+@keyframes ai-glow { 0%, 100% { box-shadow: 0 0 16px color-mix(in srgb, var(--accent-purple) 35%, transparent); } 50% { box-shadow: 0 0 30px color-mix(in srgb, var(--accent-purple) 65%, transparent); } }
+@keyframes ai-twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.6); } }
+@media (prefers-reduced-motion: reduce) {
+    .ai-modal, .ai-modal::before, .ai-badge, .ai-switch-track, .ai-switch-knob, .ai-switch-state { transition: none; }
+    .ai-modal.is-on .ai-badge, .ai-modal.is-on .ai-star-s, .ai-switch.is-on .ai-switch-track { animation: none; }
+}
