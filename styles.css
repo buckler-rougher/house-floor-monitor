@@ -13942,3 +13942,25 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .bill-open:is(:hover, :focus-visible), button.proc-bill-link:is(:hover, :focus-visible), .mem-bill:is(:hover, :focus-visible), .mem-link:is(:hover, :focus-visible) {
     background: color-mix(in srgb, var(--accent-blue) 16%, transparent); border-color: var(--accent-blue); text-decoration: none;
 }
+
+/* THE "TURN OFF AI SUMMARIES?" WINDOW (lib/ai-pref.js): the site's modal chrome (.tm-picker) with a title in sans, a short explanation, and a SWITCH, which is the second step. The switch is the first one on the
+   site: a track and a knob, outlined because it is pressed (Badges: an outline means interactive), purple while on because the setting is the AI's (Purple means AI), grey off. */
+.ai-modal-overlay { z-index: 1400; }
+.ai-modal { width: min(420px, 100%); }
+.ai-modal-title { margin: 0; font-family: var(--font-sans); font-size: var(--fs-3xl); font-weight: 600; line-height: 1.3; color: var(--text-primary); }
+.ai-modal-text { margin: var(--sp-4) 0 var(--sp-16); font-size: var(--fs-xl); line-height: 1.55; color: var(--text-secondary); }
+.ai-modal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-12); padding: var(--sp-12); border-radius: var(--radius-8); background: rgba(255, 255, 255, 0.04); }
+.ai-modal-label { font-size: var(--fs-xl); font-weight: 600; color: var(--text-primary); }
+.ai-switch { display: inline-flex; align-items: center; gap: var(--sp-10); padding: 0; border: 0; background: none; font: inherit; color: var(--text-secondary); cursor: pointer; }
+.ai-switch-state { min-width: 2.4em; text-align: right; font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 600; letter-spacing: var(--track-wide); text-transform: uppercase; }
+.ai-switch-track { position: relative; box-sizing: border-box; width: 44px; height: 24px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.12); transition: background-color 0.2s ease, border-color 0.2s ease; }
+.ai-switch-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-primary); transition: transform 0.2s var(--ease-emphasis, ease); }
+.ai-switch.is-on .ai-switch-state { color: var(--accent-purple); }
+.ai-switch.is-on .ai-switch-track { background: color-mix(in srgb, var(--accent-purple) 55%, transparent); border-color: var(--accent-purple); }
+.ai-switch.is-on .ai-switch-knob { transform: translateX(20px); }
+.ai-switch:hover .ai-switch-track { border-color: var(--text-muted); }
+.ai-switch.is-on:hover .ai-switch-track { border-color: var(--accent-purple); }
+.ai-switch:focus-visible { outline: none; }
+.ai-switch:focus-visible .ai-switch-track { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.ai-modal-done { margin: var(--sp-10) 0 0; min-height: 1.4em; font-size: var(--fs-md); color: var(--text-secondary); }
+@media (prefers-reduced-motion: reduce) { .ai-switch-track, .ai-switch-knob { transition: none; } }
