@@ -5405,8 +5405,8 @@ function getTodayDateET() {
 //
 // A fetch that fails (a network error, a 5xx) THROWS, so kvCache does not hold it: caching a null for
 // fifteen minutes because govinfo hiccupped would hide a calendar that exists.
-async function handleHouseCalendar(env) {
-  const ymd = getTodayDateET();
+async function handleHouseCalendar(env, dateParam) {
+  const ymd = /^\d{4}-\d{2}-\d{2}$/.test(dateParam || '') ? String(dateParam).replace(/-/g, '') : getTodayDateET();   // ?date=YYYY-MM-DD: another day's Calendar (the Time Machine, and looking at a day with orders)
   const date = `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
   return kvCache(env, `house-calendar-${CURRENT_CONGRESS}-${date}-v1`, 900, async () => {
     const pkg = `CCAL-${CURRENT_CONGRESS}hcal-${date}`;
@@ -7741,7 +7741,7 @@ async function handleRequest(request, env) {
   } else if (path === '/api/leadership' && request.method === 'GET') {
     return await handleLeadership(env);
   } else if (path === '/api/house-calendar' && request.method === 'GET') {
-    return await handleHouseCalendar(env);
+    return await handleHouseCalendar(env, url.searchParams.get('date'));
   } else if (path === '/api/last-session-date' && request.method === 'GET') {
     return await handleLastSessionDate(request);
   } else if (path === '/api/replay-day' && request.method === 'GET') {

@@ -9751,6 +9751,20 @@ function wireCalendarCards() {
     }
 }
 
+// "(Agreed to Jan. 6, 2026.)" at the end of a standing order: the date becomes a link to that day in the Time Machine (/?replay=YYYYMMDD). Only a past date, and only when it reads as a date.
+function linkAgreedDate(escapedText) {
+    const months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    return escapedText.replace(/(Agreed to )([A-Z][a-z]{2,8})\.? (\d{1,2}), (\d{4})/g, (whole, lead, mon, day, year) => {
+        const m = months[mon.slice(0, 3).toLowerCase()];
+        if (!m) return whole;
+        const iso = `${year}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const d = new Date(`${iso}T12:00:00`);
+        if (Number.isNaN(d.getTime()) || d.getMonth() + 1 !== m || iso >= new Date().toISOString().slice(0, 10)) return whole;
+        const shown = whole.slice(lead.length);
+        return `${lead}<a class="calendar-card-date" href="?replay=${iso.replace(/-/g, '')}" title="Open this day in the Time Machine">${shown}</a>`;
+    });
+}
+
 function renderHouseCalendar() {
     const line = document.getElementById('calendar-line');
     const card = document.getElementById('calendar-orders');
@@ -9788,13 +9802,22 @@ function renderHouseCalendar() {
         if (orders === null || orders === undefined) {
             card.hidden = true;
         } else {
-            const items = orders.map((o) => ({ label: o.label, text: o.text }));
+            // The Calendar does not separate the day's agreed orders from the standing special-order rules: both sit under its one "Special Orders" heading. So the card lists all of it, in the Calendar's
+            // order and under its own labels; the standing ones carry a small tag. The daily hours of meeting are the standing rule only: the hour the House meets can be set by something the Calendar does not
+            // list (the Speaker's adjournment announcement), so that item says so, and the line above the card stays the day's hour.
+            const items = [
+                ...orders.map((o) => ({ label: o.label, paras: [o.text] })),
+                ...(c.standing || []).map((s) => ({
+                    label: s.label, paras: s.paragraphs || [], tag: 'Standing order',
+                    note: s.kind === 'hour-of-meeting' ? 'This is the standing rule. The hour the House actually meets can be set by a later order or the Speaker\u2019s adjournment announcement, so the hour above is the one to go by.' : '',
+                })),
+            ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
-                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}</div><p>${escapeHtml(o.text)}</p></div>`).join('')
-                : '<p class="calendar-card-empty">No orders are listed for this day.</p>');
+                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="sr-fact">${escapeHtml(o.tag)}</span>` : ''}</div>${o.paras.map((p) => `<p>${linkAgreedDate(escapeHtml(p))}</p>`).join('')}${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}</div>`).join('')
+                : '<p class="calendar-card-empty">The Calendar lists no orders for this day.</p>');
             setSource(card);
             const count = card.querySelector('.calendar-card-count');
-            if (count) count.textContent = orders.length ? String(orders.length) : '';
+            if (count) count.textContent = items.length ? String(items.length) : '';
             card.hidden = false;
             if (card._measure) card._measure();
         }
@@ -9817,7 +9840,8 @@ function renderHouseCalendar() {
 async function loadHouseCalendar() {
     if (!document.getElementById('calendar-line')) return;
     try {
-        const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar');
+        const day = new URLSearchParams(location.search).get('calendar');   // ?calendar=YYYY-MM-DD shows another day's Calendar (to look at a day with orders)
+        const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar' + (/^\d{4}-\d{2}-\d{2}$/.test(day || '') ? `?date=${day}` : ''));
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         _calendar = await r.json();
     } catch (e) {

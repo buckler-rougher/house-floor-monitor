@@ -63,8 +63,12 @@ async function stagingGate({ request, env, next }, url) {
   }
   const cookie = (request.headers.get('cookie') || '').split(/;\s*/).find((c) => c.startsWith(GATE_COOKIE + '='));
   if (cookie && same(cookie.slice(GATE_COOKIE.length + 1), token)) return null;
+  const agent = env.STAGING_AGENT_KEY;   // a second key, only for the tooling that checks staging (the person's passcode is not needed for it); delete the secret to end that access
   const key = request.headers.get('x-staging-key');
-  if (key && same(key, code)) return null;
+  if (key && (same(key, code) || (agent && same(key, agent)))) return null;
+  if (request.method === 'GET' && url.pathname === '/__gate' && agent && same(url.searchParams.get('k') || '', agent)) {   // a sign-in link for a browser the tooling drives: sets the same cookie the passcode does
+    return new Response(null, { status: 303, headers: { ...gateHeaders, location: '/', 'set-cookie': `${GATE_COOKIE}=${token}; Path=/; Max-Age=2592000; HttpOnly; Secure; SameSite=Lax` } });
+  }
   const wantsPage = request.method === 'GET' && /text\/html/.test(request.headers.get('accept') || '');
   return wantsPage ? gatePage('') : new Response('Staging needs the passcode.', { status: 401, headers: { ...gateHeaders, 'content-type': 'text/plain; charset=utf-8' } });
 }
