@@ -13897,3 +13897,13 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 
 /* The date a standing order was agreed to, a link to that day in the Time Machine: as the text around it, underlined. */
 .calendar-card-date, .calendar-card-date:visited { color: inherit; font-weight: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* FLOOR PROCEEDINGS (House): a timeline. A line down the left with a dot for each entry (the newest lit green), the time above the text, the text in sans. The feed sits on the panel's own card colour so the dots
+   (filled with that same colour) cut the line cleanly. The newest entry is the first child. The Senate's feed is a different shape (a day's narrative, measures, status lines) and keeps its own look. */
+:root:not([data-chamber="senate"]) #proceedings-feed { padding-left: var(--sp-20); background: var(--bg-card); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item { position: relative; margin-left: 4px; padding: var(--sp-8) 0 var(--sp-8) var(--sp-20); border-bottom: 0; border-left: 1px solid var(--border-color); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item::before { content: ""; position: absolute; left: -4px; top: 14px; width: 7px; height: 7px; box-sizing: border-box; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--text-muted); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.18); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-text { display: block; font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-time { display: block; margin-bottom: 2px; color: var(--text-muted); font-size: var(--fs-sm); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child .proceedings-time { color: var(--accent-green); }
