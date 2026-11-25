@@ -9751,6 +9751,20 @@ function wireCalendarCards() {
     }
 }
 
+// "(Agreed to Jan. 6, 2026.)" at the end of a standing order: the date becomes a link to that day in the Time Machine (/?replay=YYYYMMDD). Only a past date, and only when it reads as a date.
+function linkAgreedDate(escapedText) {
+    const months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    return escapedText.replace(/(Agreed to )([A-Z][a-z]{2,8})\.? (\d{1,2}), (\d{4})/g, (whole, lead, mon, day, year) => {
+        const m = months[mon.slice(0, 3).toLowerCase()];
+        if (!m) return whole;
+        const iso = `${year}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const d = new Date(`${iso}T12:00:00`);
+        if (Number.isNaN(d.getTime()) || d.getMonth() + 1 !== m || iso >= new Date().toISOString().slice(0, 10)) return whole;
+        const shown = whole.slice(lead.length);
+        return `${lead}<a class="calendar-card-date" href="?replay=${iso.replace(/-/g, '')}" title="Open this day in the Time Machine">${shown}</a>`;
+    });
+}
+
 function renderHouseCalendar() {
     const line = document.getElementById('calendar-line');
     const card = document.getElementById('calendar-orders');
@@ -9799,7 +9813,7 @@ function renderHouseCalendar() {
                 })),
             ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
-                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="sr-fact">${escapeHtml(o.tag)}</span>` : ''}</div>${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}</div>`).join('')
+                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="sr-fact">${escapeHtml(o.tag)}</span>` : ''}</div>${o.paras.map((p) => `<p>${linkAgreedDate(escapeHtml(p))}</p>`).join('')}${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}</div>`).join('')
                 : '<p class="calendar-card-empty">The Calendar lists no orders for this day.</p>');
             setSource(card);
             const count = card.querySelector('.calendar-card-count');
