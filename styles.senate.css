@@ -7630,3 +7630,16 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-text { display: block; font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-time { display: block; margin-bottom: 2px; color: var(--text-muted); font-size: var(--fs-sm); }
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child .proceedings-time { color: var(--accent-green); }
+:root[data-chamber="senate"] #proceedings-feed { padding-left: var(--sp-20); background: var(--bg-card); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-item { position: relative; margin-left: 4px; padding: var(--sp-8) 0 var(--sp-8) var(--sp-20); border-bottom: 0; border-left: 1px solid var(--border-color); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-item::before { content: ""; position: absolute; left: -4px; top: 15px; width: 7px; height: 7px; box-sizing: border-box; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--text-muted); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-item:has(> .proceedings-measure:first-child)::before { top: 21px; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-item:first-child::before, :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label:first-child + .proceedings-item::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.18); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-text { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-section-label { margin: 0 0 0 4px; padding: var(--sp-12) 0 var(--sp-2) var(--sp-20); border-left: 1px solid var(--border-color); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; color: var(--text-primary); padding-left: 0; border-left: 0; margin: var(--sp-6) 0 0; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-2); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-status:first-child { margin-top: 0; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-measure { display: block; box-sizing: border-box; width: auto; max-width: 100%; margin-top: var(--sp-10); padding: var(--sp-8) var(--sp-12); border: 1px solid var(--border-color); border-radius: var(--radius-8); background: var(--bg-elevated); text-align: left; transition: background var(--dur-150) ease, border-color var(--dur-150) ease; }
+:root[data-chamber="senate"] #proceedings-feed button.proceedings-measure:hover { background: rgba(255, 255, 255, 0.035); border-color: var(--text-muted); }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-size: var(--fs-lg); margin-top: var(--sp-2); }

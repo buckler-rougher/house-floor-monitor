@@ -1300,6 +1300,7 @@ function initBillModal() {
 // today. The Worker holds it for five minutes rather than an hour, which is
 // what will make a sitting day visibly move.
 
+// A measure's entry: what the Senate did (its status lines, read as narrative, in the order they happened) first, then a small card for the measure itself.
 function proceedingsMeasure(m) {
     const status = m.status.map((x) => `
         <div class="proceedings-status">${escapeHtml(x.text)}${
@@ -1316,11 +1317,12 @@ function proceedingsMeasure(m) {
     const tag = idAttr ? 'button' : 'div';
     return `
     <div class="proceedings-item">
+        ${status}
         <${tag} class="proceedings-measure"${idAttr}${idAttr ? ' type="button"' : ''}>
             <div class="proceedings-measure-id">${escapeHtml(m.id)}${m.sponsor ? ` <span class="proceedings-sponsor">${escapeHtml(m.sponsor)}</span>` : ''}</div>
             <div class="proceedings-measure-title">${escapeHtml(m.title)}</div>
         </${tag}>
-        ${status}${amendments}
+        ${amendments}
     </div>`;
 }
 
