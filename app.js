@@ -9826,7 +9826,8 @@ function renderHouseCalendar() {
 async function loadHouseCalendar() {
     if (!document.getElementById('calendar-line')) return;
     try {
-        const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar');
+        const day = new URLSearchParams(location.search).get('calendar');   // ?calendar=YYYY-MM-DD shows another day's Calendar (to look at a day with orders)
+        const r = await fetch('https://api.evanhollander.org/house-floor/api/house-calendar' + (/^\d{4}-\d{2}-\d{2}$/.test(day || '') ? `?date=${day}` : ''));
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         _calendar = await r.json();
     } catch (e) {
