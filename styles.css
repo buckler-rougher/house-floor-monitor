@@ -13978,12 +13978,10 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .committee-more { justify-self: start; text-align: left; margin-top: var(--sp-6); font: inherit; font-size: var(--fs-sm); }
 
 /* COMMITTEE MEETINGS (House): each meeting is a card, as a bill is (the bill card's neutral look and its chevron), and the card opens a window with the whole meeting. */
-.committee-card { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) minmax(0, 10rem) auto; gap: var(--sp-4) var(--sp-16); align-items: baseline; box-sizing: border-box; width: 100%; margin: 0 0 var(--sp-8); padding: var(--sp-10) var(--sp-12); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-6); font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background var(--dur-150) ease, border-color var(--dur-150) ease, box-shadow var(--dur-150) ease; }
 .committee-card:hover, .committee-card:focus-visible { background: rgba(139, 148, 158, 0.06); box-shadow: 0 0 0 1px rgba(139, 148, 158, 0.35); }
 .committee-card:hover .bill-chevron, .committee-card:focus-visible .bill-chevron { color: var(--text-secondary); }
 .committee-card .committee-title { text-decoration: none; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: calc(2 * 1.4em); }   /* two lines held for every card, so they are one height */
 .committee-card .bill-chevron { align-self: center; }
-@media (max-width: 640px) { .committee-card { grid-template-columns: 4.2rem minmax(0, 1fr) auto; } .committee-card .committee-room { grid-column: 2; } .committee-card .bill-chevron { grid-column: 3; grid-row: 1 / span 2; } }
 
 /* THE MEETING WINDOW: the site's modal chrome (.tm-picker), a header with the committee, the meeting's title and when and where, then what the Clerk has posted: witnesses (with their documents), and a markup's
    legislation, amendments and notices. A bill number in it opens that bill's window. Nothing in it is pressed except its links, so nothing is outlined. */
@@ -14013,9 +14011,20 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .cm-load-row { display: grid; gap: var(--sp-8); }
 
 /* The committee chip in a meeting's card and window (the same chip as the bill window's), with a subcommittee's own name beside it. */
-.committee-card .committee-name, .cm-kicker { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-4); }   /* the chip on its own line, a subcommittee's name always under it */
-.committee-card .committee-name { margin-top: var(--sp-6); }
 .cm-sub { font-size: var(--fs-sm); color: var(--text-muted); }
 .cm-kicker { font-family: var(--font-sans); letter-spacing: normal; text-transform: none; font-weight: 400; min-width: 0; }
-.committee-card .cm-sub { min-height: 1.3em; }
 .cm-meta-sub { color: var(--text-muted); }
+
+/* THE MEETING CARD, redone: the time with the room under it on the left, the title beside them (two lines held so every card is one height), and under the title a compact committee chip with a
+   subcommittee's name after it. Same card as a bill's (its fill, edge, hover and chevron). */
+.committee-card { display: grid; grid-template-columns: 5.6rem minmax(0, 1fr) auto; column-gap: var(--sp-16); align-items: start; box-sizing: border-box; width: 100%; margin: 0 0 var(--sp-8); padding: var(--sp-10) var(--sp-12); background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-6); font: inherit; color: inherit; text-align: left; cursor: pointer; transition: background var(--dur-150) ease, border-color var(--dur-150) ease, box-shadow var(--dur-150) ease; }
+.committee-when { display: grid; gap: var(--sp-2); align-content: start; }
+.committee-card .committee-room { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
+.committee-card .committee-what { gap: var(--sp-6); }
+.committee-card .committee-name { display: flex; align-items: center; gap: var(--sp-8); min-width: 0; margin: 0; }
+.committee-card .bill-modal-committee { flex: none; gap: var(--sp-6); padding: 2px var(--sp-8) 2px var(--sp-6); border-left-width: 2px; font-size: var(--fs-md); }
+.committee-card .committee-chip-logo, .committee-card .committee-chip-mark { width: 16px; height: 16px; }
+.committee-card .cm-sub { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.committee-card .bill-chevron { align-self: center; }
+@media (max-width: 640px) { .committee-card { grid-template-columns: 4.4rem minmax(0, 1fr) auto; } .committee-card .committee-name { flex-wrap: wrap; } .committee-card .cm-sub { white-space: normal; } }
+.cm-kicker { display: flex; align-items: center; min-width: 0; }

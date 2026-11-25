@@ -6607,10 +6607,10 @@ function committeeParts(committee) {
     const chip = globalThis.Committees ? globalThis.Committees.committeeChipHtml({ name, chamber: 'House' }) : `<span>${escapeHtml(full)}</span>`;
     return { chip, sub };
 }
-// The card: the chip, then a row for the subcommittee's name that is always there (empty for a full committee), so every card is the same height.
+// The card's committee row: the chip, and a subcommittee's own name after it.
 function committeeChipsHtml(committee) {
     const { chip, sub } = committeeParts(committee);
-    return `${chip}<span class="cm-sub">${sub ? escapeHtml(sub) : '&nbsp;'}</span>`;
+    return `${chip}${sub ? `<span class="cm-sub">${escapeHtml(sub)}</span>` : ''}`;
 }
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
@@ -6626,12 +6626,14 @@ function renderCommitteeMeetings() {
         if (!list._clamp) { list.innerHTML = ''; ClampList.mount(list, { keep: COMMITTEE_SHOWN }); }
         const entries = d.events.map((e) => ({ key: e.id, html: `
         <button type="button" class="committee-card" data-committee-open="${escapeHtml(e.id)}">
-            <span class="committee-time">${escapeHtml(e.time)}</span>
+            <span class="committee-when">
+                <span class="committee-time">${escapeHtml(e.time)}</span>
+                <span class="committee-room">${escapeHtml(e.location)}</span>
+            </span>
             <span class="committee-what">
                 <span class="committee-title">${escapeHtml(e.title.replace(/^[\s:\u2022]+/, ""))}</span>
                 <span class="committee-name">${committeeChipsHtml(e.committee)}</span>
             </span>
-            <span class="committee-room">${escapeHtml(e.location)}</span>
             <span class="bill-chevron gi gi-chev-right" aria-hidden="true"></span>
         </button>` }));
         ListSync.sync(list, entries);
