@@ -6593,9 +6593,10 @@ function renderTodayInHouse(items) {
 // Asked for today only: a day with nothing on (a recess, a weekend) says so, and no other day is shown in its place. Titles, committees, times and rooms are the Clerk's own words;
 // a markup's title is the bills it takes up.
 let _committee = null;
-const _committeeOpen = new Set();   // meetings whose details are open
 const _committeeDetail = {};        // event id -> /api/committee-event answer, or 'loading' / 'error'
 const COMMITTEE_SHOWN = 5;
+// Each meeting is a CARD, as a bill is: the time, the title, the committee and the room, and a chevron. Pressing it opens a window with everything the Clerk has on the meeting (witnesses and their
+// documents, the legislation and amendments of a markup, notices), so the list stays a list. Nothing is fetched until a meeting is opened.
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
     if (!list || !_committee) return;
@@ -6609,16 +6610,15 @@ function renderCommitteeMeetings() {
     } else {
         if (!list._clamp) { list.innerHTML = ''; ClampList.mount(list, { keep: COMMITTEE_SHOWN }); }
         const entries = d.events.map((e) => ({ key: e.id, html: `
-        <div class="committee-item">
+        <button type="button" class="committee-card" data-committee-open="${escapeHtml(e.id)}">
             <span class="committee-time">${escapeHtml(e.time)}</span>
-            <div class="committee-what">
-                <a class="committee-title" href="${escapeHtml(globalThis.BoardUtil.safeHref(e.url))}" target="_blank" rel="noopener">${escapeHtml(e.title)}</a>
+            <span class="committee-what">
+                <span class="committee-title">${escapeHtml(e.title)}</span>
                 <span class="committee-name">${escapeHtml(e.committee)}</span>
-                <button type="button" class="committee-more" data-committee-detail="${escapeHtml(e.id)}" aria-expanded="${_committeeOpen.has(e.id)}">${_committeeOpen.has(e.id) ? 'Hide details' : 'Show witnesses and documents'}</button>
-            </div>
+            </span>
             <span class="committee-room">${escapeHtml(e.location)}</span>
-            ${_committeeOpen.has(e.id) ? committeeDetailHtml(_committeeDetail[e.id]) : ''}
-        </div>` }));
+            <span class="bill-chevron gi gi-chev-right" aria-hidden="true"></span>
+        </button>` }));
         ListSync.sync(list, entries);
         list._clamp?.refresh();
     }
@@ -6626,40 +6626,86 @@ function renderCommitteeMeetings() {
     if (link) link.href = 'https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, '');
     if (globalThis.SourcePop) {
         const dayPart = d.table ? { request: 'GET https://docs.house.gov/Committee/Calendar/ByDay.aspx?DayID=' + d.date.replace(/\//g, ''), html: d.table } : null;
-        // each meeting opened adds its own page, as the Clerk sent it
-        const eventParts = [..._committeeOpen].map((id) => _committeeDetail[id]).filter((x) => x && x.panel).map((x) => ({ request: `GET ${x.url}`, html: x.panel }));
-        SourcePop.set(document.getElementById('committee-meetings'), !dayPart ? null : eventParts.length ? { parts: [dayPart, ...eventParts], at: d.at } : { ...dayPart, at: d.at });
+        SourcePop.set(document.getElementById('committee-meetings'), dayPart ? { ...dayPart, at: d.at } : null);
     }
 }
-// What the Clerk's page for one meeting holds: who is testifying, with their documents, and the legislation, notices and votes. Document titles are the
-// Clerk's, less the date it appends ("Testimony_Taylor_09.16.2026" -> "Testimony Taylor").
-function committeeDetailHtml(x) {
-    if (!x || x === 'loading') return '<div class="committee-detail"><div class="loading-indicator" role="status" aria-label="Loading"><i></i><i></i><i></i></div></div>';
-    if (x === 'error') return `<div class="committee-detail"><span class="committee-detail-note">${SourceError.text('details', 'clerk')}</span></div>`;
-    const nice = (t) => escapeHtml(t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
-    const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(i.url))}" target="_blank" rel="noopener">${nice(i.title)}</a>` : nice(i.title);
-    const witnesses = x.witnesses.length ? `<div class="committee-detail-head">Witnesses</div>${x.witnesses.map((w) => `
-        <div class="committee-witness"><span class="committee-witness-name">${escapeHtml(w.name)}</span><span class="committee-witness-role">${escapeHtml(w.role)}</span>
-        ${w.docs.length ? `<span class="committee-docs">${w.docs.map(doc).join('')}</span>` : ''}</div>`).join('')}` : '';
-    const sections = x.sections.map((s) => `<div class="committee-detail-head">${escapeHtml(s.title)}</div><ul class="committee-docs-list">${s.items.map((i) => `<li>${doc(i)}</li>`).join('')}</ul>`).join('');
-    return `<div class="committee-detail">${witnesses}${sections || ''}${!witnesses && !sections ? EmptyState.detail('Nothing posted yet. Witnesses and documents appear here when the committee posts them.') : ''}${x.updated ? `<span class="committee-detail-note">Updated ${escapeHtml(x.updated)}</span>` : ''}</div>`;
+
+// A bill number at the start of a legislation or amendment line ("• H.R. 1031 (Rep. Tenney), ..." or "H.R. 9590 Webster_051 ANS") becomes a bill-number link that opens that bill's window.
+const COMMITTEE_BILL_RE = /^(?:•\s*)?(H\.\s?J\.\s?Res\.|H\.\s?Con\.\s?Res\.|H\.\s?Res\.|H\.R\.|S\.\s?J\.\s?Res\.|S\.\s?Con\.\s?Res\.|S\.\s?Res\.|S\.)\s*(\d+)/;
+function committeeItemHtml(item, withText) {
+    const nice = (t) => t.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' ');
+    const link = (label) => item.url ? `<a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(item.url))}" target="_blank" rel="noopener">${escapeHtml(label)}</a>` : '';
+    const m = COMMITTEE_BILL_RE.exec(item.title || '');
+    if (!m) return item.url ? link(nice(item.title)) : escapeHtml(nice(item.title));
+    const id = `${m[1].replace(/\s+/g, '')} ${m[2]}`;
+    const rest = item.title.slice(m[0].length);
+    return `<button type="button" class="bill-open" data-bill-open="${escapeHtml(id)}">${escapeHtml(id)}</button>${escapeHtml(nice(rest))}${item.url ? ` ${link(withText || 'Text')}` : ''}`;
 }
-function toggleCommitteeDetail(id) {
-    const list = document.getElementById('committee-list');
-    if (_committeeOpen.has(id)) { _committeeOpen.delete(id); renderCommitteeMeetings(); ClampList.follow(list); return; }
-    _committeeOpen.add(id);
+function committeeModalBodyHtml(ev, x) {
+    const day = _committee ? globalThis.BoardUtil.fmtIsoLong(`${_committee.date.slice(6)}-${_committee.date.slice(0, 2)}-${_committee.date.slice(3, 5)}`) : '';
+    const head = `
+        <h2 class="cm-title" id="cm-title">${escapeHtml(ev.title)}</h2>
+        <div class="cm-meta"><span>${escapeHtml(day)}</span><span class="cm-meta-time">${escapeHtml(ev.time)}</span><span class="cm-meta-room">${escapeHtml(ev.location)}</span></div>`;
+    if (!x || x === 'loading') {
+        const bar = (w, h) => `<i class="bsk" style="width:${w};height:${h}"></i>`;
+        return `${head}<div class="cm-loading" role="status" aria-label="Loading the meeting's details">${bar('9rem', '0.8rem')}${[0, 1, 2].map(() => `<div class="cm-load-row">${bar('55%', '1rem')}${bar('80%', '0.8rem')}</div>`).join('')}</div>`;
+    }
+    if (x === 'error') return `${head}<p class="cm-note">${SourceError.text('details', 'clerk')}</p>`;
+    const doc = (i) => i.url ? `<a class="ext" href="${escapeHtml(globalThis.BoardUtil.safeHref(i.url))}" target="_blank" rel="noopener">${escapeHtml(i.title.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '))}</a>` : escapeHtml(i.title.replace(/_\d\d\.\d\d\.\d{4}$/, '').replace(/_/g, ' '));
+    const witnesses = x.witnesses.length ? `<h3 class="cm-h">Witnesses <em>${x.witnesses.length}</em></h3><div class="cm-witnesses">${x.witnesses.map((w) => `
+        <div class="cm-witness"><div class="cm-witness-name">${escapeHtml(w.name)}</div><div class="cm-witness-role">${escapeHtml(w.role)}</div>
+        ${w.docs.length ? `<div class="cm-docs">${w.docs.map(doc).join('')}</div>` : ''}</div>`).join('')}</div>` : '';
+    const sections = x.sections.map((s) => {
+        const bills = /legislation|amendment/i.test(s.title);
+        return `<h3 class="cm-h">${escapeHtml(s.title)} <em>${s.items.length}</em></h3><ul class="cm-list">${s.items.map((i) => `<li>${bills ? committeeItemHtml(i, /amendment/i.test(s.title) ? 'Text' : 'Text') : doc(i)}</li>`).join('')}</ul>`;
+    }).join('');
+    const empty = !witnesses && !sections ? EmptyState.detail('Nothing posted yet. Witnesses and documents appear here when the committee posts them.') : '';
+    return `${head}${witnesses}${sections}${empty}`;
+}
+let _committeeModal = null;
+function closeCommitteeModal() {
+    if (!_committeeModal) return;
+    const { ov, trap, onKey } = _committeeModal; _committeeModal = null;
+    document.removeEventListener('keydown', onKey);
+    ov.classList.remove('is-open');
+    setTimeout(() => ov.remove(), 220);
+    if (trap) trap.release();
+}
+function openCommitteeModal(id) {
+    const ev = _committee && _committee.events.find((e) => e.id === id);
+    if (!ev) return;
+    closeCommitteeModal();
+    const ov = document.createElement('div');
+    ov.className = 'tm-picker-overlay cm-overlay';
+    ov.innerHTML = `<div class="tm-picker cm-dialog" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+        <div class="tm-picker-head"><span class="cm-kicker">${escapeHtml(ev.committee)}</span><button type="button" class="tm-picker-close" aria-label="Close"></button></div>
+        <div class="cm-body"></div>
+        <div class="cm-foot"><span class="panel-source">Source: <a href="${escapeHtml(globalThis.BoardUtil.safeHref(ev.url))}" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span></div>
+    </div>`;
+    document.body.appendChild(ov);
+    const body = ov.querySelector('.cm-body');
+    const paint = () => { setIfChanged(body, committeeModalBodyHtml(ev, _committeeDetail[id])); body.setAttribute('aria-busy', String(_committeeDetail[id] === 'loading' || !_committeeDetail[id])); };
+    const onKey = (e) => { if (e.key === 'Escape') closeCommitteeModal(); };
+    document.addEventListener('keydown', onKey);
+    const trap = globalThis.FocusTrap ? globalThis.FocusTrap.activate(ov.querySelector('.tm-picker'), { initial: '.tm-picker-close' }) : null;
+    _committeeModal = { ov, trap, onKey };
+    ov.querySelector('.tm-picker-close').addEventListener('click', closeCommitteeModal);
+    ov.addEventListener('click', (e) => { if (e.target === ov) closeCommitteeModal(); });
+    requestAnimationFrame(() => ov.classList.add('is-open'));
     if (!_committeeDetail[id] || _committeeDetail[id] === 'error') {
         _committeeDetail[id] = 'loading';
+        paint();
         fetch(`https://api.evanhollander.org/house-floor/api/committee-event?id=${encodeURIComponent(id)}`)
             .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then((d) => { _committeeDetail[id] = d; renderCommitteeMeetings(); ClampList.follow(list); })
-            .catch(() => { _committeeDetail[id] = 'error'; renderCommitteeMeetings(); ClampList.follow(list); });
-    }
-    renderCommitteeMeetings();
-    ClampList.follow(list);
+            .then((d) => { _committeeDetail[id] = d; })
+            .catch(() => { _committeeDetail[id] = 'error'; })
+            .then(() => { if (_committeeModal && _committeeModal.ov === ov) paint(); });
+    } else paint();
 }
 function loadCommitteeMeetings() {
-    const today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
+    let today = eastern(new Date(), { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dayParam = new URLSearchParams(location.search).get('committeeDay');   // ?committeeDay=YYYY-MM-DD: another day's meetings
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dayParam || '')) today = `${dayParam.slice(5, 7)}/${dayParam.slice(8, 10)}/${dayParam.slice(0, 4)}`;
     fetch('https://api.evanhollander.org/house-floor/api/committee-meetings?date=' + encodeURIComponent(today))
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then((d) => { _committee = d; renderCommitteeMeetings(); })
@@ -7103,8 +7149,8 @@ document.addEventListener('click', (e) => {
     if (!t || !t.closest) return;
     const billOpen = t.closest('[data-bill-open]');
     if (billOpen) { openBillModal(billOpen.dataset.billOpen); return; }
-    const more = t.closest('[data-committee-detail]');
-    if (more) toggleCommitteeDetail(more.dataset.committeeDetail);
+    const cm = t.closest('[data-committee-open]');
+    if (cm) { openCommitteeModal(cm.dataset.committeeOpen); return; }
     const sortBtn = t.closest('[data-dp-sort]');
     if (sortBtn) { const next = Segmented.next('sort', _dischargeSort, sortBtn.dataset.dpSort); if (next !== _dischargeSort) { _dischargeSort = next; const l = document.getElementById('discharge-list'); l?._dp?.doneClamp.close(); l?._dp?.openClamp.close(); renderDischargePetitions(); } }
     const sig = t.closest('[data-dp-signers]');

@@ -7444,7 +7444,6 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 .committee-title { color: var(--text-primary); font-size: var(--fs-md); line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
 .committee-title:hover { text-decoration: underline; }
 .committee-name { font-size: var(--fs-sm); color: var(--text-muted); }
-.committee-more { justify-self: start; text-align: left; margin-top: var(--sp-6); font: inherit; font-size: var(--fs-sm); }
 .committee-room { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; overflow-wrap: anywhere; }
 #senate-committees .committee-title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .committee-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-8); margin-top: var(--sp-4); }
@@ -7698,3 +7697,4 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 }
 .ai-modal-note { margin: 0 0 var(--sp-16); padding: var(--sp-10) var(--sp-12); border-radius: var(--radius-8); background: var(--ai-glow); font-size: var(--fs-lg); line-height: 1.55; color: var(--text-secondary); }
 .ai-robot { display: inline-block; width: 1.15em; height: 1.15em; margin: 0 0.1em; vertical-align: -0.22em; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='8' width='14' height='11' rx='3'/%3E%3Cpath d='M12 8V5'/%3E%3Ccircle cx='12' cy='4' r='1.2'/%3E%3Ccircle cx='9' cy='13' r='.9' fill='black' stroke='none'/%3E%3Ccircle cx='15' cy='13' r='.9' fill='black' stroke='none'/%3E%3Cpath d='M9.5 16.4h5M3 12v3M21 12v3'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='8' width='14' height='11' rx='3'/%3E%3Cpath d='M12 8V5'/%3E%3Ccircle cx='12' cy='4' r='1.2'/%3E%3Ccircle cx='9' cy='13' r='.9' fill='black' stroke='none'/%3E%3Ccircle cx='15' cy='13' r='.9' fill='black' stroke='none'/%3E%3Cpath d='M9.5 16.4h5M3 12v3M21 12v3'/%3E%3C/svg%3E") center / contain no-repeat; }
+.cm-meta-time { font-family: var(--font-mono); color: var(--accent-green); }
