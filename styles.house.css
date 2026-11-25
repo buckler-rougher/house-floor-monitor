@@ -12846,7 +12846,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 .cm-loading .bsk { display: block; border-radius: var(--radius-4); max-width: 100%; }
 .cm-load-row { display: grid; gap: var(--sp-8); }
 
-.committee-card .committee-name, .cm-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-8); }
+.committee-card .committee-name, .cm-kicker { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-4); }
 .committee-card .committee-name { margin-top: var(--sp-6); }
 .cm-sub { font-size: var(--fs-sm); color: var(--text-muted); }
 .cm-kicker { font-family: var(--font-sans); letter-spacing: normal; text-transform: none; font-weight: 400; min-width: 0; }
