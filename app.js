@@ -6613,7 +6613,7 @@ function renderCommitteeMeetings() {
         <button type="button" class="committee-card" data-committee-open="${escapeHtml(e.id)}">
             <span class="committee-time">${escapeHtml(e.time)}</span>
             <span class="committee-what">
-                <span class="committee-title">${escapeHtml(e.title)}</span>
+                <span class="committee-title">${escapeHtml(e.title.replace(/^[\s:\u2022]+/, ""))}</span>
                 <span class="committee-name">${escapeHtml(e.committee)}</span>
             </span>
             <span class="committee-room">${escapeHtml(e.location)}</span>
@@ -6641,10 +6641,18 @@ function committeeItemHtml(item, withText) {
     const rest = item.title.slice(m[0].length);
     return `<button type="button" class="bill-open" data-bill-open="${escapeHtml(id)}">${escapeHtml(id)}</button>${escapeHtml(nice(rest))}${item.url ? ` ${link(withText || 'Text')}` : ''}`;
 }
+// A markup's title is the list of bills it takes up, which can run to a paragraph. The window's heading says what it is instead, and the list is in the Text of Legislation section below it.
+function committeeHeading(ev, x) {
+    const t = ev.title.replace(/^[\s:\u2022]+/, '');
+    if (t.length <= 160) return t;
+    const leg = x && x !== 'loading' && x !== 'error' ? x.sections.find((s) => /legislation/i.test(s.title)) : null;
+    if (leg) return `Markup of ${leg.items.length} measure${leg.items.length === 1 ? '' : 's'}`;
+    return t.slice(0, 150).replace(/\s+\S*$/, '') + '\u2026';
+}
 function committeeModalBodyHtml(ev, x) {
     const day = _committee ? globalThis.BoardUtil.fmtIsoLong(`${_committee.date.slice(6)}-${_committee.date.slice(0, 2)}-${_committee.date.slice(3, 5)}`) : '';
     const head = `
-        <h2 class="cm-title" id="cm-title">${escapeHtml(ev.title)}</h2>
+        <h2 class="cm-title" id="cm-title">${escapeHtml(committeeHeading(ev, x))}</h2>
         <div class="cm-meta"><span>${escapeHtml(day)}</span><span class="cm-meta-time">${escapeHtml(ev.time)}</span><span class="cm-meta-room">${escapeHtml(ev.location)}</span></div>`;
     if (!x || x === 'loading') {
         const bar = (w, h) => `<i class="bsk" style="width:${w};height:${h}"></i>`;
