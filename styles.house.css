@@ -12748,3 +12748,16 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #calendar-orders .calendar-card-count:empty { display: none; }
 
 .calendar-card-date, .calendar-card-date:visited { color: inherit; font-weight: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+:root:not([data-chamber="senate"]) #proceedings-feed { padding-left: var(--sp-20); background: var(--bg-card); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item { position: relative; margin-left: 4px; padding: var(--sp-8) 0 var(--sp-8) var(--sp-20); border-bottom: 0; border-left: 1px solid var(--border-color); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item::before { content: ""; position: absolute; left: -4px; top: 15px; width: 7px; height: 7px; box-sizing: border-box; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--text-muted); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.18); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-text { display: block; font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-time { display: block; margin-bottom: 2px; color: var(--text-muted); font-size: var(--fs-sm); }
+:root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child .proceedings-time { color: var(--accent-green); }
+
+.proceedings-replay { position: relative; top: 2px; margin-left: var(--sp-12); display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: var(--radius-4); color: var(--text-muted); opacity: 0.75; text-decoration: none; transition: color var(--dur-150) ease, background var(--dur-150) ease, opacity var(--dur-150) ease; }
+.proceedings-replay::before { content: ""; position: absolute; inset: -6px; }
+.proceedings-replay svg { display: block; width: 12px; height: 12px; }
+.proceedings-replay:hover, .proceedings-replay:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.1); opacity: 1; }
