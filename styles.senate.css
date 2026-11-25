@@ -7630,4 +7630,4 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-text { display: block; font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-time { display: block; margin-bottom: 2px; color: var(--text-muted); font-size: var(--fs-sm); }
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child .proceedings-time { color: var(--accent-green); }
-#proceedings-feed .proceedings-time { display: flex; align-items: center; gap: var(--sp-6); }
+#proceedings-feed .proceedings-time { display: flex; align-items: center; gap: var(--sp-10); }
