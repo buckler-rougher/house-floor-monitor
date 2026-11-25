@@ -6603,7 +6603,7 @@ function committeeChipsHtml(committee) {
     const m = /^(.+?)\s*\((Committee on [^)]+)\)\s*$/.exec(committee || '');
     const full = m ? m[2] : (committee || '');
     const sub = m ? m[1] : '';
-    const name = /^Committee on /i.test(full) ? full.replace(/^Committee on /i, '') + ' Committee' : full;
+    const name = /^Committee on /i.test(full) ? full.replace(/^Committee on (?:the )?/i, '') + ' Committee' : full;   // "Committee on the Budget" is the Budget Committee, as the bill window names it
     const chip = globalThis.Committees ? globalThis.Committees.committeeChipHtml({ name, chamber: 'House' }) : `<span>${escapeHtml(full)}</span>`;
     return `${chip}${sub ? `<span class="cm-sub">${escapeHtml(sub)}</span>` : ''}`;
 }
