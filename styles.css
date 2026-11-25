@@ -13924,3 +13924,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label:first-child + .proceedings-item::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.18); }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-text { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label { margin: 0 0 0 4px; padding: var(--sp-12) 0 var(--sp-2) var(--sp-20); border-left: 1px solid var(--border-color); }
+
+/* Senate: a measure's status lines ("Cloture invoked in Senate by Yea-Nay Vote. 55 - 31.") are sentences, so they are set in the sans like the narrative around them, not in mono. */
+:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-lg); line-height: 1.5; }
