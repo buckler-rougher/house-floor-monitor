@@ -7637,4 +7637,5 @@ a.source-link:not(.has-manifest):not(.bill-modal-link):not(.amdt-pdf-btn):not(.t
 :root[data-chamber="senate"] #proceedings-feed .proceedings-item:first-child::before, :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label:first-child + .proceedings-item::before { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.18); }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-text { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label { margin: 0 0 0 4px; padding: var(--sp-12) 0 var(--sp-2) var(--sp-20); border-left: 1px solid var(--border-color); }
-:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-lg); line-height: 1.5; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; color: var(--text-primary); padding-left: 0; border-left: 0; margin: var(--sp-6) 0 0; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-size: var(--fs-xl); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-2); }

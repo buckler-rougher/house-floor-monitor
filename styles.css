@@ -13925,5 +13925,7 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :root[data-chamber="senate"] #proceedings-feed .proceedings-text { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; }
 :root[data-chamber="senate"] #proceedings-feed .proceedings-section-label { margin: 0 0 0 4px; padding: var(--sp-12) 0 var(--sp-2) var(--sp-20); border-left: 1px solid var(--border-color); }
 
-/* Senate: a measure's status lines ("Cloture invoked in Senate by Yea-Nay Vote. 55 - 31.") are sentences, so they are set in the sans like the narrative around them, not in mono. */
-:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-lg); line-height: 1.5; }
+/* Senate: a measure's status lines ("Cloture invoked in Senate by Yea-Nay Vote. 55 - 31.") are the Senate's narrative of what it did, so they read like the narrative around them: the same sans, the same size
+   and colour, no indented rule or mono, a little room between lines. The measure's title above them stays the quieter grey. */
+:root[data-chamber="senate"] #proceedings-feed .proceedings-status { font-family: var(--font-sans); font-size: var(--fs-xl); line-height: 1.5; color: var(--text-primary); padding-left: 0; border-left: 0; margin: var(--sp-6) 0 0; }
+:root[data-chamber="senate"] #proceedings-feed .proceedings-measure-title { font-size: var(--fs-xl); line-height: 1.5; color: var(--text-secondary); margin-top: var(--sp-2); }
