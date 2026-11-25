@@ -12757,7 +12757,8 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-time { display: block; margin-bottom: 2px; color: var(--text-muted); font-size: var(--fs-sm); }
 :root:not([data-chamber="senate"]) #proceedings-feed .proceedings-item:first-child .proceedings-time { color: var(--accent-green); }
 
-.proceedings-replay { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-left: var(--sp-6); vertical-align: -2px; border-radius: var(--radius-4); color: var(--text-muted); opacity: 0.75; text-decoration: none; transition: color var(--dur-150) ease, background var(--dur-150) ease, opacity var(--dur-150) ease; }
+#proceedings-feed .proceedings-time { display: flex; align-items: center; gap: var(--sp-6); }
+.proceedings-replay { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: var(--radius-4); color: var(--text-muted); opacity: 0.75; text-decoration: none; transition: color var(--dur-150) ease, background var(--dur-150) ease, opacity var(--dur-150) ease; }
 .proceedings-replay::before { content: ""; position: absolute; inset: -6px; }
-.proceedings-replay svg { display: block; width: 10px; height: 10px; }
+.proceedings-replay svg { display: block; width: 12px; height: 12px; }
 .proceedings-replay:hover, .proceedings-replay:focus-visible { color: var(--text-primary); background: rgba(255, 255, 255, 0.1); opacity: 1; }
