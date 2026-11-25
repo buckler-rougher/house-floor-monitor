@@ -6599,13 +6599,18 @@ const COMMITTEE_SHOWN = 5;
 // documents, the legislation and amendments of a markup, notices), so the list stays a list. Nothing is fetched until a meeting is opened.
 // The Clerk names a meeting's committee as "Committee on Homeland Security" or, for a subcommittee, "Subcommittee on Health (Committee on Veterans' Affairs)". The window and the card show the committee as the
 // bill window does, with the committee chip (lib/committees.js: its seal or monogram and its name), and a subcommittee's own name after it.
-function committeeChipsHtml(committee) {
+function committeeParts(committee) {
     const m = /^(.+?)\s*\((Committee on [^)]+)\)\s*$/.exec(committee || '');
     const full = m ? m[2] : (committee || '');
     const sub = m ? m[1] : '';
     const name = /^Committee on /i.test(full) ? full.replace(/^Committee on (?:the )?/i, '') + ' Committee' : full;   // "Committee on the Budget" is the Budget Committee, as the bill window names it
     const chip = globalThis.Committees ? globalThis.Committees.committeeChipHtml({ name, chamber: 'House' }) : `<span>${escapeHtml(full)}</span>`;
-    return `${chip}${sub ? `<span class="cm-sub">${escapeHtml(sub)}</span>` : ''}`;
+    return { chip, sub };
+}
+// The card: the chip, then a row for the subcommittee's name that is always there (empty for a full committee), so every card is the same height.
+function committeeChipsHtml(committee) {
+    const { chip, sub } = committeeParts(committee);
+    return `${chip}<span class="cm-sub">${sub ? escapeHtml(sub) : '&nbsp;'}</span>`;
 }
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
@@ -6663,7 +6668,7 @@ function committeeModalBodyHtml(ev, x) {
     const day = _committee ? globalThis.BoardUtil.fmtIsoLong(`${_committee.date.slice(6)}-${_committee.date.slice(0, 2)}-${_committee.date.slice(3, 5)}`) : '';
     const head = `
         <h2 class="cm-title" id="cm-title">${escapeHtml(committeeHeading(ev, x))}</h2>
-        <div class="cm-meta"><span>${escapeHtml(day)}</span><span class="cm-meta-time">${escapeHtml(ev.time)}</span><span class="cm-meta-room">${escapeHtml(ev.location)}</span></div>`;
+        <div class="cm-meta">${committeeParts(ev.committee).sub ? `<span class="cm-meta-sub">${escapeHtml(committeeParts(ev.committee).sub)}</span>` : ''}<span>${escapeHtml(day)}</span><span class="cm-meta-time">${escapeHtml(ev.time)}</span><span class="cm-meta-room">${escapeHtml(ev.location)}</span></div>`;
     if (!x || x === 'loading') {
         const bar = (w, h) => `<i class="bsk" style="width:${w};height:${h}"></i>`;
         return `${head}<div class="cm-loading" role="status" aria-label="Loading the meeting's details">${bar('9rem', '0.8rem')}${[0, 1, 2].map(() => `<div class="cm-load-row">${bar('55%', '1rem')}${bar('80%', '0.8rem')}</div>`).join('')}</div>`;
@@ -6696,7 +6701,7 @@ function openCommitteeModal(id) {
     const ov = document.createElement('div');
     ov.className = 'tm-picker-overlay cm-overlay';
     ov.innerHTML = `<div class="tm-picker cm-dialog" role="dialog" aria-modal="true" aria-labelledby="cm-title">
-        <div class="tm-picker-head"><span class="cm-kicker">${committeeChipsHtml(ev.committee)}</span><button type="button" class="tm-picker-close" aria-label="Close"></button></div>
+        <div class="tm-picker-head"><span class="cm-kicker">${committeeParts(ev.committee).chip}</span><button type="button" class="tm-picker-close" aria-label="Close"></button></div>
         <div class="cm-body"></div>
         <div class="cm-foot"><span class="panel-source">Source: <a href="${escapeHtml(globalThis.BoardUtil.safeHref(ev.url))}" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span></div>
     </div>`;
