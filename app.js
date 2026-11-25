@@ -6597,6 +6597,16 @@ const _committeeDetail = {};        // event id -> /api/committee-event answer, 
 const COMMITTEE_SHOWN = 5;
 // Each meeting is a CARD, as a bill is: the time, the title, the committee and the room, and a chevron. Pressing it opens a window with everything the Clerk has on the meeting (witnesses and their
 // documents, the legislation and amendments of a markup, notices), so the list stays a list. Nothing is fetched until a meeting is opened.
+// The Clerk names a meeting's committee as "Committee on Homeland Security" or, for a subcommittee, "Subcommittee on Health (Committee on Veterans' Affairs)". The window and the card show the committee as the
+// bill window does, with the committee chip (lib/committees.js: its seal or monogram and its name), and a subcommittee's own name after it.
+function committeeChipsHtml(committee) {
+    const m = /^(.+?)\s*\((Committee on [^)]+)\)\s*$/.exec(committee || '');
+    const full = m ? m[2] : (committee || '');
+    const sub = m ? m[1] : '';
+    const name = /^Committee on /i.test(full) ? full.replace(/^Committee on /i, '') + ' Committee' : full;
+    const chip = globalThis.Committees ? globalThis.Committees.committeeChipHtml({ name, chamber: 'House' }) : `<span>${escapeHtml(full)}</span>`;
+    return `${chip}${sub ? `<span class="cm-sub">${escapeHtml(sub)}</span>` : ''}`;
+}
 function renderCommitteeMeetings() {
     const list = document.getElementById('committee-list');
     if (!list || !_committee) return;
@@ -6614,7 +6624,7 @@ function renderCommitteeMeetings() {
             <span class="committee-time">${escapeHtml(e.time)}</span>
             <span class="committee-what">
                 <span class="committee-title">${escapeHtml(e.title.replace(/^[\s:\u2022]+/, ""))}</span>
-                <span class="committee-name">${escapeHtml(e.committee)}</span>
+                <span class="committee-name">${committeeChipsHtml(e.committee)}</span>
             </span>
             <span class="committee-room">${escapeHtml(e.location)}</span>
             <span class="bill-chevron gi gi-chev-right" aria-hidden="true"></span>
@@ -6686,7 +6696,7 @@ function openCommitteeModal(id) {
     const ov = document.createElement('div');
     ov.className = 'tm-picker-overlay cm-overlay';
     ov.innerHTML = `<div class="tm-picker cm-dialog" role="dialog" aria-modal="true" aria-labelledby="cm-title">
-        <div class="tm-picker-head"><span class="cm-kicker">${escapeHtml(ev.committee)}</span><button type="button" class="tm-picker-close" aria-label="Close"></button></div>
+        <div class="tm-picker-head"><span class="cm-kicker">${committeeChipsHtml(ev.committee)}</span><button type="button" class="tm-picker-close" aria-label="Close"></button></div>
         <div class="cm-body"></div>
         <div class="cm-foot"><span class="panel-source">Source: <a href="${escapeHtml(globalThis.BoardUtil.safeHref(ev.url))}" target="_blank" rel="noopener">Committee Repository (House Clerk)</a></span></div>
     </div>`;
