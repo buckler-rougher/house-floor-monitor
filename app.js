@@ -9799,7 +9799,7 @@ function renderHouseCalendar() {
                 })),
             ];
             setIfChanged(card.querySelector('.calendar-card-body'), items.length
-                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="calendar-card-tag">${escapeHtml(o.tag)}</span>` : ''}</div>${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
+                ? items.map((o) => `<div class="calendar-card-item"><div class="calendar-card-label">${escapeHtml(o.label)}${o.tag ? `<span class="sr-fact">${escapeHtml(o.tag)}</span>` : ''}</div>${o.note ? `<p class="calendar-card-note">${escapeHtml(o.note)}</p>` : ''}${o.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>`).join('')
                 : '<p class="calendar-card-empty">The Calendar lists no orders for this day.</p>');
             setSource(card);
             const count = card.querySelector('.calendar-card-count');

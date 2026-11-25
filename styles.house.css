@@ -12738,9 +12738,6 @@ html.tm-dragging, html.tm-dragging * { -webkit-user-select: none !important; use
 #calendar-orders .calendar-card-item { padding: var(--sp-12) 0 var(--sp-4); }
 #calendar-orders .calendar-card-item + .calendar-card-item { margin-top: var(--sp-4); border-top: 1px solid var(--table-rule); }
 #calendar-orders .calendar-card-label { margin-top: 0; display: flex; align-items: center; flex-wrap: wrap; gap: var(--sp-8); color: var(--text-secondary); }
-#calendar-orders .calendar-card-tag { padding: 1px var(--sp-6); border: 1px solid var(--border-color); border-radius: var(--radius-4); font-size: var(--fs-2xs); font-weight: 500; letter-spacing: var(--track-wide); color: var(--text-muted); }
 #calendar-orders .calendar-card-item p { margin: var(--sp-10) 0 0; line-height: 1.6; }
-#calendar-orders .calendar-card-item p:first-of-type { color: var(--text-primary); }
 #calendar-orders .calendar-card-label + p { margin-top: var(--sp-8); }
 #calendar-orders .calendar-card-item p.calendar-card-note { padding: var(--sp-6) var(--sp-10); border-left: 2px solid var(--accent-amber); background: rgba(255, 255, 255, 0.03); border-radius: 0 var(--radius-6) var(--radius-6) 0; font-size: var(--fs-sm); color: var(--text-secondary); }
-#calendar-orders .calendar-card-item p.calendar-card-note + p { color: var(--text-secondary); }
